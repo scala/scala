@@ -17,7 +17,7 @@ are ignored.
 
 ## Dependencies
 
-For every module in the IntelliJ project there is a corresponding `-deps` library, for exmaple `compiler-deps` provides `ant.jar` for the compiler codebase.
+For every module in the IntelliJ project there is a corresponding `-deps` library, for example `compiler-deps` provides `ant.jar` for the compiler codebase.
 The `.jar` files in these `-deps` libraries can be easily kept up-to-date by running `sbt intellij` again.
 This is necessary whenever the dependencies in the sbt build change, for example when the `starr` version is updated.
 
@@ -60,7 +60,7 @@ breakpoints within the Scala compiler.
 ## Running the Compiler and REPL
 
 You can create run/debug configurations to run the compiler and REPL directly within
-IntelliJ, which might accelerate development and debugging of the the compiler.
+IntelliJ, which might accelerate development and debugging of the compiler.
 
 To debug the Scala codebase you can also use "Remote" debug configuration and pass
 the corresponding arguments to the jvm running the compiler / program.

@@ -6,17 +6,18 @@
 package scala.tools.nsc
 package doc
 
-import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import reporters.Reporter
-import typechecker.Analyzer
-import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
-
 
 trait ScaladocGlobalTrait extends Global {
   outer =>
 
   override val useOffsetPositions = false
   override def newUnitParser(unit: CompilationUnit) = new syntaxAnalyzer.ScaladocUnitParser(unit, Nil)
+  override def newJavaUnitParser(unit: CompilationUnit) = if (createJavadoc) {
+    new syntaxAnalyzer.ScaladocJavaUnitParser(unit)
+  } else {
+    super.newJavaUnitParser(unit)
+  }
 
   override lazy val syntaxAnalyzer = new ScaladocSyntaxAnalyzer[outer.type](outer) {
     val runsAfter = List[String]()
@@ -44,6 +45,8 @@ class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(
     phasesSet += analyzer.typerFactory
   }
   override def forScaladoc = true
+  override def createJavadoc = if (settings.docNoJavaComments.value) false else true
+
   override lazy val analyzer = new {
     val global: ScaladocGlobal.this.type = ScaladocGlobal.this
   } with ScaladocAnalyzer

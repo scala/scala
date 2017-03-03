@@ -1,0 +1,13 @@
+newSource1.scala:1: warning: A_1::test()Ljava/lang/String; could not be inlined:
+Failed to check if A_1::test()Ljava/lang/String; can be safely inlined to T without causing an IllegalAccessError. Checking instruction INVOKEDYNAMIC m()LA_1$Fun; [
+      // handle kind 0x6 : INVOKESTATIC
+      not/java/lang/SomeLambdaMetafactory.notAMetaFactoryMethod(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      (Ljava/lang/String;)Ljava/lang/String;,
+      // handle kind 0x6 : INVOKESTATIC
+      A_1.lambda$test$0(Ljava/lang/String;)Ljava/lang/String;,
+      (Ljava/lang/String;)Ljava/lang/String;
+    ] failed:
+The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory).
+class T { def foo = A_1.test }
+                        ^

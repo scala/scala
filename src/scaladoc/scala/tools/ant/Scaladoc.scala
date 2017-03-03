@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant
 
 import java.io.File
@@ -15,9 +14,8 @@ import org.apache.tools.ant.Project
 import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper}
 
-import scala.tools.nsc.Global
+import scala.tools.nsc.ScalaDocReporter
 import scala.tools.nsc.doc.Settings
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** An Ant task to document Scala code.
  *
@@ -668,7 +666,7 @@ class Scaladoc extends ScalaMatchingTask {
   /** Performs the compilation. */
   override def execute() = {
     val (docSettings, sourceFiles) = initialize
-    val reporter = new ConsoleReporter(docSettings)
+    val reporter = new ScalaDocReporter(docSettings)
     try {
       val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
       docProcessor.document(sourceFiles.map (_.toString))

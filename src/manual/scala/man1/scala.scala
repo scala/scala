@@ -144,17 +144,14 @@ object scala extends Command {
     Mono("-nocompdaemon") & " or " & Mono("-nc") & " option can be used to " &
     "prevent this.",
 
-    "If " & Mono("scala") & " is run from an sbaz(1) directory, " &
-    "then it will add to its classpath any jars installed in the " &
-    "lib directory of the sbaz directory.  Additionally, if no " &
-    "-classpath option is specified, then " & Mono("scala") &
+    "If no -classpath option is specified, then " & Mono("scala") &
     " will add " & Quote(".") & ", the current directory, to the " &
     "end of the classpath.")
 
   val options = Section("OPTIONS",
 
     "If any compiler options are specified, they must be first in the " &
-    "command line and must be followed by a bare hypen (" & Quote("-") &
+    "command line and must be followed by a bare hyphen (" & Quote("-") &
     ") character. " &
     "If no arguments are specified after the optional compiler arguments, " &
     "then an interactive Scala shell is started.  Otherwise, either a " &

@@ -1,358 +1,214 @@
 // © 2009–2010 EPFL/LAMP
-// code by Gilles Dubochet with contributions by Johannes Rudolph, "spiros" and Marcin Kubala
-
-var topLevelTemplates = undefined;
-var topLevelPackages = undefined;
+// code by Gilles Dubochet with contributions by Johannes Rudolph, "spiros", Marcin Kubala and Felix Mulder
 
 var scheduler = undefined;
-
-var kindFilterState = undefined;
-var focusFilterState = undefined;
 
 var title = $(document).attr('title');
 
 var lastFragment = "";
 
-$(document).ready(function() {
-    $('body').layout({
-        west__size: '20%',
-        center__maskContents: true
-    });
-    $('#browser').layout({
-        center__paneSelector: ".ui-west-center"
-        //,center__initClosed:true
-        ,north__paneSelector: ".ui-west-north"
-    });
-    $('iframe').bind("load", function(){
-        try {
-            var subtitle = $(this).contents().find('title').text();
-            $(document).attr('title', (title ? title + " - " : "") + subtitle);
-        } catch (e) {
-            // Chrome doesn't allow reading the iframe's contents when
-            // used on the local file system.
-        }
-        setUrlFragmentFromFrameSrc();
-    });
-
-    // workaround for IE's iframe sizing lack of smartness
-    if($.browser.msie) {
-        function fixIFrame() {
-            $('iframe').height($(window).height() )
-        }
-        $('iframe').bind("load",fixIFrame)
-        $('iframe').bind("resize",fixIFrame)
-    }
-
-    scheduler = new Scheduler();
-    scheduler.addLabel("init", 1);
-    scheduler.addLabel("focus", 2);
-    scheduler.addLabel("filter", 4);
-
-    prepareEntityList();
-
-    configureTextFilter();
-    configureKindFilter();
-    configureEntityList();
-
-    setFrameSrcFromUrlFragment();
-
-    // If the url fragment changes, adjust the src of iframe "template".
-    $(window).bind('hashchange', function() {
-      if(lastFragment != window.location.hash) {
-        lastFragment = window.location.hash;
-        setFrameSrcFromUrlFragment();
-      }
-    });
-});
-
-// Set the iframe's src according to the fragment of the current url.
-// fragment = "#scala.Either" => iframe url = "scala/Either.html"
-// fragment = "#scala.Either@isRight:Boolean" => iframe url = "scala/Either.html#isRight:Boolean"
-// fragment = "#scalaz.iteratee.package@>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]" => iframe url = "scalaz/iteratee/package.html#>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]"
-function setFrameSrcFromUrlFragment() {
-
-    function extractLoc(fragment) {
-        var loc = fragment.split('@')[0].replace(/\./g, "/");
-        if (loc.indexOf(".html") < 0) {
-            loc += ".html";
-        }
-        return loc;
-    }
-
-    function extractMemberSig(fragment) {
-        var splitIdx = fragment.indexOf('@');
-        if (splitIdx < 0) {
-            return;
-        }
-        return fragment.substr(splitIdx + 1);
-    }
-
-    var fragment = location.hash.slice(1);
-    if (fragment) {
-        var locWithMemeberSig = extractLoc(fragment);
-        var memberSig = extractMemberSig(fragment);
-        if (memberSig) {
-            locWithMemeberSig += "#" + memberSig;
-        }
-        frames["template"].location.replace(location.protocol + locWithMemeberSig);
-    } else {
-        console.log("empty fragment detected");
-        frames["template"].location.replace("package.html");
-    }
-}
-
-// Set the url fragment according to the src of the iframe "template".
-// iframe url = "scala/Either.html"  =>  url fragment = "#scala.Either"
-// iframe url = "scala/Either.html#isRight:Boolean"  =>  url fragment = "#scala.Either@isRight:Boolean"
-// iframe url = "scalaz/iteratee/package.html#>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]" => fragment = "#scalaz.iteratee.package@>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]"
-function setUrlFragmentFromFrameSrc() {
-  try {
-    var commonLength = location.pathname.lastIndexOf("/");
-    var frameLocation = frames["template"].location;
-    var relativePath = frameLocation.pathname.slice(commonLength + 1);
-
-    if(!relativePath || frameLocation.pathname.indexOf("/") < 0)
-      return;
-
-    // Add #, remove ".html" and replace "/" with "."
-    fragment = "#" + relativePath.replace(/\.html$/, "").replace(/\//g, ".");
-
-    // Add the frame's hash after an @
-    if(frameLocation.hash) fragment += ("@" + frameLocation.hash.slice(1));
-
-    // Use replace to not add history items
-    lastFragment = fragment;
-    location.replace(fragment);
-  }
-  catch(e) {
-    // Chrome doesn't allow reading the iframe's location when
-    // used on the local file system.
-  }
-}
-
 var Index = {};
-
 (function (ns) {
-    function openLink(t, type) {
-        var href;
-        if (type == 'object') {
-            href = t['object'];
-        } else {
-            href = t['class'] || t['trait'] || t['case class'] || t['type'];
-        }
-        return [
-            '<a class="tplshow" target="template" href="',
-            href,
-            '"><img width="13" height="13" class="',
-            type,
-            ' icon" src="lib/',
-            type,
-            '.png" />'
-        ].join('');
-    }
-
-    function createPackageHeader(pack) {
-        return [
-            '<li class="pack">',
-            '<a class="packfocus">focus</a><a class="packhide">hide</a>',
-            '<a class="tplshow" target="template" href="',
-            pack.replace(/\./g, '/'),
-            '/package.html">',
-            pack,
-            '</a></li>'
-        ].join('');
-    };
-
-    function createListItem(template) {
-        var inner = '';
-
-
-        if (template.object) {
-            inner += openLink(template, 'object');
-        }
-
-        if (template['class'] || template['trait'] || template['case class'] || template['type']) {
-            inner += (inner == '') ?
-                '<div class="placeholder" />' : '</a>';
-            inner += openLink(template, template['trait'] ? 'trait' : template['type'] ? 'type' : 'class');
-        } else {
-            inner += '<div class="placeholder"/>';
-        }
-
-        return [
-            '<li>',
-            inner,
-            '<span class="tplLink">',
-            template.name.replace(/^.*\./, ''),
-            '</span></a></li>'
-        ].join('');
-    }
-
-
-    ns.createPackageTree = function (pack, matched, focused) {
-        var html = $.map(matched, function (child, i) {
-            return createListItem(child);
-        }).join('');
-
-        var header;
-        if (focused && pack == focused) {
-            header = '';
-        } else {
-            header = createPackageHeader(pack);
-        }
-
-        return [
-            '<ol class="packages">',
-            header,
-            '<ol class="templates">',
-            html,
-            '</ol></ol>'
-        ].join('');
-    }
-
+    ns.keyLength = 0;
     ns.keys = function (obj) {
         var result = [];
         var key;
         for (key in obj) {
             result.push(key);
+            ns.keyLength++;
         }
         return result;
     }
-
-    var hiddenPackages = {};
-
-    function subPackages(pack) {
-        return $.grep($('#tpl ol.packages'), function (element, index) {
-            var pack = $('li.pack > .tplshow', element).text();
-            return pack.indexOf(pack + '.') == 0;
-        });
-    }
-
-    ns.hidePackage = function (ol) {
-        var selected = $('li.pack > .tplshow', ol).text();
-        hiddenPackages[selected] = true;
-
-        $('ol.templates', ol).hide();
-
-        $.each(subPackages(selected), function (index, element) {
-            $(element).hide();
-        });
-    }
-
-    ns.showPackage = function (ol, state) {
-        var selected = $('li.pack > .tplshow', ol).text();
-        hiddenPackages[selected] = false;
-
-        $('ol.templates', ol).show();
-
-        $.each(subPackages(selected), function (index, element) {
-            $(element).show();
-
-            // When the filter is in "packs" state,
-            // we don't want to show the `.templates`
-            var key = $('li.pack > .tplshow', element).text();
-            if (hiddenPackages[key] || state == 'packs') {
-                $('ol.templates', element).hide();
-            }
-        });
-    }
-
 })(Index);
 
-function configureEntityList() {
-    kindFilterSync();
-    configureHideFilter();
-    configureFocusFilter();
-    textFilter();
-}
+/** Find query string from URL */
+var QueryString = function(key) {
+    if (QueryString.map === undefined) { // only calc once
+        QueryString.map = {};
+        var keyVals = window.location.search.split("?").pop().split("&");
+        keyVals.forEach(function(elem) {
+            var pair = elem.split("=");
+            if (pair.length == 2) QueryString.map[pair[0]] = pair[1];
+        });
+    }
 
-/* Updates the list of entities (i.e. the content of the #tpl element) from the raw form generated by Scaladoc to a
-   form suitable for display. In particular, it adds class and object etc. icons, and it configures links to open in
-   the right frame. Furthermore, it sets the two reference top-level entities lists (topLevelTemplates and
-   topLevelPackages) to serve as reference for resetting the list when needed.
-   Be advised: this function should only be called once, on page load. */
-function prepareEntityList() {
-    var classIcon = $("#library > img.class");
-    var traitIcon = $("#library > img.trait");
-    var typeIcon = $("#library > img.type");
-    var objectIcon = $("#library > img.object");
-    var packageIcon = $("#library > img.package");
+    return QueryString.map[key];
+};
 
-    $('#tpl li.pack > a.tplshow').attr("target", "template");
-    $('#tpl li.pack').each(function () {
-        $("span.class", this).each(function() { $(this).replaceWith(classIcon.clone()); });
-        $("span.trait", this).each(function() { $(this).replaceWith(traitIcon.clone()); });
-        $("span.type", this).each(function() { $(this).replaceWith(typeIcon.clone()); });
-        $("span.object", this).each(function() { $(this).replaceWith(objectIcon.clone()); });
-        $("span.package", this).each(function() { $(this).replaceWith(packageIcon.clone()); });
+$(document).ready(function() {
+    // Clicking #doc-title returns the user to the root package
+    $("#doc-title").click(function() { document.location = toRoot + "index.html" });
+
+    scheduler = new Scheduler();
+    scheduler.addLabel("init", 1);
+    scheduler.addLabel("focus", 2);
+    scheduler.addLabel("filter", 4);
+    scheduler.addLabel("search", 5);
+
+    configureTextFilter();
+
+    $("#index-input").on("input", function(e) {
+        if($(this).val().length > 0)
+            $("#textfilter > .input > .clear").show();
+        else
+            $("#textfilter > .input > .clear").hide();
     });
-    $('#tpl li.pack')
-        .prepend("<a class='packhide'>hide</a>")
-        .prepend("<a class='packfocus'>focus</a>");
-}
 
-/* Handles all key presses while scrolling around with keyboard shortcuts in left panel */
-function keyboardScrolldownLeftPane() {
+    if (QueryString("search") !== undefined) {
+        $("#index-input").val(QueryString("search"));
+        searchAll();
+    }
+});
+
+/* Handles all key presses while scrolling around with keyboard shortcuts in search results */
+function handleKeyNavigation() {
+    /** Iterates both back and forth among selected elements */
+    var EntityIterator = function (litems, ritems) {
+        var it = this;
+        this.index = -1;
+
+        this.items = litems;
+        this.litems = litems;
+        this.ritems = ritems;
+
+        if (litems.length == 0)
+            this.items = ritems;
+
+        /** Returns the next entry - if trying to select past last element, it
+         * returns the last element
+         */
+        it.next = function() {
+            it.index = Math.min(it.items.length - 1, it.index + 1);
+            return $(it.items[it.index]);
+        };
+
+        /** Returns the previous entry - will return `undefined` instead if
+         * selecting up from first element
+         */
+        it.prev = function() {
+            it.index = Math.max(-1, it.index - 1);
+            return it.index == -1 ? undefined : $(it.items[it.index]);
+        };
+
+        it.right = function() {
+            if (it.ritems.length != 0) {
+                it.items = it.ritems;
+                it.index = Math.min(it.index, it.items.length - 1);
+            }
+            return $(it.items[it.index]);
+        };
+
+        it.left = function() {
+            if (it.litems.length != 0) {
+                it.items = it.litems;
+                it.index = Math.min(it.index, it.items.length - 1);
+            }
+            return $(it.items[it.index]);
+        };
+    };
+
+    /** Scroll helper, ensures that the selected elem is inside the viewport */
+    var Scroller = function ($container) {
+        scroller = this;
+        scroller.container = $container;
+
+        scroller.scrollDown = function($elem) {
+            var yPos = $elem.offset().top; // offset relative to viewport
+            if ($container.height() < yPos || (yPos - $("#search").height()) < 0) {
+                $container.animate({
+                    scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
+                }, 200);
+            }
+        };
+
+        scroller.scrollUp = function ($elem) {
+            var yPos = $elem.offset().top; // offset relative to viewport
+            if (yPos < $("#search").height()) {
+                $container.animate({
+                    scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
+                }, 200);
+            }
+        };
+
+        scroller.scrollTop = function() {
+            $container.animate({
+                scrollTop: 0
+            }, 200);
+        }
+    };
+
     scheduler.add("init", function() {
         $("#textfilter input").blur();
-        var $items = $("#tpl li");
-        $items.first().addClass('selected');
+        var items = new EntityIterator(
+            $("div#results-content > div#entity-results > ul.entities span.entity > a").toArray(),
+            $("div#results-content > div#member-results > ul.entities span.entity > a").toArray()
+        );
+
+        var scroller = new Scroller($("#search-results"));
+
+        var $old = items.next();
+        $old.addClass("selected");
+        scroller.scrollDown($old);
 
         $(window).bind("keydown", function(e) {
-            var $old = $items.filter('.selected'),
-                $new;
-
             switch ( e.keyCode ) {
-
             case 9: // tab
-                $old.removeClass('selected');
+                $old.removeClass("selected");
                 break;
 
             case 13: // enter
-                $old.removeClass('selected');
-                var $url = $old.children().filter('a:last').attr('href');
-                $("#template").attr("src",$url);
+                var href = $old.attr("href");
+                location.replace(href);
+                $old.click();
+                $("#textfilter input").attr("value", "");
                 break;
 
             case 27: // escape
-                $old.removeClass('selected');
-                $(window).unbind(e);
-                $("#textfilter input").focus();
+                $("#textfilter input").attr("value", "");
+                $("div#search-results").hide();
+                $("#search > span.close-results").hide();
+                $("#search > span#doc-title").show();
+                break;
 
+            case 37: // left
+                var oldTop = $old.offset().top;
+                $old.removeClass("selected");
+                $old = items.left();
+                $old.addClass("selected");
+
+                (oldTop - $old.offset().top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
                 break;
 
             case 38: // up
-                $new = $old.prev();
+                $old.removeClass('selected');
+                $old = items.prev();
 
-                if (!$new.length) {
-                    $new = $old.parent().prev();
+                if ($old === undefined) { // scroll past top
+                    $(window).unbind("keydown");
+                    $("#textfilter input").focus();
+                    scroller.scrollTop();
+                    return false;
+                } else {
+                    $old.addClass("selected");
+                    scroller.scrollUp($old);
                 }
+                break;
 
-                if ($new.is('ol') && $new.children(':last').is('ol')) {
-                    $new = $new.children().children(':last');
-                } else if ($new.is('ol')) {
-                    $new = $new.children(':last');
-                }
+            case 39: // right
+                var oldTop = $old.offset().top;
+                $old.removeClass("selected");
+                $old = items.right();
+                $old.addClass("selected");
 
+                (oldTop - $old.offset().top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
                 break;
 
             case 40: // down
-                $new = $old.next();
-                if (!$new.length) {
-                    $new = $old.parent().parent().next();
-                }
-                if ($new.is('ol')) {
-                    $new = $new.children(':first');
-                }
+                $old.removeClass("selected");
+                $old = items.next();
+                $old.addClass("selected");
+                scroller.scrollDown($old);
                 break;
-            }
-
-            if ($new.is('li')) {
-                $old.removeClass('selected');
-                $new.addClass('selected');
-            } else if (e.keyCode == 38) {
-                $(window).unbind(e);
-                $("#textfilter input").focus();
             }
         });
     });
@@ -361,34 +217,45 @@ function keyboardScrolldownLeftPane() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#textfilter").append("<span class='pre'/><span class='input'><input id='index-input' type='text' accesskey='/'/></span><span class='post'/>");
         var input = $("#textfilter input");
-        resizeFilterBlock();
         input.bind('keyup', function(event) {
-            if (event.keyCode == 27) { // escape
-                input.attr("value", "");
+            switch ( event.keyCode ) {
+                case 27: // escape
+                    input.attr("value", "");
+                    $("div#search-results").hide();
+                    $("#search > span.close-results").hide();
+                    $("#search > span#doc-title").show();
+                    break;
+
+                case 38: // up arrow
+                    return false;
+
+                case 40: // down arrow
+                    $(window).unbind("keydown");
+                    handleKeyNavigation();
+                    return false;
             }
-            if (event.keyCode == 40) { // down arrow
-                $(window).unbind("keydown");
-                keyboardScrolldownLeftPane();
-                return false;
-            }
-            textFilter();
+
+            searchAll();
         });
-        input.bind('keydown', function(event) {
-            if (event.keyCode == 9) { // tab
-                $("#template").contents().find("#mbrsel-input").focus();
-                input.attr("value", "");
-                return false;
-            }
-            textFilter();
-        });
-        input.focus(function(event) { input.select(); });
     });
     scheduler.add("init", function() {
-        $("#textfilter > .post").click(function(){
+        $("#textfilter > .input > .clear").click(function() {
             $("#textfilter input").attr("value", "");
-            textFilter();
+            $("div#search-results").hide();
+            $("#search > span.close-results").hide();
+            $("#search > span#doc-title").show();
+
+            $(this).hide();
+        });
+    });
+
+    scheduler.add("init", function() {
+        $("div#search > span.close-results").click(function() {
+            $("div#search-results").hide();
+            $("#search > span.close-results").hide();
+            $("#search > span#doc-title").show();
+            $("#textfilter input").attr("value", "");
         });
     });
 }
@@ -406,172 +273,332 @@ function compilePattern(query) {
     }
 }
 
-// Filters all focused templates and packages. This function should be made less-blocking.
-//   @param query The string of the query
-function textFilter() {
-    var query = $("#textfilter input").attr("value") || '';
-    var queryRegExp = compilePattern(query);
+/** Searches packages for entites matching the search query using a regex
+ *
+ * @param {[Object]} pack: package being searched
+ * @param {RegExp} regExp: a regular expression for finding matching entities
+ */
+function searchPackage(pack, regExp) {
+    scheduler.add("search", function() {
+        var entities = Index.PACKAGES[pack];
+        var matched = [];
+        var notMatching = [];
 
-    // if we are filtering on types, then we have to display types
-    // ("display packages only" is not possible when filtering)
-    if (query !== "") {
-        kindFilter("all");
-    }
+        scheduler.add("search", function() {
+            searchMembers(entities, regExp, pack);
+        });
 
-    // Three things trigger a reload of the left pane list:
-    // typeof textFilter.lastQuery === "undefined" <-- first load, there is nothing yet in the left pane
-    // textFilter.lastQuery !== query              <-- the filter text has changed
-    // focusFilterState != null                    <-- a package has been "focused"
-    if ((typeof textFilter.lastQuery === "undefined") || (textFilter.lastQuery !== query) || (focusFilterState != null)) {
+        entities.forEach(function (elem) {
+            regExp.test(elem.name) ? matched.push(elem) : notMatching.push(elem);
+        });
 
-        textFilter.lastQuery = query;
-
-        scheduler.clear("filter");
-
-        $('#tpl').html('');
-
-        var index = 0;
-
-        var searchLoop = function () {
-            var packages = Index.keys(Index.PACKAGES).sort();
-
-            while (packages[index]) {
-                var pack = packages[index];
-                var children = Index.PACKAGES[pack];
-                index++;
-
-                if (focusFilterState) {
-                    if (pack == focusFilterState ||
-                        pack.indexOf(focusFilterState + '.') == 0) {
-                        ;
-                    } else {
-                        continue;
-                    }
-                }
-
-                var matched = $.grep(children, function (child, i) {
-                    return queryRegExp.test(child.name);
-                });
-
-                if (matched.length > 0) {
-                    $('#tpl').append(Index.createPackageTree(pack, matched,
-                                                             focusFilterState));
-                    scheduler.add('filter', searchLoop);
-                    return;
-                }
-            }
-
-            $('#tpl a.packfocus').click(function () {
-                focusFilter($(this).parent().parent());
-            });
-            configureHideFilter();
+        var results = {
+            "matched": matched,
+            "package": pack
         };
 
-        scheduler.add('filter', searchLoop);
-    }
-}
-
-/* Configures the hide tool by adding the hide link to all packages. */
-function configureHideFilter() {
-    $('#tpl li.pack a.packhide').click(function () {
-        var packhide = $(this)
-        var action = packhide.text();
-
-        var ol = $(this).parent().parent();
-
-        if (action == "hide") {
-            Index.hidePackage(ol);
-            packhide.text("show");
-        }
-        else {
-            Index.showPackage(ol, kindFilterState);
-            packhide.text("hide");
-        }
-        return false;
-    });
-}
-
-/* Configures the focus tool by adding the focus bar in the filter box (initially hidden), and by adding the focus
-   link to all packages. */
-function configureFocusFilter() {
-    scheduler.add("init", function() {
-        focusFilterState = null;
-        if ($("#focusfilter").length == 0) {
-            $("#filter").append("<div id='focusfilter'>focused on <span class='focuscoll'></span> <a class='focusremove'><img class='icon' src='lib/remove.png'/></a></div>");
-            $("#focusfilter > .focusremove").click(function(event) {
-                textFilter();
-
-                $("#focusfilter").hide();
-                $("#kindfilter").show();
-                resizeFilterBlock();
-                focusFilterState = null;
-            });
-            $("#focusfilter").hide();
-            resizeFilterBlock();
-        }
-    });
-    scheduler.add("init", function() {
-        $('#tpl li.pack a.packfocus').click(function () {
-            focusFilter($(this).parent());
-            return false;
+        scheduler.add("search", function() {
+            handleSearchedPackage(results, regExp);
+            setProgress();
         });
     });
 }
 
-/* Focuses the entity index on a specific package. To do so, it will copy the sub-templates and sub-packages of the
-   focuses package into the top-level templates and packages position of the index. The original top-level
-     @param package The <li> element that corresponds to the package in the entity index */
-function focusFilter(package) {
-    scheduler.clear("filter");
+function searchMembers(entities, regExp, pack) {
+    var memDiv = document.getElementById("member-results");
+    var packLink = document.createElement("a");
+    packLink.className = "package";
+    packLink.appendChild(document.createTextNode(pack));
+    packLink.style.display = "none";
+    packLink.title = pack;
+    packLink.href = toRoot + urlFriendlyEntity(pack).replace(new RegExp("\\.", "g"), "/") + "/index.html";
+    memDiv.appendChild(packLink);
 
-    var currentFocus = $('li.pack > .tplshow', package).text();
-    $("#focusfilter > .focuscoll").empty();
-    $("#focusfilter > .focuscoll").append(currentFocus);
+    var entityUl = document.createElement("ul");
+    entityUl.className = "entities";
+    memDiv.appendChild(entityUl);
 
-    $("#focusfilter").show();
-    $("#kindfilter").hide();
-    resizeFilterBlock();
-    focusFilterState = currentFocus;
-    kindFilterSync();
+    entities.forEach(function(entity) {
+        var entityLi = document.createElement("li");
+        var name = entity.name.split('.').pop()
 
-    textFilter();
-}
+        var iconElem = document.createElement("a");
+        iconElem.className = "icon " + entity.kind;
+        iconElem.title = name + " " + entity.kind;
+        iconElem.href = toRoot + entity[entity.kind];
+        entityLi.appendChild(iconElem);
 
-function configureKindFilter() {
-    scheduler.add("init", function() {
-        kindFilterState = "all";
-        $("#filter").append("<div id='kindfilter'><a>display packages only</a></div>");
-        $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
-        resizeFilterBlock();
+        if (entity.kind != "object" && entity.object) {
+            var companion = document.createElement("a");
+            companion.className = "icon object";
+            companion.title = name + " companion object";
+            companion.href = toRoot + entity.object;
+            entityLi.insertBefore(companion, iconElem);
+        } else {
+            var spacer = document.createElement("div");
+            spacer.className = "icon spacer";
+            entityLi.insertBefore(spacer, iconElem);
+        }
+
+        var nameElem = document.createElement("span");
+        nameElem.className = "entity";
+
+        var entityUrl = document.createElement("a");
+        entityUrl.title = entity.shortDescription ? entity.shortDescription : name;
+        entityUrl.href = toRoot + entity[entity.kind];
+        entityUrl.appendChild(document.createTextNode(name));
+
+        nameElem.appendChild(entityUrl);
+        entityLi.appendChild(nameElem);
+
+        var membersUl = document.createElement("ul");
+        membersUl.className = "members";
+        entityLi.appendChild(membersUl);
+
+
+        searchEntity(entity, membersUl, regExp)
+            .then(function(res) {
+                if (res.length > 0) {
+                    packLink.style.display = "block";
+                    entityUl.appendChild(entityLi);
+                }
+            });
     });
 }
 
-function kindFilter(kind) {
-    if (kind == "packs") {
-        kindFilterState = "packs";
-        kindFilterSync();
-        $("#kindfilter > a").replaceWith("<a>display all entities</a>");
-        $("#kindfilter > a").click(function(event) { kindFilter("all"); });
+/** This function inserts `li` into the `ul` ordered by the li's id
+ *
+ * @param {Node} ul: the list in which to insert `li`
+ * @param {Node} li: item to insert
+ */
+function insertSorted(ul, li) {
+    var lis = ul.childNodes;
+    var beforeLi = null;
+
+    for (var i = 0; i < lis.length; i++) {
+        if (lis[i].id > li.id)
+            beforeLi = lis[i];
     }
-    else {
-        kindFilterState = "all";
-        kindFilterSync();
-        $("#kindfilter > a").replaceWith("<a>display packages only</a>");
-        $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
-    }
+
+    // if beforeLi == null, it will be inserted last
+    ul.insertBefore(li, beforeLi);
 }
 
-/* Applies the kind filter. */
-function kindFilterSync() {
-    if (kindFilterState == "all" || focusFilterState != null) {
-        $("#tpl a.packhide").text('hide');
-        $("#tpl ol.templates").show();
+/** Defines the callback when a package has been searched and searches its
+ * members
+ *
+ * It will search all entities which matched the regExp.
+ *
+ * @param {Object} res: this is the searched package. It will contain the map
+ * from the `searchPackage`function.
+ * @param {RegExp} regExp
+ */
+function handleSearchedPackage(res, regExp) {
+    $("div#search-results").show();
+    $("#search > span.close-results").show();
+    $("#search > span#doc-title").hide();
+
+    var searchRes = document.getElementById("results-content");
+    var entityDiv = document.getElementById("entity-results");
+
+    var packLink = document.createElement("a");
+    packLink.className = "package";
+    packLink.title = res.package;
+    packLink.href = toRoot + urlFriendlyEntity(res.package).replace(new RegExp("\\.", "g"), "/") + "/index.html";
+    packLink.appendChild(document.createTextNode(res.package));
+
+    if (res.matched.length == 0)
+        packLink.style.display = "none";
+
+    entityDiv.appendChild(packLink);
+
+    var ul = document.createElement("ul")
+    ul.className = "entities";
+
+    // Generate html list items from results
+    res.matched
+       .map(function(entity) { return listItem(entity, regExp); })
+       .forEach(function(li) { ul.appendChild(li); });
+
+    entityDiv.appendChild(ul);
+}
+
+/** Searches an entity asynchronously for regExp matches in an entity's members
+ *
+ * @param {Object} entity: the entity to be searched
+ * @param {Node} ul: the list in which to insert the list item created
+ * @param {RegExp} regExp
+ */
+function searchEntity(entity, ul, regExp) {
+    return new Promise(function(resolve, reject) {
+        var allMembers =
+            (entity.members_trait  || [])
+            .concat(entity.members_class || [])
+            .concat(entity.members_object || [])
+
+        var matchingMembers = $.grep(allMembers, function(member, i) {
+            return regExp.test(member.label);
+        });
+
+        resolve(matchingMembers);
+    })
+    .then(function(res) {
+        res.forEach(function(elem) {
+            var kind = document.createElement("span");
+            kind.className = "kind";
+            kind.appendChild(document.createTextNode(elem.kind));
+
+            var label = document.createElement("a");
+            label.title = elem.label;
+            label.href = toRoot + elem.link;
+            label.className = "label";
+            label.appendChild(document.createTextNode(elem.label));
+
+            var tail = document.createElement("span");
+            tail.className = "tail";
+            tail.appendChild(document.createTextNode(elem.tail));
+
+            var li = document.createElement("li");
+            li.appendChild(kind);
+            li.appendChild(label);
+            li.appendChild(tail);
+
+            ul.appendChild(li);
+        });
+        return res;
+    });
+}
+
+/** Creates a list item representing an entity
+ *
+ * @param {Object} entity, the searched entity to be displayed
+ * @param {RegExp} regExp
+ * @return {Node} list item containing entity
+ */
+function listItem(entity, regExp) {
+    var name = entity.name.split('.').pop()
+    var nameElem = document.createElement("span");
+    nameElem.className = "entity";
+
+    var entityUrl = document.createElement("a");
+    entityUrl.title = entity.shortDescription ? entity.shortDescription : name;
+    entityUrl.href = toRoot + entity[entity.kind];
+
+    entityUrl.appendChild(document.createTextNode(name));
+    nameElem.appendChild(entityUrl);
+
+    var iconElem = document.createElement("a");
+    iconElem.className = "icon " + entity.kind;
+    iconElem.title = name + " " + entity.kind;
+    iconElem.href = toRoot + entity[entity.kind];
+
+    var li = document.createElement("li");
+    li.id = entity.name.replace(new RegExp("\\.", "g"),"-");
+    li.appendChild(iconElem);
+    li.appendChild(nameElem);
+
+    if (entity.kind != "object" && entity.object) {
+        var companion = document.createElement("a");
+        companion.title = name + " companion object";
+        companion.href = toRoot + entity.object;
+        companion.className = "icon object";
+        li.insertBefore(companion, iconElem);
     } else {
-        $("#tpl a.packhide").text('show');
-        $("#tpl ol.templates").hide();
+        var spacer = document.createElement("div");
+        spacer.className = "icon spacer";
+        li.insertBefore(spacer, iconElem);
     }
+
+    var ul = document.createElement("ul");
+    ul.className = "members";
+
+    li.appendChild(ul);
+
+    return li;
 }
 
-function resizeFilterBlock() {
-    $("#tpl").css("top", $("#filter").outerHeight(true));
+/** Searches all packages and entities for the current search string in
+ *  the input field "#textfilter"
+ *
+ * Then shows the results in div#search-results
+ */
+function searchAll() {
+    scheduler.clear("search"); // clear previous search
+    maxJobs = 1; // clear previous max
+    var searchStr = $("#textfilter input").attr("value").trim() || '';
+
+    if (searchStr === '') {
+        $("div#search-results").hide();
+        $("#search > span.close-results").hide();
+        $("#search > span#doc-title").show();
+        return;
+    }
+
+    // Replace ?search=X with current search string if not hosted locally on Chrome
+    try {
+        window.history.replaceState({}, "", "?search=" + searchStr);
+    } catch(e) {}
+
+    $("div#results-content > span.search-text").remove();
+
+    var memberResults = document.getElementById("member-results");
+    memberResults.innerHTML = "";
+    var memberH1 = document.createElement("h1");
+    memberH1.className = "result-type";
+    memberH1.innerHTML = "Member results";
+    memberResults.appendChild(memberH1);
+
+    var entityResults = document.getElementById("entity-results");
+    entityResults.innerHTML = "";
+    var entityH1 = document.createElement("h1");
+    entityH1.className = "result-type";
+    entityH1.innerHTML = "Entity results";
+    entityResults.appendChild(entityH1);
+
+    $("div#results-content")
+        .prepend("<span class='search-text'>"
+                +"  Showing results for <span class='query-str'>\"" + searchStr + "\"</span>"
+                +"</span>");
+
+    var regExp = compilePattern(searchStr);
+
+    // Search for all entities matching query
+    Index
+        .keys(Index.PACKAGES)
+        .sort()
+        .forEach(function(elem) { searchPackage(elem, regExp); })
+}
+
+/** Check if user agent is associated with a known mobile browser */
+function isMobile() {
+    return /Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function urlFriendlyEntity(entity) {
+    var corr = {
+        '\\+': '$plus',
+        ':': '$colon'
+    };
+
+    for (k in corr)
+        entity = entity.replace(new RegExp(k, 'g'), corr[k]);
+
+    return entity;
+}
+
+var maxJobs = 1;
+function setProgress() {
+    var running = scheduler.numberOfJobs("search");
+    maxJobs = Math.max(maxJobs, running);
+
+    var percent = 100 - (running / maxJobs * 100);
+    var bar = document.getElementById("progress-fill");
+    bar.style.height = "100%";
+    bar.style.width = percent + "%";
+
+    if (percent == 100) {
+        setTimeout(function() {
+            bar.style.height = 0;
+        }, 500);
+    }
 }

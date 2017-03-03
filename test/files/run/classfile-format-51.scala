@@ -1,6 +1,5 @@
 import java.io.{File, FileOutputStream}
 
-import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.partest._
 import scala.tools.asm
 import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor, Opcodes}
@@ -17,7 +16,7 @@ import Opcodes._
 // verify. So the test includes a version check that short-circuits the whole test
 // on JDK 6
 object Test extends DirectTest {
-  override def extraSettings: String = "-optimise -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = "-opt:l:classpath -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
   def generateClass() {
     val invokerClassName =  "DynamicInvoker"
@@ -81,7 +80,7 @@ object Test extends DirectTest {
 
     val test = cw.visitMethod(ACC_PUBLIC + ACC_FINAL, "test", s"()Ljava/lang/String;", null, null)
     test.visitCode()
-    val bootstrapHandle = new Handle(H_INVOKESTATIC, invokerClassName, bootstrapMethodName, bootStrapMethodType)
+    val bootstrapHandle = new Handle(H_INVOKESTATIC, invokerClassName, bootstrapMethodName, bootStrapMethodType, /* itf = */ false)
     test.visitInvokeDynamicInsn("invoke", targetMethodType, bootstrapHandle)
     test.visitInsn(ARETURN)
     test.visitMaxs(1, 1)

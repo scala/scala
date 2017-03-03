@@ -4,8 +4,8 @@ t278.scala:5: error: overloaded method value a with alternatives:
  does not take type parameters
   println(a[A])
           ^
-t278.scala:4: error: method a is defined twice
-  conflicting symbols both originated in file 't278.scala'
+t278.scala:4: error: method a is defined twice;
+  the conflicting method a was defined at line 3:7
   def a = (p:A) => ()
       ^
 two errors found

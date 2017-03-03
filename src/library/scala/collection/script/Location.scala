@@ -18,17 +18,17 @@ package script
  *  @since   2.8
  */
 
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 sealed abstract class Location
 
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case object Start extends Location
 
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case object End extends Location
 
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case object NoLo extends Location
 
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case class Index(n: Int) extends Location

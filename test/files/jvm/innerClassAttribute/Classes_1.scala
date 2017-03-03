@@ -13,7 +13,7 @@ object A3 {
 
 class A4 {
   def f(l: List[String]): List[String] = {
-    l map (_ + "1")
+    l map (_ + "1") : @noinline // inlining adds a reference to the nested class scala/collection/generic/GenTraversableFactory$GenericCanBuildFrom
   }
 }
 
@@ -186,42 +186,31 @@ trait A24 extends A24Base {
   }
 }
 
-class SI_9105 {    
-  // the EnclosingMethod attributes depend on the delambdafy strategy (inline vs method)
-
-                                       //  outerClass-inline   enclMeth-inline   outerClass-method   enclMeth-method
+class SI_9105 {
+                                       //      outerClass       enclMeth
   val fun = (s: String) => {
-    class A                            //     closure             null (*)            SI_9105           null
-    def m: Object = { class B; new B } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class C; new C } //     closure             null (*)            SI_9105           null
+    class A                            //        SI_9105           null
+    def m: Object = { class B; new B } //        SI_9105            m$1
+    val f: Object = { class C; new C } //        SI_9105           null
   }
   def met = (s: String) => {
-    class D                            //     closure             null (*)            SI_9105            met
-    def m: Object = { class E; new E } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class F; new F } //     closure             null (*)            SI_9105            met
+    class D                            //        SI_9105            met
+    def m: Object = { class E; new E } //        SI_9105            m$1
+    val f: Object = { class F; new F } //        SI_9105            met
   }
-
-  // (*) the originalOwner chain of A (similar for D) is: SI_9105.fun.$anonfun-value.A
-  //     we can get to the anonfun-class (created by uncurry), but not to the apply method.
-  //
-  //     for C and F, the originalOwner chain is fun.$anonfun-value.f.C. at later phases, the rawowner of f is
-  //     an apply$sp method of the closure class. we could use that as enclosing method, but it would be unsystematic
-  //     (A / D don't have an encl meth either), and also strange to use the $sp, which is a compilation artifact.
-  //     So using `null` looks more like the situation in the source code: C / F are nested classes of the anon-fun, and
-  //     there's no method in between.
 
   def byName(op: => Any) = 0
 
   val bnV = byName {
-    class G                            //     closure             null (*)            SI_9105           null
-    def m: Object = { class H; new H } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class I; new I } //     closure             null (*)            SI_9105           null
+    class G                            //        SI_9105           null
+    def m: Object = { class H; new H } //        SI_9105            m$1
+    val f: Object = { class I; new I } //        SI_9105           null
     ""
   }
   def bnM = byName {
-    class J                            //     closure             null (*)            SI_9105            bnM
-    def m: Object = { class K; new K } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class L; new L } //     closure             null (*)            SI_9105            bnM
+    class J                            //        SI_9105            bnM
+    def m: Object = { class K; new K } //        SI_9105            m$1
+    val f: Object = { class L; new L } //        SI_9105            bnM
     ""
   }
 }
@@ -233,7 +222,7 @@ trait SI_9124 {
 
   def f = new A { def f2 = 0 } // enclosing method is f in the interface SI_9124
 
-  private def g = new A { def f3 = 0 } // only encl class (SI_9124), encl meth is null because the interface SI_9124 doesn't have a method g
+  private def g: Object = new A { def f3 = 0 } // only encl class (SI_9124), encl meth can be g in 2.12 because the interface SI_9124 now has the method g
 
   object O { // member, no encl meth attribute
     new A { def f4 = 0 } // enclosing class is O$, no enclosing method
@@ -280,13 +269,30 @@ class SpecializedClassesAreTopLevel {
   // }
 }
 
+object AnonymousClassesMayBeNestedInSpecialized {
+  abstract class A
+  class C[@specialized(Int) T] {
+    def foo(t: T): A = new A { }
+  }
+
+  // specialization duplicates the anonymous class, one copy is nested in the specialized subclass of C
+
+  // class C$mcI$sp extends C[Int] {
+  //   override def foo(t: Int): A = C$mcI$sp.this.foo$mcI$sp(t);
+  //   override def foo$mcI$sp(t: Int): A = {
+  //     final class $anon extends A { }
+  //     new <$anon: A>()
+  //   }
+  // }
+}
+
 object NestedInValueClass {
   // note that we can only test anonymous functions, nested classes are not allowed inside value classes
   class A(val arg: String) extends AnyVal {
     // A has InnerClass entries for the two closures (and for A and A$). not for B / C
     def f = {
-      def g = List().map(x => ((s: String) => x)) // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
-      g.map(x => ((s: String) => x))              // outer class A, outer method f
+      def g = List().map(x => ((s: String) => x)): @noinline // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
+      g.map(x => ((s: String) => x)): @noinline              // outer class A, outer method f
     }
     // statements and field declarations are not allowed in value classes
   }
@@ -295,5 +301,42 @@ object NestedInValueClass {
     // A$ has InnerClass entries for B, C, A, A$. Also for the closures above, because they are referenced in A$'s bytecode.
     class B // member class of A$
     def f = { class C; new C } // outer class A$, outer method f
+  }
+}
+
+object LocalAndAnonymousInLazyInitializer {
+  abstract class A
+  class C {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  object O {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  trait T {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
   }
 }

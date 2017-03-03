@@ -1,0 +1,4 @@
+t8044-b.scala:3: error: Pattern variables must start with a lower-case letter. (SLS 8.1.1.)
+  def g = 42 match { case `Oops` : Int => }  // must be varish
+                                 ^
+one error found

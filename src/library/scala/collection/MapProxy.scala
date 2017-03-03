@@ -17,5 +17,5 @@ package collection
  *  @version 1.0, 21/07/2003
  *  @since   1
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.3")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.3")
 trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]

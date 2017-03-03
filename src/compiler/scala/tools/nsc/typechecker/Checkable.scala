@@ -212,8 +212,8 @@ trait Checkable {
     )
     /** Are all children of these symbols pairwise irreconcilable? */
     def allChildrenAreIrreconcilable(sym1: Symbol, sym2: Symbol) = (
-      sym1.children.toList forall (c1 =>
-        sym2.children.toList forall (c2 =>
+      sym1.sealedChildren.toList forall (c1 =>
+        sym2.sealedChildren.toList forall (c2 =>
           areIrreconcilableAsParents(c1, c2)
         )
       )
@@ -241,9 +241,7 @@ trait Checkable {
     private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
     private def isEffectivelyFinal(sym: Symbol): Boolean = (
       // initialization important
-      sym.initialize.isEffectivelyFinalOrNotOverridden || (
-        settings.future && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
-      )
+      sym.initialize.isEffectivelyFinalOrNotOverridden
     )
 
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)

@@ -6,7 +6,7 @@ import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
 import scala.util.matching.Regex.Match
 
-import java.util.{ Formatter, Formattable, IllegalFormatException }
+import java.util.Formattable
 
 abstract class FormatInterpolator {
   val c: Context
@@ -117,7 +117,7 @@ abstract class FormatInterpolator {
               c.error(errPoint, msg("unsupported"))
               s0
             } else {
-              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"))
+              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"), "2.11.0")
               try StringContext.treatEscapes(s0) catch escapeHatch
             }
           }
@@ -262,7 +262,7 @@ abstract class FormatInterpolator {
     def goodFlags = {
       val badFlags = flags map (_ filterNot (okFlags contains _))
       for (bf <- badFlags; f <- bf) badFlag(f, s"Illegal flag '$f'")
-      badFlags.getOrElse("").isEmpty 
+      badFlags.getOrElse("").isEmpty
     }
     def goodIndex = {
       if (index.nonEmpty && hasFlag('<'))
@@ -281,7 +281,7 @@ abstract class FormatInterpolator {
       ) orElse Some(variants(0))
   }
   object Conversion {
-    import SpecifierGroups.{ Spec, CC, Width }
+    import SpecifierGroups.{ Spec, CC }
     def apply(m: Match, p: Position, n: Int): Option[Conversion] = {
       def badCC(msg: String) = {
         val dk = new ErrorXn(m, p)

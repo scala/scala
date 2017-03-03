@@ -3,7 +3,7 @@ package model
 package diagram
 
 import model._
-import java.util.regex.{Pattern, Matcher}
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /**
@@ -163,7 +163,7 @@ trait DiagramDirectiveParser {
     case Nil =>
       defaultFilter
 
-    // compute the exact filters. By including the annotation, the diagram is autmatically added
+    // compute the exact filters. By including the annotation, the diagram is automatically added
     case _ =>
       tFilter -= System.currentTimeMillis
       var hideDiagram0: Boolean = false
@@ -177,7 +177,7 @@ trait DiagramDirectiveParser {
 
       def warning(message: String) = {
         // we need the position from the package object (well, ideally its comment, but yeah ...)
-        val sym = if (template.sym.isPackage) template.sym.info.member(global.nme.PACKAGE) else template.sym
+        val sym = if (template.sym.hasPackageFlag) template.sym.packageObject else template.sym
         assert((sym != global.NoSymbol) || (sym == global.rootMirror.RootPackage))
         global.reporter.warning(sym.pos, message)
       }

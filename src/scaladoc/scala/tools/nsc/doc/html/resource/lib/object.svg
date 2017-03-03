@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="72px" height="72px" viewBox="0 0 72 72" version="1.1">
+  <defs>
+    <filter x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox" id="filter-1">
+      <feOffset dx="0" dy="4" in="SourceAlpha" result="shadowOffsetOuter1"/>
+      <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"/>
+      <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.14 0" in="shadowBlurOuter1" type="matrix" result="shadowMatrixOuter1"/>
+      <feMerge>
+        <feMergeNode in="shadowMatrixOuter1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <circle id="path-2" cx="32" cy="32" r="32"/>
+    <filter x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox" id="filter-4">
+      <feOffset dx="0" dy="4" in="SourceAlpha" result="shadowOffsetOuter1"/>
+      <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"/>
+      <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.14 0" in="shadowBlurOuter1" type="matrix" result="shadowMatrixOuter1"/>
+      <feOffset dx="0" dy="1" in="SourceAlpha" result="shadowOffsetInner1"/>
+      <feGaussianBlur stdDeviation="0" in="shadowOffsetInner1" result="shadowBlurInner1"/>
+      <feComposite in="shadowBlurInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"/>
+      <feColorMatrix values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1  0 0 0 0.14 0" in="shadowInnerInner1" type="matrix" result="shadowMatrixInner1"/>
+      <feOffset dx="0" dy="-1" in="SourceAlpha" result="shadowOffsetInner2"/>
+      <feGaussianBlur stdDeviation="0" in="shadowOffsetInner2" result="shadowBlurInner2"/>
+      <feComposite in="shadowBlurInner2" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner2"/>
+      <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.14 0" in="shadowInnerInner2" type="matrix" result="shadowMatrixInner2"/>
+      <feMerge>
+        <feMergeNode in="shadowMatrixOuter1"/>
+        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="shadowMatrixInner1"/>
+        <feMergeNode in="shadowMatrixInner2"/>
+      </feMerge>
+    </filter>
+    <path id="path-5" d="M32 61C49.673112 61 64 48.0162577 64 32 64 15.9837423 49.673112 3 32 3 14.326888 3 0 15.9837423 0 32 0 48.0162577 14.326888 61 32 61Z"/>
+  </defs>
+  <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+    <g id="Artboard-1" transform="translate(-298.000000, -91.000000)">
+      <g id="BG" transform="translate(302.000000, 91.000000)">
+        <g id="Icon">
+          <mask id="mask-3" fill="white">
+            <use xlink:href="#path-2"/>
+          </mask>
+          <use id="Mask" fill="#2C6C8D" filter="url(#filter-1)" xlink:href="#path-2"/>
+          <mask id="mask-6" fill="white">
+            <use xlink:href="#path-5"/>
+          </mask>
+          <text id="O" mask="url(#mask-6)" font-family="Open Sans, Helvetica Neueu, Sans-serif" font-size="40" font-weight="normal" fill="#FFFFFF">
+            <tspan x="17" y="47">
+              O
+            </tspan>
+          </text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

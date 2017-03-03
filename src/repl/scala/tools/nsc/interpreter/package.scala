@@ -88,9 +88,6 @@ package object interpreter extends ReplConfig with ReplStrings {
           }
       }
 
-      if (filtered.isEmpty)
-        return "No implicits have been imported other than those in Predef."
-
       filtered foreach {
         case (source, syms) =>
           p("/* " + syms.size + " implicit members imported from " + source.fullName + " */")
@@ -126,7 +123,14 @@ package object interpreter extends ReplConfig with ReplStrings {
           }
           p("")
       }
-      ""
+      
+      if (filtered.nonEmpty) 
+        "" // side-effects above
+      else if (global.settings.nopredef || global.settings.noimports) 
+        "No implicits have been imported."
+      else
+        "No implicits have been imported other than those in Predef." 
+
     }
 
     def kindCommandInternal(expr: String, verbose: Boolean): Unit = {
@@ -200,7 +204,7 @@ package object interpreter extends ReplConfig with ReplStrings {
 
   /* An s-interpolator that uses `stringOf(arg)` instead of `String.valueOf(arg)`. */
   private[nsc] implicit class `smart stringifier`(val sc: StringContext) extends AnyVal {
-    import StringContext._, runtime.ScalaRunTime.stringOf
+    import StringContext.treatEscapes, scala.runtime.ScalaRunTime.stringOf
     def ss(args: Any*): String = sc.standardInterpolator(treatEscapes, args map stringOf)
   }
   /* Try (body) lastly (more) */

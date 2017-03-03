@@ -105,8 +105,7 @@ object Platform {
   /** The default line separator.
    *
    * On the JVM, this is equivalent to calling the method:
-   * `System.getProperty("line.separator")`
-   * with a default value of "\n".
+   * `java.lang.System.lineSeparator`
    */
   val EOL = scala.util.Properties.lineSeparator
 

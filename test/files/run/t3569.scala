@@ -4,7 +4,13 @@ object Test {
 
   lazy val lv = scala.util.Random.nextInt()
 
-  class X(final var x: Int)  {
+  trait T { final lazy val const1 = 1 } // no fields
+
+  class X(final var x: Int) extends T {
+    // a lazy val does not receive a constant type, for backwards compat (e.g. for the repl)
+    // besides, since you explicitly wanted something lazy, we'll give you something lazy! (a field and a bitmap)
+    final lazy val const2 = 2
+
     final var var1: Int = 0
     final private var var2: Int = 0
     final private[this] var var3: Int = 0

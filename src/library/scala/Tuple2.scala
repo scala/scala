@@ -16,8 +16,7 @@ package scala
  *  @param  _1   Element 1 of this Tuple2
  *  @param  _2   Element 2 of this Tuple2
  */
-@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
-case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) +T1, @specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) +T2](_1: T1, _2: T2)
+final case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) +T1, @specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) +T2](_1: T1, _2: T2)
   extends Product2[T1, T2]
 {
   override def toString() = "(" + _1 + "," + _2 + ")"

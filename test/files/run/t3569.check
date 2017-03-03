@@ -2,6 +2,8 @@
 private final int Test$X.val1
 private final int Test$X.val2
 private final int Test$X.val3
+private int Test$X.const1
+private int Test$X.const2
 private int Test$X.lval1
 private int Test$X.lval2
 private int Test$X.lval3

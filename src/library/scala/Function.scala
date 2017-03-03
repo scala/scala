@@ -72,7 +72,7 @@ object Function {
    *  @note  These functions are slotted for deprecation, but it is on
    *  hold pending superior type inference for tupling anonymous functions.
    */
-  // @deprecated("Use `f.tupled` instead")
+  // @deprecated("use `f.tupled` instead")
   def tupled[a1, a2, b](f: (a1, a2) => b): Tuple2[a1, a2] => b = {
     case Tuple2(x1, x2) => f(x1, x2)
   }
@@ -80,7 +80,7 @@ object Function {
   /** Tupling for functions of arity 3. This transforms a function
    *  of arity 3 into a unary function that takes a triple of arguments.
    */
-  // @deprecated("Use `f.tupled` instead")
+  // @deprecated("use `f.tupled` instead")
   def tupled[a1, a2, a3, b](f: (a1, a2, a3) => b): Tuple3[a1, a2, a3] => b = {
     case Tuple3(x1, x2, x3) => f(x1, x2, x3)
   }
@@ -88,7 +88,7 @@ object Function {
   /** Tupling for functions of arity 4. This transforms a function
    *  of arity 4 into a unary function that takes a 4-tuple of arguments.
    */
-  // @deprecated("Use `f.tupled` instead")
+  // @deprecated("use `f.tupled` instead")
   def tupled[a1, a2, a3, a4, b](f: (a1, a2, a3, a4) => b): Tuple4[a1, a2, a3, a4] => b = {
     case Tuple4(x1, x2, x3, x4) => f(x1, x2, x3, x4)
   }
@@ -96,7 +96,7 @@ object Function {
   /** Tupling for functions of arity 5. This transforms a function
    *  of arity 5 into a unary function that takes a 5-tuple of arguments.
    */
-  // @deprecated("Use `f.tupled` instead")
+  // @deprecated("use `f.tupled` instead")
   def tupled[a1, a2, a3, a4, a5, b](f: (a1, a2, a3, a4, a5) => b): Tuple5[a1, a2, a3, a4, a5] => b = {
     case Tuple5(x1, x2, x3, x4, x5) => f(x1, x2, x3, x4, x5)
   }

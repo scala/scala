@@ -26,16 +26,7 @@ private[collection] object BitOperations {
     def complement(i: Int)                      = (-1) ^ i
     def bits(num: Int)                          = 31 to 0 by -1 map (i => (num >>> i & 1) != 0)
     def bitString(num: Int, sep: String = "")   = bits(num) map (b => if (b) "1" else "0") mkString sep
-
-    def highestOneBit(j: Int) = {
-      var i = j
-      i |= (i >>  1)
-      i |= (i >>  2)
-      i |= (i >>  4)
-      i |= (i >>  8)
-      i |= (i >> 16)
-      i - (i >>> 1)
-    }
+    def highestOneBit(j: Int)                   = java.lang.Integer.highestOneBit(j)
   }
   object Int extends Int
 
@@ -49,17 +40,7 @@ private[collection] object BitOperations {
     def complement(i: Long)                        = (-1L) ^ i
     def bits(num: Long)                            = 63L to 0L by -1L map (i => (num >>> i & 1L) != 0L)
     def bitString(num: Long, sep: String = "")     = bits(num) map (b => if (b) "1" else "0") mkString sep
-
-    def highestOneBit(j: Long) = {
-      var i = j
-      i |= (i >>  1)
-      i |= (i >>  2)
-      i |= (i >>  4)
-      i |= (i >>  8)
-      i |= (i >> 16)
-      i |= (i >> 32)
-      i - (i >>> 1)
-    }
+    def highestOneBit(j: Long)                     = java.lang.Long.highestOneBit(j)
   }
   object Long extends Long
 }

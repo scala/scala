@@ -11,8 +11,6 @@ package scalax
 package rules
 package scalasig
 
-import language.postfixOps
-
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
 import scala.tools.scalap.scalax.util.StringUtil

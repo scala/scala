@@ -88,7 +88,7 @@ The class definition `case class X(), Y(n: Int) extends Z` expands to
 `case class X extends Z; case class Y(n: Int) extends Z`.
 - The object definition `case object Red, Green, Blue extends Color`~
 expands to
-```
+```scala
 case object Red extends Color
 case object Green extends Color
 case object Blue extends Color .
@@ -372,8 +372,8 @@ objects of type $S$.
 
 ###### Example
 
-The `Predef` object contains a definition which establishes `Pair`
-as an alias of the parameterized class `Tuple2`:
+Suppose we make `Pair` an alias of the parameterized class `Tuple2`,
+as follows:
 
 ```scala
 type Pair[+A, +B] = Tuple2[A, B]
@@ -404,7 +404,7 @@ function definitions.  In this section we consider only type parameter
 definitions with lower bounds `>: $L$` and upper bounds
 `<: $U$` whereas a discussion of context bounds
 `: $U$` and view bounds `<% $U$`
-is deferred to [here](07-implicit-parameters-and-views.html#context-bounds-and-view-bounds).
+is deferred to [here](07-implicits.html#context-bounds-and-view-bounds).
 
 The most general form of a first-order type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
@@ -587,7 +587,7 @@ FunDef             ::=  FunSig [‘:’ Type] ‘=’ Expr
 FunSig             ::=  id [FunTypeParamClause] ParamClauses
 FunTypeParamClause ::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
 ParamClauses       ::=  {ParamClause} [[nl] ‘(’ ‘implicit’ Params ‘)’]
-ParamClause        ::=  [nl] ‘(’ [Params] ‘)’}
+ParamClause        ::=  [nl] ‘(’ [Params] ‘)’
 Params             ::=  Param {‘,’ Param}
 Param              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
 ParamType          ::=  Type
@@ -595,9 +595,9 @@ ParamType          ::=  Type
                      |  Type ‘*’
 ```
 
-A function declaration has the form `def $f\,\mathit{psig}$: $T$`, where
+A _function declaration_ has the form `def $f\,\mathit{psig}$: $T$`, where
 $f$ is the function's name, $\mathit{psig}$ is its parameter
-signature and $T$ is its result type. A function definition
+signature and $T$ is its result type. A _function definition_
 `def $f\,\mathit{psig}$: $T$ = $e$` also includes a _function body_ $e$,
 i.e. an expression which defines the function's result.  A parameter
 signature consists of an optional type parameter clause `[$\mathit{tps}\,$]`,
@@ -612,13 +612,13 @@ result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
 determined from the packed type of the function body.
 
-A type parameter clause $\mathit{tps}$ consists of one or more
+A _type parameter clause_ $\mathit{tps}$ consists of one or more
 [type declarations](#type-declarations-and-type-aliases), which introduce type
 parameters, possibly with bounds.  The scope of a type parameter includes
 the whole signature, including any of the type parameter bounds as
 well as the function body, if it is present.
 
-A value parameter clause $\mathit{ps}$ consists of zero or more formal
+A _value parameter clause_ $\mathit{ps}$ consists of zero or more formal
 parameter bindings such as `$x$: $T$` or `$x: T = e$`, which bind value
 parameters and associate them with their types.
 
@@ -686,7 +686,7 @@ The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
 classes for which a `val` prefix is implicitly generated. The
 by-name modifier is also disallowed for
-[implicit parameters](07-implicit-parameters-and-views.html#implicit-parameters).
+[implicit parameters](07-implicits.html#implicit-parameters).
 
 ###### Example
 The declaration
@@ -774,12 +774,12 @@ FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
 
 Special syntax exists for procedures, i.e. functions that return the
 `Unit` value `()`.
-A procedure declaration is a function declaration where the result type
+A _procedure declaration_ is a function declaration where the result type
 is omitted. The result type is then implicitly completed to the
 `Unit` type. E.g., `def $f$($\mathit{ps}$)` is equivalent to
 `def $f$($\mathit{ps}$): Unit`.
 
-A procedure definition is a function definition where the result type
+A _procedure definition_ is a function definition where the result type
 and the equals sign are omitted; its defining expression must be a block.
 E.g., `def $f$($\mathit{ps}$) {$\mathit{stats}$}` is equivalent to
 `def $f$($\mathit{ps}$): Unit = {$\mathit{stats}$}`.

@@ -8,7 +8,7 @@ package scala.tools.nsc
 import java.io.PrintStream
 import io.Directory
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.{FakePos, Position}
+import scala.reflect.internal.util.FakePos
 import scala.tools.util.SocketServer
 import settings.FscSettings
 
@@ -47,7 +47,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   }
 
   def printMemoryStats() {
-    def mb(bytes: Long) = "%dMB".format(bytes / 1000000)
+    def mb(bytes: Long) = "%10.2fMB".format(bytes / 1048576.0)
     info("New session: total memory = %s, max memory = %s, free memory = %s".format(
       mb(totalMemory), mb(maxMemory), mb(freeMemory)))
   }
@@ -193,14 +193,14 @@ object CompileServer {
     val i = args.indexOf("-p")
     if (i >= 0 && args.length > i + 1) {
     	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
-    		port = args(i + 1).toInt 
+		port = args(i + 1).toInt
     	}
     }
-    
+
     // Create instance rather than extend to pass a port parameter.
     val server = new StandardCompileServer(port)
     val redirectDir = (server.compileSocket.tmpDir / "output-redirects").createDirectory()
-    
+
     if (debug) {
       server.echo("Starting CompileServer on port " + server.port)
       server.echo("Redirect dir is " + redirectDir)

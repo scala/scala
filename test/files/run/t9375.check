@@ -21,7 +21,7 @@ now initializing nested objects
   konstruktor: class A$T$O$
   konstruktor: class A$T$Op$
   konstruktor: class A$O$11$
-  konstruktor: class A$$anonfun$1$O$13$
+  konstruktor: class A$O$13$
   konstruktor: class A$$anon$1$O$
   konstruktor: class A$$anon$1$Op$
   konstruktor: class T$O$
@@ -33,7 +33,7 @@ now initializing nested objects
   konstruktor: class T$T$O$
   konstruktor: class T$T$Op$
   konstruktor: class T$O$14$
-  konstruktor: class T$$anonfun$2$O$16$
+  konstruktor: class T$O$16$
   konstruktor: class T$$anon$2$O$
   konstruktor: class T$$anon$2$Op$
 no object konstruktors called when serializing / deserializing objects (starting at the outer or the object itself)
@@ -56,5 +56,5 @@ init lazy val M.w
 objects declared in lazy val are not static modules either
   konstruktor: class M$O$19$
 object declared in a function: new instance created on each invocation
-  konstruktor: class M$$anonfun$3$O$20$
-  konstruktor: class M$$anonfun$3$O$20$
+  konstruktor: class M$O$20$
+  konstruktor: class M$O$20$

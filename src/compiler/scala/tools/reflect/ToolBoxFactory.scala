@@ -3,13 +3,12 @@ package tools
 package reflect
 
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc.Global
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.internal.Flags._
-import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
+import scala.reflect.internal.util.NoSourceFile
 import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
@@ -118,13 +117,15 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       def transformDuringTyper(expr: Tree, mode: scala.reflect.internal.Mode, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean)(transform: (analyzer.Typer, Tree) => Tree): Tree = {
         def withWrapping(tree: Tree)(op: Tree => Tree) = if (mode == TERMmode) wrappingIntoTerm(tree)(op) else op(tree)
-        withWrapping(verify(expr))(expr1 => {
+        withWrapping(verify(expr)) { expr =>
           // need to extract free terms, because otherwise you won't be able to typecheck macros against something that contains them
-          val exprAndFreeTerms = extractFreeTerms(expr1, wrapFreeTermRefs = false)
-          var expr2 = exprAndFreeTerms._1
-          val freeTerms = exprAndFreeTerms._2
-          val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
-          expr2 = Block(dummies, expr2)
+          val (extracted, freeTerms) = extractFreeTerms(expr, wrapFreeTermRefs = false)
+          val exprBound = {
+            val binders = freeTerms.toList.map { case (freeTerm, name) =>
+              ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark")))
+            }
+            Block(binders, extracted)
+          }
 
           // !!! Why is this is in the empty package? If it's only to make
           // it inaccessible then please put it somewhere designed for that
@@ -132,26 +133,29 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           // [Eugene] how can we implement that?
           val ownerClass       = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
           build.setInfo(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
-          val owner            = ownerClass.newLocalDummy(expr2.pos)
-          val currentTyper     = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr2, owner))
-          val withImplicitFlag = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
-          val withMacroFlag    = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
-          def withContext      (tree: => Tree) = withImplicitFlag(withMacroFlag(tree))
+          val owner            = ownerClass.newLocalDummy(exprBound.pos)
+          val currentTyper     = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(exprBound, owner))
+          import currentTyper.{context => currCtx}
 
           val run = new Run
           run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
           phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
           globalPhase = run.typerPhase // amazing... looks like phase and globalPhase are different things, so we need to set them separately
-          currentTyper.context.initRootContext() // need to manually set context mode, otherwise typer.silent will throw exceptions
+          currCtx.initRootContext() // need to manually set context mode, otherwise typer.silent will throw exceptions
           reporter.reset()
 
-          val expr3 = withContext(transform(currentTyper, expr2))
-          var (dummies1, result) = expr3 match {
-            case Block(dummies, result) => ((dummies, result))
-            case result                 => ((Nil, result))
-          }
+          val (binders, transformed) =
+            currCtx.withImplicits(enabled = !withImplicitViewsDisabled) {
+              currCtx.withMacros(enabled = !withMacrosDisabled) {
+                transform(currentTyper, exprBound)
+              }
+            } match {
+              case Block(binders, transformed) => (binders, transformed)
+              case transformed                 => (Nil, transformed)
+            }
+
           val invertedIndex = freeTerms map (_.swap)
-          result = new Transformer {
+          val indexed = new Transformer {
             override def transform(tree: Tree): Tree =
               tree match {
                 case Ident(name: TermName) if invertedIndex contains name =>
@@ -159,10 +163,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                 case _ =>
                   super.transform(tree)
               }
-          }.transform(result)
-          new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name.toTermName)))).traverse(result)
-          result
-        })
+          }.transform(transformed)
+          new TreeTypeSubstituter(binders map (_.symbol), binders map (b => SingleType(NoPrefix, invertedIndex(b.symbol.name.toTermName)))).traverse(indexed)
+          indexed
+        }
       }
 
       def typecheck(expr: Tree, pt: Type, mode: scala.reflect.internal.Mode, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =

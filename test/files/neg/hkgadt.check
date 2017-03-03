@@ -1,0 +1,31 @@
+hkgadt.scala:7: error: type mismatch;
+ found   : scala.collection.immutable.Set[Int]
+ required: F[Int]
+      case Bar() => Set(1)
+                       ^
+hkgadt.scala:13: error: type mismatch;
+ found   : Boolean(true)
+ required: A
+    case Bar1() => true
+                   ^
+hkgadt.scala:24: error: type mismatch;
+ found   : scala.collection.immutable.Set[Int]
+ required: F[Int]
+      case Bar() => Set(1)
+                       ^
+hkgadt.scala:25: error: type mismatch;
+ found   : List[Int]
+ required: F[Int]
+      case Baz() => List(1)
+                        ^
+hkgadt.scala:32: error: type mismatch;
+ found   : Boolean(true)
+ required: A
+    case Bar1() => true
+                   ^
+hkgadt.scala:33: error: type mismatch;
+ found   : Int(1)
+ required: A
+    case Baz1() => 1
+                   ^
+6 errors found

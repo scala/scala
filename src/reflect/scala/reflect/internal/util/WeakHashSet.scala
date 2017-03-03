@@ -3,7 +3,6 @@ package reflect.internal.util
 
 import java.lang.ref.{WeakReference, ReferenceQueue}
 import scala.annotation.tailrec
-import scala.collection.generic.Clearable
 import scala.collection.mutable.{Set => MSet}
 
 /**
@@ -57,9 +56,9 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   /**
    * the limit at which we'll increase the size of the hash table
    */
-  var threshhold = computeThreshHold
+  private[this] var threshold = computeThreshold
 
-  private[this] def computeThreshHold: Int = (table.size * loadFactor).ceil.toInt
+  private[this] def computeThreshold: Int = (table.size * loadFactor).ceil.toInt
 
   /**
    * find the bucket associated with an element's hash code
@@ -122,7 +121,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   private[this] def resize() {
     val oldTable = table
     table = new Array[Entry[A]](oldTable.size * 2)
-    threshhold = computeThreshHold
+    threshold = computeThreshold
 
     @tailrec
     def tableLoop(oldBucket: Int): Unit = if (oldBucket < oldTable.size) {
@@ -177,7 +176,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
       def add() = {
         table(bucket) = new Entry(elem, hash, oldHead, queue)
         count += 1
-        if (count > threshhold) resize()
+        if (count > threshold) resize()
         elem
       }
 
@@ -207,7 +206,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
       def add() {
         table(bucket) = new Entry(elem, hash, oldHead, queue)
         count += 1
-        if (count > threshhold) resize()
+        if (count > threshold) resize()
       }
 
       @tailrec
@@ -224,7 +223,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   def +=(elem: A) = this + elem
 
-  // from scala.reflect.interanl.Set
+  // from scala.reflect.internal.Set
   override def addEntry(x: A) { this += x }
 
   // remove an element from this set and return this set
@@ -253,7 +252,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   // empty this set
   override def clear(): Unit = {
     table = new Array[Entry[A]](table.size)
-    threshhold = computeThreshHold
+    threshold = computeThreshold
     count = 0
 
     // drain the queue - doesn't do anything because we're throwing away all the values anyway

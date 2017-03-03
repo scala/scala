@@ -6,11 +6,10 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.immutable
 import scala.language.implicitConversions
 
 /** Mix this into an object and use it as a phasing
- *  swiss army knife.
+ *  Swiss Army knife.
  */
 trait Phased {
   val global: Global
@@ -89,9 +88,8 @@ trait Phased {
 
     lazy val all = List(
       Parser, Namer, Packageobjects, Typer, Superaccessors, Pickler, Refchecks,
-      Selectiveanf, Liftcode, Selectivecps, Uncurry, Tailcalls, Specialize,
-      Explicitouter, Erasure, Lazyvals, Lambdalift, Constructors, Flatten, Mixin,
-      Cleanup, Delambdafy, Icode, Inliner, Closelim, Dce, Jvm, Terminal
+      Uncurry, Tailcalls, Specialize, Explicitouter, Erasure, Fields, Lambdalift,
+      Constructors, Flatten, Mixin, Cleanup, Delambdafy, Jvm, Terminal
     )
     lazy val nameMap = all.map(x => x.name -> x).toMap withDefaultValue NoPhaseName
     multi = all
@@ -110,28 +108,24 @@ trait Phased {
   case object Namer extends PhaseName
   case object Packageobjects extends PhaseName
   case object Typer extends PhaseName
+  case object Patmat extends PhaseName
   case object Superaccessors extends PhaseName
+  case object Extmethods extends PhaseName
   case object Pickler extends PhaseName
   case object Refchecks extends PhaseName
-  case object Selectiveanf extends PhaseName
-  case object Liftcode extends PhaseName
-  case object Selectivecps extends PhaseName
   case object Uncurry extends PhaseName
+  case object Fields extends PhaseName
   case object Tailcalls extends PhaseName
   case object Specialize extends PhaseName
   case object Explicitouter extends PhaseName
   case object Erasure extends PhaseName
-  case object Lazyvals extends PhaseName
+  case object PostErasure extends PhaseName
   case object Lambdalift extends PhaseName
   case object Constructors extends PhaseName
   case object Flatten extends PhaseName
   case object Mixin extends PhaseName
   case object Cleanup extends PhaseName
   case object Delambdafy extends PhaseName
-  case object Icode extends PhaseName
-  case object Inliner extends PhaseName
-  case object Closelim extends PhaseName
-  case object Dce extends PhaseName
   case object Jvm extends PhaseName
   case object Terminal extends PhaseName
   case object NoPhaseName extends PhaseName {

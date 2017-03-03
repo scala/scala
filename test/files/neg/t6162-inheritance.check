@@ -1,4 +1,4 @@
-usage.scala:3: warning: inheritance from class Foo in package t6126 is deprecated: `Foo` will be made final in a future version.
+usage.scala:3: warning: inheritance from class Foo in package t6126 is deprecated (since 2.10.0): `Foo` will be made final in a future version.
 class SubFoo extends Foo
                      ^
 usage.scala:5: warning: inheritance from trait T in package t6126 is deprecated

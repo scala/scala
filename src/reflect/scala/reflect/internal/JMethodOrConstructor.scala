@@ -7,7 +7,7 @@ package reflect
 package internal
 
 import scala.language.implicitConversions
-import java.lang.{ Class => jClass }
+
 import java.lang.annotation.{ Annotation => jAnnotation }
 import java.lang.reflect.{
   Member => jMember, Constructor => jConstructor, Method => jMethod,

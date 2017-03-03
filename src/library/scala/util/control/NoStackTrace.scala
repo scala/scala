@@ -14,6 +14,8 @@ package util.control
  *  on a global basis via a system property wrapper in
  *  [[scala.sys.SystemProperties]].
  *
+ *  @note Since JDK 1.7, a similar effect can be achieved with `class Ex extends Throwable(..., writableStackTrace = false)`
+ *
  *  @author   Paul Phillips
  *  @since    2.8
  */
@@ -26,7 +28,7 @@ trait NoStackTrace extends Throwable {
 object NoStackTrace {
   final def noSuppression = _noSuppression
 
-  // two-stage init to make checkinit happy, since sys.SystemProperties.noTraceSupression.value calls back into NoStackTrace.noSuppression
+  // two-stage init to make checkinit happy, since sys.SystemProperties.noTraceSuppression.value calls back into NoStackTrace.noSuppression
   final private var _noSuppression = false
-  _noSuppression = sys.SystemProperties.noTraceSupression.value
+  _noSuppression = sys.SystemProperties.noTraceSuppression.value
 }

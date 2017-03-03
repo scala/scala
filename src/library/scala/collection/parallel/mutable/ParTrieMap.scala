@@ -152,18 +152,9 @@ extends TrieMapIterator[K, V](lev, ct, mustInit)
 /** Only used within the `ParTrieMap`. */
 private[mutable] trait ParTrieMapCombiner[K, V] extends Combiner[(K, V), ParTrieMap[K, V]] {
 
-  def combine[N <: (K, V), NewTo >: ParTrieMap[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this eq other) this else {
-    throw new UnsupportedOperationException("This shouldn't have been called in the first place.")
-
-    val thiz = this.asInstanceOf[ParTrieMap[K, V]]
-    val that = other.asInstanceOf[ParTrieMap[K, V]]
-    val result = new ParTrieMap[K, V]
-
-    result ++= thiz.iterator
-    result ++= that.iterator
-
-    result
-  }
+  def combine[N <: (K, V), NewTo >: ParTrieMap[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] =
+    if (this eq other) this
+    else throw new UnsupportedOperationException("This shouldn't have been called in the first place.")
 
   override def canBeShared = true
 }

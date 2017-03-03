@@ -11,10 +11,8 @@
 package scala
 package util
 
-import scala.language.implicitConversions
-
 /** Represents a value of one of two possible types (a disjoint union.)
- *  Instances of Either are either an instance of [[scala.util.Left]] or [[scala.util.Right]].
+ *  An instance of Either is either an instance of [[scala.util.Left]] or [[scala.util.Right]].
  *
  *  A common use of Either is as an alternative to [[scala.Option]] for dealing
  *  with possible missing values.  In this usage, [[scala.None]] is replaced
@@ -34,41 +32,66 @@ import scala.language.implicitConversions
  *        Left(in)
  *  }
  *
- *  println( result match {
- *    case Right(x) => "You passed me the Int: " + x + ", which I will increment. " + x + " + 1 = " + (x+1)
- *    case Left(x) => "You passed me the String: " + x
+ *  println(result match {
+ *    case Right(x) => s"You passed me the Int: $x, which I will increment. $x + 1 = ${x+1}"
+ *    case Left(x)  => s"You passed me the String: $x"
  *  })
  *  }}}
  *
- *  A ''projection'' can be used to selectively operate on a value of type Either,
- *  depending on whether it is of type Left or Right. For example, to transform an
- *  Either using a function, in the case where it's a Left, one can first apply
- *  the `left` projection and invoke `map` on that projected Either. If a `right`
- *  projection is applied to that Left, the original Left is returned, unmodified.
+ *  Either is right-biased, which means that Right is assumed to be the default case to
+ *  operate on. If it is Left, operations like map, flatMap, ... return the Left value
+ *  unchanged:
  *
  *  {{{
- *  val l: Either[String, Int] = Left("flower")
- *  val r: Either[String, Int] = Right(12)
- *  l.left.map(_.size): Either[Int, Int] // Left(6)
- *  r.left.map(_.size): Either[Int, Int] // Right(12)
- *  l.right.map(_.toDouble): Either[String, Double] // Left("flower")
- *  r.right.map(_.toDouble): Either[String, Double] // Right(12.0)
+ *  Right(12).map(_ * 2) // Right(24)
+ *  Left(23).map(_ * 2)  // Left(23)
  *  }}}
  *
- *  Like with other types which define a `map` method, the same can be achieved
- *  using a for-comprehension:
+ *  As Either defines the methods  `map` and `flatMap`, it can also be used in for comprehensions:
  *  {{{
- *  for (s <- l.left) yield s.size // Left(6)
- *  }}}
+ *  val right1: Right[Double, Int] = Right(1)
+ *  val right2                     = Right(2)
+ *  val right3                     = Right(3)
+ *  val left23: Left[Double, Int]  = Left(23.0)
+ *  val left42                     = Left(42.0)
  *
- *  To support multiple projections as generators in for-comprehensions, the Either
- *  type also defines a `flatMap` method.
+ *  for {
+ *    a <- right1
+ *    b <- right2
+ *    c <- right3
+ *  } yield a + b + c // Right(6)
+ *
+ *  for {
+ *    a <- right1
+ *    b <- right2
+ *    c <- left23
+ *  } yield a + b + c // Left(23.0)
+ *
+ *  for {
+ *    a <- right1
+ *    b <- left23
+ *    c <- right2
+ *  } yield a + b + c // Left(23.0)
+ *
+ *  // It is advisable to provide the type of the “missing” value (especially the right value for `Left`)
+ *  // as otherwise that type might be inferred as `Nothing` without context:
+ *  for {
+ *    a <- left23
+ *    b <- right1
+ *    c <- left42  // type at this position: Either[Double, Nothing]
+ *  } yield a + b + c
+ *  //            ^
+ *  // error: ambiguous reference to overloaded definition,
+ *  // both method + in class Int of type (x: Char)Int
+ *  // and  method + in class Int of type (x: Byte)Int
+ *  // match argument types (Nothing)
+ *  }}}
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
+ *  @version 2.0, 2016-07-15
  *  @since 2.7
  */
-sealed abstract class Either[+A, +B] {
+sealed abstract class Either[+A, +B] extends Product with Serializable {
   /**
    * Projects this `Either` as a `Left`.
    */
@@ -76,6 +99,10 @@ sealed abstract class Either[+A, +B] {
 
   /**
    * Projects this `Either` as a `Right`.
+   *
+   * Because `Either` is right-biased, this method is not normally needed.
+   * (It is retained in the API for now for easy cross-compilation between Scala
+   * 2.11 and 2.12.)
    */
   def right = Either.RightProjection(this)
 
@@ -85,8 +112,8 @@ sealed abstract class Either[+A, +B] {
    * @example {{{
    * val result: Either[Exception, Value] = possiblyFailingOperation()
    * log(result.fold(
-   *   ex => "Operation failed with " + ex,
-   *   v => "Operation produced value: " + v
+   *   ex => s"Operation failed with $ex",
+   *   v  => s"Operation produced value: $v"
    * ))
    * }}}
    *
@@ -94,21 +121,29 @@ sealed abstract class Either[+A, +B] {
    * @param fb the function to apply if this is a `Right`
    * @return the results of applying the function
    */
-  def fold[X](fa: A => X, fb: B => X) = this match {
-    case Left(a) => fa(a)
+  def fold[C](fa: A => C, fb: B => C): C = this match {
     case Right(b) => fb(b)
+    case Left(a)  => fa(a)
   }
 
   /**
    * If this is a `Left`, then return the left value in `Right` or vice versa.
    *
    * @example {{{
-   * val l: Either[String, Int] = Left("left")
-   * val r: Either[Int, String] = l.swap // Result: Right("left")
+   * val left: Either[String, Int] = Left("left")
+   * val right: Either[Int, String] = l.swap // Result: Right("left")
+   * }}}
+   * @example {{{
+   * val right = Right(2)
+   * val left  = Left(3)
+   * for {
+   *   r1 <- right
+   *   r2 <- left.swap
+   * } yield r1 * r2 // Right(6)
    * }}}
    */
-  def swap = this match {
-    case Left(a) => Right(a)
+  def swap: Either[B, A] = this match {
+    case Left(a)  => Right(a)
     case Right(b) => Left(b)
   }
 
@@ -132,8 +167,9 @@ sealed abstract class Either[+A, +B] {
    * This method, and `joinLeft`, are analogous to `Option#flatten`
    */
   def joinRight[A1 >: A, B1 >: B, C](implicit ev: B1 <:< Either[A1, C]): Either[A1, C] = this match {
-    case Left(a)  => Left(a)
     case Right(b) => b
+    case Left(a)  => this.asInstanceOf[Either[A1, C]]
+
   }
 
   /**
@@ -157,7 +193,155 @@ sealed abstract class Either[+A, +B] {
    */
   def joinLeft[A1 >: A, B1 >: B, C](implicit ev: A1 <:< Either[C, B1]): Either[C, B1] = this match {
     case Left(a)  => a
-    case Right(b) => Right(b)
+    case Right(b) => this.asInstanceOf[Either[C, B1]]
+  }
+
+  /**
+   * Executes the given side-effecting function if this is a `Right`.
+   *
+   * {{{
+   * Right(12).foreach(x => println(x)) // prints "12"
+   * Left(12).foreach(x => println(x))  // doesn't print
+   * }}}
+   * @param f The side-effecting function to execute.
+   */
+  def foreach[U](f: B => U): Unit = this match {
+    case Right(b) => f(b)
+    case Left(_)  =>
+  }
+
+  /**
+   * Returns the value from this `Right` or the given argument if this is a `Left`.
+   *
+   * {{{
+   * Right(12).getOrElse(17) // 12
+   * Left(12).getOrElse(17)  // 17
+   * }}}
+   */
+  def getOrElse[BB >: B](or: => BB): BB = this match {
+    case Right(b) => b
+    case Left(_)  => or
+  }
+
+  /** Returns `true` if this is a `Right` and its value is equal to `elem` (as determined by `==`),
+   *  returns `false` otherwise.
+   *
+   *  {{{
+   *  // Returns true because value of Right is "something" which equals "something".
+   *  Right("something") contains "something"
+   *
+   *  // Returns false because value of Right is "something" which does not equal "anything".
+   *  Right("something") contains "anything"
+   *
+   *  // Returns false because there is no value for Right.
+   *  Left("something") contains "something"
+   *  }}}
+   *
+   *  @param elem    the element to test.
+   *  @return `true` if the option has an element that is equal (as determined by `==`) to `elem`, `false` otherwise.
+   */
+  final def contains[BB >: B](elem: BB): Boolean = this match {
+    case Right(b) => b == elem
+    case Left(_)  => false
+  }
+
+  /**
+   * Returns `true` if `Left` or returns the result of the application of
+   * the given predicate to the `Right` value.
+   *
+   * {{{
+   * Right(12).forall(_ > 10) // true
+   * Right(7).forall(_ > 10)  // false
+   * Left(12).forall(_ > 10)  // true
+   * }}}
+   */
+  def forall(f: B => Boolean): Boolean = this match {
+    case Right(b) => f(b)
+    case Left(_)  => true
+  }
+
+  /**
+   * Returns `false` if `Left` or returns the result of the application of
+   * the given predicate to the `Right` value.
+   *
+   * {{{
+   * Right(12).exists(_ > 10) // true
+   * Right(7).exists(_ > 10)  // false
+   * Left(12).exists(_ > 10)  // false
+   * }}}
+   */
+  def exists(p: B => Boolean): Boolean = this match {
+    case Right(b) => p(b)
+    case Left(_)  => false
+  }
+
+  /**
+   * Binds the given function across `Right`.
+   *
+   * @param f The function to bind across `Right`.
+   */
+  def flatMap[AA >: A, Y](f: B => Either[AA, Y]): Either[AA, Y] = this match {
+    case Right(b) => f(b)
+    case Left(a)  => this.asInstanceOf[Either[AA, Y]]
+  }
+
+  /**
+   * The given function is applied if this is a `Right`.
+   *
+   * {{{
+   * Right(12).map(x => "flower") // Result: Right("flower")
+   * Left(12).map(x => "flower")  // Result: Left(12)
+   * }}}
+   */
+  def map[Y](f: B => Y): Either[A, Y] = this match {
+    case Right(b) => Right(f(b))
+    case Left(a)  => this.asInstanceOf[Either[A, Y]]
+  }
+
+  /** Returns `Right` with the existing value of `Right` if this is a `Right` and the given predicate `p` holds for the right value,
+   *  returns `Left(zero)` if this is a `Right` and the given predicate `p` does not hold for the right value,
+   *  returns `Left` with the existing value of `Left` if this is a `Left`.
+   *
+   * {{{
+   * Right(12).filterOrElse(_ > 10, -1) // Right(12)
+   * Right(7).filterOrElse(_ > 10, -1)  // Left(-1)
+   * Left(12).filterOrElse(_ > 10, -1)  // Left(12)
+   * }}}
+   */
+  def filterOrElse[AA >: A](p: B => Boolean, zero: => AA): Either[AA, B] = this match {
+    case Right(b) => if (p(b)) this else Left(zero)
+    case Left(a)  => this
+  }
+
+  /** Returns a `Seq` containing the `Right` value if
+   *  it exists or an empty `Seq` if this is a `Left`.
+   *
+   * {{{
+   * Right(12).toSeq // Seq(12)
+   * Left(12).toSeq  // Seq()
+   * }}}
+   */
+  def toSeq: collection.immutable.Seq[B] = this match {
+    case Right(b) => collection.immutable.Seq(b)
+    case Left(_)  => collection.immutable.Seq.empty
+  }
+
+  /** Returns a `Some` containing the `Right` value
+   *  if it exists or a `None` if this is a `Left`.
+   *
+   * {{{
+   * Right(12).toOption // Some(12)
+   * Left(12).toOption  // None
+   * }}}
+   */
+  def toOption: Option[B] = this match {
+    case Right(b) => Some(b)
+    case Left(_)  => None
+  }
+
+  def toTry(implicit ev: A <:< Throwable): Try[B] = this match {
+    case Right(b) => Success(b)
+    case Left(a)  => Failure(a)
   }
 
   /**
@@ -187,9 +371,11 @@ sealed abstract class Either[+A, +B] {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](a: A) extends Either[A, B] {
-  def isLeft = true
+final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
+  def isLeft  = true
   def isRight = false
+
+  @deprecated("Use .value instead.", "2.12.0") def a: A = value
 }
 
 /**
@@ -198,12 +384,28 @@ final case class Left[+A, +B](a: A) extends Either[A, B] {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](b: B) extends Either[A, B] {
-  def isLeft = false
+final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
+  def isLeft  = false
   def isRight = true
+
+  @deprecated("Use .value instead.", "2.12.0") def b: B = value
 }
 
 object Either {
+
+  /** If the condition is satisfied, return the given `B` in `Right`,
+   *  otherwise, return the given `A` in `Left`.
+   *
+   * {{{
+   * val userInput: String = ...
+   * Either.cond(
+   *   userInput.forall(_.isDigit) && userInput.size == 10,
+   *   PhoneNumber(userInput),
+   *   "The input (%s) does not look like a phone number".format(userInput)
+   * }}}
+   */
+  def cond[X, Y](test: Boolean, right: => Y, left: => X): Either[X, Y] =
+    if (test) Right(right) else Left(left)
 
   /**
    * Allows use of a `merge` method to extract values from Either instances
@@ -218,15 +420,18 @@ object Either {
    */
   implicit class MergeableEither[A](private val x: Either[A, A]) extends AnyVal {
     def merge: A = x match {
-      case Left(a)  => a
       case Right(a) => a
+      case Left(a)  => a
     }
   }
 
   /**
    * Projects an `Either` into a `Left`.
    *
-   * This allows for-comprehensions over Either instances - for example {{{
+   * This allows for-comprehensions over the left side of Either instances,
+   * reversing Either's usual right-bias.
+   *
+   * For example {{{
    * for (s <- Left("flower").left) yield s.length // Left(6)
    * }}}
    *
@@ -252,7 +457,7 @@ object Either {
    * }}}
    *
    * {{{
-  * // using Either
+   * // using Either
    * def interactWithDB(x: Query): Either[Exception, Result] =
    *   try {
    *     Right(getResultFromDatabase(x))
@@ -284,9 +489,9 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is [[scala.util.Right]]
      */
-    def get = e match {
-      case Left(a) => a
-      case Right(_) =>  throw new NoSuchElementException("Either.left.value on Right")
+    def get: A = e match {
+      case Left(a)  => a
+      case Right(_) => throw new NoSuchElementException("Either.left.get on Right")
     }
 
     /**
@@ -298,14 +503,13 @@ object Either {
      * }}}
      * @param f The side-effecting function to execute.
      */
-    def foreach[U](f: A => U) = e match {
-      case Left(a) => f(a)
-      case Right(_) => {}
+    def foreach[U](f: A => U): Unit = e match {
+      case Left(a)  => f(a)
+      case Right(_) =>
     }
 
     /**
-     * Returns the value from this `Left` or the given argument if this is a
-     * `Right`.
+     * Returns the value from this `Left` or the given argument if this is a `Right`.
      *
      * {{{
      * Left(12).left.getOrElse(17)  // 12
@@ -313,8 +517,8 @@ object Either {
      * }}}
      *
      */
-    def getOrElse[AA >: A](or: => AA) = e match {
-      case Left(a) => a
+    def getOrElse[AA >: A](or: => AA): AA = e match {
+      case Left(a)  => a
       case Right(_) => or
     }
 
@@ -329,8 +533,8 @@ object Either {
      * }}}
      *
      */
-    def forall(@deprecatedName('f) p: A => Boolean) = e match {
-      case Left(a) => p(a)
+    def forall(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+      case Left(a)  => p(a)
       case Right(_) => true
     }
 
@@ -345,8 +549,8 @@ object Either {
      * }}}
      *
      */
-    def exists(@deprecatedName('f) p: A => Boolean) = e match {
-      case Left(a) => p(a)
+    def exists(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+      case Left(a)  => p(a)
       case Right(_) => false
     }
 
@@ -359,9 +563,9 @@ object Either {
      * }}}
      * @param f The function to bind across `Left`.
      */
-    def flatMap[BB >: B, X](f: A => Either[X, BB]) = e match {
-      case Left(a) => f(a)
-      case Right(b) => Right(b)
+    def flatMap[BB >: B, X](f: A => Either[X, BB]): Either[X, BB] = e match {
+      case Left(a)  => f(a)
+      case Right(b) => e.asInstanceOf[Either[X, BB]]
     }
 
     /**
@@ -372,9 +576,9 @@ object Either {
      * Right[Int, Int](12).left.map(_ + 2) // Right(12)
      * }}}
      */
-    def map[X](f: A => X) = e match {
-      case Left(a) => Left(f(a))
-      case Right(b) => Right(b)
+    def map[X](f: A => X): Either[X, B] = e match {
+      case Left(a)  => Left(f(a))
+      case Right(b) => e.asInstanceOf[Either[X, B]]
     }
 
     /**
@@ -388,7 +592,7 @@ object Either {
      * }}}
      */
     def filter[Y](p: A => Boolean): Option[Either[A, Y]] = e match {
-      case Left(a) => if(p(a)) Some(Left(a)) else None
+      case Left(a)  => if(p(a)) Some(Left(a)) else None
       case Right(b) => None
     }
 
@@ -401,8 +605,8 @@ object Either {
      * Right(12).left.toSeq // Seq()
      * }}}
      */
-    def toSeq = e match {
-      case Left(a) => Seq(a)
+    def toSeq: Seq[A] = e match {
+      case Left(a)  => Seq(a)
       case Right(_) => Seq.empty
     }
 
@@ -415,8 +619,8 @@ object Either {
      * Right(12).left.toOption // None
      * }}}
      */
-    def toOption = e match {
-      case Left(a) => Some(a)
+    def toOption: Option[A] = e match {
+      case Left(a)  => Some(a)
       case Right(_) => None
     }
   }
@@ -424,14 +628,9 @@ object Either {
   /**
    * Projects an `Either` into a `Right`.
    *
-   * This allows for-comprehensions over Either instances - for example {{{
-   * for (s <- Right("flower").right) yield s.length // Right(6)
-   * }}}
-   *
-   * Continuing the analogy with [[scala.Option]], a `RightProjection` declares
-   * that `Right` should be analogous to `Some` in some code.
-   *
-   * Analogous to `LeftProjection`, see example usage in its documentation above.
+   * Because `Either` is already right-biased, this class is not normally needed.
+   * (It is retained in the library for now for easy cross-compilation between Scala
+   * 2.11 and 2.12.)
    *
    * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    * @version 1.0, 11/10/2008
@@ -449,9 +648,9 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is `Left`.
      */
-    def get = e match {
-      case Left(_) =>  throw new NoSuchElementException("Either.right.value on Left")
-      case Right(a) => a
+    def get: B = e match {
+      case Right(b) => b
+      case Left(_)  => throw new NoSuchElementException("Either.right.get on Left")
     }
 
     /**
@@ -463,23 +662,22 @@ object Either {
      * }}}
      * @param f The side-effecting function to execute.
      */
-    def foreach[U](f: B => U) = e match {
-      case Left(_) => {}
+    def foreach[U](f: B => U): Unit = e match {
       case Right(b) => f(b)
+      case Left(_)  =>
     }
 
     /**
-     * Returns the value from this `Right` or the given argument if this is a
-     * `Left`.
+     * Returns the value from this `Right` or the given argument if this is a `Left`.
      *
      * {{{
      * Right(12).right.getOrElse(17) // 12
      * Left(12).right.getOrElse(17)  // 17
      * }}}
      */
-    def getOrElse[BB >: B](or: => BB) = e match {
-      case Left(_) => or
+    def getOrElse[BB >: B](or: => BB): BB = e match {
       case Right(b) => b
+      case Left(_)  => or
     }
 
     /**
@@ -492,9 +690,9 @@ object Either {
      * Left(12).right.forall(_ > 10)  // true
      * }}}
      */
-    def forall(f: B => Boolean) = e match {
-      case Left(_) => true
+    def forall(f: B => Boolean): Boolean = e match {
       case Right(b) => f(b)
+      case Left(_)  => true
     }
 
     /**
@@ -507,9 +705,9 @@ object Either {
      * Left(12).right.exists(_ > 10)   // false
      * }}}
      */
-    def exists(@deprecatedName('f) p: B => Boolean) = e match {
-      case Left(_) => false
+    def exists(@deprecatedName('f) p: B => Boolean): Boolean = e match {
       case Right(b) => p(b)
+      case Left(_)  => false
     }
 
     /**
@@ -517,9 +715,9 @@ object Either {
      *
      * @param f The function to bind across `Right`.
      */
-    def flatMap[AA >: A, Y](f: B => Either[AA, Y]) = e match {
-      case Left(a) => Left(a)
+    def flatMap[AA >: A, Y](f: B => Either[AA, Y]): Either[AA, Y] = e match {
       case Right(b) => f(b)
+      case Left(a)  => e.asInstanceOf[Either[AA, Y]]
     }
 
     /**
@@ -530,9 +728,9 @@ object Either {
      * Left(12).right.map(x => "flower")  // Result: Left(12)
      * }}}
      */
-    def map[Y](f: B => Y) = e match {
-      case Left(a) => Left(a)
+    def map[Y](f: B => Y): Either[A, Y] = e match {
       case Right(b) => Right(f(b))
+      case Left(a)  => e.asInstanceOf[Either[A, Y]]
     }
 
     /** Returns `None` if this is a `Left` or if the
@@ -546,8 +744,8 @@ object Either {
      * }}}
      */
     def filter[X](p: B => Boolean): Option[Either[X, B]] = e match {
-      case Left(_) => None
       case Right(b) => if(p(b)) Some(Right(b)) else None
+      case Left(_)  => None
     }
 
     /** Returns a `Seq` containing the `Right` value if
@@ -558,9 +756,9 @@ object Either {
      * Left(12).right.toSeq // Seq()
      * }}}
      */
-    def toSeq = e match {
-      case Left(_) => Seq.empty
+    def toSeq: Seq[B] = e match {
       case Right(b) => Seq(b)
+      case Left(_)  => Seq.empty
     }
 
     /** Returns a `Some` containing the `Right` value
@@ -571,23 +769,9 @@ object Either {
      * Left(12).right.toOption // None
      * }}}
      */
-    def toOption = e match {
-      case Left(_) => None
+    def toOption: Option[B] = e match {
       case Right(b) => Some(b)
+      case Left(_)  => None
     }
   }
-
-  /** If the condition is satisfied, return the given `B` in `Right`,
-   *  otherwise, return the given `A` in `Left`.
-   *
-   * {{{
-   * val userInput: String = ...
-   * Either.cond(
-   *   userInput.forall(_.isDigit) && userInput.size == 10,
-   *   PhoneNumber(userInput),
-   *   "The input (%s) does not look like a phone number".format(userInput)
-   * }}}
-   */
-  def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
-    if (test) Right(right) else Left(left)
 }

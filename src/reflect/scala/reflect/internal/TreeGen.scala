@@ -117,6 +117,30 @@ abstract class TreeGen {
     case _                       => qual
   }
 
+
+
+  //          val selType = testedBinder.info
+  //
+  //          // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
+  //          // generates an outer test based on `patType.prefix` with automatically dealiases.
+  //          // Prefixes can have all kinds of shapes SI-9110
+  //          val patPre = expectedTp.dealiasWiden.prefix
+  //          val selPre = selType.dealiasWiden.prefix
+  //
+  //          // Optimization: which prefixes can we disqualify from the need for an outer reference check?
+  //          //   - classes in static owners do not get outer pointers
+  //          //   - if the prefixes are statically known to be equal, the type system ensures an outer test is redundant
+  //          !((patPre eq NoPrefix) || (selPre eq NoPrefix)
+  //            || patPre.typeSymbol.isPackageClass
+  //            || selPre =:= patPre)
+
+  def mkAttributedQualifierIfPossible(prefix: Type): Option[Tree] = prefix match {
+    case NoType | NoPrefix | ErrorType => None
+    case TypeRef(_, sym, _) if sym.isModule || sym.isClass || sym.isType => None
+    case pre => Some(mkAttributedQualifier(prefix))
+  }
+
+
   /** Builds a reference to given symbol with given stable prefix. */
   def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
     val qual = mkAttributedQualifier(pre)
@@ -129,7 +153,16 @@ abstract class TreeGen {
 
   /** Builds a reference to given symbol. */
   def mkAttributedRef(sym: Symbol): RefTree =
-    if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
+    if (sym.owner.isStaticOwner) {
+      if (sym.owner.isRoot)
+        mkAttributedIdent(sym)
+      else {
+        val ownerModule = sym.owner.sourceModule
+        assert(ownerModule != NoSymbol, sym.owner)
+        mkAttributedSelect(mkAttributedRef(sym.owner.sourceModule), sym)
+      }
+    }
+    else if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
     else mkAttributedIdent(sym)
 
   def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
@@ -191,8 +224,8 @@ abstract class TreeGen {
       )
       val pkgQualifier =
         if (needsPackageQualifier) {
-          val packageObject = rootMirror.getPackageObjectWithMember(qual.tpe, sym)
-          Select(qual, nme.PACKAGE) setSymbol packageObject setType singleType(qual.tpe, packageObject)
+          val packageObject = qualsym.packageObject
+          Select(qual, nme.PACKAGE) setSymbol packageObject setType packageObject.typeOfThis
         }
         else qual
 
@@ -277,12 +310,15 @@ abstract class TreeGen {
   /** Builds a tuple */
   def mkTuple(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
     case Nil =>
-      Literal(Constant(()))
+      mkLiteralUnit
     case tree :: Nil if flattenUnary =>
       tree
     case _ =>
       Apply(scalaDot(TupleClass(elems.length).name.toTermName), elems)
   }
+
+  def mkLiteralUnit: Literal = Literal(Constant(()))
+  def mkUnitBlock(expr: Tree): Block = Block(List(expr), mkLiteralUnit)
 
   def mkTupleType(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
     case Nil =>
@@ -362,7 +398,7 @@ abstract class TreeGen {
         if (body forall treeInfo.isInterfaceMember) None
         else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, mkLiteralUnit))))
       }
       else {
         // convert (implicit ... ) to ()(implicit ... ) if it's the only parameter section
@@ -376,7 +412,7 @@ abstract class TreeGen {
                                          // therefore here we emit a dummy which gets populated when the template is named and typechecked
         Some(
           atPos(wrappingPos(superPos, lvdefs ::: vparamss1.flatten).makeTransparent) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), mkLiteralUnit))))
       }
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
@@ -448,7 +484,7 @@ abstract class TreeGen {
    *  written by end user. It's important to distinguish the two so that
    *  quasiquotes can strip synthetic ones away.
    */
-  def mkSyntheticUnit() = Literal(Constant(())).updateAttachment(SyntheticUnitAttachment)
+  def mkSyntheticUnit() = mkLiteralUnit.updateAttachment(SyntheticUnitAttachment)
 
   /** Create block of statements `stats`  */
   def mkBlock(stats: List[Tree], doFlatten: Boolean = true): Tree =

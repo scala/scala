@@ -93,7 +93,7 @@ scala> case class Bar(n: Int)
 defined class Bar
 
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 foo2bar: (foo: Foo)Bar
 
 scala> val bar: Bar = Foo(3)
@@ -267,7 +267,7 @@ scala> xs map (x => x)
 res6: Array[_] = Array(1, 2)
 
 scala> xs map (x => (x, x))
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 
 scala> 

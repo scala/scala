@@ -1,2 +1,0 @@
-UncaughtException(StartError,None,None,Test$MyException: I don't want to run!)
-UncaughtException(MessageError,Some('ping),Some(Supervisor),Test$MyException: No message for me!)

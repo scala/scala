@@ -1,7 +1,7 @@
-names-defaults-neg-warn.scala:11: warning: the parameter name s has been deprecated. Use x instead.
+names-defaults-neg-warn.scala:11: warning: the parameter name s is deprecated: use x instead
   deprNam2.f(s = "dlfkj")
                ^
-names-defaults-neg-warn.scala:12: warning: the parameter name x has been deprecated. Use s instead.
+names-defaults-neg-warn.scala:12: warning: the parameter name x is deprecated: use s instead
   deprNam2.g(x = "dlkjf")
                ^
 error: No warnings can be incurred under -Xfatal-warnings.

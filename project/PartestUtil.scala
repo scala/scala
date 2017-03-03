@@ -28,14 +28,14 @@ object PartestUtil {
   def partestParser(globalBase: File, testBase: File): Parser[String] = {
     val knownUnaryOptions = List(
       "--pos", "--neg", "--run", "--jvm", "--res", "--ant", "--scalap", "--specialized",
-      "--scalacheck", "--instrumented", "--presentation", "--failed", "--update-check",
-      "--show-diff", "--verbose", "--terse", "--debug", "--version", "--self-test", "--help")
+      "--instrumented", "--presentation", "--failed", "--update-check",
+      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--self-test", "--help")
     val srcPathOption = "--srcpath"
     val grepOption = "--grep"
 
-    // HACK: if we parse `--srpath scaladoc`, we overwrite this var. The parser for test file paths
+    // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
     // then lazily creates the examples based on the current value.
-    // TODO is there a cleaner way to do this with SBT's parser infrastructure?
+    // TODO is there a cleaner way to do this with sbt's parser infrastructure?
     var srcPath = "files"
     var _testFiles: TestFiles = null
     def testFiles = {
@@ -64,9 +64,9 @@ object PartestUtil {
         }
         val matchingFileName = try {
           val filter = GlobFilter("*" + x + "*")
-          testFiles.allTestCases.filter(x => filter.accept(x._1.name))
+          testFiles.allTestCases.filter(x => filter.accept(x._1.asFile.getPath))
         } catch {
-          case t: Throwable => Nil
+          case _: Throwable => Nil
         }
         (matchingFileContent ++ matchingFileName).map(_._2).distinct.sorted
       }
@@ -86,7 +86,10 @@ object PartestUtil {
         srcPath = path
         opt + " " + path
     }
-    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep
-    (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse("")) <~ OptSpace
+
+    val ScalacOptsParser = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
+
+    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep | ScalacOptsParser
+    (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse(""))
   }
 }

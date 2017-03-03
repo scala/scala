@@ -46,14 +46,21 @@ consider them unchanged:
 
         git update-index --no-assume-unchanged `find src/eclipse -iname .classpath -or -iname .project`
 
+0. The 2.12, sources of Scala need to be built with a 2.12 version of the compiler. One can configure a 2.12 Scala installation
+in Eclipse. In order to do this, go to `Window -> Preferences -> Scala -> Installations` and add a 2.12 installation. You can
+either download a prepackaged version of 2.12 from the Scala homepage or you add the Scala installation that is part of the
+`build/pack/lib` directory. The latter is required in case you absolutely need to depend on a nightly build of the compiler to
+compile the compiler itself. Once the 2.12 Scala installation is created you need to select all Scala projects, do a right click
+and select `Scala -> Set the Scala installation` where you have to choose the newly created 2.12 Scala installation.
+
 If it doesn’t compile
 =====================
 
 The likely reason is that the build path of the imported projects isn’t correct. This can happen for instance
-when the [version.properties](https://github.com/scala/scala/blob/master/versions.properties) file is updated,
+when the [versions.properties](https://github.com/scala/scala/blob/master/versions.properties) file is updated,
 and Eclipse .classpath of the different projects isn’t updated accordingly. The fix is simple, manually inspect
 the build path of each project and make sure the version of the declared dependencies is in sync with the version
-declared in the `version.properties` file. If it isn’t, update it manually and, when done, don’t forget to share
+declared in the `versions.properties` file. If it isn’t, update it manually and, when done, don’t forget to share
 your changes via a pull request.
 (We are aware this is cumbersome. If you feel like scripting the process, pull requests are of course welcome.)
 

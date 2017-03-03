@@ -224,42 +224,32 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit object Unit extends UnitOrdering
 
   trait BooleanOrdering extends Ordering[Boolean] {
-    def compare(x: Boolean, y: Boolean) = (x, y) match {
-      case (false, true) => -1
-      case (true, false) => 1
-      case _ => 0
-    }
+    def compare(x: Boolean, y: Boolean) = java.lang.Boolean.compare(x, y)
   }
   implicit object Boolean extends BooleanOrdering
 
   trait ByteOrdering extends Ordering[Byte] {
-    def compare(x: Byte, y: Byte) = x.toInt - y.toInt
+    def compare(x: Byte, y: Byte) = java.lang.Byte.compare(x, y)
   }
   implicit object Byte extends ByteOrdering
 
   trait CharOrdering extends Ordering[Char] {
-    def compare(x: Char, y: Char) = x.toInt - y.toInt
+    def compare(x: Char, y: Char) = java.lang.Character.compare(x, y)
   }
   implicit object Char extends CharOrdering
 
   trait ShortOrdering extends Ordering[Short] {
-    def compare(x: Short, y: Short) = x.toInt - y.toInt
+    def compare(x: Short, y: Short) = java.lang.Short.compare(x, y)
   }
   implicit object Short extends ShortOrdering
 
   trait IntOrdering extends Ordering[Int] {
-    def compare(x: Int, y: Int) =
-      if (x < y) -1
-      else if (x == y) 0
-      else 1
+    def compare(x: Int, y: Int) = java.lang.Integer.compare(x, y)
   }
   implicit object Int extends IntOrdering
 
   trait LongOrdering extends Ordering[Long] {
-    def compare(x: Long, y: Long) =
-      if (x < y) -1
-      else if (x == y) 0
-      else 1
+    def compare(x: Long, y: Long) = java.lang.Long.compare(x, y)
   }
   implicit object Long extends LongOrdering
 

@@ -1,9 +1,5 @@
 f(C@2e)
 
-#partest !-Ydelambdafy:method
-Test$$anonfun$$apply
-#partest -Ydelambdafy:method
-Test$lambda$1$$apply
-#partest
 apply
+writeReplace
 g(C@2e)

@@ -1,12 +1,13 @@
+import runtime.ArrayCharSequence
+
 object Test {
   val arr = Array[Char]('a' to 'i': _*)
-  var xs: CharSequence = arr
+  var xs: CharSequence = new runtime.ArrayCharSequence(arr, 0, arr.length)
   val hash = xs.hashCode
 
   def check(chars: CharSequence) {
     println("\n[check '" + chars + "'] len = " + chars.length)
     chars match {
-      case x: Predef.ArrayCharSequence  => assert(x.__arrayOfChars eq arr, ((x.__arrayOfChars, arr)))
       case x: runtime.ArrayCharSequence => assert(x.xs eq arr, ((x.xs, arr)))
       case x                            => assert(false, x)
     }

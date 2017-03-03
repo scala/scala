@@ -14,6 +14,12 @@ class PriorityQueueTest {
   priorityQueue.enqueue(elements :_*)
 
   @Test
+  def orderingReverseReverse() {
+    val pq = new mutable.PriorityQueue[Nothing]()((_,_)=>42)
+    assert(pq.ord eq pq.reverse.reverse.ord)
+  }
+  
+  @Test
   def canSerialize() {
     val outputStream = new ByteArrayOutputStream()
     new ObjectOutputStream(outputStream).writeObject(priorityQueue)
@@ -27,6 +33,7 @@ class PriorityQueueTest {
 
     val objectInputStream = new ObjectInputStream(new ByteArrayInputStream(bytes))
     val deserializedPriorityQueue = objectInputStream.readObject().asInstanceOf[PriorityQueue[Int]]
+    //correct sequencing is also tested here:
     assert(deserializedPriorityQueue.dequeueAll == elements.sorted.reverse)
   }
 }

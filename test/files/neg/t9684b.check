@@ -1,0 +1,7 @@
+t9684b.scala:6: error: reference to asScalaIterator is ambiguous;
+it is imported twice in the same scope by
+import scala.collection.JavaConversions._
+and import scala.collection.JavaConverters._
+  asScalaIterator(null)                                           // fails: asScalaIterator is imported twice.
+  ^
+one error found

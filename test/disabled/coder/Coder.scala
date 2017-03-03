@@ -168,7 +168,7 @@ object Test {
   
   /* */
   def main(args : Array[String]) {
-    // import scala.concurrent.forkjoin.ForkJoinPool
+    // import java.util.concurrent.ForkJoinPool
     // collection.parallel.tasksupport.environment match {
     //   case fj: ForkJoinPool => fj.setParallelism(1)
     // }

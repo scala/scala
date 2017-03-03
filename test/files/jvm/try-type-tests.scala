@@ -118,6 +118,44 @@ trait TryStandard {
     assert(f.transform(succ, fail).get == 0)
   }
 
+  def testSuccessEither(): Unit = {
+    val t = Success(1)
+    assert(t.toEither.isRight)
+  }
+
+  def testFailureEither(): Unit = {
+    val t = Failure(new Exception("foo"))
+    assert(t.toEither.isLeft)
+  }
+
+  def testFoldSuccess(): Unit = {
+    val t = Success(1)
+    val res = t.fold("Throws " + _, "Returns " + _)
+    assert(res == "Returns 1")
+  }
+
+  def testFoldFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+    val res = t.fold("Throws " + _, "Returns " + _)
+    assert(res == "Throws java.lang.Exception: foo")
+  }
+
+  def testFoldSuccessFailure(): Unit = {
+    val t = Success(1)
+    val res = t.fold("Throws " + _, _ => throw new Exception("foo"))
+    assert(res == "Throws java.lang.Exception: foo")
+  }
+
+  def testFoldFailureFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+    val res = try {
+      t.fold(_ => throw new Exception("bar"), "Returns " + _)
+    } catch {
+      case e: Throwable => "Throws " + e
+    }
+    assert(res == "Throws java.lang.Exception: bar")
+  }
+
   testForeachSuccess()
   testForeachFailure()
   testFlatMapSuccess()
@@ -136,6 +174,11 @@ trait TryStandard {
   testFailedFailure()
   testSuccessTransform()
   testFailureTransform()
+  testSuccessEither()
+  testFailureEither()
+  testFoldSuccess()
+  testFoldFailure()
+  testFoldSuccessFailure()
 }
 
 object Test

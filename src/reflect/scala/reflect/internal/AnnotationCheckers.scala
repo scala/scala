@@ -45,14 +45,14 @@ trait AnnotationCheckers {
      * Modify the type that has thus far been inferred for a tree. All this should
      * do is add annotations.
      */
-    @deprecated("Create an AnalyzerPlugin and use pluginsTyped", "2.10.1")
+    @deprecated("create an AnalyzerPlugin and use pluginsTyped", "2.10.1")
     def addAnnotations(tree: Tree, tpe: Type): Type = tpe
 
     /**
      * Decide whether this analyzer plugin can adapt a tree that has an annotated type to the
      * given type tp, taking into account the given mode (see method adapt in trait Typers).
      */
-    @deprecated("Create an AnalyzerPlugin and use canAdaptAnnotations", "2.10.1")
+    @deprecated("create an AnalyzerPlugin and use canAdaptAnnotations", "2.10.1")
     def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = false
 
     /**
@@ -62,7 +62,7 @@ trait AnnotationCheckers {
      * An implementation cannot rely on canAdaptAnnotations being called before. If the implementing
      * class cannot do the adapting, it should return the tree unchanged.
      */
-    @deprecated("Create an AnalyzerPlugin and use adaptAnnotations", "2.10.1")
+    @deprecated("create an AnalyzerPlugin and use adaptAnnotations", "2.10.1")
     def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = tree
 
     /**

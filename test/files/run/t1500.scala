@@ -20,7 +20,7 @@ object Test {
     
     val settings = new Settings()
     settings.classpath.value = System.getProperty("java.class.path")
-    val tool = new interpreter.IMain(settings)
+    val tool = interpreter.IMain(settings)
     val global = tool.global
 
     import global._

@@ -6,7 +6,7 @@
 package scala.tools
 package cmd
 
-import nsc.io.{ Path, File, Directory }
+import nsc.io.Directory
 import scala.reflect.OptManifest
 
 /** A general mechanism for defining how a command line argument

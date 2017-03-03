@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
 
 /** The name of this trait defines the eventual intent better than
  *  it does the initial contents.

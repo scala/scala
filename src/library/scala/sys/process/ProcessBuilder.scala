@@ -15,8 +15,8 @@ import ProcessBuilder._
 
 /** Represents a sequence of one or more external processes that can be
   * executed. A `ProcessBuilder` can be a single external process, or a
-  * combination of other `ProcessBuilder`. One can control where a
-  * the output of an external process will go to, and where its input will come
+  * combination of other `ProcessBuilder`. One can control where the
+  * output of an external process will go to, and where its input will come
   * from, or leave that decision to whoever starts it.
   *
   * One creates a `ProcessBuilder` through factories provided in
@@ -172,9 +172,9 @@ trait ProcessBuilder extends Source with Sink {
     * and then throw an exception.
     */
   def lineStream: Stream[String]
-  
+
   /** Deprecated (renamed). Use `lineStream` instead. */
-  @deprecated("Use lineStream instead.", "2.11.0")
+  @deprecated("use lineStream instead", "2.11.0")
   def lines: Stream[String] = lineStream
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -184,9 +184,9 @@ trait ProcessBuilder extends Source with Sink {
     * to termination and then throw an exception.
     */
   def lineStream(log: ProcessLogger): Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream(log: ProcessLogger)` instead. */
-  @deprecated("Use stream instead.", "2.11.0")
+  @deprecated("use lineStream instead", "2.11.0")
   def lines(log: ProcessLogger): Stream[String] = lineStream(log)
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -196,9 +196,9 @@ trait ProcessBuilder extends Source with Sink {
     * but will not throw an exception.
     */
   def lineStream_! : Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream_!` instead. */
-  @deprecated("Use lineStream_! instead.", "2.11.0")  
+  @deprecated("use lineStream_! instead", "2.11.0")
   def lines_! : Stream[String] = lineStream_!
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -208,9 +208,9 @@ trait ProcessBuilder extends Source with Sink {
     * to termination but will not throw an exception.
     */
   def lineStream_!(log: ProcessLogger): Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream_!(log: ProcessLogger)` instead. */
-  @deprecated("Use stream_! instead.", "2.11.0")
+  @deprecated("use lineStream_! instead", "2.11.0")
   def lines_!(log: ProcessLogger): Stream[String] = lineStream_!(log)
 
   /** Starts the process represented by this builder, blocks until it exits, and
@@ -342,7 +342,7 @@ object ProcessBuilder extends ProcessBuilderImpl {
     /** Writes the output stream of this process to a [[scala.sys.process.ProcessBuilder]]. */
     def #>(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(toSource, b, false)
 
-    /** Returnes a [[scala.sys.process.ProcessBuilder]] representing this `Source`. */
+    /** Returns a [[scala.sys.process.ProcessBuilder]] representing this `Source`. */
     def cat = toSource
     private def toFile(f: File, append: Boolean) = #> (new FileOutput(f, append))
   }

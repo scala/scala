@@ -164,7 +164,9 @@ trait Infer extends Checkable {
                      |  was: $restpe
                      |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
-    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
+    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
+      else functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe)                               => normalize(restpe)
     case ExistentialType(tparams, qtpe)                          => newExistentialType(tparams, normalize(qtpe))
     case _                                                       => tp // @MAT aliases already handled by subtyping
@@ -295,7 +297,7 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
-      def isCompatibleSam(tp: Type, pt: Type): Boolean = {
+      def isCompatibleSam(tp: Type, pt: Type): Boolean = (definitions.isFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
         val samFun = typer.samToFunctionType(pt)
         (samFun ne NoType) && isCompatible(tp, samFun)
       }
@@ -493,21 +495,22 @@ trait Infer extends Checkable {
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
-    *  argument types, result type and expected result type.
-    *  If this is not possible, throw a `NoInstance` exception.
-    *  Undetermined type arguments are represented by `definitions.NothingTpe`.
-    *  No check that inferred parameters conform to their bounds is made here.
-    *
-    *  @param   tparams         the type parameters of the method
-    *  @param   formals         the value parameter types of the method
-    *  @param   restpe          the result type of the method
-    *  @param   argtpes         the argument types of the application
-    *  @param   pt              the expected return type of the application
-    *  @return  @see adjustTypeArgs
-    *
-    *  @throws                  NoInstance
-    */
-    def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
+     *  argument types, result type and expected result type.
+     *  If this is not possible, throw a `NoInstance` exception.
+     *  Undetermined type arguments are represented by `definitions.NothingTpe`.
+     *  No check that inferred parameters conform to their bounds is made here.
+     *
+     *  @param   fn              the function for reporting, may be empty
+     *  @param   tparams         the type parameters of the method
+     *  @param   formals         the value parameter types of the method
+     *  @param   restpe          the result type of the method
+     *  @param   argtpes         the argument types of the application
+     *  @param   pt              the expected return type of the application
+     *  @return  @see adjustTypeArgs
+     *
+     *  @throws                  NoInstance
+     */
+    def methTypeArgs(fn: Tree, tparams: List[Symbol], formals: List[Type], restpe: Type,
                      argtpes: List[Type], pt: Type): AdjustedTypeArgs.Result = {
       val tvars = tparams map freshVar
       if (!sameLength(formals, argtpes))
@@ -557,21 +560,12 @@ trait Infer extends Checkable {
         val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
         !hasAny
       }
-      def argumentPosition(idx: Int): Position = context.tree match {
-        case x: ValOrDefDef => x.rhs match {
-          case Apply(fn, args) if idx < args.size => args(idx).pos
-          case _                                  => context.tree.pos
-        }
-        case _ => context.tree.pos
-      }
-      if (settings.warnInferAny && context.reportErrors && canWarnAboutAny) {
-        foreachWithIndex(targs) ((targ, idx) =>
-          targ.typeSymbol match {
-            case sym @ (AnyClass | AnyValClass) =>
-              reporter.warning(argumentPosition(idx), s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
-            case _ =>
-          }
-        )
+      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
+        targs.foreach(_.typeSymbol match {
+          case sym @ (AnyClass | AnyValClass) =>
+            reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
+          case _ =>
+        })
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
@@ -729,11 +723,11 @@ trait Infer extends Checkable {
       // If args eq the incoming arg types, fail; otherwise recurse with these args.
       def tryWithArgs(args: List[Type]) = (
            (args ne argtpes0)
-        && isApplicable(undetparams, mt, args, pt)
+        && isApplicableToMethod(undetparams, mt, args, pt) // used to be isApplicable(undetparams, mt, args, pt), knowing mt: MethodType
       )
       def tryInstantiating(args: List[Type]) = falseIfNoInstance {
         val restpe = mt resultType args
-        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, args, pt)
+        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(EmptyTree, undetparams, formals, restpe, args, pt)
         val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
         exprTypeArgs(leftUndet, restpeInst, pt, useWeaklyCompatible = true) match {
@@ -934,10 +928,8 @@ trait Infer extends Checkable {
       def infer_s = map3(tparams, tvars, targs)((tparam, tvar, targ) => s"$tparam=$tvar/$targ") mkString ","
       printTyping(tree, s"infer expr instance from pt=$pt, $infer_s")
 
-      // SI-7899 inferring by-name types is unsound. The correct behaviour is conditional because the hole is
-      //         exploited in Scalaz (Free.scala), as seen in: run/t7899-regression.
-      def dropByNameIfStrict(tp: Type): Type = if (settings.inferByName) tp else dropByName(tp)
-      def targsStrict = if (targs eq null) null else targs mapConserve dropByNameIfStrict
+      // SI-7899 inferring by-name types is unsound
+      def targsStrict = if (targs eq null) null else targs mapConserve dropByName
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targsStrict, pt)
@@ -989,7 +981,7 @@ trait Infer extends Checkable {
           val restpe  = fn.tpe.resultType(argtpes)
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
-            methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+            methTypeArgs(fn, undetparams, formals, restpe, argtpes, pt)
 
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)
@@ -1207,6 +1199,7 @@ trait Infer extends Checkable {
           }
         }
         tvars foreach instantiateTypeVar
+        invalidateTreeTpeCaches(tree0, tvars.map(_.origin.typeSymbol))
       }
       /* If the scrutinee has free type parameters but the pattern does not,
        * we have to flip the arguments so the expected type is treated as more
@@ -1217,7 +1210,7 @@ trait Infer extends Checkable {
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =
-      if (!(pat.tpe <:< pt)) {
+      if ((pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
@@ -1445,7 +1438,7 @@ trait Infer extends Checkable {
           log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
           // Multiple alternatives which are within bounds; spin up an
           // overloaded type which carries an "AntiPolyType" as a prefix.
-          val tparams = newAsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
+          val tparams = new AsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
           val bounds  = tparams map (_.tpeHK) // see e.g., #1236
           val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), alts))
           finish(sym setInfo tpe, tpe)

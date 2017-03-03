@@ -32,11 +32,18 @@ class SystemProperties
 extends mutable.AbstractMap[String, String]
    with mutable.Map[String, String] {
 
-  override def empty = new SystemProperties
+  override def empty = mutable.Map[String, String]()
   override def default(key: String): String = null
 
-  def iterator: Iterator[(String, String)] =
-    wrapAccess(System.getProperties().asScala.iterator) getOrElse Iterator.empty
+  def iterator: Iterator[(String, String)] = wrapAccess {
+    val ps = System.getProperties()
+    names map (k => (k, ps getProperty k)) filter (_._2 ne null)
+  } getOrElse Iterator.empty
+
+  def names: Iterator[String] = wrapAccess (
+    System.getProperties().stringPropertyNames().asScala.iterator
+  ) getOrElse Iterator.empty
+
   def get(key: String) =
     wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
   override def contains(key: String) =
@@ -62,23 +69,25 @@ object SystemProperties {
   def exclusively[T](body: => T) = this synchronized body
 
   implicit def systemPropertiesToCompanion(p: SystemProperties): SystemProperties.type = this
-  private lazy val propertyHelp = mutable.Map[String, String]()
-  private def addHelp[P <: Prop[_]](p: P, helpText: String): P = {
-    propertyHelp(p.key) = helpText
-    p
-  }
-  private def bool(key: String, helpText: String): BooleanProp = addHelp[BooleanProp](
-    if (key startsWith "java.") BooleanProp.valueIsTrue(key) else BooleanProp.keyExists(key),
-    helpText
-  )
-  def help(key: String) = propertyHelp.getOrElse(key, "")
 
-  // Todo: bring some sanity to the intersection of system properties aka "mutable
-  // state shared by everyone and everything" and the reality that there is no other
-  // mechanism for accomplishing some things on the jvm.
-  lazy val headless            = bool("java.awt.headless", "system should not utilize a display device")
-  lazy val preferIPv4Stack     = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
-  lazy val preferIPv6Addresses = bool("java.net.preferIPv6Addresses", "system should prefer IPv6 addresses")
-  lazy val noTraceSupression   = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
+  private final val HeadlessKey            = "java.awt.headless"
+  private final val PreferIPv4StackKey     = "java.net.preferIPv4Stack"
+  private final val PreferIPv6AddressesKey = "java.net.preferIPv6Addresses"
+  private final val NoTraceSuppressionKey  = "scala.control.noTraceSuppression"
+
+  def help(key: String): String = key match {
+    case HeadlessKey            => "system should not utilize a display device"
+    case PreferIPv4StackKey     => "system should prefer IPv4 sockets"
+    case PreferIPv6AddressesKey => "system should prefer IPv6 addresses"
+    case NoTraceSuppressionKey  => "scala should not suppress any stack trace creation"
+    case _                      => ""
+  }
+
+  lazy val headless: BooleanProp            = BooleanProp.keyExists(HeadlessKey)
+  lazy val preferIPv4Stack: BooleanProp     = BooleanProp.keyExists(PreferIPv4StackKey)
+  lazy val preferIPv6Addresses: BooleanProp = BooleanProp.keyExists(PreferIPv6AddressesKey)
+  lazy val noTraceSuppression: BooleanProp  = BooleanProp.valueIsTrue(NoTraceSuppressionKey)
+  @deprecated("use noTraceSuppression", "2.12.0")
+  def noTraceSupression        = noTraceSuppression
 }
 

@@ -7,12 +7,14 @@ package scala
 package reflect
 package internal
 
+import settings.MutableSettings
+
 /** Provides delegates to the reporter doing the actual work.
- * All forwarding methods should be marked final,
- * but some subclasses out of our reach stil override them.
+ *  All forwarding methods should be marked final,
+ *  but some subclasses out of our reach still override them.
  *
- * Eventually, this interface should be reduced to one method: `reporter`,
- * and clients should indirect themselves (reduce duplication of forwarders).
+ *  Eventually, this interface should be reduced to one method: `reporter`,
+ *  and clients should indirect themselves (reduce duplication of forwarders).
  */
 trait Reporting { self : Positions =>
   def reporter: Reporter
@@ -25,7 +27,7 @@ trait Reporting { self : Positions =>
   type PerRunReporting <: PerRunReportingBase
   protected def PerRunReporting: PerRunReporting
   abstract class PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String): Unit
+    def deprecationWarning(pos: Position, msg: String, since: String): Unit
 
     /** Have we already supplemented the error message of a compiler crash? */
     private[this] var supplementedError = false
@@ -71,8 +73,8 @@ import util.Position
 
 /** Report information, warnings and errors.
  *
- * This describes the (future) external interface for issuing information, warnings and errors.
- * Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
+ *  This describes the (future) external interface for issuing information, warnings and errors.
+ *  Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
  */
 abstract class Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
@@ -101,7 +103,17 @@ abstract class Reporter {
     resetCount(ERROR)
   }
 
-  def flush(): Unit = { }
+  def flush(): Unit = ()
+
+  /** Finish reporting: print summaries, release resources. */
+  def finish(): Unit = ()
+
+  /** After reporting, offer advice on getting more details. */
+  def rerunWithDetails(setting: MutableSettings#Setting, name: String): String =
+    setting.value match {
+      case b: Boolean if !b => s"; re-run with ${name} for details"
+      case _ => s"; re-run enabling ${name} for details, or try -help"
+    }
 }
 
 // TODO: move into superclass once partest cuts tie on Severity

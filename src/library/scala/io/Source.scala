@@ -10,7 +10,7 @@ package scala
 package io
 
 import scala.collection.AbstractIterator
-import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile }
+import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
 import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
@@ -59,7 +59,7 @@ object Source {
   def fromFile(name: String, enc: String): BufferedSource =
     fromFile(name)(Codec(enc))
 
-  /** creates `ource` from file with given file `URI`.
+  /** creates `source` from file with given file `URI`.
    */
   def fromFile(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
@@ -167,27 +167,35 @@ object Source {
 
   def fromInputStream(is: InputStream)(implicit codec: Codec): BufferedSource =
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
+
+  /** Reads data from a classpath resource, using either a context classloader (default) or a passed one.
+   *
+   *  @param  resource     name of the resource to load from the classpath
+   *  @param  classLoader  classloader to be used, or context classloader if not specified
+   *  @return              the buffered source
+   */
+  def fromResource(resource: String, classLoader: ClassLoader = Thread.currentThread().getContextClassLoader())(implicit codec: Codec): BufferedSource =
+    fromInputStream(classLoader.getResourceAsStream(resource))
+
 }
 
 /** An iterable representation of source data.
- *  It may be reset with the optional `reset` method.
+ *  It may be reset with the optional [[reset]] method.
  *
- *  Subclasses must supply [[scala.io.Source@iter the underlying iterator]].
+ *  Subclasses must supply [[scala.io.Source.iter the underlying iterator]].
  *
- *  Error handling may be customized by overriding the [[scala.io.Source@report report]] method.
+ *  Error handling may be customized by overriding the [[scala.io.Source.report report]] method.
  *
- *  The [[scala.io.Source@ch current input]] and [[scala.io.Source@pos position]],
- *  as well as the [[scala.io.Source@next next character]] methods delegate to
- *  [[scala.io.Source$Positioner the positioner]].
+ *  The [[scala.io.Source.ch current input]] and [[scala.io.Source.pos position]],
+ *  as well as the [[scala.io.Source.next next character]] methods delegate to
+ *  [[scala.io.Source#Positioner the positioner]].
  *
- *  The default positioner encodes line and column numbers in the position passed to `report`.
+ *  The default positioner encodes line and column numbers in the position passed to [[report]].
  *  This behavior can be changed by supplying a
- *  [[scala.io.Source@withPositioning(pos:Source.this.Positioner):Source.this.type custom positioner]].
+ *  [[scala.io.Source.withPositioning(pos:* custom positioner]].
  *
- *  @author  Burak Emir
- *  @version 1.0
  */
-abstract class Source extends Iterator[Char] {
+abstract class Source extends Iterator[Char] with Closeable {
   /** the actual iterator */
   protected val iter: Iterator[Char]
 

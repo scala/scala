@@ -1,0 +1,10 @@
+name: a; isNamePresent: true; isSynthetic: false
+name: _; isNamePresent: true; isSynthetic: false
+name: ***; isNamePresent: true; isSynthetic: false
+name: unary_!; isNamePresent: true; isSynthetic: false
+name: ABC; isNamePresent: true; isSynthetic: false
+name: a; isNamePresent: true; isSynthetic: false
+name: _; isNamePresent: true; isSynthetic: false
+name: ***; isNamePresent: true; isSynthetic: false
+name: unary_!; isNamePresent: true; isSynthetic: false
+name: ABC; isNamePresent: true; isSynthetic: false

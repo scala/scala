@@ -17,7 +17,7 @@ object arrays4 {
 
 // #2461
 object arrays3 {
-  import scala.collection.JavaConversions._
+  import collection.convert.ImplicitConversions._
   def apply[X](xs : X*) : java.util.List[X] = java.util.Arrays.asList(xs: _*)
 }
 

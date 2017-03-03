@@ -8,21 +8,39 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.immutable
+import scala.collection.mutable
+import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.ProdConsAnalyzer
 import BytecodeUtils._
 import BackendReporting._
 import Opcodes._
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.CompilationUnit
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
+  import coreBTypes._
+  import backendUtils._
+  import ClosureOptimizer._
+
+  private object closureInitOrdering extends Ordering[ClosureInstantiation] {
+    override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
+      val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
+      if (cls != 0) return cls
+
+      val mName = x.ownerMethod.name compareTo y.ownerMethod.name
+      if (mName != 0) return mName
+
+      val mDesc = x.ownerMethod.desc compareTo y.ownerMethod.desc
+      if (mDesc != 0) return mDesc
+
+      def pos(inst: ClosureInstantiation) = inst.ownerMethod.instructions.indexOf(inst.lambdaMetaFactoryCall.indy)
+      pos(x) - pos(y)
+    }
+  }
 
   /**
    * If a closure is allocated and invoked within the same method, re-write the invocation to the
@@ -54,55 +72,51 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    *   [invoke the closure body method]
    */
   def rewriteClosureApplyInvocations(): Unit = {
-    implicit object closureInitOrdering extends Ordering[ClosureInstantiation] {
-      override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
-        val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
-        if (cls != 0) return cls
 
-        val mName = x.ownerMethod.name compareTo y.ownerMethod.name
-        if (mName != 0) return mName
-
-        val mDesc = x.ownerMethod.desc compareTo y.ownerMethod.desc
-        if (mDesc != 0) return mDesc
-
-        def pos(inst: ClosureInstantiation) = inst.ownerMethod.instructions.indexOf(inst.lambdaMetaFactoryCall.indy)
-        pos(x) - pos(y)
-      }
+    // sort all closure invocations to rewrite to ensure bytecode stability
+    val toRewrite = mutable.TreeMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
+    def addRewrite(init: ClosureInstantiation, invocation: MethodInsnNode, stackHeight: Int): Unit = {
+      val callsites = toRewrite.getOrElseUpdate(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
+      callsites += ((invocation, stackHeight))
     }
 
-    // Grouping the closure instantiations by method allows running the ProdConsAnalyzer only once per
-    // method. Also sort the instantiations: If there are multiple closure instantiations in a method,
-    // closure invocations need to be re-written in a consistent order for bytecode stability. The local
-    // variable slots for storing captured values depends on the order of rewriting.
-    val closureInstantiationsByMethod: Map[MethodNode, immutable.TreeSet[ClosureInstantiation]] = {
-      closureInstantiations.values.groupBy(_.ownerMethod).mapValues(immutable.TreeSet.empty ++ _)
+    // For each closure instantiation find callsites of the closure and add them to the toRewrite
+    // buffer (cannot change a method's bytecode while still looking for further invocations to
+    // rewrite, the frame indices of the ProdCons analysis would get out of date). If a callsite
+    // cannot be rewritten, for example because the lambda body method is not accessible, issue a
+    // warning. The `toList` in the next line prevents modifying closureInstantiations while
+    // iterating it: minimalRemoveUnreachableCode (called in the loop) removes elements.
+    for (method <- closureInstantiations.keysIterator.toList if AsmAnalyzer.sizeOKForBasicValue(method)) closureInstantiations.get(method) match {
+      case Some(closureInitsBeforeDCE) if closureInitsBeforeDCE.nonEmpty =>
+        val ownerClass = closureInitsBeforeDCE.head._2.ownerClass.internalName
+
+        // Advanced ProdCons queries (initialProducersForValueAt) expect no unreachable code.
+        localOpt.minimalRemoveUnreachableCode(method, ownerClass)
+
+        if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
+          case Some(closureInits) =>
+            // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
+            lazy val prodCons = new ProdConsAnalyzer(method, ownerClass)
+
+            for (init <- closureInits.valuesIterator) closureCallsites(init, prodCons) foreach {
+              case Left(warning) =>
+                backendReporting.inlinerWarning(warning.pos, warning.toString)
+
+              case Right((invocation, stackHeight)) =>
+                addRewrite(init, invocation, stackHeight)
+            }
+
+          case _ =>
+        }
+
+      case _ =>
     }
 
-    // For each closure instantiation, a list of callsites of the closure that can be re-written
-    // If a callsite cannot be rewritten, for example because the lambda body method is not accessible,
-    // a warning is returned instead.
-    val callsitesToRewrite: List[(ClosureInstantiation, List[Either[RewriteClosureApplyToClosureBodyFailed, (MethodInsnNode, Int)]])] = {
-      closureInstantiationsByMethod.iterator.flatMap({
-        case (methodNode, closureInits) =>
-          // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.head.ownerClass.internalName)
-          closureInits.iterator.map(init => (init, closureCallsites(init, prodCons)))
-      }).toList // mapping to a list (not a map) to keep the sorting of closureInstantiationsByMethod
-    }
-
-    // Rewrite all closure callsites (or issue inliner warnings for those that cannot be rewritten)
-    for ((closureInit, callsites) <- callsitesToRewrite) {
+    for ((closureInit, invocations) <- toRewrite) {
       // Local variables that hold the captured values and the closure invocation arguments.
-      // They are lazy vals to ensure that locals for captured values are only allocated if there's
-      // actually a callsite to rewrite (an not only warnings to be issued).
-      lazy val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
-      for (callsite <- callsites) callsite match {
-        case Left(warning) =>
-          backendReporting.inlinerWarning(warning.pos, warning.toString)
-
-        case Right((invocation, stackHeight)) =>
-          rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
-      }
+      val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
+      for ((invocation, stackHeight) <- invocations)
+        rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
     }
   }
 
@@ -122,20 +136,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     val argTypes = closureInit.lambdaMetaFactoryCall.samMethodType.getArgumentTypes
     val firstArgLocal = ownerMethod.maxLocals
 
-    // The comment in the unapply method of `LambdaMetaFactoryCall` explains why we have to introduce
-    // casts for arguments that have different types in samMethodType and instantiatedMethodType.
-    val castLoadTypes = {
-      val instantiatedMethodType = closureInit.lambdaMetaFactoryCall.instantiatedMethodType
-      (argTypes, instantiatedMethodType.getArgumentTypes).zipped map {
-        case (samArgType, instantiatedArgType) if samArgType != instantiatedArgType =>
-          // the LambdaMetaFactoryCall extractor ensures that the two types are reference types,
-          // so we don't end up casting primitive values.
-          Some(instantiatedArgType)
-        case _ =>
-          None
-      }
-    }
-    val argLocals = LocalsList.fromTypes(firstArgLocal, argTypes, castLoadTypes)
+    val argLocals = LocalsList.fromTypes(firstArgLocal, argTypes)
     ownerMethod.maxLocals = firstArgLocal + argLocals.size
 
     (captureLocals, argLocals)
@@ -154,7 +155,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         // TODO: This is maybe over-cautious.
         // We are checking if the closure body method is accessible at the closure callsite.
         // If the closure allocation has access to the body method, then the callsite (in the same
-        // method as the alloction) should have access too.
+        // method as the allocation) should have access too.
         val bodyAccessible: Either[OptimizerWarning, Boolean] = for {
           (bodyMethodNode, declClass) <- byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
           isAccessible                <- inliner.memberIsAccessible(bodyMethodNode.access, classBTypeFromParsedClassfile(declClass), classBTypeFromParsedClassfile(lambdaBodyHandle.getOwner), ownerClass)
@@ -162,7 +163,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           isAccessible
         }
 
-        def pos = callGraph.callsites.get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
+        def pos = callGraph.callsites(ownerMethod).get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
         val stackSize: Either[RewriteClosureApplyToClosureBodyFailed, Int] = bodyAccessible match {
           case Left(w)      => Left(RewriteClosureAccessCheckFailed(pos, w))
           case Right(false) => Left(RewriteClosureIllegalAccess(pos, ownerClass.internalName))
@@ -173,6 +174,28 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     }).toList
   }
 
+  /**
+   * Check whether `invocation` invokes the SAM of the IndyLambda `closureInit`.
+   *
+   * In addition to a perfect match, we also identify cases where a generic FunctionN is created
+   * but the invocation is to a specialized variant apply$sp... Vice-versa, we also allow the
+   * case where a specialized FunctionN$sp.. is created but the generic apply is invoked. In
+   * these cases, the translation will introduce the necessary box / unbox invocations. Example:
+   *
+   *   val f: Int => Any = (x: Int) => 1
+   *   f(10)
+   *
+   * The IndyLambda creates a specialized `JFunction1$mcII$sp`, whose SAM is `apply$mcII$sp(I)I`.
+   * The invocation calls `apply(Object)Object`: the method name and type don't match.
+   * We identify these cases, insert the necessary unbox operation for the arguments, and invoke
+   * the `$anonfun(I)I` method.
+   *
+   * Tests in InlinerTest.optimizeSpecializedClosures. In that test, methods t4/t4a/t5/t8 show
+   * examples where the parameters have to be unboxed because generic `apply` is called, but the
+   * lambda body method takes primitive types.
+   * The opposite case is in t9: a the specialized `apply$sp..` is invoked, but the lambda body
+   * method takes boxed arguments, so we have to insert boxing operations.
+   */
   private def isSamInvocation(invocation: MethodInsnNode, closureInit: ClosureInstantiation, prodCons: => ProdConsAnalyzer): Boolean = {
     val indy = closureInit.lambdaMetaFactoryCall.indy
     if (invocation.getOpcode == INVOKESTATIC) false
@@ -187,11 +210,85 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         receiverProducers.size == 1 && receiverProducers.head == indy
       }
 
-      invocation.name == indy.name && {
-        val indySamMethodDesc = closureInit.lambdaMetaFactoryCall.samMethodType.getDescriptor
-        indySamMethodDesc == invocation.desc
-      } &&
-        closureIsReceiver // most expensive check last
+      def isSpecializedVersion(specName: String, nonSpecName: String) = specName.startsWith(nonSpecName) && specializationSuffix.pattern.matcher(specName.substring(nonSpecName.length)).matches
+
+      def sameOrSpecializedType(specTp: Type, nonSpecTp: Type) = {
+        specTp == nonSpecTp || {
+          val specDesc = specTp.getDescriptor
+          val nonSpecDesc = nonSpecTp.getDescriptor
+          specDesc.length == 1 && primitives.contains(specDesc) && nonSpecDesc == ObjectRef.descriptor
+        }
+      }
+
+      def specializedDescMatches(specMethodDesc: String, nonSpecMethodDesc: String) = {
+        val specArgs = Type.getArgumentTypes(specMethodDesc)
+        val nonSpecArgs = Type.getArgumentTypes(nonSpecMethodDesc)
+        specArgs.corresponds(nonSpecArgs)(sameOrSpecializedType) && sameOrSpecializedType(Type.getReturnType(specMethodDesc), Type.getReturnType(nonSpecMethodDesc))
+      }
+
+      def nameAndDescMatch = {
+        val aName = invocation.name
+        val bName = indy.name
+        val aDesc = invocation.desc
+        val bDesc = closureInit.lambdaMetaFactoryCall.samMethodType.getDescriptor
+        if (aName == bName) aDesc == bDesc
+        else if (isSpecializedVersion(aName, bName)) specializedDescMatches(aDesc, bDesc)
+        else if (isSpecializedVersion(bName, aName)) specializedDescMatches(bDesc, aDesc)
+        else false
+      }
+
+      nameAndDescMatch && closureIsReceiver // most expensive check last
+    }
+  }
+
+  private def isPrimitiveType(asmType: Type) = {
+    val sort = asmType.getSort
+    Type.VOID <= sort && sort <= Type.DOUBLE
+  }
+
+  /**
+   * The argument types of the lambda body method may differ in two ways from the argument types of
+   * the closure member method that is invoked (and replaced by a call to the body).
+   *   - The lambda body method may have more specific types than the invoked closure member, see
+   *     comment in [[LambdaMetaFactoryCall.unapply]].
+   *   - The invoked closure member might be a specialized variant of the SAM or vice-versa, see
+   *     comment method [[isSamInvocation]].
+   */
+  private def adaptStoredArguments(closureInit: ClosureInstantiation, invocation: MethodInsnNode): Int => Option[AbstractInsnNode] = {
+    val invokeDesc = invocation.desc
+    // The lambda body method has additional parameters for captured values. Here we need to consider
+    // only those parameters of the body method that correspond to lambda parameters. This happens
+    // to be exactly LMF.instantiatedMethodType. In fact, `LambdaMetaFactoryCall.unapply` ensures
+    // that the body method signature is exactly (capturedParams + instantiatedMethodType).
+    val lambdaBodyMethodDescWithoutCaptures = closureInit.lambdaMetaFactoryCall.instantiatedMethodType.getDescriptor
+    if (invokeDesc == lambdaBodyMethodDescWithoutCaptures) {
+      _ => None
+    } else {
+      val invokeArgTypes = Type.getArgumentTypes(invokeDesc)
+      val implMethodArgTypes = Type.getArgumentTypes(lambdaBodyMethodDescWithoutCaptures)
+      val res = new Array[Option[AbstractInsnNode]](invokeArgTypes.length)
+      for (i <- invokeArgTypes.indices) {
+        if (invokeArgTypes(i) == implMethodArgTypes(i)) {
+          res(i) = None
+        } else if (isPrimitiveType(implMethodArgTypes(i)) && invokeArgTypes(i).getDescriptor == ObjectRef.descriptor) {
+          res(i) = Some(getScalaUnbox(implMethodArgTypes(i)))
+        } else if (isPrimitiveType(invokeArgTypes(i)) && implMethodArgTypes(i).getDescriptor == ObjectRef.descriptor) {
+          res(i) = Some(getScalaBox(invokeArgTypes(i)))
+        } else {
+          assert(!isPrimitiveType(invokeArgTypes(i)), invokeArgTypes(i))
+          assert(!isPrimitiveType(implMethodArgTypes(i)), implMethodArgTypes(i))
+          // The comment in the unapply method of `LambdaMetaFactoryCall` explains why we have to introduce
+          // casts for arguments that have different types in samMethodType and instantiatedMethodType.
+          //
+          // Note:
+          //   - invokeArgTypes is the same as the argument types in the IndyLambda's samMethodType,
+          //     this is ensured by the `isSamInvocation` filter in this file
+          //   - implMethodArgTypes is the same as the arg types in the IndyLambda's instantiatedMethodType,
+          //     this is ensured by the unapply method in LambdaMetaFactoryCall (file CallGraph)
+          res(i) = Some(new TypeInsnNode(CHECKCAST, implMethodArgTypes(i).getInternalName))
+        }
+      }
+      res
     }
   }
 
@@ -200,7 +297,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     val lambdaBodyHandle = closureInit.lambdaMetaFactoryCall.implMethod
 
     // store arguments
-    insertStoreOps(invocation, ownerMethod, argumentLocalsList)
+    insertStoreOps(invocation, ownerMethod, argumentLocalsList, adaptStoredArguments(closureInit, invocation))
 
     // drop the closure from the stack
     ownerMethod.instructions.insertBefore(invocation, new InsnNode(POP))
@@ -210,8 +307,9 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     insertLoadOps(invocation, ownerMethod, argumentLocalsList)
 
     // update maxStack
-    val capturesStackSize = localsForCapturedValues.size
-    val invocationStackHeight = stackHeight + capturesStackSize - 1 // -1 because the closure is gone
+    // One slot per value is correct for long / double, see comment in the `analysis` package object.
+    val numCapturedValues = localsForCapturedValues.locals.length
+    val invocationStackHeight = stackHeight + numCapturedValues - 1 // -1 because the closure is gone
     if (invocationStackHeight > ownerMethod.maxStack)
       ownerMethod.maxStack = invocationStackHeight
 
@@ -227,46 +325,75 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         insns.insertBefore(invocation, new InsnNode(DUP))
         INVOKESPECIAL
     }
-    val isInterface = bodyOpcode == INVOKEINTERFACE
-    val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, isInterface)
+    val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, lambdaBodyHandle.isInterface)
     ownerMethod.instructions.insertBefore(invocation, bodyInvocation)
 
-    val returnType = Type.getReturnType(lambdaBodyHandle.getDesc)
-    fixLoadedNothingOrNullValue(returnType, bodyInvocation, ownerMethod, btypes) // see comment of that method
+    val bodyReturnType = Type.getReturnType(lambdaBodyHandle.getDesc)
+    val invocationReturnType = Type.getReturnType(invocation.desc)
+    if (isPrimitiveType(invocationReturnType) && bodyReturnType.getDescriptor == ObjectRef.descriptor) {
+      val op =
+        if (invocationReturnType.getSort == Type.VOID) getPop(1)
+        else getScalaUnbox(invocationReturnType)
+      ownerMethod.instructions.insertBefore(invocation, op)
+    } else if (isPrimitiveType(bodyReturnType) && invocationReturnType.getDescriptor == ObjectRef.descriptor) {
+      val op =
+        if (bodyReturnType.getSort == Type.VOID) getBoxedUnit
+        else getScalaBox(bodyReturnType)
+      ownerMethod.instructions.insertBefore(invocation, op)
+    } else {
+      // see comment of that method
+      fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, btypes)
+    }
 
     ownerMethod.instructions.remove(invocation)
 
     // update the call graph
-    val originalCallsite = callGraph.callsites.remove(invocation)
+    val originalCallsite = callGraph.removeCallsite(invocation, ownerMethod)
 
     // the method node is needed for building the call graph entry
     val bodyMethod = byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc)
-    def bodyMethodIsBeingCompiled = byteCodeRepository.classNodeAndSource(lambdaBodyHandle.getOwner).map(_._2 == CompilationUnit).getOrElse(false)
+    val sourceFilePath = byteCodeRepository.compilingClasses.get(lambdaBodyHandle.getOwner).map(_._2)
+    val callee = bodyMethod.map({
+      case (bodyMethodNode, bodyMethodDeclClass) =>
+        val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
+        Callee(
+          callee = bodyMethodNode,
+          calleeDeclarationClass = bodyDeclClassType,
+          isStaticallyResolved = true,
+          sourceFilePath = sourceFilePath,
+          annotatedInline = false,
+          annotatedNoInline = false,
+          samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
+          calleeInfoWarning = None)
+    })
+    val argInfos = closureInit.capturedArgInfos ++ originalCallsite.map(cs => cs.argInfos map {
+      case (index, info) => (index + numCapturedValues, info)
+    }).getOrElse(IntMap.empty)
     val bodyMethodCallsite = Callsite(
       callsiteInstruction = bodyInvocation,
       callsiteMethod = ownerMethod,
       callsiteClass = closureInit.ownerClass,
-      callee = bodyMethod.map({
-        case (bodyMethodNode, bodyMethodDeclClass) => Callee(
-          callee = bodyMethodNode,
-          calleeDeclarationClass = classBTypeFromParsedClassfile(bodyMethodDeclClass),
-          safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
-          safeToRewrite = false, // the lambda body method is not a trait interface method
-          annotatedInline = false,
-          annotatedNoInline = false,
-          calleeInfoWarning = None)
-      }),
-      argInfos = Nil,
+      callee = callee,
+      argInfos = argInfos,
       callsiteStackHeight = invocationStackHeight,
       receiverKnownNotNull = true, // see below (*)
-      callsitePosition = originalCallsite.map(_.callsitePosition).getOrElse(NoPosition)
+      callsitePosition = originalCallsite.map(_.callsitePosition).getOrElse(NoPosition),
+      annotatedInline = false,
+      annotatedNoInline = false
     )
     // (*) The documentation in class LambdaMetafactory says:
     //     "if implMethod corresponds to an instance method, the first capture argument
     //     (corresponding to the receiver) must be non-null"
     // Explanation: If the lambda body method is non-static, the receiver is a captured
     // value. It can only be captured within some instance method, so we know it's non-null.
-    callGraph.callsites(bodyInvocation) = bodyMethodCallsite
+    callGraph.addCallsite(bodyMethodCallsite)
+
+    // Rewriting a closure invocation may render code unreachable. For example, the body method of
+    // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
+    unreachableCodeEliminated -= ownerMethod
+
+    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
+      inliner.inlineCallsite(bodyMethodCallsite)
   }
 
   /**
@@ -283,13 +410,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // local. On the other hand, further optimizations (copy propagation, remove unused locals) will
     // clean it up.
 
-    // Captured variables don't need to be cast when loaded at the callsite (castLoadTypes are None).
-    // This is checked in `isClosureInstantiation`: the types of the captured variables in the indy
-    // instruction match exactly the corresponding parameter types in the body method.
-    val localsForCaptures = LocalsList.fromTypes(firstCaptureLocal, capturedTypes, castLoadTypes = _ => None)
+    val localsForCaptures = LocalsList.fromTypes(firstCaptureLocal, capturedTypes)
     closureInit.ownerMethod.maxLocals = firstCaptureLocal + localsForCaptures.size
 
-    insertStoreOps(indy, closureInit.ownerMethod, localsForCaptures)
+    insertStoreOps(indy, closureInit.ownerMethod, localsForCaptures, _ => None)
     insertLoadOps(indy, closureInit.ownerMethod, localsForCaptures)
 
     localsForCaptures
@@ -301,8 +425,16 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    *
    * The lowest stack value is stored in the head of the locals list, so the last local is stored first.
    */
-  private def insertStoreOps(before: AbstractInsnNode, methodNode: MethodNode, localsList: LocalsList) =
-    insertLocalValueOps(before, methodNode, localsList, store = true)
+  private def insertStoreOps(before: AbstractInsnNode, methodNode: MethodNode, localsList: LocalsList, beforeStore: Int => Option[AbstractInsnNode]) = {
+    // The first instruction needs to store into the last local of the `localsList`.
+    // To avoid reversing the list, we use `insert(previous)`.
+    val previous = before.getPrevious
+    def ins(op: AbstractInsnNode) = methodNode.instructions.insert(previous, op)
+    for ((l, i) <- localsList.locals.zipWithIndex) {
+      ins(new VarInsnNode(l.storeOpcode, l.local))
+      beforeStore(i) foreach ins
+    }
+  }
 
   /**
    * Insert load operations in front of the `before` instruction to copy the local values denoted
@@ -310,20 +442,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    *
    * The head of the locals list will be the lowest value on the stack, so the first local is loaded first.
    */
-  private def insertLoadOps(before: AbstractInsnNode, methodNode: MethodNode, localsList: LocalsList) =
-    insertLocalValueOps(before, methodNode, localsList, store = false)
-
-  private def insertLocalValueOps(before: AbstractInsnNode, methodNode: MethodNode, localsList: LocalsList, store: Boolean): Unit = {
-    // If `store` is true, the first instruction needs to store into the last local of the `localsList`.
-    // Load instructions on the other hand are emitted in the order of the list.
-    // To avoid reversing the list, we use `insert(previousInstr)` for stores and `insertBefore(before)` for loads.
-    lazy val previous = before.getPrevious
+  private def insertLoadOps(before: AbstractInsnNode, methodNode: MethodNode, localsList: LocalsList) = {
     for (l <- localsList.locals) {
-      val varOp = new VarInsnNode(if (store) l.storeOpcode else l.loadOpcode, l.local)
-      if (store) methodNode.instructions.insert(previous, varOp)
-      else methodNode.instructions.insertBefore(before, varOp)
-      if (!store) for (castType <- l.castLoadedValue)
-        methodNode.instructions.insert(varOp, new TypeInsnNode(CHECKCAST, castType.getInternalName))
+      val op = new VarInsnNode(l.loadOpcode, l.local)
+      methodNode.instructions.insertBefore(before, op)
     }
   }
 
@@ -345,12 +467,12 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
      *   Local(6, refOpOffset)  ::
      *   Nil
      */
-    def fromTypes(firstLocal: Int, types: Array[Type], castLoadTypes: Int => Option[Type]): LocalsList = {
+    def fromTypes(firstLocal: Int, types: Array[Type]): LocalsList = {
       var sizeTwoOffset = 0
       val locals: List[Local] = types.indices.map(i => {
         // The ASM method `type.getOpcode` returns the opcode for operating on a value of `type`.
         val offset = types(i).getOpcode(ILOAD) - ILOAD
-        val local = Local(firstLocal + i + sizeTwoOffset, offset, castLoadTypes(i))
+        val local = Local(firstLocal + i + sizeTwoOffset, offset)
         if (local.size == 2) sizeTwoOffset += 1
         local
       })(collection.breakOut)
@@ -364,10 +486,15 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    * The xLOAD / xSTORE opcodes are in the following sequence: I, L, F, D, A, so the offset for
    * a local variable holding a reference (`A`) is 4. See also method `getOpcode` in [[scala.tools.asm.Type]].
    */
-  case class Local(local: Int, opcodeOffset: Int, castLoadedValue: Option[Type]) {
+  case class Local(local: Int, opcodeOffset: Int) {
     def size = if (loadOpcode == LLOAD || loadOpcode == DLOAD) 2  else 1
 
     def loadOpcode = ILOAD + opcodeOffset
     def storeOpcode = ISTORE + opcodeOffset
   }
+}
+
+object ClosureOptimizer {
+  val primitives = "BSIJCFDZV"
+  val specializationSuffix = s"(\\$$mc[$primitives]+\\$$sp)".r
 }

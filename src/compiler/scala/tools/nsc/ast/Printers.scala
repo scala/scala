@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast
 
-import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
+import java.io.{ OutputStream, PrintWriter }
 
 trait Printers extends scala.reflect.internal.Printers { this: Global =>
 

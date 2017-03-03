@@ -129,25 +129,6 @@ trait DocComments { self: Global =>
     getDocComment(sym) map getUseCases getOrElse List()
   }
 
-  private val wikiReplacements = List(
-    ("""(\n\s*\*?)(\s*\n)"""    .r, """$1 <p>$2"""),
-    ("""<([^\w/])"""            .r, """&lt;$1"""),
-    ("""([^\w/])>"""            .r, """$1&gt;"""),
-    ("""\{\{\{(.*(?:\n.*)*)\}\}\}""".r, """<pre>$1</pre>"""),
-    ("""`([^`]*)`"""            .r, """<code>$1</code>"""),
-    ("""__([^_]*)__"""          .r, """<u>$1</u>"""),
-    ("""''([^']*)''"""          .r, """<i>$1</i>"""),
-    ("""'''([^']*)'''"""        .r, """<b>$1</b>"""),
-    ("""\^([^^]*)\^"""          .r, """<sup>$1</sup>"""),
-    (""",,([^,]*),,"""          .r, """<sub>$1</sub>"""))
-
-  /** Returns just the wiki expansion (this would correspond to
-   *  a comment in the input format of the JavaDoc tool, modulo differences
-   *  in tags.)
-   */
-  def expandWiki(str: String): String =
-    (str /: wikiReplacements) { (str1, regexRepl) => regexRepl._1 replaceAllIn(str1, regexRepl._2) }
-
   private def getDocComment(sym: Symbol): Option[DocComment] =
     mapFind(sym :: allInheritedOverriddenSymbols(sym))(docComments get _)
 

@@ -9,8 +9,6 @@
 package scala
 package runtime
 
-import scala.annotation.unspecialized
-
 /** `AbstractPartialFunction` reformulates all operations of its supertrait `PartialFunction`
  *  in terms of `isDefinedAt` and `applyOrElse`.
  *

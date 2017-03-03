@@ -1,0 +1,7 @@
+t9849.scala:14: error: method h in object O cannot be accessed in object p.O
+  O.h()
+    ^
+t9849.scala:15: error: method h$default$1 in object O cannot be accessed in object p.O
+  O.h$default$1
+    ^
+two errors found

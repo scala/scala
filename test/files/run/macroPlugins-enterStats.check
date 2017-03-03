@@ -6,13 +6,13 @@ package <empty> {
       ()
     };
     def x: Int = 2;
-    def xmacroPlugin1: Nothing = scala.this.Predef.???;
-    def xmacroPlugin2: Nothing = scala.this.Predef.???;
-    def xmacroPlugin2macroPlugin1: Nothing = scala.this.Predef.???;
+    def xmacroPlugin1: Nothing = scala.Predef.???;
+    def xmacroPlugin2: Nothing = scala.Predef.???;
+    def xmacroPlugin2macroPlugin1: Nothing = scala.Predef.???;
     def y: Int = 3;
-    def ymacroPlugin1: Nothing = scala.this.Predef.???;
-    def ymacroPlugin2: Nothing = scala.this.Predef.???;
-    def ymacroPlugin2macroPlugin1: Nothing = scala.this.Predef.???
+    def ymacroPlugin1: Nothing = scala.Predef.???;
+    def ymacroPlugin2: Nothing = scala.Predef.???;
+    def ymacroPlugin2macroPlugin1: Nothing = scala.Predef.???
   }
 }
 

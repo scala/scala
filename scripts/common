@@ -19,7 +19,7 @@ mkdir -p $IVY_CACHE
 rm -rf $IVY_CACHE/cache/org.scala-lang
 
 SBT_CMD=${sbtCmd-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 0.13.12"
+SBT_CMD="$SBT_CMD -sbt-version 0.13.13"
 
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
@@ -153,4 +153,24 @@ EOF
     RES=false
   fi
   popd
+}
+
+# Generate a repositories file with all allowed repositories in our build environment.
+# Takes one optional argument, the private repository URL.
+# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
+function generateRepositoriesConfig() {
+  jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
+  sbtRepositoryConfig="$scriptsDir/sbt-repositories-config"
+  echo > "$sbtRepositoryConfig" '[repositories]'
+  if [ -n "$1" ]
+  then
+    echo >> "$sbtRepositoryConfig" "  private-repo: $1"
+  fi
+  cat >> "$sbtRepositoryConfig" << EOF
+  jcenter-cache: $jcenterCacheUrl
+  typesafe-ivy-releases: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  maven-central
+  local
+EOF
 }

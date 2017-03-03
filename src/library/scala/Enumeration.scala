@@ -9,7 +9,7 @@
 package scala
 
 import scala.collection.{ mutable, immutable, generic, SortedSetLike, AbstractSet }
-import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
+import java.lang.reflect.{ Method => JMethod, Field => JField }
 import scala.reflect.NameTransformer._
 import scala.util.matching.Regex
 
@@ -154,14 +154,14 @@ abstract class Enumeration (initial: Int) extends Serializable {
   protected final def Value(i: Int, name: String): Value = new Val(i, name)
 
   private def populateNameMap() {
-    val fields = getClass.getDeclaredFields
-    def isValDef(m: JMethod) = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
+    val fields: Array[JField] = getClass.getDeclaredFields
+    def isValDef(m: JMethod): Boolean = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
 
     // The list of possible Value methods: 0-args which return a conforming type
-    val methods = getClass.getMethods filter (m => m.getParameterTypes.isEmpty &&
-                                                   classOf[Value].isAssignableFrom(m.getReturnType) &&
-                                                   m.getDeclaringClass != classOf[Enumeration] &&
-                                                   isValDef(m))
+    val methods: Array[JMethod] = getClass.getMethods filter (m => m.getParameterTypes.isEmpty &&
+                                                                   classOf[Value].isAssignableFrom(m.getReturnType) &&
+                                                                   m.getDeclaringClass != classOf[Enumeration] &&
+                                                                   isValDef(m))
     methods foreach { m =>
       val name = m.getName
       // invoke method to obtain actual `Value` instance

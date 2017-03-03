@@ -9,7 +9,7 @@ object Macros {
     import c.universe._
     def test(sym: Symbol): Unit = {
       println(s"uninitialized ${sym.name}: ${showDecl(sym)}")
-      sym.info
+      sym.info // NOTE: not fullyInitializeSymbol, so some parts may still be LazyTypes
       println(s"initialized ${sym.name}: ${showDecl(sym)}")
     }
 

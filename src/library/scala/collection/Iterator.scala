@@ -11,9 +11,8 @@ package collection
 
 import mutable.ArrayBuffer
 import scala.annotation.{tailrec, migration}
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import immutable.Stream
-import scala.collection.generic.CanBuildFrom
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -162,30 +161,49 @@ object Iterator {
     def next = elem
   }
 
-  /** Avoid stack overflows when applying ++ to lots of iterators by
-   *  flattening the unevaluated iterators out into a vector of closures.
+  /** Creates an iterator to which other iterators can be appended efficiently.
+   *  Nested ConcatIterators are merged to avoid blowing the stack.
    */
-  private[scala] final class ConcatIterator[+A](private[this] var current: Iterator[A], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
-    @deprecated def this(initial: Vector[() => Iterator[A]]) = this(Iterator.empty, initial) // for binary compatibility
-    private[this] var queue: Vector[() => Iterator[A]] = initial
-    private[this] var currentHasNextChecked = false
+  private final class ConcatIterator[+A](private var current: Iterator[A @uV]) extends Iterator[A] {
+    private var tail: ConcatIteratorCell[A @uV] = null
+    private var last: ConcatIteratorCell[A @uV] = null
+    private var currentHasNextChecked = false
+
     // Advance current to the next non-empty iterator
     // current is set to null when all iterators are exhausted
     @tailrec
     private[this] def advance(): Boolean = {
-      if (queue.isEmpty) {
+      if (tail eq null) {
         current = null
+        last = null
         false
       }
       else {
-        current = queue.head()
-        queue = queue.tail
-        if (current.hasNext) {
+        current = tail.headIterator
+        tail = tail.tail
+        merge()
+        if (currentHasNextChecked) true
+        else if (current.hasNext) {
           currentHasNextChecked = true
           true
         } else advance()
       }
     }
+
+    // If the current iterator is a ConcatIterator, merge it into this one
+    @tailrec
+    private[this] def merge(): Unit =
+      if (current.isInstanceOf[ConcatIterator[_]]) {
+        val c = current.asInstanceOf[ConcatIterator[A]]
+        current = c.current
+        currentHasNextChecked = c.currentHasNextChecked
+        if (c.tail ne null) {
+          c.last.tail = tail
+          tail = c.tail
+        }
+        merge()
+      }
+
     def hasNext =
       if (currentHasNextChecked) true
       else if (current eq null) false
@@ -193,48 +211,73 @@ object Iterator {
         currentHasNextChecked = true
         true
       } else advance()
+
     def next()  =
       if (hasNext) {
         currentHasNextChecked = false
         current.next()
       } else Iterator.empty.next()
 
-    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
-      if(current eq null) new JoinIterator(Iterator.empty, that)
-      else new ConcatIterator(current, queue :+ (() => that.toIterator))
+    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = {
+      val c = new ConcatIteratorCell[B](that, null).asInstanceOf[ConcatIteratorCell[A]]
+      if(tail eq null) {
+        tail = c
+        last = c
+      } else {
+        last.tail = c
+        last = c
+      }
+      if(current eq null) current = Iterator.empty
+      this
+    }
   }
 
-  private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
-    private[this] var state = 0 // 0: lhs not checked, 1: lhs has next, 2: switched to rhs
-    private[this] lazy val rhs: Iterator[A] = that.toIterator
-    def hasNext = state match {
-      case 0 =>
-        if (lhs.hasNext) {
-          state = 1
-          true
-        } else {
-          state = 2
-          rhs.hasNext
-        }
-      case 1 => true
-      case _ => rhs.hasNext
-    }
-    def next() = state match {
-      case 0 =>
-        if (lhs.hasNext) lhs.next()
-        else {
-          state = 2
-          rhs.next()
-        }
-      case 1 =>
-        state = 0
-        lhs.next()
-      case _ =>
-        rhs.next()
-    }
+  private[this] final class ConcatIteratorCell[A](head: => GenTraversableOnce[A], var tail: ConcatIteratorCell[A]) {
+    def headIterator: Iterator[A] = head.toIterator
+  }
 
-    override def ++[B >: A](that: => GenTraversableOnce[B]) =
-      new ConcatIterator(this, Vector(() => that.toIterator))
+  /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.
+   *  Lazily skip to start on first evaluation.  Avoids daisy-chained iterators due to slicing.
+   */
+  private[scala] final class SliceIterator[A](val underlying: Iterator[A], start: Int, limit: Int) extends AbstractIterator[A] {
+    private var remaining = limit
+    private var dropping  = start
+    @inline private def unbounded = remaining < 0
+    private def skip(): Unit =
+      while (dropping > 0) {
+        if (underlying.hasNext) {
+          underlying.next()
+          dropping -= 1
+        } else
+          dropping = 0
+      }
+    def hasNext = { skip(); remaining != 0 && underlying.hasNext }
+    def next()  = {
+      skip()
+      if (remaining > 0) {
+        remaining -= 1
+        underlying.next()
+      }
+      else if (unbounded) underlying.next()
+      else empty.next()
+    }
+    override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+      val lo = from max 0
+      def adjustedBound =
+        if (unbounded) -1
+        else 0 max (remaining - lo)
+      val rest =
+        if (until < 0) adjustedBound          // respect current bound, if any
+        else if (until <= lo) 0               // empty
+        else if (unbounded) until - lo        // now finite
+        else adjustedBound min (until - lo)   // keep lesser bound
+      if (rest == 0) empty
+      else {
+        dropping += lo
+        remaining = rest
+        this
+      }
+    }
   }
 }
 
@@ -347,11 +390,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Selects first ''n'' values of this iterator.
    *
    *  @param  n    the number of values to take
-   *  @return an iterator producing only of the first `n` values of this iterator, or else the
+   *  @return an iterator producing only the first `n` values of this iterator, or else the
    *          whole iterator, if it produces fewer than `n` values.
    *  @note   Reuse: $consumesAndProducesIterator
    */
-  def take(n: Int): Iterator[A] = slice(0, n)
+  def take(n: Int): Iterator[A] = sliceIterator(0, n max 0)
 
   /** Advances this iterator past the first ''n'' elements, or the length of the iterator, whichever is smaller.
    *
@@ -372,29 +415,24 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Creates an iterator returning an interval of the values produced by this iterator.
    *
    *  @param from   the index of the first element in this iterator which forms part of the slice.
-   *  @param until  the index of the first element following the slice.
+   *                If negative, the slice starts at zero.
+   *  @param until  the index of the first element following the slice. If negative, the slice is empty.
    *  @return an iterator which advances this iterator past the first `from` elements using `drop`,
    *  and then takes `until - from` elements, using `take`.
    *  @note         Reuse: $consumesAndProducesIterator
    */
-  def slice(from: Int, until: Int): Iterator[A] = {
-    val lo = from max 0
-    var toDrop = lo
-    while (toDrop > 0 && self.hasNext) {
-      self.next()
-      toDrop -= 1
-    }
+  def slice(from: Int, until: Int): Iterator[A] = sliceIterator(from, until max 0)
 
-    new AbstractIterator[A] {
-      private var remaining = until - lo
-      def hasNext = remaining > 0 && self.hasNext
-      def next(): A =
-        if (remaining > 0) {
-          remaining -= 1
-          self.next()
-        }
-        else empty.next()
-    }
+  /** Creates an optionally bounded slice, unbounded if `until` is negative. */
+  protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+    val lo = from max 0
+    val rest =
+      if (until < 0) -1            // unbounded
+      else if (until <= lo) 0      // empty
+      else until - lo              // finite
+
+    if (rest == 0) empty
+    else new Iterator.SliceIterator(this, lo, rest)
   }
 
   /** Creates a new iterator that maps all produced values of this iterator
@@ -420,7 +458,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    *    @inheritdoc
    */
-  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
+  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.ConcatIterator(self) ++ that
 
   /** Creates a new iterator by applying a function to all values produced by this iterator
    *  and concatenating the results.
@@ -522,13 +560,13 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: A = _
-    
+
     // Little state machine to keep track of where we are
     // Seek = 0; Found = 1; Empty = -1
     // Not in vals because scalac won't make them static (@inline def only works with -optimize)
     // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
     private[this] var status = 0/*Seek*/
-    
+
     def hasNext = {
       while (status == 0/*Seek*/) {
         if (self.hasNext) {
@@ -698,13 +736,13 @@ trait Iterator[+A] extends TraversableOnce[A] {
       }
       def trailer: A = hd
     }
-    
+
     val leading = new Leading
-    
+
     val trailing = new AbstractIterator[A] {
       private[this] var myLeading = leading
-      /* Status flags meanings:
-       *   -1 not yet accesssed
+      /* Status flag meanings:
+       *   -1 not yet accessed
        *   0 single element waiting in leading
        *   1 defer to self
        */
@@ -736,7 +774,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
         else Iterator.empty.next()
       }
-            
+
       override def toString = "unknown-if-empty iterator"
     }
 
@@ -770,7 +808,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
         status = 1
         false
       }
-    def next() = 
+    def next() =
       if (hasNext) {
         if (status == 1) self.next()
         else {
@@ -953,8 +991,25 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           or -1 if such an element does not exist until the end of the iterator is reached.
    *  @note    Reuse: $consumesIterator
    */
-  def indexWhere(p: A => Boolean): Int = {
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
+
+  /** Returns the index of the first produced value satisfying a predicate, or -1, after or at
+   *  some start index.
+   *  $mayNotTerminateInf
+   *
+   *  @param p the predicate to test values
+   *  @param from the start index
+   *  @return the index `>= from` of the first produced value satisfying `p`,
+   *          or -1 if such an element does not exist until the end of the iterator is reached.
+   *  @note   Reuse: $consumesIterator
+   */
+  def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = 0
+    while (i < from && hasNext) {
+      next()
+      i += 1
+    }
+
     while (hasNext) {
       if (p(next())) return i
       i += 1
@@ -971,8 +1026,26 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *          or -1 if such an element does not exist until the end of the iterator is reached.
    *  @note   Reuse: $consumesIterator
    */
-  def indexOf[B >: A](elem: B): Int = {
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
+
+  /** Returns the index of the first occurrence of the specified object in this iterable object
+   *  after or at some start index.
+   *  $mayNotTerminateInf
+   *
+   *  @param elem element to search for.
+   *  @param from the start index
+   *  @return the index `>= from` of the first occurrence of `elem` in the values produced by this
+   *          iterator, or -1 if such an element does not exist until the end of the iterator is
+   *          reached.
+   *  @note   Reuse: $consumesIterator
+   */
+  def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
+    while (i < from && hasNext) {
+      next()
+      i += 1
+    }
+
     while (hasNext) {
       if (next() == elem) return i
       i += 1
@@ -1018,7 +1091,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   extends AbstractIterator[Seq[B]]
      with Iterator[Seq[B]] {
 
-    require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))
+    require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
     private[this] var filled = false                          // whether the buffer is "hot"
@@ -1026,30 +1099,30 @@ trait Iterator[+A] extends TraversableOnce[A] {
     private[this] var pad: Option[() => B] = None             // what to pad short sequences with
 
     /** Public functions which can be used to configure the iterator before use.
-	 *
-	 *  Pads the last segment if necessary so that all segments will
-	 *  have the same size.
-	 *
-	 *  @param x The element that will be appended to the last segment, if necessary.
-	 *  @return  The same iterator, and ''not'' a new iterator.
-	 *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-	 *  @note    This method is mutually exclusive with `withPartial(true)`.
- 	 */
+     *
+     *  Pads the last segment if necessary so that all segments will
+     *  have the same size.
+     *
+     *  @param x The element that will be appended to the last segment, if necessary.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPartial(true)`.
+     */
     def withPadding(x: => B): this.type = {
       pad = Some(() => x)
       this
     }
-	/** Public functions which can be used to configure the iterator before use.
-  	 *
-	 *  Select whether the last segment may be returned with less than `size`
-	 *  elements. If not, some elements of the original iterator may not be
-	 *  returned at all.
-	 *
-	 *  @param x `true` if partial segments may be returned, `false` otherwise.
-	 *  @return  The same iterator, and ''not'' a new iterator.
-	 *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-	 *  @note    This method is mutually exclusive with `withPadding`.
-	 */
+    /** Public functions which can be used to configure the iterator before use.
+     *
+     *  Select whether the last segment may be returned with less than `size`
+     *  elements. If not, some elements of the original iterator may not be
+     *  returned at all.
+     *
+     *  @param x `true` if partial segments may be returned, `false` otherwise.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPadding`.
+     */
     def withPartial(x: Boolean): this.type = {
       _partial = x
       if (_partial == true) // reset pad since otherwise it will take precedence
@@ -1158,9 +1231,15 @@ trait Iterator[+A] extends TraversableOnce[A] {
     new GroupedIterator[B](self, size, size)
 
   /** Returns an iterator which presents a "sliding window" view of
-   *  another iterator.  The first argument is the window size, and
-   *  the second is how far to advance the window on each iteration;
-   *  defaults to `1`.  Example usages:
+   *  this iterator.  The first argument is the window size, and
+   *  the second argument `step` is how far to advance the window
+   *  on each iteration. The `step` defaults to `1`.
+   *
+   *  The default `GroupedIterator` can be configured to either
+   *  pad a partial result to size `size` or suppress the partial
+   *  result entirely.
+   *
+   *  Example usages:
    *  {{{
    *    // Returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
    *    (1 to 5).iterator.sliding(3).toList
@@ -1173,6 +1252,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    val it2 = Iterator.iterate(20)(_ + 5)
    *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList
    *  }}}
+   *
+   *  @return An iterator producing `Seq[B]`s of size `size`, except the
+   *          last element (which may be the only element) will be truncated
+   *          if there are fewer than `size` elements remaining to be grouped.
+   *          This behavior can be configured.
    *
    *  @note Reuse: $consumesAndProducesIterator
    */
@@ -1287,7 +1371,6 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
-    require(start >= 0 && (start < xs.length || xs.length == 0), s"start $start out of range ${xs.length}")
     var i = start
     val end = start + math.min(len, xs.length - start)
     while (i < end && hasNext) {

@@ -18,8 +18,6 @@ abstract class OverridingPairs extends SymbolPairs {
   import global._
 
   class Cursor(base: Symbol) extends super.Cursor(base) {
-    lazy val relatively = new RelativeTo(base.thisType)
-
     /** Symbols to exclude: Here these are constructors and private/artifact symbols,
      *  including bridges. But it may be refined in subclasses.
      */
@@ -37,7 +35,7 @@ abstract class OverridingPairs extends SymbolPairs {
          (lo.owner != high.owner)     // don't try to form pairs from overloaded members
       && !high.isPrivate              // private or private[this] members never are overridden
       && !exclude(lo)                 // this admits private, as one can't have a private member that matches a less-private member.
-      && relatively.matches(lo, high)
+      && ((self memberType lo) matches (self memberType high))
     ) // TODO we don't call exclude(high), should we?
   }
 }

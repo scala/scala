@@ -1,17 +1,17 @@
-import aQute.lib.osgi.Builder
-import aQute.lib.osgi.Constants._
+import aQute.bnd.osgi.Builder
+import aQute.bnd.osgi.Constants._
 import java.util.Properties
 import java.util.jar.Attributes
 import sbt._
 import sbt.Keys._
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 import VersionUtil.versionProperties
 
 /** OSGi packaging for the Scala build, distilled from sbt-osgi. We do not use sbt-osgi because it
   * depends on a newer version of BND which gives slightly different output (probably OK to upgrade
-  * in the future but for now it would make comparing the sbt and ant build output harder) and does
-  * not allow a crucial bit of configuration that we need: Setting the classpath for BND. In sbt-osgi
-  * this is always `fullClasspath in Compile` whereas we want `products in Compile in packageBin`. */
+  * in the future, now that the Ant build has been removed) and does not allow a crucial bit of
+  * configuration that we need: Setting the classpath for BND. In sbt-osgi this is always
+  *  `fullClasspath in Compile` whereas we want `products in Compile in packageBin`. */
 object Osgi {
   val bundle = TaskKey[File]("osgiBundle", "Create an OSGi bundle.")
   val bundleName = SettingKey[String]("osgiBundleName", "The Bundle-Name for the manifest.")
@@ -31,16 +31,17 @@ object Osgi {
         "Export-Package" -> "*;version=${ver};-split-package:=merge-first",
         "Import-Package" -> "scala.*;version=\"${range;[==,=+);${ver}}\",*",
         "Bundle-Version" -> v,
-        "Bundle-RequiredExecutionEnvironment" -> "JavaSE-1.6, JavaSE-1.7",
+        "Bundle-RequiredExecutionEnvironment" -> "JavaSE-1.8",
         "-eclipse" -> "false"
       )
     },
     jarlist := false,
-    bundle <<= Def.task {
-      bundleTask(headers.value.toMap, jarlist.value, (products in Compile in packageBin).value,
-        (artifactPath in (Compile, packageBin)).value, Nil, streams.value)
-    },
-    packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
+    bundle := Def.task {
+      val cp = (products in Compile in packageBin).value
+      bundleTask(headers.value.toMap, jarlist.value, cp,
+        (artifactPath in (Compile, packageBin)).value, cp, streams.value)
+    }.value,
+    packagedArtifact in (Compile, packageBin) := (((artifact in (Compile, packageBin)).value, bundle.value)),
     // Also create OSGi source bundles:
     packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(
       "Bundle-Name" -> (description.value + " Sources"),
@@ -56,18 +57,23 @@ object Osgi {
     val builder = new Builder
     builder.setClasspath(fullClasspath.toArray)
     headers foreach { case (k, v) => builder.setProperty(k, v) }
-    val includeRes = resourceDirectories.filter(_.exists).map(_.getAbsolutePath).mkString(",")
+
+    // https://github.com/scala/scala-dev/issues/254
+    // Must be careful not to include scala-asm.jar within scala-compiler.jar!
+    def resourceDirectoryRef(f: File) = (if (f.isDirectory) "" else "@") + f.getAbsolutePath
+
+    val includeRes = resourceDirectories.filter(_.exists).map(resourceDirectoryRef).mkString(",")
     if(!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
-    builder.getProperties.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
+    builder.getProperties.asScala.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
     // builder.build is not thread-safe because it uses a static SimpleDateFormat.  This ensures
     // that all calls to builder.build are serialized.
     val jar = synchronized { builder.build }
-    builder.getWarnings.foreach(s => log.warn(s"bnd: $s"))
-    builder.getErrors.foreach(s => log.error(s"bnd: $s"))
+    builder.getWarnings.asScala.foreach(s => log.warn(s"bnd: $s"))
+    builder.getErrors.asScala.foreach(s => log.error(s"bnd: $s"))
     IO.createDirectory(artifactPath.getParentFile)
     if (jarlist) {
       val entries = jar.getManifest.getEntries
-      for ((name, resource) <- jar.getResources if name.endsWith(".class")) {
+      for ((name, resource) <- jar.getResources.asScala if name.endsWith(".class")) {
         entries.put(name, new Attributes)
       }
     }

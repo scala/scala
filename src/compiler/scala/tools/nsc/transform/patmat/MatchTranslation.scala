@@ -7,7 +7,7 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
-import scala.collection.mutable
+
 import scala.reflect.internal.util.Statistics
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
@@ -18,8 +18,7 @@ trait MatchTranslation {
   import PatternMatchingStats._
   import global._
   import definitions._
-  import global.analyzer.{ErrorUtils, formalTypes}
-  import treeInfo.{ WildcardStarArg, Unapplied, isStar, unbind }
+  import treeInfo.{ Unapplied, unbind }
   import CODE._
 
   // Always map repeated params to sequences
@@ -110,25 +109,29 @@ trait MatchTranslation {
 
       // example check: List[Int] <:< ::[Int]
       private def extractorStep(): TranslationStep = {
-        def paramType = extractor.aligner.wholeType
         import extractor.treeMaker
-        // chain a type-testing extractor before the actual extractor call
-        // it tests the type, checks the outer pointer and casts to the expected type
-        // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
-        // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
-        lazy val typeTest = TypeTestTreeMaker(binder, binder, paramType, paramType)(pos, extractorArgTypeTest = true)
-        // check whether typetest implies binder is not null,
-        // even though the eventual null check will be on typeTest.nextBinder
-        // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
-        def extraction: TreeMaker = treeMaker(typeTest.nextBinder, typeTest impliesBinderNonNull binder, pos)
 
         // paramType = the type expected by the unapply
         // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
-        val makers = (
+        val makers = {
+          val paramType = extractor.aligner.wholeType
           // Statically conforms to paramType
-          if (this ensureConformsTo paramType) treeMaker(binder, false, pos) :: Nil
-          else typeTest :: extraction :: Nil
-        )
+          if (tpe <:< paramType) treeMaker(binder, false, pos) :: Nil
+          else {
+            // chain a type-testing extractor before the actual extractor call
+            // it tests the type, checks the outer pointer and casts to the expected type
+            // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
+            // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
+            val typeTest = TypeTestTreeMaker(binder, binder, paramType, paramType)(pos, extractorArgTypeTest = true)
+            val binderKnownNonNull = typeTest impliesBinderNonNull binder
+
+            // check whether typetest implies binder is not null,
+            // even though the eventual null check will be on typeTest.nextBinder
+            // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
+            typeTest :: treeMaker(typeTest.nextBinder, binderKnownNonNull, pos) :: Nil
+          }
+        }
+
         step(makers: _*)(extractor.subBoundTrees: _*)
       }
 
@@ -163,16 +166,6 @@ trait MatchTranslation {
         setVarInfo(binder, paramType)
         true
       }
-      // If <:< but not =:=, no type test needed, but the tree maker relies on the binder having
-      // exactly paramType (and not just some type compatible with it.) SI-6624 shows this is necessary
-      // because apparently patBinder may have an unfortunate type (.decls don't have the case field
-      // accessors) TODO: get to the bottom of this -- I assume it happens when type checking
-      // infers a weird type for an unapply call. By going back to the parameterType for the
-      // extractor call we get a saner type, so let's just do that for now.
-      def ensureConformsTo(paramType: Type): Boolean = (
-           (tpe =:= paramType)
-        || (tpe <:< paramType) && setInfo(paramType)
-      )
 
       private def concreteType = tpe.bounds.hi
       private def unbound = unbind(tree)
@@ -397,7 +390,6 @@ trait MatchTranslation {
 
       /** Create the TreeMaker that embodies this extractor call
        *
-       * `binder` has been casted to `paramType` if necessary
        * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
@@ -503,7 +495,7 @@ trait MatchTranslation {
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
       def treeMaker(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
-        val paramAccessors = binder.constrParamAccessors
+        val paramAccessors = aligner.wholeType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
         // binders corresponding to mutable fields should be stored (SI-5158, SI-6070)
@@ -532,7 +524,7 @@ trait MatchTranslation {
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
       override protected def tupleSel(binder: Symbol)(i: Int): Tree = {
-        val accessors = binder.caseFieldAccessors
+        val accessors = aligner.wholeType.typeSymbol.caseFieldAccessors
         if (accessors isDefinedAt (i-1)) gen.mkAttributedStableRef(binder) DOT accessors(i-1)
         else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
       }

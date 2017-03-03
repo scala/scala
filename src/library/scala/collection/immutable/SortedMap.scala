@@ -14,7 +14,6 @@ package immutable
 
 import generic._
 import mutable.Builder
-import scala.annotation.unchecked.uncheckedVariance
 
 /** A map whose keys are sorted.
  *

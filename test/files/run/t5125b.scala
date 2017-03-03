@@ -23,6 +23,17 @@ class C4 {
   }
 }
 
+class C5 {
+  def f(values: String*) = println("Calling C5.f(): " + values)
+  @scala.annotation.varargs
+  private def f(v: Int, values: Int*) = println("Calling C5.f(): " + values)
+
+  def method(): Unit = {
+    @scala.annotation.varargs
+    def f(values: String*) = println("Calling C5.<locally>.f(): " + values)
+  }
+}
+
 object Test extends App {
   def check(c: Class[_]) {
     val methodName = "f"
@@ -34,4 +45,5 @@ object Test extends App {
   check(classOf[C2])
   check(classOf[C2#C3])
   check(classOf[C4])
+  check(classOf[C5])
 }

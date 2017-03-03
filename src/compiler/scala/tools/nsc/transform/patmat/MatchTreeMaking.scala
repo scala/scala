@@ -6,10 +6,10 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
+
+import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
@@ -101,7 +101,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
       val pos = NoPosition
 
-      val localSubstitution = Substitution(prevBinder, CODE.REF(nextBinder))
+      val localSubstitution = Substitution(prevBinder, gen.mkAttributedStableRef(nextBinder))
       def chainBefore(next: Tree)(casegen: Casegen): Tree = substitution(next)
       override def toString = "S"+ localSubstitution
     }
@@ -118,7 +118,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val res: Tree
 
       lazy val nextBinder = freshSym(pos, nextBinderTp)
-      lazy val localSubstitution = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
+      lazy val localSubstitution = Substitution(List(prevBinder), List(gen.mkAttributedStableRef(nextBinder)))
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree =
         atPos(pos)(casegen.flatMapCond(cond, res, nextBinder, substitution(next)))
@@ -316,7 +316,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       trait TypeTestCondStrategy {
         type Result
 
-        def outerTest(testedBinder: Symbol, expectedTp: Type): Result
+        def withOuterTest(orig: Result)(testedBinder: Symbol, expectedTp: Type): Result = orig
         // TODO: can probably always widen
         def typeTest(testedBinder: Symbol, expectedTp: Type): Result
         def nonNullTest(testedBinder: Symbol): Result
@@ -336,18 +336,35 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def equalsTest(pat: Tree, testedBinder: Symbol)      = codegen._equals(pat, testedBinder)
         def eqTest(pat: Tree, testedBinder: Symbol)          = REF(testedBinder) OBJ_EQ pat
 
-        def outerTest(testedBinder: Symbol, expectedTp: Type): Tree = {
-          val expectedOuter = expectedTp.prefix match {
-            case ThisType(clazz) => This(clazz)
-            case NoType          => mkTRUE // fallback for SI-6183
-            case pre             => REF(pre.prefix, pre.termSymbol)
+        override def withOuterTest(orig: Tree)(testedBinder: Symbol, expectedTp: Type): Tree = {
+          val expectedPrefix = expectedTp.prefix
+          val testedPrefix = testedBinder.info.prefix
+
+          // Check if a type is defined in a static location. Unlike `tp.isStatic` before `flatten`,
+          // this also includes methods and (possibly nested) objects inside of methods.
+          def definedInStaticLocation(tp: Type): Boolean = {
+            def isStatic(tp: Type): Boolean =
+              if (tp == NoType || tp.typeSymbol.isPackageClass || tp == NoPrefix) true
+              else if (tp.typeSymbol.isModuleClass) isStatic(tp.prefix)
+              else false
+            tp.typeSymbol.owner == tp.prefix.typeSymbol && isStatic(tp.prefix)
           }
 
-          // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
-          // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedTp.prefix
-
-          (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
+          if ((expectedPrefix eq NoPrefix)
+            || expectedTp.typeSymbol.isJava
+            || definedInStaticLocation(expectedTp)
+            || testedPrefix =:= expectedPrefix) orig
+          else gen.mkAttributedQualifierIfPossible(expectedPrefix) match {
+            case None => orig
+            case Some(expectedOuterRef) =>
+              // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix`
+              // by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
+              // if there's an outer accessor, otherwise the condition becomes `true`
+              // TODO: centralize logic whether there's an outer accessor and use here?
+              val synthOuterGetter = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
+              val outerTest = (Select(codegen._asInstanceOf(testedBinder, expectedTp), synthOuterGetter)) OBJ_EQ expectedOuterRef
+              and(orig, outerTest)
+          }
         }
       }
 
@@ -356,7 +373,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
         def typeTest(testedBinder: Symbol, expectedTp: Type): Result  = true
 
-        def outerTest(testedBinder: Symbol, expectedTp: Type): Result = false
         def nonNullTest(testedBinder: Symbol): Result                 = false
         def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false
@@ -368,7 +384,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         type Result = Boolean
 
         def typeTest(testedBinder: Symbol, expectedTp: Type): Result  = testedBinder eq binder
-        def outerTest(testedBinder: Symbol, expectedTp: Type): Result = false
         def nonNullTest(testedBinder: Symbol): Result                 = testedBinder eq binder
         def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false // could in principle analyse pat and see if it's statically known to be non-null
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false // could in principle analyse pat and see if it's statically known to be non-null
@@ -405,12 +420,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       import TypeTestTreeMaker._
       debug.patmat("TTTM"+((prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp)))
 
-      lazy val outerTestNeeded = (
-           (expectedTp.prefix ne NoPrefix)
-        && !expectedTp.prefix.typeSymbol.isPackageClass
-        && needsOuterTest(expectedTp, testedBinder.info, matchOwner)
-      )
-
       // the logic to generate the run-time test that follows from the fact that
       // a `prevBinder` is expected to have type `expectedTp`
       // the actual tree-generation logic is factored out, since the analyses generate Cond(ition)s rather than Trees
@@ -429,12 +438,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def isExpectedPrimitiveType = isAsExpected && isPrimitiveValueType(expectedTp)
         def isExpectedReferenceType = isAsExpected && (expectedTp <:< AnyRefTpe)
         def mkNullTest              = nonNullTest(testedBinder)
-        def mkOuterTest             = outerTest(testedBinder, expectedTp)
         def mkTypeTest              = typeTest(testedBinder, expectedWide)
 
         def mkEqualsTest(lhs: Tree): cs.Result      = equalsTest(lhs, testedBinder)
         def mkEqTest(lhs: Tree): cs.Result          = eqTest(lhs, testedBinder)
-        def addOuterTest(res: cs.Result): cs.Result = if (outerTestNeeded) and(res, mkOuterTest) else res
+        def addOuterTest(res: cs.Result): cs.Result = withOuterTest(res)(testedBinder, expectedTp)
 
         // If we conform to expected primitive type:
         //   it cannot be null and cannot have an outer pointer. No further checking.
@@ -485,7 +493,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // NOTE: generate `patTree == patBinder`, since the extractor must be in control of the equals method (also, patBinder may be null)
       // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
       val cond = codegen._equals(patTree, prevBinder)
-      val res  = CODE.REF(prevBinder)
+      val res  = gen.mkAttributedStableRef(prevBinder)
       override def toString = "ET"+((prevBinder.name, patTree))
     }
 
@@ -556,11 +564,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           else scrut match {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
-              val supressUnreachable = tree match {
+              val suppressUnreachable = tree match {
                 case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
                 case _ => false
               }
-              val suppression = Suppression(suppressExhaustive, supressUnreachable)
+              val suppression = Suppression(suppressExhaustive, suppressUnreachable)
               val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
               // `case 1 | 2` is considered as two cases.

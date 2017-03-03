@@ -2,37 +2,29 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.testing.AssertUtil._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-
-import BackendReporting._
-
-import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class BTypesFromClassfileTest {
+class BTypesFromClassfileTest extends BytecodeTesting {
   // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
+  override def compilerArgs = "-opt:inline-global"
 
-  import compiler._
+  import compiler.global._
   import definitions._
   import genBCode.bTypes
   import bTypes._
 
-  def duringBackend[T](f: => T) = compiler.exitingDelambdafy(f)
+  def duringBackend[T](f: => T) = global.exitingDelambdafy(f)
 
-  val run = new compiler.Run() // initializes some of the compiler
-  duringBackend(compiler.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
+  val run = new global.Run() // initializes some of the compiler
+  duringBackend(global.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
   duringBackend(bTypes.initializeCoreBTypes())
 
   def clearCache() = bTypes.classBTypeFromInternalName.clear()

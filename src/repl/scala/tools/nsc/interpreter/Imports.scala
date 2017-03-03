@@ -6,13 +6,13 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */

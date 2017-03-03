@@ -36,10 +36,11 @@ public final class Statics {
   }
 
   public static int longHash(long lv) {
-    if ((int)lv == lv)
-      return (int)lv;
-    else
-      return (int)(lv ^ (lv >>> 32));
+    int iv = (int)lv;
+    if (iv == lv)
+      return iv;
+
+    return java.lang.Long.hashCode(lv);
   }
 
   public static int doubleHash(double dv) {
@@ -47,16 +48,15 @@ public final class Statics {
     if (iv == dv)
       return iv;
 
-    float fv = (float)dv;
-    if (fv == dv)
-      return java.lang.Float.floatToIntBits(fv);
-
     long lv = (long)dv;
     if (lv == dv)
-      return (int)lv;
+      return java.lang.Long.hashCode(lv);
 
-    lv = Double.doubleToLongBits(dv);
-    return (int)(lv ^ (lv >>> 32));
+    float fv = (float)dv;
+    if (fv == dv)
+      return java.lang.Float.hashCode(fv);
+
+    return java.lang.Double.hashCode(dv);
   }
 
   public static int floatHash(float fv) {
@@ -66,11 +66,39 @@ public final class Statics {
 
     long lv = (long)fv;
     if (lv == fv)
-      return (int)(lv^(lv>>>32));
+      return java.lang.Long.hashCode(lv);
 
-    return java.lang.Float.floatToIntBits(fv);
+    return java.lang.Float.hashCode(fv);
   }
 
+  /**
+   * Hashcode algorithm is driven by the requirements imposed
+   * by primitive equality semantics, namely that equal objects
+   * have equal hashCodes.  The first priority are the integral/char
+   * types, which already have the same hashCodes for the same
+   * values except for Long.  So Long's hashCode is altered to
+   * conform to Int's for all values in Int's range.
+   *
+   * Float is problematic because it's far too small to hold
+   * all the Ints, so for instance Int.MaxValue.toFloat claims
+   * to be == to each of the largest 64 Ints.  There is no way
+   * to preserve equals/hashCode alignment without compromising
+   * the hashCode distribution, so Floats are only guaranteed
+   * to have the same hashCode for whole Floats in the range
+   * Short.MinValue to Short.MaxValue (2^16 total.)
+   *
+   * Double has its hashCode altered to match the entire Int range,
+   * but is not guaranteed beyond that.  (But could/should it be?
+   * The hashCode is only 32 bits so this is a more tractable
+   * issue than Float's, but it might be better simply to exclude it.)
+   *
+   * Note: BigInt and BigDecimal, being arbitrary precision, could
+   * be made consistent with all other types for the Int range, but
+   * as yet have not.
+   *
+   * Note: Among primitives, Float.NaN != Float.NaN, but the boxed
+   * versions are equal.  This still needs reconciliation.
+   */
   public static int anyHash(Object x) {
     if (x == null)
       return 0;

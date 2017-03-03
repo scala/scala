@@ -1,8 +1,5 @@
 
-
-import scala.collection.JavaConversions._
-
-
+import scala.collection.convert.ImplicitConversionsToJava._
 
 object Test {
 

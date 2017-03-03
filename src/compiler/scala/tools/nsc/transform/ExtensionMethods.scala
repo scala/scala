@@ -7,7 +7,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /**
  * Perform Step 1 in the inline classes SIP: Creates extension methods for all
@@ -192,8 +192,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             // SI-7859 make param accessors accessible so the erasure can generate unbox operations.
-            val paramAccessors = currentOwner.info.decls.filter(sym => sym.isParamAccessor && sym.isMethod)
-            paramAccessors.foreach(_.makeNotPrivate(currentOwner))
+            currentOwner.info.decls.foreach(sym => if (sym.isParamAccessor && sym.isMethod) sym.makeNotPrivate(currentOwner))
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
@@ -208,7 +207,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           def makeExtensionMethodSymbol = {
             val extensionName = extensionNames(origMeth).head.toTermName
             val extensionMeth = (
-              companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~LOCAL | FINAL)
+              companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
                 setAnnotations origMeth.annotations
             )
             origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
@@ -244,7 +243,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.
-          val sel        = Select(gen.mkAttributedRef(companion), extensionMeth)
+          // SI-9542 We form the selection here from the thisType of the companion's owner. This is motivated
+          //         by the test case, and is a valid way to construct the reference because we know that this
+          //         method is also enclosed by that owner.
+          val sel        = Select(gen.mkAttributedRef(companion.owner.thisType, companion), extensionMeth)
           val targs      = origTpeParams map (_.tpeHK)
           val callPrefix = gen.mkMethodCall(sel, targs, This(origThis) :: Nil)
 

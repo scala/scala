@@ -8,6 +8,11 @@ object Test extends ReplTest {
     s
   }
 
+  override def normalize(s: String) = {
+    // replace indylambda function names by <function0>
+    """\$Lambda.*""".r.replaceAllIn(s, "<function0>")
+  }
+
   def code = """
     |var x = 10
     |var y = 11

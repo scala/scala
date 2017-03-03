@@ -7,11 +7,9 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.{ ClassPath, DeltaClassPath, MergedClassPath }
-import scala.tools.util.FlatClassPathResolver
+import scala.tools.nsc.classpath.AggregateClassPath
 import scala.tools.util.PathResolver
+import scala.tools.nsc.util.ClassPath
 
 trait JavaPlatform extends Platform {
   val global: Global
@@ -19,34 +17,25 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
+  private[nsc] var currentClassPath: Option[ClassPath] = None
 
-  def classPath: ClassPath[AbstractFile] = {
-    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Recursive,
-      "To use recursive classpath representation you must enable it with -YclasspathImpl:recursive compiler option.")
-
+  private[nsc] def classPath: ClassPath = {
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
   }
 
-  private[nsc] lazy val flatClassPath: FlatClassPath = {
-    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Flat,
-      "To use flat classpath representation you must enable it with -YclasspathImpl:flat compiler option.")
+  /** Update classpath with a substituted subentry */
+  def updateClassPath(subst: Map[ClassPath, ClassPath]): Unit = global.classPath match {
+    case AggregateClassPath(entries) =>
+      currentClassPath = Some(AggregateClassPath(entries map (e => subst.getOrElse(e, e))))
 
-    new FlatClassPathResolver(settings).result
+    case cp: ClassPath =>
+      currentClassPath = Some(subst.getOrElse(cp, cp))
   }
 
-  /** Update classpath with a substituted subentry */
-  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
-    currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
-
-  private def classEmitPhase =
-    if (settings.isBCodeActive) genBCode
-    else genASM
-
   def platformPhases = List(
-    flatten,        // get rid of inner classes
-    classEmitPhase  // generate .class files
+    flatten,  // get rid of inner classes
+    genBCode  // generate .class files
   )
 
   lazy val externalEquals          = getDecl(BoxesRunTimeClass, nme.equals_)

@@ -55,7 +55,7 @@ trait GenUtils {
     mirrorCall(TermName("" + prefix), args: _*)
 
   def scalaFactoryCall(name: TermName, args: Tree*): Tree =
-    call(s"scala.$name.apply", args: _*)
+    call(s"_root_.scala.$name.apply", args: _*)
 
   def scalaFactoryCall(name: String, args: Tree*): Tree =
     scalaFactoryCall(TermName(name), args: _*)

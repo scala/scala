@@ -12,11 +12,13 @@ import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
 import scala.collection._
 import page.diagram._
+import scala.reflect.internal.Reporter
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
+class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
+  import page.{IndexScript, EntityPage}
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */
@@ -25,10 +27,38 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
   def siteRoot: JFile = new JFile(universe.settings.outdir.value)
 
   def libResources = List(
+    "class.svg",
+    "object.svg",
+    "trait.svg",
+    "package.svg",
+    "class_comp.svg",
+    "object_comp.svg",
+    "trait_comp.svg",
+    "object_comp_trait.svg",
+    "abstract_type.svg",
+    "lato-v11-latin-100.eot",
+    "lato-v11-latin-100.ttf",
+    "lato-v11-latin-100.woff",
+    "lato-v11-latin-regular.eot",
+    "lato-v11-latin-regular.ttf",
+    "lato-v11-latin-regular.woff",
+    "open-sans-v13-latin-regular.eot",
+    "open-sans-v13-latin-regular.ttf",
+    "open-sans-v13-latin-regular.woff",
+    "source-code-pro-v6-latin-700.eot",
+    "source-code-pro-v6-latin-700.ttf",
+    "source-code-pro-v6-latin-700.woff",
+    "source-code-pro-v6-latin-regular.eot",
+    "source-code-pro-v6-latin-regular.ttf",
+    "source-code-pro-v6-latin-regular.woff",
+    "MaterialIcons-Regular.eot",
+    "MaterialIcons-Regular.ttf",
+    "MaterialIcons-Regular.woff",
+
     "index.js",
-    "jquery-ui.js",
     "jquery.js",
-    "jquery.layout.js",
+    "jquery.mousewheel.min.js",
+    "jquery.panzoom.min.js",
     "scheduler.js",
     "diagrams.js",
     "template.js",
@@ -40,64 +70,14 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "template.css",
     "diagrams.css",
 
-    "class.png",
-    "class_big.png",
     "class_diagram.png",
-    "object.png",
-    "object_big.png",
     "object_diagram.png",
-    "package.png",
-    "package_big.png",
-    "trait.png",
-    "trait_big.png",
     "trait_diagram.png",
-    "type.png",
-    "type_big.png",
     "type_diagram.png",
 
-    "class_to_object_big.png",
-    "object_to_class_big.png",
-    "trait_to_object_big.png",
-    "object_to_trait_big.png",
-    "type_to_object_big.png",
-    "object_to_type_big.png",
-
-    "arrow-down.png",
-    "arrow-right.png",
-    "filter_box_left.png",
-    "filter_box_left2.gif",
-    "filter_box_right.png",
-    "filterbg.gif",
-    "filterboxbarbg.gif",
-    "filterboxbg.gif",
-
-    "constructorsbg.gif",
-    "defbg-blue.gif",
-    "defbg-green.gif",
-    "filterboxbarbg.png",
-    "fullcommenttopbg.gif",
     "ownderbg2.gif",
     "ownerbg.gif",
-    "ownerbg2.gif",
-    "packagesbg.gif",
-    "signaturebg.gif",
-    "signaturebg2.gif",
-    "typebg.gif",
-    "conversionbg.gif",
-    "valuemembersbg.gif",
-
-    "navigation-li-a.png",
-    "navigation-li.png",
-    "remove.png",
-    "selected-right.png",
-    "selected.png",
-    "selected2-right.png",
-    "selected2.png",
-    "selected-right-implicits.png",
-    "selected-implicits.png",
-    "unselected.png",
-
-    "permalink.png"
+    "ownerbg2.gif"
   )
 
   /** Generates the Scaladoc site for a model into the site root.
@@ -121,15 +101,10 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     libResources foreach (s => copyResource("lib/" + s))
 
-    new page.Index(universe, index) writeFor this
-    new page.IndexScript(universe, index) writeFor this
-    if (index.hasDeprecatedMembers)
-      new page.DeprecatedIndex(universe, index) writeFor this
+    IndexScript(universe) writeFor this
+
     try {
       writeTemplates(_ writeFor this)
-      for (letter <- index.firstLetterIndex) {
-        new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
-      }
     } finally {
       DiagramStats.printStats(universe.settings)
       universe.dotRunner.cleanup()
@@ -142,7 +117,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
         val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings, universe.dotRunner)
-        writeForThis(new page.Template(universe, diagramGenerator, tpl))
+        writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))
         written += tpl
         tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
       }

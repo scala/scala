@@ -68,45 +68,37 @@ case object AnyScalaVersion extends ScalaVersion {
  * Factory methods for producing ScalaVersions
  */
 object ScalaVersion {
-  private val dot = "\\."
-  private val dash = "\\-"
-  private def not(s:String) = s"[^${s}]"
-  private val R = s"((${not(dot)}*)(${dot}(${not(dot)}*)(${dot}(${not(dash)}*)(${dash}(.*))?)?)?)".r
+  private val dot   = """\."""
+  private val dash  = "-"
+  private val vchar = """\d""" //"[^-+.]"
+  private val vpat  = s"(?s)($vchar+)(?:$dot($vchar+)(?:$dot($vchar+)(?:$dash(.*))?)?)?".r
+  private val rcpat = """(?i)rc(\d*)""".r
+  private val mspat = """(?i)m(\d*)""".r
 
-  def apply(versionString : String, errorHandler: String => Unit): ScalaVersion = {
-    def errorAndValue() = {
-        errorHandler(
-          s"There was a problem parsing ${versionString}. " +
-          "Versions should be in the form major[.minor[.revision]] " +
-          "where each part is a positive number, as in 2.10.1. " +
-          "The minor and revision parts are optional."
-        )
-        AnyScalaVersion
-    }
+  def apply(versionString: String, errorHandler: String => Unit): ScalaVersion = {
+    def error() = errorHandler(
+      s"Bad version (${versionString}) not major[.minor[.revision[-suffix]]]"
+    )
 
     def toInt(s: String) = s match {
       case null | "" => 0
-      case _ => s.toInt
+      case _         => s.toInt
     }
-
-    def isInt(s: String) = util.Try(toInt(s)).isSuccess
 
     def toBuild(s: String) = s match {
       case null | "FINAL" => Final
-      case s if (s.toUpperCase.startsWith("RC") && isInt(s.substring(2))) => RC(toInt(s.substring(2)))
-      case s if (s.toUpperCase.startsWith("M") && isInt(s.substring(1))) => Milestone(toInt(s.substring(1)))
-      case _ => Development(s)
+      case rcpat(i)       => RC(toInt(i))
+      case mspat(i)       => Milestone(toInt(i))
+      case _ /* | "" */   => Development(s)
     }
 
-    try versionString match {
+    versionString match {
       case "none" => NoScalaVersion
-      case "any" => AnyScalaVersion
-      case R(_, majorS, _, minorS, _, revS, _, buildS) =>
+      case ""     => NoScalaVersion
+      case "any"  => AnyScalaVersion
+      case vpat(majorS, minorS, revS, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
-      case _ =>
-        errorAndValue()
-    } catch {
-      case e: NumberFormatException => errorAndValue()
+      case _      => error() ; AnyScalaVersion
     }
   }
 

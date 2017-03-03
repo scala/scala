@@ -5,6 +5,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.AssertUtil._
+
 @RunWith(classOf[JUnit4])
 class SourceFileTest {
   def lineContentOf(code: String, offset: Int) =
@@ -56,5 +58,22 @@ class SourceFileTest {
     assertEquals("def", lineContentOf("abc\r\ndef", 7))
     assertEquals("def", lineContentOf("abc\r\ndef", 8))
     assertEquals("def", lineContentOf("abc\r\ndef\r\n", 9))
+  }
+
+  @Test def si9885_lineToOffset(): Unit = {
+    val text = "a\nb\nc\n"
+    val f = new BatchSourceFile("batch", text)
+    assertThrows[IndexOutOfBoundsException] {
+      f.lineToOffset(3)
+    }
+    assertEquals(4, f.lineToOffset(2))
+
+    val p = Position.offset(f, text.length - 1)
+    val q = Position.offset(f, f.lineToOffset(p.line - 1))
+    assertEquals(p.line, q.line)
+    assertEquals(p.column, q.column + 1)
+    assertThrows[IndexOutOfBoundsException] {
+      Position.offset(f, f.lineToOffset(p.line))
+    }
   }
 }

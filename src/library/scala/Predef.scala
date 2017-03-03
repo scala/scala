@@ -8,13 +8,14 @@
 
 package scala
 
+import scala.language.implicitConversions
+
 import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
-import scala.language.{implicitConversions, existentials}
 import scala.io.StdIn
 
 /** The `Predef` object provides definitions that are accessible in all Scala
@@ -27,13 +28,11 @@ import scala.io.StdIn
  *  constructors ([[scala.collection.immutable.::]] and
  *  [[scala.collection.immutable.Nil]]).
  *
- *  === Console I/O ===
- *  Predef provides a number of simple functions for console I/O, such as
- *  `print`, `println`, `readLine`, `readInt`, etc. These functions are all
- *  aliases of the functions provided by [[scala.Console]].
+ *  === Console Output ===
+ *  For basic console output, `Predef` provides convenience methods [[print(x:Any* print]] and [[println(x:Any* println]],
+ *  which are aliases of the methods in the object [[scala.Console]].
  *
  *  === Assertions ===
- *
  *  A set of `assert` functions are provided for use as a way to document
  *  and dynamically check invariants in code. Invocations of `assert` can be elided
  *  at compile time by providing the command line option `-Xdisable-assertions`,
@@ -66,8 +65,51 @@ import scala.io.StdIn
  *  are provided for the "widening" of numeric values, for instance, converting a
  *  Short value to a Long value as required, and to add additional higher-order
  *  functions to Array values. These are described in more detail in the documentation of [[scala.Array]].
+ *
+ * @groupname utilities Utility Methods
+ * @groupprio utilities 10
+ *
+ * @groupname assertions Assertions
+ * @groupprio assertions 20
+ * @groupdesc assertions These methods support program verification and runtime correctness.
+ *
+ * @groupname console-output Console Output
+ * @groupprio console-output 30
+ * @groupdesc console-output These methods provide output via the console.
+ *
+ * @groupname type-constraints Type Constraints
+ * @groupprio type-constraints 40
+ * @groupdesc type-constraints These entities allows constraints between types to be stipulated.
+ *
+ * @groupname aliases Aliases
+ * @groupprio aliases 50
+ * @groupdesc aliases These aliases bring selected immutable types into scope without any imports.
+ *
+ * @groupname conversions-string String Conversions
+ * @groupprio conversions-string 60
+ * @groupdesc conversions-string Conversions to and from String and StringOps.
+ *
+ * @groupname implicit-classes-any Implicit Classes
+ * @groupprio implicit-classes-any 70
+ * @groupdesc implicit-classes-any These implicit classes add useful extension methods to every type.
+ *
+ * @groupname implicit-classes-char CharSequence Conversions
+ * @groupprio implicit-classes-char 80
+ * @groupdesc implicit-classes-char These implicit classes add CharSequence methods to Array[Char] and IndexedSeq[Char] instances.
+ *
+ * @groupname conversions-java-to-anyval Java to Scala
+ * @groupprio conversions-java-to-anyval 90
+ * @groupdesc conversions-java-to-anyval Implicit conversion from Java primitive wrapper types to Scala equivalents.
+ *
+ * @groupname conversions-anyval-to-java Scala to Java
+ * @groupprio conversions-anyval-to-java 100
+ * @groupdesc conversions-anyval-to-java Implicit conversion from Scala AnyVals to Java primitive wrapper types equivalents.
+ *
+ * @groupname conversions-array-to-wrapped-array Array to WrappedArray
+ * @groupprio conversions-array-to-wrapped-array 110
+ * @groupdesc conversions-array-to-wrapped-array Conversions from Arrays to WrappedArrays.
  */
-object Predef extends LowPriorityImplicits with DeprecatedPredef {
+object Predef extends LowPriorityImplicits {
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.
@@ -79,6 +121,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * val mapIntString = classOf[Map[Int,String]]
    * // mapIntString is java.lang.Class[Map[Int,String]] = interface scala.collection.immutable.Map
    * }}}
+   * @group utilities
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
 
@@ -86,69 +129,74 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  Java String (see the documentation corresponding to your Java version, for
    *  example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]]) or
    *  are added implicitly through [[scala.collection.immutable.StringOps]].
+   *  @group aliases
    */
   type String        = java.lang.String
+  /**  @group aliases */
   type Class[T]      = java.lang.Class[T]
 
   // miscellaneous -----------------------------------------------------
   scala.`package`                         // to force scala package object to be seen.
   scala.collection.immutable.List         // to force Nil, :: to be seen.
 
+  /**  @group aliases */
   type Function[-A, +B] = Function1[A, B]
 
+  /**  @group aliases */
   type Map[A, +B] = immutable.Map[A, B]
+  /**  @group aliases */
   type Set[A]     = immutable.Set[A]
+  /**  @group aliases */
   val Map         = immutable.Map
+  /**  @group aliases */
   val Set         = immutable.Set
 
   // Manifest types, companions, and incantations for summoning
   @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
-  @deprecated("Use `scala.reflect.ClassTag` instead", "2.10.0")
+  @deprecated("use `scala.reflect.ClassTag` instead", "2.10.0")
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
+  // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
   @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("Use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+  // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
-  @deprecated("Use `scala.reflect.ClassTag` instead", "2.10.0")
+  @deprecated("use `scala.reflect.ClassTag` instead", "2.10.0")
   val ClassManifest     = scala.reflect.ClassManifest
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("Use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+  // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   val Manifest          = scala.reflect.Manifest
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
+  // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("Use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
+  // @deprecated("use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
   def manifest[T](implicit m: Manifest[T])           = m
-  @deprecated("Use scala.reflect.classTag[T] instead", "2.10.0")
+  @deprecated("use scala.reflect.classTag[T] instead", "2.10.0")
   def classManifest[T](implicit m: ClassManifest[T]) = m
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
+  // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
-  def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  /** @group utilities */
+  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  /** @group utilities */
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+  /** @group utilities */
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  // errors and asserts -------------------------------------------------
-
-  // !!! Remove this when possible - ideally for 2.11.
-  // We are stuck with it a while longer because sbt's compiler interface
-  // still calls it as of 0.12.2.
-  @deprecated("Use `sys.error(message)` instead", "2.9.0")
-  def error(message: String): Nothing = sys.error(message)
+  // assertions ---------------------------------------------------------
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
+   *  is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
+   *  @group assertions
    */
   @elidable(ASSERTION)
   def assert(assertion: Boolean) {
@@ -158,11 +206,12 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
+   *  is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
    *  @param message     a String to include in the failure message
+   *  @group assertions
    */
   @elidable(ASSERTION) @inline
   final def assert(assertion: Boolean, message: => Any) {
@@ -174,10 +223,11 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  will not be generated if `-Xelide-below` is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
+   *  @group assertions
    */
   @elidable(ASSERTION)
   def assume(assumption: Boolean) {
@@ -189,11 +239,12 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  will not be generated if `-Xelide-below` is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
    *  @param message      a String to include in the failure message
+   *  @group assertions
    */
   @elidable(ASSERTION) @inline
   final def assume(assumption: Boolean, message: => Any) {
@@ -206,6 +257,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  for violating the condition.
    *
    *  @param requirement   the expression to test
+   *  @group assertions
    */
   def require(requirement: Boolean) {
     if (!requirement)
@@ -218,6 +270,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *
    *  @param requirement   the expression to test
    *  @param message       a String to include in the failure message
+   *  @group assertions
    */
   @inline final def require(requirement: Boolean, message: => Any) {
     if (!requirement)
@@ -226,34 +279,19 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws NotImplementedError
+   *  @group utilities
    */
   def ??? : Nothing = throw new NotImplementedError
 
-  // tupling ------------------------------------------------------------
-
-  @deprecated("Use built-in tuple syntax or Tuple2 instead", "2.11.0")
-  type Pair[+A, +B] = Tuple2[A, B]
-  @deprecated("Use built-in tuple syntax or Tuple2 instead", "2.11.0")
-  object Pair {
-    def apply[A, B](x: A, y: B) = Tuple2(x, y)
-    def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-  }
-
-  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")
-  type Triple[+A, +B, +C] = Tuple3[A, B, C]
-  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")
-  object Triple {
-    def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
-    def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
-  }
-
   // implicit classes -----------------------------------------------------
 
+  /** @group implicit-classes-any */
   implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
 
+  /** @group implicit-classes-any */
   implicit final class Ensuring[A](private val self: A) extends AnyVal {
     def ensuring(cond: Boolean): A = { assert(cond); self }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); self }
@@ -261,6 +299,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(self), msg); self }
   }
 
+  /** @group implicit-classes-any */
   implicit final class StringFormat[A](private val self: A) extends AnyVal {
     /** Returns string formatted according to given `format` string.
      *  Format strings are as for `String.format`
@@ -269,35 +308,25 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // TODO: remove, only needed for binary compatibility of 2.11.0-RC1 with 2.11.0-M8
-  // note that `private[scala]` becomes `public` in bytecode
-  private[scala] final class StringAdd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
-  private[scala] def StringAdd(x: Any): Any = new StringAdd(x)
-
   // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
+  /** @group implicit-classes-any */
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
   }
 
-  implicit final class RichException(private val self: Throwable) extends AnyVal {
-    import scala.compat.Platform.EOL
-    @deprecated("Use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
+  implicit final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+    def length: Int                                     = sequenceOfChars.length
+    def charAt(index: Int): Char                        = sequenceOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
+    override def toString                               = sequenceOfChars mkString ""
   }
 
-  implicit final class SeqCharSequence(val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
-    def length: Int                                     = __sequenceOfChars.length
-    def charAt(index: Int): Char                        = __sequenceOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(__sequenceOfChars.slice(start, end))
-    override def toString                               = __sequenceOfChars mkString ""
-  }
-
-  implicit final class ArrayCharSequence(val __arrayOfChars: Array[Char]) extends CharSequence {
-    def length: Int                                     = __arrayOfChars.length
-    def charAt(index: Int): Char                        = __arrayOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(__arrayOfChars, start, end)
-    override def toString                               = __arrayOfChars mkString ""
+  /** @group implicit-classes-char */
+  implicit final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
+    def length: Int                                     = arrayOfChars.length
+    def charAt(index: Int): Char                        = arrayOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
+    override def toString                               = arrayOfChars mkString ""
   }
 
   implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
@@ -305,14 +334,47 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def apply()             = mutable.StringBuilder.newBuilder
   }
 
+  /** @group conversions-string */
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
+  /** @group conversions-string */
   @inline implicit def unaugmentString(x: StringOps): String = x.repr
 
   // printing -----------------------------------------------------------
 
+  /** Prints an object to `out` using its `toString` method.
+   *
+   *  @param x the object to print; may be null.
+   *  @group console-output
+   */
   def print(x: Any) = Console.print(x)
+
+  /** Prints a newline character on the default output.
+   *  @group console-output
+   */
   def println() = Console.println()
+
+  /** Prints out an object to the default output, followed by a newline character.
+   *
+   *  @param x the object to print.
+   *  @group console-output
+   */
   def println(x: Any) = Console.println(x)
+
+  /** Prints its arguments as a formatted string to the default output,
+   *  based on a string pattern (in a fashion similar to printf in C).
+   *
+   *  The interpretation of the formatting patterns is described in
+   *  [[java.util.Formatter]].
+   *
+   *  Consider using the [[scala.StringContext.f f interpolator]] as more type safe and idiomatic.
+   *
+   *  @param text the pattern for formatting the arguments.
+   *  @param args the arguments used to instantiating the pattern.
+   *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
+   *
+   *  @see [[scala.StringContext.f StringContext.f]]
+   *  @group console-output
+   */
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
 
   // views --------------------------------------------------------------
@@ -334,36 +396,52 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     case null              => null
   }).asInstanceOf[ArrayOps[T]]
 
-  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
-  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
-  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
-  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
-  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
-  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
-  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
-  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
-  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
-  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
+  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps.ofBoolean   = new ArrayOps.ofBoolean(xs)
+  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps.ofByte            = new ArrayOps.ofByte(xs)
+  implicit def charArrayOps(xs: Array[Char]): ArrayOps.ofChar            = new ArrayOps.ofChar(xs)
+  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps.ofDouble      = new ArrayOps.ofDouble(xs)
+  implicit def floatArrayOps(xs: Array[Float]): ArrayOps.ofFloat         = new ArrayOps.ofFloat(xs)
+  implicit def intArrayOps(xs: Array[Int]): ArrayOps.ofInt               = new ArrayOps.ofInt(xs)
+  implicit def longArrayOps(xs: Array[Long]): ArrayOps.ofLong            = new ArrayOps.ofLong(xs)
+  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps.ofRef[T] = new ArrayOps.ofRef[T](xs)
+  implicit def shortArrayOps(xs: Array[Short]): ArrayOps.ofShort         = new ArrayOps.ofShort(xs)
+  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps.ofUnit            = new ArrayOps.ofUnit(xs)
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
-  implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
-  implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
-  implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
-  implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
-  implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
-  implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
-  implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
-  implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
+  /** @group conversions-anyval-to-java */
+  implicit def byte2Byte(x: Byte): java.lang.Byte             = x.asInstanceOf[java.lang.Byte]
+  /** @group conversions-anyval-to-java */
+  implicit def short2Short(x: Short): java.lang.Short         = x.asInstanceOf[java.lang.Short]
+  /** @group conversions-anyval-to-java */
+  implicit def char2Character(x: Char): java.lang.Character   = x.asInstanceOf[java.lang.Character]
+  /** @group conversions-anyval-to-java */
+  implicit def int2Integer(x: Int): java.lang.Integer         = x.asInstanceOf[java.lang.Integer]
+  /** @group conversions-anyval-to-java */
+  implicit def long2Long(x: Long): java.lang.Long             = x.asInstanceOf[java.lang.Long]
+  /** @group conversions-anyval-to-java */
+  implicit def float2Float(x: Float): java.lang.Float         = x.asInstanceOf[java.lang.Float]
+  /** @group conversions-anyval-to-java */
+  implicit def double2Double(x: Double): java.lang.Double     = x.asInstanceOf[java.lang.Double]
+  /** @group conversions-anyval-to-java */
+  implicit def boolean2Boolean(x: Boolean): java.lang.Boolean = x.asInstanceOf[java.lang.Boolean]
 
-  implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
-  implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
-  implicit def Character2char(x: java.lang.Character): Char   = x.charValue
-  implicit def Integer2int(x: java.lang.Integer): Int         = x.intValue
-  implicit def Long2long(x: java.lang.Long): Long             = x.longValue
-  implicit def Float2float(x: java.lang.Float): Float         = x.floatValue
-  implicit def Double2double(x: java.lang.Double): Double     = x.doubleValue
-  implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.booleanValue
+  /** @group conversions-java-to-anyval */
+  implicit def Byte2byte(x: java.lang.Byte): Byte             = x.asInstanceOf[Byte]
+  /** @group conversions-java-to-anyval */
+  implicit def Short2short(x: java.lang.Short): Short         = x.asInstanceOf[Short]
+  /** @group conversions-java-to-anyval */
+  implicit def Character2char(x: java.lang.Character): Char   = x.asInstanceOf[Char]
+  /** @group conversions-java-to-anyval */
+  implicit def Integer2int(x: java.lang.Integer): Int         = x.asInstanceOf[Int]
+  /** @group conversions-java-to-anyval */
+  implicit def Long2long(x: java.lang.Long): Long             = x.asInstanceOf[Long]
+  /** @group conversions-java-to-anyval */
+  implicit def Float2float(x: java.lang.Float): Float         = x.asInstanceOf[Float]
+  /** @group conversions-java-to-anyval */
+  implicit def Double2double(x: java.lang.Double): Double     = x.asInstanceOf[Double]
+  /** @group conversions-java-to-anyval */
+  implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.asInstanceOf[Boolean]
 
   // Type Constraints --------------------------------------------------------------
 
@@ -383,6 +461,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * required lower bound.
    *
    * In part contributed by Jason Zaugg.
+   * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
@@ -390,18 +469,18 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   // The dollar prefix is to dodge accidental shadowing of this method
   // by a user-defined method of the same name (SI-7788).
   // The collections rely on this method.
+  /** @group type-constraints */
   implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
-
-  @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
-  def conforms[A]: A <:< A = $conforms[A]
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
    * @see `<:<` for expressing subtyping constraints
+   * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
   sealed abstract class =:=[From, To] extends (From => To) with Serializable
   private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
+  /** @group type-constraints */
   object =:= {
      implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
   }
@@ -418,33 +497,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
      */
     implicit def dummyImplicit: DummyImplicit = new DummyImplicit
   }
-}
-
-private[scala] trait DeprecatedPredef {
-  self: Predef.type =>
-
-  // Deprecated stubs for any who may have been calling these methods directly.
-  @deprecated("Use `ArrowAssoc`", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A]                                      = new ArrowAssoc(x)
-  @deprecated("Use `Ensuring`", "2.11.0") def any2Ensuring[A](x: A): Ensuring[A]                                            = new Ensuring(x)
-  @deprecated("Use `StringFormat`", "2.11.0") def any2stringfmt(x: Any): StringFormat[Any]                                  = new StringFormat(x)
-  @deprecated("Use `Throwable` directly", "2.11.0") def exceptionWrapper(exc: Throwable)                                    = new RichException(exc)
-  @deprecated("Use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
-  @deprecated("Use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
-
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLine(): String                 = StdIn.readLine()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLine(text: String, args: Any*) = StdIn.readLine(text, args: _*)
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readBoolean()                      = StdIn.readBoolean()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readByte()                         = StdIn.readByte()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readShort()                        = StdIn.readShort()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readChar()                         = StdIn.readChar()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readInt()                          = StdIn.readInt()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLong()                         = StdIn.readLong()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readFloat()                        = StdIn.readFloat()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readDouble()                       = StdIn.readDouble()
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf(format: String)              = StdIn.readf(format)
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf1(format: String)             = StdIn.readf1(format)
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf2(format: String)             = StdIn.readf2(format)
-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf3(format: String)             = StdIn.readf3(format)
 }
 
 /** The `LowPriorityImplicits` class provides implicit values that
@@ -481,6 +533,7 @@ private[scala] abstract class LowPriorityImplicits {
   @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
   @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
+  /** @group conversions-array-to-wrapped-array */
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs eq null) null
     else WrappedArray.make(xs)
@@ -488,23 +541,35 @@ private[scala] abstract class LowPriorityImplicits {
   // Since the JVM thinks arrays are covariant, one 0-length Array[AnyRef]
   // is as good as another for all T <: AnyRef.  Instead of creating 100,000,000
   // unique ones by way of this implicit, let's share one.
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
     if (xs eq null) null
     else if (xs.length == 0) WrappedArray.empty[T]
     else new WrappedArray.ofRef[T](xs)
   }
 
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
 
+  /** @group conversions-string */
   implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
+  /** @group conversions-string */
   implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
 
   implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =

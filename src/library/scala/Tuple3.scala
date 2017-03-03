@@ -17,8 +17,7 @@ package scala
  *  @param  _2   Element 2 of this Tuple3
  *  @param  _3   Element 3 of this Tuple3
  */
-@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
-case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
+final case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
   extends Product3[T1, T2, T3]
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + ")"

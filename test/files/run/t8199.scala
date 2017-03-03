@@ -21,17 +21,17 @@ class cls01234567
 class cls012345678
 class cls0123456789
 class cls01234567890
-trait trt0 { def x = Test.checkCallerImplClassName() }
-trait trt01 { def x = Test.checkCallerImplClassName() }
-trait trt012 { def x = Test.checkCallerImplClassName() }
-trait trt0123 { def x = Test.checkCallerImplClassName() }
-trait trt01234 { def x = Test.checkCallerImplClassName() }
-trait trt012345 { def x = Test.checkCallerImplClassName() }
-trait trt0123456 { def x = Test.checkCallerImplClassName() }
-trait trt01234567 { def x = Test.checkCallerImplClassName() }
-trait trt012345678 { def x = Test.checkCallerImplClassName() }
-trait trt0123456789 { def x = Test.checkCallerImplClassName() }
-trait trt01234567890 { def x = Test.checkCallerImplClassName() }
+trait trt0
+trait trt01
+trait trt012
+trait trt0123
+trait trt01234
+trait trt012345
+trait trt0123456
+trait trt01234567
+trait trt012345678
+trait trt0123456789
+trait trt01234567890
 }
 
 object Test extends App {
@@ -41,11 +41,6 @@ object Test extends App {
   def checkClassName(name: String) {
     val defaultMaxClassFileLength = 255
     assert((name + ".class").length <= defaultMaxClassFileLength, name)
-  }
-  def checkCallerImplClassName() {
-    val name = Thread.currentThread.getStackTrace.apply(2).getClassName
-    assert(name.contains("$class"))
-    Test.checkClassName(name)
   }
 
   val c = new reallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongname
@@ -75,7 +70,6 @@ object Test extends App {
   check(classOf[cls0123456789])
   check(classOf[cls01234567890])
 
-  // interface facets
   check(classOf[trt0])
   check(classOf[trt01])
   check(classOf[trt012])
@@ -88,18 +82,6 @@ object Test extends App {
   check(classOf[trt0123456789])
   check(classOf[trt01234567890])
 
-  // impl classes are harder to find the names of to test!
-  (new trt0 {}).x
-  (new trt01 {}).x
-  (new trt012 {}).x
-  (new trt0123 {}).x
-  (new trt01234 {}).x
-  (new trt012345 {}).x
-  (new trt0123456 {}).x
-  (new trt01234567 {}).x
-  (new trt012345678 {}).x
-  (new trt0123456789 {}).x
-  (new trt01234567890 {}).x
 }
 
 // filename too long: reallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongnamereallylongname$obj012345$.class

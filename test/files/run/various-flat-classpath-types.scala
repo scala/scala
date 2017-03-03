@@ -5,7 +5,7 @@
 import java.io.{File => JFile, FileInputStream, FileOutputStream}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.reflect.io.{Directory, File}
-import scala.tools.nsc.classpath.FlatClassPath.RootPackage
+import scala.tools.nsc.util.ClassPath.RootPackage
 import scala.tools.nsc.classpath.PackageNameUtils
 import scala.tools.nsc.io.Jar
 
@@ -80,7 +80,6 @@ object Test {
 
   private val compiler = new scala.tools.nsc.MainClass
   private val appRunner = new scala.tools.nsc.MainGenericRunner
-  private val classPathImplFlag = "-YclasspathImpl:flat"
   private val javaClassPath = sys.props("java.class.path")
 
   // creates a test dir in a temporary dir containing compiled files of this test
@@ -166,13 +165,13 @@ object Test {
     val classPath = mkPath(javaClassPath, binDir.path, zipsDir.path + "/Bin.zip", jarsDir.path + "/Bin.jar")
     val sourcePath = mkPath(srcDir.path, zipsDir.path + "/Src.zip", jarsDir.path + "/Src.jar")
 
-    compiler.process(Array(classPathImplFlag, "-cp", classPath, "-sourcepath", sourcePath,
+    compiler.process(Array("-cp", classPath, "-sourcepath", sourcePath,
       "-d", outDir.path, s"${srcDir.path}/Main.scala"))
   }
 
   private def runApp(): Unit = {
     val classPath = mkPath(javaClassPath, outDir.path, binDir.path, zipsDir.path + "/Bin.zip", jarsDir.path + "/Bin.jar")
-    appRunner.process(Array(classPathImplFlag, "-cp", classPath, "Main"))
+    appRunner.process(Array("-cp", classPath, "Main"))
   }
 
   private def createStandardSrcHierarchy(baseFileName: String): Unit =
@@ -200,7 +199,7 @@ object Test {
 
   private def compileSrc(baseFileName: String, destination: JFile = outDir): Unit = {
     val srcDirPath = srcDir.path
-    compiler.process(Array(classPathImplFlag, "-cp", javaClassPath, "-d", destination.path,
+    compiler.process(Array("-cp", javaClassPath, "-d", destination.path,
       s"$srcDirPath/$baseFileName.scala", s"$srcDirPath/nested/Nested$baseFileName.scala"))
   }
 

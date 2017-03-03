@@ -441,7 +441,7 @@ In the example, `Twice` is an extractor object with two methods:
 
 -   The `unapply` method is used to decompose an even number; it is in a sense
     the reverse of `apply`. `unapply` methods return option types:
-    `Some(...)` for a match that suceeds, `None` for a match that fails.
+    `Some(...)` for a match that succeeds, `None` for a match that fails.
     Pattern variables are returned as the elements of `Some`.
     If there are several variables, they are grouped in a tuple.
 
@@ -532,7 +532,7 @@ In particular, one can now simulate package protected access as in Java writing
 
 where would name the package containing `X`.
 
-#### Relaxation of Private Acess
+#### Relaxation of Private Access
 
 [Private members of a class](05-classes-and-objects.html#private) can now be
 referenced from the companion module of the class and vice versa.

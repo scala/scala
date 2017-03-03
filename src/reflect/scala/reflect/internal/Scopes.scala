@@ -282,6 +282,34 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
+    final def lookupSymbolEntry(sym: Symbol): ScopeEntry = {
+      var e = lookupEntry(sym.name)
+      while (e ne null) {
+        if (e.sym == sym) return e
+        e = lookupNextEntry(e)
+      }
+      null
+    }
+
+    final def lookupCompanion(original: Symbol): Symbol = {
+      lookupSymbolEntry(original) match {
+        case null =>
+        case entry =>
+          var e = lookupEntry(original.name.companionName)
+          while (e != null) {
+            // 1) Must be owned by the same Scope, to ensure that in
+            //   `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
+            // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+            def isClassAndModule(sym1: Symbol, sym2: Symbol) = sym1.isClass && sym2.isModule
+            if ((e.owner eq entry.owner) && (isClassAndModule(original, e.sym) || isClassAndModule(e.sym, original))) {
+              return if (e.sym.isCoDefinedWith(original)) e.sym else NoSymbol
+            }
+            e = lookupNextEntry(e)
+          }
+      }
+      NoSymbol
+    }
+
     /** lookup a symbol entry matching given name.
      *  @note from Martin: I believe this is a hotspot or will be one
      *  in future versions of the type system. I have reverted the previous
@@ -380,7 +408,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       if (toList forall p) this
       else newScopeWith(toList filter p: _*)
     )
-    @deprecated("Use `toList.reverse` instead", "2.10.0") // Used in SBT 0.12.4
+    @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
     override def mkString(start: String, sep: String, end: String) =

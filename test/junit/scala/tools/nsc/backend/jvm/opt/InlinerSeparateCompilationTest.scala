@@ -2,30 +2,18 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-
-import scala.collection.convert.decorateAsScala._
-
-object InlinerSeparateCompilationTest {
-  val args = "-Ybackend:GenBCode -Yopt:l:classpath"
-}
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerSeparateCompilationTest {
-  import InlinerSeparateCompilationTest._
-  import InlinerTest.{listStringLines, assertInvoke, assertNoInvoke}
+  val args = "-opt:l:classpath"
 
   @Test
-  def inlnieMixedinMember(): Unit = {
+  def inlineMixedinMember(): Unit = {
     val codeA =
       """trait T {
         |  @inline def f = 0
@@ -43,11 +31,11 @@ class InlinerSeparateCompilationTest {
         |}
       """.stripMargin
 
-    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
-    val List(c, o, oMod, t, tCls) = compileClassesSeparately(List(codeA, codeB), args + " -Yopt-warnings", _.msg contains warn)
-    assertInvoke(getSingleMethod(c, "t1"), "T", "f")
-    assertNoInvoke(getSingleMethod(c, "t2"))
-    assertNoInvoke(getSingleMethod(c, "t3"))
+    val warn = "T::f()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
+    val List(c, o, oMod, t) = compileClassesSeparately(List(codeA, codeB), args + " -opt-warnings", _.msg contains warn)
+    assertInvoke(getMethod(c, "t1"), "T", "f")
+    assertNoInvoke(getMethod(c, "t2"))
+    assertNoInvoke(getMethod(c, "t3"))
   }
 
   @Test
@@ -64,8 +52,8 @@ class InlinerSeparateCompilationTest {
         |}
       """.stripMargin
 
-    val List(c, t, tCls) = compileClassesSeparately(List(codeA, codeB), args)
-    assertNoInvoke(getSingleMethod(c, "t1"))
+    val List(c, t) = compileClassesSeparately(List(codeA, codeB), args)
+    assertNoInvoke(getMethod(c, "t1"))
   }
 
   @Test
@@ -87,8 +75,8 @@ class InlinerSeparateCompilationTest {
         |}
       """.stripMargin
 
-    val List(c, t, tCls, u, uCls) = compileClassesSeparately(List(codeA, codeB), args)
-    for (m <- List("t1", "t2", "t3")) assertNoInvoke(getSingleMethod(c, m))
+    val List(c, t, u) = compileClassesSeparately(List(codeA, codeB), args)
+    for (m <- List("t1", "t2", "t3")) assertNoInvoke(getMethod(c, m))
   }
 
   @Test
@@ -108,8 +96,8 @@ class InlinerSeparateCompilationTest {
          |$assembly
       """.stripMargin
 
-    val List(a, aCls, t, tCls) = compileClassesSeparately(List(codeA, assembly), args)
-    assertNoInvoke(getSingleMethod(tCls, "f"))
-    assertNoInvoke(getSingleMethod(aCls, "n"))
+    val List(a, t) = compileClassesSeparately(List(codeA, assembly), args)
+    assertNoInvoke(getMethod(t, "f"))
+    assertNoInvoke(getMethod(a, "n"))
   }
 }

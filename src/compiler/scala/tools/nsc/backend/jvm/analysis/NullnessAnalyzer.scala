@@ -5,68 +5,14 @@ package analysis
 import java.util
 
 import scala.annotation.switch
-import scala.tools.asm.{Type, Opcodes}
-import scala.tools.asm.tree.{MethodInsnNode, LdcInsnNode, AbstractInsnNode}
-import scala.tools.asm.tree.analysis.{Frame, Analyzer, Interpreter, Value}
+import scala.tools.asm.{Opcodes, Type}
+import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
+import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import BytecodeUtils._
 
 /**
- * Some notes on the ASM analyzer framework.
- *
- * Value
- *  - Abstract, needs to be implemented for each analysis.
- *  - Represents the desired information about local variables and stack values, for example:
- *    - Is this value known to be null / not null?
- *    - What are the instructions that could potentially have produced this value?
- *
- * Interpreter
- *  - Abstract, needs to be implemented for each analysis. Sometimes one can subclass an existing
- *    interpreter, e.g., SourceInterpreter or BasicInterpreter.
- *  - Multiple abstract methods that receive an instruction and the instruction's input values, and
- *    return a value representing the result of that instruction.
- *    - Note: due to control flow, the interpreter can be invoked multiple times for the same
- *      instruction, until reaching a fixed point.
- *  - Abstract `merge` function that computes the least upper bound of two values. Used by
- *    Frame.merge (see below).
- *
- * Frame
- *  - Can be used directly for many analyses, no subclass required.
- *  - Every frame has an array of values: one for each local variable and for each stack slot.
- *    - A `top` index stores the index of the current stack top
- *    - NOTE: for a size-2 local variable at index i, the local variable at i+1 is set to an empty
- *      value. However, for a size-2 value at index i on the stack, the value at i+1 holds the next
- *      stack value.
- *  - Defines the `execute(instruction)` method.
- *    - executing mutates the state of the frame according to the effect of the instruction
- *      - pop consumed values from the stack
- *      - pass them to the interpreter together with the instruction
- *      - if applicable, push the resulting value on the stack
- *  - Defines the `merge(otherFrame)` method
- *    - called by the analyzer when multiple control flow paths lead to an instruction
- *      - the frame at the branching instruction is merged into the current frame of the
- *        instruction (held by the analyzer)
- *      - mutates the values of the current frame, merges all values using interpreter.merge.
- *
- * Analyzer
- *   - Stores a frame for each instruction
- *   - `merge` function takes an instruction and a frame, merges the existing frame for that instr
- *     (from the frames array) with the new frame passed as argument.
- *     if the frame changed, puts the instruction on the work queue (fixpiont).
- *   - initial frame: initialized for first instr by calling interpreter.new[...]Value
- *     for each slot (locals and params), stored in frames[firstInstr] by calling `merge`
- *   - work queue of instructions (`queue` array, `top` index for next instruction to analyze)
- *   - analyze(method): simulate control flow. while work queue non-empty:
- *     - copy the state of `frames[instr]` into a local frame `current`
- *     - call `current.execute(instr, interpreter)`, mutating the `current` frame
- *     - if it's a branching instruction
- *       - for all potential destination instructions
- *         - merge the destination instruction frame with the `current` frame
- *           (this enqueues the destination instr if its frame changed)
- *       - invoke `newControlFlowEdge` (see below)
- *   - the analyzer also tracks active exception handlers at each instruction
- *   - the empty method `newControlFlowEdge` can be overridden to track control flow if required
- *
+ * See the package object `analysis` for details on the ASM analysis framework.
  *
  * Some notes on nullness analysis.
  *
@@ -87,59 +33,37 @@ import BytecodeUtils._
  */
 
 /**
- * Type to represent nullness of values.
- */
-sealed trait Nullness {
-  final def merge(other: Nullness) = if (this == other) this else Unknown
-}
-case object NotNull extends Nullness
-case object Unknown extends Nullness
-case object Null    extends Nullness
-
-/**
  * Represents the nullness state for a local variable or stack value.
  *
- * Note that nullness of primitive values is not tracked, it will be always [[Unknown]].
+ * Note that nullness of primitive values is not tracked, it will be always unknown.
  */
-sealed trait NullnessValue extends Value {
-  /**
-   * The nullness of this value.
-   */
-  def nullness: Nullness
-
-  /**
-   * True if this value is a long or double. The Analyzer framework needs to know
-   * the size of each value when interpreting instructions, see `Frame.execute`.
-   */
-  def isSize2: Boolean
+sealed abstract class NullnessValue(final val isSize2: Boolean) extends Value {
   /**
    * The size of the slot described by this value. Cannot be 0 because no values are allocated
    * for void-typed slots, see NullnessInterpreter.newValue.
    **/
   def getSize: Int = if (isSize2) 2 else 1
 
-  def merge(other: NullnessValue) = NullnessValue(nullness merge other.nullness, isSize2)
+  def merge(other: NullnessValue) = {
+    if (this eq other) this
+    else if (this eq UnknownValue2) this // the only possible value of size two
+    else UnknownValue1
+  }
+
+  final override def equals(other: Any) = this eq other.asInstanceOf[Object]
 }
 
-object NullValue     extends NullnessValue { def nullness = Null;    def isSize2 = false; override def toString = "Null"     }
-object UnknownValue1 extends NullnessValue { def nullness = Unknown; def isSize2 = false; override def toString = "Unknown1" }
-object UnknownValue2 extends NullnessValue { def nullness = Unknown; def isSize2 = true;  override def toString = "Unknown2" }
-object NotNullValue  extends NullnessValue { def nullness = NotNull; def isSize2 = false; override def toString = "NotNull"  }
+object NullValue     extends NullnessValue(isSize2 = false) { override def toString = "Null"     }
+object UnknownValue1 extends NullnessValue(isSize2 = false) { override def toString = "Unknown1" }
+object UnknownValue2 extends NullnessValue(isSize2 = true ) { override def toString = "Unknown2" }
+object NotNullValue  extends NullnessValue(isSize2 = false) { override def toString = "NotNull"  }
 
 object NullnessValue {
-  def apply(nullness: Nullness, isSize2: Boolean): NullnessValue = {
-    if      (nullness == Null)    NullValue
-    else if (nullness == NotNull) NotNullValue
-    else if (isSize2)             UnknownValue2
-    else                          UnknownValue1
-  }
-
-  def apply(nullness: Nullness, insn: AbstractInsnNode): NullnessValue = {
-    apply(nullness, isSize2 = BytecodeUtils.instructionResultSize(insn) == 2)
-  }
+  def unknown(isSize2: Boolean) = if (isSize2) UnknownValue2 else UnknownValue1
+  def unknown(insn: AbstractInsnNode) = if (BytecodeUtils.instructionResultSize(insn) == 2) UnknownValue2 else UnknownValue1
 }
 
-final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5) {
+final class NullnessInterpreter(bTypes: BTypes, method: MethodNode) extends Interpreter[NullnessValue](Opcodes.ASM5) {
   def newValue(tp: Type): NullnessValue = {
     // ASM loves giving semantics to null. The behavior here is the same as in SourceInterpreter,
     // which is provided by the framework.
@@ -151,29 +75,31 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
     // (2) `tp` may also be `null`. When creating the initial frame, the analyzer invokes
     //     `newValue(null)` for each local variable. We have to return a value of size 1.
     if (tp == Type.VOID_TYPE) null // (1)
-    else NullnessValue(Unknown, isSize2 = tp != null /*(2)*/ && tp.getSize == 2 )
+    else NullnessValue.unknown(isSize2 = tp != null /*(2)*/ && tp.getSize == 2 )
   }
 
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): NullnessValue = {
     // For instance methods, the `this` parameter is known to be not null.
-    if (isInstanceMethod && local == 0) NullnessValue(NotNull, isSize2 = false)
+    val isThis = local == 0 && (isInstanceMethod || {
+      method.parameters != null && !method.parameters.isEmpty && {
+        val p = method.parameters.get(0)
+        (p.access & Opcodes.ACC_SYNTHETIC) != 0 && p.name == "$this"
+      }
+    })
+    if (isThis) NotNullValue
     else super.newParameterValue(isInstanceMethod, local, tp)
   }
 
-  def newOperation(insn: AbstractInsnNode): NullnessValue = {
-    val nullness = (insn.getOpcode: @switch) match {
-      case Opcodes.ACONST_NULL => Null
+  def newOperation(insn: AbstractInsnNode): NullnessValue = (insn.getOpcode: @switch) match {
+    case Opcodes.ACONST_NULL => NullValue
 
-      case Opcodes.LDC => insn.asInstanceOf[LdcInsnNode].cst match {
-        case _: String | _: Type => NotNull
-        case _ => Unknown
-      }
-
-      case _ => Unknown
+    case Opcodes.LDC => insn.asInstanceOf[LdcInsnNode].cst match {
+      case _: String | _: Type => NotNullValue
+      case _ => NullnessValue.unknown(insn)
     }
 
     // for Opcodes.NEW, we use Unknown. The value will become NotNull after the constructor call.
-    NullnessValue(nullness, insn)
+    case _ => NullnessValue.unknown(insn)
   }
 
   def copyOperation(insn: AbstractInsnNode, value: NullnessValue): NullnessValue = value
@@ -182,26 +108,24 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
     case Opcodes.CHECKCAST => value
 
     case Opcodes.NEWARRAY |
-         Opcodes.ANEWARRAY => NullnessValue(NotNull, isSize2 = false)
+         Opcodes.ANEWARRAY => NotNullValue
 
-    case _ => NullnessValue(Unknown, insn)
+    case _ => NullnessValue.unknown(insn)
   }
 
   def binaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue): NullnessValue = {
-    NullnessValue(Unknown, insn)
+    NullnessValue.unknown(insn)
   }
 
-  def ternaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue, value3: NullnessValue): NullnessValue = {
-    NullnessValue(Unknown, isSize2 = false)
-  }
+  def ternaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue, value3: NullnessValue): NullnessValue = UnknownValue1
 
-  def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = (insn.getOpcode: @switch) match {
-    case Opcodes.MULTIANEWARRAY =>
-      NullnessValue(NotNull, isSize2 = false)
+  def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = insn match {
+    case mi: MethodInsnNode if bTypes.backendUtils.isNonNullMethodInvocation(mi) =>
+      NotNullValue
 
     case _ =>
-      // TODO: use a list of methods that are known to return non-null values
-      NullnessValue(Unknown, insn)
+      if (insn.getOpcode == Opcodes.MULTIANEWARRAY) NotNullValue
+      else NullnessValue.unknown(insn)
   }
 
   def returnOperation(insn: AbstractInsnNode, value: NullnessValue, expected: NullnessValue): Unit = ()
@@ -219,8 +143,10 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   override def execute(insn: AbstractInsnNode, interpreter: Interpreter[NullnessValue]): Unit = {
     import Opcodes._
 
-    // get the object id of the object that is known to be not-null after this operation
-    val nullCheckedAliasId: Long = (insn.getOpcode: @switch) match {
+    // get the alias set the object that is known to be not-null after this operation.
+    // alias sets are mutable / mutated, so after super.execute, this set contains the remaining
+    // aliases of the value that becomes not-null.
+    val nullCheckedAliases: AliasSet = (insn.getOpcode: @switch) match {
       case IALOAD |
            LALOAD |
            FALOAD |
@@ -229,7 +155,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
            BALOAD |
            CALOAD |
            SALOAD =>
-        aliasId(this.stackTop - 1)
+        aliasesOf(this.stackTop - 1)
 
       case IASTORE |
            FASTORE |
@@ -239,35 +165,36 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
            SASTORE |
            LASTORE |
            DASTORE =>
-        aliasId(this.stackTop - 2)
+        aliasesOf(this.stackTop - 2)
 
       case GETFIELD =>
-        aliasId(this.stackTop)
+        aliasesOf(this.stackTop)
 
       case PUTFIELD =>
-        aliasId(this.stackTop - 1)
+        aliasesOf(this.stackTop - 1)
 
       case INVOKEVIRTUAL |
            INVOKESPECIAL |
            INVOKEINTERFACE =>
         val desc = insn.asInstanceOf[MethodInsnNode].desc
         val numArgs = Type.getArgumentTypes(desc).length
-        aliasId(this.stackTop - numArgs)
+        aliasesOf(this.stackTop - numArgs)
 
       case ARRAYLENGTH |
            MONITORENTER |
            MONITOREXIT =>
-        aliasId(this.stackTop)
+        aliasesOf(this.stackTop)
 
       case _ =>
-        -1
+        null
     }
 
     super.execute(insn, interpreter)
 
-    if (nullCheckedAliasId != -1) {
-      for (i <- valuesWithAliasId(nullCheckedAliasId))
-        this.setValue(i, NotNullValue)
+    if (nullCheckedAliases != null) {
+      val it = nullCheckedAliases.iterator
+      while (it.hasNext)
+        this.setValue(it.next(), NotNullValue)
     }
   }
 }
@@ -276,7 +203,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
  * This class is required to override the `newFrame` methods, which makes makes sure the analyzer
  * uses NullnessFrames.
  */
-class NullnessAnalyzer extends Analyzer[NullnessValue](new NullnessInterpreter) {
+class NullnessAnalyzer(bTypes: BTypes, method: MethodNode) extends Analyzer[NullnessValue](new NullnessInterpreter(bTypes, method)) {
   override def newFrame(nLocals: Int, nStack: Int): NullnessFrame = new NullnessFrame(nLocals, nStack)
   override def newFrame(src: Frame[_ <: NullnessValue]): NullnessFrame = new NullnessFrame(src)
 }

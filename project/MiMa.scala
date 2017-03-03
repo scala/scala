@@ -4,7 +4,7 @@
 //   both forwards and backwards incompatibilities (possibly fixed as of
 //   https://github.com/typesafehub/migration-manager/commit/2844ffa48b6d2255aa64bd687703aec21dadd55e)
 // * ability to pass a filter file (https://github.com/typesafehub/migration-manager/issues/102)
-// So we invoke the MiMa CLI directly; it's also what the Ant build did.
+// So we invoke the MiMa CLI directly.
 
 import sbt._
 import sbt.Keys._
@@ -24,13 +24,12 @@ object MiMa {
           def runOnce(prev: java.io.File, curr: java.io.File, isForward: Boolean): Unit = {
             val direction = if (isForward) "forward" else "backward"
             log.info(s"Checking $direction binary compatibility")
-            log.debug(s"prev = $prev, curr = $curr")
+            log.info(s"prev = $prev, curr = $curr")
             runMima(
               prev = if (isForward) curr else prev,
               curr = if (isForward) prev else curr,
               // TODO: it would be nicer if each subproject had its own whitelist, but for now
-              // for compatibility with how Ant did things, there's just one at the root.
-              // once Ant is gone we'd be free to split it up.
+              // there's just one at the root. with the Ant build gone, we would be free now to split it.
               filter = (baseDirectory in ThisBuild).value / s"bincompat-$direction.whitelist.conf",
               log)
           }
@@ -49,7 +48,11 @@ object MiMa {
       "--prev", prev.getAbsolutePath,
       "--curr", curr.getAbsolutePath,
       "--filters", filter.getAbsolutePath,
-      "--generate-filters"
+      "--generate-filters",
+      // !!! Command line MiMa (which we call rathan the sbt Plugin for reasons alluded to in f2d0f1e85) incorrectly
+      //     defaults to no checking (!) if this isn't specified. Fixed in https://github.com/typesafehub/migration-manager/pull/138
+      //     TODO: Try out the new "--direction both" mode of MiMa
+      "--direction", "backwards"
     )
     val exitCode = TrapExit(com.typesafe.tools.mima.cli.Main.main(args), log)
     if (exitCode != 0)

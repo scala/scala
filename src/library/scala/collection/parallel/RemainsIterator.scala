@@ -9,13 +9,10 @@
 package scala
 package collection.parallel
 
-import scala.collection.Parallel
 import scala.collection.generic.Signalling
 import scala.collection.generic.DelegatedSignalling
 import scala.collection.generic.IdleSignalling
-import scala.collection.generic.CanCombineFrom
 import scala.collection.mutable.Builder
-import scala.collection.Iterator.empty
 import scala.collection.GenTraversableOnce
 import scala.collection.parallel.immutable.repetition
 
@@ -455,6 +452,15 @@ self =>
       count -= 1
     }
     it
+  }
+  /** Drop implemented as simple eager consumption. */
+  override def drop(n: Int): IterableSplitter[T] = {
+    var i = 0
+    while (i < n && hasNext) {
+      next()
+      i += 1
+    }
+    this
   }
   override def take(n: Int): IterableSplitter[T] = newTaken(n)
   override def slice(from1: Int, until1: Int): IterableSplitter[T] = newSliceInternal(newTaken(until1), from1)

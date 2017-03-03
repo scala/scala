@@ -205,7 +205,7 @@ object M5 {
         val inputSig = input.getSignal;
         afterDelay(InverterDelay) {() => output.setSignal(!inputSig) };
       }
-      input addAction invertAction
+      input addAction invertAction _
     }
 
     def andGate(a1: Wire, a2: Wire, output: Wire): Unit = {
@@ -214,8 +214,8 @@ object M5 {
         val a2Sig = a2.getSignal;
         afterDelay(AndGateDelay) {() => output.setSignal(a1Sig & a2Sig) };
       }
-      a1 addAction andAction;
-      a2 addAction andAction;
+      a1 addAction andAction _
+      a2 addAction andAction _
     }
 
     def orGate(o1: Wire, o2: Wire, output: Wire): Unit = {
@@ -224,8 +224,8 @@ object M5 {
         val o2Sig = o2.getSignal;
         afterDelay(OrGateDelay) {() => output.setSignal(o1Sig | o2Sig) };
       }
-      o1 addAction orAction;
-      o2 addAction orAction;
+      o1 addAction orAction _
+      o2 addAction orAction _
     }
 
     def probe(name: String, wire: Wire): Unit = {
@@ -479,7 +479,7 @@ abstract class BasicCircuitSimulator() extends Simulator() {
       val inputSig = input.getSignal;
       afterDelay(InverterDelay) {() => output.setSignal(!inputSig) };
     }
-    input addAction invertAction
+    input addAction invertAction _
   }
 
   def andGate(a1: Wire, a2: Wire, output: Wire) = {
@@ -488,8 +488,8 @@ abstract class BasicCircuitSimulator() extends Simulator() {
       val a2Sig = a2.getSignal;
       afterDelay(AndGateDelay) {() => output.setSignal(a1Sig & a2Sig) };
     }
-    a1 addAction andAction;
-    a2 addAction andAction
+    a1 addAction andAction _
+    a2 addAction andAction _
   }
 
   def orGate(a1: Wire, a2: Wire, output: Wire) = {
@@ -498,8 +498,8 @@ abstract class BasicCircuitSimulator() extends Simulator() {
       val a2Sig = a2.getSignal;
       afterDelay(OrGateDelay) {() => output.setSignal(a1Sig | a2Sig) };
     }
-    a1 addAction orAction;
-    a2 addAction orAction
+    a1 addAction orAction _
+    a2 addAction orAction _
   }
 
   def orGate2(a1: Wire, a2: Wire, output: Wire) = {

@@ -4,12 +4,11 @@
  */
 package scala.tools.nsc.interpreter
 
-import scala.reflect.internal.Flags
 import scala.reflect.internal.util.StringOps
-import scala.tools.nsc.interpreter.Completion.{ScalaCompleter, Candidates}
+import scala.tools.nsc.interpreter.Completion.Candidates
 import scala.util.control.NonFatal
 
-class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCompleter {
+class PresentationCompilerCompleter(intp: IMain) extends Completion {
   import PresentationCompilerCompleter._
   import intp.{PresentationCompileResult => Result}
 
@@ -20,7 +19,6 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
   private var lastCommonPrefixCompletion: Option[String] = None
 
   def resetVerbosity(): Unit = { tabCount = 0 ; lastRequest = NoRequest }
-  def completer(): ScalaCompleter = this
 
   // A convenience for testing
   def complete(before: String, after: String = ""): Candidates = complete(before + after, before.length)

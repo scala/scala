@@ -7,8 +7,6 @@ package scala.tools
 package nsc
 package settings
 
-import language.existentials
-
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {
@@ -26,6 +24,8 @@ trait Warnings {
   val warnUnused           = BooleanSetting("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are unused.")
   // currently considered too noisy for general use
   val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
+
+  val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
@@ -59,6 +59,7 @@ trait Warnings {
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
+    val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -80,6 +81,7 @@ trait Warnings {
   def warnPackageObjectClasses   = lint contains PackageObjectClasses
   def warnUnsoundMatch           = lint contains UnsoundMatch
   def warnStarsAlign             = lint contains StarsAlign
+  def warnConstant               = lint contains Constant
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")

@@ -1,6 +1,5 @@
 package scala
 package collection
-import generic.CanBuildFrom
 
 import scala.language.higherKinds
 

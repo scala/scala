@@ -9,8 +9,6 @@
 package scala
 package collection
 
-import mutable.ListBuffer
-import immutable.List
 import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]` which optimizes
@@ -133,9 +131,9 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     else op(head, tail.foldRight(z)(op))
 
   override /*TraversableLike*/
-  def reduceLeft[B >: A](f: (B, A) => B): B =
+  def reduceLeft[B >: A](@deprecatedName('f) op: (B, A) => B): B =
     if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
-    else tail.foldLeft[B](head)(f)
+    else tail.foldLeft[B](head)(op)
 
   override /*IterableLike*/
   def reduceRight[B >: A](op: (A, B) => B): B =
@@ -293,7 +291,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   override /*SeqLike*/
   def indexWhere(p: A => Boolean, from: Int): Int = {
-    var i = from
+    var i = math.max(from, 0)
     var these = this drop from
     while (these.nonEmpty) {
       if (p(these.head))

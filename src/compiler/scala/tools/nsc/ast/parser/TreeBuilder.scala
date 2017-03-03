@@ -7,7 +7,6 @@ package scala.tools.nsc
 package ast.parser
 
 import symtab.Flags._
-import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.{Position, SourceFile, FreshNameCreator}
 
 /** Methods for building trees, used in the parser.  All the trees
@@ -35,6 +34,9 @@ abstract class TreeBuilder {
     AppliedTypeTree(rootScalaDot(tpnme.BYNAME_PARAM_CLASS_NAME), List(tpe))
   def repeatedApplication(tpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(tpnme.REPEATED_PARAM_CLASS_NAME), List(tpe))
+
+  // represents `expr _`, as specified in Method Values of spec/06-expressions.md
+  def makeMethodValue(expr: Tree): Tree = Typed(expr, Function(Nil, EmptyTree))
 
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)

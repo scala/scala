@@ -6,10 +6,10 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.language.postfixOps
+
+import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 /** Optimize and analyze matches based on their TreeMaker-representation.
@@ -116,8 +116,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
               case _ =>
             }
 
-            debug.patmat("sharedPrefix: "+ sharedPrefix)
-            debug.patmat("suffix: "+ sharedPrefix)
+            debug.patmat(s"sharedPrefix: $sharedPrefix")
+            debug.patmat(s"suffix: $suffix")
             // if the shared prefix contains interesting conditions (!= True)
             // and the last of such interesting shared conditions reuses another treemaker's test
             // replace the whole sharedPrefix by a ReusingCondTreeMaker

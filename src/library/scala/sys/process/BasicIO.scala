@@ -33,7 +33,7 @@ object BasicIO {
   final val BufferSize = 8192
 
   /** Used to separate lines in the `processFully` function that takes `Appendable`. */
-  final val Newline    = props("line.separator")
+  final val Newline    = System.lineSeparator
 
   private[process] final class Streamed[T](
     val process:   T => Unit,
@@ -221,7 +221,7 @@ object BasicIO {
     */
   def transferFully(in: InputStream, out: OutputStream): Unit =
     try transferFullyImpl(in, out)
-    catch onInterrupt(())
+    catch onIOInterrupt(())
 
   private[this] def appendLine(buffer: Appendable): String => Unit = line => {
     buffer append line

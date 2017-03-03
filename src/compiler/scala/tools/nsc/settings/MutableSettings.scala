@@ -219,8 +219,15 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
-  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
-    add(new ChoiceSetting(name, helpArg, descr, choices, default))
+  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String]) =
+    add(new ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp))
+  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String]) =
+    ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp).withPostSetHook(sett =>
+      if (sett.value != default) {
+        sett.withDeprecationMessage(s"${name}:${sett.value} is deprecated, forcing use of $default")
+        sett.value = default
+      }
+    )
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
     add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
@@ -409,9 +416,9 @@ class MutableSettings(val errorFn: String => Unit)
     // Helper to generate a textual explanation of valid inputs
     private def getValidText: String = (min, max) match {
       case (IntMin, IntMax)   => "can be any integer"
-      case (IntMin, x)        => "must be less than or equal to "+x
-      case (x, IntMax)        => "must be greater than or equal to "+x
-      case _                  => "must be between %d and %d".format(min, max)
+      case (IntMin, x)        => f"must be less than or equal to $x%d"
+      case (x, IntMax)        => f"must be greater than or equal to $x%d"
+      case _                  => f"must be between $min%d and $max%d"
     }
 
     // Ensure that the default value is actually valid
@@ -424,7 +431,7 @@ class MutableSettings(val errorFn: String => Unit)
       }
     }
 
-    def errorMsg() = errorFn("invalid setting for -"+name+" "+getValidText)
+    def errorMsg() = errorFn(s"invalid setting for $name $getValidText")
 
     def tryToSet(args: List[String]) =
       if (args.isEmpty) errorAndValue("missing argument", None)
@@ -437,7 +444,7 @@ class MutableSettings(val errorFn: String => Unit)
       if (value == default) Nil
       else List(name, value.toString)
 
-    withHelpSyntax(name + " <n>")
+    withHelpSyntax(s"$name <n>")
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
@@ -620,7 +627,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String,
     val domain: E,
     val default: Option[List[String]]
-  ) extends Setting(name, s"$descr: `_' for all, `$name:help' to list") with Clearable {
+  ) extends Setting(name, s"$descr: `_' for all, `$name:help' to list choices.") with Clearable {
 
     withHelpSyntax(s"$name:<_,$helpArg,-$helpArg>")
 
@@ -741,9 +748,9 @@ class MutableSettings(val errorFn: String => Unit)
 
     def contains(choice: domain.Value): Boolean = value contains choice
 
-    def isHelping: Boolean = sawHelp
+    override def isHelping: Boolean = sawHelp
 
-    def help: String = {
+    override def help: String = {
       val describe: ((String, String)) => String = {
         val choiceWidth = choices.map(_.length).max + 1
         val formatStr   = s"  %-${choiceWidth}s %s"
@@ -809,18 +816,33 @@ class MutableSettings(val errorFn: String => Unit)
     helpArg: String,
     descr: String,
     override val choices: List[String],
-    val default: String)
-  extends Setting(name, descr + choices.mkString(" (", ",", ") default:" + default)) {
+    val default: String,
+    val choicesHelp: List[String])
+  extends Setting(name,
+    if (choicesHelp.isEmpty) s"$descr Choices: ${choices.mkString("(", ",", ")")}, default: $default."
+    else s"$descr Default: `$default', `help' to list choices.") {
     type T = String
     protected var v: T = default
     def indexOfChoice: Int = choices indexOf value
 
-    private def usageErrorMessage = f"Usage: $name:<$helpArg>%n where <$helpArg> choices are ${choices mkString ", "} (default: $default)%n"
+    private def choicesHelpMessage = if (choicesHelp.isEmpty) "" else {
+      val choiceLength = choices.map(_.length).max + 1
+      val formatStr = s"  %-${choiceLength}s %s%n"
+      choices.zipAll(choicesHelp, "", "").map({
+        case (choice, desc) => formatStr.format(choice, desc)
+      }).mkString("")
+    }
+    private def usageErrorMessage = f"Usage: $name:<$helpArg> where <$helpArg> choices are ${choices mkString ", "} (default: $default).%n$choicesHelpMessage"
+
+    private var sawHelp = false
+    override def isHelping = sawHelp
+    override def help = usageErrorMessage
 
     def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
 
     override def tryToSetColon(args: List[String]) = args match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
+      case List("help")                   => sawHelp = true; Some(Nil)
       case List(x) if choices contains x  => value = x ; Some(Nil)
       case List(x)                        => errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
       case xs                             => errorAndValue("'" + name + "' does not accept multiple arguments.", None)

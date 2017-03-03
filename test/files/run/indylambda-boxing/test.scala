@@ -2,15 +2,16 @@ class Capture
 class Test {
   def test1 = (i: Int) => ""
   def test2 = (i: VC) => i
-  def test3 = (i: Int) => i
+  def test3 = (i: Int) => i // not adapted, specialized
 
-  def test4 = {val c = new Capture; (i: Int) => {(c, Test.this.toString); 42} }
+  def test4 = {val c = new Capture; (i: Int) => {(c, Test.this.toString); 42} } // not adapted, specialized
   def test5 = {val c = new Capture; (i: VC) => (c, Test.this.toString) }
   def test6 = {val c = new Capture; (i: Int) => (c, Test.this.toString) }
 
   def test7 = {val vc = new Capture; (i: Int) => vc }
-  def test8 = {val c = 42; (s: String) => (s, c)}
+  def test8 = {val c = 42; (s: String) => (s, c)} // not adapted
   def test9 = {val c = 42; (s: String) => ()}
+  def test10 = {(s: List[String]) => ()}
 }
 
 object Test {

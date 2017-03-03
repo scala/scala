@@ -24,4 +24,5 @@ package scala
  * }
  * }}}
  */
+@deprecated("extend java.rmi.Remote instead and add @throws[java.rmi.RemoteException] to public methods", "2.12.0")
 class remote extends scala.annotation.StaticAnnotation {}

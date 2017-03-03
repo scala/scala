@@ -415,6 +415,24 @@ extends AbstractMap[Long, V]
     lm
   }
 
+  override def +[V1 >: V](kv: (Long, V1)): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    lm += kv
+    lm
+  }
+
+  override def ++[V1 >: V](xs: GenTraversableOnce[(Long, V1)]): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    xs.foreach(kv => lm += kv)
+    lm
+  }
+
+  override def updated[V1 >: V](key: Long, value: V1): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    lm += (key, value)
+    lm
+  }
+
   /** Applies a function to all keys of this map. */
   def foreachKey[A](f: Long => A) {
     if ((extraKeys & 1) == 1) f(0L)
@@ -501,7 +519,11 @@ object LongMap {
       def apply(): LongMapBuilder[U] = new LongMapBuilder[U]
     }
 
-  final class LongMapBuilder[V] extends Builder[(Long, V), LongMap[V]] {
+  /** A builder for instances of `LongMap`.
+   *
+   *  This builder can be reused to create multiple instances.
+   */
+  final class LongMapBuilder[V] extends ReusableBuilder[(Long, V), LongMap[V]] {
     private[collection] var elems: LongMap[V] = new LongMap[V]
     def +=(entry: (Long, V)): this.type = {
       elems += entry
@@ -541,7 +563,7 @@ object LongMap {
   /** Creates a new `LongMap` from keys and values.
    *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
    */
-  def fromZip[V](keys: Iterable[Long], values: Iterable[V]): LongMap[V] = {
+  def fromZip[V](keys: collection.Iterable[Long], values: collection.Iterable[V]): LongMap[V] = {
     val sz = math.min(keys.size, values.size)
     val lm = new LongMap[V](sz * 2)
     val ki = keys.iterator

@@ -6,10 +6,10 @@
 
 package scala.tools.nsc
 
-import java.io.File.pathSeparator
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.reflect.internal.util.FakePos
+import scala.reflect.internal.Reporter
+import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
@@ -39,23 +39,43 @@ class ScalaDoc {
       reporter.echo(command.usageMsg)
     else
       try { new DocFactory(reporter, docSettings) document command.files }
-    catch {
-      case ex @ FatalError(msg) =>
-        if (docSettings.debug.value) ex.printStackTrace()
-        reporter.error(null, "fatal error: " + msg)
-    }
-    finally reporter.printSummary()
+      catch {
+        case ex @ FatalError(msg) =>
+          if (docSettings.debug.value) ex.printStackTrace()
+          reporter.error(null, "fatal error: " + msg)
+      }
+      finally reporter.printSummary()
 
     !reporter.reallyHasErrors
   }
 }
 
+/** The Scaladoc reporter adds summary messages to the `ConsoleReporter`
+ *
+ *  Use the `summaryX` methods to add unique summarizing message to the end of
+ *  the run.
+ */
 class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
+  import scala.collection.mutable.LinkedHashMap
 
   // need to do sometimes lie so that the Global instance doesn't
   // trash all the symbols just because there was an error
   override def hasErrors = false
   def reallyHasErrors = super.hasErrors
+
+  private[this] val delayedMessages: LinkedHashMap[(Position, String), () => Unit] =
+    LinkedHashMap.empty
+
+  /** Eliminates messages if both `pos` and `msg` are equal to existing element */
+  def addDelayedMessage(pos: Position, msg: String, print: () => Unit): Unit =
+    delayedMessages += ((pos, msg) -> print)
+
+  def printDelayedMessages(): Unit = delayedMessages.values.foreach(_.apply())
+
+  override def printSummary(): Unit = {
+    printDelayedMessages()
+    super.printSummary()
+  }
 }
 
 object ScalaDoc extends ScalaDoc {
@@ -70,5 +90,21 @@ object ScalaDoc extends ScalaDoc {
 
   def main(args: Array[String]): Unit = sys exit {
     if (process(args)) 0 else 1
+  }
+
+  implicit class SummaryReporter(val rep: Reporter) extends AnyVal {
+    /** Adds print lambda to ScalaDocReporter, executes it on other reporter */
+    private[this] def summaryMessage(pos: Position, msg: String, print: () => Unit): Unit = rep match {
+      case r: ScalaDocReporter => r.addDelayedMessage(pos, msg, print)
+      case _ => print()
+    }
+
+    def summaryEcho(pos: Position, msg: String): Unit    = summaryMessage(pos, msg, () => rep.echo(pos, msg))
+    def summaryError(pos: Position, msg: String): Unit   = summaryMessage(pos, msg, () => rep.error(pos, msg))
+    def summaryWarning(pos: Position, msg: String): Unit = summaryMessage(pos, msg, () => rep.warning(pos, msg))
+
+    def summaryEcho(msg: String): Unit    = summaryEcho(NoPosition, msg)
+    def summaryError(msg: String): Unit   = summaryError(NoPosition, msg)
+    def summaryWarning(msg: String): Unit = summaryWarning(NoPosition, msg)
   }
 }

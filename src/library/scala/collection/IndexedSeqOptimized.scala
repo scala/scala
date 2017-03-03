@@ -10,7 +10,6 @@ package scala
 package collection
 
 import generic._
-import mutable.ArrayBuffer
 import scala.annotation.tailrec
 
 /** A template trait for indexed sequences of type `IndexedSeq[A]` which optimizes
@@ -200,7 +199,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
 
   override /*SeqLike*/
   def indexWhere(p: A => Boolean, from: Int): Int = {
-    val start = from max 0
+    val start = math.max(from, 0)
     negLength(start + segmentLength(!p(_), start))
   }
 

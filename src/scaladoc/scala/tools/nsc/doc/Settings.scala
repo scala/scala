@@ -14,12 +14,15 @@ import scala.language.postfixOps
   * @param printMsg A function that prints the string, without any extra boilerplate of error */
 class Settings(error: String => Unit, val printMsg: String => Unit = println(_)) extends scala.tools.nsc.Settings(error) {
 
+  // TODO 2.13 Remove
+  private def removalIn213 = "This flag is scheduled for removal in 2.13. If you have a case where you need this flag then please report a bug."
+
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
   val docformat = ChoiceSetting (
     "-doc-format",
     "format",
-    "Selects in which format documentation is rendered",
+    "Selects in which format documentation is rendered.",
     List("html"),
     "html"
   )
@@ -199,14 +202,20 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     ""
   )
 
+  // TODO 2.13 Remove
   val docExpandAllTypes = BooleanSetting (
     "-expand-all-types",
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
-  )
+  ) withDeprecationMessage(removalIn213)
 
   val docGroups = BooleanSetting (
     "-groups",
     "Group similar functions together (based on the @group annotation)"
+  )
+
+  val docNoJavaComments = BooleanSetting (
+    "-no-java-comments",
+    "Prevents parsing and inclusion of comments from java sources."
   )
 
   // For improved help output.
@@ -218,7 +227,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide, docImplicitsSoundShadowing,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
-    docExpandAllTypes, docGroups
+    docExpandAllTypes, docGroups, docNoJavaComments
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
@@ -315,30 +324,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       "scala.Predef.ArrowAssoc",
       "scala.Predef.Ensuring",
       "scala.collection.TraversableOnce.alternateImplicit")
-
-    /** There's a reason all these are specialized by hand but documenting each of them is beyond the point */
-    val arraySkipConversions = List(
-      "scala.Predef.refArrayOps",
-      "scala.Predef.intArrayOps",
-      "scala.Predef.doubleArrayOps",
-      "scala.Predef.longArrayOps",
-      "scala.Predef.floatArrayOps",
-      "scala.Predef.charArrayOps",
-      "scala.Predef.byteArrayOps",
-      "scala.Predef.shortArrayOps",
-      "scala.Predef.booleanArrayOps",
-      "scala.Predef.unitArrayOps",
-      "scala.LowPriorityImplicits.wrapRefArray",
-      "scala.LowPriorityImplicits.wrapIntArray",
-      "scala.LowPriorityImplicits.wrapDoubleArray",
-      "scala.LowPriorityImplicits.wrapLongArray",
-      "scala.LowPriorityImplicits.wrapFloatArray",
-      "scala.LowPriorityImplicits.wrapCharArray",
-      "scala.LowPriorityImplicits.wrapByteArray",
-      "scala.LowPriorityImplicits.wrapShortArray",
-      "scala.LowPriorityImplicits.wrapBooleanArray",
-      "scala.LowPriorityImplicits.wrapUnitArray",
-      "scala.LowPriorityImplicits.genericWrapArray")
 
     // included as names as here we don't have access to a Global with Definitions :(
     def valueClassList = List("unit", "boolean", "byte", "short", "char", "int", "long", "float", "double")

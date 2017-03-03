@@ -21,5 +21,5 @@ package collection
  *  @version 2.8
  *  @since   2.8
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.3")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.3")
 trait TraversableProxy[+A] extends Traversable[A] with TraversableProxyLike[A, Traversable[A]]

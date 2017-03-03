@@ -30,8 +30,7 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
   override def transformedType(sym: Symbol) =
     postErasure.transformInfo(sym,
       erasure.transformInfo(sym,
-        uncurry.transformInfo(sym,
-          refChecks.transformInfo(sym, sym.info))))
+        uncurry.transformInfo(sym, sym.info)))
 
   override def isCompilerUniverse = true
 

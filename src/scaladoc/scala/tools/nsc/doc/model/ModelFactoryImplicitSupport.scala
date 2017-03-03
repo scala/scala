@@ -11,7 +11,6 @@ package doc
 package model
 
 import scala.collection._
-import symtab.Flags
 
 /**
  * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.
@@ -99,10 +98,15 @@ trait ModelFactoryImplicitSupport {
       // also keep empty conversions, so they appear in diagrams
       // conversions = conversions.filter(!_.members.isEmpty)
 
-      // Filter out specialized conversions from array
-      if (sym == ArrayClass)
-        conversions = conversions.filterNot((conv: ImplicitConversionImpl) =>
-          hardcoded.arraySkipConversions.contains(conv.conversionQualifiedName))
+      val hiddenConversions: Seq[String] = thisFactory
+        .comment(sym, inTpl.linkTarget, inTpl)
+        .map(_.hideImplicitConversions)
+        .getOrElse(Nil)
+
+      conversions = conversions filterNot { conv: ImplicitConversionImpl =>
+        hiddenConversions.contains(conv.conversionShortName) ||
+        hiddenConversions.contains(conv.conversionQualifiedName)
+      }
 
       // Filter out non-sensical conversions from value types
       if (isPrimitiveValueType(sym.tpe_*))
@@ -164,6 +168,20 @@ trait ModelFactoryImplicitSupport {
         //    }
         // }}}
         // so we just won't generate an implicit conversion for implicit methods that only take implicit parameters
+        return Nil
+      }
+
+      if (!settings.docImplicitsShowAll && viewSimplifiedType.resultType.typeSymbol == sym) {
+        // If, when looking at views for a class A, we find one that returns A as well
+        // (possibly with different type parameters), we ignore it.
+        // It usually is a way to build a "whatever" into an A, but we already have an A, as in:
+        // {{{
+        //    object Box {
+        //      implicit def anyToBox[T](t: T): Box[T] = new Box(t)
+        //    }
+        //    class Box[T](val t: T)
+        // }}}
+        // We don't want the implicit conversion from Box[T] to Box[Box[T]] to appear.
         return Nil
       }
 
@@ -232,7 +250,7 @@ trait ModelFactoryImplicitSupport {
         try {
           // TODO: Not sure if `owner = sym.owner` is the right thing to do -- seems similar to what scalac should be doing
           val silentContext = context.make(owner = sym.owner).makeSilent(reportAmbiguousErrors = false)
-          val search = inferImplicit(EmptyTree, tpe, false, false, silentContext, false)
+          val search = inferImplicitByTypeSilent(tpe, silentContext)
           available = Some(search.tree != EmptyTree)
         } catch {
           case _: TypeError =>

@@ -9,9 +9,6 @@
 package scala
 package collection
 
-import mutable.ArrayBuffer
-import scala.annotation.tailrec
-
 /** A template trait for indexed sequences of type `IndexedSeq[A]`.
  *
  *  $indexedSeqInfo
@@ -95,4 +92,6 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
     copyToBuffer(result)
     result
   }
+
+  override protected[collection] def sizeHintIfCheap: Int = size
 }

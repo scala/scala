@@ -1,0 +1,10 @@
+t9382.scala:3: error: value x is not a member of (List[Int], List[Int])
+  def f = (List(1,2,3), List(4,5,6)).x
+                                     ^
+t9382.scala:4: error: value x is not a member of (List[Int], List[Int], List[Int])
+  def g = (List(1,2,3), List(4,5,6), List(7,8,9)).x
+                                                  ^
+t9382.scala:5: error: value x is not a member of (Int, Int)
+  def huh = (1,2).x
+                  ^
+three errors found

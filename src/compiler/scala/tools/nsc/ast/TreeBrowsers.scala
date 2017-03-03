@@ -7,7 +7,9 @@ package scala
 package tools.nsc
 package ast
 
-import java.awt.{List => awtList, _}
+import scala.language.implicitConversions
+
+import java.awt.{List => _, _}
 import java.awt.event._
 import java.io.StringWriter
 
@@ -17,7 +19,6 @@ import javax.swing.tree._
 
 import scala.concurrent.Lock
 import scala.text._
-import scala.language.implicitConversions
 
 /**
  * Tree browsers can show the AST in a graphical and interactive

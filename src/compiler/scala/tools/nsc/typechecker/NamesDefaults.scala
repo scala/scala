@@ -9,6 +9,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import PartialFunction.{ cond => when }
 
 /**
  *  @author Lukas Rytz
@@ -468,8 +469,7 @@ trait NamesDefaults { self: Analyzer =>
       else {
         // isClass also works for methods in objects, owner is the ModuleClassSymbol
         if (param.owner.owner.isClass) {
-          // .toInterface: otherwise we get the method symbol of the impl class
-          param.owner.owner.toInterface.info.member(defGetterName)
+          param.owner.owner.info.member(defGetterName)
         } else {
           // the owner of the method is another method. find the default
           // getter in the context.
@@ -551,64 +551,75 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
-  /**
-   * Removes name assignments from args. Additionally, returns an array mapping
-   * argument indices from call-site-order to definition-site-order.
+  /** Removes name assignments from args. Additionally, returns an array mapping
+   *  argument indices from call-site-order to definition-site-order.
    *
-   * Verifies that names are not specified twice, positional args don't appear
-   * after named ones.
+   *  Verifies that names are not specified twice, and positional args don't appear after named ones.
    */
   def removeNames(typer: Typer)(args: List[Tree], params: List[Symbol]): (List[Tree], Array[Int]) = {
     implicit val context0 = typer.context
-    // maps indices from (order written by user) to (order of definition)
-    val argPos            = Array.fill(args.length)(-1)
-    var positionalAllowed = true
-    val namelessArgs = mapWithIndex(args) { (arg, argIndex) =>
-      arg match {
-        case arg @ AssignOrNamedArg(Ident(name), rhs) =>
-          def matchesName(param: Symbol) = !param.isSynthetic && (
-            (param.name == name) || (param.deprecatedParamName match {
-              case Some(`name`) =>
-                context0.deprecationWarning(arg.pos, param,
-                  s"the parameter name $name has been deprecated. Use ${param.name} instead.")
-                true
-              case _ => false
-            })
-          )
-          val paramPos = params indexWhere matchesName
-          if (paramPos == -1) {
-            if (positionalAllowed) {
-              argPos(argIndex) = argIndex
-              // prevent isNamed from being true when calling doTypedApply recursively,
-              // treat the arg as an assignment of type Unit
-              Assign(arg.lhs, rhs) setPos arg.pos
-            }
-            else UnknownParameterNameNamesDefaultError(arg, name)
-          }
-          else if (argPos contains paramPos) {
+    def matchesName(param: Symbol, name: Name, argIndex: Int) = {
+      def warn(msg: String, since: String) = context0.deprecationWarning(args(argIndex).pos, param, msg, since)
+      def checkDeprecation(anonOK: Boolean) =
+        when (param.deprecatedParamName) {
+          case Some(`name`)      => true
+          case Some(nme.NO_NAME) => anonOK
+        }
+      def version = param.deprecatedParamVersion.getOrElse("")
+      def since   = if (version.isEmpty) version else s" (since $version)"
+      def checkName = {
+        val res = param.name == name
+        if (res && checkDeprecation(true)) warn(s"naming parameter $name is deprecated$since.", version)
+        res
+      }
+      def checkAltName = {
+        val res = checkDeprecation(false)
+        if (res) warn(s"the parameter name $name is deprecated$since: use ${param.name} instead", version)
+        res
+      }
+      !param.isSynthetic && (checkName || checkAltName)
+    }
+    // argPos maps indices from (order written by user) to (order of definition)
+    val argPos       = Array.fill(args.length)(-1)
+    val namelessArgs = {
+      var positionalAllowed = true
+      def stripNamedArg(arg: AssignOrNamedArg, argIndex: Int): Tree = {
+        val AssignOrNamedArg(Ident(name), rhs) = arg
+        params indexWhere (p => matchesName(p, name, argIndex)) match {
+          case -1 if positionalAllowed =>
+            // prevent isNamed from being true when calling doTypedApply recursively,
+            // treat the arg as an assignment of type Unit
+            Assign(arg.lhs, rhs) setPos arg.pos
+          case -1 =>
+            UnknownParameterNameNamesDefaultError(arg, name)
+          case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
-            val otherName = args(paramPos) match {
-              case AssignOrNamedArg(Ident(oName), rhs) if oName != name => Some(oName)
-              case _ => None
+            val otherName = Some(args(paramPos)) collect {
+              case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
-          } else if (isAmbiguousAssignment(typer, params(paramPos), arg))
+          case paramPos if isAmbiguousAssignment(typer, params(paramPos), arg) =>
             AmbiguousReferenceInNamesDefaultError(arg, name)
-          else {
-            // if the named argument is on the original parameter
-            // position, positional after named is allowed.
-            if (argIndex != paramPos)
-              positionalAllowed = false
-            argPos(argIndex) = paramPos
+          case paramPos if paramPos != argIndex =>
+            positionalAllowed = false    // named arg is not in original parameter order: require names after this
+            argPos(argIndex)  = paramPos // fix up the arg position
             rhs
-          }
-        case _ =>
-          argPos(argIndex) = argIndex
-          if (positionalAllowed) arg
-          else PositionalAfterNamedNamesDefaultError(arg)
+          case _ => rhs
+        }
+      }
+      mapWithIndex(args) {
+        case (arg: AssignOrNamedArg, argIndex) =>
+          val t = stripNamedArg(arg, argIndex)
+          if (!t.isErroneous && argPos(argIndex) < 0) argPos(argIndex) = argIndex
+          t
+        case (arg, argIndex) =>
+          if (positionalAllowed) {
+            argPos(argIndex) = argIndex
+            arg
+          } else
+            PositionalAfterNamedNamesDefaultError(arg)
       }
     }
-
     (namelessArgs, argPos)
   }
 }

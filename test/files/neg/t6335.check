@@ -1,9 +1,9 @@
-t6335.scala:6: error: method Z is defined twice
-  conflicting symbols both originated in file 't6335.scala'
+t6335.scala:6: error: method Z is defined twice;
+  the conflicting method Z was defined at line 5:7
   implicit class Z[A](val i: A) { def zz = i }
                  ^
-t6335.scala:3: error: method X is defined twice
-  conflicting symbols both originated in file 't6335.scala'
+t6335.scala:3: error: method X is defined twice;
+  the conflicting method X was defined at line 2:7
   implicit class X(val x: Int) { def xx = x }
                  ^
 two errors found

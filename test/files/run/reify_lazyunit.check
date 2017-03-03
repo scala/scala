@@ -1,4 +1,4 @@
-reify_lazyunit.scala:6: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+reify_lazyunit.scala:6: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     lazy val x = { 0; println("12")}
                    ^
 12

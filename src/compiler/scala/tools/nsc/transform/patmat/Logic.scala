@@ -8,9 +8,9 @@ package scala
 package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
+
 import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, Statistics, HashSet}
-import scala.tools.nsc.Global
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -184,8 +184,8 @@ trait Logic extends Debugging  {
 
       // push negation inside formula
       def negationNormalFormNot(p: Prop): Prop = p match {
-        case And(ops) => Or(ops.map(negationNormalFormNot)) // De'Morgan
-        case Or(ops)  => And(ops.map(negationNormalFormNot)) // De'Morgan
+        case And(ops) => Or(ops.map(negationNormalFormNot)) // De Morgan
+        case Or(ops)  => And(ops.map(negationNormalFormNot)) // De Morgan
         case Not(p)   => negationNormalForm(p)
         case True     => False
         case False    => True
@@ -646,7 +646,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     }
 
 
-    import global.{ConstantType, Constant, EmptyScope, SingletonType, Literal, Ident, refinedType, singleType, TypeBounds, NoSymbol}
+    import global.{ConstantType, SingletonType, Literal, Ident, singleType, TypeBounds, NoSymbol}
     import global.definitions._
 
 
@@ -682,7 +682,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       private[TreesAndTypesDomain] def uniqueTpForTree(t: Tree): Type = {
         def freshExistentialSubtype(tp: Type): Type = {
           // SI-8611 tp.narrow is tempting, but unsuitable. See `testRefinedTypeSI8611` for an explanation.
-          NoSymbol.freshExistential("").setInfo(TypeBounds.upper(tp)).tpe
+          NoSymbol.freshExistential("", 0).setInfo(TypeBounds.upper(tp)).tpe
         }
 
         if (!t.symbol.isStable) {
@@ -691,7 +691,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // if X is mutable.
           freshExistentialSubtype(t.tpe)
         }
-        else trees find (a => a.correspondsStructure(t)(sameValue)) match {
+        else trees find (a => equivalentTree(a, t)) match {
           case Some(orig) =>
             debug.patmat("unique tp for tree: " + ((orig, orig.tpe)))
             orig.tpe

@@ -1,7 +1,0 @@
-Bundle-Name: Scala Actors
-Bundle-SymbolicName: org.scala-lang.scala-actors
-ver: @VERSION@
-Bundle-Version: ${ver}
-Export-Package: *;version=${ver}
-Import-Package: scala.*;version="${range;[==,=+);${ver}}",*
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6, JavaSE-1.7

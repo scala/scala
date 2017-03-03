@@ -7,11 +7,11 @@ package scala
 package reflect
 package internal
 
+import scala.language.implicitConversions
+
 import java.security.MessageDigest
-import java.util.UUID.randomUUID
 import Chars.isOperatorPart
 import scala.annotation.switch
-import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.io.Codec
 
@@ -70,7 +70,7 @@ trait StdNames {
       val suffix = s takeRight edge
 
       val cs = s.toArray
-      val bytes = Codec toUTF8 cs
+      val bytes = Codec.toUTF8(new scala.runtime.ArrayCharSequence(cs, 0, cs.length))
       md5 update bytes
       val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
 
@@ -92,25 +92,28 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
-    val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
-    val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
-    val TRAIT_SETTER_SEPARATOR_STRING: String = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
-
-    val SINGLETON_SUFFIX: String     = ".type"
+    // TODO: what is the purpose of all this duplication!?!?!
+    // I made these constants because we cannot change them without bumping our major version anyway.
+    final val NAME_JOIN_STRING                 = NameTransformer.NAME_JOIN_STRING
+    final val MODULE_SUFFIX_STRING             = NameTransformer.MODULE_SUFFIX_STRING
+    final val MODULE_VAR_SUFFIX_STRING         = NameTransformer.MODULE_VAR_SUFFIX_STRING
+    final val LOCAL_SUFFIX_STRING              = NameTransformer.LOCAL_SUFFIX_STRING
+    final val LAZY_LOCAL_SUFFIX_STRING         = NameTransformer.LAZY_LOCAL_SUFFIX_STRING
+    final val TRAIT_SETTER_SEPARATOR_STRING    = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
+    final val SINGLETON_SUFFIX                 = ".type"
 
     val ANON_CLASS_NAME: NameType              = "$anon"
     val DELAMBDAFY_LAMBDA_CLASS_NAME: NameType = "$lambda"
     val ANON_FUN_NAME: NameType                = "$anonfun"
     val EMPTY: NameType                        = ""
     val EMPTY_PACKAGE_NAME: NameType           = "<empty>"
-    val IMPL_CLASS_SUFFIX                      = "$class"
     val IMPORT: NameType                       = "<import>"
     val MODULE_SUFFIX_NAME: NameType           = MODULE_SUFFIX_STRING
-    val MODULE_VAR_SUFFIX: NameType            = "$module"
+    val MODULE_VAR_SUFFIX: NameType            = MODULE_VAR_SUFFIX_STRING
     val PACKAGE: NameType                      = "package"
     val ROOT: NameType                         = "<root>"
     val SPECIALIZED_SUFFIX: NameType           = "$sp"
+    val CASE_ACCESSOR: NameType                = "$access"
 
     val NESTED_IN: String                      = "$nestedIn"
     val NESTED_IN_ANON_CLASS: String           = NESTED_IN + ANON_CLASS_NAME.toString.replace("$", "")
@@ -291,6 +294,7 @@ trait StdNames {
     final val DeprecatedATTR: NameType             = "Deprecated"
     final val ExceptionsATTR: NameType             = "Exceptions"
     final val InnerClassesATTR: NameType           = "InnerClasses"
+    final val MethodParametersATTR: NameType       = "MethodParameters"
     final val RuntimeAnnotationATTR: NameType      = "RuntimeVisibleAnnotations"   // RetentionPolicy.RUNTIME
     final val ScalaATTR: NameType                  = "Scala"
     final val ScalaSignatureATTR: NameType         = "ScalaSig"
@@ -302,8 +306,6 @@ trait StdNames {
 
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
-    def implClassName(name: Name): TypeName     = (name append IMPL_CLASS_SUFFIX).toTypeName
-    def interfaceName(implname: Name): TypeName = (implname dropRight IMPL_CLASS_SUFFIX.length).toTypeName
   }
 
   abstract class TermNames extends Keywords with TermNamesApi {
@@ -338,7 +340,6 @@ trait StdNames {
     val DEFAULT_CASE: NameType             = "defaultCase$"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
-    val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.internal.reificationSupport."
     val UNIVERSE_PREFIX: NameType          = "$u."
@@ -366,6 +367,7 @@ trait StdNames {
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
     val OUTER_LOCAL: NameType              = OUTER.localName
+    val OUTER_ARG: NameType                = "arg" + OUTER
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
     val ROOTPKG: NameType                  = "_root_"
     val SELECTOR_DUMMY: NameType           = "<unapply-selector>"
@@ -377,7 +379,6 @@ trait StdNames {
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
-    def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
@@ -433,14 +434,14 @@ trait StdNames {
         name drop idx + 2
     }
 
-    @deprecated("Use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
-    @deprecated("Use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
-    @deprecated("Use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
-    @deprecated("Use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
-    @deprecated("Use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
-    @deprecated("Use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
-    @deprecated("Use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
-    @deprecated("Use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
+    @deprecated("use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
+    @deprecated("use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
+    @deprecated("use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
+    @deprecated("use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
+    @deprecated("use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
+    @deprecated("use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
+    @deprecated("use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
+    @deprecated("use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
 
     /**
      * Convert `Tuple2$mcII` to `Tuple2`, or `T1$sp` to `T1`.
@@ -644,6 +645,7 @@ trait StdNames {
     val accessor: NameType             = "accessor"
     val add_ : NameType                = "add"
     val annotation: NameType           = "annotation"
+    val anyHash: NameType              = "anyHash"
     val anyValClass: NameType          = "anyValClass"
     val apply: NameType                = "apply"
     val applyDynamic: NameType         = "applyDynamic"
@@ -673,6 +675,7 @@ trait StdNames {
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
     val dollarScope: NameType          = "$scope"
+    val doubleHash: NameType           = "doubleHash"
     val drop: NameType                 = "drop"
     val elem: NameType                 = "elem"
     val noSelfType: NameType           = "noSelfType"
@@ -691,16 +694,19 @@ trait StdNames {
     val finalize_ : NameType           = "finalize"
     val find_ : NameType               = "find"
     val flatMap: NameType              = "flatMap"
+    val floatHash: NameType            = "floatHash"
     val foreach: NameType              = "foreach"
     val freshTermName: NameType        = "freshTermName"
     val freshTypeName: NameType        = "freshTypeName"
     val get: NameType                  = "get"
+    val parameterTypes: NameType       = "parameterTypes"
     val hashCode_ : NameType           = "hashCode"
-    val hash_ : NameType               = "hash"
     val head : NameType                = "head"
     val immutable: NameType            = "immutable"
     val implicitly: NameType           = "implicitly"
     val in: NameType                   = "in"
+    val initialize : NameType          = "initialize"
+    val initialized : NameType         = "initialized"
     val internal: NameType             = "internal"
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"
@@ -713,6 +719,7 @@ trait StdNames {
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
+    val longHash: NameType             = "longHash"
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
     val manifestToTypeTag: NameType    = "manifestToTypeTag"
@@ -876,7 +883,7 @@ trait StdNames {
     val toCharacter: NameType = "toCharacter"
     val toInteger: NameType   = "toInteger"
 
-    def newLazyValSlowComputeName(lzyValName: Name) = lzyValName append LAZY_SLOW_SUFFIX
+    def newLazyValSlowComputeName(lzyValName: Name) = (lzyValName stripSuffix MODULE_VAR_SUFFIX append LAZY_SLOW_SUFFIX).toTermName
 
     // ASCII names for operators
     val ADD       = encode("+")
@@ -1103,6 +1110,7 @@ trait StdNames {
     final val ELSEkw: TermName         = kw("else")
     final val ENUMkw: TermName         = kw("enum")
     final val EXTENDSkw: TermName      = kw("extends")
+    final val FALSEkw: TermName        = kw("false")
     final val FINALkw: TermName        = kw("final")
     final val FINALLYkw: TermName      = kw("finally")
     final val FLOATkw: TermName        = kw("float")
@@ -1132,6 +1140,7 @@ trait StdNames {
     final val THROWkw: TermName        = kw("throw")
     final val THROWSkw: TermName       = kw("throws")
     final val TRANSIENTkw: TermName    = kw("transient")
+    final val TRUEkw: TermName         = kw("true")
     final val TRYkw: TermName          = kw("try")
     final val VOIDkw: TermName         = kw("void")
     final val VOLATILEkw: TermName     = kw("volatile")
@@ -1168,7 +1177,9 @@ trait StdNames {
     final val Invoke: TermName           = newTermName("invoke")
     final val InvokeExact: TermName      = newTermName("invokeExact")
 
+    final val Metafactory: TermName         = newTermName("metafactory")
     final val AltMetafactory: TermName      = newTermName("altMetafactory")
+    final val Bootstrap: TermName           = newTermName("bootstrap")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,

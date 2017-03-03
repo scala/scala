@@ -14,10 +14,7 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import WrapAsScala._
 import WrapAsJava._
 
-/** Don't put the implementations in the same scope as the implicits
- *  which utilize them, or they will stow away into every scope which
- *  extends one of those implementations.  See SI-5580.
- */
+/** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
@@ -102,9 +99,9 @@ private[collection] trait Wrappers {
     override def clone(): JListWrapper[A] = JListWrapper(new ju.ArrayList[A](underlying))
   }
 
-  // Note various overrides to avoid performance gotchas.
-  class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] {
-    self =>
+  @SerialVersionUID(1L)
+  class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] with Serializable { self =>
+    // Note various overrides to avoid performance gotchas.
     override def contains(o: Object): Boolean = {
       try { underlying.contains(o.asInstanceOf[A]) }
       catch { case cce: ClassCastException => false }
@@ -116,7 +113,7 @@ private[collection] trait Wrappers {
       var prev: Option[A] = None
       def hasNext = ui.hasNext
       def next = { val e = ui.next(); prev = Some(e); e }
-      override def remove = prev match {
+      override def remove() = prev match {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
@@ -165,7 +162,8 @@ private[collection] trait Wrappers {
       new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
   }
 
-  class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] { self =>
+  @SerialVersionUID(1L)
+  class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] with Serializable { self =>
     override def size = underlying.size
 
     override def get(key: AnyRef): B = try {

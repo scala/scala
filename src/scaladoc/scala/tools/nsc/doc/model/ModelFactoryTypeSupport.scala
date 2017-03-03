@@ -20,7 +20,7 @@ trait ModelFactoryTypeSupport {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, AnyClass, AnyRefClass }
 
   protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 
@@ -94,7 +94,7 @@ trait ModelFactoryTypeSupport {
                     LinkToMember(bMbr, oTpl)
                   case _ =>
                     val name = makeQualifiedName(bSym)
-                    if (!bSym.owner.isPackage)
+                    if (!bSym.owner.hasPackageFlag)
                       Tooltip(name)
                     else
                       findExternalLink(bSym, name).getOrElse (

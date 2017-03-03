@@ -1,7 +1,7 @@
-delay-good.scala:53: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+delay-good.scala:53: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     f(new C { 5 })
               ^
-delay-good.scala:73: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+delay-good.scala:73: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     f(new { val x = 5 } with E() { 5 })
                                    ^
 

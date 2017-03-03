@@ -56,13 +56,5 @@ This license is used by the following third-party libraries:
 This license is used by the following third-party libraries:
 
   * jquery
-  * jquery-ui
-  * jquery-layout
   * sizzle
   * tools tooltip
-
-### Public Domain
-The following libraries are freely available in the public domain:
-
-  * forkjoin
-

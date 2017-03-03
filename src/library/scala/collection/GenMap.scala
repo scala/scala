@@ -18,18 +18,18 @@ import generic._
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait GenMap[A, +B]
-extends GenMapLike[A, B, GenMap[A, B]]
-   with GenIterable[(A, B)]
+trait GenMap[K, +V]
+extends GenMapLike[K, V, GenMap[K, V]]
+   with GenIterable[(K, V)]
 {
-  def seq: Map[A, B]
+  def seq: Map[K, V]
 
-  def updated [B1 >: B](key: A, value: B1): GenMap[A, B1]
+  def updated [V1 >: V](key: K, value: V1): GenMap[K, V1]
 }
 
 object GenMap extends GenMapFactory[GenMap] {
-  def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
+  def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), GenMap[K, V]] = new MapCanBuildFrom[K, V]
 }

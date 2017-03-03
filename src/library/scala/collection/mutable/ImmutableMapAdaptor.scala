@@ -25,7 +25,7 @@ import scala.annotation.migration
  *  @version 2.0, 01/01/2007
  *  @since   1
  */
-@deprecated("Adaptors are inherently unreliable and prone to performance problems.", "2.11.0")
+@deprecated("adaptors are inherently unreliable and prone to performance problems", "2.11.0")
 class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
 extends AbstractMap[A, B]
    with Map[A, B]

@@ -27,10 +27,12 @@ import generic.CanBuildFrom
  *  rapidly as 2^30^ is approached.
  *
  */
+@SerialVersionUID(1L)
 final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[K, V]
    with Map[K, V]
    with MapLike[K, V, AnyRefMap[K, V]]
+   with Serializable
 {
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
@@ -335,6 +337,24 @@ extends AbstractMap[K, V]
     arm
   }
 
+  override def +[V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += kv
+    arm
+  }
+
+  override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    xs.foreach(kv => arm += kv)
+    arm
+  }
+
+  override def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += (key, value)
+    arm
+  }
+
   private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B) {
     var i,j = 0
     while (i < _hashes.length & j < _size) {
@@ -399,7 +419,11 @@ object AnyRefMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
 
-  private val exceptionDefault = (k: Any) => throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
+  @SerialVersionUID(1L)
+  private class ExceptionDefault extends (Any => Nothing) with Serializable {
+    def apply(k: Any): Nothing = throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
+  }
+  private val exceptionDefault = new ExceptionDefault
 
   implicit def canBuildFrom[K <: AnyRef, V, J <: AnyRef, U]: CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] =
     new CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] {
@@ -407,7 +431,11 @@ object AnyRefMap {
       def apply(): AnyRefMapBuilder[J, U] = new AnyRefMapBuilder[J, U]
     }
 
-  final class AnyRefMapBuilder[K <: AnyRef, V] extends Builder[(K, V), AnyRefMap[K, V]] {
+  /** A builder for instances of `AnyRefMap`.
+   *
+   *  This builder can be reused to create multiple instances.
+   */
+  final class AnyRefMapBuilder[K <: AnyRef, V] extends ReusableBuilder[(K, V), AnyRefMap[K, V]] {
     private[collection] var elems: AnyRefMap[K, V] = new AnyRefMap[K, V]
     def +=(entry: (K, V)): this.type = {
       elems += entry

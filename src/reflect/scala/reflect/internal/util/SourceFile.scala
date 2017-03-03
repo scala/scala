@@ -154,18 +154,23 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
     case _       => false
   }
 
-  def calculateLineIndices(cs: Array[Char]) = {
-    val buf = new ArrayBuffer[Int]
-    buf += 0
-    for (i <- 0 until cs.length) if (isAtEndOfLine(i)) buf += i + 1
-    buf += cs.length // sentinel, so that findLine below works smoother
-    buf.toArray
+  private lazy val lineIndices: Array[Int] = {
+    def calculateLineIndices(cs: Array[Char]) = {
+      val buf = new ArrayBuffer[Int]
+      buf += 0
+      for (i <- 0 until cs.length) if (isAtEndOfLine(i)) buf += i + 1
+      buf += cs.length // sentinel, so that findLine below works smoother
+      buf.toArray
+    }
+    calculateLineIndices(content)
   }
-  private lazy val lineIndices: Array[Int] = calculateLineIndices(content)
 
-  def lineToOffset(index : Int): Int = lineIndices(index)
+  def lineToOffset(index: Int): Int = {
+    val offset = lineIndices(index)
+    if (offset < length) offset else throw new IndexOutOfBoundsException(index.toString)
+  }
 
-  private var lastLine = 0
+  private[this] var lastLine = 0
 
   /** Convert offset to line in this source file.
    *  Lines are numbered from 0.

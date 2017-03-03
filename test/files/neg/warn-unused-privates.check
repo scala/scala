@@ -19,10 +19,7 @@ warn-unused-privates.scala:36: warning: private val in class Boppy is never used
 warn-unused-privates.scala:43: warning: private var in trait Accessors is never used
   private var v1: Int = 0 // warn
               ^
-warn-unused-privates.scala:43: warning: private setter in trait Accessors is never used
-  private var v1: Int = 0 // warn
-              ^
-warn-unused-privates.scala:44: warning: private setter in trait Accessors is never used
+warn-unused-privates.scala:44: warning: private var in trait Accessors is never used
   private var v2: Int = 0 // warn, never set
               ^
 warn-unused-privates.scala:45: warning: private var in trait Accessors is never used
@@ -65,5 +62,5 @@ warn-unused-privates.scala:103: warning: local type OtherThing is never used
     type OtherThing = String // warn
          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-22 warnings found
+21 warnings found
 one error found

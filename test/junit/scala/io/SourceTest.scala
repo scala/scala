@@ -28,6 +28,10 @@ class SourceTest {
   @Test def canIterateLines() = {
     assertEquals(sampler.lines.size, (Source fromString sampler).getLines.size)
   }
+  @Test def loadFromResource() = {
+    val res = Source.fromResource("rootdoc.txt")
+    assertTrue("No classpath resource found", res.getLines().size > 5)
+  }
   @Test def canCustomizeReporting() = {
     class CapitalReporting(is: InputStream) extends BufferedSource(is) {
       override def report(pos: Int, msg: String, out: PrintStream): Unit = {

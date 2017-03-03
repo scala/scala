@@ -1,47 +1,47 @@
 
 scala> Map(1 -> "eis").values    // no warn
-res0: Iterable[String] = MapLike(eis)
+res0: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration:none
 
 scala> Map(1 -> "eis").values    // no warn
-res1: Iterable[String] = MapLike(eis)
+res1: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration:any
 
 scala> Map(1 -> "eis").values    // warn
 <console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
-`values` returns `Iterable[B]` rather than `Iterator[B]`.
+`values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
-res2: Iterable[String] = MapLike(eis)
+res2: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration:2.8
 
 scala> Map(1 -> "eis").values    // no warn
-res3: Iterable[String] = MapLike(eis)
+res3: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration:2.7
 
 scala> Map(1 -> "eis").values    // warn
 <console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
-`values` returns `Iterable[B]` rather than `Iterator[B]`.
+`values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
-res4: Iterable[String] = MapLike(eis)
+res4: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration:2.11
 
 scala> Map(1 -> "eis").values    // no warn
-res5: Iterable[String] = MapLike(eis)
+res5: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :setting -Xmigration      // same as :any
 
 scala> Map(1 -> "eis").values    // warn
 <console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
-`values` returns `Iterable[B]` rather than `Iterator[B]`.
+`values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
-res6: Iterable[String] = MapLike(eis)
+res6: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 
 scala> :quit

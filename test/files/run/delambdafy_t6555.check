@@ -6,8 +6,8 @@ package <empty> {
       ()
     };
     private[this] val f: String => String = {
-      final <artifact> def $anonfun(param: String): String = param;
-      ((param: String) => $anonfun(param))
+      final <artifact> def $anonfun$f(param: String): String = param;
+      ((param: String) => $anonfun$f(param))
     };
     <stable> <accessor> def f(): String => String = Foo.this.f
   }

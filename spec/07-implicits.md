@@ -44,7 +44,7 @@ object Monoids {
 
 ## Implicit Parameters
 
-An implicit parameter list
+An _implicit parameter list_
 `(implicit $p_1$,$\ldots$,$p_n$)` of a method marks the parameters $p_1 , \ldots , p_n$ as
 implicit. A method or constructor can have only one implicit parameter
 list, and it must be the last parameter list given.

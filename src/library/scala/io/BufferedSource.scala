@@ -8,11 +8,9 @@
 
 package scala.io
 
-import java.util.Arrays
 import java.io.{ InputStream, BufferedReader, InputStreamReader, PushbackReader }
 import Source.DefaultBufSize
 import scala.collection.{ Iterator, AbstractIterator }
-import scala.collection.mutable.ArrayBuffer
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.

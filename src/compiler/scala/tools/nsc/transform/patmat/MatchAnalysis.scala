@@ -6,9 +6,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.annotation.tailrec
-import scala.collection.immutable.{IndexedSeq, Iterable}
-import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
@@ -85,11 +82,15 @@ trait TreeAndTypeAnalysis extends Debugging {
     tp <:< tpImpliedNormalizedToAny
   }
 
-  // TODO: improve, e.g., for constants
-  def sameValue(a: Tree, b: Tree): Boolean = (a eq b) || ((a, b) match {
-    case (_ : Ident, _ : Ident) => a.symbol eq b.symbol
-    case _                      => false
-  })
+  def equivalentTree(a: Tree, b: Tree): Boolean = (a, b) match {
+    case (Select(qual1, _), Select(qual2, _)) => equivalentTree(qual1, qual2) && a.symbol == b.symbol
+    case (Ident(_), Ident(_)) => a.symbol == b.symbol
+    case (Literal(c1), Literal(c2)) => c1 == c2
+    case (This(_), This(_)) => a.symbol == b.symbol
+    case (Apply(fun1, args1), Apply(fun2, args2)) => equivalentTree(fun1, fun2) && args1.corresponds(args2)(equivalentTree)
+    // Those are the only cases we need to handle in the pattern matcher
+    case _ => false
+  }
 
   trait CheckableTreeAndTypeAnalysis {
     val typer: Typer
@@ -138,7 +139,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
           if(grouped) {
             def enumerateChildren(sym: Symbol) = {
-              sym.children.toList
+              sym.sealedChildren.toList
                 .sortBy(_.sealedSortName)
                 .filterNot(x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
             }
@@ -173,6 +174,8 @@ trait TreeAndTypeAnalysis extends Debugging {
               filterChildren(subclasses)
             })
           }
+        case sym if sym.isCase =>
+          List(List(tp))
 
         case sym =>
           debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
@@ -277,7 +280,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
       // hashconsing trees (modulo value-equality)
       def unique(t: Tree, tpOverride: Type = NoType): Tree =
-        trees find (a => a.correspondsStructure(t)(sameValue)) match {
+        trees find (a => equivalentTree(a, t)) match {
           case Some(orig) =>
             // debug.patmat("unique: "+ (t eq orig, orig))
             orig
@@ -346,7 +349,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
               object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
                 type Result                                           = Prop
                 def and(a: Result, b: Result)                         = And(a, b)
-                def outerTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
+                def withOuterTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
                 def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
                   val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
                 }
@@ -707,9 +710,8 @@ trait MatchAnalysis extends MatchApproximation {
 
         val (equal, notEqual) = varAssignment.getOrElse(variable, Nil -> Nil)
 
-        def addVarAssignment(equalTo: List[Const], notEqualTo: List[Const]) = {
-          Map(variable ->(equal ++ equalTo, notEqual ++ notEqualTo))
-        }
+        def addVarAssignment(equalTo: List[Const], notEqualTo: List[Const]) =
+          Map(variable ->((equal ++ equalTo, notEqual ++ notEqualTo)))
 
         // this assignment is needed in case that
         // there exists already an assign
@@ -734,7 +736,7 @@ trait MatchAnalysis extends MatchApproximation {
       if (expanded.isEmpty) {
         List(varAssignment)
       } else {
-        // we need the cartesian product here,
+        // we need the Cartesian product here,
         // since we want to report all missing cases
         // (i.e., combinations)
         val cartesianProd = expanded.reduceLeft((xs, ys) =>

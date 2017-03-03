@@ -17,7 +17,7 @@ trait PhaseAssembly {
   self: Global =>
 
   /**
-   * Aux datastructure for solving the constraint system
+   * Aux data structure for solving the constraint system
    * The dependency graph container with helper methods for node and edge creation
    */
   private class DependencyGraph {

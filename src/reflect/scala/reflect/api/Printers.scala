@@ -232,7 +232,7 @@ trait Printers { self: Universe =>
    *  @group Printers
    */
   def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printOwners: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
-    render(any, newRawTreePrinter(_), printTypes, printIds, printOwners, printKinds, printMirrors, printPositions)
+    render(any, newRawTreePrinter, printTypes, printIds, printOwners, printKinds, printMirrors, printPositions)
 
   /** Hook to define what `showRaw(...)` means.
    * @group Printers

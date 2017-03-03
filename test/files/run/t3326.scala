@@ -19,7 +19,7 @@ import scala.math.Ordering
  *  This is why `collection.SortedMap` used to resort to the generic
  *  `TraversableLike.++` which knows nothing about the ordering.
  *
- *  To avoid `collection.SortedMap`s resort to the more generic `TraverableLike.++`,
+ *  To avoid `collection.SortedMap`s resort to the more generic `TraversableLike.++`,
  *  we override the `MapLike.++` overload in `collection.SortedMap` to return
  *  the proper type `SortedMap`.
  */

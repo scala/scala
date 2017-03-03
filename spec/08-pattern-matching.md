@@ -10,10 +10,10 @@ chapter: 8
 
 ```ebnf
   Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
-  Pattern1        ::=  varid ‘:’ TypePat
+  Pattern1        ::=  boundvarid ‘:’ TypePat
                     |  ‘_’ ‘:’ TypePat
                     |  Pattern2
-  Pattern2        ::=  varid [‘@’ Pattern3]
+  Pattern2        ::=  id [‘@’ Pattern3]
                     |  Pattern3
   Pattern3        ::=  SimplePattern
                     |  SimplePattern {id [nl] SimplePattern}
@@ -22,7 +22,7 @@ chapter: 8
                     |  Literal
                     |  StableId
                     |  StableId ‘(’ [Patterns] ‘)’
-                    |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
+                    |  StableId ‘(’ [Patterns ‘,’] [id ‘@’] ‘_’ ‘*’ ‘)’
                     |  ‘(’ [Patterns] ‘)’
                     |  XmlPattern
   Patterns        ::=  Pattern {‘,’ Patterns}
@@ -56,11 +56,11 @@ patterns.
 ### Variable Patterns
 
 ```ebnf
-  SimplePattern   ::=  `_'
+  SimplePattern   ::=  ‘_’
                     |  varid
 ```
 
-A variable pattern $x$ is a simple identifier which starts with a
+A _variable pattern_ $x$ is a simple identifier which starts with a
 lower case letter.  It matches any value, and binds the variable name
 to that value.  The type of $x$ is the expected type of the pattern as
 given from outside.  A special case is the wild-card pattern `_`
@@ -69,11 +69,11 @@ which is treated as if it was a fresh variable on each occurrence.
 ### Typed Patterns
 
 ```ebnf
-  Pattern1        ::=  varid `:' TypePat
-                    |  `_' `:' TypePat
+  Pattern1        ::=  varid ‘:’ TypePat
+                    |  ‘_’ ‘:’ TypePat
 ```
 
-A typed pattern $x: T$ consists of a pattern variable $x$ and a
+A _typed pattern_ $x: T$ consists of a pattern variable $x$ and a
 type pattern $T$.  The type of $x$ is the type pattern $T$, where
 each type variable and wildcard is replaced by a fresh, unknown type.
 This pattern matches any value matched by the [type pattern](#type-patterns)
@@ -83,10 +83,10 @@ that value.
 ### Pattern Binders
 
 ```ebnf
-  Pattern2        ::=  varid `@' Pattern3
+  Pattern2        ::=  varid ‘@’ Pattern3
 ```
 
-A pattern binder `$x$@$p$` consists of a pattern variable $x$ and a
+A _pattern binder_ `$x$@$p$` consists of a pattern variable $x$ and a
 pattern $p$. The type of the variable $x$ is the static type $T$ of the pattern $p$.
 This pattern matches any value $v$ matched by the pattern $p$,
 provided the run-time type of $v$ is also an instance of $T$,
@@ -98,7 +98,7 @@ and it binds the variable name to that value.
   SimplePattern   ::=  Literal
 ```
 
-A literal pattern $L$ matches any value that is equal (in terms of
+A _literal pattern_ $L$ matches any value that is equal (in terms of
 `==`) to the literal $L$. The type of $L$ must conform to the
 expected type of the pattern.
 
@@ -108,7 +108,7 @@ expected type of the pattern.
   SimplePattern   ::=  StableId
 ```
 
-A stable identifier pattern is a [stable identifier](03-types.html#paths) $r$.
+A _stable identifier pattern_ is a [stable identifier](03-types.html#paths) $r$.
 The type of $r$ must conform to the expected
 type of the pattern. The pattern matches any value $v$ such that
 `$r$ == $v$` (see [here](12-the-scala-standard-library.html#root-classes)).
@@ -144,10 +144,10 @@ argument of `f` are equal.
 ### Constructor Patterns
 
 ```ebnf
-SimplePattern   ::=  StableId `(' [Patterns] `)
+SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
-A constructor pattern is of the form $c(p_1 , \ldots , p_n)$ where $n
+A _constructor pattern_ is of the form $c(p_1 , \ldots , p_n)$ where $n
 \geq 0$. It consists of a stable identifier $c$, followed by element
 patterns $p_1 , \ldots , p_n$. The constructor $c$ is a simple or
 qualified name which denotes a [case class](05-classes-and-objects.html#case-classes).
@@ -170,10 +170,10 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 ### Tuple Patterns
 
 ```ebnf
-  SimplePattern   ::=  `(' [Patterns] `)'
+  SimplePattern   ::=  ‘(’ [Patterns] ‘)’
 ```
 
-A tuple pattern `($p_1 , \ldots , p_n$)` is an alias
+A _tuple pattern_ `($p_1 , \ldots , p_n$)` is an alias
 for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`,
 where $n \geq 2$. The empty tuple
 `()` is the unique value of type `scala.Unit`.
@@ -181,10 +181,10 @@ where $n \geq 2$. The empty tuple
 ### Extractor Patterns
 
 ```ebnf
-  SimplePattern   ::=  StableId `(' [Patterns] `)'
+  SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
-An extractor pattern $x(p_1 , \ldots , p_n)$ where $n \geq 0$ is of
+An _extractor pattern_ $x(p_1 , \ldots , p_n)$ where $n \geq 0$ is of
 the same syntactic form as a constructor pattern. However, instead of
 a case class, the stable identifier $x$ denotes an object which has a
 member method named `unapply` or `unapplySeq` that matches
@@ -217,8 +217,8 @@ and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if 
 This case is further discussed [below](#pattern-sequences).
 
 ###### Example
-The `Predef` object contains a definition of an
-extractor object `Pair`:
+
+If we define an extractor object `Pair`:
 
 ```scala
 object Pair {
@@ -241,10 +241,10 @@ val y = x match {
 ### Pattern Sequences
 
 ```ebnf
-SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
+SimplePattern ::= StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
 ```
 
-A pattern sequence $p_1 , \ldots , p_n$ appears in two contexts.
+A _pattern sequence_ $p_1 , \ldots , p_n$ appears in two contexts.
 First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters) of type `S*`.
 Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
 but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
@@ -265,7 +265,7 @@ p_n$.
   Pattern3  ::=  SimplePattern {id [nl] SimplePattern}
 ```
 
-An infix operation pattern $p;\mathit{op};q$ is a shorthand for the
+An _infix operation pattern_ $p;\mathit{op};q$ is a shorthand for the
 constructor or extractor pattern $\mathit{op}(p, q)$.  The precedence and
 associativity of operators in patterns is the same as in
 [expressions](06-expressions.html#prefix,-infix,-and-postfix-operations).
@@ -277,10 +277,10 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 ### Pattern Alternatives
 
 ```ebnf
-  Pattern   ::=  Pattern1 { `|' Pattern1 }
+  Pattern   ::=  Pattern1 { ‘|’ Pattern1 }
 ```
 
-A pattern alternative `$p_1$ | $\ldots$ | $p_n$`
+A _pattern alternative_ `$p_1$ | $\ldots$ | $p_n$`
 consists of a number of alternative patterns $p_i$. All alternative
 patterns are type checked with the expected type of the pattern. They
 may not bind variables other than wildcards. The alternative pattern
@@ -328,10 +328,12 @@ A type pattern $T$ is of one of the following  forms:
 
 * A reference to a class $C$, $p.C$, or `$T$#$C$`.  This
   type pattern matches any non-null instance of the given class.
-  Note that the prefix of the class, if it is given, is relevant for determining
+  Note that the prefix of the class, if it exists, is relevant for determining
   class instances. For instance, the pattern $p.C$ matches only
   instances of classes $C$ which were created with the path $p$ as
-  prefix.
+  prefix. This also applies to prefixes which are not given syntactically.
+  For example, if $C$ refers to a class defined in the nearest enclosing
+  class and is thus equivalent to $this.C$, it is considered to have a prefix.
 
   The bottom types `scala.Nothing` and `scala.Null` cannot
   be used as type patterns, because they would match nothing in any case.
@@ -439,7 +441,7 @@ complexity.
 
 ### Type parameter inference for constructor patterns
 Assume a constructor pattern $C(p_1 , \ldots , p_n)$ where class $C$
-has type type parameters $a_1 , \ldots , a_n$.  These type parameters
+has type parameters $a_1 , \ldots , a_n$.  These type parameters
 are inferred in the same way as for the typed pattern
 `(_: $C[a_1 , \ldots , a_n]$)`.
 
@@ -519,12 +521,12 @@ function's declared result type, `Number`.
 ## Pattern Matching Expressions
 
 ```ebnf
-  Expr            ::=  PostfixExpr `match' `{' CaseClauses `}'
+  Expr            ::=  PostfixExpr ‘match’ ‘{’ CaseClauses ‘}’
   CaseClauses     ::=  CaseClause {CaseClause}
-  CaseClause      ::=  `case' Pattern [Guard] `=>' Block
+  CaseClause      ::=  ‘case’ Pattern [Guard] ‘=>’ Block
 ```
 
-A pattern matching expression
+A _pattern matching expression_
 
 ```scala
 e match { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
@@ -636,7 +638,7 @@ conforms to its expected type, `T`.
 ## Pattern Matching Anonymous Functions
 
 ```ebnf
-  BlockExpr ::= `{' CaseClauses `}'
+  BlockExpr ::= ‘{’ CaseClauses ‘}’
 ```
 
 An anonymous function can be defined by a sequence of cases
@@ -652,7 +654,8 @@ or `scala.PartialFunction[$S_1$, $R$]`, where the
 argument type(s) $S_1 , \ldots , S_k$ must be fully determined, but the result type
 $R$ may be undetermined.
 
-If the expected type is `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
+If the expected type is [SAM-convertible](06-expressions.html#sam-conversion)
+to `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
 the expression is taken to be equivalent to the anonymous function:
 
 ```scala

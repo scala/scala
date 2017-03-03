@@ -1,9 +1,3 @@
-#partest java6
-t6289/J.java:2: method does not override or implement a method from a supertype
-  @Override public void foo() { }
-  ^
-1 error
-#partest !java6
 t6289/J.java:2: error: method does not override or implement a method from a supertype
   @Override public void foo() { }
   ^

@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{ DataOutputStream, FileOutputStream, IOException, OutputStream, File => JFile }
+import java.io.{ DataOutputStream, FileOutputStream, IOException, File => JFile }
 import scala.tools.nsc.io._
 import java.util.jar.Attributes.Name
 import scala.language.postfixOps
@@ -78,7 +78,7 @@ trait BytecodeWriters {
   }
 
   /*
-   * The ASM textual representation for bytecode overcomes disadvantages of javap ouput in three areas:
+   * The ASM textual representation for bytecode overcomes disadvantages of javap output in three areas:
    *    (a) pickle dingbats undecipherable to the naked eye;
    *    (b) two constant pools, while having identical contents, are displayed differently due to physical layout.
    *    (c) stack maps (classfile version 50 and up) are displayed in encoded form by javap,

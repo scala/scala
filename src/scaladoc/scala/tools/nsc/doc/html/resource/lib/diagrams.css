@@ -1,143 +1,203 @@
-.diagram-container
-{
-	display: none;
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(MaterialIcons-Regular.eot);
+  src: local('Material Icons'),
+  local('MaterialIcons-Regular'),
+  url(MaterialIcons-Regular.woff) format('woff'),
+  url(MaterialIcons-Regular.ttf) format('truetype');
 }
 
-.diagram
-{
-	overflow: hidden;
-	padding-top:15px;
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
 }
 
-.diagram svg
-{
-	display: block;
-	position: absolute;
-	visibility: hidden;
-	margin: auto;
+.diagram-container {
+  display: none;
 }
 
-.diagram-help
-{
-	float:right;
-	display:none;
+.diagram-container > span.toggle {
+  z-index: 9;
 }
 
-.magnifying
-{
-	cursor: -webkit-zoom-in ! important;
-	cursor: -moz-zoom-in ! important;
-	cursor: pointer;
+.diagram {
+  overflow: hidden;
+  padding-top:15px;
 }
 
-#close-link
-{
-	position: absolute;
-	z-index: 100;
-	font-family: Arial, sans-serif;
-	font-size: 10pt;
-	text-decoration: underline;
-	color: #315479;
+.diagram svg {
+  display: block;
+  position: absolute;
+  visibility: hidden;
+  margin: auto;
 }
 
-#close:hover
-{
-	text-decoration: none;
+.diagram-help {
+  float:right;
+  display:none;
 }
 
-svg a
-{
-	cursor:pointer;
+.magnifying {
+  cursor: -webkit-zoom-in ! important;
+  cursor: -moz-zoom-in ! important;
+  cursor: pointer;
 }
 
-svg text
-{
-	font-size: 10px;
+#close-link {
+  position: absolute;
+  z-index: 100;
+  font-family: Arial, sans-serif;
+  font-size: 10pt;
+  text-decoration: underline;
+  color: #315479;
+}
+
+#close:hover {
+  text-decoration: none;
+}
+
+#inheritance-diagram-container > span.toggle {
+  z-index: 2;
+}
+
+.diagram-container.full-screen {
+  position: fixed !important;
+  margin: 0;
+  border-radius: 0;
+  top: 0em;
+  bottom: 3em;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+}
+
+.diagram-container.full-screen > span.toggle {
+  display: none;
+}
+
+.diagram-container.full-screen > div.diagram {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  margin: auto;
+}
+
+#diagram-controls {
+  z-index: 2;
+  position: absolute;
+  bottom: 1em;
+  right: 1em;
+}
+
+#diagram-controls > button.diagram-btn {
+  border-radius: 1.25em;
+  height: 2.5em;
+  width: 2.5em;
+  background-color: #c2c2c2;
+  color: #fff;
+  border: 0;
+  float: left;
+  margin: 0 0.1em;
+  cursor: pointer;
+  line-height: 0.9;
+  outline: none;
+}
+
+#diagram-controls > button.diagram-btn:hover {
+  background-color: #e2e2e2;
+}
+
+#diagram-controls > button.diagram-btn > i.material-icons {
+  font-size: 1.5em;
+}
+
+svg a {
+  cursor:pointer;
+}
+
+svg text {
+  font-size: 8.5px;
 }
 
 /* try to move the node text 1px in order to be vertically
-   centered (does not work in all browsers) */
-svg .node text
-{
-	transform: translate(0px,1px);
-	-ms-transform: translate(0px,1px);
-	-webkit-transform: translate(0px,1px);
-	-o-transform: translate(0px,1px);
-	-moz-transform: translate(0px,1px);
+ * centered (does not work in all browsers)
+ */
+svg .node text {
+  transform: translate(0px,1px);
+  -ms-transform: translate(0px,1px);
+  -webkit-transform: translate(0px,1px);
+  -o-transform: translate(0px,1px);
+  -moz-transform: translate(0px,1px);
 }
 
 /* hover effect for edges */
 
 svg .edge.over text,
 svg .edge.implicit-incoming.over polygon,
-svg .edge.implicit-outgoing.over polygon
-{
-	fill: #202020;
+svg .edge.implicit-outgoing.over polygon {
+  fill: #103A51;
 }
 
 svg .edge.over path,
-svg .edge.over polygon
-{
-	stroke: #202020;
+svg .edge.over polygon {
+  stroke: #103A51;
 }
 
-/* hover effect for nodes in class diagrams */
+/* for hover effect on nodes in diagrams, edit the following */
+svg.class-diagram .node {}
+svg.class-diagram .node.this {}
+svg.class-diagram .node.over {}
 
-svg.class-diagram .node
-{
-	opacity: 0.75;
-}
-
-svg.class-diagram .node.this
-{
-	opacity: 1.0;
-}
-
-svg.class-diagram .node.over
-{
-	opacity: 1.0;
-}
-
-svg .node.over polygon
-{
-	stroke: #202020;
+svg .node.over polygon {
+  stroke: #202020;
 }
 
 /* hover effect for nodes in package diagrams */
 
 svg.package-diagram .node.class.over polygon,
-svg.class-diagram .node.this.class.over polygon
-{
-	fill: #098552;
-	fill: #04663e;
+svg.class-diagram .node.this.class.over polygon {
+  fill: #098552;
+  fill: #04663e;
 }
 
 svg.package-diagram .node.trait.over polygon,
-svg.class-diagram .node.this.trait.over polygon
-{
-	fill: #3c7b9b;
-	fill: #235d7b;
+svg.class-diagram .node.this.trait.over polygon {
+  fill: #3c7b9b;
+  fill: #235d7b;
 }
 
 svg.package-diagram .node.type.over polygon,
-svg.class-diagram .node.this.type.over polygon
-{
-	fill: #098552;
-	fill: #04663e;
+svg.class-diagram .node.this.type.over polygon {
+  fill: #098552;
+  fill: #04663e;
 }
 
 
-svg.package-diagram .node.object.over polygon
-{
-	fill: #183377;
+svg.package-diagram .node.object.over polygon {
+  fill: #183377;
 }
 
-svg.package-diagram .node.outside.over polygon
-{
-	fill: #d4d4d4;
+svg.package-diagram .node.outside.over polygon {
+  fill: #d4d4d4;
 }
 
-svg.package-diagram .node.default.over polygon
-{
-	fill: #d4d4d4;
+svg.package-diagram .node.default.over polygon {
+  fill: #d4d4d4;
 }

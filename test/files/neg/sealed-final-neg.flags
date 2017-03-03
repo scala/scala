@@ -1,1 +1,1 @@
--Xfatal-warnings -Yinline-warnings -optimise
+-Xfatal-warnings -opt:l:project -opt-warnings

@@ -91,7 +91,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     )
 
   /** Make a synchronized block on 'monitor'. */
-  def mkSynchronized(monitor: Tree, body: Tree): Tree =
+  def mkSynchronized(monitor: Tree)(body: Tree): Tree =
     Apply(Select(monitor, Object_synchronized), List(body))
 
   def mkAppliedTypeForCase(clazz: Symbol): Tree = {
@@ -145,6 +145,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   override def mkCast(tree: Tree, pt: Type): Tree = {
     debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
+    assert(!pt.isInstanceOf[MethodType], tree)
     assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
     atPos(tree.pos) {
       mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = isAtPhaseAfter(currentRun.uncurryPhase))
@@ -232,22 +233,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
   }
 
-  /** Return the synchronized part of the double-checked locking idiom around the syncBody tree. It guards with `cond` and
-   *  synchronizes on `clazz.this`. Additional statements can be included after initialization,
-   *  (outside the synchronized block).
-   *
-   *  The idiom works only if the condition is using a volatile field.
-   *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
-   */
-  def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
-    mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
-
-  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
-    Block(mkSynchronized(
-      attrThis,
-      If(cond, Block(syncBody: _*), EmptyTree)) ::
-      stats: _*)
-
   /** Creates a tree representing new Object { stats }.
    *  To make sure an anonymous subclass of Object is created,
    *  if there are no stats, a () is added.
@@ -257,43 +242,133 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     mkNew(Nil, noSelfType, stats1, NoPosition, NoPosition)
   }
 
-  /**
-   * Create a method based on a Function
-   *
-   * Used both to under `-Ydelambdafy:method` create a lifted function and
-   * under `-Ydelambdafy:inline` to create the apply method on the anonymous
-   * class.
-   *
-   * It creates a method definition with value params cloned from the
-   * original lambda. Then it calls a supplied function to create
-   * the body and types the result. Finally
-   * everything is wrapped up in a DefDef
-   *
-   * @param owner The owner for the new method
-   * @param name name for the new method
-   * @param additionalFlags flags to be put on the method in addition to FINAL
-   */
-  def mkMethodFromFunction(localTyper: analyzer.Typer)
-                          (fun: Function, owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags) = {
-    val funParams = fun.vparams map (_.symbol)
-    val formals :+ restpe = fun.tpe.typeArgs
 
-    val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-
-    val paramSyms = map2(formals, fun.vparams) {
-      (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
+  // Construct a method to implement `fun`'s single abstract method (`apply`, when `fun.tpe` is a built-in function type)
+  def mkMethodFromFunction(localTyper: analyzer.Typer)(owner: Symbol, fun: Function) = {
+    // TODO: treat FunctionN like any other SAM -- drop `&& !isFunctionType(fun.tpe)`
+    val sam = if (!isFunctionType(fun.tpe)) samOf(fun.tpe) else NoSymbol
+    if (!sam.exists) mkMethodForFunctionBody(localTyper)(owner, fun, nme.apply)()
+    else {
+      val samMethType = fun.tpe memberInfo sam
+      mkMethodForFunctionBody(localTyper)(owner, fun, sam.name.toTermName)(methParamProtos = samMethType.params, resTp = samMethType.resultType)
     }
+  }
 
-    methSym setInfo MethodType(paramSyms, restpe.deconst)
+  // used to create the lifted method that holds a function's body
+  def mkLiftedFunctionBodyMethod(localTyper: global.analyzer.Typer)(owner: global.Symbol, fun: global.Function) = {
+    def nonLocalEnclosingMember(sym: Symbol): Symbol = {
+      if (sym.isLocalDummy) sym.enclClass.primaryConstructor
+      else if (sym.isLocalToBlock) nonLocalEnclosingMember(sym.originalOwner)
+      else sym
+    }
+    val ownerName = nonLocalEnclosingMember(fun.symbol.originalOwner).name match {
+      case nme.CONSTRUCTOR => nme.NEWkw // do as javac does for the suffix, prefer "new" to "$lessinit$greater$1"
+      case x => x.dropLocal
+    }
+    val newName = nme.ANON_FUN_NAME.append(nme.NAME_JOIN_STRING).append(ownerName)
+    mkMethodForFunctionBody(localTyper)(owner, fun, newName)(additionalFlags = ARTIFACT)
+  }
 
-    fun.body.substituteSymbols(funParams, paramSyms)
-    fun.body changeOwner (fun.symbol -> methSym)
 
-    val methDef = DefDef(methSym, fun.body)
+  // the result type of a function or corresponding SAM type
+  private def functionResultType(tp: Type): Type = {
+    val dealiased = tp.dealiasWiden
+    if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.last
+    else samOf(tp) match {
+      case samSym if samSym.exists => tp.memberInfo(samSym).resultType.deconst
+      case _ => NoType
+    }
+  }
 
-    // Have to repack the type to avoid mismatches when existentials
-    // appear in the result - see SI-4869.
-    methDef.tpt setType localTyper.packedType(fun.body, methSym).deconst
-    methDef
+  /**
+    * Lift a Function's body to a method. For use during Uncurry, where Function nodes have type FunctionN[T1, ..., Tn, R]
+    *
+    * It creates a method definition with value params derived from the original lambda
+    * or `methParamProtos` (used to create the correct override for sam methods).
+    *
+    * Replace the `fun.vparams` symbols by the newly created method params,
+    * changes owner of `fun.body` from `fun.symbol` to resulting method's symbol.
+    *
+    * @param owner The owner for the new method
+    * @param fun  the function to take the body from
+    * @param name name for the new method
+    * @param additionalFlags flags to be put on the method in addition to FINAL
+    */
+  private def mkMethodForFunctionBody(localTyper: analyzer.Typer)
+                                     (owner: Symbol, fun: Function, name: TermName)
+                                     (methParamProtos: List[Symbol] = fun.vparams.map(_.symbol),
+                                      resTp: Type = functionResultType(fun.tpe),
+                                      additionalFlags: FlagSet = NoFlags): DefDef = {
+    val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
+    // for sams, methParamProtos is the parameter symbols for the sam's method, so that we generate the correct override (based on parmeter types)
+    val methParamSyms = methParamProtos.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
+    methSym setInfo MethodType(methParamSyms, resTp)
+
+    // we must rewire reference to the function's param symbols -- and not methParamProtos -- to methParamSyms
+    val useMethodParams = new TreeSymSubstituter(fun.vparams.map(_.symbol), methParamSyms)
+    // we're now owned by the method that holds the body, and not the function
+    val moveToMethod = new ChangeOwnerTraverser(fun.symbol, methSym)
+
+    newDefDef(methSym, moveToMethod(useMethodParams(fun.body)))(tpt = TypeTree(resTp))
+  }
+
+  /**
+    * Create a new `DefDef` based on `orig` with an explicit self parameter.
+    *
+    * Details:
+    *   - Must by run after erasure
+    *   - If `maybeClone` is the identity function, this runs "in place"
+    *     and mutates the symbol of `orig`. `orig` should be discarded
+    *   - Symbol owners and returns are substituted, as are parameter symbols
+    *   - Recursive calls are not rewritten. This is correct if we assume
+    *     that we either:
+    *       - are in "in-place" mode, but can guarantee that no recursive calls exists
+    *       - are associating the RHS with a cloned symbol, but intend for the original
+    *         method to remain and for recursive calls to target it.
+    */
+  final def mkStatic(orig: DefDef, newName: Name, maybeClone: Symbol => Symbol): DefDef = {
+    assert(phase.erasedTypes, phase)
+    assert(!orig.symbol.hasFlag(SYNCHRONIZED), orig.symbol.defString)
+    val origSym = orig.symbol
+    val origParams = orig.symbol.info.params
+    val newSym = maybeClone(orig.symbol)
+    newSym.setName(newName)
+    newSym.setFlag(STATIC)
+    // Add an explicit self parameter
+    val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF).setFlag(ARTIFACT)
+    newSym.updateInfo(newSym.info match {
+      case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
+    })
+    val selfParam = ValDef(selfParamSym)
+    val rhs = orig.rhs.substituteThis(newSym.owner, gen.mkAttributedIdent(selfParamSym)) // SD-186 intentionally leaving Ident($this) is unpositioned
+      .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym -> newSym)
+    treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
+  }
+
+  def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
+    val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag)
+    val parents = if (isFunctionType(fun.tpe)) {
+      anonClass addAnnotation SerialVersionUIDAnnotation
+      addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
+    } else {
+      if (fun.tpe.typeSymbol.isSubClass(JavaSerializableClass))
+        anonClass addAnnotation SerialVersionUIDAnnotation
+      fun.tpe :: Nil
+    }
+    anonClass setInfo ClassInfoType(parents, newScope, anonClass)
+
+    // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
+    // nested in a value-class method, its owner was already changed to the extension method.
+    // Saving the original owner allows getting the source structure from the class symbol.
+    defineOriginalOwner(anonClass, fun.symbol.originalOwner)
+
+    val samDef = mkMethodFromFunction(localTyper)(anonClass, fun)
+    anonClass.info.decls enter samDef.symbol
+
+    localTyper.typedPos(fun.pos) {
+      Block(
+        ClassDef(anonClass, NoMods, ListOfNil, List(samDef), fun.pos),
+        Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
+    }
   }
 }

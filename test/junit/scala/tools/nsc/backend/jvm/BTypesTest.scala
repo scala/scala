@@ -1,37 +1,29 @@
 package scala.tools.nsc
 package backend.jvm
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
 import scala.tools.asm.Opcodes
-import org.junit.Assert._
-
-import scala.tools.nsc.backend.jvm.CodeGenTools._
-import scala.tools.testing.ClearAfterClass
-
-object BTypesTest extends ClearAfterClass.Clearable {
-  var compiler = {
-    val comp = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
-    new comp.Run() // initializes some of the compiler
-    comp.exitingDelambdafy(comp.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
-    comp.exitingDelambdafy(comp.genBCode.bTypes.initializeCoreBTypes())
-    comp
-  }
-  def clear(): Unit = { compiler = null }
-}
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class BTypesTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = BTypesTest
+class BTypesTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:l:none"
+  import compiler.global
+  locally {
+    new global.Run() // initializes some of the compiler
+    global.exitingDelambdafy(global.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
+    global.exitingDelambdafy(global.genBCode.bTypes.initializeCoreBTypes())
+  }
+  import global.genBCode.bTypes._
 
-  val compiler = BTypesTest.compiler
-  import compiler.genBCode.bTypes._
+  def classBTFS(sym: global.Symbol) = global.exitingDelambdafy(classBTypeFromSymbol(sym))
 
-  def classBTFS(sym: compiler.Symbol) = compiler.exitingDelambdafy(classBTypeFromSymbol(sym))
-
-  def jlo = compiler.definitions.ObjectClass
-  def jls = compiler.definitions.StringClass
+  def jlo = global.definitions.ObjectClass
+  def jls = global.definitions.StringClass
   def o = classBTFS(jlo)
   def s = classBTFS(jls)
   def oArr = ArrayBType(o)

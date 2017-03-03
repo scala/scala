@@ -5,8 +5,6 @@
 
 package scala.tools.partest
 
-import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.ILoop
 import java.lang.reflect.{ Method => JMethod, Field => JField }
 import scala.reflect.{ClassTag, classTag}
 

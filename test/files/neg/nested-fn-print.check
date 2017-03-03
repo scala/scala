@@ -1,4 +1,4 @@
-nested-fn-print.scala:4: error: only classes can have declared but undefined members
+nested-fn-print.scala:4: error: only traits and abstract classes can have declared but undefined members
 (Note that variables need to be initialized to be defined)
   var x3: Int => Double
       ^

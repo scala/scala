@@ -10,8 +10,6 @@ package scala
 package collection
 package immutable
 
-import mutable.{ Builder, ListBuffer }
-
 // TODO: Now the specialization exists there is no clear reason to have
 // separate classes for Range/NumericRange.  Investigate and consolidate.
 
@@ -116,15 +114,20 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   import NumericRange.defaultOrdering
 
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
-      if (num.signum(step) > 0) start
+    // We can take the fast path:
+    // - If the Integral of this NumericRange is also the requested Ordering
+    //   (Integral <: Ordering). This can happen for custom Integral types.
+    // - The Ordering is the default Ordering of a well-known Integral type.
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
+      if (num.signum(step) > 0) head
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
+    // See comment for fast path in min().
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
       if (num.signum(step) > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   // Motivated by the desire for Double ranges with BigDecimal precision,
@@ -163,6 +166,12 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
       override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
+
+      override def toString = {
+        def simpleOf(x: Any): String = x.getClass.getName.split("\\.").last
+        val stepped = simpleOf(underlyingRange.step)
+        s"${super.toString} (using $underlyingRange of $stepped)"
+      }
     }
   }
 
@@ -193,7 +202,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
         // Either numRangeElements or (head + last) must be even, so divide the even one before multiplying
         val a = head.toLong
         val b = last.toLong
-        val ans = 
+        val ans =
           if ((numRangeElements & 1) == 0) (numRangeElements / 2) * (a + b)
           else numRangeElements * {
             // Sum is even, but we might overflow it, so divide in pieces and add back remainder
@@ -252,9 +261,11 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
       super.equals(other)
   }
 
-  override def toString() = {
-    val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("NumericRange(", ", ", endStr)
+  override def toString = {
+    val empty = if (isEmpty) "empty " else ""
+    val preposition = if (isInclusive) "to" else "until"
+    val stepped = if (step == 1) "" else s" by $step"
+    s"${empty}NumericRange $start $preposition $end$stepped"
   }
 }
 

@@ -1,30 +1,29 @@
 Testing Symbol.isAbstract...
 =======class C=======
-class C => true
-constructor C => false
-value x1 => true
-value x2 => false
-value x2 => false
-method y1 => true
-method y2 => false
-type T1 => true
-type T2 => false
+class C => abstract
+constructor C => concrete
+value xAbs => abstract
+value x => concrete
+value x => concrete
+method yAbs => abstract
+method y => concrete
+type TAbs => abstract
+type T => concrete
 =======trait T=======
-trait T => true
-method $init$ => false
-value z1 => true
-value z2 => false
-value z2 => false
-method w1 => true
-method w2 => false
-type U1 => true
-type U2 => false
-=======class D=======
-class D => false
-constructor D => false
-value x1 => false
-value x1 => false
-method y1 => false
+trait T => abstract
+method $init$ => concrete
+value zAbs => abstract
+value z => concrete
+method wAbs => abstract
+method w => concrete
+type UAbs => abstract
+type U => concrete
+=======class AllConcrete=======
+class AllConcrete => concrete
+constructor AllConcrete => concrete
+value xAbs => concrete
+value xAbs => concrete
+method yAbs => concrete
 =======object M=======
-object M => false
-constructor M => false
+object M => concrete
+constructor M => concrete

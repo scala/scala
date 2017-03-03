@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import pickling.ByteCodecs
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 import scala.language.postfixOps
@@ -29,12 +28,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def withoutAnnotations: Self                              // Remove all annotations from this type.
 
     def staticAnnotations = annotations filter (_.isStatic)
-
-    /** Symbols of any @throws annotations on this symbol.
-     */
-    def throwsAnnotations(): List[Symbol] = annotations collect {
-      case ThrownException(exc) => exc
-    }
 
     def addThrowsAnnotation(throwableSym: Symbol): Self = {
       val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
@@ -175,6 +168,13 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def unapply(info: AnnotationInfo): Option[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])] =
       Some((info.atp, info.args, info.assocs))
+
+    def mkFilter(category: Symbol, defaultRetention: Boolean)(ann: AnnotationInfo) =
+      (ann.metaAnnotations, ann.defaultTargets) match {
+        case (Nil, Nil)      => defaultRetention
+        case (Nil, defaults) => defaults contains category
+        case (metas, _)      => metas exists (_ matches category)
+      }
   }
 
   class CompleteAnnotationInfo(
@@ -296,10 +296,13 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     }
 
     /** The default kind of members to which this annotation is attached.
-     *  For instance, for scala.deprecated defaultTargets =
-     *    List(getter, setter, beanGetter, beanSetter).
-     */
-    def defaultTargets = symbol.annotations map (_.symbol) filter isMetaAnnotation
+      * For instance, for scala.deprecated defaultTargets =
+      * List(getter, setter, beanGetter, beanSetter).
+      *
+      * NOTE: have to call symbol.initialize, since we won't get any annotations if the symbol hasn't yet been completed
+      */
+    def defaultTargets = symbol.initialize.annotations map (_.symbol) filter isMetaAnnotation
+
     // Test whether the typeSymbol of atp conforms to the given class.
     def matches(clazz: Symbol) = !symbol.isInstanceOf[StubSymbol] && (symbol isNonBottomSubClass clazz)
     // All subtrees of all args are considered.
@@ -313,8 +316,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
 
-    def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
-    def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)
+    def stringArg(index: Int)  = constantAtIndex(index) map (_.stringValue)
+    def intArg(index: Int)     = constantAtIndex(index) map (_.intValue)
+    def booleanArg(index: Int) = constantAtIndex(index) map (_.booleanValue)
     def symbolArg(index: Int) = argAtIndex(index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)
@@ -406,24 +410,24 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
   class ErroneousAnnotation() extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
 
-  /** Extracts symbol of thrown exception from AnnotationInfo.
+  /** Extracts the type of the thrown exception from an AnnotationInfo.
     *
     * Supports both “old-style” `@throws(classOf[Exception])`
-    * as well as “new-stye” `@throws[Exception]("cause")` annotations.
+    * as well as “new-style” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
-    def unapply(ann: AnnotationInfo): Option[Symbol] = {
+    def unapply(ann: AnnotationInfo): Option[Type] = {
       ann match {
         case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
           None
         // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
         case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
-          Some(tpe.typeSymbol)
+          Some(tpe)
         // new-style: @throws[Exception], @throws[Exception]("cause")
         case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
-          Some(arg.typeSymbol)
+          Some(arg)
         case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
-          Some(ThrowableClass)
+          Some(ThrowableTpe)
       }
     }
   }

@@ -1,6 +1,6 @@
 package test
 
-/* check availability of members defined locally and in hierachy */
+/* check availability of members defined locally and in hierarchy */
 
 abstract class Base1 {
 

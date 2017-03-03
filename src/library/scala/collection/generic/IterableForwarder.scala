@@ -26,7 +26,7 @@ import scala.collection._
  *  @version 2.8
  *  @since   2.8
  */
-@deprecated("Forwarding is inherently unreliable since it is not automated and methods can be forgotten.", "2.11.0")
+@deprecated("forwarding is inherently unreliable since it is not automated and methods can be forgotten", "2.11.0")
 trait IterableForwarder[+A] extends Iterable[A] with TraversableForwarder[A] {
 
   /** The iterable object to which calls are forwarded */

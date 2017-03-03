@@ -1,0 +1,5 @@
+
+scala> :implicits
+No implicits have been imported other than those in Predef.
+
+scala> :quit

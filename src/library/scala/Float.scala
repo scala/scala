@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -200,7 +200,8 @@ final abstract class Float private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Float] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Float] = ???
 }
 
 object Float extends AnyValCompanion {
@@ -229,7 +230,7 @@ object Float extends AnyValCompanion {
    *  @param  x   the Float to be boxed
    *  @return     a java.lang.Float offering `x` as its underlying value.
    */
-  def box(x: Float): java.lang.Float = java.lang.Float.valueOf(x)
+  def box(x: Float): java.lang.Float = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -241,7 +242,7 @@ object Float extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Float
    *  @return     the Float resulting from calling floatValue() on `x`
    */
-  def unbox(x: java.lang.Object): Float = x.asInstanceOf[java.lang.Float].floatValue()
+  def unbox(x: java.lang.Object): Float = ???
 
   /** The String representation of the scala.Float companion object. */
   override def toString = "object scala.Float"

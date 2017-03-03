@@ -1,5 +1,5 @@
 t4541b.scala:13: error: variable data in class SparseArray cannot be accessed in SparseArray[Int]
- Access to protected method data not permitted because
+ Access to protected variable data not permitted because
  prefix type SparseArray[Int] does not conform to
  class SparseArray$mcI$sp where the access take place
     use(that.data.clone)

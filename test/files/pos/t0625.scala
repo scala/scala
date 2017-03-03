@@ -3,6 +3,5 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     idMap(Some(5))
-    idMap(Responder.constant(5))
   }
 }

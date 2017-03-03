@@ -6,8 +6,9 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
 import scala.language.implicitConversions
+
+import scala.collection.mutable
 
 trait MemberHandlers {
   val intp: IMain

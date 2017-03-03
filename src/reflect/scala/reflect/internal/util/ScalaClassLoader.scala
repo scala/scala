@@ -6,15 +6,16 @@
 package scala
 package reflect.internal.util
 
+import scala.language.implicitConversions
+
 import java.lang.{ ClassLoader => JClassLoader }
-import java.lang.reflect.{ Constructor, Modifier, Method }
-import java.io.{ File => JFile }
+import java.lang.reflect.Modifier
 import java.net.{ URLClassLoader => JURLClassLoader }
 import java.net.URL
-import scala.reflect.runtime.ReflectionUtils.unwrapHandler
+
+import scala.reflect.runtime.ReflectionUtils.{ show, unwrapHandler }
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
-import scala.language.implicitConversions
 import scala.reflect.{ ClassTag, classTag }
 
 trait HasClassPath {
@@ -45,6 +46,33 @@ trait ScalaClassLoader extends JClassLoader {
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
     tryToInitializeClass[AnyRef](path).map(_.newInstance()).orNull
+
+  /** Create an instance with ctor args, or invoke errorFn before throwing. */
+  def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T = {
+    def fail(msg: String) = error(msg, new IllegalArgumentException(msg))
+    def error(msg: String, e: Throwable) = { errorFn(msg) ; throw e }
+    try {
+      val clazz = Class.forName(path, /*initialize =*/ true, /*loader =*/ this)
+      if (classTag[T].runtimeClass isAssignableFrom clazz) {
+        val ctor = {
+          val maybes = clazz.getConstructors filter (c => c.getParameterCount == args.size &&
+            (c.getParameterTypes zip args).forall { case (k, a) => k isAssignableFrom a.getClass })
+          if (maybes.size == 1) maybes.head
+          else fail(s"Constructor must accept arg list (${args map (_.getClass.getName) mkString ", "}): ${path}")
+        }
+        (ctor.newInstance(args: _*)).asInstanceOf[T]
+      } else {
+        errorFn(s"""Loader for ${classTag[T]}:   [${show(classTag[T].runtimeClass.getClassLoader)}]
+                   |Loader for ${clazz.getName}: [${show(clazz.getClassLoader)}]""".stripMargin)
+        fail(s"Not a ${classTag[T]}: ${path}")
+      }
+    } catch {
+      case e: ClassNotFoundException =>
+        error(s"Class not found: ${path}", e)
+      case e @ (_: LinkageError | _: ReflectiveOperationException) =>
+        error(s"Unable to create instance: ${path}: ${e.toString}", e)
+    }
+  }
 
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def classBytes(className: String): Array[Byte] = classAsStream(className) match {
@@ -110,6 +138,10 @@ object ScalaClassLoader {
     override def addURL(url: URL) = {
       classloaderURLs :+= url
       super.addURL(url)
+    }
+    override def close(): Unit = {
+      super.close()
+      classloaderURLs = null
     }
   }
 

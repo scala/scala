@@ -43,8 +43,13 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with scala.collection.S
  *
  */
 object SortedSet extends MutableSortedSetFactory[SortedSet] {
-  implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = new SortedSetCanBuildFrom[A]
+  def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = new SortedSetCanBuildFrom[A]
 
   def empty[A](implicit ord: Ordering[A]): SortedSet[A] = TreeSet.empty[A]
 
+  // Force a declaration here so that BitSet (which does not inherit from SortedSetFactory) can be more specific
+  override implicit def newCanBuildFrom[A](implicit ord : Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = super.newCanBuildFrom
 }
+
+/** Explicit instantiation of the `SortedSet` trait to reduce class file size in subclasses. */
+abstract class AbstractSortedSet[A] extends scala.collection.mutable.AbstractSet[A] with SortedSet[A]

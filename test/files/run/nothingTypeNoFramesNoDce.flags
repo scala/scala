@@ -1,1 +1,0 @@
--target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none -deprecation

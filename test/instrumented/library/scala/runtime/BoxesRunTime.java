@@ -278,10 +278,6 @@ public final class BoxesRunTime
       else if (n instanceof java.lang.Float) return hashFromFloat((java.lang.Float)n);
       else return n.hashCode();
     }
-    public static int hashFromObject(Object a) {
-      if (a instanceof Number) return hashFromNumber((Number)a);
-      else return a.hashCode();
-    }
 
     private static int unboxCharOrInt(Object arg1, int code) {
       if (code == CHAR)

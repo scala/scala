@@ -1,5 +1,4 @@
-t712.scala:10: error: value self is not a member of B.this.ParentImpl
- Note: implicit method coerce is not applicable here because it comes after the application point and it lacks an explicit result type
+t712.scala:10: error: overloaded method coerce needs result type
   implicit def coerce(p : ParentImpl) = p.self;
                                           ^
 one error found

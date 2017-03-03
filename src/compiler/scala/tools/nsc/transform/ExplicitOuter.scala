@@ -8,10 +8,8 @@ package tools.nsc
 package transform
 
 import symtab._
-import Flags.{ CASE => _, _ }
-import scala.collection.mutable
+import Flags.{CASE => _, _}
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.settings.ScalaVersion
 
 /** This class ...
  *
@@ -68,8 +66,6 @@ abstract class ExplicitOuter extends InfoTransform
 
     result
   }
-
-  private val innerClassConstructorParamName: TermName = newTermName("arg" + nme.OUTER)
 
   class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
     override def transform(tree: Tree) = tree match {
@@ -159,20 +155,18 @@ abstract class ExplicitOuter extends InfoTransform
    *  elides outer pointers.
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case MethodType(params, restpe1) =>
-      val restpe = transformInfo(sym, restpe1)
-      if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
-        sym.makeNotPrivate(sym.owner)
-      }
-      if (sym.owner.isTrait && sym.isProtected) sym setFlag notPROTECTED // 6
-      if (sym.isClassConstructor && isInner(sym.owner)) { // 1
-        val p = sym.newValueParameter(innerClassConstructorParamName, sym.pos)
-                   .setInfo(sym.owner.outerClass.thisType)
-        MethodType(p :: params, restpe)
-      } else if (restpe ne restpe1)
-        MethodType(params, restpe)
+    case MethodType(params, resTp) =>
+      val resTpTransformed = transformInfo(sym, resTp)
+
+      val paramsWithOuter =
+        if (sym.isClassConstructor && isInner(sym.owner)) // 1
+          sym.newValueParameter(nme.OUTER_ARG, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
+        else params
+
+      if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)
       else tp
-    case ClassInfoType(parents, decls, clazz) =>
+
+    case ClassInfoType(parents, decls, clazz) if !clazz.isJava =>
       var decls1 = decls
       if (isInner(clazz) && !clazz.isInterface) {
         decls1 = decls.cloneScope
@@ -201,14 +195,6 @@ abstract class ExplicitOuter extends InfoTransform
       if (restp eq restp1) tp else PolyType(tparams, restp1)
 
     case _ =>
-      // Local fields of traits need to be unconditionally unprivatized.
-      // Reason: Those fields might need to be unprivatized if referenced by an inner class.
-      // On the other hand, mixing in the trait into a separately compiled
-      // class needs to have a common naming scheme, independently of whether
-      // the field was accessed from an inner class or not. See #2946
-      if (sym.owner.isTrait && sym.isLocalToThis &&
-              (sym.getterIn(sym.owner.toInterface) == NoSymbol))
-        sym.makeNotPrivate(sym.owner)
       tp
   }
 
@@ -238,12 +224,17 @@ abstract class ExplicitOuter extends InfoTransform
      *  Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
     private def outerSelect(base: Tree): Tree = {
-      val baseSym = base.tpe.typeSymbol.toInterface
+      val baseSym = base.tpe.typeSymbol
       val outerAcc = outerAccessor(baseSym)
-      if (outerAcc == NoSymbol && baseSym.ownersIterator.exists(isUnderConstruction)) {
-         // e.g neg/t6666.scala
-         // The caller will report the error with more information.
-         EmptyTree
+      if (outerAcc == NoSymbol) {
+        if (baseSym.ownersIterator.exists(isUnderConstruction)) {
+          // e.g neg/t6666.scala
+          // The caller will report the error with more information.
+          EmptyTree
+        } else {
+          globalError(currentOwner.pos, s"Internal error: unable to find the outer accessor symbol of $baseSym")
+          EmptyTree
+        }
       } else {
         val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
         // outerFld is the $outer field of the current class, if the reference can
@@ -251,6 +242,7 @@ abstract class ExplicitOuter extends InfoTransform
         // otherwise it is NoSymbol
         val outerFld =
           if (outerAcc.owner == currentClass &&
+            !outerAcc.owner.isTrait &&
             base.tpe =:= currentClass.thisType &&
             outerAcc.owner.isEffectivelyFinal)
             outerField(currentClass) suchThat (_.owner == currentClass)
@@ -271,8 +263,7 @@ abstract class ExplicitOuter extends InfoTransform
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
-      //assert(base.tpe.widen.baseType(from.toInterface) != NoType, ""+base.tpe.widen+" "+from.toInterface)//DEBUG
-      if (from == to || from.isImplClass && from.toInterface == to) base
+      if (from == to) base
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
@@ -294,61 +285,41 @@ abstract class ExplicitOuter extends InfoTransform
     }
   }
 
-  /** <p>
-   *    The phase performs the following transformations on terms:
-   *  </p>
-   *  <ol>
-   *    <li> <!-- 1 -->
-   *      <p>
-   *        An class which is not an interface and is not static gets an outer
-   *        accessor (@see outerDefs).
-   *      </p>
-   *      <p>
-   *        1a. A class which is not a trait gets an outer field.
-   *      </p>
-   *    </li>
-   *    <li> <!-- 4 -->
-   *      A constructor of a non-trait inner class gets an outer parameter.
-   *    </li>
-   *    <li> <!-- 5 -->
-   *      A reference C.this where C refers to an
-   *      outer class is replaced by a selection
-   *      this.$outer$$C1 ... .$outer$$Cn (@see outerPath)
-   *    </li>
-   *    <li>
-   *    </li>
-   *    <li> <!-- 7 -->
-   *      A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
-   *      the constructor belongs to a non-static class is augmented by an outer argument.
-   *      E.g. Q.<init>(OUTER, args) where OUTER
-   *      is the qualifier corresponding to the singleton type Q.
-   *    </li>
-   *    <li>
-   *      A call to a constructor this.<init>(args) in a
-   *      secondary constructor is augmented to this.<init>(OUTER, args)
-   *      where OUTER is the last parameter of the secondary constructor.
-   *    </li>
-   *    <li> <!-- 9 -->
-   *      Remove private modifier from class members M
-   *      that are accessed from an inner class.
-   *    </li>
-   *    <li> <!-- 10 -->
-   *      Remove protected modifier from class members M
-   *      that are accessed without a super qualifier accessed from an inner
-   *      class or trait.
-   *    </li>
-   *    <li> <!-- 11 -->
-   *      Remove private and protected modifiers
-   *      from type symbols
-   *    </li>
-   *    <li> <!-- 12 -->
-   *      Remove private modifiers from members of traits
-   *    </li>
-   *  </ol>
-   *  <p>
-   *    Note: The whole transform is run in phase explicitOuter.next.
-   *  </p>
-   */
+  /** The phase performs the following transformations (more or less...):
+    *
+    * (1) An class which is not an interface and is not static gets an outer accessor (@see outerDefs).
+    * (1a) A class which is not a trait gets an outer field.
+    *
+    * (4) A constructor of a non-trait inner class gets an outer parameter.
+    *
+    * (5) A reference C.this where C refers to an outer class is replaced by a selection
+    *     `this.$outer$$C1 ... .$outer$$Cn` (@see outerPath)
+    *
+    * (7) A call to a constructor Q.(args) or Q.$init$(args) where Q != this and
+    *     the constructor belongs to a non-static class is augmented by an outer argument.
+    *     E.g. Q.(OUTER, args) where OUTER
+    *     is the qualifier corresponding to the singleton type Q.
+    *
+    * (8) A call to a constructor this.(args) in a
+    *     secondary constructor is augmented to this.(OUTER, args)
+    *     where OUTER is the last parameter of the secondary constructor.
+    *
+    * (9) Remove private modifier from class members M that are accessed from an inner class.
+    *
+    * (10) Remove protected modifier from class members M that are accessed
+    *      without a super qualifier accessed from an inner class or trait.
+    *
+    * (11) Remove private and protected modifiers from type symbols
+    *
+    * Note: The whole transform is run in phase explicitOuter.next.
+    *
+    * TODO: Make this doc reflect what's actually going on.
+    *       Some of the deviations are motivated by separate compilation
+    *       (name mangling based on usage is inherently unstable).
+    *       Now that traits are compiled 1:1 to interfaces, they can have private members,
+    *       so there's also less need to make trait members non-private
+    *       (they still may need to be implemented in subclasses, though we could make those protected...).
+    */
   class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
     transformer =>
 
@@ -397,7 +368,7 @@ abstract class ExplicitOuter extends InfoTransform
         case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
-            if (!currentClass.isInterface || (currentClass hasFlag lateINTERFACE)) {
+            if (!currentClass.isInterface) {
               if (isInner(currentClass)) {
                 if (hasOuterField(currentClass))
                   newDefs += outerFieldDef // (1a)
@@ -446,8 +417,10 @@ abstract class ExplicitOuter extends InfoTransform
           //
           // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
           // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
-          if (currentClass != sym.owner ||
-              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
+          def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
+          // SI-8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
+          //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
+          if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
             sym.makeNotPrivate(sym.owner)
 
           val qsym = qual.tpe.widen.typeSymbol
@@ -474,14 +447,15 @@ abstract class ExplicitOuter extends InfoTransform
         // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
         // TODO remove the synthetic `<outer>` method from outerFor??
         case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
-          val outerFor = sel.symbol.owner.toInterface // TODO: toInterface necessary?
+          val outerFor = sel.symbol.owner
           val acc = outerAccessor(outerFor)
 
           if (acc == NoSymbol ||
               // since we can't fix SI-4440 properly (we must drop the outer accessors of final classes when there's no immediate reference to them in sight)
               // at least don't crash... this duplicates maybeOmittable from constructors
               (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
-            currentRun.reporting.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
+            if (!base.tpe.hasAnnotation(UncheckedClass))
+              currentRun.reporting.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
             transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
           } else {
             // println("(base, acc)= "+(base, acc))

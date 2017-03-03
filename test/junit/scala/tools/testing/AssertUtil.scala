@@ -3,6 +3,7 @@ package testing
 
 import org.junit.Assert
 import Assert._
+import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.{ GenIterable, IterableLike }
 import scala.collection.JavaConverters._
@@ -40,15 +41,13 @@ object AssertUtil {
    *  and that its message satisfies the `checkMessage` predicate.
    *  Any other exception is propagated.
    */
-  def assertThrows[T <: Throwable](body: => Any,
-                                   checkMessage: String => Boolean = s => true)
-                                  (implicit manifest: Manifest[T]): Unit = {
+  def assertThrows[T <: Throwable: ClassTag](body: => Any,
+      checkMessage: String => Boolean = s => true): Unit = {
     try {
       body
       fail("Expression did not throw!")
     } catch {
-      case e: Throwable if (manifest.runtimeClass isAssignableFrom e.getClass) &&
-                            checkMessage(e.getMessage) =>
+      case e: T if checkMessage(e.getMessage) =>
     }
   }
 

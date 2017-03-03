@@ -3,13 +3,9 @@ package reflect
 package internal
 
 import scala.language.implicitConversions
-import scala.language.higherKinds
-import scala.collection.mutable.WeakHashMap
-import scala.ref.WeakReference
+
 import scala.reflect.api.Universe
 import scala.reflect.macros.Attachments
-import scala.reflect.internal.util.FreshNameCreator
-import scala.reflect.internal.util.ListOfNil
 
 trait Internals extends api.Internals {
   self: SymbolTable =>
@@ -33,7 +29,7 @@ trait Internals extends api.Internals {
     def freeTypes(tree: Tree): List[FreeTypeSymbol] = tree.freeTypes
     def substituteSymbols(tree: Tree, from: List[Symbol], to: List[Symbol]): Tree = tree.substituteSymbols(from, to)
     def substituteTypes(tree: Tree, from: List[Symbol], to: List[Type]): Tree = tree.substituteTypes(from, to)
-    def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree = tree.substituteThis(clazz, to)
+    def substituteThis(tree: Tree, clazz: Symbol, to: => Tree): Tree = tree.substituteThis(clazz, to)
     def attachments(tree: Tree): Attachments { type Pos = Position } = tree.attachments
     def updateAttachment[T: ClassTag](tree: Tree, attachment: T): tree.type = tree.updateAttachment(attachment)
     def removeAttachment[T: ClassTag](tree: Tree): tree.type = tree.removeAttachment[T]
@@ -60,19 +56,7 @@ trait Internals extends api.Internals {
     def typeDef(sym: Symbol): TypeDef = self.TypeDef(sym)
     def labelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef = self.LabelDef(sym, params, rhs)
 
-    def changeOwner(tree: Tree, prev: Symbol, next: Symbol): tree.type = {
-      object changeOwnerAndModuleClassTraverser extends ChangeOwnerTraverser(prev, next) {
-        override def traverse(tree: Tree) {
-          tree match {
-            case _: DefTree => change(tree.symbol.moduleClass)
-            case _          => // do nothing
-          }
-          super.traverse(tree)
-        }
-      }
-      changeOwnerAndModuleClassTraverser.traverse(tree)
-      tree
-    }
+    def changeOwner(tree: Tree, prev: Symbol, next: Symbol): tree.type = { new ChangeOwnerTraverser(prev, next).traverse(tree); tree }
 
     lazy val gen = self.treeBuild
 

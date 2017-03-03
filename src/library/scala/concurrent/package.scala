@@ -20,11 +20,11 @@ import scala.annotation.implicitNotFound
  * [[http://docs.scala-lang.org/overviews/core/futures.html]].
  *
  * == Common Imports ==
- * 
+ *
  * When working with Futures, you will often find that importing the whole concurrent
  * package is convenient, furthermore you are likely to need an implicit ExecutionContext
  * in scope for many operations involving Futures and Promises:
- * 
+ *
  * {{{
  * import scala.concurrent._
  * import ExecutionContext.Implicits.global
@@ -41,7 +41,7 @@ import scala.annotation.implicitNotFound
  * }}}
  *
  * == Using Futures For Non-blocking Computation ==
- * 
+ *
  * Basic use of futures is easy with the factory method on Future, which executes a
  * provided function asynchronously, handing you back a future result of that function
  * without blocking the current thread. In order to create the Future you will need
@@ -50,7 +50,7 @@ import scala.annotation.implicitNotFound
  * {{{
  * import scala.concurrent._
  * import ExecutionContext.Implicits.global  // implicit execution context
- * 
+ *
  * val firstZebra: Future[Int] = Future {
  *   val source = scala.io.Source.fromFile("/etc/dictionaries-common/words")
  *   source.toSeq.indexOfSlice("zebra")
@@ -80,7 +80,7 @@ import scala.annotation.implicitNotFound
  * animalRange.onSuccess {
  *   case x if x > 500000 => println("It's a long way from Aardvark to Zebra")
  * }
- * }}} 
+ * }}}
  */
 package object concurrent {
   type ExecutionException =    java.util.concurrent.ExecutionException
@@ -96,7 +96,7 @@ package object concurrent {
    *  @param executor the execution context on which the future is run
    *  @return         the `Future` holding the result of the computation
    */
-  @deprecated("Use `Future { ... }` instead.", "2.11.0")
+  @deprecated("use `Future { ... }` instead", "2.11.0")
   // removal planned for 2.13.0
   def future[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] = Future[T](body)
 
@@ -105,7 +105,7 @@ package object concurrent {
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  @deprecated("Use `Promise[T]()` instead.", "2.11.0")
+  @deprecated("use `Promise[T]()` instead", "2.11.0")
   // removal planned for 2.13.0
   def promise[T](): Promise[T] = Promise[T]()
 

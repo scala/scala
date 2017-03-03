@@ -1,0 +1,7 @@
+= Java Erased Signatures =
+public int C.a(Wrapper)
+public int C.b(Wrapper)
+
+= Java Generic Signatures =
+public int C.a(Wrapper<int[]>)
+public int C.b(Wrapper<java.lang.Object>)

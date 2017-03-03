@@ -1,0 +1,6 @@
+t9953.scala:10: warning: Object and X are unrelated: they will never compare equal
+  def b = y == x   // warn
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

@@ -3,8 +3,7 @@
 # requires env: scalaVersion (specifies binary already built from above checkout), WORKSPACE (provided by jenkins), repo_ref (HEAD of the scala checkout),
 # requires files: $baseDir/versions.properties (from checkout -- defines version numbers for modules used to build scala for dbuild...)
 
-echo "IDE integration disabled for now on 2.11.x. Punting."
-echo "see https://github.com/scala/scala-dev/issues/104"
+echo "IDE integration not yet available on 2.12.x. Punting."
 exit 0
 
 # TODO: remove when integration is up and running

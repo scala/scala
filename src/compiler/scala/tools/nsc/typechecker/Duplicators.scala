@@ -7,7 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.tools.nsc.symtab.Flags
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /** Duplicate trees and re-type check them, taking care to replace
  *  and create fresh symbols for new local definitions.
@@ -151,8 +151,12 @@ abstract class Duplicators extends Analyzer {
             ldef.symbol = newsym
             debuglog("newsym: " + newsym + " info: " + newsym.info)
 
-          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
-            debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
+          // don't retypecheck val members or local lazy vals -- you'll end up with duplicate symbols because
+          // entering a valdef results in synthesizing getters etc
+          // TODO: why retype check any valdefs?? I checked and the rhs is specialized just fine this way
+          // (and there are no args/type params/... to warrant full type checking?)
+          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) || owner.isClass =>
+            debuglog(s"ValDef $name in $owner sym.info: ${vdef.symbol.info}")
             invalidSyms(vdef.symbol) = vdef
             val newowner = owner orElse context.owner
             val newsym = vdef.symbol.cloneSymbol(newowner)
@@ -229,11 +233,12 @@ abstract class Duplicators extends Analyzer {
 
         case ddef @ DefDef(_, _, _, _, tpt, rhs) =>
           ddef.tpt modifyType fixType
-          super.typed(ddef.clearType(), mode, pt)
-
-        case fun: Function =>
-          debuglog("Clearing the type and retyping Function: " + fun)
-          super.typed(fun.clearType, mode, pt)
+          val result = super.typed(ddef.clearType(), mode, pt)
+          // TODO this is a hack, we really need a cleaner way to transport symbol attachments to duplicated methods
+          // bodies in specialized subclasses.
+          if (ddef.hasAttachment[DelambdafyTarget.type])
+            result.symbol.updateAttachment(DelambdafyTarget)
+          result
 
         case vdef @ ValDef(mods, name, tpt, rhs) =>
           // log("vdef fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol + " and " + invalidSyms)

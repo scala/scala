@@ -9,10 +9,9 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.{ mutable, immutable }
-import mutable.{ ListBuffer, StringBuilder }
+import scala.collection.mutable
+import mutable.ListBuffer
 import scala.reflect.internal.{ Precedence, ModifierFlags => Flags }
-import scala.reflect.internal.Chars.{ isScalaLetter }
 import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator, ListOfNil }
 import Tokens._
 
@@ -40,7 +39,7 @@ trait ParsersCommon extends ScannersCommon { self =>
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def deprecationWarning(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit
     def accept(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
@@ -155,7 +154,7 @@ self =>
 
     // suppress warnings; silent abort on errors
     def warning(offset: Offset, msg: String): Unit = ()
-    def deprecationWarning(offset: Offset, msg: String): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
 
     def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
@@ -207,8 +206,8 @@ self =>
     override def warning(offset: Offset, msg: String): Unit =
       reporter.warning(o2p(offset), msg)
 
-    override def deprecationWarning(offset: Offset, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(o2p(offset), msg)
+    override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
+      currentRun.reporting.deprecationWarning(o2p(offset), msg, since)
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -684,6 +683,15 @@ self =>
       case _                                                        => false
     }
     def isLiteral = isLiteralToken(in.token)
+
+    def isSimpleExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
+      case IDENTIFIER | BACKQUOTED_IDENT |
+           THIS | SUPER | NEW | USCORE |
+           LPAREN | LBRACE | XMLSTART => true
+      case _ => false
+    })
+
+    def isSimpleExprIntro: Boolean = isExprIntroToken(in.token)
 
     def isExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT |
@@ -1255,8 +1263,8 @@ self =>
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt
         case LONGLIT                => in.intVal(isNegated)
-        case FLOATLIT               => in.floatVal(isNegated).toFloat
-        case DOUBLELIT              => in.floatVal(isNegated)
+        case FLOATLIT               => in.floatVal(isNegated)
+        case DOUBLELIT              => in.doubleVal(isNegated)
         case STRINGLIT | STRINGPART => in.strVal.intern()
         case TRUE                   => true
         case FALSE                  => false
@@ -1636,11 +1644,14 @@ self =>
     def prefixExpr(): Tree = {
       if (isUnaryOp) {
         atPos(in.offset) {
-          val name = nme.toUnaryName(rawIdent().toTermName)
-          if (name == nme.UNARY_- && isNumericLit)
-            simpleExprRest(literal(isNegated = true), canApply = true)
-          else
-            Select(stripParens(simpleExpr()), name)
+          if (lookingAhead(isSimpleExprIntro)) {
+            val uname = nme.toUnaryName(rawIdent().toTermName)
+            if (uname == nme.UNARY_- && isNumericLit)
+              simpleExprRest(literal(isNegated = true), canApply = true)
+            else
+              Select(stripParens(simpleExpr()), uname)
+          }
+          else simpleExpr()
         }
       }
       else simpleExpr()
@@ -1722,9 +1733,7 @@ self =>
           }
           simpleExprRest(app, canApply = true)
         case USCORE =>
-          atPos(t.pos.start, in.skipToken()) {
-            Typed(stripParens(t), Function(Nil, EmptyTree))
-          }
+          atPos(t.pos.start, in.skipToken()) { makeMethodValue(stripParens(t)) }
         case _ =>
           t
       }
@@ -1833,7 +1842,7 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
-        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated")
+        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated", "2.10.0")
         else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
       }
 
@@ -1912,19 +1921,20 @@ self =>
       }
 
       /** {{{
-       *  Pattern1    ::= varid `:' TypePat
+       *  Pattern1    ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  Pattern2
-       *  SeqPattern1 ::= varid `:' TypePat
+       *  SeqPattern1 ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  [SeqPattern2]
        *  }}}
        */
       def pattern1(): Tree = pattern2() match {
         case p @ Ident(name) if in.token == COLON =>
-          if (treeInfo.isVarPattern(p))
+          if (nme.isVariableName(name)) {
+            p.removeAttachment[BackquotedIdentifierAttachment.type]
             atPos(p.pos.start, in.skipToken())(Typed(p, compoundType()))
-          else {
+          } else {
             syntaxError(in.offset, "Pattern variables must start with a lower-case letter. (SLS 8.1.1.)")
             p
           }
@@ -1932,10 +1942,9 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  varid [ @ Pattern3 ]
+       *  Pattern2    ::=  id  @ Pattern3
+       *                |  `_' @ Pattern3
        *                |   Pattern3
-       *  SeqPattern2 ::=  varid [ @ SeqPattern3 ]
-       *                |   SeqPattern3
        *  }}}
        */
       def pattern2(): Tree = {
@@ -1946,7 +1955,7 @@ self =>
           case Ident(nme.WILDCARD) =>
             in.nextToken()
             pattern3()
-          case Ident(name) if treeInfo.isVarPattern(p) =>
+          case Ident(name) =>
             in.nextToken()
             atPos(p.pos.start) { Bind(name, pattern3()) }
           case _ => p
@@ -1975,8 +1984,8 @@ self =>
           case _ => EmptyTree
         }
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
-          case next if isIdentExcept(raw.BAR) => pushOpInfo(next) ; loop(simplePattern(badPattern3))
-          case next                           => next
+          case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(badPattern3))
+          case next                         => next
         }
         checkWildStar orElse stripParens(loop(top))
       }
@@ -2227,30 +2236,56 @@ self =>
      *  }}}
      */
     def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
-      var implicitmod = 0
-      var caseParam = ofCaseClass
-      def paramClause(): List[ValDef] = {
-        if (in.token == RPAREN)
-          return Nil
-
-        if (in.token == IMPLICIT) {
-          in.nextToken()
-          implicitmod = Flags.IMPLICIT
-        }
-        commaSeparated(param(owner, implicitmod, caseParam  ))
-      }
-      val vds = new ListBuffer[List[ValDef]]
+      var implicitSection = -1
+      var implicitOffset  = -1
+      var warnAt          = -1
+      var caseParam       = ofCaseClass
+      val vds   = new ListBuffer[List[ValDef]]
       val start = in.offset
+      def paramClause(): List[ValDef] = if (in.token == RPAREN) Nil else {
+        val implicitmod = 
+          if (in.token == IMPLICIT) {
+            if (implicitOffset == -1) { implicitOffset = in.offset ; implicitSection = vds.length }
+            else if (warnAt == -1) warnAt = in.offset
+            in.nextToken()
+            Flags.IMPLICIT
+          } else 0
+        commaSeparated(param(owner, implicitmod, caseParam))
+      }
       newLineOptWhenFollowedBy(LPAREN)
-      if (ofCaseClass && in.token != LPAREN)
-        syntaxError(in.lastOffset, "case classes without a parameter list are not allowed;\n"+
-                                   "use either case objects or case classes with an explicit `()' as a parameter list.")
-      while (implicitmod == 0 && in.token == LPAREN) {
+      while (in.token == LPAREN) {
         in.nextToken()
         vds += paramClause()
         accept(RPAREN)
         caseParam = false
         newLineOptWhenFollowedBy(LPAREN)
+      }
+      if (ofCaseClass) {
+        if (vds.isEmpty)
+          syntaxError(start, s"case classes must have a parameter list; try 'case class ${owner.encoded
+                                         }()' or 'case object ${owner.encoded}'")
+        else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
+          if (settings.isScala213)
+            syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class ${
+                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'")
+          else {
+            deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class ${
+                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'", "2.12.2")
+            vds.insert(0, List.empty[ValDef])
+            vds(1) = vds(1).map(vd => copyValDef(vd)(mods = vd.mods & ~Flags.CASEACCESSOR))
+            if (implicitSection != -1) implicitSection += 1
+          }
+        }
+      }
+      if (implicitSection != -1 && implicitSection != vds.length - 1)
+        syntaxError(implicitOffset, "an implicit parameter section must be last")
+      if (warnAt != -1)
+        syntaxError(warnAt, "multiple implicit parameter sections are not allowed")
+      else if (settings.warnExtraImplicit) {
+        // guard against anomalous class C(private implicit val x: Int)(implicit s: String)
+        val ttl = vds.count { case ValDef(mods, _, _, _) :: _ => mods.isImplicit ; case _ => false }
+        if (ttl > 1)
+          warning(in.offset, s"$ttl parameter sections are effectively implicit")
       }
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
@@ -2369,7 +2404,7 @@ self =>
           while (in.token == VIEWBOUND) {
             val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
             if (settings.future)
-              deprecationWarning(in.offset, s"View bounds are deprecated. $msg")
+              deprecationWarning(in.offset, s"View bounds are deprecated. $msg", "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2663,14 +2698,14 @@ self =>
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
               if (settings.future)
-                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.")
+                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.", "2.12.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
             if (settings.future)
-              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.")
+              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.", "2.12.0")
             restype = scalaUnitConstr
             blockExpr()
           } else {
@@ -2820,11 +2855,6 @@ self =>
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
           var mods1 = mods
-          if (mods.isTrait) {
-            if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
-          } else if (in.token == SUBTYPE) {
-            syntaxError("classes are not allowed to be virtual", skipIt = false)
-          }
           val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
           val result = gen.mkClassDef(mods1, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
@@ -2937,7 +2967,7 @@ self =>
       case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
-        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
+        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.", "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)

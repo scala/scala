@@ -9,7 +9,6 @@ package interactive
 import scala.reflect.internal.util._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
-import java.io.FileWriter
 
 /** Interface of interactive compiler to a client such as an IDE
  */
@@ -65,7 +64,7 @@ object REPL {
   def loop(action: (String) => Unit) {
     Console.print(prompt)
     try {
-      val line = Console.readLine()
+      val line = scala.io.StdIn.readLine()
       if (line.length() > 0) {
         action(line)
       }

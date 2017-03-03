@@ -19,7 +19,7 @@ scala> def test(n: Int): Unit = {
   val x = sig.asInstanceOf[MethodType].params.head
   println(x.info)
 }
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 test: (n: Int)Unit
 
 scala> for (i <- 1 to 8) test(i)

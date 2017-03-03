@@ -135,6 +135,20 @@ class IteratorTest {
     assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 4 })
     assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 16 })
   }
+  @Test def indexOfFrom(): Unit = {
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 0))
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 1))
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 2))
+    assertEquals(4, List(1, 2, 3, 2, 1).iterator.indexOf(1, 1))
+    assertEquals(1, List(1, 2, 3, 2, 1).iterator.indexOf(2, 1))
+  }
+  @Test def indexWhereFrom(): Unit = {
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 0))
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 1))
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 2))
+    assertEquals(4, List(1, 2, 3, 2, 1).iterator.indexWhere(_ < 2, 1))
+    assertEquals(1, List(1, 2, 3, 2, 1).iterator.indexWhere(_ <= 2, 1))
+  }
   // iterator-iterate-lazy.scala
   // was java.lang.UnsupportedOperationException: tail of empty list
   @Test def iterateIsSufficientlyLazy(): Unit = {
@@ -153,6 +167,14 @@ class IteratorTest {
     // back and forth without slipping into nontermination.
     results += (Stream from 1).toIterator.drop(10).toStream.drop(10).toIterator.next()
     assertSameElements(List(1,1,21), results)
+  }
+  // SI-8552
+  @Test def indexOfShouldWorkForTwoParams(): Unit = {
+    assertEquals(1, List(1, 2, 3).iterator.indexOf(2, 0))
+    assertEquals(-1, List(5 -> 0).iterator.indexOf(5, 0))
+    assertEquals(0, List(5 -> 0).iterator.indexOf((5, 0)))
+    assertEquals(-1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9, 2))
+    assertEquals(1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9 -> 2))
   }
   // SI-9332
   @Test def spanExhaustsLeadingIterator(): Unit = {
@@ -198,22 +220,32 @@ class IteratorTest {
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14
   }
-
-  // SI-9766
-  @Test def exhaustedConcatIteratorConcat: Unit = {
-    def consume[A](i: Iterator[A]) = {
-      while(i.hasNext) i.next()
-    }
-    val joiniter = Iterator.empty ++ Seq(1, 2, 3)
-    assertTrue(joiniter.hasNext)
-    consume(joiniter)
-    val concatiter = joiniter ++ Seq(4, 5, 6)
-    assertTrue(concatiter.hasNext)
-    consume(concatiter)
-    assertFalse(concatiter.hasNext)
-    val concatFromEmpty = concatiter ++ Seq(7, 8, 9)
-    assertTrue(concatFromEmpty.hasNext)
-    consume(concatFromEmpty)
-    assertFalse(concatFromEmpty.hasNext)
+  // SI-9691
+  @Test def bufferedHeadOptionReturnsValueWithHeadOrNone(): Unit = {
+    // Checks BufferedIterator returns Some(value) when there is a value
+    val validHeadOption = List(1,2,3).iterator.buffered.headOption
+    assertEquals(Some(1), validHeadOption)
+    // Checks BufferedIterator returns None when there is no value
+    val invalidHeadOption = List(1,2,3).iterator.drop(10).buffered.headOption
+    assertEquals(None: Option[Int], invalidHeadOption)
+    // Checks BufferedIterator returns Some(value) in the last position with a value
+    val validHeadOptionAtTail = List(1,2,3).iterator.drop(2).buffered.headOption
+    assertEquals(Some(3), validHeadOptionAtTail)
+    // Checks BufferedIterator returns None at the first position without a value
+    val invalidHeadOptionOnePastTail = List(1,2,3).iterator.drop(3).buffered.headOption
+    assertEquals(None, invalidHeadOptionOnePastTail)
+    // Checks BufferedIterator returns Some(null) if the next value is null.
+    val nullHandingList = List(null, "yellow").iterator.buffered.headOption
+    assertEquals(Some(null), nullHandingList)
+    // Checks that BufferedIterator is idempotent. That the head is not
+    // changed by its invocation, nor the headOption by the next call to head.
+    val it = List(1,2,3).iterator.buffered
+    val v1 = it.head
+    val v2 = it.headOption
+    val v3 = it.head
+    val v4 = it.headOption
+    assertEquals(v1, v3)
+    assertEquals(v2, v4)
+    assertEquals(Some(v1), v2)
   }
 }

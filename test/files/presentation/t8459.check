@@ -9,6 +9,7 @@ scala.AnyRef {
     ()
   };
   private[this] val bar: F = new F();
+  <stable> <accessor> def bar: F = Foo.this.bar;
   Foo.this.bar.<selectDynamic: error>("<error>")
 }
 ================================================================================

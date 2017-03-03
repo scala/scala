@@ -9,16 +9,14 @@
 package scala
 package runtime
 
-import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator, GenIterable }
+import scala.collection.{ TraversableView, AbstractIterator, GenIterable }
 import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
+import scala.collection.immutable.{ StringLike, NumericRange }
 import scala.collection.generic.{ Sorted, IsTraversableLike }
 import scala.reflect.{ ClassTag, classTag }
-import scala.util.control.ControlThrowable
 import java.lang.{ Class => jClass }
 
-import java.lang.Double.doubleToLongBits
-import java.lang.reflect.{ Modifier, Method => JMethod }
+import java.lang.reflect.{ Method => JMethod }
 
 /** The object ScalaRunTime provides support methods required by
  *  the scala runtime.  All these methods should be considered
@@ -31,15 +29,6 @@ object ScalaRunTime {
   private def isArrayClass(clazz: jClass[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
-  def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
-
-  // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
-  def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
-  def isAnyVal(x: Any) = x match {
-    case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
-    case _                                                                                             => false
-  }
-
   // A helper method to make my life in the pattern matcher a lot easier.
   def drop[Repr](coll: Repr, num: Int)(implicit traversable: IsTraversableLike[Repr]): Repr =
     traversable conversion coll drop num
@@ -50,15 +39,6 @@ object ScalaRunTime {
     // newInstance throws an exception if the erasure is Void.TYPE. see SI-5680
     if (clazz == java.lang.Void.TYPE) classOf[Array[Unit]]
     else java.lang.reflect.Array.newInstance(clazz, 0).getClass
-  }
-
-  /** Return the class object representing elements in arrays described by a given schematic.
-   */
-  def arrayElementClass(schematic: Any): jClass[_] = schematic match {
-    case cls: jClass[_]   => cls.getComponentType
-    case tag: ClassTag[_] => tag.runtimeClass
-    case _                =>
-      throw new UnsupportedOperationException(s"unsupported schematic $schematic (${schematic.getClass})")
   }
 
   /** Return the class object representing an unboxed value type,
@@ -118,15 +98,15 @@ object ScalaRunTime {
   }
 
   def array_clone(xs: AnyRef): AnyRef = xs match {
-    case x: Array[AnyRef]  => ArrayRuntime.cloneArray(x)
-    case x: Array[Int]     => ArrayRuntime.cloneArray(x)
-    case x: Array[Double]  => ArrayRuntime.cloneArray(x)
-    case x: Array[Long]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Float]   => ArrayRuntime.cloneArray(x)
-    case x: Array[Char]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Byte]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Short]   => ArrayRuntime.cloneArray(x)
-    case x: Array[Boolean] => ArrayRuntime.cloneArray(x)
+    case x: Array[AnyRef]  => x.clone()
+    case x: Array[Int]     => x.clone()
+    case x: Array[Double]  => x.clone()
+    case x: Array[Long]    => x.clone()
+    case x: Array[Float]   => x.clone()
+    case x: Array[Char]    => x.clone()
+    case x: Array[Byte]    => x.clone()
+    case x: Array[Short]   => x.clone()
+    case x: Array[Boolean] => x.clone()
     case x: Array[Unit]    => x
     case null => throw new NullPointerException
   }
@@ -159,9 +139,6 @@ object ScalaRunTime {
   // More background at ticket #2318.
   def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 
-  def checkInitialized[T <: AnyRef](x: T): T =
-    if (x == null) throw new UninitializedError else x
-
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
@@ -180,72 +157,6 @@ object ScalaRunTime {
       }
     }
   }
-
-  /** Fast path equality method for inlining; used when -optimise is set.
-   */
-  @inline def inlinedEquals(x: Object, y: Object): Boolean =
-    if (x eq y) true
-    else if (x eq null) false
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.equalsNumObject(x.asInstanceOf[java.lang.Number], y)
-    else if (x.isInstanceOf[java.lang.Character]) BoxesRunTime.equalsCharObject(x.asInstanceOf[java.lang.Character], y)
-    else x.equals(y)
-
-  def _equals(x: Product, y: Any): Boolean = y match {
-    case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
-    case _                                              => false
-  }
-
-  // hashcode -----------------------------------------------------------
-  //
-  // Note that these are the implementations called by ##, so they
-  // must not call ## themselves.
-
-  def hash(x: Any): Int =
-    if (x == null) 0
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
-    else x.hashCode
-
-  def hash(dv: Double): Int = {
-    val iv = dv.toInt
-    if (iv == dv) return iv
-
-    val lv = dv.toLong
-    if (lv == dv) return lv.hashCode
-
-    val fv = dv.toFloat
-    if (fv == dv) fv.hashCode else dv.hashCode
-  }
-  def hash(fv: Float): Int = {
-    val iv = fv.toInt
-    if (iv == fv) return iv
-
-    val lv = fv.toLong
-    if (lv == fv) hash(lv)
-    else fv.hashCode
-  }
-  def hash(lv: Long): Int = {
-    val low = lv.toInt
-    val lowSign = low >>> 31
-    val high = (lv >>> 32).toInt
-    low ^ (high + lowSign)
-  }
-  def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
-
-  // The remaining overloads are here for completeness, but the compiler
-  // inlines these definitions directly so they're not generally used.
-  def hash(x: Int): Int = x
-  def hash(x: Short): Int = x.toInt
-  def hash(x: Byte): Int = x.toInt
-  def hash(x: Char): Int = x.toInt
-  def hash(x: Boolean): Int = if (x) true.hashCode else false.hashCode
-  def hash(x: Unit): Int = 0
-
-  /** A helper method for constructing case class equality methods,
-   *  because existential types get in the way of a clean outcome and
-   *  it's performing a series of Any/Any equals comparisons anyway.
-   *  See ticket #2867 for specifics.
-   */
-  def sameElements(xs1: scala.collection.Seq[Any], xs2: scala.collection.Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -267,6 +178,9 @@ object ScalaRunTime {
     }
     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+
+    // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
+    def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
 
     // We use reflection because the scala.xml package might not be available
     def isSubClassOf(potentialSubClass: Class[_], ofClass: String) =
@@ -346,18 +260,5 @@ object ScalaRunTime {
     val nl = if (s contains "\n") "\n" else ""
 
     nl + s + "\n"
-  }
-
-  def box[T](clazz: jClass[T]): jClass[_] = clazz match {
-    case java.lang.Byte.TYPE => classOf[java.lang.Byte]
-    case java.lang.Short.TYPE => classOf[java.lang.Short]
-    case java.lang.Character.TYPE => classOf[java.lang.Character]
-    case java.lang.Integer.TYPE => classOf[java.lang.Integer]
-    case java.lang.Long.TYPE => classOf[java.lang.Long]
-    case java.lang.Float.TYPE => classOf[java.lang.Float]
-    case java.lang.Double.TYPE => classOf[java.lang.Double]
-    case java.lang.Void.TYPE => classOf[scala.runtime.BoxedUnit]
-    case java.lang.Boolean.TYPE => classOf[java.lang.Boolean]
-    case _ => clazz
   }
 }

@@ -7,8 +7,8 @@ package scala
 package reflect
 package io
 
-import java.net.{ URI, URL }
-import java.io.{ BufferedInputStream, InputStream, PrintStream }
+import java.net.URL
+import java.io.{ BufferedInputStream, InputStream }
 import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
 import scala.io.{ Codec, BufferedSource, Source }
 import scala.collection.mutable.ArrayBuffer

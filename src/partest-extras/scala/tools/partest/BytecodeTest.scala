@@ -1,10 +1,10 @@
 package scala.tools.partest
 
-import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
-import scala.tools.asm.{ClassWriter, ClassReader}
+import scala.tools.asm.{ClassReader, ClassWriter}
 import scala.tools.asm.tree._
-import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
+import java.io.{InputStream, File => JFile}
+
 import AsmNode._
 
 /**
@@ -125,12 +125,16 @@ abstract class BytecodeTest {
     cn
   }
 
-  protected lazy val classpath: JavaClassPath = {
-    import scala.tools.nsc.util.ClassPath.DefaultJavaContext
+  protected lazy val classpath: scala.tools.nsc.util.ClassPath = {
+    import scala.tools.nsc.classpath.AggregateClassPath
+    import scala.tools.nsc.classpath.ClassPathFactory
     import scala.tools.util.PathResolver.Defaults
+    import scala.tools.nsc.Settings
     // logic inspired by scala.tools.util.PathResolver implementation
-    val containers = DefaultJavaContext.classesInExpandedPath(Defaults.javaUserClassPath)
-    new JavaClassPath(containers, DefaultJavaContext)
+    // `Settings` is used to check YdisableFlatCpCaching in ZipArchiveFlatClassPath
+    val factory = new ClassPathFactory(new Settings())
+    val containers = factory.classesInExpandedPath(Defaults.javaUserClassPath)
+    new AggregateClassPath(containers)
   }
 }
 

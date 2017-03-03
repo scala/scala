@@ -26,11 +26,11 @@ import scala.language.implicitConversions
  *  make it possible for one to block until the process exits and get the exit value,
  *  or destroy the process altogether.
  *
- *  Presently, one cannot poll the `Process` to see if it has finished.
- *
  *  @see [[scala.sys.process.ProcessBuilder]]
  */
 trait Process {
+  /** Returns this process alive status */
+  def isAlive(): Boolean
   /** Blocks until this process exits and returns the exit code.*/
   def exitValue(): Int
   /** Destroys this process. */

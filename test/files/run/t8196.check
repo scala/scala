@@ -1,4 +1,4 @@
-t8196.scala:26: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t8196.scala:26: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     form2.g1 // comment this line in order to make the test pass
           ^
 warning: there were two feature warnings; re-run with -feature for details

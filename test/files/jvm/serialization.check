@@ -1,4 +1,6 @@
-warning: there were three deprecation warnings; re-run with -deprecation for details
+warning: there were two deprecation warnings (since 2.11.0)
+warning: there was one deprecation warning (since 2.12.0)
+warning: there were three deprecation warnings in total; re-run with -deprecation for details
 a1 = Array[1,2,3]
 _a1 = Array[1,2,3]
 arrayEquals(a1, _a1): true
@@ -85,24 +87,24 @@ x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
 x equals y: true, y equals x: true
 
-x = Map(buffers -> 20, layers -> 2, title -> 3)
-y = Map(buffers -> 20, layers -> 2, title -> 3)
+x = ListMap(buffers -> 20, layers -> 2, title -> 3)
+y = ListMap(buffers -> 20, layers -> 2, title -> 3)
 x equals y: true, y equals x: true
 
-x = ListSet(5, 3)
-y = ListSet(5, 3)
+x = ListSet(3, 5)
+y = ListSet(3, 5)
 x equals y: true, y equals x: true
 
 x = Queue(a, b, c)
 y = Queue(a, b, c)
 x equals y: true, y equals x: true
 
-x = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-y = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x = Range 0 until 10
+y = Range 0 until 10
 x equals y: true, y equals x: true
 
-x = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-y = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x = NumericRange 0 until 10
+y = NumericRange 0 until 10
 x equals y: true, y equals x: true
 
 x = Map(1 -> A, 2 -> B, 3 -> C)
@@ -266,12 +268,12 @@ x = ParHashSet(1, 2, 3)
 y = ParHashSet(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = ParRange(0, 1, 2, 3, 4)
-y = ParRange(0, 1, 2, 3, 4)
+x = ParRange 0 to 4
+y = ParRange 0 to 4
 x equals y: true, y equals x: true
 
-x = ParRange(0, 1, 2, 3)
-y = ParRange(0, 1, 2, 3)
+x = ParRange 0 until 4
+y = ParRange 0 until 4
 x equals y: true, y equals x: true
 
 x = ParMap(5 -> 1, 10 -> 2)

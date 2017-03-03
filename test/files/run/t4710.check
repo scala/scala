@@ -1,6 +1,6 @@
 
 scala> def method : String = { implicit def f(s: Symbol) = "" ; 'symbol }
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 method: String
 
 scala> :quit

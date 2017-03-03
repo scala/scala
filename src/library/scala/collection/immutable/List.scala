@@ -13,7 +13,7 @@ package immutable
 import generic._
 import mutable.{Builder, ListBuffer}
 import scala.annotation.tailrec
-import java.io._
+import java.io.{ObjectOutputStream, ObjectInputStream}
 
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type `A`.
@@ -24,6 +24,8 @@ import java.io._
  *
  *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
  *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
+ *
+ *  $usesMutableState
  *
  *  ==Performance==
  *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
@@ -86,10 +88,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqOptimized[A, List[A]]
-                                  with Serializable {
+                                  with FilteredTraversableInternal[A, List[A]]
+                                  with scala.Serializable {
   override def companion: GenericCompanion[List] = List
-
-  import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
 
   def isEmpty: Boolean
   def head: A
@@ -163,30 +164,41 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
     // If any successful optimization attempts or other changes are made, please rehash them there too.
     @tailrec
-    def loop(mapped: ListBuffer[B], unchanged: List[A], pending: List[A]): List[B] =
-      if (pending.isEmpty) {
-        if (mapped eq null) unchanged
-        else mapped.prependToList(unchanged)
-      }
+    def loop(mappedHead: List[B] = Nil, mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] =
+    if (pending.isEmpty) {
+      if (mappedHead eq null) unchanged
       else {
-        val head0 = pending.head
-        val head1 = f(head0)
-
-        if (head1 eq head0.asInstanceOf[AnyRef])
-          loop(mapped, unchanged, pending.tail)
-        else {
-          val b = if (mapped eq null) new ListBuffer[B] else mapped
-          var xc = unchanged
-          while (xc ne pending) {
-            b += xc.head
-            xc = xc.tail
-          }
-          b += head1
-          val tail0 = pending.tail
-          loop(b, tail0, tail0)
-        }
+        mappedLast.tl = unchanged
+        mappedHead
       }
-    loop(null, this, this)
+    }
+    else {
+      val head0 = pending.head
+      val head1 = f(head0)
+
+      if (head1 eq head0.asInstanceOf[AnyRef])
+        loop(mappedHead, mappedLast, unchanged, pending.tail)
+      else {
+        var xc = unchanged
+        var mappedHead1: List[B] = mappedHead
+        var mappedLast1: ::[B] = mappedLast
+        while (xc ne pending) {
+          val next = new ::[B](xc.head, Nil)
+          if (mappedHead1 eq null) mappedHead1 = next
+          if (mappedLast1 ne null) mappedLast1.tl = next
+          mappedLast1 = next
+          xc = xc.tail
+        }
+        val next = new ::(head1, Nil)
+        if (mappedHead1 eq null) mappedHead1 = next
+        if (mappedLast1 ne null) mappedLast1.tl = next
+        mappedLast1 = next
+        val tail0 = pending.tail
+        loop(mappedHead1, mappedLast1, tail0, tail0)
+
+      }
+    }
+    loop(null, null, this, this)
   }
 
   // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
@@ -265,8 +277,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     (b.toList, these)
   }
-  
-  @noinline // TODO - fix optimizer bug that requires noinline (see SI-8334)
+
   final override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -284,8 +295,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.map(f)
   }
-  
-  @noinline // TODO - fix optimizer bug that requires noinline for map; applied here to be safe (see SI-8334)
+
   final override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -314,8 +324,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.collect(pf)
   }
-  
-  @noinline // TODO - fix optimizer bug that requires noinline for map; applied here to be safe (see SI-8334)
+
   final override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -403,8 +412,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else new Stream.Cons(head, tail.toStream)
 
   // Create a proxy for Java serialization that allows us to avoid mutation
-  // during de-serialization.  This is the Serialization Proxy Pattern.
+  // during deserialization.  This is the Serialization Proxy Pattern.
   protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
+
 }
 
 /** The empty list.
@@ -455,7 +465,7 @@ object List extends SeqFactory[List] {
   override def empty[A]: List[A] = Nil
 
   override def apply[A](xs: A*): List[A] = xs.toList
-  
+
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
 
   @SerialVersionUID(1L)
@@ -471,7 +481,7 @@ object List extends SeqFactory[List] {
       out.writeObject(ListSerializeEnd)
     }
 
-    // Java serialization calls this before readResolve during de-serialization.
+    // Java serialization calls this before readResolve during deserialization.
     // Read the whole list and store it in `orig`.
     private def readObject(in: ObjectInputStream) {
       in.defaultReadObject()

@@ -12,6 +12,7 @@ import scala.annotation.switch
 import scala.collection.mutable
 import GenBCode._
 import scala.tools.asm.tree.MethodInsnNode
+import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 
 /*
  *  A high-level facade to the ASM API for bytecode generation.
@@ -28,9 +29,6 @@ abstract class BCodeIdiomatic extends SubComponent {
   import coreBTypes._
 
   val classfileVersion: Int = settings.target.value match {
-    case "jvm-1.5"     => asm.Opcodes.V1_5
-    case "jvm-1.6"     => asm.Opcodes.V1_6
-    case "jvm-1.7"     => asm.Opcodes.V1_7
     case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
@@ -42,7 +40,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
   )
 
-  val StringBuilderClassName = "scala/collection/mutable/StringBuilder"
+  lazy val JavaStringBuilderClassName = jlStringBuilderRef.internalName
 
   val EMPTY_STRING_ARRAY   = Array.empty[String]
   val EMPTY_INT_ARRAY      = Array.empty[Int]
@@ -109,41 +107,20 @@ abstract class BCodeIdiomatic extends SubComponent {
     def jmethod: asm.tree.MethodNode
 
     import asm.Opcodes;
-    import icodes.opcodes.{ Static, Dynamic,  SuperCall }
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
-    /*
-     * can-multi-thread
-     */
-    final def genPrimitiveArithmetic(op: icodes.ArithmeticOp, kind: BType) {
-
-      import icodes.{ ADD, SUB, MUL, DIV, REM, NOT }
-
-      op match {
-
-        case ADD => add(kind)
-        case SUB => sub(kind)
-        case MUL => mul(kind)
-        case DIV => div(kind)
-        case REM => rem(kind)
-
-        case NOT =>
-          if (kind.isIntSizedType) {
-            emit(Opcodes.ICONST_M1)
-            emit(Opcodes.IXOR)
-          } else if (kind == LONG) {
-            jmethod.visitLdcInsn(new java.lang.Long(-1))
-            jmethod.visitInsn(Opcodes.LXOR)
-          } else {
-            abort(s"Impossible to negate an $kind")
-          }
-
-        case _ =>
-          abort(s"Unknown arithmetic primitive $op")
+    final def genPrimitiveNot(bType: BType): Unit = {
+      if (bType.isIntSizedType) {
+        emit(Opcodes.ICONST_M1)
+        emit(Opcodes.IXOR)
+      } else if (bType == LONG) {
+        jmethod.visitLdcInsn(new java.lang.Long(-1))
+        jmethod.visitInsn(Opcodes.LXOR)
+      } else {
+        abort(s"Impossible to negate a $bType")
       }
-
-    } // end of method genPrimitiveArithmetic()
+    }
 
     /*
      * can-multi-thread
@@ -207,12 +184,13 @@ abstract class BCodeIdiomatic extends SubComponent {
      * can-multi-thread
      */
     final def genStartConcat(pos: Position): Unit = {
-      jmethod.visitTypeInsn(Opcodes.NEW, StringBuilderClassName)
+      jmethod.visitTypeInsn(Opcodes.NEW, JavaStringBuilderClassName)
       jmethod.visitInsn(Opcodes.DUP)
       invokespecial(
-        StringBuilderClassName,
+        JavaStringBuilderClassName,
         INSTANCE_CONSTRUCTOR_NAME,
         "()V",
+        itf = false,
         pos
       )
     }
@@ -220,22 +198,27 @@ abstract class BCodeIdiomatic extends SubComponent {
     /*
      * can-multi-thread
      */
-    final def genStringConcat(el: BType, pos: Position): Unit = {
-
-      val jtype =
-        if (el.isArray || el.isClass) ObjectReference
-        else el
-
-      val bt = MethodBType(List(jtype), StringBuilderReference)
-
-      invokevirtual(StringBuilderClassName, "append", bt.descriptor, pos)
+    def genConcat(elemType: BType, pos: Position): Unit = {
+      val paramType = elemType match {
+        case ct: ClassBType if ct.isSubtypeOf(StringRef).get          => StringRef
+        case ct: ClassBType if ct.isSubtypeOf(jlStringBufferRef).get  => jlStringBufferRef
+        case ct: ClassBType if ct.isSubtypeOf(jlCharSequenceRef).get  => jlCharSequenceRef
+        // Don't match for `ArrayBType(CHAR)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        case _: RefBType                                              => ObjectRef
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case BYTE | SHORT                                             => INT
+        case pt: PrimitiveBType                                       => pt
+      }
+      val bt = MethodBType(List(paramType), jlStringBuilderRef)
+      invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 
     /*
      * can-multi-thread
      */
     final def genEndConcat(pos: Position): Unit = {
-      invokevirtual(StringBuilderClassName, "toString", "()Ljava/lang/String;", pos)
+      invokevirtual(JavaStringBuilderClassName, "toString", "()Ljava/lang/String;", pos)
     }
 
     /*
@@ -391,41 +374,38 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def rem(tk: BType) { emitPrimitive(JCodeMethodN.remOpcodes, tk) } // can-multi-thread
 
     // can-multi-thread
-    final def invokespecial(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, false, pos)
+    final def invokespecial(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokestatic(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESTATIC, owner, name, desc, false, pos)
+    final def invokestatic(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESTATIC, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokeinterface(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, true, pos)
+    final def invokeinterface(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, itf = true, pos)
     }
     // can-multi-thread
-    final def invokevirtual(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, false, pos)
+    final def invokevirtual(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, itf = false, pos)
     }
 
-    private def addInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position) = {
+    def emitInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
       val node = new MethodInsnNode(opcode, owner, name, desc, itf)
       jmethod.instructions.add(node)
-      if (settings.YoptInlinerEnabled) callsitePositions(node) = pos
-    }
-    final def invokedynamic(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKEDYNAMIC, owner, name, desc)
+      if (settings.optInlinerEnabled) callsitePositions(node) = pos
     }
 
     // can-multi-thread
     final def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
     // can-multi-thread
-    final def emitIF(cond: icodes.TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
+    final def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
     // can-multi-thread
-    final def emitIF_ICMP(cond: icodes.TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
+    final def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
     // can-multi-thread
-    final def emitIF_ACMP(cond: icodes.TestOp, label: asm.Label) {
-      assert((cond == icodes.EQ) || (cond == icodes.NE), cond)
-      val opc = (if (cond == icodes.EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
+    final def emitIF_ACMP(cond: TestOp, label: asm.Label) {
+      assert((cond == TestOp.EQ) || (cond == TestOp.NE), cond)
+      val opc = (if (cond == TestOp.EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
       jmethod.visitJumpInsn(opc, label)
     }
     // can-multi-thread

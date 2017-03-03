@@ -76,7 +76,7 @@ import generic._
   *  }}}
   */
 @SerialVersionUID(-7308240733518833071L)
-@deprecated("Low-level linked lists are deprecated due to idiosyncrasies in interface and incomplete features.", "2.11.0")
+@deprecated("low-level linked lists are deprecated due to idiosyncrasies in interface and incomplete features", "2.11.0")
 class LinkedList[A]() extends AbstractSeq[A]
                          with LinearSeq[A]
                          with GenericTraversableTemplate[A, LinkedList]
@@ -114,7 +114,7 @@ class LinkedList[A]() extends AbstractSeq[A]
  *  @define Coll `LinkedList`
  *  @define coll linked list
  */
-@deprecated("Low-level linked lists are deprecated.", "2.11.0")
+@deprecated("low-level linked lists are deprecated", "2.11.0")
 object LinkedList extends SeqFactory[LinkedList] {
   override def empty[A]: LinkedList[A] = new LinkedList[A]
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

@@ -13,7 +13,7 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.tailrec
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
@@ -34,14 +34,33 @@ trait Implicits {
   import typingStack.{ printTyping }
   import typeDebug._
 
+  // standard usage
+  def inferImplicitFor(pt: Type, tree: Tree, context: Context, reportAmbiguous: Boolean = true): SearchResult =
+    inferImplicit(tree, pt, reportAmbiguous, isView = false, context, saveAmbiguousDivergent = true, tree.pos)
+
+  // used by typer to find an implicit coercion
+  def inferImplicitView(from: Type, to: Type, tree: Tree, context: Context, reportAmbiguous: Boolean, saveAmbiguousDivergent: Boolean) =
+    inferImplicit(tree, Function1(from, to), reportAmbiguous, isView = true, context, saveAmbiguousDivergent, tree.pos)
+
+  // used for manifests, typetags, checking language features, scaladoc
+  def inferImplicitByType(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
+    inferImplicit(EmptyTree, pt, reportAmbiguous = true, isView = false, context, saveAmbiguousDivergent = true, pos)
+
+  def inferImplicitByTypeSilent(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
+    inferImplicit(EmptyTree, pt, reportAmbiguous = false, isView = false, context, saveAmbiguousDivergent = false, pos)
+
+  @deprecated("Unused in scalac", "2.12.0-M4")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent = true, tree.pos)
 
+  @deprecated("Unused in scalac", "2.12.0-M4")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, tree.pos)
 
-  /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
-   *  for more info how the search is conducted.
+  /** Search for an implicit value. Consider using one of the convenience methods above. This one has many boolean levers.
+   *
+   * See the comment on `result` at the end of class `ImplicitSearch` for more info how the search is conducted.
+   *
    *  @param tree                    The tree for which the implicit needs to be inserted.
    *                                 (the inference might instantiate some of the undetermined
    *                                 type parameters of that tree.
@@ -92,9 +111,10 @@ trait Implicits {
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
    */
   def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
-    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
-    def wrapper(inference: => SearchResult) = wrapper1(inference)
-    val result = wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos))
+    val result = context.withMacros(enabled = !withMacrosDisabled) {
+      inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
+    }
+
     if (result.isFailure && !silent) {
       val err = context.reporter.firstError
       val errPos = err.map(_.errPos).getOrElse(pos)
@@ -304,6 +324,10 @@ trait Implicits {
    */
   object Function1 {
     val Sym = FunctionClass(1)
+    val Pre = Sym.typeConstructor.prefix
+
+    def apply(from: Type, to: Type) = TypeRef(Pre, Sym, List(from, to))
+
     // It is tempting to think that this should be inspecting "tp baseType Sym"
     // rather than tp. See test case run/t8280 and the commit message which
     // accompanies it for explanation why that isn't done.
@@ -887,7 +911,7 @@ trait Implicits {
        *   - find the most likely one
        *   - if it matches, forget about all others it improves upon
        */
-      @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
+      @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
         case firstPending :: otherPending =>
           def firstPendingImproves(alt: ImplicitInfo) =
@@ -914,7 +938,7 @@ trait Implicits {
               val pendingImprovingBest = undoLog undo {
                 otherPending filterNot firstPendingImproves
               }
-              rankImplicits(pendingImprovingBest, firstPending :: acc)
+              rankImplicits(pendingImprovingBest, (newBest, firstPending) :: acc)
           }
       }
 
@@ -930,14 +954,14 @@ trait Implicits {
         // So if there is any element not improved upon by the first it is an error.
         rankImplicits(eligible, Nil) match {
           case Nil            => ()
-          case chosen :: rest =>
-            rest find (alt => !improves(chosen, alt)) match {
-              case Some(competing)  =>
-                AmbiguousImplicitError(chosen, competing, "both", "and", "")(isView, pt, tree)(context)
+          case (chosenResult, chosenInfo) :: rest =>
+            rest find { case (_, alt) => !improves(chosenInfo, alt) } match {
+              case Some((competingResult, competingInfo))  =>
+                AmbiguousImplicitError(chosenInfo, chosenResult.tree, competingInfo, competingResult.tree, "both", "and", "")(isView, pt, tree)(context)
                 return AmbiguousSearchFailure // Stop the search once ambiguity is encountered, see t4457_2.scala
               case _                =>
-                if (isView) chosen.useCountView += 1
-                else chosen.useCountArg += 1
+                if (isView) chosenInfo.useCountView += 1
+                else chosenInfo.useCountArg += 1
             }
         }
 
@@ -1014,15 +1038,12 @@ trait Implicits {
               }
             case None =>
               if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-                val companion = companionSymbolOf(sym, context)
-                companion.moduleClass match {
-                  case mc: ModuleClassSymbol =>
-                    val infos =
-                      for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
-                    if (infos.nonEmpty)
-                      infoMap += (sym -> infos)
-                  case _ =>
-                }
+                val pre1 =
+                  if (sym.isPackageClass) sym.packageObject.typeOfThis
+                  else singleType(pre, companionSymbolOf(sym, context))
+                val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
+                if (infos.nonEmpty)
+                  infoMap += (sym -> infos)
               }
               val bts = tp.baseTypeSeq
               var i = 1
@@ -1210,7 +1231,7 @@ trait Implicits {
 
       /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicit(tree, appliedType(manifestClass, tp), reportAmbiguous = true, isView = false, context).tree
+        inferImplicitFor(appliedType(manifestClass, tp), tree, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
       def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {
@@ -1413,7 +1434,7 @@ trait Implicits {
       }
 
       if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
-        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
+        log(s"no implicits found for ${pt} ${pt.typeSymbol.info.baseClasses} ${implicitsOfExpectedType}")
 
       result
     }
@@ -1450,9 +1471,9 @@ trait Implicits {
     }
   }
 
-  object ImplicitNotFoundMsg {
-    def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg match {
-      case Some(m) => Some(new Message(sym, m))
+  class ImplicitAnnotationMsg(f: Symbol => Option[String], clazz: Symbol, annotationName: String) {
+    def unapply(sym: Symbol): Option[(Message)] = f(sym) match {
+      case Some(m) => Some(new Message(sym, m, annotationName))
       case None if sym.isAliasType =>
         // perform exactly one step of dealiasing
         // this is necessary because ClassManifests are now aliased to ClassTags
@@ -1464,41 +1485,45 @@ trait Implicits {
     // check the message's syntax: should be a string literal that may contain occurrences of the string "${X}",
     // where `X` refers to a type parameter of `sym`
     def check(sym: Symbol): Option[String] =
-      sym.getAnnotation(ImplicitNotFoundClass).flatMap(_.stringArg(0) match {
-        case Some(m) => new Message(sym, m).validate
-        case None => Some("Missing argument `msg` on implicitNotFound annotation.")
+      sym.getAnnotation(clazz).flatMap(_.stringArg(0) match {
+        case Some(m) => new Message(sym, m, annotationName).validate
+        case None => Some(s"Missing argument `msg` on $annotationName annotation.")
       })
+  }
 
+  object ImplicitNotFoundMsg extends ImplicitAnnotationMsg(_.implicitNotFoundMsg, ImplicitNotFoundClass, "implicitNotFound")
+
+  object ImplicitAmbiguousMsg extends ImplicitAnnotationMsg(_.implicitAmbiguousMsg, ImplicitAmbiguousClass, "implicitAmbiguous")
+
+  class Message(sym: Symbol, msg: String, annotationName: String) {
     // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
     private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
-    class Message(sym: Symbol, msg: String) {
-      private def interpolate(text: String, vars: Map[String, String]) =
-        Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-          case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
+    private def interpolate(text: String, vars: Map[String, String]) =
+      Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
+        case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
-        })
+      })
 
-      private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
-      private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
+    private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
+    private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
 
-      def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
+    def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
 
-      def format(typeArgs: List[String]): String =
-        interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
+    def format(typeArgs: List[String]): String =
+      interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
-      def validate: Option[String] = {
-        val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
-        val decls = typeParamNames.toSet
+    def validate: Option[String] = {
+      val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
+      val decls = typeParamNames.toSet
 
-        (refs &~ decls) match {
-          case s if s.isEmpty => None
-          case unboundNames   =>
-            val singular = unboundNames.size == 1
-            val ess      = if (singular) "" else "s"
-            val bee      = if (singular) "is" else "are"
-            Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @implicitNotFound annotation $bee not defined by $sym.")
-        }
+      (refs &~ decls) match {
+        case s if s.isEmpty => None
+        case unboundNames   =>
+          val singular = unboundNames.size == 1
+          val ess      = if (singular) "" else "s"
+          val bee      = if (singular) "is" else "are"
+          Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not defined by $sym.")
       }
     }
   }

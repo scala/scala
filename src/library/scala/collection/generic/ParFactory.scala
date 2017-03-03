@@ -11,7 +11,6 @@ package collection
 package generic
 
 import scala.collection.parallel.ParIterable
-import scala.collection.parallel.Combiner
 import scala.language.higherKinds
 
 /** A template class for companion objects of `ParIterable` and subclasses

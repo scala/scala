@@ -7,7 +7,7 @@ package scala
 package reflect
 package internal.util
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /** A debugging class for logging from whence a method is being called.
  *  Say you wanted to discover who was calling phase_= in SymbolTable.

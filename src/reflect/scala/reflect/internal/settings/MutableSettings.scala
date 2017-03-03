@@ -54,11 +54,13 @@ abstract class MutableSettings extends AbsSettings {
   def uniqid: BooleanSetting
   def verbose: BooleanSetting
   def YpartialUnification: BooleanSetting
+  def Yvirtpatmat: BooleanSetting
 
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
 
   def isScala211: Boolean
+  def isScala212: Boolean
 }
 
 object MutableSettings {

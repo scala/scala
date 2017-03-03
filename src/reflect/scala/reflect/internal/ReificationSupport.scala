@@ -266,7 +266,7 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     // undo gen.mkTemplate
-    protected object UnMkTemplate {
+    protected class UnMkTemplate(isCaseClass: Boolean) {
       def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
         val Template(parents, selfType, _) = templ
         val tbody = treeInfo.untypecheckedTemplBody(templ)
@@ -285,16 +285,20 @@ trait ReificationSupport { self: SymbolTable =>
           val (gvdefs, etdefs) = rawEdefs.partition(treeInfo.isEarlyValDef)
           val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest))
           val evdefs = gvdefs.zip(lvdefs).map {
+            // TODO: in traits, early val defs are defdefs
             case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
               copyValDef(gvdef)(tpt = tpt.original, rhs = rhs)
+            case (tr1, tr2) =>
+              throw new MatchError((tr1, tr2))
           }
           val edefs = evdefs ::: etdefs
           if (ctorMods.isTrait)
             result(ctorMods, Nil, edefs, body)
           else {
             // undo conversion from (implicit ... ) to ()(implicit ... ) when it's the only parameter section
+            // except that case classes require the explicit leading empty parameter list
             val vparamssRestoredImplicits = ctorVparamss match {
-              case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit => tail
+              case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit && !isCaseClass => tail
               case other => other
             }
             // undo flag modifications by merging flag info from constructor args and fieldDefs
@@ -311,7 +315,9 @@ trait ReificationSupport { self: SymbolTable =>
           }
         }
       }
+      def asCase = new UnMkTemplate(isCaseClass = true)
     }
+    protected object UnMkTemplate extends UnMkTemplate(isCaseClass = false)
 
     protected def mkSelfType(tree: Tree) = tree match {
       case vd: ValDef =>
@@ -343,9 +349,15 @@ trait ReificationSupport { self: SymbolTable =>
 
       def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
                                        List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
-        case ClassDef(mods, name, tparams, UnMkTemplate(parents, selfType, ctorMods, vparamss, earlyDefs, body))
-          if !ctorMods.isTrait && !ctorMods.hasFlag(JAVA) =>
-          Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+        case ClassDef(mods, name, tparams, impl) =>
+          val X = if (mods.isCase) UnMkTemplate.asCase else UnMkTemplate
+          impl match {
+            case X(parents, selfType, ctorMods, vparamss, earlyDefs, body)
+                if (!ctorMods.isTrait && !ctorMods.hasFlag(JAVA)) =>
+              Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+            case _ =>
+              None
+          }
         case _ =>
           None
       }
@@ -723,10 +735,11 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     // match call to either withFilter or filter
+    // TODO: now that we no longer rewrite `filter` to `withFilter`, maybe this extractor should only look for `withFilter`?
     protected object FilterCall {
       def unapply(tree: Tree): Option[(Tree,Tree)] = tree match {
         case Apply(Select(obj, nme.withFilter | nme.filter), arg :: Nil) =>
-          Some(obj, arg)
+          Some((obj, arg))
         case _ => None
       }
     }
@@ -760,10 +773,10 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Tree) = tree match {
         case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some(lhs, f)
+          Some((lhs, f))
         case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: _ :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some(lhs, f)
+          Some((lhs, f))
         case _ => None
       }
     }
@@ -1132,7 +1145,7 @@ trait ReificationSupport { self: SymbolTable =>
       def apply(tpt: Tree, where: List[Tree]): ExistentialTypeTree =
         ExistentialTypeTree(tpt, where.map {
           case md: MemberDef => md
-          case tree => throw new IllegalArgumentException("$tree is not legal forSome definition")
+          case tree => throw new IllegalArgumentException(s"$tree is not legal forSome definition")
         })
       def unapply(tree: Tree): Option[(Tree, List[MemberDef])] = tree match {
         case MaybeTypeTreeOriginal(ExistentialTypeTree(tpt, where)) =>

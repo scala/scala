@@ -1,10 +1,16 @@
-patmatnew.scala:351: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+patmatnew.scala:351: warning: a pure expression does nothing in statement position
         case 1 => "OK"
                   ^
-patmatnew.scala:352: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+patmatnew.scala:352: warning: a pure expression does nothing in statement position
         case 2 => assert(false); "KO"
                                  ^
-patmatnew.scala:353: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+patmatnew.scala:352: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+        case 2 => assert(false); "KO"
+                                 ^
+patmatnew.scala:353: warning: a pure expression does nothing in statement position
+        case 3 => assert(false); "KO"
+                                 ^
+patmatnew.scala:353: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
         case 3 => assert(false); "KO"
                                  ^
 patmatnew.scala:670: warning: This catches all Throwables. If this is really intended, use `case e : Throwable` to clear this warning.

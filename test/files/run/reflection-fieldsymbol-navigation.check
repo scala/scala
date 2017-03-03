@@ -1,6 +1,6 @@
-method x
+variable x
 false
 variable x
 true
-method x
-method x_=
+variable x
+variable x

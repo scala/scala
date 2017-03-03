@@ -7,7 +7,7 @@
     };
     [24:51]private[this] val foo: [28]Set[_ <: T] = [47:51]null;
     [28]<stable> <accessor> def foo: [28]Set[_ <: T] = [28][28]A.this.foo;
-    [54:74]<stable> <accessor> def bar: [58]Set[_ <: T]
+    [54:74]<stable> <accessor> val bar: [58]Set[_ <: T]
   }
 }
 

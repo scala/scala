@@ -1,6 +1,5 @@
 import java.io.{File, FileOutputStream}
 
-import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.partest._
 import scala.tools.asm
 import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor, Opcodes}
@@ -14,7 +13,7 @@ import Opcodes._
 // By its nature the test can only work on JDK 8+ because under JDK 7- the
 // interface won't verify.
 object Test extends DirectTest {
-  override def extraSettings: String = "-optimise -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = "-opt:l:classpath -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
   def generateInterface() {
     val interfaceName =  "HasDefaultMethod"

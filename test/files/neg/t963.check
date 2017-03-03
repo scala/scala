@@ -1,12 +1,12 @@
+t963.scala:10: error: type mismatch;
+ found   : AnyRef{def x: Integer}
+ required: AnyRef{val x: Integer}
+  val y2 : { val x : java.lang.Integer  } = new { def x = new java.lang.Integer(r.nextInt) }
+                                            ^
 t963.scala:14: error: stable identifier required, but y3.x.type found.
   val w3 : y3.x.type = y3.x
                ^
 t963.scala:17: error: stable identifier required, but y4.x.type found.
   val w4 : y4.x.type = y4.x
                ^
-t963.scala:10: error: type mismatch;
- found   : AnyRef{def x: Integer}
- required: AnyRef{val x: Integer}
-  val y2 : { val x : java.lang.Integer  } = new { def x = new java.lang.Integer(r.nextInt) }
-                                            ^
 three errors found

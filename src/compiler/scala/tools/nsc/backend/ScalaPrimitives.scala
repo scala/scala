@@ -7,7 +7,7 @@ package scala
 package tools.nsc
 package backend
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /** Scala primitive operations are represented as methods in `Any` and
  *  `AnyVal` subclasses. Here we demultiplex them by providing a mapping
@@ -31,7 +31,6 @@ abstract class ScalaPrimitives {
 
   import global._
   import definitions._
-  import global.icodes._
 
   // Arithmetic unary operations
   final val POS = 1                            // +x
@@ -62,8 +61,8 @@ abstract class ScalaPrimitives {
   final val NE = 43                            // x != y
   final val LT = 44                            // x < y
   final val LE = 45                            // x <= y
-  final val GE = 46                            // x > y
-  final val GT = 47                            // x >= y
+  final val GT = 46                            // x > y
+  final val GE = 47                            // x >= y
 
   // Boolean unary operations
   final val ZNOT = 50                          // !x
@@ -457,18 +456,6 @@ abstract class ScalaPrimitives {
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D)
 
-  final val typeOfArrayOp: Map[Int, TypeKind] = Map(
-    (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL)) ++
-    (List(BARRAY_LENGTH, BARRAY_GET, BARRAY_SET) map (_ -> BYTE)) ++
-    (List(SARRAY_LENGTH, SARRAY_GET, SARRAY_SET) map (_ -> SHORT)) ++
-    (List(CARRAY_LENGTH, CARRAY_GET, CARRAY_SET) map (_ -> CHAR)) ++
-    (List(IARRAY_LENGTH, IARRAY_GET, IARRAY_SET) map (_ -> INT)) ++
-    (List(LARRAY_LENGTH, LARRAY_GET, LARRAY_SET) map (_ -> LONG)) ++
-    (List(FARRAY_LENGTH, FARRAY_GET, FARRAY_SET) map (_ -> FLOAT)) ++
-    (List(DARRAY_LENGTH, DARRAY_GET, DARRAY_SET) map (_ -> DOUBLE)) ++
-    (List(OARRAY_LENGTH, OARRAY_GET, OARRAY_SET) map (_ -> REFERENCE(AnyRefClass))) : _*
-  )
-
   /** Check whether the given operation code is an array operation. */
   def isArrayOp(code: Int): Boolean =
     isArrayNew(code) | isArrayLength(code) | isArrayGet(code) | isArraySet(code)
@@ -535,24 +522,11 @@ abstract class ScalaPrimitives {
     case _ => false
   }
 
-  /** If code is a coercion primitive, the result type */
-  def generatedKind(code: Int): TypeKind = code match {
-    case B2B | C2B | S2B | I2B | L2B | F2B | D2B => BYTE
-    case B2C | C2C | S2C | I2C | L2C | F2C | D2C => CHAR
-    case B2S | C2S | S2S | I2S | L2S | F2S | D2S => SHORT
-    case B2I | C2I | S2I | I2I | L2I | F2I | D2I => INT
-    case B2L | C2L | S2L | I2L | L2L | F2L | D2L => LONG
-    case B2F | C2F | S2F | I2F | L2F | F2F | D2F => FLOAT
-    case B2D | C2D | S2D | I2D | L2D | F2D | D2D => DOUBLE
-  }
-
   def isPrimitive(sym: Symbol): Boolean = primitives contains sym
 
   /** Return the code for the given symbol. */
-  def getPrimitive(sym: Symbol): Int = {
-    assert(isPrimitive(sym), "Unknown primitive " + sym)
-    primitives(sym)
-  }
+  def getPrimitive(sym: Symbol): Int =
+    primitives.getOrElse(sym, throw new AssertionError(s"Unknown primitive $sym"))
 
   /**
    * Return the primitive code of the given operation. If the
@@ -565,6 +539,7 @@ abstract class ScalaPrimitives {
    */
   def getPrimitive(fun: Symbol, tpe: Type): Int = {
     import definitions._
+    import genBCode.bTypes._
     val code = getPrimitive(fun)
 
     def elementType = enteringTyper {
@@ -577,7 +552,7 @@ abstract class ScalaPrimitives {
     code match {
 
       case APPLY =>
-        toTypeKind(elementType) match {
+        typeToBType(elementType) match {
           case BOOL    => ZARRAY_GET
           case BYTE    => BARRAY_GET
           case SHORT   => SARRAY_GET
@@ -586,13 +561,13 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_GET
           case FLOAT   => FARRAY_GET
           case DOUBLE  => DARRAY_GET
-          case REFERENCE(_) | ARRAY(_) => OARRAY_GET
+          case _: ClassBType | _: ArrayBType => OARRAY_GET
           case _ =>
             abort("Unexpected array element type: " + elementType)
         }
 
       case UPDATE =>
-        toTypeKind(elementType) match {
+        typeToBType(elementType) match {
           case BOOL    => ZARRAY_SET
           case BYTE    => BARRAY_SET
           case SHORT   => SARRAY_SET
@@ -601,13 +576,13 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_SET
           case FLOAT   => FARRAY_SET
           case DOUBLE  => DARRAY_SET
-          case REFERENCE(_) | ARRAY(_) => OARRAY_SET
+          case _: ClassBType | _: ArrayBType => OARRAY_SET
           case _ =>
             abort("Unexpected array element type: " + elementType)
         }
 
       case LENGTH =>
-        toTypeKind(elementType) match {
+        typeToBType(elementType) match {
           case BOOL    => ZARRAY_LENGTH
           case BYTE    => BARRAY_LENGTH
           case SHORT   => SARRAY_LENGTH
@@ -616,7 +591,7 @@ abstract class ScalaPrimitives {
           case LONG    => LARRAY_LENGTH
           case FLOAT   => FARRAY_LENGTH
           case DOUBLE  => DARRAY_LENGTH
-          case REFERENCE(_) | ARRAY(_) => OARRAY_LENGTH
+          case _: ClassBType | _: ArrayBType => OARRAY_LENGTH
           case _ =>
             abort("Unexpected array element type: " + elementType)
         }

@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ FileInputStream, InputStream, IOException }
+import java.io.{ FileInputStream, IOException }
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{ ReadableByteChannel, Channels }
 import java.nio.charset.{CharsetDecoder, CoderResult}

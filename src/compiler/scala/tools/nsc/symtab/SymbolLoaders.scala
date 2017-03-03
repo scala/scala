@@ -10,10 +10,8 @@ import classfile.ClassfileParser
 import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
-import scala.reflect.io.{ AbstractFile, NoAbstractFile }
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.{ ClassPath, ClassRepresentation }
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 
 /** This class ...
  *
@@ -54,20 +52,28 @@ abstract class SymbolLoaders {
     })
   }
 
+  def newClass(owner: Symbol, name: String): ClassSymbol = owner.newClass(newTypeName(name))
+
   /** Enter class with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClass(owner: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val clazz = owner.newClass(newTypeName(name))
+  def enterClass(owner: Symbol, name: String, completer: SymbolLoader): Symbol =
+    enterClass(owner, newClass(owner, name), completer)
+
+  def enterClass(owner: Symbol, clazz: ClassSymbol, completer: SymbolLoader): Symbol = {
     clazz setInfo completer
     enterIfNew(owner, clazz, completer)
   }
 
+  def newModule(owner: Symbol, name: String): ModuleSymbol = owner.newModule(newTermName(name))
+
   /** Enter module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterModule(owner: Symbol, name: String, completer: SymbolLoader): Symbol = {
-    val module = owner.newModule(newTermName(name))
+  def enterModule(owner: Symbol, name: String, completer: SymbolLoader): Symbol =
+    enterModule(owner, newModule(owner, name), completer)
+
+  def enterModule(owner: Symbol, module: ModuleSymbol, completer: SymbolLoader): Symbol = {
     module setInfo completer
     module.moduleClass setInfo moduleClassLoader
     enterIfNew(owner, module, completer)
@@ -115,9 +121,12 @@ abstract class SymbolLoaders {
   /** Enter class and module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
-    val clazz = enterClass(root, name, completer)
-    val module = enterModule(root, name, completer)
+  def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
+    val clazz = newClass(root, name)
+    val module = newModule(root, name)
+    val completer = getCompleter(clazz, module)
+    enterClass(root, clazz, completer)
+    enterModule(root, module, completer)
     if (!clazz.isAnonymousClass) {
       // Diagnostic for SI-7147
       def msg: String = {
@@ -138,7 +147,7 @@ abstract class SymbolLoaders {
    *  (overridden in interactive.Global).
    */
   def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
-    enterClassAndModule(root, name, new SourcefileLoader(src))
+    enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src))
   }
 
   /** The package objects of scala and scala.reflect should always
@@ -154,7 +163,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation[AbstractFile]) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -164,16 +173,9 @@ abstract class SymbolLoaders {
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        enterClassAndModule(owner, classRep.name, newClassLoader(bin))
+        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _))
     }
   }
-
-  /** Create a new loader from a binary classfile.
-   *  This is intended as a hook allowing to support loading symbols from
-   *  files other than .class files.
-   */
-  protected def newClassLoader(bin: AbstractFile): SymbolLoader =
-    new ClassfileLoader(bin)
 
   /**
    * A lazy type that completes itself by calling parameter doComplete.
@@ -247,41 +249,11 @@ abstract class SymbolLoaders {
   }
 
   /**
-   * Load contents of a package
-   */
-  class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = s"package loader ${classpath.name}"
-
-    protected def doComplete(root: Symbol) {
-      assert(root.isPackageClass, root)
-      // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
-      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
-      // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
-      enteringPhase(phaseBeforeRefchecks) {
-        root.setInfo(new PackageClassInfoType(newScope, root))
-
-        if (!root.isRoot) {
-          for (classRep <- classpath.classes) {
-            initializeFromClassPath(root, classRep)
-          }
-        }
-        if (!root.isEmptyPackageClass) {
-          for (pkg <- classpath.packages) {
-            enterPackage(root, pkg.name, new PackageLoader(pkg))
-          }
-
-          openPackageModule(root)
-        }
-      }
-    }
-  }
-
-  /**
    * Loads contents of a package
    */
-  class PackageLoaderUsingFlatClassPath(packageName: String, classPath: FlatClassPath) extends SymbolLoader with FlagAgnosticCompleter {
+  class PackageLoader(packageName: String, classPath: ClassPath) extends SymbolLoader with FlagAgnosticCompleter {
     protected def description = {
-      val shownPackageName = if (packageName == FlatClassPath.RootPackage) "<root package>" else packageName
+      val shownPackageName = if (packageName == ClassPath.RootPackage) "<root package>" else packageName
       s"package loader $shownPackageName"
     }
 
@@ -298,9 +270,9 @@ abstract class SymbolLoaders {
           val fullName = pkg.name
 
           val name =
-            if (packageName == FlatClassPath.RootPackage) fullName
+            if (packageName == ClassPath.RootPackage) fullName
             else fullName.substring(packageName.length + 1)
-          val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classPath)
+          val packageLoader = new PackageLoader(fullName, classPath)
           enterPackage(root, name, packageLoader)
         }
 
@@ -309,7 +281,7 @@ abstract class SymbolLoaders {
     }
   }
 
-  class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
+  class ClassfileLoader(val classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
       val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable
     } with ClassfileParser {
@@ -329,23 +301,14 @@ abstract class SymbolLoaders {
 
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
 
-      override def classFileLookup: util.ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
-        case ClassPathRepresentationType.Recursive => platform.classPath
-        case ClassPathRepresentationType.Flat => platform.flatClassPath
-      }
+      override def classPath: ClassPath = platform.classPath
     }
 
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
-
-      // Running the classfile parser after refchecks can lead to "illegal class file dependency"
-      // errors. More concretely, the classfile parser calls "sym.companionModule", which calls
-      // "isModuleNotMethod" on the companion. After refchecks, this method forces the info, which
-      // may run the classfile parser. This produces the error.
-      enteringPhase(phaseBeforeRefchecks)(classfileParser.parse(classfile, root))
-
+      classfileParser.parse(classfile, clazz, module)
       if (root.associatedFile eq NoAbstractFile) {
         root match {
           // In fact, the ModuleSymbol forwards its setter to the module class

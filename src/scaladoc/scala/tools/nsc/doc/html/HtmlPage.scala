@@ -13,9 +13,10 @@ import base._
 import base.comment._
 import model._
 
+import scala.reflect.internal.Reporter
 import scala.xml.NodeSeq
 import scala.xml.Elem
-import scala.xml.dtd.{DocType, PublicID}
+import scala.xml.dtd.DocType
 import scala.collection._
 import java.io.Writer
 
@@ -25,6 +26,9 @@ import java.io.Writer
 abstract class HtmlPage extends Page { thisPage =>
   /** The title of this page. */
   protected def title: String
+
+  /** ScalaDoc reporter for error handling */
+  protected def docletReporter: Reporter
 
   /** The page description */
   protected def description: String =
@@ -47,6 +51,8 @@ abstract class HtmlPage extends Page { thisPage =>
     val html =
       <html>
         <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
           <title>{ title }</title>
           <meta name="description" content={ description }/>
           <meta name="keywords" content={ keywords }/>
@@ -211,44 +217,19 @@ abstract class HtmlPage extends Page { thisPage =>
     val Trait, Class, Type, Object, Package = Value
   }
 
-  /** Returns the _big image name and the alt attribute
-   *  corresponding to the DocTemplate Entity (upper left icon) */
-  def docEntityKindToBigImage(ety: DocTemplateEntity) = {
-    def entityToImage(e: DocTemplateEntity) =
-      if (e.isTrait)                              Image.Trait
-      else if (e.isClass)                         Image.Class
-      else if (e.isAbstractType || e.isAliasType) Image.Type
-      else if (e.isObject)                        Image.Object
-      else if (e.isPackage)                       Image.Package
-      else {
-        // FIXME: an entity *should* fall into one of the above categories,
-        // but AnyRef is somehow not
-        Image.Class
-      }
-
-    val image = entityToImage(ety)
-    val companionImage = ety.companion filter {
-      e => e.visibility.isPublic && ! e.inSource.isEmpty
-    } map { entityToImage }
-
-    (image, companionImage) match {
-      case (from, Some(to)) =>
-        ((from + "_to_" + to + "_big.png").toLowerCase, from + "/" + to)
-      case (from, None) =>
-        ((from + "_big.png").toLowerCase, from.toString)
-    }
-  }
-
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
-      <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
-        <img src={ relativeLinkTo(List("permalink.png", "lib")) } alt="Permalink" />
+      <a href={ memberToUrl(template, isSelf) } title="Permalink">
+        <i class="material-icons">&#xE157;</i>
       </a>
     </span>
-	
-  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") = 
+
+  def docEntityImageClass(tpl: DocTemplateEntity): String =
+    tpl.kind + tpl.companion.fold("")("-companion-" + _.kind)
+
+  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") =
     ety.companion match{
-	  case Some(companion) => 
+          case Some(companion) =>
 	    s"$baseString${
 		if(companion.isObject) " object"
 		else if(companion.isTrait) " trait"
@@ -258,7 +239,7 @@ abstract class HtmlPage extends Page { thisPage =>
 	  case None => baseString
 	}
 
-  def companionAndPackage(tpl: DocTemplateEntity): Elem =
+  def companionAndPackage(tpl: DocTemplateEntity): NodeSeq =
     <span class="morelinks">{
       tpl.companion match {
         case Some(companionTpl) =>
@@ -267,18 +248,13 @@ abstract class HtmlPage extends Page { thisPage =>
             else if (companionTpl.isTrait) s"trait ${companionTpl.name}"
             else s"class ${companionTpl.name}"
           <div>
-            Related Docs:
-            <a href={relativeLinkTo(tpl.companion.get)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
-            | {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+            Companion <a href={relativeLinkTo(companionTpl)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
           </div>
-        case None =>
-          <div>Related Doc:
-            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
-          </div>
+        case None => NodeSeq.Empty
       }
     }</span>
 
-  def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
+  private def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
     val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
       case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)
       case dte: DocTemplateEntity => (None, dte)
@@ -286,12 +262,8 @@ abstract class HtmlPage extends Page { thisPage =>
       case tpl => (None, tpl)
     }
 
-    def hashFromPath(templatePath: List[String]): String =
-      ((templatePath.head.replace(".html", "") :: templatePath.tail).reverse).mkString(".")
-
-    val containingTemplatePath = templateToPath(containingTemplate)
-    val url = "../" * (containingTemplatePath.size - 1) + "index.html"
-    val hash = hashFromPath(containingTemplatePath)
-    s"$url#$hash" + signature.map("@" + _).getOrElse("")
+    val templatePath = templateToPath(containingTemplate)
+    val url = "../" * (templatePath.size - 1) + templatePath.reverse.mkString("/")
+    url + signature.map("#" + _).getOrElse("")
   }
 }

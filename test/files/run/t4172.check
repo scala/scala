@@ -1,6 +1,6 @@
 
 scala> val c = { class C { override def toString = "C" }; ((new C, new C { def f = 2 })) }
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 c: (C, C{def f: Int}) forSome { type C <: AnyRef } = (C,C)
 
 scala> :quit

@@ -5,12 +5,12 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
+import java.io.{ FileReader, FileWriter }
 import scala.collection.mutable
-import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
+import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
+import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
@@ -19,6 +19,8 @@ import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.reflect.internal.Chars.isIdentifierStart
 
 /**
@@ -70,8 +72,6 @@ trait InteractiveAnalyzer extends Analyzer {
     override def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       if (sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
-        if (sym.isLazy)
-          sym.lazyAccessor andAlso enterIfNotThere
 
         for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
           defAtt.defaultGetters foreach enterIfNotThere
@@ -159,33 +159,20 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   override def forInteractive = true
   override protected def synchronizeNames = true
 
-  override def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
-    new InteractiveAsSeenFromMap(pre, clazz)
-
-  class InteractiveAsSeenFromMap(pre: Type, clazz: Symbol) extends AsSeenFromMap(pre, clazz) {
-    /** The method formerly known as 'instParamsRelaxed' goes here if it's still necessary,
-     *  which it is currently supposed it is not.
-     *
-     *  If it is, change AsSeenFromMap method correspondingTypeArgument to call an overridable
-     *  method rather than aborting in the failure case.
-     */
-  }
-
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
-  val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
-                       SynchronizedMap[AbstractFile, RichCompilationUnit] {
+  val unitOfFile = mapAsScalaMapConverter(new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
     override def put(key: AbstractFile, value: RichCompilationUnit) = {
       val r = super.put(key, value)
-      if (r.isEmpty) debugLog("added unit for "+key)
+      if (r == null) debugLog("added unit for "+key)
       r
     }
-    override def remove(key: AbstractFile) = {
+    override def remove(key: Any) = {
       val r = super.remove(key)
-      if (r.nonEmpty) debugLog("removed unit for "+key)
+      if (r != null) debugLog("removed unit for "+key)
       r
     }
-  }
+  }).asScala
 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
@@ -1105,7 +1092,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       val implicitlyAdded = viaView != NoSymbol
       members.add(sym, pre, implicitlyAdded) { (s, st) =>
         val result = new TypeMember(s, st,
-          context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
+          context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
         result.prefix = pre

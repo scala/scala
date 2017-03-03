@@ -88,6 +88,12 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     /** Issue error and return */
     def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
 
+    /** If this method returns true, print the [[help]] message and exit. */
+    def isHelping: Boolean = false
+
+    /** The help message to be printed if [[isHelping]]. */
+    def help: String = ""
+
     /** After correct Setting has been selected, tryToSet is called with the
      *  remainder of the command line.  It consumes any applicable arguments and
      *  returns the unconsumed ones.

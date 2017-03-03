@@ -12,7 +12,7 @@ We use Jekyll 2 and [Redcarpet](https://github.com/vmg/redcarpet) to generate th
 
 ## Building
 
-Travis CI builds the spec automatically on every commit to master and publishes to http://www.scala-lang.org/files/archive/spec/2.11/.
+Travis CI builds the spec automatically after every merged pull release and publishes to http://www.scala-lang.org/files/archive/spec/2.12/.
 
 To preview locally, run `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` (in the root of your checkout of scala/scala),
 and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but make sure to restart it when you change `_config.yml`.
@@ -36,5 +36,5 @@ and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but
 
 ### Unicode Character replacements
 
-- The unicode  left and right single  quotation marks (‘ and  ’) have been used in  place of ` and  ', where the quotation marks  are intended to  be paired. These can  be typed on  a mac using  Option+] for a left  quote and Option+Shift+] for the right quote.
-- Similarly for left and right double quotation marks (“ and ”) in place of ". These can be typed on a mac using Option+[ and Option+Shift+].
+- The unicode  left and right single  quotation marks (‘ and ’ (U+2018 and U+2019, respectively)) have been used in  place of ` and ', where the quotation marks  are intended to  be paired. These can  be typed on  a mac using  Option+] for a left  quote and Option+Shift+] for the right quote.
+- Similarly for left and right double quotation marks (“ and ” (U+201C and U+201D, respectively)) in place of ". These can be typed on a mac using Option+[ and Option+Shift+].

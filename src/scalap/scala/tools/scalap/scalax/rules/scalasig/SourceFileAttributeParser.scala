@@ -22,7 +22,6 @@ object SourceFileAttributeParser extends ByteCodeReader {
     }
  *
  * Contains only file index in ConstantPool, first two fields are already treated
- * by {@link scalax.rules.scalasig.ClassFile.attribute#attribute}
+ * by {@link scalax.rules.scalasig.ClassFileParser#attribute}
  */
 case class SourceFileInfo(sourceFileIndex: Int)
-

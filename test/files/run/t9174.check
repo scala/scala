@@ -1,0 +1,17 @@
+
+scala> import scala.util.{Success, Failure}
+import scala.util.{Success, Failure}
+
+scala> def f1(b: Boolean) = if (b) Left(1) else Right(2)
+f1: (b: Boolean)scala.util.Either[Int,Int]
+
+scala> def f2(b: Boolean) = if (b) Nil else 1 :: Nil
+f2: (b: Boolean)List[Int]
+
+scala> def f3(b: Boolean) = if (b) Stream.Empty else new Stream.Cons(1, Stream.Empty)
+f3: (b: Boolean)scala.collection.immutable.Stream[Int]
+
+scala> def f4(b: Boolean) = if (b) Success(1) else Failure(new Exception(""))
+f4: (b: Boolean)scala.util.Try[Int]
+
+scala> :quit

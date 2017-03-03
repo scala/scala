@@ -12,7 +12,6 @@ package immutable
 
 import generic._
 import mutable.{ Builder, ListBuffer }
-import scala.annotation.tailrec
 
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -38,8 +37,7 @@ import scala.annotation.tailrec
  */
 
 @SerialVersionUID(-7622936493364270175L)
-@deprecatedInheritance("The implementation details of immutable queues make inheriting from them unwise.", "2.11.0")
-class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
+sealed class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
          extends AbstractSeq[A]
             with LinearSeq[A]
             with GenericTraversableTemplate[A, Queue]
@@ -86,6 +84,14 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
     else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
     else throw new NoSuchElementException("tail on empty queue")
 
+  /* This is made to avoid inefficient implementation of iterator. */
+  override def forall(p: A => Boolean): Boolean =
+    in.forall(p) && out.forall(p)
+
+  /* This is made to avoid inefficient implementation of iterator. */
+  override def exists(p: A => Boolean): Boolean =
+    in.exists(p) || out.exists(p)
+
   /** Returns the length of the queue.
    */
   override def length = in.length + out.length
@@ -100,6 +106,15 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
     case _                               => super.:+(elem)(bf)
   }
 
+  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Queue[A], B, That]): That = {
+    if (bf eq Queue.ReusableCBF) {
+      val thatQueue = that.asInstanceOf[Queue[B]]
+      new Queue[B](thatQueue.in ++ (thatQueue.out reverse_::: this.in), this.out).asInstanceOf[That]
+    } else {
+      super.++(that)(bf)
+    }
+  }
+
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
@@ -107,16 +122,15 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
 
-  /** Returns a new queue with all elements provided by an `Iterable` object
-   *  added at the end of the queue.
+  /** Creates a new queue with all elements provided by an `Iterable` object
+   *  added at the end of the old queue.
    *
-   *  The elements are prepended in the order they are given out by the
+   *  The elements are appended in the order they are given out by the
    *  iterator.
    *
    *  @param  iter        an iterable object
    */
-  def enqueue[B >: A](iter: Iterable[B]) =
-    new Queue(iter.toList reverse_::: in, out)
+  def enqueue[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.

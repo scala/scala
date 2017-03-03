@@ -35,15 +35,7 @@ package object parallel {
     else sz
   }
 
-  private[parallel] def unsupported = throw new UnsupportedOperationException
-
-  private[parallel] def unsupportedop(msg: String) = throw new UnsupportedOperationException(msg)
-
-  private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
-
-  private[parallel] def getTaskSupport: TaskSupport = new ExecutionContextTaskSupport
-
-  val defaultTaskSupport: TaskSupport = getTaskSupport
+  val defaultTaskSupport: TaskSupport = new ExecutionContextTaskSupport
 
   def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
     c match {
@@ -98,7 +90,7 @@ package parallel {
       }
     }
   }
-  
+
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {
       def otherwise(notbody: => R): R
@@ -122,9 +114,9 @@ package parallel {
     def ifParSeq[R](isbody: ParSeq[T] => R): Otherwise[R]
   }
 
-  @deprecated("This trait will be removed.", "2.11.0")
+  @deprecated("this trait will be removed", "2.11.0")
   trait ThrowableOps {
-    @deprecated("This method will be removed.", "2.11.0")
+    @deprecated("this method will be removed", "2.11.0")
     def alongWith(that: Throwable): Throwable
   }
 
@@ -143,7 +135,7 @@ package parallel {
   }
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
-  @deprecated("This class will be removed.", "2.11.0")
+  @deprecated("this class will be removed.", "2.11.0")
   final case class CompositeThrowable(throwables: Set[Throwable]) extends Exception(
     "Multiple exceptions thrown during a parallel computation: " +
       throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")

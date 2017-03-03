@@ -61,9 +61,9 @@ trait Reifiers {
       // logging free vars only when they are untyped prevents avalanches of duplicate messages
       symtab.syms map (sym => symtab.symDef(sym)) foreach {
         case FreeTermDef(_, _, binding, _, origin) if universe.settings.logFreeTerms && binding.tpe == null =>
-          reporter.echo(position, "free term: %s %s".format(showRaw(binding), origin))
+          reporter.echo(position, s"free term: ${showRaw(binding)} $origin")
         case FreeTypeDef(_, _, binding, _, origin) if universe.settings.logFreeTypes && binding.tpe == null =>
-          reporter.echo(position, "free type: %s %s".format(showRaw(binding), origin))
+          reporter.echo(position, s"free type: ${showRaw(binding)} $origin")
         case _ =>
           // do nothing
       }

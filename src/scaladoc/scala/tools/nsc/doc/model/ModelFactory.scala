@@ -9,11 +9,9 @@ import base.comment._
 import diagram._
 
 import scala.collection._
-import scala.tools.nsc.doc.html.HtmlPage
 import scala.tools.nsc.doc.html.page.diagram.{DotRunner}
 import scala.util.matching.Regex
 import scala.reflect.macros.internal.macroImpl
-import scala.xml.NodeSeq
 import symtab.Flags
 
 import io._
@@ -30,8 +28,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
-  import rootMirror.{ RootPackage, RootClass, EmptyPackage }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import rootMirror.{ RootPackage, EmptyPackage }
 
   // Defaults for member grouping, that may be overridden by the template
   val defaultGroup = "Ungrouped"
@@ -53,7 +51,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       lazy val dotRunner = new DotRunner(settings)
     }
     _modelFinished = true
-    // complete the links between model entities, everthing that couldn't have been done before
+    // complete the links between model entities, everything that couldn't have been done before
     universe.rootPackage.completeModel()
 
     Some(universe) filter (_.rootPackage != null)
@@ -93,10 +91,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   trait TemplateImpl extends EntityImpl with TemplateEntity {
     override def qualifiedName: String =
       if (inTemplate == null || inTemplate.isRootPackage) name else optimize(inTemplate.qualifiedName + "." + name)
-    def isPackage = sym.isPackage
+    def isPackage = sym.hasPackageFlag
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
-    def isObject = sym.isModule && !sym.isPackage
+    def isObject = sym.isModule && !sym.hasPackageFlag
     def isCaseClass = sym.isCaseClass
     def isRootPackage = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
@@ -108,10 +106,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     // in the doc comment of MyClass
     def linkTarget: DocTemplateImpl = inTpl
 
-    lazy val comment = {
-      val documented = if (sym.hasAccessorFlag) sym.accessed else sym
-      thisFactory.comment(documented, linkTarget, inTpl)
-    }
+    // if there is a field symbol, the ValDef will use it, which means docs attached to it will be under the field symbol, not the getter's
+    protected[this] def commentCarryingSymbol(sym: Symbol) =
+      if (sym.hasAccessorFlag && sym.accessed.exists) sym.accessed else sym
+
+    lazy val comment = thisFactory.comment(commentCarryingSymbol(sym), linkTarget, inTpl)
+
     def group = comment flatMap (_.group) getOrElse defaultGroup
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
@@ -254,7 +254,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def valueParams: List[List[ValueParam]] = Nil /** TODO, these are now only computed for DocTemplates */
 
     def parentTypes =
-      if (sym.isPackage || sym == AnyClass) List() else {
+      if (sym.hasPackageFlag || sym == AnyClass) List() else {
         val tps = (this match {
           case a: AliasType => sym.tpe.dealias.parents
           case a: AbstractType => sym.info.bounds match {
@@ -478,17 +478,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     override lazy val comment = {
       def nonRootTemplate(sym: Symbol): Option[DocTemplateImpl] =
         if (sym eq RootPackage) None else findTemplateMaybe(sym)
+
       /* Variable precedence order for implicitly added members: Take the variable definitions from ...
        * 1. the target of the implicit conversion
        * 2. the definition template (owner)
        * 3. the current template
        */
-      val inRealTpl = conversion.flatMap { conv =>
-        nonRootTemplate(conv.toType.typeSymbol)
-      } orElse nonRootTemplate(sym.owner) orElse Option(inTpl)
-      inRealTpl flatMap { tpl =>
-        thisFactory.comment(sym, tpl, tpl)
-      }
+      val inRealTpl = (
+        conversion.flatMap(conv => nonRootTemplate(conv.toType.typeSymbol))
+          orElse nonRootTemplate(sym.owner)
+          orElse Option(inTpl))
+
+      inRealTpl flatMap (tpl => thisFactory.comment(commentCarryingSymbol(sym), tpl, tpl))
     }
 
     override def inDefinitionTemplates = useCaseOf.fold(super.inDefinitionTemplates)(_.inDefinitionTemplates)
@@ -665,7 +666,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
               s != EmptyPackage && s != RootPackage
             }
         })
-      else if (bSym.isPackage) // (2)
+      else if (bSym.hasPackageFlag) // (2)
         if (settings.skipPackage(makeQualifiedName(bSym)))
           None
         else
@@ -778,7 +779,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(new MemberTemplateImpl(bSym, inTpl) with AliasImpl with AliasType {
           override def isAliasType = true
         })
-      else if (!modelFinished && (bSym.isPackage || templateShouldDocument(bSym, inTpl)))
+      else if (!modelFinished && (bSym.hasPackageFlag || templateShouldDocument(bSym, inTpl)))
         modelCreation.createTemplate(bSym, inTpl)
       else
         None
@@ -885,8 +886,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
-              // SI-4922 `sym == aSym` is insufficent if `aSym` is a clone of symbol
-              //         of the parameter in the tree, as can happen with type parametric methods.
+              // SI-4922 `sym == aSym` is insufficient if `aSym` is a clone of symbol
+              //         of the parameter in the tree, as can happen with type parameterized methods.
               def isCorrespondingParam(sym: Symbol) = (
                 sym != null &&
                 sym != NoSymbol &&

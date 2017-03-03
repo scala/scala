@@ -185,8 +185,8 @@ package scala.sys {
     * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
-    * More information about the other ways of controlling I/O can be looked at
-    * in the scaladoc for the associated objects, traits and classes.
+    * More information about the other ways of controlling I/O can be found
+    * in the Scaladoc for the associated objects, traits and classes.
     *
     * ==Running the Process==
     *
@@ -203,9 +203,9 @@ package scala.sys {
   package object process extends ProcessImplicits {
     /** The arguments passed to `java` when creating this process */
     def javaVmArguments: List[String] = {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
-      java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
+      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.asScala.toList
     }
     /** The input stream of this process */
     def stdin  = java.lang.System.in
@@ -225,16 +225,26 @@ package scala.sys {
       final val processDebug = props contains "scala.process.debug"
       dbg("Initializing process package.")
 
-      type =?>[-A, +B]     = PartialFunction[A, B]
-      type Closeable       = java.io.Closeable
-      type File            = java.io.File
-      type IOException     = java.io.IOException
-      type InputStream     = java.io.InputStream
-      type JProcess        = java.lang.Process
-      type JProcessBuilder = java.lang.ProcessBuilder
-      type OutputStream    = java.io.OutputStream
-      type SyncVar[T]      = scala.concurrent.SyncVar[T]
-      type URL             = java.net.URL
+      type =?>[-A, +B]            = PartialFunction[A, B]
+      type Closeable              = java.io.Closeable
+      type File                   = java.io.File
+      type IOException            = java.io.IOException
+      type InterruptedIOException = java.io.InterruptedIOException
+      type InputStream            = java.io.InputStream
+      type JProcess               = java.lang.Process
+      type JProcessBuilder        = java.lang.ProcessBuilder
+      type LinkedBlockingQueue[T] = java.util.concurrent.LinkedBlockingQueue[T]
+      type OutputStream           = java.io.OutputStream
+      type SyncVar[T]             = scala.concurrent.SyncVar[T]
+      type URL                    = java.net.URL
+
+      def onError[T](handler: Throwable => T): Throwable =?> T = {
+        case e @ _ => handler(e)
+      }
+
+      def onIOInterrupt[T](handler: => T): Throwable =?> T = {
+        case _: InterruptedIOException => handler
+      }
 
       def onInterrupt[T](handler: => T): Throwable =?> T = {
         case _: InterruptedException => handler

@@ -26,16 +26,16 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
 
-  @Test def userSettingsHavePrecedenceOverOptimize() {
+  @Test def userSettingsHavePrecedenceOverExperimental() {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
       assert(residual.isEmpty)
-      s.inline // among -optimize
+      s.YpartialUnification // among -Xexperimental
     }
-    assertTrue(check("-optimise").value)
-    assertFalse(check("-optimise", "-Yinline:false").value)
-    assertFalse(check("-Yinline:false", "-optimise").value)
+    assertTrue(check("-Xexperimental").value)
+    assertFalse(check("-Xexperimental", "-Ypartial-unification:false").value)
+    assertFalse(check("-Ypartial-unification:false", "-Xexperimental").value)
   }
 
   // for the given args, select the desired setting
@@ -172,13 +172,13 @@ class SettingsTest {
       assert(residual.isEmpty)
       assertTrue(s.source.value == ScalaVersion(expected))
     }
-    check(expected = "2.11.0") // default
+    check(expected = "2.12.0") // default
     check(expected = "2.11.0", "-Xsource:2.11")
     check(expected = "2.10",   "-Xsource:2.10.0")
     check(expected = "2.12",   "-Xsource:2.12")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource"), _ == "-Xsource requires an argument, the syntax is -Xsource:<version>")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource", "2.11"), _ == "-Xsource requires an argument, the syntax is -Xsource:<version>")
-    assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource:2.invalid"), _ contains "There was a problem parsing 2.invalid")
+    assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource:2.invalid"), _ contains "Bad version (2.invalid)")
   }
 
   // equal with stripped margins and normalized line endings

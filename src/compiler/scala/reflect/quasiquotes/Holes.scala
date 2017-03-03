@@ -1,7 +1,6 @@
 package scala.reflect
 package quasiquotes
 
-import scala.collection.{immutable, mutable}
 import scala.reflect.internal.Flags._
 import scala.reflect.macros.TypecheckException
 
@@ -222,7 +221,7 @@ trait Holes { self: Quasiquotes =>
       else if (rank == NoDot) Some(unlifter)
       else {
         val idx = records.indexWhere { p => p._1 =:= tpe && p._2 == rank }
-        val resIdx = if (idx != -1) idx else { records +:= (tpe, rank); records.length - 1}
+        val resIdx = if (idx != -1) idx else { records +:= ((tpe, rank)); records.length - 1}
         Some(Ident(TermName(nme.QUASIQUOTE_UNLIFT_HELPER + resIdx)))
       }
     }

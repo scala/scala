@@ -10,7 +10,6 @@ import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.io._
-import java.io.{File => JFile}
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -80,12 +79,6 @@ object ReflectionUtils {
     accessor setAccessible true
     accessor invoke outer
   }
-
-  def isTraitImplementation(fileName: String) = fileName endsWith "$class.class"
-
-  def scalacShouldntLoadClassfile(fileName: String) = isTraitImplementation(fileName)
-
-  def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(name + ".class")
 
   object PrimitiveOrArray {
     def unapply(jclazz: jClass[_]) = jclazz.isPrimitive || jclazz.isArray

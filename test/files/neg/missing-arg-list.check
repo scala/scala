@@ -18,4 +18,9 @@ Unapplied methods are only converted to functions when a function type is expect
 You can make this conversion explicit by writing `h _` or `h(_,_,_)(_)` instead of `h`.
   val z = h
           ^
-four errors found
+missing-arg-list.scala:15: error: missing argument list for method + in trait T
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `+ _` or `+(_)` instead of `+`.
+  val p = +
+          ^
+5 errors found

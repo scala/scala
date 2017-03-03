@@ -7,9 +7,9 @@ chapter: 5
 # Classes and Objects
 
 ```ebnf
-TmplDef          ::= [`case'] `class' ClassDef
-                  |  [`case'] `object' ObjectDef
-                  |  `trait' TraitDef
+TmplDef          ::= [‘case’] ‘class’ ClassDef
+                  |  [‘case’] ‘object’ ObjectDef
+                  |  ‘trait’ TraitDef
 ```
 
 [Classes](#class-definitions) and [objects](#object-definitions)
@@ -20,14 +20,14 @@ are both defined in terms of _templates_.
 ```ebnf
 ClassTemplate   ::=  [EarlyDefs] ClassParents [TemplateBody]
 TraitTemplate   ::=  [EarlyDefs] TraitParents [TemplateBody]
-ClassParents    ::=  Constr {`with' AnnotType}
-TraitParents    ::=  AnnotType {`with' AnnotType}
-TemplateBody    ::=  [nl] `{' [SelfType] TemplateStat {semi TemplateStat} `}'
-SelfType        ::=  id [`:' Type] `=>'
-                 |   this `:' Type `=>'
+ClassParents    ::=  Constr {‘with’ AnnotType}
+TraitParents    ::=  AnnotType {‘with’ AnnotType}
+TemplateBody    ::=  [nl] ‘{’ [SelfType] TemplateStat {semi TemplateStat} ‘}’
+SelfType        ::=  id [‘:’ Type] ‘=>’
+                 |   this ‘:’ Type ‘=>’
 ```
 
-A template defines the type signature, behavior and initial state of a
+A _template_ defines the type signature, behavior and initial state of a
 trait or class of objects or of a single object. Templates form part of
 instance creation expressions, class definitions, and object
 definitions.  A template
@@ -145,7 +145,7 @@ def delayedInit(body: => Unit)
 ### Constructor Invocations
 
 ```ebnf
-Constr  ::=  AnnotType {`(' [Exprs] `)'}
+Constr  ::=  AnnotType {‘(’ [Exprs] ‘)’}
 ```
 
 Constructor invocations define the type, members, and initial state of
@@ -344,8 +344,8 @@ $M'$:
 - If $M$ and $M'$ are both concrete value definitions, then either none
   of them is marked `lazy` or both must be marked `lazy`.
 
-A stable member can only be overridden by a stable member.
-For example, this is not allowed:
+- A stable member can only be overridden by a stable member.
+  For example, this is not allowed:
 
 ```scala
 class X { val stable = 1}
@@ -410,7 +410,7 @@ necessary to make subtyping decidable[^kennedy]).
 ### Early Definitions
 
 ```ebnf
-EarlyDefs         ::= `{' [EarlyDef {semi EarlyDef}] `}' `with'
+EarlyDefs         ::= ‘{’ [EarlyDef {semi EarlyDef}] ‘}’ ‘with’
 EarlyDef          ::=  {Annotation} {Modifier} PatVarDef
 ```
 
@@ -478,14 +478,14 @@ body, it would be initialized after the constructor of
 ```ebnf
 Modifier          ::=  LocalModifier
                     |  AccessModifier
-                    |  `override'
-LocalModifier     ::=  `abstract'
-                    |  `final'
-                    |  `sealed'
-                    |  `implicit'
-                    |  `lazy'
-AccessModifier    ::=  (`private' | `protected') [AccessQualifier]
-AccessQualifier   ::=  `[' (id | `this') `]'
+                    |  ‘override’
+LocalModifier     ::=  ‘abstract’
+                    |  ‘final’
+                    |  ‘sealed’
+                    |  ‘implicit’
+                    |  ‘lazy’
+AccessModifier    ::=  (‘private’ | ‘protected’) [AccessQualifier]
+AccessQualifier   ::=  ‘[’ (id | ‘this’) ‘]’
 ```
 
 Member definitions may be preceded by modifiers which affect the
@@ -668,16 +668,16 @@ constructor `private` ([example](#example-private-constructor)).
 ## Class Definitions
 
 ```ebnf
-TmplDef           ::=  `class' ClassDef
+TmplDef           ::=  ‘class’ ClassDef
 ClassDef          ::=  id [TypeParamClause] {Annotation}
                        [AccessModifier] ClassParamClauses ClassTemplateOpt
 ClassParamClauses ::=  {ClassParamClause}
-                       [[nl] `(' implicit ClassParams `)']
-ClassParamClause  ::=  [nl] `(' [ClassParams] ')'
-ClassParams       ::=  ClassParam {`,' ClassParam}
-ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
-                       id [`:' ParamType] [`=' Expr]
-ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
+                       [[nl] ‘(’ implicit ClassParams ‘)’]
+ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
+ClassParams       ::=  ClassParam {‘,’ ClassParam}
+ClassParam        ::=  {Annotation} {Modifier} [(‘val’ | ‘var’)]
+                       id [‘:’ ParamType] [‘=’ Expr]
+ClassTemplateOpt  ::=  ‘extends’ ClassTemplate | [[‘extends’] TemplateBody]
 ```
 
 The most general form of class definition is
@@ -709,7 +709,7 @@ Here,
     value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
     It is illegal to define two formal value parameters with the same name.
 
-    If no formal parameter sections are given, an empty parameter section `()` is assumed.
+    If a class has no formal parameter section that is not implicit, an empty parameter section `()` is assumed.
 
     If a formal parameter declaration $x: T$ is preceded by a `val`
     or `var` keyword, an accessor (getter) [definition](04-basic-declarations-and-definitions.html#variable-declarations-and-definitions)
@@ -725,7 +725,7 @@ Here,
 
   - $t$ is a [template](#templates) of the form
 
-    ```
+    ```scala
     $sc$ with $mt_1$ with $\ldots$ with $mt_m$ { $\mathit{stats}$ } // $m \geq 0$
     ```
 
@@ -768,12 +768,12 @@ class Sensitive private () {
 ### Constructor Definitions
 
 ```ebnf
-FunDef         ::= `this' ParamClause ParamClauses
-                   (`=' ConstrExpr | [nl] ConstrBlock)
+FunDef         ::= ‘this’ ParamClause ParamClauses
+                   (‘=’ ConstrExpr | [nl] ConstrBlock)
 ConstrExpr     ::= SelfInvocation
                 |  ConstrBlock
-ConstrBlock    ::= `{' SelfInvocation {semi BlockStat} `}'
-SelfInvocation ::= `this' ArgumentExprs {ArgumentExprs}
+ConstrBlock    ::= ‘{’ SelfInvocation {semi BlockStat} ‘}’
+SelfInvocation ::= ‘this’ ArgumentExprs {ArgumentExprs}
 ```
 
 A class may have additional constructors besides the primary
@@ -836,18 +836,19 @@ third one constructs a list with a given head and tail.
 ### Case Classes
 
 ```ebnf
-TmplDef  ::=  `case' `class' ClassDef
+TmplDef  ::=  ‘case’ ‘class’ ClassDef
 ```
 
 If a class definition is prefixed with `case`, the class is said
 to be a _case class_.
 
-The formal parameters in the first parameter section of a case class
-are called _elements_; they are treated
-specially. First, the value of such a parameter can be extracted as a
+A case class is required to have a parameter section that is not implicit.
+The formal parameters in the first parameter section 
+are called _elements_ and are treated specially.
+First, the value of such a parameter can be extracted as a
 field of a constructor pattern. Second, a `val` prefix is
-implicitly added to such a parameter, unless the parameter carries
-already a `val` or `var` modifier. Hence, an accessor
+implicitly added to such a parameter, unless the parameter already carries
+a `val` or `var` modifier. Hence, an accessor
 definition for the parameter is [generated](#class-definitions).
 
 A case class definition of `$c$[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$)` with type
@@ -967,12 +968,12 @@ directly extend `Expr` must be in the same source file as
 ## Traits
 
 ```ebnf
-TmplDef          ::=  `trait' TraitDef
+TmplDef          ::=  ‘trait’ TraitDef
 TraitDef         ::=  id [TypeParamClause] TraitTemplateOpt
-TraitTemplateOpt ::=  `extends' TraitTemplate | [[`extends'] TemplateBody]
+TraitTemplateOpt ::=  ‘extends’ TraitTemplate | [[‘extends’] TemplateBody]
 ```
 
-A trait is a class that is meant to be added to some other class
+A _trait_ is a class that is meant to be added to some other class
 as a mixin. Unlike normal classes, traits cannot have
 constructor parameters. Furthermore, no constructor arguments are
 passed to the superclass of the trait. This is not necessary as traits are
@@ -1074,7 +1075,7 @@ in `MyTable`.
 ObjectDef       ::=  id ClassTemplate
 ```
 
-An object definition defines a single object of a new class. Its
+An _object definition_ defines a single object of a new class. Its
 most general form is
 `object $m$ extends $t$`. Here,
 $m$ is the name of the object to be defined, and
@@ -1103,8 +1104,8 @@ Note that the value defined by an object definition is instantiated
 lazily.  The `new $m$\$cls` constructor is evaluated
 not at the point of the object definition, but is instead evaluated
 the first time $m$ is dereferenced during execution of the program
-(which might be never at all). An attempt to dereference $m$ again in
-the course of evaluation of the constructor leads to a infinite loop
+(which might be never at all). An attempt to dereference $m$ again
+during evaluation of the constructor will lead to an infinite loop
 or run-time error.
 Other threads trying to dereference $m$ while the
 constructor is being evaluated block until evaluation is complete.

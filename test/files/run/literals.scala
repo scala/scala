@@ -84,6 +84,10 @@ object Test {
     check_success("3.14f == 3.14f", 3.14f, 3.14f)
     check_success("6.022e23f == 6.022e23f", 6.022e23f, 6.022e23f)
     check_success("09f == 9.0f", 09f, 9.0f)
+    check_success("1.00000017881393421514957253748434595763683319091796875001f == 1.0000001f",
+      1.00000017881393421514957253748434595763683319091796875001f,
+      1.0000001f)
+    check_success("3.4028235E38f == Float.MaxValue", 3.4028235E38f, Float.MaxValue)
     check_success("1.asInstanceOf[Float] == 1.0", 1.asInstanceOf[Float], 1.0f)
     check_success("1l.asInstanceOf[Float] == 1.0", 1l.asInstanceOf[Float], 1.0f)
 
@@ -97,6 +101,7 @@ object Test {
     check_success("3.14 == 3.14", 3.14, 3.14)
     check_success("1e-9d == 1.0e-9", 1e-9d, 1.0e-9)
     check_success("1e137 == 1.0e137", 1e137, 1.0e137)
+    check_success("1.7976931348623157e308d == Double.MaxValue", 1.7976931348623157e308d, Double.MaxValue)
     check_success("1.asInstanceOf[Double] == 1.0", 1.asInstanceOf[Double], 1.0)
     check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
 

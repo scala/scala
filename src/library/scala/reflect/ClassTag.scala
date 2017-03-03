@@ -2,7 +2,6 @@ package scala
 package reflect
 
 import java.lang.{ Class => jClass }
-import scala.runtime.ScalaRunTime.arrayElementClass
 
 /**
  *
@@ -84,28 +83,13 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
        ) Some(x.asInstanceOf[T])
     else None
 
-  // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
-  def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
-  def unapply(x: Short)   : Option[T] = unapplyImpl(x, classOf[Short])
-  def unapply(x: Char)    : Option[T] = unapplyImpl(x, classOf[Char])
-  def unapply(x: Int)     : Option[T] = unapplyImpl(x, classOf[Int])
-  def unapply(x: Long)    : Option[T] = unapplyImpl(x, classOf[Long])
-  def unapply(x: Float)   : Option[T] = unapplyImpl(x, classOf[Float])
-  def unapply(x: Double)  : Option[T] = unapplyImpl(x, classOf[Double])
-  def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
-  def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
-
-  private[this] def unapplyImpl(x: Any, primitiveCls: java.lang.Class[_]): Option[T] =
-    if (runtimeClass.isInstance(x) || runtimeClass.isAssignableFrom(primitiveCls)) Some(x.asInstanceOf[T])
-    else None
-
   // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
-  override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
+  override def hashCode = runtimeClass.##
   override def toString = {
     def prettyprint(clazz: jClass[_]): String =
-      if (clazz.isArray) s"Array[${prettyprint(arrayElementClass(clazz))}]" else
+      if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
       clazz.getName
     prettyprint(runtimeClass)
   }
@@ -135,6 +119,9 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
+  @SerialVersionUID(1L)
+  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T]
+
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {
       case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
@@ -149,7 +136,7 @@ object ClassTag {
       case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
       case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
       case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
-      case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
+      case _                        => new GenericClassTag[T](runtimeClass1)
     }
 
   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)

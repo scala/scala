@@ -10,7 +10,6 @@ package scala
 package collection
 package generic
 
-import scala.collection.mutable.Builder
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParSet
 import scala.collection.parallel.ParSetLike

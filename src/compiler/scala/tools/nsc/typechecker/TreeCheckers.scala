@@ -7,8 +7,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable
-import mutable.ListBuffer
-import util.returning
 import scala.reflect.internal.util.shortClassOfInstance
 import scala.reflect.internal.util.StringOps._
 
@@ -94,7 +92,7 @@ abstract class TreeCheckers extends Analyzer {
     def latest        = maps.head._2
     val defSyms       = symbolTreeMap[DefTree]()
     val newSyms       = mutable.HashSet[Symbol]()
-    val movedMsgs     = new ListBuffer[String]
+    val movedMsgs     = mutable.ListBuffer[String]()
     def sortedNewSyms = newSyms.toList.distinct sortBy (_.name.toString)
 
     def record(tree: Tree) {
@@ -113,8 +111,6 @@ abstract class TreeCheckers extends Analyzer {
         newSyms += sym
       else if (prevTrees exists (t => (t eq tree) || (t.symbol == sym)))
         ()
-      else if (prevTrees exists (_.symbol.owner == sym.owner.implClass))
-        errorFn("Noticed " + ownerstr(sym) + " moving to implementation class.")
       else {
         val s1 = (prevTrees map wholetreestr).sorted.distinct
         val s2 = wholetreestr(tree)

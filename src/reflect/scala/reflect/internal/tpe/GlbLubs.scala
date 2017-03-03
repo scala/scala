@@ -118,7 +118,7 @@ private[internal] trait GlbLubs {
         // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
         // Invariant: all symbols "under" (closer to the first row) the frontier
         // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
-        val ts0     = tsBts map (_.head)
+        val ts0 = tsBts map (_.head)
 
         // Is the frontier made up of types with the same symbol?
         val isUniformFrontier = (ts0: @unchecked) match {
@@ -136,7 +136,7 @@ private[internal] trait GlbLubs {
           mergePrefixAndArgs(ts1, Covariant, depth) match {
             case NoType => loop(pretypes, tails)
             case tp if strictInference && willViolateRecursiveBounds(tp, ts0, ts1) =>
-              log(s"Breaking recursion in lublist, advancing frontier and discaring merged prefix/args from $tp")
+              log(s"Breaking recursion in lublist, advancing frontier and discarding merged prefix/args from $tp")
               loop(pretypes, tails)
             case tp =>
               loop(tp :: pretypes, tails)
@@ -208,24 +208,6 @@ private[internal] trait GlbLubs {
       if (ts1 eq ts0) ts0
       else elimSub(ts1, depth)
     }
-  }
-
-  private def stripExistentialsAndTypeVars(ts: List[Type]): (List[Type], List[Symbol]) = {
-    val quantified = ts flatMap {
-      case ExistentialType(qs, _) => qs
-      case t => List()
-    }
-    def stripType(tp: Type): Type = tp match {
-      case ExistentialType(_, res) =>
-        res
-      case tv@TypeVar(_, constr) =>
-        if (tv.instValid) stripType(constr.inst)
-        else if (tv.untouchable) tv
-        else abort("trying to do lub/glb of typevar "+tp)
-      case t => t
-    }
-    val strippedTypes = ts mapConserve stripType
-    (strippedTypes, quantified)
   }
 
   /** Does this set of types have the same weak lub as

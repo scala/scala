@@ -1,26 +1,12 @@
 
-  // access flags 0x9
-  public static <clinit>()V
-    GETSTATIC scala/Symbol$.MODULE$ : Lscala/Symbol$;
-    LDC "Symbolic1"
-    INVOKEVIRTUAL scala/Symbol$.apply (Ljava/lang/String;)Lscala/Symbol;
-    PUTSTATIC Symbols.symbol$1 : Lscala/Symbol;
-    GETSTATIC scala/Symbol$.MODULE$ : Lscala/Symbol$;
-    LDC "Symbolic2"
-    INVOKEVIRTUAL scala/Symbol$.apply (Ljava/lang/String;)Lscala/Symbol;
-    PUTSTATIC Symbols.symbol$2 : Lscala/Symbol;
-    GETSTATIC scala/Symbol$.MODULE$ : Lscala/Symbol$;
-    LDC "Symbolic3"
-    INVOKEVIRTUAL scala/Symbol$.apply (Ljava/lang/String;)Lscala/Symbol;
-    PUTSTATIC Symbols.symbol$3 : Lscala/Symbol;
-    RETURN
-    MAXSTACK = 2
-    MAXLOCALS = 0
-
-
   // access flags 0x1
   public someSymbol1()Lscala/Symbol;
-    GETSTATIC Symbols.symbol$1 : Lscala/Symbol;
+    INVOKEDYNAMIC apply()Lscala/Symbol; [
+      // handle kind 0x6 : INVOKESTATIC
+      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      "Symbolic1"
+    ]
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
@@ -28,7 +14,12 @@
 
   // access flags 0x1
   public someSymbol2()Lscala/Symbol;
-    GETSTATIC Symbols.symbol$2 : Lscala/Symbol;
+    INVOKEDYNAMIC apply()Lscala/Symbol; [
+      // handle kind 0x6 : INVOKESTATIC
+      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      "Symbolic2"
+    ]
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
@@ -36,7 +27,12 @@
 
   // access flags 0x1
   public sameSymbol1()Lscala/Symbol;
-    GETSTATIC Symbols.symbol$1 : Lscala/Symbol;
+    INVOKEDYNAMIC apply()Lscala/Symbol; [
+      // handle kind 0x6 : INVOKESTATIC
+      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      "Symbolic1"
+    ]
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
@@ -56,7 +52,12 @@
     ALOAD 0
     INVOKESPECIAL java/lang/Object.<init> ()V
     ALOAD 0
-    GETSTATIC Symbols.symbol$3 : Lscala/Symbol;
+    INVOKEDYNAMIC apply()Lscala/Symbol; [
+      // handle kind 0x6 : INVOKESTATIC
+      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      "Symbolic3"
+    ]
     PUTFIELD Symbols.someSymbol3 : Lscala/Symbol;
     RETURN
     MAXSTACK = 2

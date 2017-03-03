@@ -3,7 +3,7 @@
  */
 package scala.tools.nsc.classpath
 
-import scala.tools.nsc.classpath.FlatClassPath.RootPackage
+import scala.tools.nsc.util.ClassPath.RootPackage
 
 /**
  * Common methods related to package names represented as String

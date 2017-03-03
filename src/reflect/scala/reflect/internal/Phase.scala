@@ -39,10 +39,18 @@ abstract class Phase(val prev: Phase) {
   def description: String = name
   // Will running with -Ycheck:name work?
   def checkable: Boolean = true
-  def specialized: Boolean = false
-  def erasedTypes: Boolean = false
-  def flatClasses: Boolean = false
-  def refChecked: Boolean = false
+
+  // NOTE: sbt injects its own phases which extend this class, and not GlobalPhase, so we must implement this logic here
+  private val _erasedTypes = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "erasure" || prev.erasedTypes)
+  def erasedTypes: Boolean = _erasedTypes // overridden in back-end
+  final val flatClasses: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "flatten"    || prev.flatClasses)
+  final val specialized: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "specialize" || prev.specialized)
+  final val refChecked: Boolean    = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "refchecks"  || prev.refChecked)
+
+  // are we past the fields phase, so that:
+  //   - we should allow writing to vals (as part of type checking trait setters)
+  //   - modules have module accessors
+  final val assignsFields: Boolean = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "fields"     || prev.assignsFields)
 
   /** This is used only in unsafeTypeParams, and at this writing is
    *  overridden to false in parser, namer, typer, and erasure. (And NoPhase.)

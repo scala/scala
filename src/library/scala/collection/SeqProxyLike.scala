@@ -23,7 +23,7 @@ import generic._
  *  @version 2.8
  *  @since   2.8
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
 trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A, Repr] with IterableProxyLike[A, Repr] {
   override def size = self.size
   override def toSeq: Seq[A] = self.toSeq

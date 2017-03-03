@@ -8,11 +8,8 @@
 
 package scala.tools.ant
 
-import java.io.{ File, InputStream, FileWriter }
-
 import org.apache.tools.ant.{ Task, BuildException }
 import org.apache.tools.ant.taskdefs.MatchingTask
-import org.apache.tools.ant.types.{ Path, Reference }
 
 trait ScalaTask {
   self: Task =>
@@ -27,5 +24,4 @@ trait ScalaTask {
      throw new BuildException(message, getLocation())
 }
 
-abstract class ScalaMatchingTask extends MatchingTask with ScalaTask {
-}
+abstract class ScalaMatchingTask extends MatchingTask with ScalaTask

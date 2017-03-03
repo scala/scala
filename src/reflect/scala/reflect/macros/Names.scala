@@ -34,15 +34,15 @@ trait Names {
   self: blackbox.Context =>
 
   /** $freshNameNoParams */
-  @deprecated("Use freshName instead", "2.11.0")
+  @deprecated("use freshName instead", "2.11.0")
   def fresh(): String
 
   /** $freshNameStringParam */
-  @deprecated("Use freshName instead", "2.11.0")
+  @deprecated("use freshName instead", "2.11.0")
   def fresh(name: String): String
 
   /** $freshNameNameParam */
-  @deprecated("Use freshName instead", "2.11.0")
+  @deprecated("use freshName instead", "2.11.0")
   def fresh[NameType <: Name](name: NameType): NameType
 
   /** $freshNameNoParams */

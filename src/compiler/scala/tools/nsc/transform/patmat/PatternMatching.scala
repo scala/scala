@@ -222,7 +222,7 @@ trait Interface extends ast.TreeDSL {
         object substIdentsForTrees extends Transformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
-            // important: only type when actually substing and when original tree was typed
+            // important: only type when actually substituting and when original tree was typed
             // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
             else typer.typed(to)
 

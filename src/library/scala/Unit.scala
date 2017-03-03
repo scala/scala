@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -19,7 +19,8 @@ package scala
  *  method which is declared `void`.
  */
 final abstract class Unit private extends AnyVal {
-  override def getClass(): Class[Unit] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Unit] = ???
 }
 
 object Unit extends AnyValCompanion {
@@ -39,7 +40,7 @@ object Unit extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a scala.runtime.BoxedUnit
    *  @return     the Unit value ()
    */
-  def unbox(x: java.lang.Object): Unit = ()
+  def unbox(x: java.lang.Object): Unit = x.asInstanceOf[scala.runtime.BoxedUnit]
 
   /** The String representation of the scala.Unit companion object. */
   override def toString = "object scala.Unit"

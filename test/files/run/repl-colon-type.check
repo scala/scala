@@ -35,7 +35,7 @@ Int
 
 scala> :type protected lazy val f = 5
 <console>:5: error: lazy value f cannot be accessed in object $iw
- Access to protected value f not permitted because
+ Access to protected lazy value f not permitted because
  enclosing object $eval in package $line13 is not a subclass of
  object $iw where target is defined
   lazy val $result = f
@@ -75,7 +75,7 @@ TypeRef(
     )
     TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with FilteredTraversableInternal[A,List[A]] with Serializable
 
       )
       args = List(
@@ -142,7 +142,7 @@ TypeRef(
       args = List(
         TypeRef(
           TypeSymbol(
-            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
+            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with FilteredTraversableInternal[A,List[A]] with Serializable
 
           )
           args = List(
@@ -175,7 +175,7 @@ PolyType(
           args = List(
             TypeRef(
               TypeSymbol(
-                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
+                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with FilteredTraversableInternal[A,List[A]] with Serializable
 
               )
               args = List(TypeParamTypeRef(TypeParam(T <: AnyVal)))
@@ -198,7 +198,7 @@ PolyType(
     params = List(TermSymbol(x: T), TermSymbol(y: List[U]))
     resultType = TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with FilteredTraversableInternal[A,List[A]] with Serializable
 
       )
       args = List(TypeParamTypeRef(TypeParam(U >: T)))

@@ -7,8 +7,7 @@ package reflect
 package internal
 
 // todo implement in terms of BitSet
-import scala.collection.{ mutable, immutable }
-import scala.math.max
+import scala.collection.mutable
 import util.Statistics
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
@@ -57,49 +56,51 @@ trait BaseTypeSeqs {
       if(pending contains i) {
         pending.clear()
         throw CyclicInheritance
-      } else
+      } else {
+        def computeLazyType(rtp: RefinedType): Type = {
+          if (!isIntersectionTypeForLazyBaseType(rtp))
+            devWarning("unexpected RefinedType in base type seq, lazy BTS elements should be created via intersectionTypeForLazyBaseType: " + rtp)
+          val variants = rtp.parents
+          // can't assert decls.isEmpty; see t0764
+          //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
+          //Console.println("compute closure of "+this+" => glb("+variants+")")
+          pending += i
+          try {
+            mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
+              case NoType => typeError("no common type instance of base types " + (variants mkString ", and ") + " exists.")
+              case tp0 =>
+                pending(i) = false
+                elems(i) = tp0
+                tp0
+            }
+          }
+          catch {
+            case CyclicInheritance =>
+              typeError(
+                "computing the common type instance of base types " + (variants mkString ", and ") + " leads to a cycle.")
+          }
+        }
         elems(i) match {
-          case rtp @ RefinedType(variants, decls) =>
-            // can't assert decls.isEmpty; see t0764
-            //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
-            //Console.println("compute closure of "+this+" => glb("+variants+")")
-            pending += i
-            try {
-              mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
-                case NoType => typeError("no common type instance of base types "+(variants mkString ", and ")+" exists.")
-                case tp0    =>
-                  pending(i) = false
-                  elems(i) = tp0
-                  tp0
-              }
-            }
-            catch {
-              case CyclicInheritance =>
-                typeError(
-                  "computing the common type instance of base types "+(variants mkString ", and ")+" leads to a cycle.")
-            }
+          case rtp@RefinedType(variants, decls) =>
+            computeLazyType(rtp)
+          case et @ ExistentialType(quantified, rtp: RefinedType) =>
+            existentialAbstraction(quantified, computeLazyType(rtp))
           case tp =>
             tp
         }
+      }
 
     def rawElem(i: Int) = elems(i)
 
-    /** The type symbol of the type at i'th position in this sequence;
-     *  no evaluation needed.
-     */
-    def typeSymbol(i: Int): Symbol = {
-      elems(i) match {
-        case RefinedType(v :: vs, _) => v.typeSymbol
-        case tp => tp.typeSymbol
-      }
-    }
+    /** The type symbol of the type at i'th position in this sequence */
+    def typeSymbol(i: Int): Symbol = elems(i).typeSymbol
 
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
 
     def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
-      scala.compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
+      java.lang.System.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
       newBaseTypeSeq(parents, arr)
     }
@@ -216,7 +217,7 @@ trait BaseTypeSeqs {
           }
           i += 1
         }
-        buf += intersectionType(minTypes)
+        buf += intersectionTypeForLazyBaseType(minTypes) // TODO this reverses the order. Does this matter? Or should this be minTypes.reverse?
         btsSize += 1
       }
     }

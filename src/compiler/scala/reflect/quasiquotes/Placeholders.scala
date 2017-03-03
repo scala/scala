@@ -2,7 +2,7 @@ package scala.reflect
 package quasiquotes
 
 import java.util.UUID.randomUUID
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 
 /** Emulates hole support (see Holes.scala) in the quasiquote parser (see Parsers.scala).
  *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.

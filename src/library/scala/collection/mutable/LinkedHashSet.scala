@@ -73,6 +73,8 @@ class LinkedHashSet[A] extends AbstractSet[A]
       else e.earlier.later = e.later
       if (e.later eq null) lastEntry = e.earlier
       else e.later.earlier = e.earlier
+      e.earlier = null // Null references to prevent nepotism
+      e.later = null
       true
     }
   }

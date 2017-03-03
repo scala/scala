@@ -1,0 +1,17 @@
+Test.scala:4: error: class C1 inherits conflicting members:
+  method f in trait A of type ()Int  and
+  method f in trait T of type => Int
+(Note: this can be resolved by declaring an override in class C1.)
+class C1 extends A with T // error
+      ^
+Test.scala:5: error: class C2 inherits conflicting members:
+  method f in trait T of type => Int  and
+  method f in trait A of type ()Int
+(Note: this can be resolved by declaring an override in class C2.)
+class C2 extends T with A // error
+      ^
+Test.scala:14: error: overriding method f in trait A of type ()Int;
+ method f needs `override' modifier
+  def f() = 9999 // need override modifier
+      ^
+three errors found

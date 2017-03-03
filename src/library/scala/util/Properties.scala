@@ -105,7 +105,7 @@ private[scala] trait PropertiesTrait {
    *  or "version (unknown)" if it cannot be determined.
    */
   val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)")
-  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2016, LAMP/EPFL")
+  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2016, LAMP/EPFL and Lightbend, Inc.")
 
   /** This is the encoding to use reading in source files, overridden with -encoding.
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
@@ -120,7 +120,7 @@ private[scala] trait PropertiesTrait {
 
   /** The default end of line character.
    */
-  def lineSeparator         = propOrElse("line.separator", "\n")
+  def lineSeparator         = System.lineSeparator()
 
   /* Various well-known properties. */
   def javaClassPath         = propOrEmpty("java.class.path")
@@ -148,6 +148,8 @@ private[scala] trait PropertiesTrait {
   // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
   /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
   def isMac                 = osName startsWith "Mac OS X"
+  /** Returns `true` iff the underlying operating system is a Linux distribution. */
+  def isLinux               = osName startsWith "Linux"
 
   /* Some runtime values. */
   private[scala] def isAvian = javaVmName contains "Avian"
@@ -166,27 +168,53 @@ private[scala] trait PropertiesTrait {
 
   /** Compares the given specification version to the specification version of the platform.
    *
-   * @param version a specification version of the form "major.minor"
-   * @return `true` iff the specification version of the current runtime
-   * is equal to or higher than the version denoted by the given string.
-   * @throws NumberFormatException if the given string is not a version string
+   *  @param version a specification version number (legacy forms acceptable)
+   *  @return `true` if the specification version of the current runtime
+   *    is equal to or higher than the version denoted by the given string.
+   *  @throws NumberFormatException if the given string is not a version string
    *
-   * @example {{{
-   * // In this example, the runtime's Java specification is assumed to be at version 1.7.
-   * isJavaAtLeast("1.6")            // true
-   * isJavaAtLeast("1.7")            // true
-   * isJavaAtLeast("1.8")            // false
-   * }}}
+   *  @example {{{
+   *  // In this example, the runtime's Java specification is assumed to be at version 8.
+   *  isJavaAtLeast("1.8")            // true
+   *  isJavaAtLeast("8")              // true
+   *  isJavaAtLeast("9")              // false
+   *  isJavaAtLeast("9.1")            // false
+   *  isJavaAtLeast("1.9")            // throws
+   *  }}}
    */
   def isJavaAtLeast(version: String): Boolean = {
-    def parts(x: String) = {
-      val i = x.indexOf('.')
-      if (i < 0) throw new NumberFormatException("Not a version: " + x)
-      (x.substring(0, i), x.substring(i+1, x.length))
+    def versionOf(s: String, depth: Int): (Int, String) =
+      s.indexOf('.') match {
+        case 0 =>
+          (-2, s.substring(1))
+        case 1 if depth == 0 && s.charAt(0) == '1' =>
+          val r0 = s.substring(2)
+          val (v, r) = versionOf(r0, 1)
+          val n = if (v > 8 || r0.isEmpty) -2 else v   // accept 1.8, not 1.9 or 1.
+          (n, r)
+        case -1 =>
+          val n = if (!s.isEmpty) s.toInt else if (depth == 0) -2 else 0
+          (n, "")
+        case i  =>
+          val r = s.substring(i + 1)
+          val n = if (depth < 2 && r.isEmpty) -2 else s.substring(0, i).toInt
+          (n, r)
+      }
+    def compareVersions(s: String, v: String, depth: Int): Int = {
+      if (depth >= 3) 0
+      else {
+        val (sn, srest) = versionOf(s, depth)
+        val (vn, vrest) = versionOf(v, depth)
+        if (vn < 0) -2
+        else if (sn < vn) -1
+        else if (sn > vn) 1
+        else compareVersions(srest, vrest, depth + 1)
+      }
     }
-    val (v, _v) = parts(version)
-    val (s, _s) = parts(javaSpecVersion)
-    s.toInt >= v.toInt && _s.toInt >= _v.toInt
+    compareVersions(javaSpecVersion, version, 0) match {
+      case -2 => throw new NumberFormatException(s"Not a version: $version")
+      case i  => i >= 0
+    }
   }
 
   // provide a main method so version info can be obtained by running this

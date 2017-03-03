@@ -6,6 +6,9 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.tools.nsc.backend.JavaPlatform
+import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
+import scala.tools.nsc.util.ClassPath
 import typechecker.Analyzer
 
 /** A layer on top of Global so I can guarantee some extra
@@ -30,37 +33,15 @@ trait ReplGlobal extends Global {
       val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get
       new util.AbstractFileClassLoader(virtualDirectory, loader) {}
     }
-
-    override def newTyper(context: Context): Typer = new Typer(context) {
-      override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-        val res = super.typed(tree, mode, pt)
-        tree match {
-          case Ident(name) if !tree.symbol.hasPackageFlag && !name.toString.startsWith("$") =>
-            repldbg("typed %s: %s".format(name, res.tpe))
-          case _ =>
-        }
-        res
-      }
-    }
   }
 
-  object replPhase extends SubComponent {
-    val global: ReplGlobal.this.type = ReplGlobal.this
-    val phaseName = "repl"
-    val runsAfter = List[String]("typer")
-    val runsRightAfter = None
-    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      def apply(unit: CompilationUnit) {
-        repldbg("Running replPhase on " + unit.body)
-        // newNamer(rootContext(unit)).enterSym(unit.body)
-      }
+  override def optimizerClassPath(base: ClassPath): ClassPath = {
+    settings.outputDirs.getSingleOutput match {
+      case None => base
+      case Some(out) =>
+        // Make bytecode of previous lines available to the inliner
+        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings)
+        AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
-    // add to initial or terminal phase to sanity check Run at construction
-    override val requires = List("typer")  // ensure they didn't -Ystop-after:parser
-  }
-
-  override protected def computePhaseDescriptors: List[SubComponent] = {
-    addToPhasesSet(replPhase, "repl")
-    super.computePhaseDescriptors
   }
 }

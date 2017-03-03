@@ -1,6 +1,8 @@
 import annotation._
 import elidable._
 
+// runs -Xelide-below WARNING or 900
+
 trait T {
   @elidable(FINEST) def f1()
   @elidable(SEVERE) def f2()
@@ -37,6 +39,13 @@ object Test {
   @elidable(FINEST) def fc() = 1.0f
   @elidable(FINEST) def fd() = 1.0
   @elidable(FINEST) def fe() = "s"
+
+  /* variable elisions? see test/files/neg/t10068.scala
+  @elidable(INFO) val goner1: Int      = { assert(false, "Should have been elided.") ; 42 }
+  @elidable(INFO) lazy val goner2: Int = { assert(false, "Should have been elided.") ; 42 }
+  @elidable(INFO) var goner3: Int      = { assert(false, "Should have been elided.") ; 42 }
+  @elidable(INFO) var goner4: Nothing  = _
+  */
 
   def main(args: Array[String]): Unit = {
     f1()
@@ -80,6 +89,17 @@ object Test {
         Class.forName(className).getMethod(methodName)
       }
     }
-    Class.forName("T$class").getMethod("f3", classOf[T])
+
+    // variable elisions?
+    /*
+    assert(goner1 == 0)
+    assert(goner2 == 0)
+    assert(goner3 == 0)
+    try assert(goner4 == null)
+    catch {
+      case _: NullPointerException => println("NPE")
+      case _: NotImplementedError   => println("NIE")
+    }
+    */
   }
 }

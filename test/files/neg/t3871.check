@@ -1,5 +1,5 @@
 t3871.scala:4: error: variable foo in class Sub2 cannot be accessed in Sub2
- Access to protected method foo not permitted because
+ Access to protected variable foo not permitted because
  enclosing class Base is not a subclass of
  class Sub2 where target is defined
     s.foo = true

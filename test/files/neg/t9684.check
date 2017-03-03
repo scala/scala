@@ -1,0 +1,9 @@
+t9684.scala:6: warning: object JavaConversions in package collection is deprecated (since 2.12.0): use JavaConverters
+  null.asInstanceOf[java.util.List[Int]] : Buffer[Int]
+                   ^
+t9684.scala:8: warning: object JavaConversions in package collection is deprecated (since 2.12.0): use JavaConverters
+  null.asInstanceOf[Iterable[Int]] : java.util.Collection[Int]
+                   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

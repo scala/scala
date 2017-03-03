@@ -1,0 +1,11 @@
+
+scala> trait B { val y = "a" }
+defined trait B
+
+scala> trait T extends B { val x: y.type = y }
+defined trait T
+
+scala> println((new T{}).x)
+a
+
+scala> :quit

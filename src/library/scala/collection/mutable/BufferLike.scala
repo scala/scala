@@ -14,7 +14,7 @@ package mutable
 
 import generic._
 import script._
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 
 /** A template trait for buffers of type `Buffer[A]`.
  *
@@ -105,15 +105,18 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     */
   def remove(n: Int): A
 
-  /** Removes a number of elements from a given index position.
+  /** Removes a number of elements from a given index position.  Subclasses of `BufferLike`
+   *  will typically override this method to provide better performance than `count`
+   *  successive calls to single-element `remove`.
    *
    *  @param n  the index which refers to the first element to remove.
    *  @param count  the number of elements to remove.
    *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
-   *            `0 <= n <= length - count`.
+   *            `0 <= n <= length - count` (with `count > 0`).
    *  @throws   IllegalArgumentException if `count < 0`.
    */
   def remove(n: Int, count: Int) {
+    if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
     for (i <- 0 until count) remove(n)
   }
 
@@ -184,7 +187,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param cmd  the message to send.
    */
-  @deprecated("Scripting is deprecated.", "2.11.0")
+  @deprecated("scripting is deprecated", "2.11.0")
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(Start, x)      => prepend(x)
     case Include(End, x)        => append(x)
@@ -210,13 +213,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *           Unless overridden this is simply `"Buffer"`.
    */
   override def stringPrefix: String = "Buffer"
-
-  /** Returns the current evolving(!) state of this buffer as a read-only sequence.
-   *
-   *  @return  A sequence that forwards to this buffer for all its operations.
-   */
-  @deprecated("The returned sequence changes as this buffer is mutated. For an immutable copy, use, e.g., toList.", "2.11.0")
-  def readOnly: scala.collection.Seq[A] = toSeq
 
   /** Creates a new collection containing both the elements of this collection and the provided
    *  traversable object.

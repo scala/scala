@@ -23,5 +23,5 @@ trait DiagramGenerator {
    * @param p   The page the diagram will be embedded in (needed for link generation)
    * @return    The HTML to be embedded in the Scaladoc page
    */
-  def generate(d: Diagram, t: DocTemplateEntity, p: HtmlPage):NodeSeq
+  def generate(d: Diagram, t: DocTemplateEntity, p: HtmlPage): NodeSeq
 }

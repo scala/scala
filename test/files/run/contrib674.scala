@@ -1,7 +1,7 @@
 // causes VerifyError with scala-2.5.1
 
 object Test extends App {
-  def bad() {
+  def bad(): Unit = {
     try {
       1
     } catch {

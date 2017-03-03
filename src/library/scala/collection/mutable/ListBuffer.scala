@@ -12,8 +12,7 @@ package mutable
 
 import generic._
 import immutable.{List, Nil, ::}
-import java.io._
-import scala.annotation.migration
+import java.io.{ObjectOutputStream, ObjectInputStream}
 
 /** A `Buffer` implementation backed by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
@@ -47,7 +46,7 @@ final class ListBuffer[A]
          with Buffer[A]
          with GenericTraversableTemplate[A, ListBuffer]
          with BufferLike[A, ListBuffer[A]]
-         with Builder[A, List[A]]
+         with ReusableBuilder[A, List[A]]
          with SeqForwarder[A]
          with Serializable
 {
@@ -262,13 +261,14 @@ final class ListBuffer[A]
    *
    *  @param n         the index which refers to the first element to remove.
    *  @param count     the number of elements to remove.
+   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
+   *            `0 <= n <= length - count` (with `count > 0`).
+   *  @throws   IllegalArgumentException if `count < 0`.
    */
-  @migration("Invalid input values will be rejected in future releases.", "2.11")
   override def remove(n: Int, count: Int) {
-    if (n >= len)
-      return
-    if (count < 0)
-      throw new IllegalArgumentException(s"removing negative number ($count) of elements")
+    if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
+    else if (count == 0) return  // Nothing to do
+    if (n < 0 || n > len - count) throw new IndexOutOfBoundsException("at " + n.toString + " deleting " + count.toString)
     if (exported) copy()
     val n1 = n max 0
     val count1 = count min (len - n1)
@@ -297,6 +297,10 @@ final class ListBuffer[A]
 
 // Implementation of abstract method in Builder
 
+  /** Returns the accumulated `List`.
+   *
+   *  This method may be called multiple times to obtain snapshots of the list in different stages of construction.
+   */
   def result: List[A] = toList
 
   /** Converts this buffer to a list. Takes constant time. The buffer is
@@ -382,6 +386,25 @@ final class ListBuffer[A]
     this
   }
 
+  /** Selects the last element.
+   *
+   *  Runs in constant time.
+   *
+   *  @return the last element of this buffer.
+   *  @throws NoSuchElementException if this buffer is empty.
+   */
+  override def last: A =
+    if (last0 eq null) throw new NoSuchElementException("last of empty ListBuffer")
+    else last0.head
+
+  /** Optionally selects the last element.
+   *
+   *  Runs in constant time.
+   *
+   *  @return `Some` of the last element of this buffer if the buffer is nonempty, `None` if it is empty.
+   */
+  override def lastOption: Option[A] = if (last0 eq null) None else Some(last0.head)
+
   /** Returns an iterator over this `ListBuffer`.  The iterator will reflect
    *  changes made to the underlying `ListBuffer` beyond the next element;
    *  the next element's value is cached so that `hasNext` and `next` are
@@ -408,9 +431,6 @@ final class ListBuffer[A]
       }
   }
 
-  @deprecated("The result of this method will change along with this buffer, which is often not what's expected.", "2.11.0")
-  override def readOnly: List[A] = start
-
   // Private methods
 
   /** Copy contents of this buffer */
@@ -426,7 +446,7 @@ final class ListBuffer[A]
   }
 
   override def equals(that: Any): Boolean = that match {
-    case that: ListBuffer[_] => this.readOnly equals that.readOnly
+    case that: ListBuffer[_] => this.start equals that.start
     case _                   => super.equals(that)
   }
 

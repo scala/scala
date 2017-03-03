@@ -10,14 +10,10 @@ package util
 import java.net.URL
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
-import scala.reflect.io.{ File, Directory, Path, AbstractFile }
-import scala.reflect.runtime.ReflectionUtils
-import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
+import scala.tools.nsc.util.ClassPath
+import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
-import scala.language.postfixOps
-import scala.tools.nsc.classpath.{ AggregateFlatClassPath, ClassPathFactory, FlatClassPath, FlatClassPathFactory }
-import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.classpath._
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -42,7 +38,7 @@ object PathResolver {
   }
 
   /** pretty print class path */
-  def ppcp(s: String) = split(s) match {
+  def ppcp(s: String) = ClassPath.split(s) match {
     case Nil      => ""
     case Seq(x)   => x
     case xs       => xs.mkString(EOL, EOL, "")
@@ -52,7 +48,7 @@ object PathResolver {
    */
   object Environment {
     private def searchForBootClasspath =
-      systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
+      systemProperties collectFirst { case (k, v) if k endsWith ".boot.class.path" => v } getOrElse ""
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
@@ -166,19 +162,6 @@ object PathResolver {
       |}""".asLines
   }
 
-  // used in PathResolver constructor
-  private object NoImplClassJavaContext extends JavaContext {
-    override def isValidName(name: String): Boolean =
-      !ReflectionUtils.scalacShouldntLoadClassfile(name)
-  }
-
-  @deprecated("This method is no longer used be scalap and will be deleted", "2.11.5")
-  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
-    val s = new Settings()
-    s.classpath.value = path
-    new PathResolver(s, context).result
-  }
-
   /** With no arguments, show the interesting values in Environment and Defaults.
    *  If there are arguments, show those in Calculated as if those options had been
    *  given to a scala runner.
@@ -190,28 +173,19 @@ object PathResolver {
     } else {
       val settings = new Settings()
       val rest = settings.processArguments(args.toList, processAll = false)._2
-      val pr = PathResolverFactory.create(settings)
+      val pr = new PathResolver(settings)
       println("COMMAND: 'scala %s'".format(args.mkString(" ")))
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
 
       pr.result match {
-        case cp: JavaClassPath =>
-          cp.show()
-        case cp: AggregateFlatClassPath =>
+        case cp: AggregateClassPath =>
           println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
       }
     }
 }
 
-trait PathResolverResult {
-  def result: ClassFileLookup[AbstractFile]
-
-  def resultAsURLs: Seq[URL] = result.asURLs
-}
-
-abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFile], ResultClassPathType <: BaseClassPathType]
-(settings: Settings, classPathFactory: ClassPathFactory[BaseClassPathType])
-  extends PathResolverResult {
+final class PathResolver(settings: Settings) {
+  private val classPathFactory = new ClassPathFactory(settings)
 
   import PathResolver.{ AsLines, Defaults, ppcp }
 
@@ -254,22 +228,13 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
      * TODO: we should refactor this as a separate -bootstrap option to have a clean implementation, no? */
     def sourcePath          = if (!settings.isScaladoc) cmdLineOrElse("sourcepath", Defaults.scalaSourcePath) else ""
 
-    /** Against my better judgment, giving in to martin here and allowing
-     *  CLASSPATH to be used automatically.  So for the user-specified part
-     *  of the classpath:
-     *
-     *  - If -classpath or -cp is given, it is that
-     *  - Otherwise, if CLASSPATH is set, it is that
-     *  - If neither of those, then "." is used.
-     */
-    def userClassPath =
-      if (!settings.classpath.isDefault) settings.classpath.value
-      else sys.env.getOrElse("CLASSPATH", ".")
+    def userClassPath = settings.classpath.value  // default is specified by settings and can be overridden there
 
     import classPathFactory._
 
     // Assemble the elements!
-    def basis = List[Traversable[BaseClassPathType]](
+    def basis = List[Traversable[ClassPath]](
+      JImageDirectoryLookup.apply(),                // 0. The Java 9 classpath (backed by the jrt:/ virtual system)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -300,7 +265,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
 
   import PathResolver.MkLines
 
-  def result: ResultClassPathType = {
+  def result: ClassPath = {
     val cp = computeResult()
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
@@ -313,37 +278,11 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
     cp
   }
 
+  def resultAsURLs: Seq[URL] = result.asURLs
+
   @deprecated("Use resultAsURLs instead of this one", "2.11.5")
   def asURLs: List[URL] = resultAsURLs.toList
 
-  protected def computeResult(): ResultClassPathType
+  private def computeResult(): ClassPath = AggregateClassPath(containers.toIndexedSeq)
 }
 
-class PathResolver(settings: Settings, context: JavaContext)
-  extends PathResolverBase[ClassPath[AbstractFile], JavaClassPath](settings, context) {
-
-  def this(settings: Settings) =
-    this(settings,
-      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext)
-
-  override protected def computeResult(): JavaClassPath =
-    new JavaClassPath(containers.toIndexedSeq, context)
-}
-
-class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath])
-  extends PathResolverBase[FlatClassPath, AggregateFlatClassPath](settings, flatClassPathFactory) {
-
-  def this(settings: Settings) = this(settings, new FlatClassPathFactory(settings))
-
-  override protected def computeResult(): AggregateFlatClassPath = AggregateFlatClassPath(containers.toIndexedSeq)
-}
-
-object PathResolverFactory {
-
-  def create(settings: Settings): PathResolverResult =
-    settings.YclasspathImpl.value match {
-      case ClassPathRepresentationType.Flat => new FlatClassPathResolver(settings)
-      case ClassPathRepresentationType.Recursive => new PathResolver(settings)
-    }
-}

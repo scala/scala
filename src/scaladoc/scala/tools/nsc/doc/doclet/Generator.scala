@@ -9,7 +9,6 @@ import scala.collection._
   * to configure what data is actually available to the generator:
   *  - A `Universer` provides a `Universe` data structure representing the interfaces and comments of the documented
   *    program.
-  *  - An `Indexer` provides precalculated indexing information about a universe.
   * To implement this class only requires defining method `generateImpl`. */
 abstract class Generator {
 

@@ -8,7 +8,7 @@ class S extends javax.swing.JApplet {
 
 object Test extends SecurityTest {
   val s = new S
-  // lazy val TestKey = sys.SystemProperties.noTraceSupression.key
+  // lazy val TestKey = sys.SystemProperties.noTraceSuppression.key
   // def hitPerm() = new Throwable with scala.util.control.ControlThrowable { }
   // 
   // var throwing = false

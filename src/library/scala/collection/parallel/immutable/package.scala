@@ -20,7 +20,12 @@ package immutable {
     self =>
 
     def apply(idx: Int) = if (0 <= idx && idx < length) elem else throw new IndexOutOfBoundsException("" + idx)
-    override def seq = throw new UnsupportedOperationException
+    override def seq: collection.immutable.Seq[T] = new collection.AbstractSeq[T] with collection.immutable.Seq[T] {
+        override def length: Int = self.length
+        override def apply(idx: Int): T = self.apply(idx)
+        override def iterator: Iterator[T] = Iterator.continually(elem).take(length)
+        override def par: ParSeq[T] = self
+      }
     def update(idx: Int, elem: T) = throw new UnsupportedOperationException
 
     class ParIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends SeqSplitter[T] {

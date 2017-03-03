@@ -1,4 +1,7 @@
-t6214.scala:5: error: missing parameter type
+t6214.scala:5: error: ambiguous reference to overloaded definition,
+both method m in object Test of type (f: Int => Unit)Int
+and  method m in object Test of type (f: String => Unit)Int
+match argument types (Any => Unit)
   	m { s => case class Foo() }
-            ^
+        ^
 one error found

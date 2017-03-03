@@ -76,7 +76,7 @@ object fasta {
 }
 
 
-// We could use instances of Pair or Tuple2 but specific labels
+// We could use instances of Tuple2 but specific labels
 // make the code more readable than index numbers
 
 class Frequency(_code: Byte, _percent: Double){

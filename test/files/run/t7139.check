@@ -1,0 +1,11 @@
+
+scala> import test._
+import test._
+
+scala> A(0)
+res0: test.A = 0
+
+scala> A(0)
+res1: test.A = 0
+
+scala> :quit

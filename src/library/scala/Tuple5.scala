@@ -19,8 +19,7 @@ package scala
  *  @param  _4   Element 4 of this Tuple5
  *  @param  _5   Element 5 of this Tuple5
  */
-@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
-case class Tuple5[+T1, +T2, +T3, +T4, +T5](_1: T1, _2: T2, _3: T3, _4: T4, _5: T5)
+final case class Tuple5[+T1, +T2, +T3, +T4, +T5](_1: T1, _2: T2, _3: T3, _4: T4, _5: T5)
   extends Product5[T1, T2, T3, T4, T5]
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + "," + _4 + "," + _5 + ")"

@@ -1,0 +1,17 @@
+t9629.scala:4: error: pattern must be a value: Option[Int]
+Note: if you intended to match against the class, try `case _: Option[_]`
+      case Option[Int] => // error was issued before
+                 ^
+t9629.scala:5: error: pattern must be a value: Option[Int]
+Note: if you intended to match against the class, try `case _: Option[_]`
+      case Some(Option[Int]) => // error was skipped, patmat issued an internal error
+                      ^
+t9629.scala:8: error: pattern must be a value: Option[Int]
+Note: if you intended to match against the class, try `case _: Option[_]`
+      case (_, Option[Int]) =>
+                     ^
+t9629.scala:9: error: pattern must be a value: Option[Int]
+Note: if you intended to match against the class, try `case _: Option[_]`
+      case x @ (y @ Option[Int]) =>
+                          ^
+four errors found

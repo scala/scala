@@ -14,9 +14,10 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.annotation.switch
+import scala.util.control.NonFatal
 
 /** @author Martin Odersky
  *  @version 1.0
@@ -29,25 +30,22 @@ abstract class UnPickler {
    *  from an array of bytes.
    *  @param bytes      bytearray from which we unpickle
    *  @param offset     offset from which unpickling starts
-   *  @param classRoot  the top-level class which is unpickled, or NoSymbol if inapplicable
-   *  @param moduleRoot the top-level module which is unpickled, or NoSymbol if inapplicable
+   *  @param classRoot  the top-level class which is unpickled
+   *  @param moduleRoot the top-level module which is unpickled
    *  @param filename   filename associated with bytearray, only used for error messages
    */
-  def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
+  def unpickle(bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) {
     try {
+      assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case ex: IOException =>
-        throw ex
-      case ex: MissingRequirementError =>
-        throw ex
-      case ex: Throwable =>
+      case NonFatal(ex) =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }
   }
 
-  class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
+  class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
     protected def debug = settings.debug.value
@@ -218,28 +216,12 @@ abstract class UnPickler {
             }
             adjust(decl)
         }
-        def nestedObjectSymbol: Symbol = {
-          // If the owner is overloaded (i.e. a method), it's not possible to select the
-          // right member, so return NoSymbol. This can only happen when unpickling a tree.
-          // the "case Apply" in readTree() takes care of selecting the correct alternative
-          //  after parsing the arguments.
-          if (owner.isOverloaded)
-            return NoSymbol
-
-          if (tag == EXTMODCLASSref) {
-            val moduleVar = owner.info.decl(nme.moduleVarName(name.toTermName))
-            if (moduleVar.isLazyAccessor)
-              return moduleVar.lazyAccessor.lazyAccessor
-          }
-          NoSymbol
-        }
 
         def moduleAdvice(missing: String): String = {
           val module =
             if      (missing.startsWith("scala.xml"))                Some(("org.scala-lang.modules", "scala-xml"))
             else if (missing.startsWith("scala.util.parsing"))       Some(("org.scala-lang.modules", "scala-parser-combinators"))
             else if (missing.startsWith("scala.swing"))              Some(("org.scala-lang.modules", "scala-swing"))
-            else if (missing.startsWith("scala.util.continuations")) Some(("org.scala-lang.plugins", "scala-continuations-library"))
             else None
 
           (module map { case (group, art) =>
@@ -260,20 +242,18 @@ abstract class UnPickler {
           // symbols are read from outside: for instance when checking the children
           // of a class.  See #1722.
           fromName(nme.expandedName(name.toTermName, owner)) orElse {
-            // (3) Try as a nested object symbol.
-            nestedObjectSymbol orElse {
-              // (4) Call the mirror's "missing" hook.
-              adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
-                // (5) Create a stub symbol to defer hard failure a little longer.
-                val advice = moduleAdvice(s"${owner.fullName}.$name")
-                val missingMessage =
-                  s"""|missing or invalid dependency detected while loading class file '$filename'.
-                      |Could not access ${name.longString} in ${owner.kindString} ${owner.fullName},
-                      |because it (or its dependencies) are missing. Check your build definition for
-                      |missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-                      |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
-                owner.newStubSymbol(name, missingMessage)
-              }
+            // (3) Call the mirror's "missing" hook.
+            adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
+              // (4) Create a stub symbol to defer hard failure a little longer.
+              val advice = moduleAdvice(s"${owner.fullName}.$name")
+              val missingMessage =
+                s"""|missing or invalid dependency detected while loading class file '$filename'.
+                    |Could not access ${name.longString} in ${owner.kindString} ${owner.fullName},
+                    |because it (or its dependencies) are missing. Check your build definition for
+                    |missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+                    |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
+              val stubName = if (tag == EXTref) name else name.toTypeName
+              owner.newStubSymbol(stubName, missingMessage)
             }
           }
         }
@@ -296,10 +276,11 @@ abstract class UnPickler {
         case Right(sym)  => sym -> readNat()
       }
 
-      def isModuleFlag = (flags & MODULE) != 0L
-      def isClassRoot  = (name == classRoot.name) && (owner == classRoot.owner)
-      def isModuleRoot = (name == moduleRoot.name) && (owner == moduleRoot.owner)
-      def pflags       = flags & PickledFlags
+      def isModuleFlag      = (flags & MODULE) != 0L
+      def isClassRoot       = (name == classRoot.name) && (owner == classRoot.owner)
+      def isModuleRoot      = (name == moduleRoot.name) && (owner == moduleRoot.owner)
+      def isModuleClassRoot = (name == moduleRoot.name.toTypeName) && (owner == moduleRoot.owner)
+      def pflags            = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
         /**
@@ -344,22 +325,22 @@ abstract class UnPickler {
       finishSym(tag match {
         case TYPEsym  | ALIASsym =>
           owner.newNonClassSymbol(name.toTypeName, NoPosition, pflags)
+
         case CLASSsym =>
-          val sym = (
-            if (isClassRoot) {
-              if (isModuleFlag) moduleRoot.moduleClass setFlag pflags
-              else classRoot setFlag pflags
-            }
+          val sym = {
+            if (isModuleFlag && isModuleClassRoot) moduleRoot.moduleClass setFlag pflags
+            else if (!isModuleFlag && isClassRoot) classRoot setFlag pflags
             else owner.newClassSymbol(name.toTypeName, NoPosition, pflags)
-          )
+          }
           if (!atEnd)
             sym.typeOfThis = newLazyTypeRef(readNat())
-
           sym
+
         case MODULEsym =>
-          val clazz = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
+          val moduleClass = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
           if (isModuleRoot) moduleRoot setFlag pflags
-          else owner.newLinkedModule(clazz, pflags)
+          else owner.newLinkedModule(moduleClass, pflags)
+
         case VALsym =>
           if (isModuleRoot) { abort(s"VALsym at module root: owner = $owner, name = $name") }
           else owner.newTermSymbol(name.toTermName, NoPosition, pflags)
@@ -396,9 +377,7 @@ abstract class UnPickler {
 
       def readThisType(): Type = {
         val sym = readSymbolRef() match {
-          case stub: StubSymbol if !stub.isClass =>
-            // SI-8502 This allows us to create a stub for a unpickled reference to `missingPackage.Foo`.
-            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage, isPackage = true)
+          case stub: StubSymbol => stub.setFlag(PACKAGE)
           case sym => sym
         }
         ThisType(sym)
@@ -406,7 +385,7 @@ abstract class UnPickler {
 
       // We're stuck with the order types are pickled in, but with judicious use
       // of named parameters we can recapture a declarative flavor in a few cases.
-      // But it's still a rat's nest of adhockery.
+      // But it's still a rat's nest of ad-hockery.
       (tag: @switch) match {
         case NOtpe                     => NoType
         case NOPREFIXtpe               => NoPrefix

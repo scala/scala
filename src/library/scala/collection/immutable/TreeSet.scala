@@ -49,8 +49,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(-5685982407650748405L)
-@deprecatedInheritance("The implementation details of immutable tree sets make inheriting from them unwise.", "2.11.0")
-class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
   if (ordering eq null)

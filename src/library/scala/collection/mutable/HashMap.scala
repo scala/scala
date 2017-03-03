@@ -72,6 +72,17 @@ extends AbstractMap[A, B]
     else Some(e.value)
   }
 
+  override def getOrElseUpdate(key: A, value: => B): B = {
+    val i = index(elemHashCode(key))
+    val e = findEntry0(key, i)
+    if (e ne null) e.value
+    else {
+      val newEntry = createNewEntry(key, value)
+      addEntry0(newEntry, i)
+      newEntry.value
+    }
+  }
+
   override def put(key: A, value: B): Option[B] = {
     val e = findOrAddEntry(key, value)
     if (e eq null) None

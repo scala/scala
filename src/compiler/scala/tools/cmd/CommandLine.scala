@@ -51,7 +51,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
       /* Assumes known options have all been ruled out already. */
       def isUnknown(opt: String) =
         onlyKnownOptions && (opt startsWith "-") && {
-          errorFn("Option '%s' not recognized.".format(opt))
+          errorFn(s"Option '$opt' not recognized.")
           true
         }
 
@@ -61,7 +61,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
         case x :: Nil         =>
           expand(x) foreach (exp => return loop(exp))
           if (isBinaryOption(x) && enforceArity)
-            errorFn("Option '%s' requires argument, found EOF instead.".format(x))
+            errorFn(s"Option '$x' requires argument, found EOF instead.")
 
           if (isUnaryOption(x)) mapForUnary(x)
           else if (isUnknown(x)) Map()

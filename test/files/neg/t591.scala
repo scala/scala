@@ -35,7 +35,8 @@ trait BaseFlow extends BaseList {
     private var  input : Input  = _;
     private var output : Output = _;
 
+    // the error message is a bit confusing, as it points here,
+    // but the symbol it reports is `input`'s actual setter (the one we synthesized)
     def input_=(in : Input) = {}
-
   }
 }

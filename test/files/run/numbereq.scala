@@ -1,6 +1,7 @@
 object Test {
   def mkNumbers(x: Int): List[AnyRef] = {
-    val base = List(
+    //Use explicit AnyRef to workaround known limitation of type inference with F-Bounds
+    val base = List[AnyRef](
       BigDecimal(x),
       BigInt(x),
       new java.lang.Double(x.toDouble),

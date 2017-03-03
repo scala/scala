@@ -18,7 +18,7 @@ package collection
  *  @version 2.8
  *  @since   2.8
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
 trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
       extends MapLike[A, B, This]
       with IterableProxyLike[(A, B), This]

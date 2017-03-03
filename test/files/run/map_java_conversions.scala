@@ -1,20 +1,16 @@
-
-
-
-
+import collection.convert.ImplicitConversionsToScala._
+import collection.JavaConverters._
 
 object Test {
 
   def main(args: Array[String]) {
-    import collection.JavaConversions._
-
     test(new java.util.HashMap[String, String])
     test(new java.util.Properties)
     testConcMap
   }
 
   def testConcMap {
-    import collection.JavaConversions._
+    import collection.convert.ImplicitConversionsToScala._
 
     val concMap = new java.util.concurrent.ConcurrentHashMap[String, String]
 
@@ -50,7 +46,6 @@ object Test {
     for (i <- 0 until 10) m += (("key" + i, "value" + i))
     for ((k, v) <- m) assert(k.startsWith("key"))
   }
-
 }
 
 

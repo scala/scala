@@ -8,3 +8,9 @@ test/files/pos/t9020.scala:2: warning: discarded non-Unit value
       ^
 one warning found
 */
+
+trait DiscardThis {
+  import collection.mutable.ListBuffer
+  val b = ListBuffer.empty[String]
+  def add(s: String): Unit = b += s
+}

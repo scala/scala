@@ -1,1 +1,1 @@
--badCompilerFlag notAFlag -Yopt:badChoice
+-badCompilerFlag notAFlag -opt:badChoice

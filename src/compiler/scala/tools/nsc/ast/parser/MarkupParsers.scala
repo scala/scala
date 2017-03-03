@@ -12,7 +12,7 @@ import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
 import scala.tools.nsc.ast.parser.xml.{MarkupParserCommon, Utility}
-import scala.reflect.internal.Chars.{ SU, LF }
+import scala.reflect.internal.Chars.SU
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
 // from another file - scala.xml.parsing.MarkupParser, it looks like.
@@ -261,7 +261,7 @@ trait MarkupParsers {
       def coalesce(): ArrayBuffer[Tree] = {
         def copy() = {
           val buf = new ArrayBuffer[Tree]
-          var acc = new StringBuilder
+          val acc = new StringBuilder
           var pos: Position = NoPosition
           def emit() = if (acc.nonEmpty) {
             appendText(pos, buf, acc.toString)

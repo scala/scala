@@ -40,9 +40,10 @@ abstract class ConstantFolder {
       if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
       else tree
     } catch {
-      case _: ArithmeticException => tree   // the code will crash at runtime,
-                                           // but that is better than the
-                                           // compiler itself crashing
+      case e: ArithmeticException =>
+        if (settings.warnConstant)
+          warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
+        tree
     }
 
   private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
@@ -75,7 +76,7 @@ abstract class ConstantFolder {
     case nme.AND  => Constant(x.booleanValue & y.booleanValue)
     case nme.EQ   => Constant(x.booleanValue == y.booleanValue)
     case nme.NE   => Constant(x.booleanValue != y.booleanValue)
-    case _ => null
+    case _        => null
   }
   private def foldSubrangeOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.OR  => Constant(x.intValue | y.intValue)
@@ -95,14 +96,20 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.intValue * y.intValue)
     case nme.DIV => Constant(x.intValue / y.intValue)
     case nme.MOD => Constant(x.intValue % y.intValue)
-    case _ => null
+    case _       => null
   }
   private def foldLongOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.OR  => Constant(x.longValue | y.longValue)
     case nme.XOR => Constant(x.longValue ^ y.longValue)
     case nme.AND => Constant(x.longValue & y.longValue)
-    case nme.LSL => Constant(x.longValue << y.longValue)
+    case nme.LSL if x.tag <= IntTag
+                 => Constant(x.intValue << y.longValue)
+    case nme.LSL => Constant(x.longValue <<  y.longValue)
+    case nme.LSR if x.tag <= IntTag
+                 => Constant(x.intValue >>> y.longValue)
     case nme.LSR => Constant(x.longValue >>> y.longValue)
+    case nme.ASR if x.tag <= IntTag
+                 => Constant(x.intValue >> y.longValue)
     case nme.ASR => Constant(x.longValue >> y.longValue)
     case nme.EQ  => Constant(x.longValue == y.longValue)
     case nme.NE  => Constant(x.longValue != y.longValue)
@@ -115,7 +122,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.longValue * y.longValue)
     case nme.DIV => Constant(x.longValue / y.longValue)
     case nme.MOD => Constant(x.longValue % y.longValue)
-    case _ => null
+    case _       => null
   }
   private def foldFloatOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.EQ  => Constant(x.floatValue == y.floatValue)
@@ -129,7 +136,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.floatValue * y.floatValue)
     case nme.DIV => Constant(x.floatValue / y.floatValue)
     case nme.MOD => Constant(x.floatValue % y.floatValue)
-    case _ => null
+    case _       => null
   }
   private def foldDoubleOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.EQ  => Constant(x.doubleValue == y.doubleValue)
@@ -143,7 +150,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.doubleValue * y.doubleValue)
     case nme.DIV => Constant(x.doubleValue / y.doubleValue)
     case nme.MOD => Constant(x.doubleValue % y.doubleValue)
-    case _ => null
+    case _       => null
   }
 
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = {
@@ -152,7 +159,7 @@ abstract class ConstantFolder {
       else if (x.isNumeric && y.isNumeric) math.max(x.tag, y.tag)
       else NoTag
 
-    try optag match {
+    optag match {
       case BooleanTag                               => foldBooleanOp(op, x, y)
       case ByteTag | ShortTag | CharTag | IntTag    => foldSubrangeOp(op, x, y)
       case LongTag                                  => foldLongOp(op, x, y)
@@ -160,9 +167,6 @@ abstract class ConstantFolder {
       case DoubleTag                                => foldDoubleOp(op, x, y)
       case StringTag if op == nme.ADD               => Constant(x.stringValue + y.stringValue)
       case _                                        => null
-    }
-    catch {
-      case ex: ArithmeticException => null
     }
   }
 }

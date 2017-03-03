@@ -2,37 +2,25 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
+import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
 import scala.tools.asm.tree._
-import scala.tools.testing.AssertUtil._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-
-import scala.collection.convert.decorateAsScala._
-import scala.tools.testing.ClearAfterClass
-
-object InlinerIllegalAccessTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
-  def clear(): Unit = { compiler = null }
-}
+import scala.tools.nsc.backend.jvm.AsmUtils._
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class InlinerIllegalAccessTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlinerIllegalAccessTest
+class InlinerIllegalAccessTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:l:none"
 
-  val compiler = InlinerIllegalAccessTest.compiler
-  import compiler.genBCode.bTypes._
+  import compiler._
+  import global.genBCode.bTypes._
 
-  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, ByteCodeRepository.Classfile)
-  def assertEmpty(ins: Option[AbstractInsnNode]) = for (i <- ins)
+  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, None)
+  def assertEmpty(ins: List[AbstractInsnNode]) = for (i <- ins)
     throw new AssertionError(textify(i))
 
   @Test
@@ -40,7 +28,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
     val code =
       """package a {
         |  private class C {            // the Scala compiler makes all classes public
-        |    def f1 = new C                   // NEW a/C
+        |    def f1 = new C                   // NEW a/C, INVOKESPECIAL a/C.<init> ()V
         |    def f2 = new Array[C](0)         // ANEWARRAY a/C
         |    def f3 = new Array[Array[C]](0)  // ANEWARRAY [La/C;
         |  }
@@ -51,23 +39,23 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val allClasses = compileClasses(compiler)(code)
+    val allClasses = compileClasses(code)
     val List(cClass, dClass, eClass) = allClasses
     assert(cClass.name == "a/C" && dClass.name == "a/D" && eClass.name == "b/E", s"${cClass.name}, ${dClass.name}, ${eClass.name}")
     addToRepo(allClasses) // they are not on the compiler's classpath, so we add them manually to the code repo
 
     val methods = cClass.methods.asScala.filter(_.name(0) == 'f').toList
 
-    def check(classNode: ClassNode, test: Option[AbstractInsnNode] => Unit) = {
+    def check(classNode: ClassNode, test: List[AbstractInsnNode] => Unit) = {
       for (m <- methods)
-        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(cClass.name), classBTypeFromParsedClassfile(classNode.name)).map(_._1))
+        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(cClass.name), classBTypeFromParsedClassfile(classNode.name)).right.get)
     }
 
     check(cClass, assertEmpty)
     check(dClass, assertEmpty)
     check(eClass, assertEmpty) // C is public, so accessible in E
 
-    byteCodeRepository.classes.clear()
+    byteCodeRepository.parsedClasses.clear()
     classBTypeFromInternalName.clear()
 
     cClass.access &= ~ACC_PUBLIC // ftw
@@ -77,7 +65,11 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
     check(cClass, assertEmpty)
     check(dClass, assertEmpty) // accessing a private class in the same package is OK
     check(eClass, {
-      case Some(ti: TypeInsnNode) if Set("a/C", "[La/C;")(ti.desc) => ()
+      case (ti: TypeInsnNode) :: is if Set("a/C", "[La/C;")(ti.desc) =>
+        is match {
+          case List(mi: MethodInsnNode) => assert(mi.owner == "a/C" && mi.name == "<init>")
+          case Nil =>
+        }
       // MatchError otherwise
     })
   }
@@ -127,7 +119,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val allClasses = compileClasses(compiler)(code)
+    val allClasses = compileClasses(code)
     val List(cCl, dCl, eCl, fCl, gCl, hCl, iCl) = allClasses
     addToRepo(allClasses)
 
@@ -153,12 +145,12 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
 
     val List(rbD, rcD, rfD, rgD) = dCl.methods.asScala.toList.filter(_.name(0) == 'r').sortBy(_.name)
 
-    def check(method: MethodNode, decl: ClassNode, dest: ClassNode, test: Option[AbstractInsnNode] => Unit): Unit = {
-      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(decl.name), classBTypeFromParsedClassfile(dest.name)).map(_._1))
+    def check(method: MethodNode, decl: ClassNode, dest: ClassNode, test: List[AbstractInsnNode] => Unit): Unit = {
+      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(decl.name), classBTypeFromParsedClassfile(dest.name)).right.get)
     }
 
-    val cOrDOwner = (_: Option[AbstractInsnNode] @unchecked) match {
-      case Some(mi: MethodInsnNode) if Set("a/C", "a/D")(mi.owner) => ()
+    val cOrDOwner = (_: List[AbstractInsnNode] @unchecked) match {
+      case List(mi: MethodInsnNode) if Set("a/C", "a/D")(mi.owner) => ()
       // MatchError otherwise
     }
 

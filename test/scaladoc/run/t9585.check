@@ -1,0 +1,6 @@
+warning: there was one feature warning; re-run with -feature for details
+any2stringadd[Box[T]]
+StringFormat[Box[T]]
+Ensuring[Box[T]]
+ArrowAssoc[Box[T]]
+Done.

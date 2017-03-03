@@ -1,6 +1,5 @@
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.html.page.{Index, ReferenceIndex}
 import scala.tools.partest.ScaladocModelTest
 
 object Test extends ScaladocModelTest {

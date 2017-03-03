@@ -8,8 +8,7 @@
 
 package scala.tools.ant
 
-import java.io.{File, InputStream, FileWriter}
-import org.apache.tools.ant.BuildException
+import java.io.{File, FileWriter}
 import org.apache.tools.ant.types.{Path, Reference}
 
 /** An Ant task that generates a shell or batch script to execute a

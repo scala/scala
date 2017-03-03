@@ -1,8 +1,0 @@
-.DS_Store
-*.complete
-locker
-deps
-scala-continuations-*.jar
-scala-parser-combinators*.jar
-scala-swing*.jar
-scala-xml*.jar

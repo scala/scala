@@ -3,5 +3,5 @@ make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class jann(x: Int, y: Array[Int]) extends ClassfileAnnotation
       ^
-new sann(1, immutable.this.List.apply[Int](1, 2))
+new sann(1, scala.collection.immutable.List.apply[Int](1, 2))
 new jann(y = Array(1, 2), x = 2)

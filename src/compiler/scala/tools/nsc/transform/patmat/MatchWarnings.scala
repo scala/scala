@@ -6,10 +6,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.language.postfixOps
-import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
-
 trait MatchWarnings {
   self: PatternMatching =>
 

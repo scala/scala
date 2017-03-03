@@ -6,10 +6,11 @@
 package scala.tools.nsc
 package interpreter
 
-import NamedParam._
 import scala.language.implicitConversions
+
+import NamedParam._
 import scala.reflect.runtime.{universe => ru}
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{ClassTag}
 import scala.tools.nsc.typechecker.{ TypeStrings }
 
 trait NamedParamCreator {

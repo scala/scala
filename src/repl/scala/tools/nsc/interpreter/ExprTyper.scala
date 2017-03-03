@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.ast.parser.Tokens.EOF
-
 trait ExprTyper {
   val repl: IMain
 

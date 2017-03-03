@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -434,14 +434,15 @@ final abstract class Int private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Int] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Int] = ???
 }
 
 object Int extends AnyValCompanion {
-  /** The smallest value representable as a Int. */
+  /** The smallest value representable as an Int. */
   final val MinValue = java.lang.Integer.MIN_VALUE
 
-  /** The largest value representable as a Int. */
+  /** The largest value representable as an Int. */
   final val MaxValue = java.lang.Integer.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.
@@ -451,7 +452,7 @@ object Int extends AnyValCompanion {
    *  @param  x   the Int to be boxed
    *  @return     a java.lang.Integer offering `x` as its underlying value.
    */
-  def box(x: Int): java.lang.Integer = java.lang.Integer.valueOf(x)
+  def box(x: Int): java.lang.Integer = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -463,7 +464,7 @@ object Int extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Integer
    *  @return     the Int resulting from calling intValue() on `x`
    */
-  def unbox(x: java.lang.Object): Int = x.asInstanceOf[java.lang.Integer].intValue()
+  def unbox(x: java.lang.Object): Int = ???
 
   /** The String representation of the scala.Int companion object. */
   override def toString = "object scala.Int"

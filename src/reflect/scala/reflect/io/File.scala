@@ -6,20 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package reflect
 package io
 
 import java.io.{
-  FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable,
-  File => JFile
+  FileInputStream, FileOutputStream, BufferedWriter, OutputStreamWriter,
+  BufferedOutputStream, IOException, PrintWriter, File => JFile
 }
 
-import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
-import scala.language.{reflectiveCalls, implicitConversions}
 /**
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */

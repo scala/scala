@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder, SetBuilder }
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 import parallel.ParSet
 
 /** A template trait for sets.
@@ -77,11 +77,20 @@ self =>
 
   protected[this] override def parCombiner = ParSet.newCombiner[A]
 
-  /* Overridden for efficiency. */
-  override def toSeq: Seq[A] = toBuffer[A]
+  // Default collection type appropriate for immutable collections; mutable collections override this
+  override def toSeq: Seq[A] = {
+    if (isEmpty) Vector.empty[A]
+    else {
+      val vb = Vector.newBuilder[A]
+      foreach(vb += _)
+      vb.result
+    }
+  }
+
   override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
     val result = new mutable.ArrayBuffer[A1](size)
-    copyToBuffer(result)
+    // Faster to let the map iterate itself than to defer through copyToBuffer
+    foreach(result += _)
     result
   }
 
@@ -204,9 +213,9 @@ self =>
     }
   }
 
-  /** An Iterator include all subsets containing exactly len elements.
+  /** An Iterator including all subsets containing exactly len elements.
    *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
-   *  ListSet(1,2,3).subsets => {1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
+   *  ListSet(1,2,3).subsets => {{1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
    *
    *  @author Eastsun
    *  @date 2010.12.6

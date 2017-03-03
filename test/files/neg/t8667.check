@@ -1,0 +1,91 @@
+t8667.scala:6: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+Note that 'c' is not a parameter name of the invoked method.
+  def c2 = new C(a = 42, b = 17, c = 5)
+                                   ^
+t8667.scala:7: error: unknown parameter name: c
+  def c3 = new C(b = 42, a = 17, c = 5)
+                                   ^
+t8667.scala:7: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+  def c3 = new C(b = 42, a = 17, c = 5)
+           ^
+t8667.scala:8: error: positional after named argument.
+  def c4 = new C(b = 42, a = 17, 5)
+                                 ^
+t8667.scala:8: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+  def c4 = new C(b = 42, a = 17, 5)
+           ^
+t8667.scala:9: error: not found: value c
+  def c5 = new C(a = 42, c = 17)
+                         ^
+t8667.scala:10: error: parameter 'b' is already specified at parameter position 2
+Note that 'c' is not a parameter name of the invoked method.
+  def c6 = new C(a = 42, c = 17, b = 5)
+                                   ^
+t8667.scala:10: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+Note that 'c' is not a parameter name of the invoked method.
+  def c6 = new C(a = 42, c = 17, b = 5)
+           ^
+t8667.scala:11: error: parameter 'a' is already specified at parameter position 1
+Note that 'c' is not a parameter name of the invoked method.
+  def c7 = new C(c = 42, a = 17, b = 5)
+                           ^
+t8667.scala:11: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+Note that 'c' is not a parameter name of the invoked method.
+  def c7 = new C(c = 42, a = 17, b = 5)
+           ^
+t8667.scala:12: error: parameter 'b' is already specified at parameter position 2
+  def c8 = new C(42, 17, b = 5)
+                           ^
+t8667.scala:12: error: too many arguments (3) for constructor C: (a: Int, b: Int)C
+  def c8 = new C(42, 17, b = 5)
+           ^
+t8667.scala:13: error: parameter 'b' is already specified at parameter position 2
+Note that 'c' is not a parameter name of the invoked method.
+  def c9 = new C(a = 42, c = 17, d = 3, b = 5)
+                                          ^
+t8667.scala:13: error: too many arguments (4) for constructor C: (a: Int, b: Int)C
+Note that 'c', 'd' are not parameter names of the invoked method.
+  def c9 = new C(a = 42, c = 17, d = 3, b = 5)
+                                   ^
+t8667.scala:14: error: too many arguments (4) for constructor C: (a: Int, b: Int)C
+Note that 'd', 'c' are not parameter names of the invoked method.
+  def c0 = new C(42, 17, d = 3, c = 5)
+                           ^
+t8667.scala:25: error: no arguments allowed for nullary method f0: ()Int
+    f0(1)
+       ^
+t8667.scala:26: error: too many arguments (2) for method f1: (i: Int)Int
+    f1(1, 2)
+          ^
+t8667.scala:27: error: too many arguments (3) for method f1: (i: Int)Int
+    f1(1, 2, 3)
+          ^
+t8667.scala:28: error: 3 more arguments than can be applied to method f1: (i: Int)Int
+    f1(1, 2, 3, 4)
+          ^
+t8667.scala:29: error: 3 more arguments than can be applied to method f1: (i: Int)Int
+Note that 'j' is not a parameter name of the invoked method.
+    f1(1, j = 2, 3, 4)
+            ^
+t8667.scala:30: error: 3 more arguments than can be applied to method f1: (i: Int)Int
+Note that 'j', 'k' are not parameter names of the invoked method.
+    f1(1, j = 2, k = 3, 4)
+            ^
+t8667.scala:31: error: parameter 'i' is already specified at parameter position 1
+Note that 'k' is not a parameter name of the invoked method.
+    f2(k = 1, i = 2, j = 3)
+                ^
+t8667.scala:31: error: too many arguments (3) for method f2: (i: Int, j: Int)Int
+Note that 'k' is not a parameter name of the invoked method.
+    f2(k = 1, i = 2, j = 3)
+      ^
+t8667.scala:32: error: one more argument than can be applied to method f6: (i: Int, j: Int, k: Int, l: Int, m: Int, n: Int)Int
+    f6(1, 2, 3, 4, 5, 6, 7)
+                         ^
+t8667.scala:33: error: 2 more arguments than can be applied to method f6: (i: Int, j: Int, k: Int, l: Int, m: Int, n: Int)Int
+    f6(1, 2, 3, 4, 5, 6, 7, 8)
+                         ^
+t8667.scala:34: error: 15 arguments but expected 12 for method f12: (i: Int, j: Int, k: Int, l: Int, m: Int, n: Int, o: Int, p: Int, q: Int, r: Int, s: Int, t: Int)Int
+    f12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+                                               ^
+26 errors found

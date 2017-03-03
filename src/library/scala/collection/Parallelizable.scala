@@ -12,7 +12,7 @@ package collection
 import parallel.Combiner
 
 /** This trait describes collections which can be turned into parallel collections
- *  by invoking the method `par`. Parallelizable collections may be parametrized with
+ *  by invoking the method `par`. Parallelizable collections may be parameterized with
  *  a target type different than their own.
  *
  *  @tparam A            the type of the elements in the collection

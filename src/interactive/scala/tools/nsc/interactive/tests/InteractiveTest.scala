@@ -78,9 +78,15 @@ abstract class InteractiveTest
   }
 
   protected def execute(): Unit = {
-    loadSources()
-    runDefaultTests()
+    util.stringFromStream { ostream =>
+      Console.withOut(ostream) {
+        loadSources()
+        runDefaultTests()
+      }
+    }.lines.map(normalize).foreach(println)
   }
+
+  protected def normalize(s: String) = s
 
   /** Load all sources before executing the test. */
   protected def loadSources() {

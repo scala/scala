@@ -197,7 +197,7 @@ extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetC
         while (i < chunksz) {
           val v = chunkarr(i).asInstanceOf[T]
           val hc = trie.computeHash(v)
-          trie = trie.updated0(v, hc, rootbits)
+          trie = trie.updated0(v, hc, rootbits)  // internal API, private[collection]
           i += 1
         }
         i = 0

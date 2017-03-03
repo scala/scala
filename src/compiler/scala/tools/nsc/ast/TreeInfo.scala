@@ -97,4 +97,12 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     case DocDef(_, definition) => isPureDef(definition)
     case _ => super.isPureDef(tree)
   }
+
+  override def firstConstructor(stats: List[Tree]): Tree = {
+    def unwrap(stat: Tree): Tree = stat match {
+      case DocDef(_, defn) => unwrap(defn)
+      case tree => tree
+    }
+    super.firstConstructor(stats map unwrap)
+  }
 }

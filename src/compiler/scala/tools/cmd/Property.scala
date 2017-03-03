@@ -9,6 +9,7 @@ package cmd
 import nsc.io._
 import java.util.Properties
 import java.io.FileInputStream
+import scala.sys.SystemProperties
 
 /** Contains logic for translating a property key/value pair into
  *  equivalent command line arguments.  The default settings will
@@ -58,14 +59,14 @@ trait Property extends Reference {
     returning(new Properties)(_ load new FileInputStream(file.path))
 
   def systemPropertiesToOptions: List[String] =
-    propertiesToOptions(System.getProperties)
+    propertiesToOptions(new SystemProperties().toList)
 
   def propertiesToOptions(file: File): List[String] =
     propertiesToOptions(loadProperties(file))
 
   def propertiesToOptions(props: java.util.Properties): List[String] = {
-    import scala.collection.JavaConversions._
-    propertiesToOptions(props.toList)
+    import scala.collection.JavaConverters._
+    propertiesToOptions(props.asScala.toList)
   }
   def propertiesToOptions(props: List[(String, String)]) = props flatMap propMapper
 }

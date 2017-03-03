@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder }
-import scala.annotation.{tailrec, migration, bridge}
+import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
 import scala.language.higherKinds
@@ -242,7 +242,7 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
-  private def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
+  private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
     val b = newBuilder
     for (x <- this)
       if (p(x) != isFlipped) b += x
@@ -605,13 +605,69 @@ trait TraversableLike[+A, +Repr] extends Any
    *           applied to this $coll. By default the string prefix is the
    *           simple name of the collection class $coll.
    */
-  def stringPrefix : String = {
-    var string = repr.getClass.getName
-    val idx1 = string.lastIndexOf('.' : Int)
-    if (idx1 != -1) string = string.substring(idx1 + 1)
-    val idx2 = string.indexOf('$')
-    if (idx2 != -1) string = string.substring(0, idx2)
-    string
+  def stringPrefix: String = {
+    /* This method is written in a style that avoids calling `String.split()`
+     * as well as methods of java.lang.Character that require the Unicode
+     * database information. This is mostly important for Scala.js, so that
+     * using the collection library does automatically bring java.util.regex.*
+     * and the Unicode database in the generated code.
+     *
+     * This algorithm has the additional benefit that it won't allocate
+     * anything except the result String in the common case, where the class
+     * is not an inner class (i.e., when the result contains no '.').
+     */
+    val fqn = repr.getClass.getName
+    var pos: Int = fqn.length - 1
+
+    // Skip trailing $'s
+    while (pos != -1 && fqn.charAt(pos) == '$') {
+      pos -= 1
+    }
+    if (pos == -1 || fqn.charAt(pos) == '.') {
+      return ""
+    }
+
+    var result: String = ""
+    while (true) {
+      // Invariant: if we enter the loop, there is a non-empty part
+
+      // Look for the beginning of the part, remembering where was the last non-digit
+      val partEnd = pos + 1
+      while (pos != -1 && fqn.charAt(pos) <= '9' && fqn.charAt(pos) >= '0') {
+        pos -= 1
+      }
+      val lastNonDigit = pos
+      while (pos != -1 && fqn.charAt(pos) != '$' && fqn.charAt(pos) != '.') {
+        pos -= 1
+      }
+      val partStart = pos + 1
+
+      // A non-last part which contains only digits marks a method-local part -> drop the prefix
+      if (pos == lastNonDigit && partEnd != fqn.length) {
+        return result
+      }
+
+      // Skip to the next part, and determine whether we are the end
+      while (pos != -1 && fqn.charAt(pos) == '$') {
+        pos -= 1
+      }
+      val atEnd = pos == -1 || fqn.charAt(pos) == '.'
+
+      // Handle the actual content of the part (we ignore parts that are likely synthetic)
+      def isPartLikelySynthetic = {
+        val firstChar = fqn.charAt(partStart)
+        (firstChar > 'Z' && firstChar < 0x7f) || (firstChar < 'A')
+      }
+      if (atEnd || !isPartLikelySynthetic) {
+        val part = fqn.substring(partStart, partEnd)
+        result = if (result.isEmpty) part else part + '.' + result
+        if (atEnd)
+          return result
+      }
+    }
+
+    // dead code
+    result
   }
 
   /** Creates a non-strict view of this $coll.

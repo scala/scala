@@ -14,7 +14,7 @@ object Product2 {
     Some(x)
 }
 
-/** Product2 is a cartesian product of 2 components.
+/** Product2 is a Cartesian product of 2 components.
  *  @since 2.3
  */
 trait Product2[@specialized(Int, Long, Double) +T1, @specialized(Int, Long, Double) +T2] extends Any with Product {

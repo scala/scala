@@ -1,1 +1,1 @@
--optimize -Ydelambdafy:inline -Ybackend:GenASM
+-Ydelambdafy:method -opt:l:classpath

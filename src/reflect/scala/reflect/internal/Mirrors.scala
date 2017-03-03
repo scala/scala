@@ -91,7 +91,6 @@ trait Mirrors extends api.Mirrors {
 
     private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
       var result = sym
-      while (result.isAliasType) result = result.info.typeSymbol
       result match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
@@ -175,12 +174,12 @@ trait Mirrors extends api.Mirrors {
     def getPackageIfDefined(fullname: TermName): Symbol =
       wrapMissing(getPackage(fullname))
 
-    @deprecated("Use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
+    @deprecated("use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
     def getPackageObject(fullname: String): ModuleSymbol = getPackageObject(newTermName(fullname))
     def getPackageObject(fullname: TermName): ModuleSymbol =
-      (getPackage(fullname).info member nme.PACKAGE) match {
+      (getPackage(fullname).packageObject) match {
         case x: ModuleSymbol => x
         case _               => MissingRequirementError.notFound("package object " + fullname)
       }
@@ -190,15 +189,6 @@ trait Mirrors extends api.Mirrors {
 
     def getPackageObjectIfDefined(fullname: TermName): Symbol =
       wrapMissing(getPackageObject(fullname))
-
-    final def getPackageObjectWithMember(pre: Type, sym: Symbol): Symbol = {
-      // The owner of a symbol which requires package qualification may be the
-      // package object iself, but it also could be any superclass of the package
-      // object.  In the latter case, we must go through the qualifier's info
-      // to obtain the right symbol.
-      if (sym.owner.isModuleClass) sym.owner.sourceModule // fast path, if the member is owned by a module class, that must be linked to the package object
-      else pre member nme.PACKAGE                         // otherwise we have to findMember
-    }
 
     override def staticPackage(fullname: String): ModuleSymbol =
       try ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
@@ -220,27 +210,6 @@ trait Mirrors extends api.Mirrors {
    @inline final def wrapMissing(body: => Symbol): Symbol =
       try body
       catch { case _: MissingRequirementError => NoSymbol }
-
-    /** getModule2/getClass2 aren't needed at present but may be again,
-     *  so for now they're mothballed.
-     */
-    // def getModule2(name1: Name, name2: Name) = {
-    //   try getModuleOrClass(name1.toTermName)
-    //   catch { case ex1: FatalError =>
-    //     try getModuleOrClass(name2.toTermName)
-    //     catch { case ex2: FatalError => throw ex1 }
-    //   }
-    // }
-    // def getClass2(name1: Name, name2: Name) = {
-    //   try {
-    //     val result = getModuleOrClass(name1.toTypeName)
-    //     if (result.isAliasType) getClass(name2) else result
-    //   }
-    //   catch { case ex1: FatalError =>
-    //     try getModuleOrClass(name2.toTypeName)
-    //     catch { case ex2: FatalError => throw ex1 }
-    //   }
-    // }
 
     def init() {
       if (initialized) return
@@ -282,7 +251,7 @@ trait Mirrors extends api.Mirrors {
     // is very beneficial for a handful of bootstrap symbols to have
     // first class identities
     sealed trait WellKnownSymbol extends Symbol {
-      this initFlags (TopLevelCreationFlags | STATIC)
+      this initFlags (PackageFlags | STATIC)
     }
     // Features common to RootClass and RootPackage, the roots of all
     // type and term symbols respectively.

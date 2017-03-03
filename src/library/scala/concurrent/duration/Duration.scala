@@ -9,8 +9,6 @@
 package scala.concurrent.duration
 
 import java.lang.{ Double => JDouble, Long => JLong }
-import scala.language.implicitConversions
-import scala.language.postfixOps
 
 object Duration {
 
@@ -49,7 +47,7 @@ object Duration {
    * whitespace is allowed before, between and after the parts. Infinities are
    * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
    *
-   * @throws NumberFormatException if format is not parseable
+   * @throws NumberFormatException if format is not parsable
    */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
@@ -57,7 +55,7 @@ object Duration {
       case "Inf" | "PlusInf" | "+Inf" => Inf
       case "MinusInf" | "-Inf"        => MinusInf
       case _                          =>
-        val unitName = s1.reverse takeWhile (_.isLetter) reverse;
+        val unitName = s1.reverse.takeWhile(_.isLetter).reverse;
         timeUnit get unitName match {
           case Some(unit) =>
             val valueStr = s1 dropRight unitName.length
@@ -87,11 +85,11 @@ object Duration {
 
   // TimeUnit => standard label
   protected[duration] val timeUnitName: Map[TimeUnit, String] =
-    timeUnitLabels.toMap mapValues (s => words(s).last) toMap
+    timeUnitLabels.toMap.mapValues(s => words(s).last).toMap
 
   // Label => TimeUnit
   protected[duration] val timeUnit: Map[String, TimeUnit] =
-    timeUnitLabels flatMap { case (unit, names) => expandLabels(names) map (_ -> unit) } toMap
+    timeUnitLabels.flatMap{ case (unit, names) => expandLabels(names) map (_ -> unit) }.toMap
 
   /**
    * Extract length and time unit out of a string, where the format must match the description for [[Duration$.apply(s:String)* apply(String)]].
@@ -122,7 +120,7 @@ object Duration {
   def fromNanos(nanos: Double): Duration = {
     if (nanos.isInfinite)
       if (nanos > 0) Inf else MinusInf
-    else if (nanos.isNaN)
+    else if (JDouble.isNaN(nanos))
       Undefined
     else if (nanos > Long.MaxValue || nanos < Long.MinValue)
       throw new IllegalArgumentException("trying to construct too large duration with " + nanos + "ns")
@@ -198,11 +196,11 @@ object Duration {
     }
 
     def *(factor: Double): Duration =
-      if (factor == 0d || factor.isNaN) Undefined
+      if (factor == 0d || JDouble.isNaN(factor)) Undefined
       else if (factor < 0d) -this
       else this
     def /(divisor: Double): Duration =
-      if (divisor.isNaN || divisor.isInfinite) Undefined
+      if (JDouble.isNaN(divisor) || divisor.isInfinite) Undefined
       else if ((divisor compare 0d) < 0) -this
       else this
     def /(divisor: Duration): Double = divisor match {
@@ -287,7 +285,7 @@ object Duration {
    * whitespace is allowed before, between and after the parts. Infinities are
    * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
    *
-   * @throws NumberFormatException if format is not parseable
+   * @throws NumberFormatException if format is not parsable
    */
   def create(s: String): Duration                          = apply(s)
 
@@ -629,13 +627,13 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
 
   def *(factor: Double) =
     if (!factor.isInfinite) fromNanos(toNanos * factor)
-    else if (factor.isNaN) Undefined
+    else if (JDouble.isNaN(factor)) Undefined
     else if ((factor > 0) ^ (this < Zero)) Inf
     else MinusInf
 
   def /(divisor: Double) =
     if (!divisor.isInfinite) fromNanos(toNanos / divisor)
-    else if (divisor.isNaN) Undefined
+    else if (JDouble.isNaN(divisor)) Undefined
     else Zero
 
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, SI-6331
@@ -708,7 +706,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
 
   final def isFinite() = true
 
-  final def toCoarsest: Duration = {
+  final override def toCoarsest: FiniteDuration = {
     def loop(length: Long, unit: TimeUnit): FiniteDuration = {
       def coarserOrThis(coarser: TimeUnit, divider: Int) =
         if (length % divider == 0) loop(length / divider, coarser)

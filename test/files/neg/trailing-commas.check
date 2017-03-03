@@ -1,0 +1,130 @@
+trailing-commas.scala:10: error: illegal start of simple expression
+trait ArgumentExprs1 { f(23, "bar", )(Ev0, Ev1) }
+                                    ^
+trailing-commas.scala:10: error: ')' expected but '}' found.
+trait ArgumentExprs1 { f(23, "bar", )(Ev0, Ev1) }
+                                                ^
+trailing-commas.scala:11: error: illegal start of simple expression
+trait ArgumentExprs2 { f(23, "bar")(Ev0, Ev1, ) }
+                                              ^
+trailing-commas.scala:11: error: ')' expected but '}' found.
+trait ArgumentExprs2 { f(23, "bar")(Ev0, Ev1, ) }
+                                                ^
+trailing-commas.scala:12: error: illegal start of simple expression
+trait ArgumentExprs3 { new C(23, "bar", )(Ev0, Ev1) }
+                                        ^
+trailing-commas.scala:12: error: ')' expected but '}' found.
+trait ArgumentExprs3 { new C(23, "bar", )(Ev0, Ev1) }
+                                                    ^
+trailing-commas.scala:13: error: illegal start of simple expression
+trait ArgumentExprs4 { new C(23, "bar")(Ev0, Ev1, ) }
+                                                  ^
+trailing-commas.scala:13: error: ')' expected but '}' found.
+trait ArgumentExprs4 { new C(23, "bar")(Ev0, Ev1, ) }
+                                                    ^
+trailing-commas.scala:15: error: identifier expected but ')' found.
+trait Params1 { def f(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1, ) = 1 }
+                                             ^
+trailing-commas.scala:15: error: ':' expected but '}' found.
+trait Params1 { def f(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1, ) = 1 }
+                                                                                  ^
+trailing-commas.scala:16: error: identifier expected but ')' found.
+trait Params2 { def f(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1, ) = 1 }
+                                             ^
+trailing-commas.scala:16: error: ':' expected but '}' found.
+trait Params2 { def f(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1, ) = 1 }
+                                                                                  ^
+trailing-commas.scala:17: error: identifier expected but ')' found.
+trait ClassParams1 { final class C(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1) }
+                                                          ^
+trailing-commas.scala:17: error: ':' expected but '}' found.
+trait ClassParams1 { final class C(foo: Int, bar: String, )(implicit ev0: Ev0, ev1: Ev1) }
+                                                                                         ^
+trailing-commas.scala:18: error: identifier expected but ')' found.
+trait ClassParams2 { final class C(foo: Int, bar: String)(implicit ev0: Ev0, ev1: Ev1, ) }
+                                                                                       ^
+trailing-commas.scala:18: error: ':' expected but '}' found.
+trait ClassParams2 { final class C(foo: Int, bar: String)(implicit ev0: Ev0, ev1: Ev1, ) }
+                                                                                         ^
+trailing-commas.scala:20: error: illegal start of simple expression
+trait SimpleExpr { (23, "bar", ) }
+                               ^
+trailing-commas.scala:20: error: ')' expected but '}' found.
+trait SimpleExpr { (23, "bar", ) }
+                                 ^
+trailing-commas.scala:22: error: identifier expected but ']' found.
+trait TypeArgs { def f: C[Int, String, ] }
+                                       ^
+trailing-commas.scala:22: error: ']' expected but '}' found.
+trait TypeArgs { def f: C[Int, String, ] }
+                                         ^
+trailing-commas.scala:23: error: identifier expected but ']' found.
+trait TypeParamClause { type C[A, B, ] }
+                                     ^
+trailing-commas.scala:23: error: ']' expected but '}' found.
+trait TypeParamClause { type C[A, B, ] }
+                                       ^
+trailing-commas.scala:24: error: identifier expected but ']' found.
+trait FunTypeParamClause { def f[A, B, ] }
+                                       ^
+trailing-commas.scala:24: error: ']' expected but '}' found.
+trait FunTypeParamClause { def f[A, B, ] }
+                                         ^
+trailing-commas.scala:26: error: identifier expected but ')' found.
+trait SimpleType { def f: (Int, String, ) }
+                                        ^
+trailing-commas.scala:26: error: ')' expected but '}' found.
+trait SimpleType { def f: (Int, String, ) }
+                                          ^
+trailing-commas.scala:27: error: identifier expected but ')' found.
+trait FunctionArgTypes { def f: (Int, String, ) => Boolean }
+                                              ^
+trailing-commas.scala:27: error: ')' expected but '}' found.
+trait FunctionArgTypes { def f: (Int, String, ) => Boolean }
+                                                           ^
+trailing-commas.scala:29: error: illegal start of simple pattern
+trait SimplePattern { val (foo, bar, ) = null: Any }
+                                     ^
+trailing-commas.scala:31: error: identifier expected but '}' found.
+trait ImportSelectors { import foo.{ Ev0, Ev1, } }
+                                               ^
+trailing-commas.scala:33: error: identifier expected but '}' found.
+trait Import { import foo.Ev0, foo.Ev1, }
+                                        ^
+trailing-commas.scala:35: error: illegal start of simple pattern
+trait ValDcl { val foo, bar, = 23 }
+                             ^
+trailing-commas.scala:35: error: '=' expected but '}' found.
+trait ValDcl { val foo, bar, = 23 }
+                                  ^
+trailing-commas.scala:36: error: illegal start of simple pattern
+trait VarDcl { var foo, bar, = 23 }
+                             ^
+trailing-commas.scala:36: error: '=' expected but '}' found.
+trait VarDcl { var foo, bar, = 23 }
+                                  ^
+trailing-commas.scala:37: error: illegal start of simple pattern
+trait VarDef { var foo, bar, = _ }
+                             ^
+trailing-commas.scala:37: error: '=' expected but '}' found.
+trait VarDef { var foo, bar, = _ }
+                                 ^
+trailing-commas.scala:38: error: illegal start of simple pattern
+trait PatDef { val Foo(foo), Bar(bar), = bippy }
+                                       ^
+trailing-commas.scala:38: error: '=' expected but '}' found.
+trait PatDef { val Foo(foo), Bar(bar), = bippy }
+                                               ^
+trailing-commas.scala:45: error: illegal start of simple expression
+trait SimpleExpr2 { (23, ) }
+                         ^
+trailing-commas.scala:45: error: ')' expected but '}' found.
+trait SimpleExpr2 { (23, ) }
+                           ^
+trailing-commas.scala:48: error: identifier expected but ')' found.
+trait SimpleType2 { def f: (Int, ) }
+                                 ^
+trailing-commas.scala:48: error: ')' expected but '}' found.
+trait SimpleType2 { def f: (Int, ) }
+                                   ^
+43 errors found

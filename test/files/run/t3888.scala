@@ -1,3 +1,4 @@
+case class Tuple2[+T1, +T2](_1: T1, _2: T2) extends Product2[T1, T2]
 
 // in a match, which notion of equals prevails?
 // extending Tuple doesn't seem to be at issue here.
@@ -7,13 +8,13 @@ object Test {
   private[this] val T2 = T1
 
   def m1 =
-    (1, 2) match {
+    Tuple2(1, 2) match {
       case T1 => true
       case _ => false
     }
 
   def m2 =
-    (1, 2) match {
+    Tuple2(1, 2) match {
       case T2 => true
       case _ => false
     }

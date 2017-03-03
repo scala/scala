@@ -82,7 +82,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
   }
 
   private def initialUnitBody(unit: CompilationUnit): Tree = {
-    if (unit.isJava) new JavaUnitParser(unit).parse()
+    if (unit.isJava) newJavaUnitParser(unit).parse()
     else if (currentRun.parsing.incompleteHandled) newUnitParser(unit).parse()
     else newUnitParser(unit).smartParse()
   }

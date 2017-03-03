@@ -62,9 +62,15 @@ object Entity {
     case x: MemberEntity  => x.deprecation.isDefined
     case _                => false
   }
+
+  private def isObject(x: Entity) = x match {
+    case x: TemplateEntity  => x.isObject
+    case _                  => false
+  }
+
   /** Ordering deprecated things last. */
   implicit lazy val EntityOrdering: Ordering[Entity] =
-    Ordering[(Boolean, String)] on (x => (isDeprecated(x), x.name))
+    Ordering[(Boolean, String, Boolean)] on (x => (isDeprecated(x), x.qualifiedName, isObject(x)))
 }
 
 /** A template, which is either a class, trait, object or package. Depending on whether documentation is available
@@ -250,11 +256,11 @@ trait DocTemplateEntity extends MemberTemplateEntity {
     * only if the `docsourceurl` setting has been set. */
   def sourceUrl: Option[java.net.URL]
 
-  /** All class, trait and object templates which are part of this template's linearization, in lineratization order.
+  /** All class, trait and object templates which are part of this template's linearization, in linearization order.
     * This template's linearization contains all of its direct and indirect super-classes and super-traits. */
   def linearizationTemplates: List[TemplateEntity]
 
-  /** All instantiated types which are part of this template's linearization, in lineratization order.
+  /** All instantiated types which are part of this template's linearization, in linearization order.
     * This template's linearization contains all of its direct and indirect super-types. */
   def linearizationTypes: List[TypeEntity]
 
@@ -449,7 +455,7 @@ trait ValueParam extends ParameterEntity {
   /** The type of this value parameter. */
   def resultType: TypeEntity
 
-  /** The devault value of this value parameter, if it has been defined. */
+  /** The default value of this value parameter, if it has been defined. */
   def defaultValue: Option[TreeEntity]
 
   /** Whether this value parameter is implicit. */
@@ -505,9 +511,9 @@ trait ImplicitConversion {
 
 /** Shadowing captures the information that the member is shadowed by some other members
  *  There are two cases of implicitly added member shadowing:
- *  1) shadowing from a original class member (the class already has that member)
+ *  1) shadowing from an original class member (the class already has that member)
  *     in this case, it won't be possible to call the member directly, the type checker will fail attempting to adapt
- *     the call arguments (or if they fit it will call the original class' method)
+ *     the call arguments (or if they fit it will call the original class method)
  *  2) shadowing from other possible implicit conversions ()
  *     this will result in an ambiguous implicit converion error
  */

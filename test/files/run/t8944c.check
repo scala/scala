@@ -1,0 +1,5 @@
+private java.lang.Object Foo.ant()
+public java.lang.Object Foo.ant$access$0()
+private scala.collection.Seq Foo.cat()
+public scala.collection.Seq Foo.cat$access$2()
+public java.lang.Object Foo.elk()

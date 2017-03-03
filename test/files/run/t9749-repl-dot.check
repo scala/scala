@@ -1,0 +1,8 @@
+
+scala> "3"
+res0: String = 3
+
+scala>   .toInt
+res1: Int = 3
+
+scala> :quit

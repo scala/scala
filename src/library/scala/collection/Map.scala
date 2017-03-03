@@ -12,7 +12,7 @@ package collection
 import generic._
 
 /**
- *  A map from keys of type `A` to values of type `B`.
+ *  A map from keys of type `K` to values of type `V`.
  *
  *  $mapNote
  *
@@ -22,15 +22,15 @@ import generic._
  *  '''Note:''' If your additions and mutations return the same kind of map as the map
  *        you are defining, you should inherit from `MapLike` as well.
  *
- *  @tparam A     the type of the keys in this map.
- *  @tparam B     the type of the values associated with keys.
+ *  @tparam K     the type of the keys in this map.
+ *  @tparam V     the type of the values associated with keys.
  *
  *  @since 1.0
  */
-trait Map[A, +B] extends Iterable[(A, B)] with GenMap[A, B] with MapLike[A, B, Map[A, B]] {
-  def empty: Map[A, B] = Map.empty
+trait Map[K, +V] extends Iterable[(K, V)] with GenMap[K, V] with MapLike[K, V, Map[K, V]] {
+  def empty: Map[K, V] = Map.empty
 
-  override def seq: Map[A, B] = this
+  override def seq: Map[K, V] = this
 }
 
 /** $factoryInfo
@@ -38,22 +38,22 @@ trait Map[A, +B] extends Iterable[(A, B)] with GenMap[A, B] with MapLike[A, B, M
  *  @define coll map
  */
 object Map extends MapFactory[Map] {
-  def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
+  def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] = new MapCanBuildFrom[K, V]
 
   /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
    *  because of variance issues.
    */
-  abstract class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends AbstractMap[A, B] with Map[A, B] with Serializable {
+  abstract class WithDefault[K, +V](underlying: Map[K, V], d: K => V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size               = underlying.size
-    def get(key: A)                 = underlying.get(key) // removed in 2.9: orElse Some(default(key))
+    def get(key: K)                 = underlying.get(key) // removed in 2.9: orElse Some(default(key))
     def iterator                    = underlying.iterator
-    override def default(key: A): B = d(key)
+    override def default(key: K): V = d(key)
   }
 
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]
+abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]

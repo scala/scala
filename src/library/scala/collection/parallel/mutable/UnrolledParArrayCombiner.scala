@@ -9,23 +9,11 @@
 package scala
 package collection.parallel.mutable
 
-import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.UnrolledBuffer
+import scala.collection.mutable.DoublingUnrolledBuffer
 import scala.collection.mutable.UnrolledBuffer.Unrolled
-import scala.collection.parallel.TaskSupport
-import scala.collection.parallel.unsupportedop
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
-import scala.reflect.ClassTag
-
-// Todo -- revisit whether inheritance is the best way to achieve this functionality
-private[mutable] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
-  override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
-  protected override def newUnrolled = new Unrolled[T](0, new Array[T](4), null, this)
-}
-
 
 /** An array combiner that uses doubling unrolled buffers to store elements. */
 trait UnrolledParArrayCombiner[T]
@@ -62,7 +50,7 @@ extends Combiner[T, ParArray[T]] {
     case that: UnrolledParArrayCombiner[t] =>
       buff concat that.buff
       this
-    case _ => unsupportedop("Cannot combine with combiner of different type.")
+    case _ => throw new UnsupportedOperationException("Cannot combine with combiner of different type.")
   }
 
   def size = buff.size

@@ -11,7 +11,7 @@ package collection
 package immutable
 
 import generic._
-import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
+import mutable.{Builder, StringBuilder, LazyBuilder}
 import scala.annotation.tailrec
 import Stream.cons
 import scala.language.implicitConversions
@@ -23,7 +23,7 @@ import scala.language.implicitConversions
  *  import scala.math.BigInt
  *  object Main extends App {
  *
- *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
+ *    lazy val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
  *
  *    fibs take 5 foreach println
  *  }
@@ -46,7 +46,7 @@ import scala.language.implicitConversions
  *  import scala.math.BigInt
  *  object Main extends App {
  *
- *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
+ *    lazy val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
  *      fibs.tail).map(n => {
  *        println("Adding %d and %d".format(n._1, n._2))
  *        n._1 + n._2
@@ -162,7 +162,7 @@ import scala.language.implicitConversions
  *  // The first time we try to access the tail we're going to need more
  *  // information which will require us to recurse, which will require us to
  *  // recurse, which...
- *  val sov: Stream[Vector[Int]] = Vector(0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+ *  lazy val sov: Stream[Vector[Int]] = Vector(0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
  *  }}}
  *
  *  The definition of `fibs` above creates a larger number of objects than
@@ -198,16 +198,13 @@ import scala.language.implicitConversions
  *  @define orderDependentFold
  *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
-@deprecatedInheritance("This class will be sealed.", "2.11.0")
-abstract class Stream[+A] extends AbstractSeq[A]
+sealed abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
                              with LinearSeqOptimized[A, Stream[A]]
-                             with Serializable {
-self =>
-  override def companion: GenericCompanion[Stream] = Stream
+                             with Serializable { self =>
 
-  import scala.collection.{Traversable, Iterable, Seq, IndexedSeq}
+  override def companion: GenericCompanion[Stream] = Stream
 
   /** Indicates whether or not the `Stream` is empty.
    *
@@ -360,7 +357,7 @@ self =>
    * `List(BigInt(12)) ++ fibs`.
    *
    * @tparam B The element type of the returned collection.'''That'''
-   * @param that The [[scala.collection.GenTraversableOnce]] the be concatenated
+   * @param that The [[scala.collection.GenTraversableOnce]] to be concatenated
    * to this `Stream`.
    * @return A new collection containing the result of concatenating `this` with
    * `that`.
@@ -499,80 +496,19 @@ self =>
     )
     else super.flatMap(f)(bf)
 
-  /** Returns all the elements of this `Stream` that satisfy the predicate `p`
-   * in a new `Stream` - i.e., it is still a lazy data structure. The order of
-   * the elements is preserved
-   *
-   *  @param p the predicate used to filter the stream.
-   *  @return the elements of this stream satisfying `p`.
-   *
-   * @example {{{
-   * $naturalsEx
-   * naturalsFrom(1) filter { _ % 5 == 0 } take 10 mkString(", ")
-   * // produces "5, 10, 15, 20, 25, 30, 35, 40, 45, 50"
-   * }}}
-   */
-  override def filter(p: A => Boolean): Stream[A] = {
+  override private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Stream[A] = {
     // optimization: drop leading prefix of elems for which f returns false
     // var rest = this dropWhile (!p(_)) - forget DRY principle - GC can't collect otherwise
     var rest = this
-    while (!rest.isEmpty && !p(rest.head)) rest = rest.tail
+    while (!rest.isEmpty && p(rest.head) == isFlipped) rest = rest.tail
     // private utility func to avoid `this` on stack (would be needed for the lazy arg)
-    if (rest.nonEmpty) Stream.filteredTail(rest, p)
+    if (rest.nonEmpty) Stream.filteredTail(rest, p, isFlipped)
     else Stream.Empty
   }
 
-  override final def withFilter(p: A => Boolean): StreamWithFilter = new StreamWithFilter(p)
-
-  /** A lazier implementation of WithFilter than TraversableLike's.
-   */
-  final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
-
-    override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailMap(coll: Stream[A]): Stream[B] = {
-        var head: A = null.asInstanceOf[A]
-        var tail: Stream[A] = coll
-        while (true) {
-          if (tail.isEmpty)
-            return Stream.Empty
-          head = tail.head
-          tail = tail.tail
-          if (p(head))
-            return cons(f(head), tailMap(tail))
-        }
-        throw new RuntimeException()
-      }
-
-      if (isStreamBuilder(bf)) asThat(tailMap(Stream.this))
-      else super.map(f)(bf)
-    }
-
-    override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailFlatMap(coll: Stream[A]): Stream[B] = {
-        var head: A = null.asInstanceOf[A]
-        var tail: Stream[A] = coll
-        while (true) {
-          if (tail.isEmpty)
-            return Stream.Empty
-          head = tail.head
-          tail = tail.tail
-          if (p(head))
-            return f(head).toStream append tailFlatMap(tail)
-        }
-        throw new RuntimeException()
-      }
-
-      if (isStreamBuilder(bf)) asThat(tailFlatMap(Stream.this))
-      else super.flatMap(f)(bf)
-    }
-
-    override def foreach[U](f: A => U) =
-      for (x <- self)
-        if (p(x)) f(x)
-
-    override def withFilter(q: A => Boolean): StreamWithFilter =
-      new StreamWithFilter(x => p(x) && q(x))
-  }
+  /** A FilterMonadic which allows GC of the head of stream during processing */
+  @noinline // Workaround SI-9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
+  override final def withFilter(p: A => Boolean): FilterMonadic[A, Stream[A]] = new Stream.StreamWithFilter(this, p)
 
   /** A lazier Iterator than LinearSeqLike's. */
   override def iterator: Iterator[A] = new StreamIterator(self)
@@ -1093,6 +1029,8 @@ self =>
    */
   override def stringPrefix = "Stream"
 
+  override def equals(that: Any): Boolean =
+    if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
 }
 
 /** A specialized, extra-lazy implementation of a stream iterator, so it can
@@ -1152,14 +1090,12 @@ object Stream extends SeqFactory[Stream] {
   /** Creates a new builder for a stream */
   def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
 
-  import scala.collection.{Iterable, Seq, IndexedSeq}
-
   /** A builder for streams
    *  @note This builder is lazy only in the sense that it does not go downs the spine
    *        of traversables that are added as a whole. If more laziness can be achieved,
    *        this builder should be bypassed.
    */
-  class StreamBuilder[A] extends scala.collection.mutable.LazyBuilder[A, Stream[A]] {
+  class StreamBuilder[A] extends LazyBuilder[A, Stream[A]] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
@@ -1183,11 +1119,11 @@ object Stream extends SeqFactory[Stream] {
     /** Construct a stream consisting of a given first element followed by elements
      *  from a lazily evaluated Stream.
      */
-    def #::(hd: A): Stream[A] = cons(hd, tl)
+    def #::[B >: A](hd: B): Stream[B] = cons(hd, tl)
     /** Construct a stream consisting of the concatenation of the given stream and
      *  a lazily evaluated Stream.
      */
-    def #:::(prefix: Stream[A]): Stream[A] = prefix append tl
+    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix append tl
   }
 
   /** A wrapper method that adds `#::` for cons and `#:::` for concat as operations
@@ -1236,6 +1172,27 @@ object Stream extends SeqFactory[Stream] {
         }
 
       tlVal
+    }
+
+    override /*LinearSeqOptimized*/
+    def sameElements[B >: A](that: GenIterable[B]): Boolean = {
+      @tailrec def consEq(a: Cons[_], b: Cons[_]): Boolean = {
+        if (a.head != b.head) false
+        else {
+          a.tail match {
+            case at: Cons[_] =>
+              b.tail match {
+                case bt: Cons[_] => (at eq bt) || consEq(at, bt)
+                case _ => false
+              }
+            case _ => b.tail.isEmpty
+          }
+        }
+      }
+      that match {
+        case that: Cons[_] => consEq(this, that)
+        case _ =>             super.sameElements(that)
+      }
     }
   }
 
@@ -1295,13 +1252,36 @@ object Stream extends SeqFactory[Stream] {
     else cons(start, range(start + step, end, step))
   }
 
-  private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
-    cons(stream.head, stream.tail filter p)
+  private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean, isFlipped: Boolean) = {
+    cons(stream.head, stream.tail.filterImpl(p, isFlipped))
   }
 
   private[immutable] def collectedTail[A, B, That](head: B, stream: Stream[A], pf: PartialFunction[A, B], bf: CanBuildFrom[Stream[A], B, That]) = {
     cons(head, stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
   }
+
+  /** An implementation of `FilterMonadic` allowing GC of the filtered-out elements of
+    * the `Stream` as it is processed.
+    *
+    * Because this is not an inner class of `Stream` with a reference to the original
+    * head, it is now possible for GC to collect any leading and filtered-out elements
+    * which do not satisfy the filter, while the tail is still processing (see SI-8990).
+    */
+  private[immutable] final class StreamWithFilter[A](sl: => Stream[A], p: A => Boolean) extends FilterMonadic[A, Stream[A]] {
+    private var s = sl                                              // set to null to allow GC after filtered
+    private lazy val filtered = { val f = s filter p; s = null; f } // don't set to null if throw during filter
+
+    def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+      filtered map f
+
+    def flatMap[B, That](f: A => scala.collection.GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+      filtered flatMap f
+
+    def foreach[U](f: A => U): Unit =
+      filtered foreach f
+
+    def withFilter(q: A => Boolean): FilterMonadic[A, Stream[A]] =
+      new StreamWithFilter[A](filtered, q)
+  }
+
 }
-
-

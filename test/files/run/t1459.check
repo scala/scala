@@ -1,0 +1,3 @@
+JavaPrinter: one two three 
+InheritingPrinter extends JavaPrinter: one two three 
+ScalaPrinter: onetwothree
