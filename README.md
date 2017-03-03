@@ -220,7 +220,7 @@ tested version during CI validation.
 The Scala CI builds nightly download releases (including all modules) and publishes
 them to the following locations:
   - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/?C=M;O=D)
-  - [2.11.x](http://www.scala-lang.org/files/archive/nightly/2.11.x/?C=M;O=A)
+  - [2.11.x](http://www.scala-lang.org/files/archive/nightly/2.11.x/?C=M;O=D)
 
 The CI also publishes nightly API docs:
   - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/api/?C=M;O=D)
