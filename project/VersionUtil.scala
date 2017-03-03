@@ -45,17 +45,19 @@ object VersionUtil {
   /** Compute the canonical, Maven and OSGi version number from `baseVersion` and `baseVersionSuffix`.
     * Examples of the generated versions:
     *
-    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-SNAPSHOT",            "2.11.8.v20151215-133023-7559aed3c5")
-    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-7559aed3c5-SNAPSHOT", "2.11.8.v20151215-133023-7559aed3c5")
-    * ("2.11.8", ""            ) -> ("2.11.8",                            "2.11.8",                     "2.11.8.v20151215-133023-VFINAL-7559aed3c5")
-    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                         "2.11.8-M3",                  "2.11.8.v20151215-133023-M3-7559aed3c5")
-    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
-    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
+    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed", "2.11.8-bin-SNAPSHOT",         "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed", "2.11.8-bin-7559aed-SNAPSHOT", "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA"         ) -> ("2.11.8-7559aed",                 "2.11.8-bin-7559aed",          "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.0", "SHA"         ) -> ("2.11.0-7559aed",                 "2.11.0-pre-7559aed",          "2.11.0.v20151215-133023-7559aed")
+    * ("2.11.8", ""            ) -> ("2.11.8",                         "2.11.8",                      "2.11.8.v20151215-133023-VFINAL-7559aed")
+    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                      "2.11.8-M3",                   "2.11.8.v20151215-133023-M3-7559aed")
+    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                     "2.11.8-RC4",                  "2.11.8.v20151215-133023-RC4-7559aed")
+    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                     "2.11.8-RC4",                  "2.11.8.v20151215-133023-RC4-7559aed")
     *
     * A `baseVersionSuffix` of "SNAPSHOT" is the default, which is used for local snapshot builds. The PR validation
-    * job uses "SHA-SNAPSHOT". An empty suffix is used for releases. All other suffix values are treated as RC /
-    * milestone builds. The special suffix value "SPLIT" is used to split the real suffix off from `baseVersion`
-    * instead and then apply the usual logic. */
+    * job uses "SHA-SNAPSHOT". A proper version number for an integration build can be computed with "SHA". An empty
+    * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
+    * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
 
     val (base, suffix) = {
@@ -78,11 +80,18 @@ object VersionUtil {
     val date = executeTool("get-scala-commit-date")
     val sha = executeTool("get-scala-commit-sha").substring(0, 7) // The script produces 10 digits at the moment
 
+    val Patch = """\d+\.\d+\.(\d+)""".r
+    def cross = base match {
+      case Patch(p) if p.toInt > 0 => "bin"
+      case _ => "pre"
+    }
+
     val (canonicalV, mavenV, osgiV, release) = suffix match {
-      case "SNAPSHOT"     => (s"$base-$date-$sha", s"$base-SNAPSHOT",      s"$base.v$date-$sha",         false)
-      case "SHA-SNAPSHOT" => (s"$base-$date-$sha", s"$base-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
-      case ""             => (s"$base",            s"$base",               s"$base.v$date-VFINAL-$sha",  true)
-      case suffix         => (s"$base-$suffix",    s"$base-$suffix",       s"$base.v$date-$suffix-$sha", true)
+      case "SNAPSHOT"     => (s"$base-$date-$sha", s"$base-$cross-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT" => (s"$base-$date-$sha", s"$base-$cross-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case "SHA"          => (s"$base-$sha",       s"$base-$cross-$sha",          s"$base.v$date-$sha",         false)
+      case ""             => (s"$base",            s"$base",                      s"$base.v$date-VFINAL-$sha",  true)
+      case suffix         => (s"$base-$suffix",    s"$base-$suffix",              s"$base.v$date-$suffix-$sha", true)
     }
 
     Versions(canonicalV, mavenV, osgiV, sha, date, release)
