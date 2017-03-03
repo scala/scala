@@ -1,0 +1,25 @@
+userdefined_apply.scala:3: error: overloaded method apply needs result type
+  private def apply(x: Int) = if (x > 0) new ClashOverloadNoSig(x) else apply("")
+                                                                             ^
+userdefined_apply.scala:14: error: overloaded method apply needs result type
+  private def apply(x: Int) = if (x > 0) ClashRecNoSig(1) else ???
+                                         ^
+userdefined_apply.scala:21: error: overloaded method apply needs result type
+  private def apply(x: Boolean) = if (x) NoClashNoSig(1) else ???
+                                         ^
+userdefined_apply.scala:28: error: overloaded method apply needs result type
+  private def apply(x: Boolean) = if (x) NoClashOverload(1) else apply("")
+                                                        ^
+userdefined_apply.scala:45: error: recursive method apply needs result type
+case class NoClashNoSigPoly private(x: Int)
+           ^
+userdefined_apply.scala:39: error: NoClashNoSigPoly.type does not take parameters
+  def apply(x: T) = if (???) NoClashNoSigPoly(1) else ???
+                                             ^
+userdefined_apply.scala:57: error: recursive method apply needs result type
+case class ClashNoSigPoly private(x: Int)
+           ^
+userdefined_apply.scala:51: error: ClashNoSigPoly.type does not take parameters
+  def apply(x: T) = if (???) ClashNoSigPoly(1) else ???
+                                           ^
+8 errors found
