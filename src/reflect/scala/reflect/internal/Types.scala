@@ -1197,7 +1197,6 @@ trait Types
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
-    override def boundSyms = if (sym.isInstanceOf[StubSymbol]) emptySymbolSet else super.boundSyms
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
