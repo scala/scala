@@ -193,7 +193,7 @@ object Set extends ImmutableSetFactory[Set] {
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def + (elem: A): Set[A] =
       if (contains(elem)) this
-      else new HashSet[A] + (elem1, elem2, elem3, elem4, elem)
+      else new HashSet[A] + elem1 + elem2 + elem3 + elem4 + elem
     def - (elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)
