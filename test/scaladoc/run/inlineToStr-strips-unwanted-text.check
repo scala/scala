@@ -1,13 +1,1 @@
-Chain(List(Chain(List(Text(This comment contains ), Superscript(Text(superscript))))))
-Chain(List(Chain(List(Text(This comment contains ), Subscript(Text(subscript))))))
-Chain(List(Chain(List(Text(This comment contains a link ), Link(https://scala.epfl.ch/,Text(https://scala.epfl.ch/))))))
-Chain(List(Chain(List(Text(This comment contains an ), HtmlTag(<strong>html tag</strong>)))))
-Chain(List(Chain(List(Text(This comment contains a), HtmlTag(<br>), Text( single html tag)))))
-Chain(List(Chain(List(Text(This comment contains nested ), HtmlTag(<strong>html<br> tags</strong>)))))
-This comment contains superscript
-This comment contains subscript
-This comment contains a link https://scala.epfl.ch/
-This comment contains an html tag
-This comment contains a single html tag
-This comment contains nested html tags
 Done.

@@ -121,6 +121,6 @@ object Page {
     case Text(text) => text
     case Summary(in) => inlineToStr(in)
     case HtmlTag(tag) => "<[^>]*>".r.replaceAllIn(tag, "")
-    case EntityLink(Text(text), _) => text
+    case EntityLink(in, _) => inlineToStr(in)
   }
 }
