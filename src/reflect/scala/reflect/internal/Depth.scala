@@ -5,7 +5,7 @@ package internal
 import Depth._
 
 final class Depth private (val depth: Int) extends AnyVal with Ordered[Depth] {
-  def max(that: Depth): Depth   = if (this < that) that else this
+  def max(that: Depth): Depth   = if (this.depth < that.depth) that else this
   def decr(n: Int): Depth       = if (isAnyDepth) this else Depth(depth - n)
   def incr(n: Int): Depth       = if (isAnyDepth) this else Depth(depth + n)
   def decr: Depth               = decr(1)
