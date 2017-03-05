@@ -339,6 +339,11 @@ trait ScalaSettings extends AbsScalaSettings
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
   val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").
     withPostSetHook( _ => YprofileEnabled.value = true )
+  val YprofileExternalTool = PhasesSetting("-Yprofile-external-tool", "Enable profiling for a phase using an external tool hook. Generally only useful for a single phase", "typer").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+  val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or *", "_").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+
 
 
   /** Area-specific debug output.
