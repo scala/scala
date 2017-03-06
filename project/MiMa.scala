@@ -1,3 +1,5 @@
+package scala.build
+
 // It would be nice to use sbt-mima-plugin here, but the plugin is missing
 // at least two features we need:
 // * ability to run MiMa twice, swapping `curr` and `prev`, to detect

@@ -7,12 +7,18 @@ import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream, 
   ByteArrayOutputStream, IOException, Closeable}
 import java.lang.reflect.InvocationTargetException
 import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 
-// Each test normally ends in a moment, but for failure cases, waits until one second.
+// Each test normally ends in a moment, but for failure cases, waits two seconds.
 // SI-7350, SI-8768
+
+// one second wasn't always enough --
+// https://github.com/scala/scala-dev/issues/313
+object TestDuration {
+  import scala.concurrent.duration.{Duration, SECONDS}
+  val Standard = Duration(2, SECONDS)
+}
 
 @RunWith(classOf[JUnit4])
 class PipedProcessTest {
@@ -81,7 +87,7 @@ class PipedProcessTest {
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(source.releaseCount == 0)
     assert(sink.releaseCount == 0)
     assert(a.destroyCount == 0)
@@ -102,7 +108,7 @@ class PipedProcessTest {
         p.callRunAndExitValue(source, sink)
       }
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(source.releaseCount == 1)
     assert(sink.releaseCount == 1)
     assert(a.destroyCount == 0)
@@ -123,7 +129,7 @@ class PipedProcessTest {
         p.callRunAndExitValue(source, sink)
       }
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(source.releaseCount == 1)
     assert(sink.releaseCount == 1)
     assert(a.destroyCount == 0)
@@ -142,7 +148,7 @@ class PipedProcessTest {
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(source.releaseCount == 1)
     assert(sink.releaseCount == 1)
     assert(a.destroyCount == 1)
@@ -161,7 +167,7 @@ class PipedProcessTest {
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(source.releaseCount == 1)
     assert(sink.releaseCount == 1)
     assert(a.destroyCount == 1)
@@ -235,7 +241,7 @@ class PipeSourceSinkTest {
       source.join()
       sink.join()
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(in.closed == true)
     assert(out.closed == true)
     assert(source.isReleased == true)
@@ -253,7 +259,7 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(out.closed == true)
     assert(source.isReleased == true)
     assert(sink.isReleased == true)
@@ -270,13 +276,13 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(in.closed == true)
     assert(source.isReleased == true)
     assert(sink.isReleased == true)
   }
 
-  // PipeSource and PipeSink must release resources when interrupted during copy streams"
+  // PipeSource and PipeSink must release resources when interrupted during copy streams
   @Test
   def runloopInterrupted() {
     val in = new DebugInfinityInputStream
@@ -290,7 +296,7 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, Duration(1, SECONDS))
+    Await.result(f, TestDuration.Standard)
     assert(in.closed == true)
     assert(out.closed == true)
     assert(source.isReleased == true)

@@ -597,10 +597,12 @@ overridden in subclasses. A `final` class may not be inherited by
 a template. `final` is redundant for object definitions.  Members
 of final classes or objects are implicitly also final, so the
 `final` modifier is generally redundant for them, too. Note, however, that
-[constant value definitions](04-basic-declarations-and-definitions.html#value-declarations-and-definitions) do require
-an explicit `final` modifier, even if they are defined in a final class or
-object. `final` may not be applied to incomplete members, and it may not be
-combined in one modifier list with `sealed`.
+[constant value definitions](04-basic-declarations-and-definitions.html#value-declarations-and-definitions)
+do require an explicit `final` modifier,
+even if they are defined in a final class or object.
+`final` is permitted for abstract classes
+but it may not be applied to traits or incomplete members,
+and it may not be combined in one modifier list with `sealed`.
 
 ### `sealed`
 The `sealed` modifier applies to class definitions. A

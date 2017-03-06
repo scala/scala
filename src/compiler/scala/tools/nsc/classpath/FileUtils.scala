@@ -13,7 +13,7 @@ import scala.reflect.io.AbstractFile
  */
 object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
-    def isPackage: Boolean = file.isDirectory && maybeValidPackage(file.name)
+    def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.name)
 
     def isClass: Boolean = !file.isDirectory && file.hasExtension("class")
 
@@ -30,7 +30,7 @@ object FileUtils {
   }
 
   implicit class FileOps(val file: JFile) extends AnyVal {
-    def isPackage: Boolean = file.isDirectory && maybeValidPackage(file.getName)
+    def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.getName)
 
     def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
   }
@@ -63,7 +63,7 @@ object FileUtils {
 
   // probably it should match a pattern like [a-z_]{1}[a-z0-9_]* but it cannot be changed
   // because then some tests in partest don't pass
-  def maybeValidPackage(dirName: String): Boolean =
+  def mayBeValidPackage(dirName: String): Boolean =
     (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
 
   def mkFileFilter(f: JFile => Boolean) = new FileFilter {

@@ -967,6 +967,8 @@ trait Types
      */
     def directObjectString = safeToString
 
+    def nameAndArgsString = typeSymbol.name.toString
+
     /** A test whether a type contains any unification type variables.
      *  Overridden with custom logic except where trivially true.
      */
@@ -2321,6 +2323,8 @@ trait Types
     private def preString  = if (needsPreString) pre.prefixString else ""
     private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
 
+    override def nameAndArgsString = typeSymbol.name.toString + argsString
+
     private def refinementDecls = fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
     private def refinementString = (
       if (sym.isStructuralRefinement)
@@ -2728,6 +2732,19 @@ trait Types
         arg.toString
     }
 
+    override def nameAndArgsString: String = underlying match {
+      case TypeRef(_, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+        sym.name + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
+      case TypeRef(_, sym, args) =>
+        sym.name + args.mkString("[", ",", "]") + existentialClauses
+      case _ => underlying.typeSymbol.name + existentialClauses
+    }
+
+    private def existentialClauses = {
+      val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
+      if (settings.explaintypes) "(" + str + ")" else str
+    }
+
     /** An existential can only be printed with wildcards if:
      *   - the underlying type is a typeref
      *   - every quantified variable appears at most once as a type argument and
@@ -2746,7 +2763,7 @@ trait Types
             tpe.typeSymbol.isRefinementClass && (tpe.parents exists isQuantified)
           }
           val (wildcardArgs, otherArgs) = args partition (arg => qset contains arg.typeSymbol)
-          wildcardArgs.distinct == wildcardArgs &&
+          wildcardArgs.toSet.size == wildcardArgs.size &&
           !(otherArgs exists (arg => isQuantified(arg))) &&
           !(wildcardArgs exists (arg => isQuantified(arg.typeSymbol.info.bounds))) &&
           !(qset contains sym) &&
@@ -2756,17 +2773,13 @@ trait Types
     }
 
     override def safeToString: String = {
-      def clauses = {
-        val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
-        if (settings.explaintypes) "(" + str + ")" else str
-      }
       underlying match {
         case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
-          "(" + underlying + ")" + clauses
+          "(" + underlying + ")" + existentialClauses
         case _ =>
-          "" + underlying + clauses
+          "" + underlying + existentialClauses
       }
     }
 

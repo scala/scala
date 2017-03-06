@@ -342,12 +342,16 @@ abstract class UnCurry extends InfoTransform
      *  the whole tree with it.
      */
     private def replaceElidableTree(tree: Tree): Tree = {
+      def elisionOf(t: Type): Tree = t.typeSymbol match {
+        case StringClass => Literal(Constant("")) setType t
+        case _ => gen.mkZero(t)
+      }
       tree match {
         case DefDef(_,_,_,_,_,rhs) =>
-          val rhs1 = if (rhs == EmptyTree) rhs else Block(Nil, gen.mkZero(rhs.tpe)) setType rhs.tpe
+          val rhs1 = if (rhs == EmptyTree) rhs else Block(Nil, elisionOf(rhs.tpe)) setType rhs.tpe
           deriveDefDef(tree)(_ => rhs1) setSymbol tree.symbol setType tree.tpe
         case _ =>
-          gen.mkZero(tree.tpe) setType tree.tpe
+          elisionOf(tree.tpe)
       }
     }
 

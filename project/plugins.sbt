@@ -20,3 +20,7 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 buildInfoPackage := "scalabuild"
 
 libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.13"
+
+concurrentRestrictions in Global := Seq(
+  Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970
+)

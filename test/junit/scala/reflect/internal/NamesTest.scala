@@ -92,4 +92,29 @@ class NamesTest {
     assert(h1 string_== h2)
     assert(h1 string_== h1y)
   }
+
+  @Test
+  def pos(): Unit = {
+    def check(nameString: String, sub: String) = {
+      val name = TermName(nameString)
+      val javaResult = name.toString.indexOf(sub) match { case -1 => name.length case x => x }
+      val nameResult = name.pos(sub)
+      assertEquals(javaResult, nameResult)
+      if (sub.length == 1) {
+        val nameResultChar = name.pos(sub.head)
+        assertEquals(javaResult, nameResultChar)
+      }
+    }
+
+    check("a", "a") // was "String index out of range: 1
+    check("a", "b")
+    check("a", "ab")
+    check("a", "ba")
+    check("ab", "a")
+    check("ab", "b")
+    check("ab", "ab")
+    check("ab", "ba")
+    check("", "x")
+    check("", "xy")
+  }
 }

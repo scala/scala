@@ -17,7 +17,7 @@ class ReplProps {
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
-  val colorOk = bool("scala.color")
+  val colorOk = Properties.coloredOutputEnabled
 
   val info  = bool("scala.repl.info")
   val debug = bool("scala.repl.debug")
