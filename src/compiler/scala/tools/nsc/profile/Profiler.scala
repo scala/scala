@@ -125,7 +125,7 @@ sealed trait ProfileReporter {
 
 object ConsoleProfileReporter extends ProfileReporter {
   override def report(profiler: RealProfiler, phase: Phase, diff: ProfileCounters): Unit =
-    println(f"Profiler compile ${profiler.id} after phase ${phase.id}:(${phase.name}) wallClockTime: ${diff.wallClockTimeMillis}%6.4fms, cpuTime ${diff.cpuTimeMillis}%6.4fms, userTime ${diff.userTimeMillis}%6.4fms, allocatedBytes ${diff.allocatedMB}%6.4fMB, retainedHeapBytes ${diff.retainedHeapMB}%6.4fMB, gcTime ${diff.gcTimeMillis}%6.0fms")
+    println(f"Profiler compile ${profiler.id} after phase ${phase.id}%2d:${phase.name}%20s wallClockTime: ${diff.wallClockTimeMillis}%12.4fms, cpuTime ${diff.cpuTimeMillis}%12.4fms, userTime ${diff.userTimeMillis}%12.4fms, allocatedBytes ${diff.allocatedMB}%12.4fMB, retainedHeapBytes ${diff.retainedHeapMB}%12.4fMB, gcTime ${diff.gcTimeMillis}%6.0fms")
 
   override def close(profiler: RealProfiler): Unit = ()
 
