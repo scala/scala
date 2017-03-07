@@ -10,6 +10,7 @@ package xsbt
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
 import xsbti.api._
+import java.util.{ HashMap => JavaMap }
 
 object API {
   val name = "xsbt-api"
@@ -33,26 +34,50 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
 
     def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
 
-    def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
-    def processScalaUnit(unit: CompilationUnit): Unit = {
+    private def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
+
+    private def debugOutput(map: JavaMap[String, Array[String]]): String = {
+      val stringBuffer = new StringBuffer()
+      // Optimized while loop that uses Java collection
+      val it = map.entrySet().iterator()
+      while (it.hasNext) {
+        val values = it.next()
+        stringBuffer.append(showUsedNames(values.getKey, values.getValue))
+      }
+
+      stringBuffer.toString
+    }
+
+    private def showUsedNames(className: String, names: Array[String]): String =
+      s"$className:\n\t${names.mkString(",")}"
+
+    private def register(allUsedNames: JavaMap[String, Array[String]]) = {
+      // Optimized while loop that uses Java collection
+      val it = allUsedNames.entrySet.iterator()
+      while (it.hasNext) {
+        val usedNameInfo = it.next()
+        val className = usedNameInfo.getKey
+        val namesIterator = usedNameInfo.getValue.iterator
+        while (namesIterator.hasNext) {
+          callback.usedName(className, namesIterator.next())
+        }
+      }
+    }
+
+    private def processScalaUnit(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
       traverser.apply(unit.body)
+
       val extractUsedNames = new ExtractUsedNames[global.type](global)
       val allUsedNames = extractUsedNames.extract(unit)
-      def showUsedNames(className: String, names: Iterable[String]): String =
-        s"$className:\n\t${names.mkString(", ")}"
-      debuglog("The " + sourceFile + " contains the following used names:\n" +
-        allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
-      allUsedNames foreach {
-        case (className: String, names: Iterable[String]) =>
-          names foreach { (name: String) => callback.usedName(className, name) }
-      }
-      val classApis = traverser.allNonLocalClasses
+      debuglog(s"The $sourceFile contains the following used names:\n ${debugOutput(allUsedNames)}")
+      register(allUsedNames)
 
+      val classApis = traverser.allNonLocalClasses
       classApis.foreach(callback.api(sourceFile, _))
     }
   }
