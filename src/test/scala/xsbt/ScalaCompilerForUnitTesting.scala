@@ -3,7 +3,6 @@ package xsbt
 import xsbti.TestCallback.ExtractedClassDependencies
 import xsbti.compile.SingleOutput
 import java.io.File
-import _root_.scala.tools.nsc.reporters.ConsoleReporter
 import xsbti._
 import sbt.io.IO.withTemporaryDirectory
 import xsbti.api.ClassLike
@@ -138,7 +137,7 @@ class ScalaCompilerForUnitTesting {
         val compiler = if (reuseCompilerInstance) commonCompilerInstance else
           prepareCompiler(classesDir, analysisCallback, classesDir.toString)
         val run = new compiler.Run
-        val srcFiles = compilationUnit.toSeq.zipWithIndex map {
+        val srcFiles = compilationUnit.zipWithIndex map {
           case (src, i) =>
             val fileName = s"Test-$unitId-$i.scala"
             prepareSrcFile(temp, fileName, src)
@@ -150,7 +149,7 @@ class ScalaCompilerForUnitTesting {
         srcFilePaths.foreach(f => new File(f).delete)
         srcFiles
       }
-      (files.flatten.toSeq, analysisCallback)
+      (files.flatten, analysisCallback)
     }
   }
 
@@ -175,7 +174,6 @@ class ScalaCompilerForUnitTesting {
     val settings = cachedCompiler.settings
     settings.classpath.value = classpath
     settings.usejavacp.value = true
-    val scalaReporter = new ConsoleReporter(settings)
     val delegatingReporter = DelegatingReporter(settings, ConsoleReporter)
     val compiler = cachedCompiler.compiler
     compiler.set(analysisCallback, delegatingReporter)

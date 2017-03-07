@@ -125,7 +125,7 @@ class ExtractAPI[GlobalType <: Global](
   private[this] object existentialRenamings {
     private var nestingLevel: Int = 0
     import scala.collection.mutable.Map
-    private var renameTo: Map[Symbol, String] = Map.empty
+    private val renameTo: Map[Symbol, String] = Map.empty
 
     def leaveExistentialTypeVariables(typeVariables: Seq[Symbol]): Unit = {
       nestingLevel -= 1
@@ -220,7 +220,7 @@ class ExtractAPI[GlobalType <: Global](
     }
 
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
-  private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
+
   private def defDef(in: Symbol, s: Symbol): xsbti.api.Def =
     {
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
@@ -256,9 +256,9 @@ class ExtractAPI[GlobalType <: Global](
           import xsbti.api.ParameterModifier._
           val (t, special) =
             if (ts == definitions.RepeatedParamClass) // || s == definitions.JavaRepeatedParamClass)
-              (tpe.typeArgs(0), Repeated)
+              (tpe.typeArgs.head, Repeated)
             else if (ts == definitions.ByNameParamClass)
-              (tpe.typeArgs(0), ByName)
+              (tpe.typeArgs.head, ByName)
             else
               (tpe, Plain)
           new xsbti.api.MethodParameter(name, processType(in, t), hasDefault(paramSym), special)
@@ -357,8 +357,8 @@ class ExtractAPI[GlobalType <: Global](
 
   private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.ClassDefinition] =
     {
-      def mkVar = Some(fieldDef(in, sym, false, new xsbti.api.Var(_, _, _, _, _)))
-      def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_, _, _, _, _)))
+      def mkVar = Some(fieldDef(in, sym, keepConst = false, new xsbti.api.Var(_, _, _, _, _)))
+      def mkVal = Some(fieldDef(in, sym, keepConst = true, new xsbti.api.Val(_, _, _, _, _)))
       if (isClass(sym))
         if (ignoreClass(sym)) None else Some(classLike(in, sym))
       else if (sym.isNonClassType)
@@ -480,7 +480,7 @@ class ExtractAPI[GlobalType <: Global](
         case t: ExistentialType               => makeExistentialType(in, t)
         case NoType                           => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
         case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
-        case NullaryMethodType(resultType) =>
+        case NullaryMethodType(_) =>
           warning("sbt-api: Unexpected nullary method type " + in + " in " + in.owner); Constants.emptyType
         case _ => warning("sbt-api: Unhandled type " + t.getClass + " : " + t); Constants.emptyType
       }

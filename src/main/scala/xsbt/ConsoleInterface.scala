@@ -8,10 +8,9 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.{ GenericRunnerCommand, Interpreter, ObjectRunner, Settings }
+import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 import scala.tools.nsc.interpreter.{ IMain, InteractiveReader, ILoop }
 import scala.tools.nsc.reporters.Reporter
-import scala.tools.nsc.util.ClassPath
 
 class ConsoleInterface {
   def commandArguments(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Array[String] =

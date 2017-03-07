@@ -77,8 +77,8 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val posOpt =
         Option(posIn) match {
           case None | Some(NoPosition) => None
-          case Some(x: FakePos)        => None
-          case x                       => Option(posIn.finalPosition)
+          case Some(_: FakePos)        => None
+          case _                       => Option(posIn.finalPosition)
         }
       posOpt match {
         case None      => new PositionImpl(None, None, None, "", None, None, None)
@@ -94,7 +94,7 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val lineContent = pos.lineContent.stripLineEnd
       val offset = pos.point
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
-      val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
+      val pointerSpace = (lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }.mkString
       new PositionImpl(Option(sourcePath), Option(sourceFile), Option(line), lineContent, Option(offset), Option(pointer), Option(pointerSpace))
     }
 

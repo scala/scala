@@ -34,10 +34,10 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
       zipfs = initFileSystem(fileUri)
       new String(Files.readAllBytes(Paths.get(fileUri)))
     } finally
-      zipfs.foreach { fs => try fs.close catch { case _: Throwable => /*ignore*/ } }
+      zipfs.foreach { fs => try fs.close() catch { case _: Throwable => /*ignore*/ } }
     import org.scalatest.concurrent.Timeouts._
     import org.scalatest.time.SpanSugar._
-    val usedNames = failAfter(20 seconds) {
+    val usedNames = failAfter(30 seconds) {
       val compilerForTesting = new ScalaCompilerForUnitTesting
       compilerForTesting.extractUsedNamesFromSrc(src)
     }
@@ -93,7 +93,7 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
                  |  def bar[Out] = macro Foo.foo_impl[Out]
                  |}""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
-    val (_, analysis) = compilerForTesting.compileSrcs(List(List(ext), List(cod)), true)
+    val (_, analysis) = compilerForTesting.compileSrcs(List(List(ext), List(cod)), reuseCompilerInstance = true)
     val usedNames = analysis.usedNames.toMap
 
     val expectedNamesForFoo = Set("TypeApplyExtractor", "mkIdent", "package", "<repeated>", "tpe", "in", "$u", "internal", "reify", "WeakTypeTag", "Name", "empty", "collection", "ThisType", "staticModule", "staticPackage", "Singleton", "T", "asInstanceOf", "ReificationSupportApi", "U", "Expr", "Universe", "TypeApply", "A", "Tree", "Nothing", "acme", "ClassSymbol", "blackbox", "AnyRef", "Context", "mkTypeTree", "immutable", "SelectExtractor", "<init>", "$treecreator1", "apply", "Object", "macros", "moduleClass", "Foo", "T0", "Symbol", "Predef", "scala", "asModule", "Internal", "$m", "TypeCreator", "TermNameExtractor", "ModuleSymbol", "staticClass", "universe", "c", "<refinement>", "TypeTree", "List", "Select", "TermName", "Mirror", "atag", "reificationSupport", "rootMirror", "reflect", "TypeRef", "Ident", "Any", "TreeCreator", "$typecreator2", "$m$untyped", "String", "Type")

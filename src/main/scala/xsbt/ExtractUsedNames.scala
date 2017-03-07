@@ -162,6 +162,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         def usedNameInImportSelector(name: Name): Unit = {
           if (!isEmptyName(name) && (name != nme.WILDCARD) && !names.contains(name)) {
             names += name
+            ()
           }
         }
         selectors foreach { selector =>

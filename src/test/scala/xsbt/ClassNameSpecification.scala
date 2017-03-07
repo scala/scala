@@ -1,9 +1,5 @@
 package xsbt
 
-import xsbti.api.ClassLike
-import xsbti.api.Def
-import xsbt.api.SameAPI
-
 import sbt.internal.util.UnitSpec
 
 class ClassNameSpecification extends UnitSpec {

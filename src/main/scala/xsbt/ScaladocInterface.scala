@@ -21,7 +21,6 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
   val reporter = DelegatingReporter(docSettings, delegate)
   def noErrors = !reporter.hasErrors && command.ok
 
-  import forScope._
   def run(): Unit = {
     debug(log, "Calling Scaladoc with arguments:\n\t" + args.mkString("\n\t"))
     if (noErrors) {
@@ -59,7 +58,6 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
 
         val generator =
           {
-            import doc._
             new DefaultDocDriver {
               lazy val global: compiler.type = compiler
               lazy val settings = docSettings

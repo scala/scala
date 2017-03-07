@@ -20,8 +20,8 @@ object Command {
     try {
       constr(classOf[List[_]], classOf[Settings]).newInstance(arguments, settings)
     } catch {
-      case e: NoSuchMethodException =>
-        constr(classOf[List[_]], classOf[Settings], classOf[Function1[_, _]], classOf[Boolean]).newInstance(arguments, settings, (s: String) => throw new RuntimeException(s), false.asInstanceOf[AnyRef])
+      case _: NoSuchMethodException =>
+        constr(classOf[List[_]], classOf[Settings], classOf[(_) => _], classOf[Boolean]).newInstance(arguments, settings, (s: String) => throw new RuntimeException(s), false.asInstanceOf[AnyRef])
     }
   }
 

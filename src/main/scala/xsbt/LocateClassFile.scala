@@ -8,7 +8,6 @@
 package xsbt
 
 import scala.reflect.io.NoAbstractFile
-import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.io.AbstractFile
 
 import java.io.File

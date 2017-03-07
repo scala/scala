@@ -7,14 +7,7 @@
 
 package xsbt
 
-import scala.tools.nsc.{ io, plugins, symtab, Global, Phase }
-import io.{ AbstractFile, PlainFile, ZipArchive }
-import plugins.{ Plugin, PluginComponent }
-import scala.collection.mutable.{ HashMap, HashSet, Map, Set }
-
-import java.io.File
-import java.util.zip.ZipFile
-import xsbti.AnalysisCallback
+import scala.tools.nsc.Phase
 
 object Analyzer {
   def name = "xsbt-analyzer"
