@@ -42,7 +42,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def length = end
   override def knownSize = length
 
-  override def view = new ArrayBufferView(array, end)
+  override def view: ArrayBufferView[A] = new ArrayBufferView(array, end)
 
   def iterator() = view.iterator()
 
