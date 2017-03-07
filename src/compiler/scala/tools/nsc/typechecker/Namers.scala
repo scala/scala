@@ -580,11 +580,11 @@ trait Namers extends MethodSynthesis {
       noDuplicates(selectors map (_.rename), AppearsTwice)
     }
 
-    def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
+    final class CopyMethodCompleter(copyDef: DefDef) extends CompleterWrapper(completerOf(copyDef)) {
       /* Assign the types of the class parameters to the parameters of the
        * copy method. See comment in `Unapplies.caseClassCopyMeth`
        */
-      def assignParamTypes(copyDef: DefDef, sym: Symbol) {
+      private def assignParamTypes(copyDef: DefDef, sym: Symbol) {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
         val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
@@ -597,90 +597,87 @@ trait Namers extends MethodSynthesis {
         )
       }
 
-      new CompleterWrapper(completerOf(copyDef)) {
-        override def complete(sym: Symbol): Unit = {
-          assignParamTypes(tree.asInstanceOf[DefDef], sym)
-          super.complete(sym)
-        }
+      override def complete(sym: Symbol): Unit = {
+        assignParamTypes(tree.asInstanceOf[DefDef], sym)
+        super.complete(sym)
       }
     }
 
     // for apply/unapply, which may need to disappear when they clash with a user-defined method of matching signature
-    def applyUnapplyMethodCompleter(un_applyDef: DefDef, companionContext: Context): TypeCompleter =
-      new CompleterWrapper(completerOf(un_applyDef)) {
-        override def complete(sym: Symbol): Unit = {
-          assert(sym hasAllFlags CASE | SYNTHETIC, sym.defString)
+    final class ApplyUnapplyMethodCompleter(un_applyDef: DefDef, companionContext: Context) extends CompleterWrapper(completerOf(un_applyDef)) {
+      override def complete(sym: Symbol): Unit = {
+        assert(sym hasAllFlags CASE | SYNTHETIC, sym.defString)
 
-          super.complete(sym)
+        super.complete(sym)
 
-          // don't propagate e.g. @volatile annot to apply's argument
-          def retainOnlyParamAnnots(param: Symbol) =
-            param setAnnotations (param.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = false))
+        // don't propagate e.g. @volatile annot to apply's argument
+        def retainOnlyParamAnnots(param: Symbol) =
+          param setAnnotations (param.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = false))
 
-          sym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
+        sym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
 
-          // owner won't be locked
-          val ownerInfo = companionContext.owner.info
+        // owner won't be locked
+        val ownerInfo = companionContext.owner.info
 
-          // If there's a same-named locked symbol, we're currently completing its signature.
-          // If `scopePartiallyCompleted`, the program is known to have a type error, since
-          // this means a user-defined method is missing a result type while its rhs refers to `sym` or an overload.
-          // This is an error because overloaded/recursive methods must have a result type.
-          // The method would be overloaded if its signature, once completed, would not match the synthetic method's,
-          // or recursive if it turned out we should unlink our synthetic method (matching sig).
-          // In any case, error out. We don't unlink the symbol so that `symWasOverloaded` says yes,
-          // which would be wrong if the method is in fact recursive, but it seems less confusing.
-          val scopePartiallyCompleted = new HasMember(ownerInfo, sym.name, BridgeFlags | SYNTHETIC, LOCKED).apply()
+        // If there's a same-named locked symbol, we're currently completing its signature.
+        // If `scopePartiallyCompleted`, the program is known to have a type error, since
+        // this means a user-defined method is missing a result type while its rhs refers to `sym` or an overload.
+        // This is an error because overloaded/recursive methods must have a result type.
+        // The method would be overloaded if its signature, once completed, would not match the synthetic method's,
+        // or recursive if it turned out we should unlink our synthetic method (matching sig).
+        // In any case, error out. We don't unlink the symbol so that `symWasOverloaded` says yes,
+        // which would be wrong if the method is in fact recursive, but it seems less confusing.
+        val scopePartiallyCompleted = new HasMember(ownerInfo, sym.name, BridgeFlags | SYNTHETIC, LOCKED).apply()
 
-          // Check `scopePartiallyCompleted` first to rule out locked symbols from the owner.info.member call,
-          // as FindMember will call info on a locked symbol (while checking type matching to assemble an overloaded type),
-          // and throw a TypeError, so that we are aborted.
-          // Do not consider deferred symbols, as suppressing our concrete implementation would be an error regardless
-          // of whether the signature matches (if it matches, we omitted a valid implementation, if it doesn't,
-          // we would get an error for the missing implementation it isn't implemented by some overload other than our synthetic one)
-          val suppress = scopePartiallyCompleted || {
-            // can't exclude deferred members using DEFERRED flag here (TODO: why?)
-            val userDefined = ownerInfo.memberBasedOnName(sym.name, BridgeFlags | SYNTHETIC)
+        // Check `scopePartiallyCompleted` first to rule out locked symbols from the owner.info.member call,
+        // as FindMember will call info on a locked symbol (while checking type matching to assemble an overloaded type),
+        // and throw a TypeError, so that we are aborted.
+        // Do not consider deferred symbols, as suppressing our concrete implementation would be an error regardless
+        // of whether the signature matches (if it matches, we omitted a valid implementation, if it doesn't,
+        // we would get an error for the missing implementation it isn't implemented by some overload other than our synthetic one)
+        val suppress = scopePartiallyCompleted || {
+          // can't exclude deferred members using DEFERRED flag here (TODO: why?)
+          val userDefined = ownerInfo.memberBasedOnName(sym.name, BridgeFlags | SYNTHETIC)
 
-            (userDefined != NoSymbol) && {
-              assert(userDefined != sym)
-              val alts = userDefined.alternatives // could be just the one, if this member isn't overloaded
-              // don't compute any further `memberInfo`s if there's an error somewhere
-              alts.exists(_.isErroneous) || {
-                val self = companionContext.owner.thisType
-                val memberInfo = self.memberInfo(sym)
-                alts.exists(alt => !alt.isDeferred && (self.memberInfo(alt) matches memberInfo))
-              }
+          (userDefined != NoSymbol) && {
+            assert(userDefined != sym)
+            val alts = userDefined.alternatives // could be just the one, if this member isn't overloaded
+            // don't compute any further `memberInfo`s if there's an error somewhere
+            alts.exists(_.isErroneous) || {
+              val self = companionContext.owner.thisType
+              val memberInfo = self.memberInfo(sym)
+              alts.exists(alt => !alt.isDeferred && (self.memberInfo(alt) matches memberInfo))
             }
           }
+        }
 
-          if (suppress) {
-            sym setInfo ErrorType
+        if (suppress) {
+          sym setInfo ErrorType
 
-            // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
-            // because we don't know when the completer runs with respect to this loop in addSynthetics
-            //  for (sym <- scope)
-            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
-            //      if (!sym.initialize.hasFlag(IS_ERROR))
-            //        newStats += typedStat(tree)
-            // If we're already in the loop, set the IS_ERROR flag and trigger the condition `sym.initialize.hasFlag(IS_ERROR)`
-            sym setFlag IS_ERROR
-            // Or, if we are not yet in the addSynthetics loop, we can just retract our symbol from the synthetics for this unit.
-            companionContext.unit.synthetics -= sym
+          // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
+          // because we don't know when the completer runs with respect to this loop in addSynthetics
+          //  for (sym <- scope)
+          //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+          //      if (!sym.initialize.hasFlag(IS_ERROR))
+          //        newStats += typedStat(tree)
+          // If we're already in the loop, set the IS_ERROR flag and trigger the condition `sym.initialize.hasFlag(IS_ERROR)`
+          sym setFlag IS_ERROR
+          // Or, if we are not yet in the addSynthetics loop, we can just retract our symbol from the synthetics for this unit.
+          companionContext.unit.synthetics -= sym
 
-            // Don't unlink in an error situation to generate less confusing error messages.
-            // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
-            // but this would require some form of partial-completion of method signatures, so that we can
-            // know what the argument types were, even though we can't complete the result type, because
-            // we hit a cycle while trying to compute it (when we get here with locked user-defined symbols, we
-            // are in the complete for that symbol, and thus the locked symbol has not yet received enough info;
-            // I hesitate to provide more info, because it would involve a WildCard or something for its result type,
-            // which could upset other code paths)
-            if (!scopePartiallyCompleted)
-              companionContext.scope.unlink(sym)
-          }
+          // Don't unlink in an error situation to generate less confusing error messages.
+          // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
+          // but this would require some form of partial-completion of method signatures, so that we can
+          // know what the argument types were, even though we can't complete the result type, because
+          // we hit a cycle while trying to compute it (when we get here with locked user-defined symbols, we
+          // are in the complete for that symbol, and thus the locked symbol has not yet received enough info;
+          // I hesitate to provide more info, because it would involve a WildCard or something for its result type,
+          // which could upset other code paths)
+          if (!scopePartiallyCompleted)
+            companionContext.scope.unlink(sym)
         }
       }
+    }
 
     def completerOf(tree: MemberDef): TypeCompleter = {
       val mono = namerOf(tree.symbol) monoTypeCompleter tree
@@ -738,8 +735,8 @@ trait Namers extends MethodSynthesis {
 
         val completer =
           if (sym hasFlag SYNTHETIC) {
-            if (name == nme.copy) copyMethodCompleter(tree)
-            else if (sym hasFlag CASE) applyUnapplyMethodCompleter(tree, context)
+            if (name == nme.copy) new CopyMethodCompleter(tree)
+            else if (sym hasFlag CASE) new ApplyUnapplyMethodCompleter(tree, context)
             else completerOf(tree)
           } else completerOf(tree)
 
@@ -868,7 +865,7 @@ trait Namers extends MethodSynthesis {
 
     import AnnotationInfo.{mkFilter => annotationFilter}
 
-    def implicitFactoryMethodCompleter(tree: DefDef, classSym: Symbol) = new CompleterWrapper(completerOf(tree)) {
+    final class ImplicitFactoryMethodCompleter(tree: DefDef, classSym: Symbol) extends CompleterWrapper(completerOf(tree)) {
       override def complete(methSym: Symbol): Unit = {
         super.complete(methSym)
         val annotations = classSym.initialize.annotations

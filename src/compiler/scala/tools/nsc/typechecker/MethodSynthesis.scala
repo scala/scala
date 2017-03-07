@@ -223,7 +223,7 @@ trait MethodSynthesis {
       val methDef = factoryMeth(classDef.mods & AccessFlags | METHOD | IMPLICIT | SYNTHETIC, classDef.name.toTermName, classDef)
       val methSym = enterInScope(assignMemberSymbol(methDef))
       context.unit.synthetics(methSym) = methDef
-      methSym setInfo implicitFactoryMethodCompleter(methDef, classDef.symbol)
+      methSym setInfo new ImplicitFactoryMethodCompleter(methDef, classDef.symbol)
     }
 
 
