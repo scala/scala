@@ -2,9 +2,9 @@ package strawman.collection.mutable
 
 import java.lang.IndexOutOfBoundsException
 
-import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math}
+import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
 import strawman.collection
-import strawman.collection.{IndexedView, IterableFactories, IterableOnce, SeqLike}
+import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike}
 
 import scala.Predef.intWrapper
 
@@ -124,7 +124,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactories[ArrayBuffer] {
+object ArrayBuffer extends IterableFactory[Any, ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =

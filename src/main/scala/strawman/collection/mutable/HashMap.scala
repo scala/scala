@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import strawman.collection.{IterableOnce, Iterator, MapFactories}
+import strawman.collection.{IterableOnce, Iterator, MapFactory}
 
 import scala.{Option, Unit}
 import scala.Predef.???
@@ -35,7 +35,7 @@ final class HashMap[K, V]
 
 }
 
-object HashMap extends MapFactories[HashMap] {
+object HashMap extends MapFactory[HashMap] {
 
   def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] = ???
 

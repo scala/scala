@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import strawman.collection.BitSetFactories
+import strawman.collection.MonomorphicIterableFactory
 
 import scala.Int
 import scala.Predef.???
@@ -11,8 +11,9 @@ trait BitSet
     with collection.BitSetLike[BitSet]
     with SortedSet[Int]
 
-object BitSet extends BitSetFactories[BitSet] {
+object BitSet extends MonomorphicIterableFactory[Int, BitSet] {
 
-  def newBuilder: Builder[Int, BitSet] = ???
+  def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet = ???
 
+  def newBuilder[A <: Int]: Builder[A, BitSet] = ???
 }

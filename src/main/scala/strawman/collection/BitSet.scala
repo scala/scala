@@ -39,16 +39,3 @@ trait BitSetMonoTransforms[+C <: BitSet]
   def map(f: Int => Int): C
 
 }
-
-/** Factory methods for unconstrained collections of kind `*` */
-trait BitSetFactories[+C] {
-
-  def newBuilder: Builder[Int, C]
-
-  final def empty: C = newBuilder.result
-
-  final def apply(elems: Int*): C = newBuilder.++=(elems.toStrawman).result
-
-  implicit val canBuild: () => Builder[Int, C] = () => newBuilder
-
-}

@@ -2,7 +2,9 @@ organization in ThisBuild := "ch.epfl.scala"
 
 version in ThisBuild := "0.2.0-SNAPSHOT"
 
-scalaVersion in ThisBuild := "2.12.1"
+resolvers in ThisBuild += "scala-pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots"
+scalaVersion in ThisBuild := "2.12.2-ebe1180-SNAPSHOT" // from https://github.com/scala/scala/pull/5742
+scalaBinaryVersion in ThisBuild := "2.12"
 
 scalacOptions in ThisBuild ++=
   Seq("-deprecation", "-unchecked", "-Yno-imports", "-language:higherKinds")
@@ -26,7 +28,7 @@ val collections =
           <developer><id>ichoran</id><name>Rex Kerr</name></developer>
           <developer><id>odersky</id><name>Martin Odersky</name></developer>
           <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
-          <developer><id>szeiger</id><name>Stefan Szeiger</name></developer>
+          <developer><id>szeiger</id><name>Stefan Zeiger</name></developer>
         </developers>,
       homepage := Some(url("https://github.com/scala/collection-strawman")),
       licenses := Seq("BSD 3-clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),

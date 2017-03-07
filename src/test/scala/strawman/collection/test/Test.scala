@@ -305,7 +305,12 @@ class StrawmanTest {
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
     val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs2: immutable.SortedSet[String] = xs1
-  }
+    val l = List(1,2,3)
+    val s1 = l.to(immutable.TreeSet)
+    val s1t: immutable.TreeSet[Int] = s1
+    val m1 = s1.map(x => x.toString)
+    val m1t: immutable.TreeSet[String] = m1
+   }
 
   def mapOps(xs: Map[Int, String]): Unit = {
     val xs1 = xs.map((k, v) => (v, k))
@@ -347,6 +352,9 @@ class StrawmanTest {
     val xs10: immutable.Set[Either[Int, Nothing]] = xs9
     val xs11 = xs + 42
     val xs12: immutable.BitSet = xs11
+    val l = List(1, 2, 3)
+    val bs1 = l.to(immutable.BitSet)
+    val bs1t: immutable.BitSet = bs1
   }
 
   @Test

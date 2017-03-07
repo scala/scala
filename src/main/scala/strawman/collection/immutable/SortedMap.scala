@@ -41,15 +41,3 @@ trait SortedMapPolyTransforms[K, +V, +C[X, Y] <: Sorted[X]]
   def + [V1 >: V](kv: (K, V1)): C[K, V1]
 
 }
-
-trait SortedMapFactories[C[_, _]] {
-
-  def newBuilder[K : Ordering, V]: Builder[(K, V), C[K, V]]
-
-  def empty[K : Ordering, V]: C[K, V] = newBuilder[K, V].result
-
-  def apply[K : Ordering, V](elems: (K, V)*): C[K, V] = newBuilder[K, V].++=(elems.toStrawman).result
-
-  implicit def canBuild[K : Ordering, V]: () => Builder[(K, V), C[K, V]] = () => newBuilder[K, V]
-
-}

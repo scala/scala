@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.Builder
 
-import scala.Option
+import scala.{Option, Any}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.Predef.???
 
@@ -31,9 +31,12 @@ trait MapPolyTransforms[K, +V, +C[X, Y] <: Map[X, Y]] extends IterablePolyTransf
 }
 
 /** Factory methods for collections of kind `* −> * -> *` */
-trait MapFactories[C[_, _]] {
+trait MapFactory[+C[_, _]] { self =>
 
   def newBuilder[K, V]: Builder[(K, V), C[K, V]]
+
+  def fromIterable[K, V](it: Iterable[(K, V)]): C[K, V] =
+    newBuilder[K, V].++=(it).result
 
   def empty[K, V]: C[K, V] =
     newBuilder[K, V].result
@@ -41,6 +44,32 @@ trait MapFactories[C[_, _]] {
   def apply[K, V](elems: (K, V)*): C[K, V] =
     newBuilder[K, V].++=(elems.toStrawman).result
 
-  implicit def canBuild[K, V]: () => Builder[(K, V), C[K, V]] = () => newBuilder[K, V]
+  protected[this] lazy val monomorphicIterableFactoryProto: MonomorphicIterableFactory[(Any, Any), C[Any, Any]] = new MonomorphicIterableFactory[(Any, Any), C[Any, Any]] {
+    def fromIterable[E](it: Iterable[E]): C[Any, Any] = self.fromIterable[Any, Any](it.asInstanceOf[Iterable[(Any, Any)]])
+    def newBuilder[A]: Builder[A, C[Any, Any]] = self.newBuilder[Any, Any].asInstanceOf[Builder[A, C[Any, Any]]]
+    override protected[this] lazy val monomorphicIterableFactoryProto = this
+  }
 
+  implicit def iterableFactory[K, V]: MonomorphicIterableFactory[(K, V), C[K, V]] =
+    monomorphicIterableFactoryProto.asInstanceOf[MonomorphicIterableFactory[(K, V), C[K, V]]]
+}
+
+/** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
+trait ConstrainedMapFactory[+C[_, _], Ev[_]] { self =>
+
+  def constrainedNewBuilder[K : Ev, V]: Builder[(K, V), C[K, V]]
+
+  def constrainedFromIterable[K : Ev, V](it: Iterable[(K, V)]): C[K, V] =
+    constrainedNewBuilder[K, V].++=(it).result
+
+  def empty[K : Ev, V]: C[K, V] =
+    constrainedNewBuilder[K, V].result
+
+  def apply[K : Ev, V](elems: (K, V)*): C[K, V] =
+    constrainedNewBuilder[K, V].++=(elems.toStrawman).result
+
+  implicit def iterableFactory[K : Ev, V]: MonomorphicIterableFactory[(K, V), C[K, V]] = new MonomorphicIterableFactory[(K, V), C[K, V]] {
+    def fromIterable[E <: (K, V)](it: Iterable[E]): C[K, V] = self.constrainedFromIterable(it)
+    def newBuilder[A <: (K, V)]: Builder[A, C[K, V]] = self.constrainedNewBuilder
+  }
 }

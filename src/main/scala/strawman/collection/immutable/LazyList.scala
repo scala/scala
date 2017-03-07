@@ -1,10 +1,10 @@
 package strawman.collection.immutable
 
-import scala.{None, Nothing, Option, Some, StringContext}
+import scala.{None, Nothing, Option, Some, StringContext, Any}
 import scala.Predef.???
 import strawman.collection
 import strawman.collection.mutable.Builder
-import strawman.collection.{IterableFactories, Iterator, LinearSeq, SeqLike}
+import strawman.collection.{IterableFactory, Iterator, LinearSeq, SeqLike}
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
   extends Seq[A] with SeqLike[A, LazyList] with LinearSeq[A] {
@@ -39,7 +39,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
     else "LazyList(?)"
 }
 
-object LazyList extends IterableFactories[LazyList] {
+object LazyList extends IterableFactory[Any, LazyList] {
 
   type Evaluated[+A] = Option[(A, LazyList[A])]
 

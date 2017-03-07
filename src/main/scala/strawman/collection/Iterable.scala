@@ -27,7 +27,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
   *
   */
 trait IterableLike[+A, +C[X] <: Iterable[X]]
-  extends FromIterable[C]
+  extends FromIterable[Any, C]
     with IterableOps[A]
     with IterableMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
     with IterablePolyTransforms[A, C] {
@@ -81,16 +81,20 @@ trait IterableOps[+A] extends Any {
   /** A view representing the elements of this collection. */
   def view: View[A] = View.fromIterator(iterator())
 
-  /** Given a collection factory `fi` for collections of type constructor `C`,
-    *  convert this collection to one of type `C[A]`. Example uses:
+  /** Given a collection factory `fi`, convert this collection to the appropriate
+    * representation for the current element type `A`. Example uses:
     *
     *      xs.to(List)
     *      xs.to(ArrayBuffer)
+    *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[C[X] <: Iterable[X]](fi: FromIterable[C]): C[A @uncheckedVariance] =
+  def to[F <: FromIterableBase[A]](fi: F): F#To[A @uncheckedVariance] =
   // variance seems sound because `to` could just as well have been added
   // as a decorator. We should investigate this further to be sure.
     fi.fromIterable(coll)
+
+  def to[C[_], Ev[_]](fi: ConstrainedFromIterable[C, Ev])(implicit ev: Ev[A @uncheckedVariance]): C[A @uncheckedVariance] =
+    fi.constrainedFromIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -188,4 +192,28 @@ trait IterablePolyTransforms[+A, +C[A]] extends Any {
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
+}
+
+/** Transforms over iterables that can return collections of different element types for which an
+  * implicit evidence is required.
+  */
+trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X], Ev[A]] extends ConstrainedFromIterable[CC, Ev] with IterablePolyTransforms[A, C] {
+
+  protected def coll: Iterable[A]
+
+  /** Map */
+  def map[B : Ev](f: A => B): CC[B] = constrainedFromIterable(View.Map(coll, f))
+
+  /** Flatmap */
+  def flatMap[B : Ev](f: A => IterableOnce[B]): CC[B] = constrainedFromIterable(View.FlatMap(coll, f))
+
+  /** Concatenation */
+  def ++[B >: A : Ev](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
+
+  /** Zip. Interesting because it requires to align to source collections. */
+  def zip[B](xs: IterableOnce[B])(implicit ev: Ev[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = constrainedFromIterable(View.Zip(coll, xs))
+  // sound bcs of VarianceNote
+
+  /** Widen this collection to the most specific unconstrained collection type. */
+  def unconstrained: C[A @uncheckedVariance]
 }

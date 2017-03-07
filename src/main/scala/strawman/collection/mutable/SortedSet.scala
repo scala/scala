@@ -1,6 +1,10 @@
 package strawman
 package collection.mutable
 
+import scala.Ordering
+
+import strawman.collection.ConstrainedIterablePolyTransforms
+
 trait SortedSet[A]
   extends collection.SortedSet[A]
     with Set[A]
@@ -8,5 +12,6 @@ trait SortedSet[A]
 
 trait SortedSetLike[A, +C[X] <: SortedSet[X]]
   extends collection.SortedSetLike[A, C]
+    with ConstrainedIterablePolyTransforms[A, Set, SortedSet, Ordering]
     with SetLike[A, Set]
     with SetMonoTransforms[A, C[A]]

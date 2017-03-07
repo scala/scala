@@ -1,8 +1,8 @@
 package strawman.collection.mutable
 
-import strawman.collection.{IterableFactories, Iterator}
+import strawman.collection.{IterableFactory, Iterator}
 
-import scala.{Boolean, Option, Unit}
+import scala.{Any, Boolean, Option, Unit}
 import scala.Predef.???
 
 /** Mutable set backed by a hash trie */
@@ -33,7 +33,7 @@ final class HashSet[A]
 
 }
 
-object HashSet extends IterableFactories[HashSet] {
+object HashSet extends IterableFactory[Any, HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = {
     val result = new HashSet[B]
