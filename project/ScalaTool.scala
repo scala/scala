@@ -1,3 +1,5 @@
+package scala.build
+
 import sbt._
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.lang3.StringUtils.replaceEach

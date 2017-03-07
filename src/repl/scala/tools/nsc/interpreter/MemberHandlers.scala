@@ -213,29 +213,40 @@ trait MemberHandlers {
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
+
     def targetType = intp.global.rootMirror.getModuleIfDefined("" + expr) match {
       case NoSymbol => intp.typeOfExpression("" + expr)
-      case sym      => sym.thisType
+      case sym      => sym.tpe
     }
-    private def importableTargetMembers = importableMembers(targetType).toList
-    // wildcard imports, e.g. import foo._
-    private def selectorWild    = selectors filter (_.name == nme.USCOREkw)
-    // renamed imports, e.g. import foo.{ bar => baz }
-    private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
+
+    private def isFlattenedSymbol(sym: Symbol) =
+      sym.owner.isPackageClass &&
+        sym.name.containsName(nme.NAME_JOIN_STRING) &&
+        sym.owner.info.member(sym.name.take(sym.name.indexOf(nme.NAME_JOIN_STRING))) != NoSymbol
+
+    private def importableTargetMembers =
+      importableMembers(exitingTyper(targetType)).filterNot(isFlattenedSymbol).toList
+
+    // non-wildcard imports
+    private def individualSelectors = selectors filter analyzer.isIndividualImport
 
     /** Whether this import includes a wildcard import */
-    val importsWildcard = selectorWild.nonEmpty
+    val importsWildcard = selectors exists analyzer.isWildcardImport
 
     def implicitSymbols = importedSymbols filter (_.isImplicit)
     def importedSymbols = individualSymbols ++ wildcardSymbols
 
-    private val selectorNames = selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames) toSet
-    lazy val individualSymbols: List[Symbol] = exitingTyper(importableTargetMembers filter (m => selectorNames(m.name)))
-    lazy val wildcardSymbols: List[Symbol]   = exitingTyper(if (importsWildcard) importableTargetMembers else Nil)
+    lazy val importableSymbolsWithRenames = {
+      val selectorRenameMap = individualSelectors.flatMap(x => x.name.bothNames zip x.rename.bothNames).toMap
+      importableTargetMembers flatMap (m => selectorRenameMap.get(m.name) map (m -> _))
+    }
+
+    lazy val individualSymbols: List[Symbol] = importableSymbolsWithRenames map (_._1)
+    lazy val wildcardSymbols: List[Symbol]   = if (importsWildcard) importableTargetMembers else Nil
 
     /** Complete list of names imported by a wildcard */
     lazy val wildcardNames: List[Name]   = wildcardSymbols map (_.name)
-    lazy val individualNames: List[Name] = individualSymbols map (_.name)
+    lazy val individualNames: List[Name] = importableSymbolsWithRenames map (_._2)
 
     /** The names imported by this statement */
     override lazy val importedNames: List[Name] = wildcardNames ++ individualNames

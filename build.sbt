@@ -32,6 +32,7 @@
  *   - to modularize the Scala compiler or library further
  */
 
+import scala.build._
 import VersionUtil._
 
 // Scala dependencies:
@@ -1018,6 +1019,9 @@ buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build"
 commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>
   ("test/it:testOnly -- " + parsed) :: state
 }
+
+// Watch the test files also so ~partest triggers on test case changes
+watchSources ++= PartestUtil.testFilePaths((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")
 
 // Add tab completion to scalac et al.
 commands ++= {

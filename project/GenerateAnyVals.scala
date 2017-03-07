@@ -1,3 +1,5 @@
+package scala.build
+
 /** Code generation of the AnyVal types and their companions. */
 trait GenerateAnyValReps {
   self: GenerateAnyVals =>

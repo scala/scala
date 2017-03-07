@@ -1,0 +1,4 @@
+t10207.scala:14: error: too many arguments (2) for method apply: (key: Int)scala.collection.mutable.ArrayBuffer[String] in trait MapLike
+  m(1, (_ => empty)) ++= AB("eins", "uno")
+          ^
+one error found

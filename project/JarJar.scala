@@ -1,3 +1,5 @@
+package scala.build
+
 import org.pantsbuild.jarjar
 import org.pantsbuild.jarjar._
 import org.pantsbuild.jarjar.util._

@@ -1,3 +1,5 @@
+package scala.build
+
 import sbt._
 
 /** This object defines keys that should be visible with an unqualified name in all .sbt files and the command line */

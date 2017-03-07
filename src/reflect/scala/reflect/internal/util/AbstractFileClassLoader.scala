@@ -92,7 +92,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     }
   }
 
-  private val packages = mutable.Map[String, Package]()
+  private[this] val packages = mutable.Map[String, Package]()
 
   override def definePackage(name: String, specTitle: String, specVersion: String, specVendor: String, implTitle: String, implVersion: String, implVendor: String, sealBase: URL): Package = {
     throw new UnsupportedOperationException()

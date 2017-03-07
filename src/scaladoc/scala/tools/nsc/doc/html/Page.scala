@@ -7,7 +7,7 @@ package scala
 package tools.nsc.doc.html
 
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.base.comment
+import scala.tools.nsc.doc.base.comment._
 import java.io.{FileOutputStream, File}
 import scala.reflect.NameTransformer
 import java.nio.channels.Channels
@@ -106,16 +106,21 @@ abstract class Page {
     case dtpl: DocTemplateEntity => dtpl.companion.isDefined
     case _ => false
   }
+}
 
-  protected def inlineToStr(inl: comment.Inline): String = inl match {
-    case comment.Chain(items) => items flatMap (inlineToStr(_)) mkString ""
-    case comment.Italic(in) => inlineToStr(in)
-    case comment.Bold(in) => inlineToStr(in)
-    case comment.Underline(in) => inlineToStr(in)
-    case comment.Monospace(in) => inlineToStr(in)
-    case comment.Text(text) => text
-    case comment.Summary(in) => inlineToStr(in)
-    case comment.EntityLink(comment.Text(text), _) => text
-    case _ => inl.toString
+object Page {
+  def inlineToStr(inl: Inline): String = inl match {
+    case Chain(items) => items flatMap (inlineToStr(_)) mkString ""
+    case Italic(in) => inlineToStr(in)
+    case Bold(in) => inlineToStr(in)
+    case Underline(in) => inlineToStr(in)
+    case Superscript(in) => inlineToStr(in)
+    case Subscript(in) => inlineToStr(in)
+    case Link(raw, title) => inlineToStr(title)
+    case Monospace(in) => inlineToStr(in)
+    case Text(text) => text
+    case Summary(in) => inlineToStr(in)
+    case HtmlTag(tag) => "<[^>]*>".r.replaceAllIn(tag, "")
+    case EntityLink(in, _) => inlineToStr(in)
   }
 }

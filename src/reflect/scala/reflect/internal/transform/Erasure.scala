@@ -161,6 +161,11 @@ trait Erasure {
           }
         if (newParents eq parents) tp
         else ClassInfoType(newParents, decls, clazz)
+
+      // can happen while this map is being used before erasure (e.g. when reasoning about sam types)
+      // the regular mapOver will cause a class cast exception because TypeBounds don't erase to TypeBounds
+      case _: BoundedWildcardType => tp // skip
+
       case _ =>
         mapOver(tp)
     }

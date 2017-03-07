@@ -1955,9 +1955,12 @@ trait Namers extends MethodSynthesis {
     //         Doing this generally would trigger cycles; that's what we also
     //         use the lower-level scan through the current Context as a fall back.
     if (!currentRun.compiles(owner)) owner.initialize
-    original.companionSymbol orElse {
-      ctx.lookupCompanionOf(original)
-    }
+
+    if (original.isModuleClass) original.sourceModule
+    else if (!owner.isTerm && owner.hasCompleteInfo)
+      original.companionSymbol
+    else
+      ctx.lookupCompanionInIncompleteOwner(original)
   }
 
   /** A version of `Symbol#linkedClassOfClass` that works with local companions, ala `companionSymbolOf`. */

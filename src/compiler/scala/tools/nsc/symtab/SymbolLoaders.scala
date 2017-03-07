@@ -122,11 +122,16 @@ abstract class SymbolLoaders {
    *  and give them `completer` as type.
    */
   def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
-    val clazz = newClass(root, name)
-    val module = newModule(root, name)
-    val completer = getCompleter(clazz, module)
-    enterClass(root, clazz, completer)
-    enterModule(root, module, completer)
+    val clazz0 = newClass(root, name)
+    val module0 = newModule(root, name)
+    val completer = getCompleter(clazz0, module0)
+    // enterClass/Module may return an existing symbol instead of the ones we created above
+    // this may happen when there's both sources and binaries on the classpath, but the class
+    // name is different from the file name, so the classpath can't match the binary and source
+    // representation. `companionModule/Class` prefers the source version, so we should be careful
+    // to reuse the symbols returned below.
+    val clazz = enterClass(root, clazz0, completer)
+    val module = enterModule(root, module0, completer)
     if (!clazz.isAnonymousClass) {
       // Diagnostic for SI-7147
       def msg: String = {

@@ -1,3 +1,5 @@
+package scala.build
+
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
 import java.util.Properties

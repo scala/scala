@@ -291,25 +291,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       null
     }
 
-    final def lookupCompanion(original: Symbol): Symbol = {
-      lookupSymbolEntry(original) match {
-        case null =>
-        case entry =>
-          var e = lookupEntry(original.name.companionName)
-          while (e != null) {
-            // 1) Must be owned by the same Scope, to ensure that in
-            //   `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
-            // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
-            def isClassAndModule(sym1: Symbol, sym2: Symbol) = sym1.isClass && sym2.isModule
-            if ((e.owner eq entry.owner) && (isClassAndModule(original, e.sym) || isClassAndModule(e.sym, original))) {
-              return if (e.sym.isCoDefinedWith(original)) e.sym else NoSymbol
-            }
-            e = lookupNextEntry(e)
-          }
-      }
-      NoSymbol
-    }
-
     /** lookup a symbol entry matching given name.
      *  @note from Martin: I believe this is a hotspot or will be one
      *  in future versions of the type system. I have reverted the previous
@@ -344,6 +325,20 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name)
       e
     }
+
+    final def lookupNameInSameScopeAs(original: Symbol, companionName: Name): Symbol = {
+      lookupSymbolEntry(original) match {
+        case null =>
+        case entry =>
+          var e = lookupEntry(companionName)
+          while (e != null) {
+            if (e.owner eq entry.owner) return e.sym
+            e = lookupNextEntry(e)
+          }
+      }
+      NoSymbol
+    }
+
 
     /** TODO - we can test this more efficiently than checking isSubScope
      *  in both directions. However the size test might be enough to quickly

@@ -1,0 +1,36 @@
+
+scala> // import in various ways
+
+scala> import java.util.Date
+import java.util.Date
+
+scala> import scala.util._
+import scala.util._
+
+scala> import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{universe=>ru}
+
+scala> import ru.TypeTag
+import ru.TypeTag
+
+scala> 
+
+scala> // show the imports
+
+scala> :imports
+ 1) import java.lang._             (...)
+ 2) import scala._                 (...)
+ 3) import scala.Predef._          (...)
+ 4) import java.util.Date          (...)
+ 5) import scala.util._            (...)
+ 6) import scala.reflect.runtime.{universe=>ru} (...)
+ 7) import ru.TypeTag              (...)
+
+scala> 
+
+scala> // should be able to define this class with the imports above
+
+scala> class C[T](date: Date, rand: Random, typeTag: TypeTag[T])
+defined class C
+
+scala> :quit
