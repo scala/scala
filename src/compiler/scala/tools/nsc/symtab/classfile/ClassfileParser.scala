@@ -68,13 +68,13 @@ abstract class ClassfileParser {
   protected var busy: Symbol = _               // lock to detect recursive reads
   protected var currentClass: Name = _         // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
-  protected var srcfile0 : Option[AbstractFile] = None
+  protected var srcfile0 : () => Option[AbstractFile] = () => None
   protected def moduleClass: Symbol = staticModule.moduleClass
   private var sawPrivateConstructor = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
 
-  def srcfile = srcfile0
+  lazy val srcfile: Option[AbstractFile] = srcfile0()
 
   private def optimized         = settings.optimise.value
 
@@ -868,7 +868,7 @@ abstract class ClassfileParser {
             case rootMirror.EmptyPackage => srcfileLeaf
             case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
           }
-          srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
+          srcfile0 = () => None // settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
         case tpnme.CodeATTR =>
           if (sym.owner.isInterface) {
             sym setFlag JAVA_DEFAULTMETHOD
