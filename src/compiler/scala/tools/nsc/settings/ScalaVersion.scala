@@ -127,7 +127,7 @@ abstract class ScalaBuild extends Ordered[ScalaBuild] {
   def unparse: String
 }
 /**
- * A development, test, nightly, snapshot or other "unofficial" build
+ * A development, test, integration, snapshot or other "unofficial" build
  */
 case class Development(id: String) extends ScalaBuild {
   def unparse = s"-${id}"
