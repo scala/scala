@@ -2158,6 +2158,15 @@ trait Types
       else
         finalizeHash(h, 2)
     }
+    //OPT specialize equals
+    override final def equals(other: Any): Boolean = {
+      other match {
+        case otherTypeRef: TypeRef =>
+          pre.equals(otherTypeRef.pre) && sym.eq(otherTypeRef.sym) && sameElementsEquals(args, otherTypeRef.args)
+        case _ => false
+      }
+    }
+
 
     // interpret symbol's info in terms of the type's prefix and type args
     protected def relativeInfo: Type = appliedType(sym.info.asSeenFrom(pre, sym.owner), argsOrDummies)
