@@ -174,11 +174,6 @@ class ExtractAPI[GlobalType <: Global](
       if (sym == NoSymbol || sym.isRoot || sym.isEmptyPackageClass || sym.isRootPackage) postfix
       else pathComponents(sym.owner, new xsbti.api.Id(simpleName(sym)) :: postfix)
     }
-  private def simpleType(in: Symbol, t: Type): SimpleType =
-    processType(in, t) match {
-      case s: SimpleType => s
-      case x             => log("Not a simple type:\n\tType: " + t + " (" + t.getClass + ")\n\tTransformed: " + x.getClass); Constants.emptyType
-    }
   private def types(in: Symbol, t: List[Type]): Array[xsbti.api.Type] = t.toArray[Type].map(processType(in, _))
   private def projectionType(in: Symbol, pre: Type, sym: Symbol) =
     {
@@ -192,7 +187,7 @@ class ExtractAPI[GlobalType <: Global](
           reference(sym)
         }
       } else if (sym.isRoot || sym.isRootPackage) Constants.emptyType
-      else new xsbti.api.Projection(simpleType(in, pre), simpleName(sym))
+      else new xsbti.api.Projection(processType(in, pre), simpleName(sym))
     }
   private def reference(sym: Symbol): xsbti.api.ParameterRef = new xsbti.api.ParameterRef(tparamID(sym))
 
