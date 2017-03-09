@@ -524,14 +524,18 @@ class MutableSettings(val errorFn: String => Unit)
     appendPath: StringSetting)
   extends StringSetting(name, "path", descr, default) {
     import util.ClassPath.join
-    def prepend(s: String) = prependPath.value = join(s, prependPath.value)
-    def append(s: String) = appendPath.value = join(appendPath.value, s)
+    def prepend(s: String) = {
+      prependPath.value = join(s, prependPath.value)
+      updateValue()
+    }
+    def append(s: String) = {
+      appendPath.value = join(appendPath.value, s)
+      updateValue()
+    }
 
-    override def value = join(
-      prependPath.value,
-      super.value,
-      appendPath.value
-    )
+    override def value = v
+
+    protected def updateValue() = this.value = join(prependPath.value, value, appendPath.value)
   }
 
   /** Set the output directory. */
