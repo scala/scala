@@ -82,6 +82,7 @@ trait LowPriorityCodecImplicits {
 }
 
 object Codec extends LowPriorityCodecImplicits {
+  // TODO: Replace with java.nio.charset.StandardCharsets as soon as support for Java < 7 is dropped.
   final val ISO8859: Codec = new Codec(Charset forName "ISO-8859-1")
   final val UTF8: Codec    = new Codec(Charset forName "UTF-8")
 

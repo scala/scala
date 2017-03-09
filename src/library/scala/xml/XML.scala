@@ -14,6 +14,7 @@ import java.io.{ File, FileDescriptor, FileInputStream, FileOutputStream }
 import java.io.{ InputStream, Reader, StringReader, Writer }
 import java.nio.channels.Channels
 import scala.util.control.Exception.ultimately
+import scala.annotation.migration
 
 object Source {
   def fromFile(file: File)              = new InputSource(new FileInputStream(file))
@@ -61,7 +62,8 @@ object XML extends XMLLoader[Elem] {
   val preserve  = "preserve"
   val space     = "space"
   val lang      = "lang"
-  val encoding  = "ISO-8859-1"
+  @migration("Default encoding changed from ISO-8859-1 to UTF-8.", "2.10.0")
+  val encoding  = "UTF-8"
 
   /** Returns an XMLLoader whose load* methods will use the supplied SAXParser. */
   def withSAXParser(p: SAXParser): XMLLoader[Elem] =

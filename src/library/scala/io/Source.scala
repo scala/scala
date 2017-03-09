@@ -111,6 +111,7 @@ object Source {
   /** Create a `Source` from array of bytes, assuming
    *  one byte per character (ISO-8859-1 encoding.)
    */
+  @deprecated("Use `fromBytes` and specify encoding explicitly.", "2.10.0")
   def fromRawBytes(bytes: Array[Byte]): Source =
     fromString(new String(bytes, Codec.ISO8859.name))
 
