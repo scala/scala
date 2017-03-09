@@ -190,11 +190,6 @@ trait Namers extends MethodSynthesis {
       sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass
     )
 
-    private def inCurrentScope(m: Symbol): Boolean = {
-      if (owner.isClass) owner == m.owner
-      else m.owner.isClass && context.scope == m.owner.info.decls
-    }
-
     /** Enter symbol into context's scope and return symbol itself */
     def enterInScope(sym: Symbol): Symbol = enterInScope(sym, context.scope)
 
@@ -414,7 +409,7 @@ trait Namers extends MethodSynthesis {
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
       var m: Symbol = context.scope lookupAll tree.name find (_.isModule) getOrElse NoSymbol
       val moduleFlags = tree.mods.flags | MODULE
-      if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
+      if (m.isModule && !m.isPackage && (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m)
         m.moduleClass andAlso (setPrivateWithin(tree, _))
