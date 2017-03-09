@@ -649,8 +649,8 @@ object Future {
                     // up to the invoking executor
                     val remaining = _tasksLocal.get
                     _tasksLocal set Nil
-                    unbatchedExecute(new Batch(remaining)) //TODO what if this submission fails?
-                    throw t // rethrow
+                    try unbatchedExecute(new Batch(remaining)) // investigating SI-8069
+                    finally throw t // rethrow
                 }
                 processBatch(_tasksLocal.get) // since head.run() can add entries, always do _tasksLocal.get here
             }
