@@ -75,25 +75,25 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
 
   /** For a given class and concrete type arguments, give its specialized class */
-  val specializedClass = perRunCaches.newMap[(Symbol, TypeEnv), Symbol]
+  val specializedClass = perRunCaches.newAnyRefMap[(Symbol, TypeEnv), Symbol]
 
   /** Map a method symbol to a list of its specialized overloads in the same class. */
-  private val overloads = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
+  private val overloads = perRunCaches.newAnyRefMap[Symbol, List[Overload]]() withDefaultValue Nil
 
   /** Map a symbol to additional information on specialization. */
-  private val info = perRunCaches.newMap[Symbol, SpecializedInfo]()
+  private val info = perRunCaches.newAnyRefMap[Symbol, SpecializedInfo]()
 
   /** Map class symbols to the type environments where they were created. */
-  private val typeEnv = perRunCaches.newMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
+  private val typeEnv = perRunCaches.newAnyRefMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
 
   //    Key: a specialized class or method
   //  Value: a map from tparams in the original class to tparams in the specialized class.
-  private val anyrefSpecCache = perRunCaches.newMap[Symbol, mutable.Map[Symbol, Symbol]]()
+  private val anyrefSpecCache = perRunCaches.newAnyRefMap[Symbol, mutable.Map[Symbol, Symbol]]()
 
   // holds mappings from members to the type variables in the class
   // that they were already specialized for, so that they don't get
   // specialized twice (this is for AnyRef specializations)
-  private val wasSpecializedForTypeVars = perRunCaches.newMap[Symbol, Set[Symbol]]() withDefaultValue Set()
+  private val wasSpecializedForTypeVars = perRunCaches.newAnyRefMap[Symbol, Set[Symbol]]() withDefaultValue Set()
 
   /** Concrete methods that use a specialized type, or override such methods. */
   private val concreteSpecMethods = perRunCaches.newWeakSet[Symbol]()

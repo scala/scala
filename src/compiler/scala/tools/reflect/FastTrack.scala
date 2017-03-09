@@ -42,10 +42,10 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
   }
 
   /** A map from a set of pre-established macro symbols to their implementations. */
-  private val fastTrackCache = perRunCaches.newGeneric[Map[Symbol, FastTrackEntry]] {
+  private val fastTrackCache = perRunCaches.newGeneric[collection.Map[Symbol, FastTrackEntry]] {
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
-    Map[Symbol, FastTrackEntry](
+    collection.mutable.AnyRefMap[Symbol, FastTrackEntry](
       makeBlackbox(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
       makeBlackbox(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
       makeBlackbox(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
