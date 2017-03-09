@@ -23,9 +23,6 @@ trait Namers extends MethodSynthesis {
   import global._
   import definitions._
 
-  var _lockedCount = 0
-  def lockedCount = this._lockedCount
-
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
    *  Does the same for any trees containing EmptyTrees.
    */
@@ -1892,9 +1889,9 @@ trait Namers extends MethodSynthesis {
   abstract class LockingTypeCompleter(val tree: Tree) extends TypeCompleter with FlagAgnosticCompleter {
     def completeImpl(sym: Symbol): Unit
     override def complete(sym: Symbol) = {
-      _lockedCount += 1
+      lockedCount += 1
       try completeImpl(sym)
-      finally _lockedCount -= 1
+      finally lockedCount -= 1
     }
   }
 
