@@ -2487,7 +2487,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           block match {
             case Block(List(classDef @ ClassDef(_, _, _, _)), Apply(Select(New(_), _), _)) =>
               val classDecls = classDef.symbol.info.decls
-              val visibleMembers = pt match {
+              lazy val visibleMembers = pt match {
                 case WildcardType                           => classDecls.toList
                 case BoundedWildcardType(TypeBounds(lo, _)) => lo.members
                 case _                                      => pt.members
