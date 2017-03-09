@@ -131,7 +131,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     private val q3:juc.BlockingQueue[Workflow] = new juc.LinkedBlockingQueue[Workflow]
 
 
-    class Workflow(val item1:List[Item1])  extends AsyncReporter {
+    class Workflow(val cunit:CompilationUnit,
+                   val item1:List[Item1])  extends AsyncReporter {
       val optimize = Promise[List[Item2]]
       val item2 = Promise[List[Item2]]
       val item3 = Promise[List[Item3]]
@@ -173,16 +174,16 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val caseInsensitively = mutable.Map.empty[String, Symbol]
 
       def run() {
-        for (workflow <- allData) {
+        for (workflow <- allData) withCurrentUnitNoLog(workflow.cunit){
           val item2Builder = List.newBuilder[Item2]
           for (item1 <- workflow.item1) {
             try {
-              item2Builder += withAstTreeLock(withCurrentUnitNoLog(item1.cunit)(visit(item1)))
+              item2Builder += visit(item1,workflow.cunit)
             } catch {
               case ex: Throwable =>
                 ex.printStackTrace()
                 //we can report directly to the reporter - this is not parallelised
-                reporter.error(NoPosition, s"Error while emitting ${item1.cunit.source}\n${ex.getMessage}")
+                reporter.error(NoPosition, s"Error while emitting ${workflow.cunit.source}\n${ex.getMessage}")
             }
           }
           startPipeline(workflow, item2Builder.result())
@@ -200,8 +201,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        *  returns an Item2.
        *
        */
-      def visit(item: Item1) = {
-        val Item1(cd, cunit) = item
+      def visit(item: Item1, cunit:CompilationUnit) = {
+        val cd = item.cd
         val claszSymbol = cd.symbol
 
         if (checkCaseInsensitively) {
@@ -382,7 +383,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         addInnerClasses(classNode, bTypes.backendUtils.collectNestedClasses(classNode))
       }
 
-      override def process(items: List[Item2]): List[Item3] = withAstTreeLock {
+      override def process(items: List[Item2]): List[Item3] = {
         items map { item =>
           try {
             trace(s"start Worker2 ${item.sourceFilePath}")
@@ -514,8 +515,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
           java.util.concurrent.Executors.newCachedThreadPool(), onWorkerError
         )
         val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ec)
-        val workers2: List[Future[Unit]] = (1 to 3).map { i => Future(new Worker2(i, q2).run)(ec) }(scala.collection.breakOut)
-        val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 3)).map {
+        val workers2: List[Future[Unit]] = (1 to 4).map { i => Future(new Worker2(i, q2).run)(ec) }(scala.collection.breakOut)
+        val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 4)).map {
           i => Future(new Worker3(i, q3, bytecodeWriter).run)(ec)
         }(scala.collection.breakOut)
 
@@ -613,7 +614,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       }
 
       gen(cunit.body)
-      val workflow = new Workflow(classesInCompilation.result())
+      val workflow = new Workflow(cunit, classesInCompilation.result())
 
       allData += workflow
       q2 add workflow

@@ -1355,11 +1355,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
                                         implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type,
-                                        serializable: Boolean, markerInterfaces: Seq[asm.Type]) = {
+                                        serializable: Boolean, markerInterfaces: List[asm.Type]) = {
     import java.lang.invoke.LambdaMetafactory.{FLAG_MARKERS, FLAG_SERIALIZABLE}
     def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
     val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE)
-    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces
+    val bsmArgs = samMethodType :: implMethodHandle :: instantiatedMethodType :: Int.box(flags) :: Int.box(markerInterfaces.length) :: markerInterfaces
     jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
   }
 

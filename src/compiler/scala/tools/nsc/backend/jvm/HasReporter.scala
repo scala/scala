@@ -12,10 +12,6 @@ trait HasReporter {
 
   val global : Global
 
-  @inline def withAstTreeLock[T](fn: => T): T = {
-    global.synchronized(fn)
-  }
-
   lazy val defaultReporter = new DefaultReporter(global)
 
   @inline private def reporterForThread: LocalReporter = {
