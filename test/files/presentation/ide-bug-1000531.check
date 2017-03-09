@@ -19,7 +19,7 @@ retrieved 126 members
 [accessible:  true] `method addString(b: StringBuilder)StringBuilder`
 [accessible:  true] `method addString(b: StringBuilder, sep: String)StringBuilder`
 [accessible:  true] `method addString(b: StringBuilder, start: String, sep: String, end: String)StringBuilder`
-[accessible:  true] `method aggregate[B](z: B)(seqop: (B, B) => B, combop: (B, B) => B)B`
+[accessible:  true] `method aggregate[B](z: => B)(seqop: (B, B) => B, combop: (B, B) => B)B`
 [accessible:  true] `method asInstanceOf[T0]=> T0`
 [accessible:  true] `method buffered=> scala.collection.BufferedIterator[B]`
 [accessible:  true] `method collectFirst[B](pf: PartialFunction[B,B])Option[B]`

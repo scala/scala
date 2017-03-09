@@ -181,7 +181,7 @@ self =>
 
     override def fold[U >: T](z: U)(op: (U, U) => U): U = foldLeft[U](z)(op)
 
-    override def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
+    override def aggregate[S](z: =>S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
 
     override def sum[U >: T](implicit num: Numeric[U]): U = {
       var s = sum_quick(num, arr, until, i, num.zero)
