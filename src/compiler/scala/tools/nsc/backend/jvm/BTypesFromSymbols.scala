@@ -607,11 +607,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
               annotatedInline   = info.annotatedInline,
               annotatedNoInline = info.annotatedNoInline)
             if (methodSym.isMixinConstructor)
-              List((staticMethodSignature, staticMethodInfo))
+              (staticMethodSignature, staticMethodInfo) :: Nil
             else
-              List((signature, info), (staticMethodSignature, staticMethodInfo))
+              (signature, info) :: (staticMethodSignature, staticMethodInfo) :: Nil
           } else
-            List((signature, info))
+            (signature, info) :: Nil
         }
     }).toMap
 

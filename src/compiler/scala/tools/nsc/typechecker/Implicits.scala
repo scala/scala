@@ -635,7 +635,7 @@ trait Implicits {
         val itree2 = if (!isView) fallback else pt match {
           case Function1(arg1, arg2) =>
             typed1(
-              atPos(itree0.pos)(Apply(itree1, List(Ident(nme.argument) setType approximate(arg1)))),
+              atPos(itree0.pos)(Apply(itree1, Ident(nme.argument).setType(approximate(arg1)) :: Nil)),
               EXPRmode,
               approximate(arg2)
             ) match {
