@@ -591,9 +591,10 @@ trait Implicits {
       // We can only rule out a subtype relationship if the left hand
       // side is a class, else we may not know enough.
       case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
+        def hasMember(tp: Type, name: Name) = tp.baseClasses.exists(_.info.decl(name) != NoSymbol)
         tp2.dealiasWiden match {
           case TypeRef(_, sym2, _)         => ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
-          case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
+          case RefinedType(parents, decls) => decls.nonEmpty && !hasMember(tr1, decls.head.name) // opt avoid full call to .member
           case _                           => false
         }
       case _ => false
