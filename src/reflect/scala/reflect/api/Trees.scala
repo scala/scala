@@ -2993,15 +2993,16 @@ trait Trees { self: Universe =>
   /** The constructor/extractor for `Modifiers` instances.
    *  @group Traversal
    */
-  val Modifiers: ModifiersCreator
+  val Modifiers: ModifiersExtractor
 
   /** An extractor class to create and pattern match with syntax `Modifiers(flags, privateWithin, annotations)`.
    *  Modifiers encapsulate flags, visibility annotations and Scala annotations for member definitions.
    *  @group Traversal
    */
-  abstract class ModifiersCreator {
+  abstract class ModifiersExtractor {
     def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
+    def unapply(mods: Modifiers): Option[(FlagSet, Name, List[Tree])]
   }
 
   /** The factory for `Modifiers` instances.

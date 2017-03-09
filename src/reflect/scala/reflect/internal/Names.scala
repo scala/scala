@@ -510,6 +510,11 @@ trait Names extends api.Names with LowPriorityNames {
 
   implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
 
+  object TermName extends TermNameExtractor {
+    def apply(s: String) = newTermName(s)
+    def unapply(name: TermName): Option[String] = Some(name.toString)
+  }
+
   sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
@@ -539,4 +544,9 @@ trait Names extends api.Names with LowPriorityNames {
   }
 
   implicit val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
+
+  object TypeName extends TypeNameExtractor {
+    def apply(s: String) = newTypeName(s)
+    def unapply(name: TypeName): Option[String] = Some(name.toString)
+  }
 }
