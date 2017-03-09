@@ -103,9 +103,10 @@ releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifacto
 # repo for the modules and the quick build
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
-# the `releaseTempRepoUrl` needs to be in the repositories file for building quick (to get starr) and the modules.
-# the file is re-generated for running the stability test, this time with the `integrationRepoUrl`.
-generateRepositoriesConfig $releaseTempRepoUrl
+# the `releaseTempRepoUrl` needs to be in the repositories file to get starr when building quick and the modules.
+# `integrationRepoUrl` is there to find modules when building quick and other modules (e.g., partest requires xml).
+# the file is re-generated for running the stability test, this time with only `integrationRepoUrl`.
+generateRepositoriesConfig $releaseTempRepoUrl $integrationRepoUrl
 
 # ARGH trying to get this to work on multiple versions of sbt-extras...
 # the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
