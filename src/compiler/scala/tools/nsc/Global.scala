@@ -1194,10 +1194,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Collects for certain classes of warnings during this run. */
   class ConditionalWarning(what: String, option: Settings#BooleanSetting) {
-    val warnings = mutable.LinkedHashMap[Position, String]()
+    val warnings = mutable.ListBuffer[(Position, String)]()
+    private[this] val seenWarningPositions = mutable.Set[Position]()
     def warn(pos: Position, msg: String) =
       if (option.value) reporter.warning(pos, msg)
-      else if (!(warnings contains pos)) warnings += ((pos, msg))
+      else if (!(seenWarningPositions contains pos)) {
+        // This is a bit convoluted in order to retain binary
+        // compatiblity with the signature of `warnings: ListBuffer`.
+        // Changing this just before 2.10.1 might have broken SBT:
+        // https://groups.google.com/forum/?fromgroups=#!topic/scala-internals/ZpzayFCu_8E
+        seenWarningPositions += pos
+        warnings += ((pos, msg))
+      }
     def summarize() =
       if (option.isDefault && warnings.nonEmpty)
         reporter.warning(NoPosition, "there were %d %s warning(s); re-run with %s for details".format(warnings.size, what, option.name))
