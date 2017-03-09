@@ -575,7 +575,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     def collectMacroArgs(tree: Tree): Unit = tree match {
       case Apply(fn, args) =>
         // todo. infer precise typetag for this Expr, namely the declared type of the corresponding macro impl argument
-        exprArgs.prepend(args map (arg => context.Expr[Nothing](arg)(TypeTag.Nothing)))
+        exprArgs.prepend(args map (arg => context.Expr[Nothing](arg.duplicate)(TypeTag.Nothing)))
         collectMacroArgs(fn)
       case TypeApply(fn, args) =>
         typeArgs = args
