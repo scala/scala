@@ -63,7 +63,8 @@ trait MemberLookupBase {
     val links = syms flatMap { case (sym, site) => internalLink(sym, site) } match {
       case Nil =>
         // (3) Look at external links
-        syms.flatMap { case (sym, owner) =>
+        syms.flatMap { case (sym, site) =>
+          val owner = if(site.allOverriddenSymbols contains sym.owner) site else sym.owner
           // reconstruct the original link
           def linkName(sym: Symbol) = {
             def nameString(s: Symbol) = s.nameString + (if ((s.isModule || s.isModuleClass) && !s.isPackage) "$" else "")
