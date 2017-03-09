@@ -49,7 +49,7 @@ trait Growable[-A] extends Clearable {
    */
   def ++=(xs: TraversableOnce[A]): this.type = {
     @tailrec def loop(xs: scala.collection.LinearSeq[A]) {
-      if (xs.nonEmpty) {
+      if (!xs.isEmpty) {
         this += xs.head
         loop(xs.tail)
       }
