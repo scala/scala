@@ -1,0 +1,6 @@
+class Test$InnerObject$ isFinal = false
+class Test$InnerCase isFinal = true
+class Test$InnerNonCase isFinal = true
+class TopLevelObject$ isFinal = true
+class TopLevelCase isFinal = true
+class TopLevelNonCase isFinal = true
