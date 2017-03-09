@@ -458,7 +458,7 @@ abstract class Erasure extends InfoTransform
   class ComputeBridges(unit: CompilationUnit, root: Symbol) {
 
     class BridgesCursor(root: Symbol) extends overridingPairs.Cursor(root) {
-      override def parents              = List(root.info.firstParent)
+      override def parents              = root.info.firstParent :: Nil
       // Varargs bridges may need generic bridges due to the non-repeated part of the signature of the involved methods.
       // The vararg bridge is generated during refchecks (probably to simplify override checking),
       // but then the resulting varargs "bridge" method may itself need an actual erasure bridge.
@@ -656,7 +656,7 @@ abstract class Erasure extends InfoTransform
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
       tree match {
-        case Apply(ta @ TypeApply(sel @ Select(qual, name), List(targ)), List())
+        case Apply(ta @ TypeApply(sel @ Select(qual, name), targ :: Nil), List())
         if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectTpe) // need to have an expected type, see #3037
           // !!! Make pending/run/t5866b.scala work. The fix might be here and/or in unbox1.
