@@ -104,10 +104,13 @@ Core commands:
   - `partest` runs partest tests (accepts options, try `partest --help`)
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
-    - Optionally `set baseVersionSuffix := "abcd123-SNAPSHOT"`
+    - Optionally `set baseVersionSuffix := "-bin-abcd123-SNAPSHOT"`
       where `abcd123` is the git hash of the revision being published. You can also
-      use something custom like `"mypatch"`. This changes the version number from
-      `2.12.0-SNAPSHOT` to something more stable (`2.12.0-abcd123-SNAPSHOT`).
+      use something custom like `"-bin-mypatch"`. This changes the version number from
+      `2.12.2-SNAPSHOT` to something more stable (`2.12.2-bin-abcd123-SNAPSHOT`).
+    - Note that the `-bin` string marks the version binary compatible. Using it in
+      sbt will cause the `scalaBinaryVersion` to be `2.12`. If the version is not
+      binary compatible, we recommend using `-pre`, e.g., `2.13.0-pre-abcd123-SNAPSHOT`.
     - Optionally `set publishArtifact in (Compile, packageDoc) in ThisBuild := false`
       to skip generating / publishing API docs (speeds up the process).
 
@@ -199,8 +202,9 @@ CI performs a full bootstrap. The first task, `validate-publish-core`, publishes
 a build of your commit to the temporary repository
 https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots.
 Note that this build is not yet bootstrapped, its bytecode is built using the
-current `starr`. The version number is `2.12.0-abcd123-SNAPSHOT` where `abcd123`
-is the commit hash.
+current `starr`. The version number is `2.12.2-bin-abcd123-SNAPSHOT` where `abcd123`
+is the commit hash. For binary incompatible builds, the version number is
+`2.13.0-pre-abcd123-SNAPSHOT`.
 
 You can use Scala builds in the validation repository locally by adding a resolver
 and specifying the corresponding `scalaVersion`:
@@ -208,7 +212,7 @@ and specifying the corresponding `scalaVersion`:
 ```
 $ sbt
 > set resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
-> set scalaVersion := "2.12.0-abcd123-SNAPSHOT"
+> set scalaVersion := "2.12.2-bin-abcd123-SNAPSHOT"
 > console
 ```
 
@@ -228,10 +232,8 @@ The CI also publishes nightly API docs:
   - [2.11.x](http://www.scala-lang.org/files/archive/nightly/2.11.x/api/?C=M;O=D)
     - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.11.x/api/2.11.x/)
 
-Note that we currently don't publish nightly (or SNAPSHOT) builds in maven or ivy
-format to any repository. You can track progress on this front at
-[scala-jenkins-infra#133](https://github.com/scala/scala-jenkins-infra/issues/133)
-and [scala-dev#68](https://github.com/scala/scala-dev/issues/68).
+Using a nightly build in sbt is explained in
+[this answer on Stack Overflow](http://stackoverflow.com/questions/40622878)
 
 ## Scala CI Internals
 
