@@ -4875,17 +4875,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
-        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name) orElse {
+        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
+        if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
-          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-            if ((qual1 ne qual) && !qual1.isErrorTyped)
-              return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-          }
-          NoSymbol
+          val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+          if ((qual1 ne qual) && !qual1.isErrorTyped)
+            return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
+
         if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
           qual setType tree.symbol.owner.tpe
 
