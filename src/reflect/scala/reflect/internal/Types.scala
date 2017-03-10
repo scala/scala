@@ -2135,14 +2135,17 @@ trait Types
     //OPT specialize hashCode
     override final def computeHashCode = {
       import scala.util.hashing.MurmurHash3._
-      val hasArgs = args ne Nil
       var h = productSeed
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
-      if (hasArgs)
-        finalizeHash(mix(h, args.hashCode()), 3)
-      else
-        finalizeHash(h, 2)
+      var i = 0
+      var elem = args
+      while (elem ne Nil) {
+        h = mix(h, elem.head.hashCode())
+        elem = elem.tail
+        i += 1
+      }
+      finalizeHash(h, 2 + i)
     }
 
     // interpret symbol's info in terms of the type's prefix and type args
