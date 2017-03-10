@@ -113,7 +113,7 @@ trait PatternTypers {
         typedArg(arg, mode, newMode, dropByName(pt))
       }
       val FixedAndRepeatedTypes(fixed, elem) = formals
-      val front = (args, fixed).zipped map typedArgWithFormal
+      val front = map2(args, fixed)(typedArgWithFormal)
       def rest  = context withinStarPatterns (args drop front.length map (typedArgWithFormal(_, elem)))
 
       elem match {
