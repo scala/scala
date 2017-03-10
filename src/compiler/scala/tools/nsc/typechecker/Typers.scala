@@ -4754,7 +4754,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
 
-        def mkUpdate(table: Tree, indices: List[Tree]) =
+        def mkUpdate(table: Tree, indices: List[Tree], argss: List[List[Tree]]) =
           gen.evalOnceAll(table :: indices, context.owner, context.unit) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
@@ -4763,9 +4763,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   is.map(i => i()) ++ extraArgs
                 ) setPos tree.pos
               )
+              def mkApplies(core: Tree) = argss.foldLeft(core)((x, args) => Apply(x, args))
               mkCall(
                 nme.update,
-                Apply(Select(mkCall(nme.apply), prefix) setPos fun.pos, args) setPos tree.pos
+                Apply(Select(mkApplies(mkCall(nme.apply)), prefix) setPos fun.pos, args) setPos tree.pos
               )
             case _ => EmptyTree
           }
@@ -4782,7 +4783,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           case Apply(fn, indices) =>
             fn match {
-              case treeInfo.Applied(Select(table, nme.apply), _, _) => mkUpdate(table, indices)
+              case treeInfo.Applied(Select(table, nme.apply), _, argss) =>
+                if (argss.isEmpty) mkUpdate(table, indices, Nil)
+                else {
+                  // table(indices)(cruft)(implicits)
+                  mkUpdate(table, argss.head, argss.drop(1) :+ indices)
+                }
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }
