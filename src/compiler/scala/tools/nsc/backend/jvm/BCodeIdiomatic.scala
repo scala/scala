@@ -11,6 +11,7 @@ import scala.tools.asm
 import scala.annotation.switch
 import scala.collection.mutable
 import GenBCode._
+import scala.collection.JavaConverters._
 import scala.tools.asm.tree.MethodInsnNode
 import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 
@@ -641,7 +642,7 @@ abstract class BCodeIdiomatic extends SubComponent {
    *
    */
   class LabelDefsFinder(rhs: Tree) extends Traverser {
-    val result = mutable.AnyRefMap.empty[Tree, List[LabelDef]]
+    val result = new java.util.IdentityHashMap[Tree, List[LabelDef]]().asScala
     var acc: List[LabelDef] = Nil
     var directResult: List[LabelDef] = Nil
 
