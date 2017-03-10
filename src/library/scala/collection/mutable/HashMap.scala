@@ -73,10 +73,18 @@ extends AbstractMap[A, B]
   }
 
   override def getOrElseUpdate(key: A, defaultValue: => B): B = {
-    val i = index(elemHashCode(key))
+    val hash = elemHashCode(key)
+    val i = index(hash)
     val entry = findEntry(key, i)
     if (entry != null) entry.value
-    else addEntry(createNewEntry(key, defaultValue), i)
+    else {
+      val table0 = table
+      val default = defaultValue
+      // Avoid recomputing index if the `defaultValue()` hasn't triggered
+      // a table resize.
+      val newEntryIndex = if (table0 eq table) i else index(hash)
+      addEntry(createNewEntry(key, default), newEntryIndex)
+    }
   }
 
   /* inlined HashTable.findEntry0 to preserve its visibility */
