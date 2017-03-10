@@ -4781,14 +4781,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               mkAssign(Select(qq1, vname) setPos qual.pos)
             }
 
+          case Apply(fn, extra) if qual.isInstanceOf[ApplyToImplicitArgs] =>
+            fn match {
+              case treeInfo.Applied(Select(table, nme.apply), _, indices :: Nil) =>
+                // table(indices)(implicits)
+                mkUpdate(table, indices, extra :: Nil)
+              case _  => UnexpectedTreeAssignmentConversionError(qual)
+            }
+
           case Apply(fn, indices) =>
             fn match {
-              case treeInfo.Applied(Select(table, nme.apply), _, argss) =>
-                if (argss.isEmpty) mkUpdate(table, indices, Nil)
-                else {
-                  // table(indices)(cruft)(implicits)
-                  mkUpdate(table, argss.head, argss.drop(1) :+ indices)
-                }
+              case treeInfo.Applied(Select(table, nme.apply), _, Nil) =>
+                mkUpdate(table, indices, Nil)
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }

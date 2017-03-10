@@ -1,0 +1,7 @@
+t6714.scala:19: error: Unexpected tree during assignment conversion.
+  a(1)(9000) += 20  // Not OK
+      ^
+t6714.scala:21: error: Unexpected tree during assignment conversion.
+  b(1)(5) += 20     // Not OK
+      ^
+two errors found
