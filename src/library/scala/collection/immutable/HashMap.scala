@@ -49,7 +49,10 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
 
   override def foreach[U](f: ((A, B)) => U): Unit = ()
 
-  def get(key: A): Option[B] =
+  override def contains(key: A): Boolean =
+    contains0(key, computeHash(key), 0)
+
+  override def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
 
   override final def contains(key: A): Boolean =
@@ -93,6 +96,8 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   private[collection] def computeHash(key: A) = improve(elemHashCode(key))
 
   import HashMap.{Merger, MergeFunction, liftMerger}
+
+  private[collection] def contains0(key: A, hash: Int, level: Int): Boolean = false
 
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
   protected def contains0(key: A, hash: Int, level: Int): Boolean = false
@@ -196,6 +201,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     private[collection] def getHash = hash
     private[collection] def computeHashFor(k: A) = computeHash(k)
 
+    override def contains0(key: A, hash: Int, level: Int): Boolean =
+      hash == this.hash && key == this.key
+
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
 
@@ -241,6 +249,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     // assert(kvs.size > 1)
 
     override def size = kvs.size
+
+    override def contains0(key: A, hash: Int, level: Int): Boolean =
+      hash == this.hash && kvs.contains(key)
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash) kvs.get(key) else None
@@ -314,6 +325,18 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieMap[_,_]]))
 
     override def size = size0
+
+    override def contains0(key: A, hash: Int, level: Int): Boolean = {
+      val index = (hash >>> level) & 0x1f
+      val mask = 1 << index
+      if (bitmap == - 1) {
+        elems(index & 0x1f).contains0(key, hash, level + 5)
+      } else if ((bitmap & mask) != 0) {
+        val offset = Integer.bitCount(bitmap & (mask-1))
+        elems(offset).contains0(key, hash, level + 5)
+      } else
+        false
+    }
 
     override def get0(key: A, hash: Int, level: Int): Option[B] = {
       // Note: this code is duplicated with `contains0`
