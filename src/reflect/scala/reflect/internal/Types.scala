@@ -3828,7 +3828,10 @@ trait Types
       // as a) this is now a weak set, and b) it is discarded completely before the next run.
       uniqueRunId = currentRunId
     }
-    (uniques findEntryOrUpdate tp).asInstanceOf[T]
+    val result = (uniques findEntryOrUpdate tp).asInstanceOf[T]
+
+    if (Statistics.canEnable && (result eq tp)) Statistics.incCounter(rawTypeNewEntries)
+    result
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -4836,6 +4839,7 @@ object TypeConstants {
 object TypesStats {
   import BaseTypeSeqsStats._
   val rawTypeCount        = Statistics.newCounter   ("#raw type creations")
+  val rawTypeNewEntries   = Statistics.newSubCounter("  of which are new entries", rawTypeCount)
   val subtypeCount        = Statistics.newCounter   ("#subtype ops")
   val sametypeCount       = Statistics.newCounter   ("#sametype ops")
   val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")
@@ -4856,7 +4860,6 @@ object TypesStats {
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
-
   /* Commented out, because right now this does not inline, so creates a closure which will distort statistics
   @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
     val start = Statistics.pushTimer(typeOpsStack, c)
