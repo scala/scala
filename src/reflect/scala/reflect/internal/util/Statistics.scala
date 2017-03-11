@@ -256,7 +256,7 @@ quant)
    *
    *  to remove all Statistics code from build
    */
-  final val canEnable = _enabled
+  final val canEnable = true
 
   /** replace with
    *
