@@ -544,6 +544,7 @@ trait Implicits {
             case tr @ TypeRef(pre, sym, args) =>
               if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
+              else if (!(sym.rawowner == ScalaPackageClass && isFunctionSymbol(sym))) false
               else {
                 val len = args.length - 1
                 hasLength(params, len) &&
