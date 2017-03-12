@@ -102,7 +102,9 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
-         (numericWeight contains sub)
+         sub.rawowner == ScalaPackageClass // opt
+      && sup.rawowner == ScalaPackageClass // opt
+      && (numericWeight contains sub)
       && (numericWeight contains sup)
       && (numericWeight(sup) % numericWeight(sub) == 0)
     )
