@@ -337,7 +337,6 @@ final case class Some[+A](@deprecatedName('x, "2.12.0") value: A) extends Option
   @deprecated("Use .value instead.", "2.12.0") def x: A = value
 }
 
-
 /** This case object represents non-existent values.
  *
  *  @author  Martin Odersky

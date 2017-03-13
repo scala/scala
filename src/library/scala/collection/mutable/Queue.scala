@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
@@ -188,7 +186,6 @@ extends MutableList[A]
     if (len == 0) last0 = first0
   }
 }
-
 
 object Queue extends SeqFactory[Queue] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection
 
-
 import generic._
-
 
 /** A trait for sets which may possibly
  *  have their operations implemented in parallel.
@@ -29,7 +26,6 @@ extends GenSetLike[A, GenSet[A]]
   override def companion: GenericCompanion[GenSet] = GenSet
   def seq: Set[A]
 }
-
 
 object GenSet extends GenTraversableFactory[GenSet] {
   implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

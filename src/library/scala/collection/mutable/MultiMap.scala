@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
-
 
 /** A trait for mutable maps with multiple values assigned to a key.
  *

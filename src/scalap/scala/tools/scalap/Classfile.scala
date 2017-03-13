@@ -5,9 +5,7 @@
 **
 */
 
-
 package scala.tools.scalap
-
 
 class Classfile(in: ByteArrayReader) {
   import Classfiles._

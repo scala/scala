@@ -6,15 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 
 import generic._
 
 // Methods could be printed by  cat SeqLike.scala | egrep '^  (override )?def'
-
 
 /** This trait implements a proxy for sequences. It forwards
  *  all calls to a different sequence.

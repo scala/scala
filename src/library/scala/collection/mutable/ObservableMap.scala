@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
 
 import script._
-
 
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the `Map` class into which this abstract

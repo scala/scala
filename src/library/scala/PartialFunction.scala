@@ -8,7 +8,6 @@
 
 package scala
 
-
 /** A partial function of type `PartialFunction[A, B]` is a unary function
  *  where the domain does not necessarily include all values of type `A`.
  *  The function `isDefinedAt` allows to test dynamically if a value is in

@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection.parallel.mutable
-
-
 
 import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericCompanion
@@ -678,7 +675,6 @@ self =>
   }
 
 }
-
 
 /** $factoryInfo
  *  @define Coll `mutable.ParArray`
