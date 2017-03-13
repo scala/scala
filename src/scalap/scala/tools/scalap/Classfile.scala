@@ -79,6 +79,9 @@ class Classfile(in: ByteArrayReader) {
     case class DoubleConst(x: Double) extends PoolEntry(CONSTANT_DOUBLE)
     case class NameAndType(nameId: Int, typeId: Int) extends PoolEntry(CONSTANT_NAMEANDTYPE)
     case object Empty extends PoolEntry(0) { }
+    case class MethodHandle(kindId: Int, refId: Int) extends PoolEntry(CONSTANT_METHODHANDLE)
+    case class InvokeDynamic(bootMethodId: Int, nameTypeId: Int) extends PoolEntry(CONSTANT_INVDYNAMIC)
+    case class MethodType(descId: Int) extends PoolEntry(CONSTANT_METHODTYPE)
 
     val entries = {
       val pool = new Array[PoolEntry](in.nextChar.toInt)
@@ -102,6 +105,9 @@ class Classfile(in: ByteArrayReader) {
           case CONSTANT_NAMEANDTYPE     => NameAndType(in.nextChar, in.nextChar)
           case CONSTANT_INTEGER         => IntegerConst(in.nextInt)
           case CONSTANT_FLOAT           => FloatConst(in.nextFloat)
+          case CONSTANT_METHODHANDLE    => MethodHandle(in.nextByte, in.nextChar)
+          case CONSTANT_METHODTYPE      => MethodType(in.nextChar)
+          case CONSTANT_INVDYNAMIC      => InvokeDynamic(in.nextChar, in.nextChar)
         }
 
         i += 1
