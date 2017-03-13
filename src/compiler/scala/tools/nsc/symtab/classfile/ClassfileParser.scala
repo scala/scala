@@ -154,6 +154,8 @@ abstract class ClassfileParser {
       parseHeader()
       this.pool = newConstantPool
       parseClass()
+      in = null // TypeCompleters retaining the outer `ClassFileParser` instance should be written so as not to
+                // require then entire file content. See `ConstantPool#trimIn`.
     }
   }
 
@@ -175,6 +177,8 @@ abstract class ClassfileParser {
     protected val starts       = new Array[Int](len)
     protected val values       = new Array[AnyRef](len)
     protected val internalized = new Array[Name](len)
+    private var in: AbstractFileReader = ClassfileParser.this.in
+    private var lastIndex: Int = _
 
     { var i = 1
       while (i < starts.length) {
@@ -191,6 +195,12 @@ abstract class ClassfileParser {
           case _                                                               => errorBadTag(in.bp - 1)
         }
       }
+      lastIndex = in.bp
+    }
+
+    def trimIn(): Unit = {
+      val trimmedBuf = java.util.Arrays.copyOfRange(in.buf, 0, lastIndex)
+      in = new AbstractFileReader(in.file, trimmedBuf)
     }
 
     def recordAtIndex[T <: AnyRef](value: T, idx: Int): T = {
@@ -446,8 +456,12 @@ abstract class ClassfileParser {
     val classInfo = ClassInfoType(parseParents, instanceScope, clazz)
     val staticInfo = ClassInfoType(List(), staticScope, moduleClass)
 
-    if (!isScala && !isScalaRaw)
+    if (!isScala && !isScalaRaw) {
       enterOwnInnerClasses()
+      // Give `pool` a copy of the range of the bytes it needs, so we can refer to the constant pool from
+      // type completers without retaining the entireity of the classfile.
+      pool.trimIn()
+    }
 
     val curbp = in.bp
     skipMembers() // fields
@@ -461,7 +475,7 @@ abstract class ClassfileParser {
       staticModule setFlag JAVA
       staticModule.moduleClass setFlag JAVA
       // attributes now depend on having infos set already
-      parseAttributes(clazz, classInfo)
+      parseAttributes(clazz, isVarargs = false)
 
       def queueLoad() {
         in.bp = curbp
@@ -486,7 +500,7 @@ abstract class ClassfileParser {
         }
       }
     } else
-      parseAttributes(clazz, classInfo)
+      parseAttributes(clazz, isVarargs = false)
   }
 
   /** Add type parameters of enclosing classes */
@@ -518,7 +532,7 @@ abstract class ClassfileParser {
         else info
       }
       propagatePackageBoundary(jflags, sym)
-      parseAttributes(sym, info)
+      parseAttributes(sym, isVarargs = false)
       getScope(jflags) enter sym
 
       // sealed java enums
@@ -552,43 +566,10 @@ abstract class ClassfileParser {
       } else {
         val name = readName()
         val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
-        var info = pool.getType(sym, u2)
-        if (name == nme.CONSTRUCTOR)
-          info match {
-            case MethodType(params, restpe) =>
-              // if this is a non-static inner class, remove the explicit outer parameter
-              val paramsNoOuter = innerClasses getEntry currentClass match {
-                case Some(entry) if !isScalaRaw && !entry.jflags.isStatic =>
-                  /* About `clazz.owner.hasPackageFlag` below: SI-5957
-                   * For every nested java class A$B, there are two symbols in the scala compiler.
-                   *  1. created by SymbolLoader, because of the existence of the A$B.class file, owner: package
-                   *  2. created by ClassfileParser of A when reading the inner classes, owner: A
-                   * If symbol 1 gets completed (e.g. because the compiled source mentions `A$B`, not `A#B`), the
-                   * ClassfileParser for 1 executes, and clazz.owner is the package.
-                   */
-                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
-                  params.tail
-                case _ =>
-                  params
-              }
-              val newParams = paramsNoOuter match {
-                case (init :+ tail) if jflags.isSynthetic =>
-                  // SI-7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
-                  // are added when an inner class needs to access a private constructor.
-                  init
-                case _ =>
-                  paramsNoOuter
-              }
-
-              info = MethodType(newParams, clazz.tpe)
-          }
-        // Note: the info may be overwritten later with a generic signature
-        // parsed from SignatureATTR
-        sym setInfo info
+        val lazyInfo = new JavaSignatureTypeCompleter(name, jflags, index = u2)
+        sym.info = lazyInfo
         propagatePackageBoundary(jflags, sym)
-        parseAttributes(sym, info)
-        if (jflags.isVarargs)
-          sym modifyInfo arrayToRepeated
+        parseAttributes(sym, jflags.isVarargs)
 
         getScope(jflags) enter sym
       }
@@ -769,7 +750,7 @@ abstract class ClassfileParser {
     GenPolyType(ownTypeParams, tpe)
   } // sigToType
 
-  def parseAttributes(sym: Symbol, symtype: Type) {
+  def parseAttributes(sym: Symbol, isVarargs: Boolean) {
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.typeSymbol == BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
@@ -783,8 +764,12 @@ abstract class ClassfileParser {
         case tpnme.SignatureATTR =>
           if (!isScala && !isScalaRaw) {
             val sig = pool.getExternalName(u2)
-            val newType = sigToType(sym, sig)
-            sym.setInfo(newType)
+            if (sym.isClass) {
+              sym.setInfo(sigToType(sym, sig))
+            } else {
+              val lazyType = new JavaGenericSignatureTypeCompleter(sig, isVarargs)
+              sym.setInfo(lazyType)
+            }
           }
           else in.skip(attrLen)
         case tpnme.SyntheticATTR =>
@@ -799,9 +784,9 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case tpnme.ConstantValueATTR =>
           val c = pool.getConstant(u2)
-          val c1 = convertTo(c, symtype)
+          val c1 = convertTo(c, sym.initialize.info.resultType)
           if (c1 ne null) sym.setInfo(ConstantType(c1))
-          else devWarning(s"failure to convert $c to $symtype")
+          else devWarning(s"failure to convert $c to ${sym.initialize.info.resultType}")
         case tpnme.MethodParametersATTR =>
           def readParamNames(): Unit = {
             import tools.asm.Opcodes.ACC_SYNTHETIC
@@ -1185,6 +1170,49 @@ abstract class ClassfileParser {
   class LazyAliasType(alias: Symbol) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {
       sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
+    }
+  }
+  final class JavaSignatureTypeCompleter(name: Name, jflags: JavaAccFlags, index: Int) extends LazyType {
+    override def complete(sym: symbolTable.Symbol): Unit = {
+      var info = pool.getType(sym, index)
+      if (name == nme.CONSTRUCTOR)
+        info match {
+          case MethodType(params, restpe) =>
+            // if this is a non-static inner class, remove the explicit outer parameter
+            val paramsNoOuter = innerClasses getEntry currentClass match {
+              case Some(entry) if !isScalaRaw && !entry.jflags.isStatic =>
+                /* About `clazz.owner.hasPackageFlag` below: SI-5957
+                 * For every nested java class A$B, there are two symbols in the scala compiler.
+                 *  1. created by SymbolLoader, because of the existence of the A$B.class file, owner: package
+                 *  2. created by ClassfileParser of A when reading the inner classes, owner: A
+                 * If symbol 1 gets completed (e.g. because the compiled source mentions `A$B`, not `A#B`), the
+                 * ClassfileParser for 1 executes, and clazz.owner is the package.
+                 */
+                assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                params.tail
+              case _ =>
+                params
+            }
+            val newParams = paramsNoOuter match {
+              case (init :+ tail) if jflags.isSynthetic =>
+                // SI-7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
+                // are added when an inner class needs to access a private constructor.
+                init
+              case _ =>
+                paramsNoOuter
+            }
+
+            info = MethodType(newParams, clazz.tpe)
+        }
+      // Note: the info may be overwritten later with a generic signature
+      // parsed from SignatureATTR
+      sym.setInfo(if (jflags.isVarargs) arrayToRepeated(info) else info)
+    }
+  }
+  final class JavaGenericSignatureTypeCompleter(sig: Name, isVarargs: Boolean) extends LazyType {
+    override def complete(sym: symbolTable.Symbol): Unit = {
+      var info = sigToType(sym, sig)
+      sym.setInfo(if (isVarargs) arrayToRepeated(info) else info)
     }
   }
 
