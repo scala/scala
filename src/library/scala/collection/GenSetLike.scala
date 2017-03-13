@@ -83,7 +83,7 @@ extends GenIterableLike[A, Repr]
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  def diff(that: GenSet[A]): Repr
+  def diff(that: GenSet[A]): Repr = this filterNot that
 
   /** The difference of this set and another set.
    *

@@ -171,14 +171,6 @@ self =>
    */
   def union(that: GenSet[A]): This = this ++ that
 
-  /** Computes the difference of this set and another set.
-   *
-   *  @param that the set of elements to exclude.
-   *  @return     a set containing those elements of this
-   *              set that are not also contained in the given set `that`.
-   */
-  def diff(that: GenSet[A]): This = this -- that
-
   /** An iterator over all subsets of this set of the given size.
    *  If the requested size is impossible, an empty iterator is returned.
    *
