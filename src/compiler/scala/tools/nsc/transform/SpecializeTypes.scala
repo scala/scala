@@ -470,7 +470,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else if (args.isEmpty)
         Set()
       else
-        specializedTypeVars(sym.typeParams zip args collect { case (tp, arg) if tp.isSpecialized => arg })
+        enteringTyper(specializedTypeVars(sym.typeParams zip args collect { case (tp, arg) if tp.isSpecialized => arg }))
 
     case PolyType(tparams, resTpe)   => specializedTypeVars(resTpe :: mapList(tparams)(symInfo)) // OPT
     // since this method may be run at phase typer (before uncurry, where NMTs are eliminated)
