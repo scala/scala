@@ -73,6 +73,18 @@ trait Collections {
       these.isEmpty && those.isEmpty
     }
   }
+  final def sameElementsRef(thiss: List[AnyRef], that: List[AnyRef]): Boolean = {
+    // Probably immutable, so check reference identity first (it's quick anyway)
+    (thiss eq that) || {
+      var these = thiss
+      var those = that
+      while (!these.isEmpty && !those.isEmpty && (these.head eq those.head)) {
+        these = these.tail
+        those = those.tail
+      }
+      these.isEmpty && those.isEmpty
+    }
+  }
 
   def containsRef[A <: AnyRef](as: List[A], elem: A): Boolean = {
     var as1 = as
