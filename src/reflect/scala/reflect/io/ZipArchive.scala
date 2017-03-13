@@ -129,23 +129,37 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
       case ioe: IOException => throw new IOException("Error accessing " + file.getPath, ioe)
     }
 
-    val enum    = zipFile.entries()
+    val enum = zipFile.entries()
 
-    while (enum.hasMoreElements) {
-      val zipEntry = enum.nextElement
-      val dir = getDir(dirs, zipEntry)
-      if (zipEntry.isDirectory) dir
-      else {
-        class FileEntry() extends Entry(zipEntry.getName) {
-          override def getArchive   = zipFile
-          override def lastModified = zipEntry.getTime()
-          override def input        = getArchive getInputStream zipEntry
-          override def sizeOption   = Some(zipEntry.getSize().toInt)
+    try {
+      while (enum.hasMoreElements) {
+        val zipEntry = enum.nextElement
+        val dir = getDir(dirs, zipEntry)
+        if (zipEntry.isDirectory) dir
+        else {
+          class FileEntry() extends Entry(zipEntry.getName) {
+            override def getArchive = zipFile
+
+            override def lastModified = zipEntry.getTime()
+
+            override def input = {
+              val zipFile = getArchive
+              val delegate = zipFile getInputStream zipEntry
+              new FilterInputStream(delegate) {
+                override def close(): Unit = {
+                  delegate.close()
+                  zipFile.close()
+                }
+              }
+            }
+
+            override def sizeOption = Some(zipEntry.getSize().toInt)
+          }
+          val f = new FileEntry()
+          dir.entries(f.name) = f
         }
-        val f = new FileEntry()
-        dir.entries(f.name) = f
       }
-    }
+    } finally zipFile.close()
     (root, dirs)
   }
 
