@@ -27,7 +27,6 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
   trait SynchronizedBaseTypeSeq extends BaseTypeSeq {
     override def apply(i: Int): Type = gilSynchronized { super.apply(i) }
     override def rawElem(i: Int) = gilSynchronized { super.rawElem(i) }
-    override def typeSymbol(i: Int): Symbol = gilSynchronized { super.typeSymbol(i) }
     override def toList: List[Type] = gilSynchronized { super.toList }
     override def copy(head: Type, offset: Int): BaseTypeSeq = gilSynchronized { super.copy(head, offset) }
     override def map(f: Type => Type): BaseTypeSeq = gilSynchronized { super.map(f) }
