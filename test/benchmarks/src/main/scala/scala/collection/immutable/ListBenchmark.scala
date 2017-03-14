@@ -23,12 +23,14 @@ class ListBenchmark {
   var values: List[Content] = _
   var mid: Content = _
   var last: Content = _
+  var replacement: Content = _
 
 
   @Setup(Level.Trial) def initKeys(): Unit = {
     values = List.tabulate(size)(v => Content(v))
     mid = Content(size / 2)
     last = Content(Math.max(0,size -1))
+    replacement = Content(size * 2 + 1)
   }
 
   @Benchmark def filter_includeAll: Any = {
@@ -55,18 +57,14 @@ class ListBenchmark {
     values.filter(v => v.value == last.value)
   }
 
-  @Setup(Level.Trial) def initKeys(): Unit = {
-    values = List.tabulate(size)(n => if (n == size / 2) "mid" else "")
-  }
-
   @Benchmark def mapConserve_identity: Any = {
     values.mapConserve(x => x)
   }
 
   @Benchmark def mapConserve_modifyAll: Any = {
-    values.mapConserve(x => "replace")
+    values.mapConserve(x => replacement)
   }
   @Benchmark def mapConserve_modifyMid: Any = {
-    values.mapConserve(x => if (x == "mid") "replace" else x)
+    values.mapConserve(x => if (x == mid) replacement else x)
   }
 }
