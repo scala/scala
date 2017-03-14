@@ -6,6 +6,15 @@ chapter: 15
 
 # Changelog
 
+Changes in Version 2.12.2
+-------------------------
+
+#### Trailing commas
+
+Trailing commas when multi-line and enclosed by parentheses, brackets or braces
+(`)`, `}`, and `]`, respectively) are supported, via
+[SIP-27](http://docs.scala-lang.org/sips/completed/trailing-commas.html).
+
 Changes in Version 2.8.0
 ------------------------
 

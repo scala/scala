@@ -553,6 +553,22 @@ but are required to be properly nested.  Therefore, a comment like
 `/* /* */` will be rejected as having an unterminated
 comment.
 
+## Multi-line and trailing commas
+
+Trailing commas are allowed when followed by a newline and a closing
+parentheses, brackets or braces (`)`, `}`, and `]`, respectively), such as:
+
+```scala
+foo(
+  23,
+  "bar",
+  true,
+)
+```
+
+This feature was added with
+[SIP-27](http://docs.scala-lang.org/sips/completed/trailing-commas.html).
+
 ## XML mode
 
 In order to allow literal inclusion of XML fragments, lexical analysis
