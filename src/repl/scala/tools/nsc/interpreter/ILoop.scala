@@ -768,7 +768,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     result
   }
 
-  private object paste extends Pasted(prompt) {
+  private object paste extends Pasted(replProps.promptText) {
     def interpret(line: String) = intp interpret line
     def echo(message: String)   = ILoop.this echo message
 
