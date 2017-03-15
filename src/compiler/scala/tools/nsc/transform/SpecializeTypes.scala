@@ -599,7 +599,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  `stps`, by specializing its members, and creating a new class for
    *  each combination of `stps`.
    */
-  def specializeClass(clazz: Symbol, outerEnv: TypeEnv): List[Symbol] = {
+  def specializeClass(clazz: Symbol, outerEnv: TypeEnv, allAncestorsUnspecialized: Boolean): Scope = {
     def specializedClass(env0: TypeEnv, normMembers: List[Symbol]): Symbol = {
       /* It gets hard to follow all the clazz and cls, and specializedClass
        * was both already used for a map and mucho long.  So "sClass" is the
@@ -848,30 +848,39 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       sClass
     }
 
-    val decls1 = clazz.info.decls.toList flatMap { m: Symbol =>
-      if (m.isAnonymousClass) List(m) else {
-        normalizeMember(m.owner, m, outerEnv) flatMap { normalizedMember =>
-          val ms = specializeMember(m.owner, normalizedMember, outerEnv, clazz.info.typeParams)
-          // interface traits have concrete members now
-          if (ms.nonEmpty && clazz.isTrait && clazz.isInterface)
-            clazz.resetFlag(INTERFACE)
+    val decls1: Scope = {
+      var declsChanged = false
+      val decls2 = clazz.info.decls.toList flatMap { m: Symbol =>
+        if (m.isAnonymousClass) List(m) else {
+          val newMembers = normalizeMember(m.owner, m, outerEnv) flatMap { normalizedMember =>
+            val ms = specializeMember(m.owner, normalizedMember, outerEnv, clazz.info.typeParams)
+            // interface traits have concrete members now
+            if (ms.nonEmpty && clazz.isTrait && clazz.isInterface)
+              clazz.resetFlag(INTERFACE)
 
-          if (normalizedMember.isMethod) {
-            val newTpe = subst(outerEnv, normalizedMember.info)
-            // only do it when necessary, otherwise the method type might be at a later phase already
-            if (newTpe != normalizedMember.info) {
-              normalizedMember updateInfo newTpe
+            if (normalizedMember.isMethod) {
+              val newTpe = subst(outerEnv, normalizedMember.info)
+              // only do it when necessary, otherwise the method type might be at a later phase already
+              if (newTpe != normalizedMember.info) {
+                normalizedMember updateInfo newTpe
+              }
             }
+            normalizedMember :: ms
           }
-          normalizedMember :: ms
+          if (newMembers != List(m)) declsChanged = true
+          newMembers
         }
       }
+      if (declsChanged || !allAncestorsUnspecialized)
+        newScopeWith(decls2 : _*)
+      else
+        clazz.info.decls
     }
 
     val subclasses = specializations(clazz.info.typeParams) filter satisfiable
     subclasses foreach {
       env =>
-      val spc      = specializedClass(env, decls1)
+      val spc      = specializedClass(env, decls1.toList)
       val existing = clazz.owner.info.decl(spc.name)
 
       // a symbol for the specialized class already exists if there's a classfile for it.
@@ -882,7 +891,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       exitingSpecialize(clazz.owner.info.decls enter spc) //!!! assumes fully specialized classes
     }
     if (subclasses.nonEmpty) clazz.resetFlag(FINAL)
-    cleanAnyRefSpecCache(clazz, decls1)
+    cleanAnyRefSpecCache(clazz, decls1.toList)
     decls1
   }
 
@@ -1276,7 +1285,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               if (tparams.nonEmpty) "(poly) " else "", clazz, parents1)
             )
           }
-          val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
+          def specializationWasNoOp(cls: Symbol): Boolean = enteringSpecialize(cls.info) eq exitingSpecialize(cls.info)
+          val allAncestorsUnspecialized = clazz.ancestors.forall(specializationWasNoOp)
+          val decls1 = specializeClass(clazz, typeEnv(clazz), allAncestorsUnspecialized)
+          val overrides = if (allAncestorsUnspecialized)
+            Nil
+          else
+            specialOverrides(clazz)
+
+          val newScope = if (overrides == Nil) decls1 else newScopeWith(decls1.toList ++ overrides : _*)
           // If tparams.isEmpty, this is just the ClassInfoType.
           GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
         }

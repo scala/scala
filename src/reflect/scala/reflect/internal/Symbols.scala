@@ -2310,7 +2310,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       matchingSymbolInternal(site, site.nonPrivateMemberAdmitting(name, admit))
 
     private def matchingSymbolInternal(site: Type, candidate: Symbol): Symbol = {
-      def qualifies(sym: Symbol) = !sym.isTerm || ((site memberType this) matches (site memberType sym))
+      def qualifies(sym: Symbol) = !sym.isTerm || {
+        val result = ((site memberType this) matches (site memberType sym))
+        result
+      }
       //OPT cut down on #closures by special casing non-overloaded case
       if (candidate == NoSymbol) NoSymbol
       else if (candidate.isOverloaded) candidate filter qualifies
