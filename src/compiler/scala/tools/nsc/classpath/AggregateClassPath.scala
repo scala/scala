@@ -96,7 +96,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   private def mergeClassesAndSources(entries: Seq[ClassRepresentation]*): Seq[ClassRepresentation] = {
     // based on the implementation from MergedClassPath
     var count = 0
-    val indices = collection.mutable.HashMap[String, Int]()
+    val indices = new java.util.HashMap[String, Int](1024)
     val mergedEntries = new ArrayBuffer[ClassRepresentation](1024)
 
     for {
@@ -104,8 +104,8 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
       entry <- partOfEntries
     } {
       val name = entry.name
-      if (indices contains name) {
-        val index = indices(name)
+      if (indices containsKey name) {
+        val index = indices.get(name)
         val existing = mergedEntries(index)
 
         if (existing.binary.isEmpty && entry.binary.isDefined)
@@ -114,7 +114,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
           mergedEntries(index) = ClassAndSourceFilesEntry(existing.binary.get, entry.source.get)
       }
       else {
-        indices(name) = count
+        indices.put(name, count)
         mergedEntries += entry
         count += 1
       }
