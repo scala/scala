@@ -591,8 +591,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
       val tree1 = super.transform(preTransform(tree))
       // localTyper needed when not flattening inner classes. parts after an
       // inner class will otherwise be typechecked with a wrong scope
-      try exitingMixin(postTransform(tree1))
-      finally localTyper = saved
+      val result = exitingMixin(postTransform(tree1))
+      localTyper = saved
+      result
     }
   }
 
