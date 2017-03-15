@@ -109,6 +109,50 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
+  abstract class CheckDead {
+    def apply(tree: Tree): Tree
+    def updateExpr[A](fn: Tree)(f: => A): A
+    def inMode(mode: Mode, tree: Tree): Tree
+  }
+  object NoOpCheckDead extends CheckDead {
+    def apply(tree: Tree): Tree = tree
+    def updateExpr[A](fn: Tree)(f: => A): A = f
+    def inMode(mode: Mode, tree: Tree): Tree = tree
+  }
+  class CheckingCheckDead(unit: CompilationUnit) extends CheckDead {
+    private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+    // The method being applied to `tree` when `apply` is called.
+    private def expr = exprStack.top
+
+    private def exprOK =
+      (expr != Object_synchronized) &&
+      !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
+
+    private def treeOK(tree: Tree) = {
+      val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+      tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+    }
+
+    @inline def updateExpr[A](fn: Tree)(f: => A): A = {
+      if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+        exprStack push fn.symbol
+        try f finally exprStack.pop()
+      } else f
+    }
+    def apply(tree: Tree): Tree = {
+      // Error suppression (in context.warning) would squash some of these warnings.
+      // It is presumed if you are using a -Y option you would really like to hear
+      // the warnings you've requested; thus, use reporter.warning.
+      if (unit.exists && treeOK(tree) && exprOK)
+        reporter.warning(tree.pos, "dead code following this construct")
+      tree
+    }
+
+    // The checkDead call from typedArg is more selective.
+    def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
+  }
+
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
     import typeDebug.ptTree
@@ -253,6 +297,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     var context = context0
     def context1 = context
+    private val checkDead: CheckDead = if (settings.warnDeadCode.value) new CheckingCheckDead(if (context == null) NoCompilationUnit else context.unit) else NoOpCheckDead
 
     // for use with silent type checking to when we can't have results with undetermined type params
     // note that this captures the context var
