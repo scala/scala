@@ -236,7 +236,7 @@ object BytecodeUtils {
   }
 
   def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
-    val res = mutable.Map.empty[LabelNode, Set[AnyRef]]
+    val res = mutable.AnyRefMap[LabelNode, Set[AnyRef]]()
     def add(l: LabelNode, ref: AnyRef) = if (res contains l) res(l) = res(l) + ref else res(l) = Set(ref)
 
     method.instructions.iterator().asScala foreach {
