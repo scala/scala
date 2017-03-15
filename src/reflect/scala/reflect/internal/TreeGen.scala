@@ -233,7 +233,7 @@ abstract class TreeGen {
       if (pkgQualifier.tpe == null) tree
       else tree setType {
         if (sym.owner == ObjectClass) sym.tpeHK // opt for asInstanceOf
-        else (qual.tpe memberType sym)
+        (qual.tpe memberType sym)
       }
     }
   }
