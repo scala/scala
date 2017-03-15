@@ -61,6 +61,16 @@ trait Collections {
     head
   }
 
+  def containsRef[A <: AnyRef](as: List[A], elem: A): Boolean = {
+    var as1 = as
+    while (!as1.isEmpty) {
+      val a = as1.head
+      if (a eq elem) return true
+      as1 = as1.tail
+    }
+    false
+  }
+
   final def collectFirst[A, B](as: List[A])(pf: PartialFunction[A, B]): Option[B] = {
     @tailrec
     def loop(rest: List[A]): Option[B] = rest match {

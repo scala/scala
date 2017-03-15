@@ -352,7 +352,7 @@ private[internal] trait TypeMaps {
     private def countOccs(tp: Type) = {
       tp foreach {
         case TypeRef(_, sym, _) =>
-          if (tparams contains sym)
+          if (containsRef(tparams, sym))
             occurCount(sym) += 1
         case _ => ()
       }
@@ -724,7 +724,7 @@ private[internal] trait TypeMaps {
 
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
       val boundSyms             = tp0.boundSyms
-      val tp1                   = if (boundSyms.nonEmpty && (boundSyms exists from.contains)) renameBoundSyms(tp0) else tp0
+      val tp1                   = if (!boundSyms.isEmpty && boundSyms.exists(sym => containsRef(from, sym))) renameBoundSyms(tp0) else tp0
       val tp                    = mapOver(tp1)
       def substFor(sym: Symbol) = subst(tp, sym, from, to)
 
