@@ -1470,7 +1470,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    def reportError[T](body: =>T)(handler: TypeError => T): T =
+    @inline final def reportError[T](body: =>T)(handler: TypeError => T): T =
       try body
       catch {
         case te: TypeError =>
@@ -1478,10 +1478,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           handler(te)
       }
 
-    override def transform(tree: Tree): Tree =
-      reportError { transform1(tree) } {_ => tree}
-
-    def transform1(tree: Tree) = {
+    override def transform(tree: Tree): Tree = {
       val symbol = tree.symbol
       /* The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Symbol = {
