@@ -566,9 +566,6 @@ foo(
 )
 ```
 
-This feature was added with
-[SIP-27](http://docs.scala-lang.org/sips/completed/trailing-commas.html).
-
 ## XML mode
 
 In order to allow literal inclusion of XML fragments, lexical analysis
