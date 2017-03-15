@@ -460,7 +460,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BooleanTpe
     definitions.ScalaNumericValueClasses
     definitions.ScalaValueClasses
+    definitions.ScalaNumericValueClassesArrayList
     definitions.ScalaValueClassesNoUnit
+    definitions.ScalaValueClassesArrayList
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
