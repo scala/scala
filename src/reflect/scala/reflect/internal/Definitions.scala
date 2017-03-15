@@ -566,7 +566,8 @@ trait Definitions extends api.StandardDefinitions {
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
-      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) })
+      val seqArrayList: java.util.List[ClassSymbol] = java.util.Arrays.asList(seq.toArray: _*)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {
         val arity = args.length
@@ -605,9 +606,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = TupleClass.seqArrayList contains unspecializedSymbol(sym)
+    def isFunctionSymbol(sym: Symbol) = FunctionClass.seqArrayList contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass.seqArrayList contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
