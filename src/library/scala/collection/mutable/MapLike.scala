@@ -13,7 +13,6 @@ package mutable
 
 import generic._
 import scala.annotation.migration
-import scala.collection.parallel.mutable.ParMap
 
 /** A template trait for mutable maps.
  *  $mapNote
@@ -50,7 +49,6 @@ trait MapLike[K, V, +This <: MapLike[K, V, This] with Map[K, V]]
      with Growable[(K, V)]
      with Shrinkable[K]
      with Cloneable[This]
-     with Parallelizable[(K, V), ParMap[K, V]]
 { self =>
 
   /** A common implementation of `newBuilder` for all mutable maps
@@ -60,8 +58,6 @@ trait MapLike[K, V, +This <: MapLike[K, V, This] with Map[K, V]]
    */
   override protected[this] def newBuilder: Builder[(K, V), This] = empty
 
-  protected[this] override def parCombiner = ParMap.newCombiner[K, V]
-  
   /** Converts this $coll to a sequence.
     *
     * ```Note```: assumes a fast `size` method.  Subclasses should override if this is not true.

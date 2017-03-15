@@ -12,7 +12,6 @@ class ScalaRunTimeTest {
   def testStringOf() {
     import ScalaRunTime.stringOf
     import scala.collection._
-    import parallel.ParIterable
 
     assertEquals("null", stringOf(null))
     assertEquals( "\"\"", stringOf(""))
@@ -35,10 +34,6 @@ class ScalaRunTimeTest {
     val iterable = Iterable("a", "", " c", null)
     assertEquals(s"""${iterable.stringPrefix}(a, "", " c", null)""", stringOf(iterable))
     assertEquals(s"""${iterable.stringPrefix}(a, "")""", stringOf(iterable, 2))
-
-    val parIterable = ParIterable("a", "", " c", null)
-    assertEquals(s"""${parIterable.stringPrefix}(a, "", " c", null)""", stringOf(parIterable))
-    assertEquals(s"""${parIterable.stringPrefix}(a, "")""", stringOf(parIterable, 2))
 
     val traversable = new Traversable[Int] {
        def foreach[U](f: Int => U): Unit = (0 to 3).foreach(f)

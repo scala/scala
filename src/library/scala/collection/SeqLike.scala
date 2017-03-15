@@ -11,7 +11,6 @@ package collection
 
 import immutable.{ List, Range }
 import generic._
-import parallel.ParSeq
 import scala.math.Ordering
 
 /** A template trait for sequences of type `Seq[A]`
@@ -58,7 +57,7 @@ import scala.math.Ordering
  *  @define orderDependent
  *  @define orderDependentFold
  */
-trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[A, Repr] with Parallelizable[A, ParSeq[A]] { self =>
+trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[A, Repr] { self =>
 
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
@@ -66,8 +65,6 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   def length: Int
 
   def apply(idx: Int): A
-
-  protected[this] override def parCombiner = ParSeq.newCombiner[A]
 
   /** Compares the length of this $coll to a test value.
    *

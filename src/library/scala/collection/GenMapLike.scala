@@ -22,7 +22,7 @@ package collection
  *  A map is a collection of bindings from keys to values, where there are
  *  no duplicate keys.
  */
-trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals with Parallelizable[(K, V), parallel.ParMap[K, V]] {
+trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals {
   def default(key: K): V
   def get(key: K): Option[V]
   def apply(key: K): V

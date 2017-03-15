@@ -11,7 +11,6 @@ package collection
 package immutable
 
 import generic._
-import parallel.immutable.ParMap
 
 /**
  *  A generic template for immutable maps from keys of type `K`
@@ -48,11 +47,8 @@ import parallel.immutable.ParMap
  */
 trait MapLike[K, +V, +This <: MapLike[K, V, This] with Map[K, V]]
   extends scala.collection.MapLike[K, V, This]
-     with Parallelizable[(K, V), ParMap[K, V]]
 {
 self =>
-
-  protected[this] override def parCombiner = ParMap.newCombiner[K, V]
 
   /** A new immutable map containing updating this map with a given key/value mapping.
    *  @param    key the key

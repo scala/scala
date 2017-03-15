@@ -13,7 +13,6 @@ import generic._
 import mutable.{ Builder }
 import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
-import parallel.ParIterable
 import scala.language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
@@ -71,7 +70,6 @@ trait TraversableLike[+A, +Repr] extends Any
                                     with FilterMonadic[A, Repr]
                                     with TraversableOnce[A]
                                     with GenTraversableLike[A, Repr]
-                                    with Parallelizable[A, ParIterable[A]]
 {
   self =>
 
@@ -102,8 +100,6 @@ trait TraversableLike[+A, +Repr] extends Any
   /** Creates a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, Repr]
-
-  protected[this] def parCombiner = ParIterable.newCombiner[A]
 
   /** Applies a function `f` to all elements of this $coll.
    *

@@ -15,7 +15,6 @@ package mutable
 import scala.reflect.ClassTag
 import scala.runtime.BoxedUnit
 import scala.collection.generic._
-import scala.collection.parallel.mutable.ParArray
 import scala.util.hashing.MurmurHash3
 
 import java.util.Arrays
@@ -39,7 +38,6 @@ abstract class WrappedArray[T]
 extends AbstractSeq[T]
     with IndexedSeq[T]
     with ArrayLike[T, WrappedArray[T]]
-    with CustomParallelizable[T, ParArray[T]]
 {
 
   override protected[this] def thisCollection: WrappedArray[T] = this
@@ -62,8 +60,6 @@ extends AbstractSeq[T]
 
   /** The underlying array */
   def array: Array[T]
-
-  override def par = ParArray.handoff(array)
 
   private def elementClass: Class[_] =
     array.getClass.getComponentType

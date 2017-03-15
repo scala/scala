@@ -12,7 +12,6 @@ package collection
 import generic._
 import mutable.{ Builder, SetBuilder }
 import scala.annotation.migration
-import parallel.ParSet
 
 /** A template trait for sets.
  *
@@ -59,7 +58,6 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableLike[A, This]
    with GenSetLike[A, This]
    with Subtractable[A, This]
-   with Parallelizable[A, ParSet[A]]
 {
 self =>
 
@@ -74,8 +72,6 @@ self =>
    *  `mutable.SetLike`</a>.
    */
   override protected[this] def newBuilder: Builder[A, This] = new SetBuilder[A, This](empty)
-
-  protected[this] override def parCombiner = ParSet.newCombiner[A]
 
   // Default collection type appropriate for immutable collections; mutable collections override this
   override def toSeq: Seq[A] = {
