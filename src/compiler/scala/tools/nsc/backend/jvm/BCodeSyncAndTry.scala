@@ -399,7 +399,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       var saved: immutable.Map[ /* LabelDef */ Symbol, asm.Label ] = null
       if (isDuplicate) {
         saved = jumpDest
-        for(ldef <- labelDefsAtOrUnder(finalizer)) {
+        for(ldef <- labelDefsAtOrUnder.getOrElse(finalizer, Nil)) {
           jumpDest -= ldef.symbol
         }
       }
