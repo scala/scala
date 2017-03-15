@@ -1591,189 +1591,181 @@ abstract class RefChecks extends Transform {
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
       val savedCurrentApplication = currentApplication
-      try {
-        val sym = tree.symbol
+      val sym = tree.symbol
 
-        // Apply RefChecks to annotations. Makes sure the annotations conform to
-        // type bounds (bug #935), issues deprecation warnings for symbols used
-        // inside annotations.
-        applyRefchecksToAnnotations(tree)
-        var result: Tree = tree match {
-          // NOTE: a val in a trait is now a DefDef, with the RHS being moved to an Assign in Constructors
-          case tree: ValOrDefDef =>
-            checkDeprecatedOvers(tree)
-            if (!tree.isErroneous)
-              checkInfiniteLoop(tree.symbol, tree.rhs)
+      // Apply RefChecks to annotations. Makes sure the annotations conform to
+      // type bounds (bug #935), issues deprecation warnings for symbols used
+      // inside annotations.
+      applyRefchecksToAnnotations(tree)
+      var result: Tree = tree match {
+        // NOTE: a val in a trait is now a DefDef, with the RHS being moved to an Assign in Constructors
+        case tree: ValOrDefDef =>
+          checkDeprecatedOvers(tree)
+          if (!tree.isErroneous)
+            checkInfiniteLoop(tree.symbol, tree.rhs)
 
-            if (settings.warnNullaryUnit)
-              checkNullaryMethodReturnType(sym)
-            if (settings.warnInaccessible) {
-              if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.isSynthetic)
-                checkAccessibilityOfReferencedTypes(tree)
-            }
-            tree match {
-              case dd: DefDef =>
-                checkByNameRightAssociativeDef(dd)
+          if (settings.warnNullaryUnit)
+            checkNullaryMethodReturnType(sym)
+          if (settings.warnInaccessible) {
+            if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.isSynthetic)
+              checkAccessibilityOfReferencedTypes(tree)
+          }
+          tree match {
+            case dd: DefDef =>
+              checkByNameRightAssociativeDef(dd)
 
-                if (sym hasAnnotation NativeAttr) {
-                  if (sym.owner.isTrait) {
-                    reporter.error(tree.pos, "A trait cannot define a native method.")
-                    tree
-                  } else if (dd.rhs == EmptyTree) {
-                    // pretend it had a stub implementation
-                    sym resetFlag DEFERRED
-                    deriveDefDef(dd)(_ => typed(gen.mkSysErrorCall("native method stub")))
-                  } else tree
+              if (sym hasAnnotation NativeAttr) {
+                if (sym.owner.isTrait) {
+                  reporter.error(tree.pos, "A trait cannot define a native method.")
+                  tree
+                } else if (dd.rhs == EmptyTree) {
+                  // pretend it had a stub implementation
+                  sym resetFlag DEFERRED
+                  deriveDefDef(dd)(_ => typed(gen.mkSysErrorCall("native method stub")))
                 } else tree
+              } else tree
 
-              case _ => tree
-            }
+            case _ => tree
+          }
 
-          case Template(parents, self, body) =>
-            localTyper = localTyper.atOwner(tree, currentOwner)
-            validateBaseTypes(currentOwner)
-            checkOverloadedRestrictions(currentOwner, currentOwner)
-            // SI-7870 default getters for constructors live in the companion module
-            checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
-            val bridges = addVarargBridges(currentOwner) // TODO: do this during uncurry?
-            checkAllOverrides(currentOwner)
-            checkAnyValSubclass(currentOwner)
-            if (currentOwner.isDerivedValueClass)
-              currentOwner.primaryConstructor makeNotPrivate NoSymbol // SI-6601, must be done *after* pickler!
-            if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
+        case Template(parents, self, body) =>
+          localTyper = localTyper.atOwner(tree, currentOwner)
+          validateBaseTypes(currentOwner)
+          checkOverloadedRestrictions(currentOwner, currentOwner)
+          // SI-7870 default getters for constructors live in the companion module
+          checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
+          val bridges = addVarargBridges(currentOwner) // TODO: do this during uncurry?
+          checkAllOverrides(currentOwner)
+          checkAnyValSubclass(currentOwner)
+          if (currentOwner.isDerivedValueClass)
+            currentOwner.primaryConstructor makeNotPrivate NoSymbol // SI-6601, must be done *after* pickler!
+          if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
-          case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
-          case tpt@TypeTree() =>
-            if(tpt.original != null) {
-              tpt.original foreach {
-                case dc@TypeTreeWithDeferredRefCheck() =>
-                  transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
-                  // tpt has the right type if the deferred checks are ok
-                case _ =>
-              }
-            }
-
-            val existentialParams = new ListBuffer[Symbol]
-            var skipBounds = false
-            // check all bounds, except those that are existential type parameters
-            // or those within typed annotated with @uncheckedBounds
-            doTypeTraversal(tree) {
-              case tp @ ExistentialType(tparams, tpe) =>
-                existentialParams ++= tparams
-              case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
-                // SI-7694 Allow code synthetizers to disable checking of bounds for TypeTrees based on inferred LUBs
-                // which might not conform to the constraints.
-                skipBounds = true
-              case tp: TypeRef =>
-                val tpWithWildcards = deriveTypeWithWildcards(existentialParams.toList)(tp)
-                checkTypeRef(tpWithWildcards, tree, skipBounds)
+        case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
+        case tpt@TypeTree() =>
+          if(tpt.original != null) {
+            tpt.original foreach {
+              case dc@TypeTreeWithDeferredRefCheck() =>
+                transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
+                // tpt has the right type if the deferred checks are ok
               case _ =>
             }
-            if (skipBounds) {
-              tree.setType(tree.tpe.map {
-                _.filterAnnotations(_.symbol != UncheckedBoundsClass)
-              })
-            }
+          }
 
-            tree
+          val existentialParams = new ListBuffer[Symbol]
+          var skipBounds = false
+          // check all bounds, except those that are existential type parameters
+          // or those within typed annotated with @uncheckedBounds
+          doTypeTraversal(tree) {
+            case tp @ ExistentialType(tparams, tpe) =>
+              existentialParams ++= tparams
+            case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
+              // SI-7694 Allow code synthetizers to disable checking of bounds for TypeTrees based on inferred LUBs
+              // which might not conform to the constraints.
+              skipBounds = true
+            case tp: TypeRef =>
+              val tpWithWildcards = deriveTypeWithWildcards(existentialParams.toList)(tp)
+              checkTypeRef(tpWithWildcards, tree, skipBounds)
+            case _ =>
+          }
+          if (skipBounds) {
+            tree.setType(tree.tpe.map {
+              _.filterAnnotations(_.symbol != UncheckedBoundsClass)
+            })
+          }
 
-          case TypeApply(fn, args) =>
-            checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
-            if (isSimpleCaseApply(tree))
-              transformCaseApply(tree)
-            else
-              tree
-
-          case x @ Apply(_, _)  =>
-            transformApply(x)
-
-          case x @ If(_, _, _)  =>
-            transformIf(x)
-
-          case New(tpt) =>
-            enterReference(tree.pos, tpt.tpe.typeSymbol)
-            tree
-
-          case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
-            reporter.error(tree.pos, "no `: _*' annotation allowed here\n"+
-              "(such annotations are only allowed in arguments to *-parameters)")
-            tree
-
-          case Ident(name) =>
-            checkUndesiredProperties(sym, tree.pos)
-            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
-              assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
-              enterReference(tree.pos, sym)
-            }
-            tree
-
-          case x @ Select(_, _) =>
-            transformSelect(x)
-
-          case UnApply(fun, args) =>
-            transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
-                           // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
-                           // probably not, until we allow parameterised extractors
-            tree
-
-
-          case _ => tree
-        }
-
-        // skip refchecks in patterns....
-        result = result match {
-          case CaseDef(pat, guard, body) =>
-            val pat1 = savingInPattern {
-              inPattern = true
-              transform(pat)
-            }
-            treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
-          case LabelDef(_, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            savingInPattern {
-              inPattern = true
-              deriveLabelDef(result)(transform)
-            }
-          case Apply(fun, args) if fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol) =>
-            savingInPattern {
-              // SI-7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
-              //         that we are in the user-supplied code in the case body.
-              //
-              //         Relies on the translation of:
-              //            (null: Any) match { case x: List[_] => x; x.reverse; case _ => }'
-              //         to:
-              //            <synthetic> val x2: List[_] = (x1.asInstanceOf[List[_]]: List[_]);
-              //                  matchEnd4({ x2; x2.reverse}) // case body is an argument to a label apply.
-              inPattern = false
-              super.transform(result)
-            }
-          case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            deriveValDef(result)(transform) // SI-7716 Don't refcheck the tpt of the synthetic val that holds the selector.
-          case _ =>
-            super.transform(result)
-        }
-        result match {
-          case ClassDef(_, _, _, _)
-             | TypeDef(_, _, _, _)
-             | ModuleDef(_, _, _) =>
-            if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
-              varianceValidator.traverse(result)
-          case tt @ TypeTree() if tt.original != null =>
-            varianceValidator.traverse(tt.original) // See SI-7872
-          case _ =>
-        }
-
-        checkUnexpandedMacro(result)
-
-        result
-      } catch {
-        case ex: TypeError =>
-          if (settings.debug) ex.printStackTrace()
-          reporter.error(tree.pos, ex.getMessage())
           tree
-      } finally {
-        localTyper = savedLocalTyper
-        currentApplication = savedCurrentApplication
+
+        case TypeApply(fn, args) =>
+          checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
+          if (isSimpleCaseApply(tree))
+            transformCaseApply(tree)
+          else
+            tree
+
+        case x @ Apply(_, _)  =>
+          transformApply(x)
+
+        case x @ If(_, _, _)  =>
+          transformIf(x)
+
+        case New(tpt) =>
+          enterReference(tree.pos, tpt.tpe.typeSymbol)
+          tree
+
+        case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
+          reporter.error(tree.pos, "no `: _*' annotation allowed here\n"+
+            "(such annotations are only allowed in arguments to *-parameters)")
+          tree
+
+        case Ident(name) =>
+          checkUndesiredProperties(sym, tree.pos)
+          if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
+            assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
+            enterReference(tree.pos, sym)
+          }
+          tree
+
+        case x @ Select(_, _) =>
+          transformSelect(x)
+
+        case UnApply(fun, args) =>
+          transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
+                         // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
+                         // probably not, until we allow parameterised extractors
+          tree
+
+
+        case _ => tree
       }
+
+      // skip refchecks in patterns....
+      result = result match {
+        case CaseDef(pat, guard, body) =>
+          val pat1 = savingInPattern {
+            inPattern = true
+            transform(pat)
+          }
+          treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+        case LabelDef(_, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
+          savingInPattern {
+            inPattern = true
+            deriveLabelDef(result)(transform)
+          }
+        case Apply(fun, args) if fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol) =>
+          savingInPattern {
+            // SI-7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
+            //         that we are in the user-supplied code in the case body.
+            //
+            //         Relies on the translation of:
+            //            (null: Any) match { case x: List[_] => x; x.reverse; case _ => }'
+            //         to:
+            //            <synthetic> val x2: List[_] = (x1.asInstanceOf[List[_]]: List[_]);
+            //                  matchEnd4({ x2; x2.reverse}) // case body is an argument to a label apply.
+            inPattern = false
+            super.transform(result)
+          }
+        case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
+          deriveValDef(result)(transform) // SI-7716 Don't refcheck the tpt of the synthetic val that holds the selector.
+        case _ =>
+          super.transform(result)
+      }
+      result match {
+        case ClassDef(_, _, _, _)
+           | TypeDef(_, _, _, _)
+           | ModuleDef(_, _, _) =>
+          if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
+            varianceValidator.traverse(result)
+        case tt @ TypeTree() if tt.original != null =>
+          varianceValidator.traverse(tt.original) // See SI-7872
+        case _ =>
+      }
+
+      checkUnexpandedMacro(result)
+
+      localTyper = savedLocalTyper
+      currentApplication = savedCurrentApplication
+      result
     }
   }
 }
