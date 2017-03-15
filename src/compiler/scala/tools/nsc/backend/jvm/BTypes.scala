@@ -74,13 +74,13 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(new java.util.concurrent.ConcurrentHashMap[InternalName, ClassBType]().asScala)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
    * in the call graph to remember its source position, which is required for inliner warnings.
    */
-  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(new java.util.concurrent.ConcurrentHashMap[MethodInsnNode, Position]().asScala)
 
   /**
    * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
