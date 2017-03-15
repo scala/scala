@@ -38,10 +38,9 @@ abstract class Pasted(prompt: String) {
   def matchesContinue(line: String) = matchesString(line, ContinueString)
   def running = isRunning
 
-  private def matchesString(line: String, target: String): Boolean = (
-    (line startsWith target) ||
-    (line.nonEmpty && spacey(line.head) && matchesString(line.tail, target))
-  )
+  private def matchesString(line: String, target: String): Boolean =
+    line.startsWith(target) || (line.nonEmpty && spacey(line.head) && matchesString(line.tail, target))
+
   private def stripString(line: String, target: String) = line indexOf target match {
     case -1   => line
     case idx  => line drop (idx + target.length)
