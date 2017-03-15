@@ -39,7 +39,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
     else "LazyList(?)"
 }
 
-object LazyList extends IterableFactory[Any, LazyList] {
+object LazyList extends IterableFactory[LazyList] {
 
   type Evaluated[+A] = Option[(A, LazyList[A])]
 

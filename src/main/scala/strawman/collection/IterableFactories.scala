@@ -3,18 +3,23 @@ package collection
 
 import strawman.collection.mutable.Builder
 
-import scala.Int
+import scala.{Any, Int}
 import scala.annotation.unchecked.uncheckedVariance
 
-trait FromIterableBase[-B] {
-  type To[X]
+/** Instances of Build[B] can build some kind of collection from values of type B. */
+trait Build[-B] {
+  type To[_]
   def fromIterable[E <: B](it: Iterable[E]): To[E]
 }
 
+trait BuildConstrained {
+  trait Constraint[E] extends Build[E]
+}
+
 /** Base trait for instances that can construct a collection from an iterable */
-trait FromIterable[-B, +C[_]] extends FromIterableBase[B] {
+trait FromIterable[+C[_]] extends Build[Any] {
   type To[X] = C[X] @uncheckedVariance
-  def fromIterable[E <: B](it: Iterable[E]): C[E]
+  def fromIterable[E](it: Iterable[E]): C[E]
 }
 
 /** Base trait for instances that can construct a collection from an iterable by using an implicit evidence
@@ -23,28 +28,28 @@ trait ConstrainedFromIterable[+CC[_], Ev[_]] {
   def constrainedFromIterable[E : Ev](it: Iterable[E]): CC[E]
 }
 
-/** Base trait for companion objects of collections */
-trait IterableFactory[-B, +C[_]] extends FromIterable[B, C] { self =>
+/** Base trait for companion objects of unconstrained collection types */
+trait IterableFactory[+C[_]] extends FromIterable[C] { self =>
+  def empty[A]: C[A] = fromIterable(View.Empty)
 
-  def empty[A <: B]: C[A] = fromIterable(View.Empty)
+  def apply[A](xs: A*): C[A] = fromIterable(View.Elems(xs: _*))
 
-  def apply[A <: B](xs: A*): C[A] = fromIterable(View.Elems(xs: _*))
+  def fill[A](n: Int)(elem: => A): C[A] = fromIterable(View.Fill(n)(elem))
 
-  def fill[A <: B](n: Int)(elem: => A): C[A] = fromIterable(View.Fill(n)(elem))
+  def newBuilder[A]: Builder[A, C[A]]
 
-  def newBuilder[A <: B]: Builder[A, C[A]]
-
-  protected[this] lazy val monomorphicIterableFactoryProto: MonomorphicIterableFactory[B, C[B]] = new MonomorphicIterableFactory[B, C[B]] {
-    def fromIterable[E <: B](it: Iterable[E]): C[B] = self.fromIterable[B](it)
-    def newBuilder[A <: B]: Builder[A, C[B]] = self.newBuilder[B]
-    override protected[this] lazy val monomorphicIterableFactoryProto = this
+  protected[this] lazy val canBuildProto: CanBuild[Any, C[Any]] = new CanBuild[Any, C[Any]] {
+    def fromIterable(it: Iterable[Any]): C[Any] = self.fromIterable[Any](it)
+    def newBuilder: Builder[Any, C[Any]] = self.newBuilder[Any]
   }
 
-  implicit def iterableFactory[E <: B]: MonomorphicIterableFactory[E, C[E]] =
-    monomorphicIterableFactoryProto.asInstanceOf[MonomorphicIterableFactory[E, C[E]]]
+  implicit def canBuild[E]: CanBuild[E, C[E]] = canBuildProto.asInstanceOf[CanBuild[E, C[E]]]
 }
 
-trait MonomorphicIterableFactory[-B, +Repr] extends IterableFactory[B, ({ type L[X] = Repr })#L]
+trait CanBuild[E, +Repr] {
+  def fromIterable(it: Iterable[E]): Repr
+  def newBuilder: Builder[E, Repr]
+}
 
 /** Base trait for companion objects of collections that require an implicit evidence */
 trait ConstrainedIterableFactory[+CC[X], Ev[_]] extends ConstrainedFromIterable[CC, Ev] {
@@ -57,8 +62,8 @@ trait ConstrainedIterableFactory[+CC[X], Ev[_]] extends ConstrainedFromIterable[
 
   def constrainedNewBuilder[A : Ev]: Builder[A, CC[A]]
 
-  implicit def iterableFactory[B : Ev]: MonomorphicIterableFactory[B, CC[B]] = new MonomorphicIterableFactory[B, CC[B]] {
-    def fromIterable[E <: B](it: Iterable[E]): CC[B] = constrainedFromIterable[B](it)
-    def newBuilder[A <: B]: Builder[A, CC[B]] = constrainedNewBuilder[B]
+  implicit def canBuild[E : Ev]: CanBuild[E, CC[E]] = new CanBuild[E, CC[E]] {
+    def fromIterable(it: Iterable[E]): CC[E] = constrainedFromIterable[E](it)
+    def newBuilder: Builder[E, CC[E]] = constrainedNewBuilder[E]
   }
 }

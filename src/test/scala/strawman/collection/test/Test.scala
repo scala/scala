@@ -336,6 +336,8 @@ class StrawmanTest {
 //    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
     val xs7 = (xs: immutable.Map[String, Int]).map((k, v) => (new Foo, v))
     val xs8: immutable.Map[Foo, Int] = xs7
+    val xs9 = xs6.to(List).to(mutable.HashMap)
+    val xs9t: mutable.HashMap[Int, String] = xs9
   }
 
   def bitSets(xs: immutable.BitSet, ys: BitSet, zs: Set[Int]): Unit = {

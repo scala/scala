@@ -27,7 +27,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
   *
   */
 trait IterableLike[+A, +C[X] <: Iterable[X]]
-  extends FromIterable[Any, C]
+  extends FromIterable[C]
     with IterableOps[A]
     with IterableMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
     with IterablePolyTransforms[A, C] {
@@ -88,10 +88,13 @@ trait IterableOps[+A] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[F <: FromIterableBase[A]](fi: F): F#To[A @uncheckedVariance] =
+  def to[F <: Build[A]](fi: F): fi.To[A @uncheckedVariance] =
   // variance seems sound because `to` could just as well have been added
   // as a decorator. We should investigate this further to be sure.
     fi.fromIterable(coll)
+
+  def to[F <: BuildConstrained](fi: F)(implicit c: fi.Constraint[A @uncheckedVariance]): c.To[A @uncheckedVariance] =
+    c.fromIterable(coll)
 
   def to[C[_], Ev[_]](fi: ConstrainedFromIterable[C, Ev])(implicit ev: Ev[A @uncheckedVariance]): C[A @uncheckedVariance] =
     fi.constrainedFromIterable(coll)

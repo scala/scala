@@ -32,7 +32,7 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
 
 }
 
-object HashSet extends IterableFactory[Any, HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] = ???
 

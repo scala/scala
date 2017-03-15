@@ -13,13 +13,13 @@ import java.lang.String
 
 class TraverseTest {
 
-  def optionSequence[C[X] <: Iterable[X], A](xs: C[Option[A]])(implicit fi: MonomorphicIterableFactory[A, C[A]]): Option[C[A]] =
+  def optionSequence[C[X] <: Iterable[X], A](xs: C[Option[A]])(implicit fi: CanBuild[A, C[A]]): Option[C[A]] =
     xs.foldLeft[Option[Builder[A, C[A]]]](Some(fi.newBuilder)) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
 
-  def eitherSequence[C[X] <: Iterable[X], A, B](xs: C[Either[A, B]])(implicit fi: MonomorphicIterableFactory[B, C[B]]): Either[A, C[B]] =
+  def eitherSequence[C[X] <: Iterable[X], A, B](xs: C[Either[A, B]])(implicit fi: CanBuild[B, C[B]]): Either[A, C[B]] =
     xs.foldLeft[Either[A, Builder[B, C[B]]]](Right(fi.newBuilder)) {
       case (Right(builder), Right(b)) => Right(builder += b)
       case (Left(a)       ,        _) => Left(a)

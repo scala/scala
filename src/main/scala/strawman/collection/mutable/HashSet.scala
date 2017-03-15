@@ -33,7 +33,7 @@ final class HashSet[A]
 
 }
 
-object HashSet extends IterableFactory[Any, HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = {
     val result = new HashSet[B]

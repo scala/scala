@@ -124,7 +124,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactory[Any, ArrayBuffer] {
+object ArrayBuffer extends IterableFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =
