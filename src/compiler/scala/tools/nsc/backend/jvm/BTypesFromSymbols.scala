@@ -174,7 +174,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def primitiveOrClassToBType(sym: Symbol): BType = {
       assertClassNotArray(sym)
-      primitiveTypeToBType.getOrElse(sym, classBTypeFromSymbol(sym))
+      if (sym.isPrimitiveValueClass) primitiveTypeToBType(sym) else classBTypeFromSymbol(sym)
     }
 
     /**
