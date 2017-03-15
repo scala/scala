@@ -1085,7 +1085,8 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-  }
+    override def boundSyms: Set[Symbol] = emptySymbolSet
+ }
 
   /** A base class for types that represent a single value
    *  (single-types and this-types).
@@ -1106,13 +1107,15 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-/*
-    override def typeOfThis: Type = typeSymbol.typeOfThis
-    override def bounds: TypeBounds = TypeBounds(this, this)
-    override def prefix: Type = NoType
-    override def typeArgs: List[Type] = List()
-    override def typeParams: List[Symbol] = List()
-*/
+    override def boundSyms: Set[Symbol] = emptySymbolSet
+
+    /*
+        override def typeOfThis: Type = typeSymbol.typeOfThis
+        override def bounds: TypeBounds = TypeBounds(this, this)
+        override def prefix: Type = NoType
+        override def typeArgs: List[Type] = List()
+        override def typeParams: List[Symbol] = List()
+    */
   }
 
   /** An object representing an erroneous type */
