@@ -108,12 +108,7 @@ abstract class UnCurry extends InfoTransform
     // which hit at this point should not be hard to come by, but the immediate
     // motivation can be seen in continuations-neg/t3718.
     override def transform(tree: Tree): Tree =
-      try postTransform(mainTransform(tree))
-      catch { case ex: TypeError =>
-        reporter.error(ex.pos, ex.msg)
-        debugStack(ex)
-        EmptyTree
-      }
+      postTransform(mainTransform(tree))
 
     /* Is tree a reference `x` to a call by name parameter that needs to be converted to
      * x.apply()? Note that this is not the case if `x` is used as an argument to another
@@ -385,8 +380,9 @@ abstract class UnCurry extends InfoTransform
       @inline def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
         val saved = needTryLift
         needTryLift = needLift
-        try f
-        finally needTryLift = saved
+        val result = f
+        needTryLift = saved
+        result
       }
 
       /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
@@ -404,8 +400,9 @@ abstract class UnCurry extends InfoTransform
       def withInConstructorFlag(inConstructorFlag: Long)(f: => Tree): Tree = {
         val saved = this.inConstructorFlag
         this.inConstructorFlag = inConstructorFlag
-        try f
-        finally this.inConstructorFlag = saved
+        val result = f
+        this.inConstructorFlag = saved
+        result
       }
 
       val sym = tree.symbol

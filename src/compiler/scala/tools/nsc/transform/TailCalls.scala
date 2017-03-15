@@ -206,8 +206,9 @@ abstract class TailCalls extends Transform {
     def transform(tree: Tree, nctx: TailContext): Tree = {
       val saved = ctx
       ctx = nctx
-      try transform(tree)
-      finally this.ctx = saved
+      val result = transform(tree)
+      this.ctx = saved
+      result
     }
 
     def yesTailTransform(tree: Tree): Tree = transform(tree, ctx.yesTailContext())
