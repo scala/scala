@@ -18,6 +18,7 @@ import util.ThreeValues._
 import Variance._
 import Depth._
 import TypeConstants._
+import scala.util.hashing.MurmurHash3
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -1071,7 +1072,23 @@ trait Types
    */
   abstract class UniqueType extends Type with Product {
     final override val hashCode = computeHashCode
-    protected def computeHashCode = scala.runtime.ScalaRunTime._hashCode(this)
+    // DUPLICATED from MurmurHash3.productHash to replace ## with hashCode
+    protected def computeHashCode = {
+      val seed = MurmurHash3.productSeed
+      val arr = productArity
+      if (arr == 0) {
+        productPrefix.hashCode
+      }
+      else {
+        var h = seed
+        var i = 0
+        while (i < arr) {
+          h = MurmurHash3.mix(h, productElement(i).hashCode())
+          i += 1
+        }
+        MurmurHash3.finalizeHash(h, arr)
+      }
+    }
   }
 
  /** A base class for types that defer some operations
