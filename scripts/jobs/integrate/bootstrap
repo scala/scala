@@ -6,8 +6,7 @@
 #  - build minimal core (aka locker) of Scala, use the determined version number, publish to scala-integration
 #  - build those modules where a binary compatible version doesn't exist, publish to scala-integration
 #  - build Scala using the previously built core and bootstrap modules, publish to scala-integration, overwriting
-#    the existing artifacts (note: in 2.12.x we use scala-release-temp for locker, but that doesn't work in 2.11.x,
-#    because we can only pass in one `extra.repo` to ant, see comment in PR 5764).
+#    the existing artifacts
 #  - for releases
 #    - stage Scala on sonatype
 #    - rebuild modules that needed a rebuild with this Scala build, and stage them on sonatype
