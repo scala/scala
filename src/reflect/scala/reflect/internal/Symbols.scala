@@ -3067,7 +3067,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
-    private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
+    private def newTypeRef(targs: List[Type]) = newPrefix match {
+      case NoPrefix => TypeRef(NoPrefix, this, targs) //opt
+      case _        => typeRef(newPrefix, this, targs)
+    }
 
     /** A polymorphic type symbol has two distinct "types":
      *
