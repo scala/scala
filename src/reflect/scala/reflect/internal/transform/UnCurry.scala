@@ -18,7 +18,8 @@ trait UnCurry {
    */
   case class VarargsSymbolAttachment(varargMethod: Symbol)
 
-  val uncurry: TypeMap = new TypeMap {
+  val uncurry: TypeMap = new UncurryInfoTypeMap
+  private class UncurryInfoTypeMap extends TypeMap {
     def apply(tp: Type): Type = {
       tp match {
         case mt @ MethodType(params, MethodType(params1, restpe)) =>
@@ -60,7 +61,7 @@ trait UnCurry {
       }
   }
 
-  private val uncurryType = new TypeMap {
+  private class UncurryTypeTypeMap extends TypeMap {
     def apply(tp: Type): Type = {
       tp match {
         case ClassInfoType(parents, decls, clazz) if !clazz.isJavaDefined =>
@@ -93,6 +94,8 @@ trait UnCurry {
     }
   }
 
+
+  private val uncurryType = new UncurryTypeTypeMap
   private def varargForwarderSym(currentClass: Symbol, origSym: Symbol, newInfo: Type): Symbol = {
     val forwSym = origSym.cloneSymbol(currentClass, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED, origSym.name.toTermName).withoutAnnotations
 
