@@ -13,14 +13,14 @@ import java.lang.String
 
 class TraverseTest {
 
-  def optionSequence[C[X] <: Iterable[X], A](xs: C[Option[A]])(implicit fi: CanBuild[A, C[A]]): Option[C[A]] =
-    xs.foldLeft[Option[Builder[A, C[A]]]](Some(fi.newBuilder)) {
+  def optionSequence[C[X] <: Iterable[X], A](xs: C[Option[A]])(implicit bf: BuildFrom[C[_], A]): Option[bf.To[A]] =
+    xs.foldLeft[Option[Builder[A, bf.To[A]]]](Some(bf.newBuilder)) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
 
-  def eitherSequence[C[X] <: Iterable[X], A, B](xs: C[Either[A, B]])(implicit fi: CanBuild[B, C[B]]): Either[A, C[B]] =
-    xs.foldLeft[Either[A, Builder[B, C[B]]]](Right(fi.newBuilder)) {
+  def eitherSequence[C[X] <: Iterable[X], A, B](xs: C[Either[A, B]])(implicit bf: BuildFrom[C[_], B]): Either[A, bf.To[B]] =
+    xs.foldLeft[Either[A, Builder[B, bf.To[B]]]](Right(bf.newBuilder)) {
       case (Right(builder), Right(b)) => Right(builder += b)
       case (Left(a)       ,        _) => Left(a)
       case (_             ,  Left(a)) => Left(a)
@@ -41,10 +41,10 @@ class TraverseTest {
     val e1 = eitherSequence(xs3)
     val e1t: Either[Int, mutable.ListBuffer[String]] = e1
 
-    // This use case from https://github.com/scala/scala/pull/5233 still eludes us
-    //val xs4 = immutable.List((1 -> "a"), (2 -> "b"))
-    //val o4 = optionSequence(xs1)(immutable.TreeMap.iterableFactory)
-    //val o4t: Option[immutable.TreeMap[Int, String]] = o4
+    // Breakout-like use case from https://github.com/scala/scala/pull/5233:
+    val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
+    val o4 = optionSequence(xs4)(immutable.TreeMap.buildFromAny)
+    val o4t: Option[immutable.TreeMap[Int, String]] = o4
   }
 
 }

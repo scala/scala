@@ -96,8 +96,9 @@ trait IterableOps[+A] extends Any {
   def to[F <: BuildConstrained](fi: F)(implicit c: fi.Constraint[A @uncheckedVariance]): c.To[A @uncheckedVariance] =
     c.fromIterable(coll)
 
-  def to[C[_], Ev[_]](fi: ConstrainedFromIterable[C, Ev])(implicit ev: Ev[A @uncheckedVariance]): C[A @uncheckedVariance] =
-    fi.constrainedFromIterable(coll)
+  // Could be defined in addition to the method above; less generic but doesn't have to wrap the evidence
+  //def to[C[_], Ev[_]](fi: ConstrainedFromIterable[C, Ev])(implicit ev: Ev[A @uncheckedVariance]): C[A @uncheckedVariance] =
+  //  fi.constrainedFromIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
