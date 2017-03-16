@@ -1058,7 +1058,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = (
-         !isConstructor
+         canMatchInheritedSymbols
+      && ancestors.exists(_.isRefinementClass) // opt
       && allOverriddenSymbols.forall(_.owner.isRefinementClass) // this includes allOverriddenSymbols.isEmpty
     )
 
