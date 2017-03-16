@@ -232,7 +232,7 @@ abstract class TreeGen {
       val tree = Select(pkgQualifier, sym)
       if (pkgQualifier.tpe == null) tree
       else tree setType {
-        if (sym.owner == ObjectClass) sym.tpeHK // opt for asInstanceOf
+        if (sym.rawowner == ObjectClass || sym.rawowner == AnyClass) sym.tpeHK // opt for asInstanceOf
         (qual.tpe memberType sym)
       }
     }
