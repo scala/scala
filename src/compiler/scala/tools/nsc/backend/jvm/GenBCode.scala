@@ -75,7 +75,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
     }
     private val poison1 = Item1(Int.MaxValue, null, null)
     private val q1 = new java.util.LinkedList[Item1]
-    private val asyncClassfileWriter = java.util.concurrent.Executors.newFixedThreadPool(1)
+    private val asyncClassfileWriter = java.util.concurrent.Executors.newFixedThreadPool(4)
 
     /* ---------------- q2 ---------------- */
 
