@@ -3630,7 +3630,7 @@ trait Types
 
       if ((args eq Nil) && (pre eq NoPrefix)) {
         val result = sym.tpeHK // opt lean on TypeSymbol#tyconCache, rather than interning a type ref.
-        assert(result eq TypeRef(pre, sym, args))
+        // assert(result eq TypeRef(pre, sym, args))
         result
       }
       else TypeRef(pre, sym, args)
