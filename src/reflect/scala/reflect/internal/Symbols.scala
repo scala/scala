@@ -1059,7 +1059,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = (
          canMatchInheritedSymbols
-      && ancestors.exists(_.isRefinementClass) // opt
       && allOverriddenSymbols.forall(_.owner.isRefinementClass) // this includes allOverriddenSymbols.isEmpty
     )
 
@@ -2313,7 +2312,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def matchingSymbolInternal(site: Type, candidate: Symbol): Symbol = {
       def qualifies(sym: Symbol) = !sym.isTerm || ((site memberType this) matches (site memberType sym))
       //OPT cut down on #closures by special casing non-overloaded case
-      if (candidate.isOverloaded) candidate filter qualifies
+      if (candidate == NoSymbol) NoSymbol
+      else if (candidate.isOverloaded) candidate filter qualifies
       else if (qualifies(candidate)) candidate
       else NoSymbol
     }
