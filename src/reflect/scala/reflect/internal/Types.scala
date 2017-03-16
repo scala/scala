@@ -3628,7 +3628,10 @@ trait Types
       if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
         throw new RecoverableCyclicReference(sym)
 
-      TypeRef(pre, sym, args)
+      def TypeRefNoArg(pre: Type, sym: Symbol) = TypeRef(pre, sym, Nil)
+      if (args eq Nil)
+        TypeRefNoArg(pre, sym)
+      else TypeRef(pre, sym, args)
     case _ =>
       typeRef(pre, sym, args)
   }
