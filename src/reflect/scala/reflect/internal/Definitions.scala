@@ -606,9 +606,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seqArrayList contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seqArrayList contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seqArrayList contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && TupleClass.seqArrayList.contains(unspecializedSymbol(sym))
+    def isFunctionSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && FunctionClass.seqArrayList.contains(unspecializedSymbol(sym))
+    def isProductNSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && ProductClass.seqArrayList.contains(unspecializedSymbol(sym))
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
