@@ -787,6 +787,7 @@ trait Types
 
     /** Does this type contain a reference to this symbol? */
     def contains(sym: Symbol): Boolean = new ContainsCollector(sym).collect(this)
+    def containsNoNormalize(sym: Symbol): Boolean = new ContainsCollectorNoNormalize(sym).collect(this)
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
@@ -2514,8 +2515,13 @@ trait Types
 
     private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
       case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
-        areTrivialParams(rest)
+        val collector = new ContainsCollectorNoNormalize(p)
+        def containsP(tp: Type): Boolean = collector.collect(tp)
+        @tailrec def typesContain(tps: List[Type]): Boolean = tps match {
+          case tp :: rest => (containsP(tp) || typesContain(rest))
+          case _ => false
+        }
+        p.tpe.isTrivial && !typesContain(paramTypes) && !containsP(resultType) && areTrivialParams(rest)
       case _ =>
         true
     }
@@ -4792,7 +4798,7 @@ trait Types
   }
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
-    case tp :: rest => (tp contains sym) || typesContain(rest, sym)
+    case tp :: rest => (tp containsNoNormalize sym) || typesContain(rest, sym)
     case _ => false
   }
 
