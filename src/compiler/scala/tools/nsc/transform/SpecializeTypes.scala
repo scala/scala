@@ -1255,7 +1255,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def satisfiable(env: TypeEnv): Boolean = satisfiable(env, false)
   def satisfiable(env: TypeEnv, warnings: Boolean): Boolean = {
-    def matches(tpe1: Type, tpe2: Type): Boolean = {
+    def matches(tpe1: Type, tpe2: Type): Boolean = (tpe2 == AnyTpe) || { // opt for common case of unbounded type parameter
       val t1 = subst(env, tpe1)
       val t2 = subst(env, tpe2)
       ((t1 <:< t2)
