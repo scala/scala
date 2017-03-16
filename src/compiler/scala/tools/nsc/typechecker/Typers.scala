@@ -5100,7 +5100,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
+              val tree1 = if (qual == EmptyTree) tree else {
+                val pos = tree.pos
+                Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+              }
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
             // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.
