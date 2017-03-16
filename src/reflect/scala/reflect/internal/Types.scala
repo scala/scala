@@ -3604,7 +3604,10 @@ trait Types
       if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
         throw new RecoverableCyclicReference(sym)
 
-      TypeRef(pre, sym, args)
+      if ((args eq Nil) && (pre eq NoPrefix))
+        sym.tpeHK // opt lean on TypeSymbol#tyconCache, rather than interning a type ref.
+      else
+        TypeRef(pre, sym, args)
     case _ =>
       typeRef(pre, sym, args)
   }
