@@ -542,13 +542,10 @@ trait Implicits {
             loop(restpe, pt)
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>
-              if (sym.isAliasType) loop(tp, pt.dealias)
+              if (sym.isAliasType) loop(tp, pt.normalize)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
-              else if (!(sym.rawowner == ScalaPackageClass && isFunctionSymbol(sym))) false
               else {
-                val len = args.length - 1
-                hasLength(params, len) &&
-                sym == FunctionClass(len) && {
+                definitions.isFunctionSymbol(sym) && sameLength(params, args.tail) && {
                   var ps = params
                   var as = args
                   if (fast) {
