@@ -7,13 +7,13 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
-import util.Statistics
+import util.{Statistics, TriState}
 import util.ThreeValues._
 import Variance._
 import Depth._
@@ -1930,8 +1930,21 @@ trait Types
     // to a java or scala symbol, but it does matter whether it occurs in java or scala code.
     // TypeRefs w/o type params that occur in java signatures/code are considered raw types, and are
     // represented as existential types.
-    override def isHigherKinded = (typeParams ne Nil)
+    override def isHigherKinded: Boolean = {
+      if (phase.erasedTypes) false
+      else {
+        if (isHigherKindedCache == currentRunId) true
+        else if (-isHigherKindedCache == currentRunId) false
+        else {
+          val result = typeParams ne Nil
+          isHigherKindedCache = (if (result) 1 else -1) * currentRunId
+          result
+        }
+      }
+    }
     override def typeParams     = if (isDefinitionsInitialized) sym.typeParams else sym.unsafeTypeParams
+    // encoding: currentRunId = true, -currentRunId = false, otherwise unknown or stale.
+    private var isHigherKindedCache: Int = NoRunId
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
