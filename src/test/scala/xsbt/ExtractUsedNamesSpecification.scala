@@ -237,7 +237,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     // Seq and Set is not
     findPatMatUsages(classWithPatMatOfType(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
 
-    def inNestedCase(tpe: String = sealedClassName) =
+    def inNestedCase(tpe: String) =
       s"""package client
           |import base._
           |
@@ -247,7 +247,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
           |  }
           |}""".stripMargin
 
-    findPatMatUsages(inNestedCase()) shouldEqual Set()
+    findPatMatUsages(inNestedCase(sealedClassName)) shouldEqual Set()
 
     val notUsedInPatternMatch =
       s"""package client

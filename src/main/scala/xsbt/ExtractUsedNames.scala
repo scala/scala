@@ -56,13 +56,13 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
   import global._
   import JavaUtils._
 
-  class NamesUsedInClass {
+  private final class NamesUsedInClass {
     // Default names and other scopes are separated for performance reasons
     val defaultNames: JavaSet[Name] = new JavaSet[global.Name]()
     val scopedNames: JavaMap[Name, EnumSet[UseScope]] = new JavaMap[Name, EnumSet[UseScope]]()
 
     // We have to leave with commas on ends
-    override def toString() = {
+    override def toString(): String = {
       val builder = new StringBuilder(": ")
       defaultNames.foreach { name =>
         builder.append(name.decoded.trim)
@@ -78,32 +78,36 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
   }
 
+  private def DefaultScopes = EnumSet.of(UseScope.Default)
+  private def PatmatScopes = EnumSet.of(UseScope.PatMatTarget)
+
   def extractAndReport(unit: CompilationUnit): Unit = {
     val tree = unit.body
     val traverser = new ExtractUsedNamesTraverser
     traverser.traverse(tree)
-    val namesUsedAtTopLevel = traverser.namesUsedAtTopLevel
 
-    if (!namesUsedAtTopLevel.defaultNames.isEmpty || !namesUsedAtTopLevel.scopedNames.isEmpty) {
+    val namesUsedAtTopLevel = traverser.namesUsedAtTopLevel
+    val defaultNamesTopLevel = namesUsedAtTopLevel.defaultNames
+    val scopedNamesTopLevel = namesUsedAtTopLevel.scopedNames
+
+    // Handle names used at top level that cannot be related to an owner
+    if (!defaultNamesTopLevel.isEmpty || !scopedNamesTopLevel.isEmpty) {
       val responsible = firstClassOrModuleDef(tree)
       responsible match {
         case Some(classOrModuleDef) =>
           val sym = classOrModuleDef.symbol
-          val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
+          val firstClassSymbol = enclOrModuleClass(sym)
           val firstClassName = className(firstClassSymbol)
           val namesInFirstClass = traverser.usedNamesFromClass(firstClassName)
+          val scopedNamesInFirstClass = namesInFirstClass.scopedNames
 
-          namesInFirstClass.defaultNames.addAll(namesUsedAtTopLevel.defaultNames)
-          namesUsedAtTopLevel.scopedNames.foreach {
-            (topLevelName, topLevelScopes) =>
-              namesInFirstClass.scopedNames.get(topLevelName) match {
-                case null =>
-                  namesInFirstClass.scopedNames.put(topLevelName, topLevelScopes)
-                  ()
-                case scopes =>
-                  scopes.addAll(topLevelScopes)
-                  ()
-              }
+          namesInFirstClass.defaultNames.addAll(defaultNamesTopLevel)
+          scopedNamesTopLevel.foreach { (topLevelName, topLevelScopes) =>
+            val existingScopes = scopedNamesInFirstClass.get(topLevelName)
+            if (existingScopes == null)
+              scopedNamesInFirstClass.put(topLevelName, topLevelScopes)
+            else existingScopes.addAll(topLevelScopes)
+            ()
           }
 
         case None =>
@@ -111,30 +115,36 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       }
     }
 
-    def usedNameDebugMessage: String = {
-      val builder = new StringBuilder(s"The ${unit.source} contains the following used names:\n")
+    debuglog {
+      val msg = s"The ${unit.source} contains the following used names:\n"
+      val builder = new StringBuilder(msg)
       traverser.usedNamesFromClasses.foreach {
         (name, usedNames) =>
-          builder.append(name.toString.trim).append(": ").append(usedNames.toString()).append("\n")
+          builder
+            .append(name.toString.trim)
+            .append(": ")
+            .append(usedNames.toString())
+            .append("\n")
+          ()
       }
       builder.toString()
     }
-    debuglog(usedNameDebugMessage)
 
+    // Handle names circumscribed to classes
     traverser.usedNamesFromClasses.foreach {
       (rawClassName, usedNames) =>
         val className = rawClassName.toString.trim
-        usedNames.defaultNames.foreach {
-          rawUsedName =>
-            val useName = rawUsedName.decoded.trim
-            val useScopes = usedNames.scopedNames.get(rawUsedName) match {
-              case null =>
-                EnumSet.of(UseScope.Default)
-              case scopes =>
-                scopes.add(UseScope.Default)
-                scopes
+        usedNames.defaultNames.foreach { rawUsedName =>
+          val useName = rawUsedName.decoded.trim
+          val existingScopes = usedNames.scopedNames.get(rawUsedName)
+          val useScopes = {
+            if (existingScopes == null) DefaultScopes
+            else {
+              existingScopes.add(UseScope.Default)
+              existingScopes
             }
-            callback.usedName(className, useName, useScopes)
+          }
+          callback.usedName(className, useName, useScopes)
         }
     }
   }
@@ -170,15 +180,14 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     /** Returns mutable set with all names from given class used in current context */
-    def usedNamesFromClass(className: Name): NamesUsedInClass =
-      usedNamesFromClasses.get(className) match {
-        case null =>
-          val newOne = new NamesUsedInClass
-          usedNamesFromClasses.put(className, newOne)
-          newOne
-        case existing =>
-          existing
-      }
+    def usedNamesFromClass(className: Name): NamesUsedInClass = {
+      val names = usedNamesFromClasses.get(className)
+      if (names == null) {
+        val newOne = new NamesUsedInClass
+        usedNamesFromClasses.put(className, newOne)
+        newOne
+      } else names
+    }
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -201,13 +210,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       override def addDependency(symbol: global.Symbol): Unit = {
         if (!ignoredSymbol(symbol) && symbol.isSealed) {
           val name = symbol.name
-          if (!isEmptyName(name))
-            _currentScopedNamesCache.get(name) match {
-              case null =>
-                _currentScopedNamesCache.put(name, EnumSet.of(UseScope.PatMatTarget))
-              case scopes =>
-                scopes.add(UseScope.PatMatTarget)
-            }
+          if (!isEmptyName(name)) {
+            val existingScopes = _currentScopedNamesCache.get(name)
+            if (existingScopes == null)
+              _currentScopedNamesCache.put(name, PatmatScopes)
+            else existingScopes.add(UseScope.PatMatTarget)
+          }
         }
         ()
       }
@@ -264,8 +272,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       // not what we need
       case t: TypeTree if t.original != null =>
         val original = t.original
-        if (inspectedTypeTrees.add(original))
+        if (!inspectedTypeTrees.contains(original)) {
+          inspectedTypeTrees.add(original)
           original.foreach(traverse)
+        }
 
       case t if t.hasSymbolField =>
         val symbol = t.symbol
@@ -299,12 +309,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     /**
-     * Updates caches for closest non-local class owner
-     * of a tree given `currentOwner`, defined and updated by `Traverser`.
+     * Updates caches for closest non-local class owner of a tree given
+     * `currentOwner`, defined and updated by `Traverser`.
      *
      * This method modifies the state associated with the names variable
-     * `_currentNamesCache` and `_currentScopedNamesCache`, which is composed by `_currentOwner` and
-     * and `_currentNonLocalClass`.
+     * `_currentNamesCache` and `_currentScopedNamesCache`, which are composed
+     * by `_currentOwner` and and `_currentNonLocalClass`.
      *
      * * The used caching strategy works as follows:
      * 1. Do nothing if owners are referentially equal.
