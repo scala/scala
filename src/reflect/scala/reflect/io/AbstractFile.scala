@@ -178,9 +178,10 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
         arr
       case None =>
         val out = new ByteArrayOutputStream()
-        var c = in.read()
+        var buffer = new Array[Byte](8192)
+        var c = in.read(buffer)
         while(c != -1) {
-          out.write(c)
+          out.write(buffer, 0, c)
           c = in.read()
         }
         in.close()
