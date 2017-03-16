@@ -140,7 +140,9 @@ trait BytecodeWriters {
           Files.write(outfile.file.toPath, jclassBytes)
         } catch {
           case _: java.nio.file.NoSuchFileException =>
-            Files.createDirectories(outfile.file.toPath.getParent)
+            global.synchronized {
+              Files.createDirectories(outfile.file.toPath.getParent)
+            }
             Files.write(outfile.file.toPath, jclassBytes)
         }
       } else {
