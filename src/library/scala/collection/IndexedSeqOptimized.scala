@@ -182,6 +182,16 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
     }
   }
 
+  override def toList: List[A] = {
+    var result: List[A] = Nil
+    var i = length - 1
+    while (i >= 0) {
+      result ::= apply(i)
+      i -= 1
+    }
+    result
+  }
+
   // Overridden methods from Seq
 
   override /*SeqLike*/
