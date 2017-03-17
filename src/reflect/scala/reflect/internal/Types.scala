@@ -3788,7 +3788,7 @@ trait Types
   private var uniques: util.WeakHashSet[Type] = _
   private var uniqueRunId = NoRunId
 
-  protected def unique[T <: Type](tp: T): T = {
+  protected def unique[T <: Type](tp: T): T =  {
     if (Statistics.canEnable) Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
@@ -4242,38 +4242,44 @@ trait Types
    */
   protected[internal] def specializesSym(preLo: Type, symLo: Symbol, preHi: Type, symHi: Symbol, depth: Depth): Boolean =
     (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
-      // only now that we know symHi is a viable candidate ^^^^^^^, do the expensive checks: ----V
-      require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
+      val symHiInfo = symHi.info
+      if (symHiInfo == WildcardType) {
+        if (symHi.isTerm) (!symHi.isStable || symLo.isStable)     // sub-member must remain stable
+        else true
+      } else {
+        // only now that we know symHi is a viable candidate, do the expensive checks: ----V
+        require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
 
-      val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
+        val tpHi = symHiInfo.asSeenFrom(preHi, symHi.owner).substThis(preHi.typeSymbol, preLo)
 
-      // Should we use memberType or memberInfo?
-      // memberType transforms (using `asSeenFrom`) `sym.tpe`,
-      // whereas memberInfo performs the same transform on `sym.info`.
-      // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
-      // For type symbols, however, the `.info` of an abstract type member
-      // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
-      // so that `sym.tpe <:< sym.info`, but not the other way around.
-      //
-      // Thus, for the strongest (correct) result,
-      // we should use `memberType` on the low side.
-      //
-      // On the high side, we should use the result appropriate
-      // for the right side of the `<:<` above (`memberInfo`).
-      val tpLo = preLo.memberType(symLo)
+        // Should we use memberType or memberInfo?
+        // memberType transforms (using `asSeenFrom`) `sym.tpe`,
+        // whereas memberInfo performs the same transform on `sym.info`.
+        // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
+        // For type symbols, however, the `.info` of an abstract type member
+        // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
+        // so that `sym.tpe <:< sym.info`, but not the other way around.
+        //
+        // Thus, for the strongest (correct) result,
+        // we should use `memberType` on the low side.
+        //
+        // On the high side, we should use the result appropriate
+        // for the right side of the `<:<` above (`memberInfo`).
+        val tpLo = preLo.memberType(symLo)
 
-      debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
-      debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
+        debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
+        debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
 
-      if (symHi.isTerm)
-        (isSubType(tpLo, tpHi, depth)        &&
-         (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
-         (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
-      else if (symHi.isAbstractType)
-        ((tpHi.bounds containsType tpLo) &&
-         kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
-      else // we know `symHi.isAliasType` (see above)
-        tpLo =:= tpHi
+        if (symHi.isTerm)
+          (isSubType(tpLo, tpHi, depth)        &&
+            (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
+            (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
+        else if (symHi.isAbstractType)
+          ((tpHi.bounds containsType tpLo) &&
+            kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+        else // we know `symHi.isAliasType` (see above)
+          tpLo =:= tpHi
+      }
     }
 
   /** A function implementing `tp1` matches `tp2`. */
