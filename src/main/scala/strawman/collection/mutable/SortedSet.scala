@@ -12,6 +12,6 @@ trait SortedSet[A]
 
 trait SortedSetLike[A, +C[X] <: SortedSet[X]]
   extends collection.SortedSetLike[A, C]
-    with ConstrainedIterablePolyTransforms[A, Set, SortedSet, Ordering]
+    with ConstrainedIterablePolyTransforms[A, Set, SortedSet]
     with SetLike[A, Set]
     with SetMonoTransforms[A, C[A]]

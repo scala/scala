@@ -10,6 +10,9 @@ trait SortedSet[A]
 
 trait SortedSetLike[A, +C[X] <: SortedSet[X]]
   extends SortedLike[A, C[A]]
-    with ConstrainedIterablePolyTransforms[A, Set, SortedSet, Ordering]
+    with ConstrainedIterablePolyTransforms[A, Set, SortedSet]
     with SetLike[A, Set] // Inherited Set operations return a `Set`
-    with SetMonoTransforms[A, C[A]] // Override the return type of Set ops to return C[A]
+    with SetMonoTransforms[A, C[A]]// Override the return type of Set ops to return C[A]
+{
+  type Ev[A] = Ordering[A]
+}
