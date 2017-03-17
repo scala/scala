@@ -201,9 +201,11 @@ trait IterablePolyTransforms[+A, +C[A]] extends Any {
 /** Transforms over iterables that can return collections of different element types for which an
   * implicit evidence is required.
   */
-trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X], Ev[A]] extends ConstrainedFromIterable[CC, Ev] with IterablePolyTransforms[A, C] {
+trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X]] extends IterablePolyTransforms[A, C] {
+  type Ev[A]
 
   protected def coll: Iterable[A]
+  protected def constrainedFromIterable[B: Ev](it: Iterable[B]): CC[B]
 
   /** Map */
   def map[B : Ev](f: A => B): CC[B] = constrainedFromIterable(View.Map(coll, f))
@@ -217,6 +219,11 @@ trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X], Ev[A]] extend
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B])(implicit ev: Ev[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = constrainedFromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
+
+  def collect[B: Ev](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a => 
+    if (pf.isDefinedAt(a)) View.Elems(pf(a))
+    else View.Empty
+  )
 
   /** Widen this collection to the most specific unconstrained collection type. */
   def unconstrained: C[A @uncheckedVariance]
