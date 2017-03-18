@@ -4,7 +4,7 @@ import java.lang.IndexOutOfBoundsException
 
 import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
 import strawman.collection
-import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike}
+import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike, MonoBuildable, PolyBuildable}
 
 import scala.Predef.intWrapper
 
@@ -12,7 +12,8 @@ import scala.Predef.intWrapper
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedOptimizedGrowableSeq[A]
     with SeqLike[A, ArrayBuffer]
-    with Buildable[A, ArrayBuffer[A]]
+    with MonoBuildable[A, ArrayBuffer[A]]
+    with PolyBuildable[A, ArrayBuffer]
     with Builder[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
@@ -49,7 +50,8 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
 
-  protected[this] def newBuilder = new ArrayBuffer[A]
+  protected[this] def newBuilderWithSameElemType = new ArrayBuffer[A]
+  def newBuilder[E] = new ArrayBuffer[E]
 
   def clear() =
     end = 0

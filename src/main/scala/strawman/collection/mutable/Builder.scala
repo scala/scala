@@ -27,26 +27,6 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   }
 }
 
-/** Base trait for strict collections that can be built using a builder.
-  * @tparam  A    the element type of the collection
-  * @tparam Repr  the type of the underlying collection
-  */
-trait Buildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr]  {
-
-  /** Creates a new builder. */
-  protected[this] def newBuilder: Builder[A, Repr]
-
-  /** Optimized, push-based version of `partition`. */
-  override def partition(p: A => Boolean): (Repr, Repr) = {
-    val l, r = newBuilder
-    coll.iterator().foreach(x => (if (p(x)) l else r) += x)
-    (l.result, r.result)
-  }
-
-  // one might also override other transforms here to avoid generating
-  // iterators if it helps efficiency.
-}
-
 class StringBuilder extends Builder[Char, String] {
   private val sb = new java.lang.StringBuilder
 

@@ -1,7 +1,7 @@
 package strawman.collection.immutable
 
 import strawman.collection.mutable.Builder
-import strawman.collection.{ConstrainedIterableFactory, Iterator}
+import strawman.collection.{ConstrainedIterableFactory, ConstrainedPolyBuildable, Iterator}
 
 import scala.{Boolean, Ordering}
 import scala.Predef.???
@@ -9,9 +9,8 @@ import scala.Predef.???
 /** Immutable sorted set backed by a tree */
 final class TreeSet[A]()(implicit val ordering: Ordering[A])
   extends SortedSet[A]
-    with SortedSetLike[A, TreeSet] {
-
-  type CC[X] = TreeSet[X]
+    with SortedSetLike[A, TreeSet]
+    with ConstrainedPolyBuildable[A, TreeSet, Ordering] {
 
   // From IterableOnce
   def iterator(): Iterator[A] = ???
@@ -27,6 +26,13 @@ final class TreeSet[A]()(implicit val ordering: Ordering[A])
   def constrainedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
     TreeSet.constrainedNewBuilder[B].++=(coll).result
   def unconstrained: Set[A] = this
+
+  // From ConstrainedPolyBuildable
+  def newConstrainedBuilder[E : Ordering] = TreeSet.constrainedNewBuilder
+
+  // From PolyBuildable
+  def newBuilder[E]: Builder[E, Set[E]] = ???
+
 
   // From SetLike
   def contains(elem: A): Boolean = ???

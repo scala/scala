@@ -4,7 +4,7 @@ import strawman.collection.immutable.List
 
 import scala.{Array, Char, Int, AnyVal}
 import scala.Predef.String
-import strawman.collection.mutable.{ArrayBuffer, Buildable, StringBuilder}
+import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import scala.reflect.ClassTag
 
@@ -12,7 +12,7 @@ class StringOps(val s: String)
   extends AnyVal with IterableOps[Char]
     with SeqMonoTransforms[Char, String]
     with IterablePolyTransforms[Char, List]
-    with Buildable[Char, String]
+    with MonoBuildable[Char, String]
     with ArrayLike[Char] {
 
   protected def coll = new StringView(s)
@@ -26,7 +26,7 @@ class StringOps(val s: String)
 
   def fromIterable[B](coll: Iterable[B]): List[B] = List.fromIterable(coll)
 
-  protected[this] def newBuilder = new StringBuilder
+  protected[this] def newBuilderWithSameElemType = new StringBuilder
 
   def length = s.length
   def apply(i: Int) = s.charAt(i)
@@ -76,7 +76,7 @@ case class StringView(s: String) extends IndexedView[Char] {
 class ArrayOps[A](val xs: Array[A])
   extends AnyVal with IterableOps[A]
     with SeqMonoTransforms[A, Array[A]]
-    with Buildable[A, Array[A]]
+    with MonoBuildable[A, Array[A]]
     with ArrayLike[A] {
 
   protected def coll = new ArrayView(xs)
@@ -93,7 +93,7 @@ class ArrayOps[A](val xs: Array[A])
 
   def fromIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
-  protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
+  protected[this] def newBuilderWithSameElemType = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
 
   override def knownSize = xs.length
 

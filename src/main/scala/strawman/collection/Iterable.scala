@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 import scala.{Any, Array, Boolean, Int, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
 
-import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
+import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
 
 /** Base trait for generic collections */
@@ -88,17 +88,14 @@ trait IterableOps[+A] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[F <: Build[A]](fi: F): fi.To[A @uncheckedVariance] =
-  // variance seems sound because `to` could just as well have been added
-  // as a decorator. We should investigate this further to be sure.
+  def to[F <: TypeConstrainedFromIterable[A]](fi: F): fi.To[A @uncheckedVariance] =
     fi.fromIterable(coll)
 
-  def to[F <: BuildConstrained](fi: F)(implicit c: fi.Constraint[A @uncheckedVariance]): c.To[A @uncheckedVariance] =
-    c.fromIterable(coll)
-
-  // Could be defined in addition to the method above; less generic but doesn't have to wrap the evidence
-  //def to[C[_], Ev[_]](fi: ConstrainedFromIterable[C, Ev])(implicit ev: Ev[A @uncheckedVariance]): C[A @uncheckedVariance] =
-  //  fi.constrainedFromIterable(coll)
+  // Generic version of the method above that can build anything with BuildFrom. Note that `bf` is not implicit.
+  // We never want it to be inferred (because a collection could only rebuild itself that way) but we do rely on
+  // the implicit conversions from the various factory types to BuildFrom.
+  def to(bf: BuildFrom[Iterable[A], A]): bf.To =
+    bf.fromIterable(coll)(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -180,7 +177,7 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
 
 /** Transforms over iterables that can return collections of different element types.
   */
-trait IterablePolyTransforms[+A, +C[A]] extends Any {
+trait IterablePolyTransforms[+A, +C[_]] extends Any {
   protected def coll: Iterable[A]
   def fromIterable[B](coll: Iterable[B]): C[B]
 
@@ -201,8 +198,8 @@ trait IterablePolyTransforms[+A, +C[A]] extends Any {
 /** Transforms over iterables that can return collections of different element types for which an
   * implicit evidence is required.
   */
-trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X]] extends IterablePolyTransforms[A, C] {
-  type Ev[A]
+trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with IterablePolyTransforms[A, C] {
+  type Ev[_]
 
   protected def coll: Iterable[A]
   protected def constrainedFromIterable[B: Ev](it: Iterable[B]): CC[B]
@@ -227,4 +224,44 @@ trait ConstrainedIterablePolyTransforms[+A, +C[A], +CC[X] <: C[X]] extends Itera
 
   /** Widen this collection to the most specific unconstrained collection type. */
   def unconstrained: C[A @uncheckedVariance]
+}
+
+/** Base trait for strict collections that can be built using a builder.
+  * @tparam  A    the element type of the collection
+  * @tparam Repr  the type of the underlying collection
+  */
+trait MonoBuildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr]  {
+
+  /** Creates a new builder. */
+  protected[this] def newBuilderWithSameElemType: Builder[A, Repr]
+
+  /** Optimized, push-based version of `partition`. */
+  override def partition(p: A => Boolean): (Repr, Repr) = {
+    val l, r = newBuilderWithSameElemType
+    coll.iterator().foreach(x => (if (p(x)) l else r) += x)
+    (l.result, r.result)
+  }
+
+  // one might also override other transforms here to avoid generating
+  // iterators if it helps efficiency.
+}
+
+/** Base trait for strict collections that can be built for arbitrary element types using a builder.
+  * @tparam  A    the element type of the collection
+  * @tparam C     the type constructor of the underlying collection
+  */
+trait PolyBuildable[+A, +C[_]] extends Any with FromIterable[C] {
+
+  /** Creates a new builder. */
+  def newBuilder[E]: Builder[E, C[E]]
+}
+
+/** Base trait for strict collections that can be built using a builder for element types with an implicit evidence.
+  * @tparam  A    the element type of the collection
+  * @tparam C     the type constructor of the underlying collection
+  */
+trait ConstrainedPolyBuildable[+A, +CC[_], Ev[_]] extends Any with ConstrainedFromIterable[CC, Ev] {
+
+  /** Creates a new builder. */
+  def newConstrainedBuilder[E : Ev]: Builder[E, CC[E]]
 }
