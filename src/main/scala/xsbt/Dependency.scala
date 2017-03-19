@@ -376,8 +376,16 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
         traverseTrees(body)
 
-      // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
+      /* Original type trees have to be traversed because typer is very
+       * aggressive when expanding explicit user-defined types. For instance,
+       * `Foo#B` will be expanded to `C` and the dependency on `Foo` will be
+       * lost. This makes sure that we traverse all the original prefixes. */
       case typeTree: TypeTree if !ignoredType(typeTree.tpe) =>
+        val original = typeTree.original
+        if (original != null && !inspectedOriginalTrees.contains(original)) {
+          traverse(original)
+          inspectedOriginalTrees.add(original)
+        }
         addTypeDependencies(typeTree.tpe)
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)

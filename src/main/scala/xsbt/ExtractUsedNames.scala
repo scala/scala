@@ -188,11 +188,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           usedNameInImportSelector(selector.name)
           usedNameInImportSelector(selector.rename)
         }
-      // TODO: figure out whether we should process the original tree or walk the type
-      // the argument for processing the original tree: we process what user wrote
-      // the argument for processing the type: we catch all transformations that typer applies
-      // to types but that might be a bad thing because it might expand aliases eagerly which
-      // not what we need
+      /* Original type trees have to be traversed because typer is very
+       * aggressive when expanding explicit user-defined types. For instance,
+       * `Foo#B` will be expanded to `C` and the dependency on `Foo` will be
+       * lost. This makes sure that we traverse all the original prefixes. */
       case t: TypeTree if t.original != null =>
         val original = t.original
         if (!inspectedTypeTrees.contains(original)) {
