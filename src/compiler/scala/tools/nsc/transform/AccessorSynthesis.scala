@@ -350,7 +350,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
     }
 
     class SynthInitCheckedAccessorsIn(protected val clazz: Symbol) extends SynthCheckedAccessorsTreesInClass with CheckInitAccessorSymbolSynth {
-      private object addInitBitsTransformer extends Transformer {
+      private object addInitBitsTransformer extends BaseTransformer {
         private def checkedGetter(lhs: Tree)(pos: Position) = {
           val getter = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
           if (hasBitmap(getter) && needsInitFlag(getter)) {

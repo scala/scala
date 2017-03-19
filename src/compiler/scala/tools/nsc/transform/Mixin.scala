@@ -356,7 +356,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new MixinTransformer(unit)
 
-  class MixinTransformer(unit : CompilationUnit) extends Transformer with AccessorTreeSynthesis {
+  class MixinTransformer(unit : CompilationUnit) extends BaseTransformer with AccessorTreeSynthesis {
     /** The typer */
     private var localTyper: erasure.Typer = _
     protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)

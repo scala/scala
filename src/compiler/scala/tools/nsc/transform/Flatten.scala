@@ -110,7 +110,7 @@ abstract class Flatten extends InfoTransform {
 
   protected def newTransformer(unit: CompilationUnit): Transformer = new Flattener
 
-  class Flattener extends Transformer {
+  class Flattener extends BaseTransformer {
     /** Buffers for lifted out classes */
     private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
 

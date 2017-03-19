@@ -9,7 +9,7 @@ trait Internals extends scala.tools.nsc.transform.TypingTransformers {
   lazy val internal: ContextInternalApi = new global.SymbolTableInternal with ContextInternalApi {
     val enclosingOwner = callsiteTyper.context.owner
 
-    class HofTransformer(hof: (Tree, TransformApi) => Tree) extends Transformer {
+    class HofTransformer(hof: (Tree, TransformApi) => Tree) extends BaseTransformer {
       val api = new TransformApi {
         def recur(tree: Tree): Tree = hof(tree, this)
         def default(tree: Tree): Tree = superTransform(tree)
@@ -20,7 +20,7 @@ trait Internals extends scala.tools.nsc.transform.TypingTransformers {
 
     def transform(tree: Tree)(transformer: (Tree, TransformApi) => Tree): Tree = new HofTransformer(transformer).transform(tree)
 
-    class HofTypingTransformer(hof: (Tree, TypingTransformApi) => Tree) extends TypingTransformer(callsiteTyper.context.unit) { self =>
+    class HofTypingTransformer(hof: (Tree, TypingTransformApi) => Tree) extends BaseTypingTransformer(callsiteTyper.context.unit) { self =>
       currentOwner = callsiteTyper.context.owner
       curTree = EmptyTree
       localTyper = global.analyzer.newTyper(callsiteTyper.context.make(unit = callsiteTyper.context.unit))

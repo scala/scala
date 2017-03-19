@@ -54,7 +54,7 @@ trait PatternMatching extends Transform
 
   def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
 
-  class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class MatchTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
       case Match(sel, cases) =>
         val origTp = tree.tpe
@@ -213,7 +213,7 @@ trait Interface extends ast.TreeDSL {
           case _          => false
         }
         val toSyms = to.map(_.symbol)
-        object substIdentsForTrees extends Transformer {
+        object substIdentsForTrees extends BaseTransformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
             // important: only type when actually substituting and when original tree was typed

@@ -26,7 +26,7 @@ trait Namers extends MethodSynthesis {
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
    *  Does the same for any trees containing EmptyTrees.
    */
-  private class TypeTreeSubstituter(cond: Name => Boolean) extends Transformer {
+  private class TypeTreeSubstituter(cond: Name => Boolean) extends BaseTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if cond(name) => TypeTree()
       case _                         => super.transform(tree)

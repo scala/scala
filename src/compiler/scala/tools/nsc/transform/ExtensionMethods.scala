@@ -122,7 +122,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       stpe
   }
 
-  class Extender(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class Extender(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     private val extensionDefs = mutable.Map[Symbol, mutable.ListBuffer[Tree]]()
 
     def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
@@ -278,7 +278,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   }
 
   final class SubstututeRecursion(origMeth: Symbol, extensionMeth: Symbol,
-                            unit: CompilationUnit) extends TypingTransformer(unit) {
+                            unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
       // SI-6574 Rewrite recursive calls against the extension method so they can
       //         be tail call optimized later. The tailcalls phases comes before

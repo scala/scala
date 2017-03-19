@@ -87,7 +87,7 @@ abstract class TailCalls extends Transform {
    *            parameter lists exit.
    * </p>
    */
-  class TailCallElimination(unit: CompilationUnit) extends Transformer {
+  class TailCallElimination(unit: CompilationUnit) extends BaseTransformer {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason

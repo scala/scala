@@ -26,7 +26,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
   private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = perRunCaches.newMap[Symbol, List[Tree]]()
   private val ctorParams: mutable.Map[Symbol, List[Symbol]] = perRunCaches.newMap[Symbol, List[Symbol]]()
 
-  class ConstructorTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class ConstructorTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     /*
      * Inspect for obvious out-of-order initialization; concrete, eager vals or vars, declared in this class,
      * for which a reference to the member precedes its definition.
@@ -351,7 +351,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
        */
       def rewriteArrayUpdate(tree: Tree): Tree = {
         val arrayUpdateMethod = currentRun.runDefinitions.arrayUpdateMethod
-        val adapter = new Transformer {
+        val adapter = new BaseTransformer {
           override def transform(t: Tree): Tree = t match {
             case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
               localTyper.typed(Apply(gen.mkAttributedSelect(xs, arrayUpdateMethod), List(idx, v)))
@@ -445,7 +445,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
   } // GuardianOfCtorStmts
 
   private class TemplateTransformer(val unit: CompilationUnit, val impl: Template)
-    extends TypingTransformer(unit)
+    extends BaseTypingTransformer(unit)
     with    StaticsTransformer
     with    DelayedInitHelper
     with    OmittablesHelper
@@ -486,7 +486,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     }
 
     // A transformer for expressions that go into the constructor
-    object intoConstructor extends Transformer {
+    object intoConstructor extends BaseTransformer {
       /*
       * `usesSpecializedField` makes a difference in deciding whether constructor-statements
       * should be guarded in a `guardSpecializedFieldInit` class, ie in a class that's the generic super-class of
