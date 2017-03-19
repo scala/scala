@@ -104,7 +104,7 @@ abstract class RefChecks extends Transform {
     false
   }
 
-  class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
+  class RefCheckTransformer(unit: CompilationUnit) extends BaseTransformer {
 
     var localTyper: analyzer.Typer = typer
     var currentApplication: Tree = EmptyTree

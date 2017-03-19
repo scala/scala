@@ -24,7 +24,7 @@ trait Reshape {
    *    * Transforming Annotated(annot, expr) into Typed(expr, TypeTree(Annotated(annot, _))
    *    * Non-idempotencies of the typechecker: https://issues.scala-lang.org/browse/SI-5464
    */
-  val reshape = new Transformer {
+  val reshape = new BaseTransformer {
     var currentSymbol: Symbol = NoSymbol
 
     override def transform(tree0: Tree) = {

@@ -53,7 +53,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new DelambdafyTransformer(unit)
 
-  class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class DelambdafyTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     // we need to know which methods refer to the 'this' reference so that we can determine which lambdas need access to it
     // TODO: this looks expensive, so I made it a lazy val. Can we make it more pay-as-you-go / optimize for common shapes?
     private[this] lazy val methodReferencesThis: Set[Symbol] =
