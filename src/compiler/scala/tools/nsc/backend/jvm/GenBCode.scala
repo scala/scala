@@ -189,11 +189,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
           startPipeline(workflow, item2Builder.result())
         }
       }
-      def startPipeline(workflow:Workflow, item2s:List[Item2]) = {
-        trace("push to optimize")
-        workflow.optimize.success(item2s)
-      }
-
 
       /*
        *  Checks for duplicate internal names case-insensitively,
@@ -285,7 +280,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
         val downstreams = allData map { workflow: Workflow =>
           Await.ready(workflow.optimize.future, Duration.Inf)
-          trace("start optimise")
           val upstream = workflow.optimize.future.value.get
           try {
             upstream match {
@@ -308,7 +302,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
               case _ =>
             }
             if (!hasGlobalOptimisations) {
-              trace("push to Worker2")
               workflow.item2.complete(upstream)
             }
             upstream
@@ -316,7 +309,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
             case NonFatal(t) =>
               val downstream = Failure(t)
               if (!hasGlobalOptimisations) {
-                trace("push to Worker2")
                 workflow.item2.complete(downstream)
               }
               downstream
@@ -329,7 +321,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
             bTypes.inliner.runInliner()
           if (optClosureInvocations)
             bTypes.closureOptimizer.rewriteClosureApplyInvocations()
-          trace("push all to Worker2")
           for (i <- 0 to allData.size) {
             allData(i).item2.complete(downstreams(i))
           }
@@ -363,12 +354,10 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       override def getWork(workflow: Workflow): Future[List[Item2]] = workflow.item2.future
 
       override def nextStageSuccess(workflow: Workflow, result: List[Item3]): Unit = {
-        trace("push to Worker3")
         workflow.item3.success(result)
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
-        trace("push to Worker3")
         workflow.item3.failure(ex)
       }
 
@@ -386,7 +375,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       override def process(items: List[Item2]): List[Item3] = {
         items map { item =>
           try {
-            trace(s"start Worker2 ${item.sourceFilePath}")
             localOptimizations(item.plain)
             setInnerClasses(item.plain)
             val lambdaImplMethods = getIndyLambdaImplMethods(item.plain.name)
@@ -565,11 +553,9 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       override def getWork(workflow: Workflow): Future[List[Item3]] = workflow.item3.future
 
       override def nextStageSuccess(workflow: Workflow, result: Unit): Unit = {
-        trace("done Worker3")
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
-        trace("done Worker3")
       }
 
       override def waitReady: Unit = ()
@@ -591,7 +577,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       }
 
       override def process(items: List[Item3]): Unit = {
-        trace("start Worker3")
         for (item <- items) {
           val outFolder = item.outFolder
           sendToDisk(item.mirror, outFolder)
@@ -624,9 +609,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
   } // end of class BCodePhase
 
-  def trace(s:String): Unit = {
-//    println(s)
-  }
 
 } // end of class GenBCode
 
