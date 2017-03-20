@@ -61,7 +61,7 @@
 #
 # Note: It's still OK for a module to release a binary incompatible version to maven, for example
 # scala-parser-combinators_2.11 % 1.1.0. Users can depend on this in their sbt build. But for the
-# distribution (tar/zip archives, scala-library-all) we have to stay on the binary compatible version.
+# distribution (tar/zip archives) we have to stay on the binary compatible version.
 
 
 # Requirements

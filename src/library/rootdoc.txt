@@ -19,16 +19,6 @@ Notable packages include:
       [[scala.collection.mutable.HashMap `HashMap`]] or [[scala.collection.mutable.HashSet `HashSet`]]
     - [[scala.collection.concurrent `scala.collection.concurrent`]] - Mutable, concurrent data-structures such as
       [[scala.collection.concurrent.TrieMap `TrieMap`]]
-    - [[scala.collection.parallel.immutable `scala.collection.parallel.immutable`]] - Immutable, parallel
-      data-structures such as [[scala.collection.parallel.immutable.ParVector `ParVector`]],
-      [[scala.collection.parallel.immutable.ParRange `ParRange`]],
-      [[scala.collection.parallel.immutable.ParHashMap `ParHashMap`]] or
-      [[scala.collection.parallel.immutable.ParHashSet `ParHashSet`]]
-    - [[scala.collection.parallel.mutable `scala.collection.parallel.mutable`]] - Mutable, parallel
-      data-structures such as [[scala.collection.parallel.mutable.ParArray `ParArray`]],
-      [[scala.collection.parallel.mutable.ParHashMap `ParHashMap`]],
-      [[scala.collection.parallel.mutable.ParTrieMap `ParTrieMap`]] or
-      [[scala.collection.parallel.mutable.ParHashSet `ParHashSet`]]
   - [[scala.concurrent    `scala.concurrent`]] - Primitives for concurrent programming such as
     [[scala.concurrent.Future `Futures`]] and [[scala.concurrent.Promise `Promises`]]
   - [[scala.io            `scala.io`]]     - Input and output operations
@@ -43,8 +33,9 @@ Additional parts of the standard library are shipped as separate libraries. Thes
 
   - [[scala.reflect       `scala.reflect`]]   - Scala's reflection API (scala-reflect.jar)
   - [[scala.xml           `scala.xml`]]    - XML parsing, manipulation, and serialization (scala-xml.jar)
-  - [[scala.swing         `scala.swing`]]  - A convenient wrapper around Java's GUI framework called Swing (scala-swing.jar)
+  - [[scala.collection.parallel `scala.collection.parallel`]] - Parallel collections (scala-parallel-collections.jar)
   - [[scala.util.parsing  `scala.util.parsing`]] - Parser combinators (scala-parser-combinators.jar)
+  - [[scala.swing         `scala.swing`]]  - A convenient wrapper around Java's GUI framework called Swing (scala-swing.jar)
 
 == Automatic imports ==
 
