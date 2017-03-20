@@ -442,16 +442,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                    => false
   })
   def specializedTypeVars(tpes: List[Type]): immutable.Set[Symbol] = {
-    @tailrec def loop(result: immutable.Set[Symbol], xs: List[Type]): immutable.Set[Symbol] = {
-      if (xs.isEmpty) result
-      else loop(result ++ specializedTypeVars(xs.head), xs.tail)
-    }
-    loop(immutable.Set.empty, tpes)
+    val result = mutable.Set.empty[Symbol]
+    specializedTypeVars1(tpes, result)
+    result.toSet
   }
-  def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = (
-    if (neverHasTypeParameters(sym)) immutable.Set.empty
-    else enteringTyper(specializedTypeVars(sym.info))
-  )
+  def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = {
+    val result = mutable.Set.empty[Symbol]
+    specializedTypeVars1(sym, result)
+    result.toSet
+  }
 
   /** Return the set of @specialized type variables mentioned by the given type.
    *  It only counts type variables that appear:
@@ -459,30 +458,60 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    - as arguments to type constructors in @specialized positions
    *      (arrays are considered as Array[@specialized T])
    */
-  def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = tpe match {
-    case TypeRef(pre, sym, args) =>
-      if (sym.isAliasType)
-        specializedTypeVars(tpe.dealiasWiden)
-      else if (sym.isTypeParameter && sym.isSpecialized || (sym.isTypeSkolem && sym.deSkolemize.isSpecialized))
-        Set(sym)
-      else if (sym == ArrayClass)
-        specializedTypeVars(args)
-      else if (args.isEmpty)
-        Set()
-      else
-        enteringTyper(specializedTypeVars(sym.typeParams zip args collect { case (tp, arg) if tp.isSpecialized => arg }))
-
-    case PolyType(tparams, resTpe)   => specializedTypeVars(resTpe :: mapList(tparams)(symInfo)) // OPT
-    // since this method may be run at phase typer (before uncurry, where NMTs are eliminated)
-    case NullaryMethodType(resTpe)   => specializedTypeVars(resTpe)
-    case MethodType(argSyms, resTpe) => specializedTypeVars(resTpe :: mapList(argSyms)(symTpe))  // OPT
-    case ExistentialType(_, res)     => specializedTypeVars(res)
-    case AnnotatedType(_, tp)        => specializedTypeVars(tp)
-    case TypeBounds(lo, hi)          => specializedTypeVars(lo :: hi :: Nil)
-    case RefinedType(parents, _)     => parents.flatMap(specializedTypeVars).toSet
-    case _                           => immutable.Set.empty
+  def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = {
+    val result =mutable.Set.empty[Symbol]
+    specializedTypeVars1(tpe, result)
+    result.toSet
   }
 
+  def specializedTypeVars1(tpes: List[Type], result: mutable.Set[Symbol]): Unit = {
+    @tailrec def loop(xs: List[Type]): Unit = {
+      if (xs.isEmpty) ()
+      else {
+        specializedTypeVars1(xs.head, result)
+        loop(xs.tail)
+      }
+    }
+    loop(tpes)
+  }
+  def specializedTypeVars1(sym: Symbol, result: mutable.Set[Symbol]): Unit = (
+    if (neverHasTypeParameters(sym)) immutable.Set.empty
+    else enteringTyper(specializedTypeVars1(sym.info, result))
+    )
+
+  /** Return the set of @specialized type variables mentioned by the given type.
+    *  It only counts type variables that appear:
+    *    - naked
+    *    - as arguments to type constructors in @specialized positions
+    *      (arrays are considered as Array[@specialized T])
+    */
+  def specializedTypeVars1(tpe: Type, result: mutable.Set[Symbol]): Unit = tpe match {
+    case TypeRef(pre, sym, args) =>
+      if (sym.isAliasType)
+        specializedTypeVars1(tpe.dealiasWiden, result)
+      else if (sym.isTypeParameter && sym.isSpecialized || (sym.isTypeSkolem && sym.deSkolemize.isSpecialized))
+        result += sym
+      else if (sym == ArrayClass)
+        specializedTypeVars1(args, result)
+      else if (args.isEmpty)
+        immutable.Set.empty
+      else enteringTyper {
+        foreach2(sym.typeParams, args) { (tp, arg) =>
+          if (tp.isSpecialized)
+            specializedTypeVars1(arg, result)
+        }
+      }
+    case PolyType(tparams, resTpe)   => specializedTypeVars1(resTpe, result);  tparams.foreach(tp => specializedTypeVars1(symInfo(tp), result))
+    // since this method may be run at phase typer (before uncurry, where NMTs are eliminated)
+    case NullaryMethodType(resTpe)   => specializedTypeVars1(resTpe, result)
+    case MethodType(argSyms, resTpe) => specializedTypeVars1(resTpe, result); argSyms.foreach(a => specializedTypeVars1(symTpe(a), result))
+    case ExistentialType(_, res)     => specializedTypeVars1(res, result)
+    case AnnotatedType(_, tp)        => specializedTypeVars1(tp, result)
+    case TypeBounds(lo, hi)          => specializedTypeVars1(lo, result); specializedTypeVars1(hi, result)
+    case RefinedType(parents, _)     => parents.foreach(p => specializedTypeVars1(p, result))
+    case _                           => ()
+  }
+  
   /** Returns the type parameter in the specialized class `sClass` that corresponds to type parameter
    *  `tparam` in the original class. It will create it if needed or use the one from the cache.
    */
@@ -950,7 +979,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (hasUnspecializableAnnotation(sym)) {
         List()
       } else {
-        val stvars = specializedTypeVars(sym)
+
+        val stvars = mutable.Set.empty[Symbol]
+        specializedTypeVars1(sym, stvars)
         if (stvars.nonEmpty)
           debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
 
