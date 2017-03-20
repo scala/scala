@@ -824,7 +824,10 @@ self =>
 
       def mkSelection(t: Tree) = {
         def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
-        if (targs.isEmpty) sel else atPos(left.pos)(TypeApply(sel, targs))
+        if (targs.isEmpty) sel
+        else atPos(sel.pos union targs.last.pos withPoint sel.pos.point) {
+          TypeApply(sel, targs)
+        }
       }
       def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
       val arguments = right match {
