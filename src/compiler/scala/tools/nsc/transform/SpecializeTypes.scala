@@ -204,6 +204,22 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         FunctionClass.seq.map(_.info)
         TupleClass.seq.map(_.info)
       }
+
+      // Remove the final modifier and @inline annotation from anything in the
+      // original class (since it's being overridden in at least one subclass).
+      //
+      // We do this here so that the specialized subclasses will correctly copy
+      // final and @inline.
+      //
+      // TODO Try to move this logic back to the info transform.
+      info.foreach {
+        case (sym, SpecialOverload(target, _)) =>
+          sym.resetFlag(FINAL)
+          target.resetFlag(FINAL)
+          sym.removeAnnotation(ScalaInlineClass)
+          target.removeAnnotation(ScalaInlineClass)
+        case _ =>
+      }
     }
   }
 
@@ -2036,26 +2052,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   class SpecializationTransformer(unit: CompilationUnit) extends BaseTransformer {
     informProgress("specializing " + unit)
     override def transform(tree: Tree) = {
-      val resultTree = if (settings.nospecialization) tree
+      if (settings.nospecialization) tree
       else exitingSpecialize(specializeCalls(unit).transform(tree))
-
-      // Remove the final modifier and @inline annotation from anything in the
-      // original class (since it's being overridden in at least one subclass).
-      //
-      // We do this here so that the specialized subclasses will correctly copy
-      // final and @inline.
-      // TODO this implementation has exponential complexity: all encountered SpecialOverloads are processed after
-      //      each compilation unit.
-      info.foreach {
-        case (sym, SpecialOverload(target, _)) =>
-          sym.resetFlag(FINAL)
-          target.resetFlag(FINAL)
-          sym.removeAnnotation(ScalaInlineClass)
-          target.removeAnnotation(ScalaInlineClass)
-        case _ =>
-      }
-
-      resultTree
     }
   }
   object SpecializedSuperConstructorCallArgument
