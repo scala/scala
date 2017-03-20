@@ -2044,14 +2044,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       //
       // We do this here so that the specialized subclasses will correctly copy
       // final and @inline.
+      // TODO this implementation has exponential complexity: all encountered SpecialOverloads are processed after
+      //      each compilation unit.
       info.foreach {
-        case (sym, SpecialOverload(target, _)) => {
+        case (sym, SpecialOverload(target, _)) =>
           sym.resetFlag(FINAL)
           target.resetFlag(FINAL)
           sym.removeAnnotation(ScalaInlineClass)
           target.removeAnnotation(ScalaInlineClass)
-        }
-        case _ => {}
+        case _ =>
       }
 
       resultTree
