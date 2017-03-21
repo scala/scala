@@ -134,11 +134,6 @@ trait Implicits {
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
-  private def isInvalidConversionSource(tpe: Type): Boolean = tpe match {
-    case Function1(in, _) => in <:< NullClass.tpe
-    case _                => false
-  }
-
   def resetImplicits() {
     implicitsCache.clear()
     infoMapCache.clear()
@@ -1388,27 +1383,32 @@ trait Implicits {
         }
       }
       if (result.isSuccess && isView) {
-        def maybeInvalidConversionError(msg: String) {
+        def maybeInvalidConversionError(msg: String): Boolean = {
           // We have to check context.ambiguousErrors even though we are calling "issueAmbiguousError"
           // which ostensibly does exactly that before issuing the error. Why? I have no idea. Test is pos/t7690.
           // AM: I would guess it's because ambiguous errors will be buffered in silent mode if they are not reported
           if (context.ambiguousErrors)
             context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
+          true
         }
         pt match {
-          case Function1(_, out) =>
-            // must inline to avoid capturing result
-            def prohibit(sym: Symbol) = (sym.tpe <:< out) && {
-              maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
-              true
-            }
-            if (prohibit(AnyRefClass) || (settings.isScala211 && prohibit(AnyValClass)))
-              result = SearchFailure
-          case _                 => false
-        }
-        if (settings.isScala211 && isInvalidConversionSource(pt)) {
-          maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
-          result = SearchFailure
+          // SI-10206 don't use subtyping to rule out AnyRef/AnyVal:
+          //   - there are several valid structural types that are supertypes of AnyRef (e.g., created by HasMember);
+          //     typeSymbol will do the trick (AnyRef is a type alias for Object), while ruling out these structural types
+          //   - also don't want to accidentally constrain type vars through using <:<
+          case Function1(in, out) =>
+            val outSym = out.typeSymbol
+
+            val fail =
+              if (out.annotations.isEmpty && (outSym == ObjectClass || (isScala211 && outSym == AnyValClass)))
+                maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than $out")
+              else if (isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
+                maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
+              else false
+
+            if (fail) result = SearchFailure
+
+          case _ =>
         }
       }
 
@@ -1417,6 +1417,9 @@ trait Implicits {
 
       result
     }
+
+    // this setting is expensive to check, actually....
+    private[this] val isScala211 = settings.isScala211
 
     def allImplicits: List[SearchResult] = {
       def search(iss: Infoss, isLocalToCallsite: Boolean) = applicableInfos(iss, isLocalToCallsite).values
