@@ -669,6 +669,15 @@ def f(a: Int = 0)(b: Int = a + 1) = b // OK
 f(10)()                               // returns 11 (not 1)
 ```
 
+If an [implicit argument](07-implicits.html#implicit-parameters)
+is not found by implicit search, it may be supplied using a default argument.
+
+```scala
+implicit val i: Int = 2
+def f(implicit x: Int, s: String = "hi") = s * x
+f                                     // "hihi"
+```
+
 ### By-Name Parameters
 
 ```ebnf

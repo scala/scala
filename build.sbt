@@ -670,7 +670,7 @@ lazy val test = project
       (baseDir / "test/files/lib").list.toSeq.filter(_.endsWith(".jar.desired.sha1"))
         .map(f => bootstrapDep(baseDir, "test/files/lib", f.dropRight(17)))
     },
-    // Two hardcoded depenencies in partest, resolved in the otherwise unused scope "test":
+    // Two hardcoded dependencies in partest, resolved in the otherwise unused scope "test":
     libraryDependencies += bootstrapDep((baseDirectory in ThisBuild).value, "test/files/codelib", "code") % "test",
     libraryDependencies += bootstrapDep((baseDirectory in ThisBuild).value, "test/files/speclib", "instrumented") % "test",
     // no main sources
