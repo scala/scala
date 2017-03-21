@@ -299,12 +299,12 @@ abstract class BTypes {
    */
   sealed trait BType {
     final override def toString: String = {
-      val builder = new StringBuilder(64)
+      val builder = new java.lang.StringBuilder(64)
       buildString(builder)
       builder.toString
     }
 
-    final def buildString(builder: StringBuilder): Unit = this match {
+    final def buildString(builder: java.lang.StringBuilder): Unit = this match {
       case UNIT   => builder.append('V')
       case BOOL   => builder.append('Z')
       case CHAR   => builder.append('C')
