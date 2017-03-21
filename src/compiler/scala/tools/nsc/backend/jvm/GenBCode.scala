@@ -366,16 +366,16 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val backendUtils = bTypes.backendUtils
 
       override def getWork(workflow: Workflow): Future[List[Item2]] = {
-        val res = workflow.item2.future
-        workflow.item2 = null //release memory
-        res
+        workflow.item2.future
       }
 
       override def nextStageSuccess(workflow: Workflow, result: List[Item3]): Unit = {
+        workflow.item2 = null //release memory
         workflow.item3.success(result)
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
+        workflow.item2 = null //release memory
         workflow.item3.failure(ex)
       }
 
@@ -587,15 +587,15 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val backendUtils = bTypes.backendUtils
 
       override def getWork(workflow: Workflow): Future[List[Item3]] = {
-        val res = workflow.item3.future
-        workflow.item3 = null //release memory
-        res
+        workflow.item3.future
       }
 
       override def nextStageSuccess(workflow: Workflow, result: Unit): Unit = {
+        workflow.item3 = null //release memory
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
+        workflow.item3 = null //release memory
       }
 
       override def waitReady: Unit = ()
