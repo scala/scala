@@ -200,7 +200,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                 reporter.error(NoPosition, s"Error while emitting ${workflow.cunit.source}\n${ex.getMessage}")
             }
           }
-          startPipeline(workflow, item2Builder.result())
+          workflow.optimize.success(item2Builder.result())
         }
       }
 
