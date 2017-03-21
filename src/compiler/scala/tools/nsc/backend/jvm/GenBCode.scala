@@ -379,7 +379,9 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         workflow.item3.failure(ex)
       }
 
-      override def waitReady: Unit = {Await.ready(allData.last.optimize.future, Duration.Inf)}
+      override def waitReady: Unit = {
+        Option(allData.last.optimize) foreach {p => Await.ready(p.future, Duration.Inf)}
+      }
 
       def localOptimizations(classNode: ClassNode): Unit = {
         BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
