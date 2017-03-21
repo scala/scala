@@ -41,11 +41,13 @@ import java.util.regex.{ Pattern, Matcher }
  *  implicitly for strings:
  *
  *  {{{
- *  val date = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+ *  val date = raw"(\d{4})-(\d{2})-(\d{2})".r
  *  }}}
  *
  *  Since escapes are not processed in multi-line string literals, using triple quotes
  *  avoids having to escape the backslash character, so that `"\\d"` can be written `"""\d"""`.
+ *  The same result is achieved with certain interpolators, such as `raw"\d".r` or
+ *  a custom interpolator `r"\d"` that also compiles the `Regex`.
  *
  *  === Extraction ===
  *  To extract the capturing groups when a `Regex` is matched, use it as
@@ -116,29 +118,41 @@ import java.util.regex.{ Pattern, Matcher }
  *  while (mi.hasNext) {
  *    val d = mi.next
  *    if (mi.group(1).toInt < 1960) println(s"$d: An oldie but goodie.")
+ *  }
  *  }}}
+ *
+ *  Although the `MatchIterator` returned by `findAllIn` is used like any `Iterator`,
+ *  with alternating calls to `hasNext` and `next`, `hasNext` has the additional
+ *  side effect of advancing the underlying matcher to the next unconsumed match.
+ *  This effect is visible in the `MatchData` representing the "current match".
+ *
+ *  {{{
+ *  val r = "(ab+c)".r
+ *  val s = "xxxabcyyyabbczzz"
+ *  r.findAllIn(s).start    // 3
+ *  val mi = r.findAllIn(s)
+ *  mi.hasNext              // true
+ *  mi.start                // 3
+ *  mi.next()               // "abc"
+ *  mi.start                // 3
+ *  mi.hasNext              // true
+ *  mi.start                // 9
+ *  mi.next()               // "abbc"
+ *  }}}
+ *
+ *  The example shows that methods on `MatchData` such as `start` will advance to
+ *  the first match, if necessary. It also shows that `hasNext` will advance to
+ *  the next unconsumed match, if `next` has already returned the current match.
+ *
+ *  The current `MatchData` can be captured using the `matchData` method.
+ *  Alternatively, `findAllMatchIn` returns an `Iterator[Match]`, where there
+ *  is no interaction between the iterator and `Match` objects it has already produced.
  *
  *  Note that `findAllIn` finds matches that don't overlap. (See [[findAllIn]] for more examples.)
  *
  *  {{{
- *  val num = """(\d+)""".r
+ *  val num = raw"(\d+)".r
  *  val all = num.findAllIn("123").toList  // List("123"), not List("123", "23", "3")
- *  }}}
- *
- *  Also, the "current match" of a `MatchIterator` may be advanced by either `hasNext` or `next`.
- *  By comparison, the `Iterator[Match]` returned by `findAllMatchIn` or `findAllIn.matchData`
- *  produces `Match` objects that remain valid after the iterator is advanced.
- *
- *  {{{
- *  val ns = num.findAllIn("1 2 3")
- *  ns.start    // 0
- *  ns.hasNext  // true
- *  ns.start    // 2
- *  val ms = num.findAllMatchIn("1 2 3")
- *  val m  = ms.next()
- *  m.start     // 0
- *  ms.hasNext  // true
- *  m.start     // still 0
  *  }}}
  *
  *  === Replace Text ===
