@@ -219,9 +219,10 @@ abstract class UnPickler {
 
         def moduleAdvice(missing: String): String = {
           val module =
-            if      (missing.startsWith("scala.xml"))                Some(("org.scala-lang.modules", "scala-xml"))
-            else if (missing.startsWith("scala.util.parsing"))       Some(("org.scala-lang.modules", "scala-parser-combinators"))
-            else if (missing.startsWith("scala.swing"))              Some(("org.scala-lang.modules", "scala-swing"))
+            if      (missing.startsWith("scala.xml"))                 Some(("org.scala-lang.modules", "scala-xml"))
+            else if (missing.startsWith("scala.util.parsing"))        Some(("org.scala-lang.modules", "scala-parser-combinators"))
+            else if (missing.startsWith("scala.swing"))               Some(("org.scala-lang.modules", "scala-swing"))
+            else if (missing.startsWith("scala.collection.parallel")) Some(("org.scala-lang.modules", "scala-parallel-collections"))
             else None
 
           (module map { case (group, art) =>
