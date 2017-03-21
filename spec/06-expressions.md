@@ -455,7 +455,7 @@ $e$.
 
 Type applications can be omitted if
 [local type inference](#local-type-inference) can infer best type parameters
-for a polymorphic functions from the types of the actual function arguments
+for a polymorphic function from the types of the actual function arguments
 and the expected result type.
 
 ## Tuples

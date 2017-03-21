@@ -1,9 +1,0 @@
-t7629-view-bounds-removal.scala:2: error: View bounds have been removed. Use an implicit parameter instead.
-Example: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`.
-  def f[A <% Int](a: A) = null
-          ^
-t7629-view-bounds-removal.scala:3: error: View bounds have been removed. Use an implicit parameter instead.
-Example: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`.
-  def g[C, B <: C, A <% B : Numeric](a: A) = null
-                     ^
-two errors found

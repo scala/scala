@@ -1,1 +1,0 @@
--i dashi/a.scala -e 'setBippy ; getBippy'
