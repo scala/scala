@@ -607,6 +607,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
             val outFile =
               if (outFolder == null) null
               else getFileForClassfile(outFolder, jclassName, ".class")
+            println(s"$outFolder $jclassName $outFile")
             bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
           }
           catch {
