@@ -11,18 +11,19 @@ package jvm
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
-
 import java.util.concurrent.BlockingQueue
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import java.util.{concurrent => juc}
+
+import scala.tools.nsc.io.AbstractFile
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -133,11 +134,12 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
     class Workflow(val cunit:CompilationUnit,
                    val item1:List[Item1])  extends AsyncReporter {
-      val optimize = Promise[List[Item2]]
-      val item2 = Promise[List[Item2]]
-      val item3 = Promise[List[Item3]]
+      //we hold the promises as vars. Once read the values are nulled
+      var optimize = Promise[List[Item2]]
+      var item2 = Promise[List[Item2]]
+      var item3 = Promise[List[Item3]]
 
-      override def toString: String = s"Workflow optimizeComplete: ${optimize.isCompleted} item2Complete: ${item2.isCompleted} item2Complete: ${item2.isCompleted}"
+      override def toString: String = s"Workflow optimizeComplete: ${optimize == null || optimize.isCompleted} item2Complete: ${item2 == null || item2.isCompleted} item3Complete: ${item3 == null || item3.isCompleted}"
     }
     case class Item2(mirror:         asm.tree.ClassNode,
                      plain:          asm.tree.ClassNode,
@@ -168,6 +170,17 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     class Worker1(needsOutFolder: Boolean) {
       import scala.util.{Try, Success, Failure}
 
+      private def outputFolder(workflow: Workflow) = {
+        if (needsOutFolder && workflow.item1.nonEmpty) {
+          try outputDirectory(workflow.cunit.source)
+          catch {
+            case t: Throwable =>
+              reporter.error(workflow.cunit.body.pos, s"Couldn't create file for ${workflow.cunit.source}\n${t.getMessage}")
+              null
+          }
+        } else null
+      }
+
       //TODO should be a scalac param
       val checkCaseInsensitively = true
 
@@ -176,9 +189,10 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       def run() {
         for (workflow <- allData) withCurrentUnitNoLog(workflow.cunit){
           val item2Builder = List.newBuilder[Item2]
+          val outFolder = outputFolder(workflow)
           for (item1 <- workflow.item1) {
             try {
-              item2Builder += visit(item1,workflow.cunit)
+              item2Builder += visit(item1,workflow.cunit, outFolder)
             } catch {
               case ex: Throwable =>
                 ex.printStackTrace()
@@ -196,7 +210,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        *  returns an Item2.
        *
        */
-      def visit(item: Item1, cunit:CompilationUnit) = {
+      def visit(item: Item1, cunit:CompilationUnit, outFolder:AbstractFile) = {
         val cd = item.cd
         val claszSymbol = cd.symbol
 
@@ -234,7 +248,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisBType.internalName, cunit) else null
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -251,7 +264,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
         Item2(mirrorC, plainC, beanC,
           cunit.source.file.canonicalPath,
-          outF)
+          outFolder)
 
 
       } // end of method visit(Item1)
@@ -281,6 +294,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         val downstreams = allData map { workflow: Workflow =>
           Await.ready(workflow.optimize.future, Duration.Inf)
           val upstream = workflow.optimize.future.value.get
+          workflow.optimize = null //release memory
           try {
             upstream match {
               case Success(items) =>
@@ -351,7 +365,11 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
 
-      override def getWork(workflow: Workflow): Future[List[Item2]] = workflow.item2.future
+      override def getWork(workflow: Workflow): Future[List[Item2]] = {
+        val res = workflow.item2.future
+        workflow.item2 = null //release memory
+        res
+      }
 
       override def nextStageSuccess(workflow: Workflow, result: List[Item3]): Unit = {
         workflow.item3.success(result)
@@ -476,6 +494,25 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        */
     }
 
+    private def onWorkerError(workerFailed: Throwable): Unit = {
+      workerFailed.printStackTrace()
+      reporter.error(NoPosition, workerFailed.toString)
+    }
+    private def exec(name:String, priorityDelta:Int): ExecutionContext = {
+      import java.util.concurrent.{Executors, ThreadFactory}
+      import java.util.concurrent.atomic.AtomicInteger
+      object BoostThreadFactory extends ThreadFactory {
+        final private val group = Thread.currentThread.getThreadGroup
+        final private val threadNumber = new AtomicInteger(1)
+
+        def newThread(r: Runnable): Thread = {
+          val t = new Thread(group, r, name + threadNumber.getAndIncrement, 0)
+          t.setPriority(Thread.NORM_PRIORITY + priorityDelta)
+          t
+        }
+      }
+      ExecutionContext.fromExecutorService(Executors.newCachedThreadPool(BoostThreadFactory), onWorkerError)
+    }
     /*
      *  Sequentially:
      *    (a) place all ClassDefs in queue-1
@@ -492,20 +529,17 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       feedPipeline1()
       if (runInParallel) {
         reporter.echo(NoPosition, "running GenBCode in parallel")
-        def onWorkerError(workerFailed: Throwable): Unit = {
-          workerFailed.printStackTrace()
-          reporter.error(NoPosition, workerFailed.toString)
-        }
 
         def checkWorker(worker: Future[Unit]) = Await.result(worker, Duration.Inf)
 
-        val ec = scala.concurrent.ExecutionContext.fromExecutorService(
-          java.util.concurrent.Executors.newCachedThreadPool(), onWorkerError
-        )
-        val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ec)
-        val workers2: List[Future[Unit]] = (1 to 4).map { i => Future(new Worker2(i, q2).run)(ec) }(scala.collection.breakOut)
+        val ecOptimise = exec("GenBCode:optimise-",1)
+        val ecWorker2 = exec("GenBCode:worker2-",2)
+        val ecWorker3 = exec("GenBCode:worker3-",3)
+
+        val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ecOptimise)
+        val workers2: List[Future[Unit]] = (1 to 4).map { i => Future(new Worker2(i, q2).run)(ecWorker2) }(scala.collection.breakOut)
         val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 4)).map {
-          i => Future(new Worker3(i, q3, bytecodeWriter).run)(ec)
+          i => Future(new Worker3(i, q3, bytecodeWriter).run)(ecWorker3)
         }(scala.collection.breakOut)
 
         val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
@@ -550,7 +584,11 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
 
-      override def getWork(workflow: Workflow): Future[List[Item3]] = workflow.item3.future
+      override def getWork(workflow: Workflow): Future[List[Item3]] = {
+        val res = workflow.item3.future
+        workflow.item3 = null //release memory
+        res
+      }
 
       override def nextStageSuccess(workflow: Workflow, result: Unit): Unit = {
       }

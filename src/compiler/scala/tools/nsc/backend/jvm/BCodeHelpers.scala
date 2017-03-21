@@ -240,18 +240,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters with Has
     getFile(base, clsName, suffix)
   }
 
-  /*
-   * must-single-thread
-   */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile =
-    _root_.scala.util.Try {
-      outputDirectory(csym)
-    }.recover {
-      case ex: Throwable =>
-        reporter.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
-        null
-    }.get
-
   var pickledBytes = 0 // statistics
 
   // -----------------------------------------------------------------------------------------
