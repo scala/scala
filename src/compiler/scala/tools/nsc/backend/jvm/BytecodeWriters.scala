@@ -42,7 +42,7 @@ trait BytecodeWriters extends HasReporter{
 
     var dir = Path(base.file)
     val pathParts = BytecodeWriters.pathSplitterPattern.split(clsName)
-    for (part <- pathParts.take(pathParts.length - 2)) {
+    for (part <- pathParts.take(pathParts.length - 1)) {
       dir = dir / part
     }
     val file = dir.toDirectory.createDirectory() / (pathParts.last + suffix)
