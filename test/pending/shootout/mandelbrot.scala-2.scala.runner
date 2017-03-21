@@ -1,3 +1,0 @@
-object Test extends Application {
-  for(n <- List(200,400,600)) mandelbrot.main(Array(n.toString)) 
-}

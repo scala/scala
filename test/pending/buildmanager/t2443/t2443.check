@@ -1,6 +1,0 @@
-builder > BitSet.scala
-compiling Set(BitSet.scala)
-builder > BitSet.scala
-Changes: Map(class BitSet -> List(Removed(Class(BitSet))))
-
-
