@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.io.{DataOutputStream, FileOutputStream, IOException, File => JFile}
+import java.nio.file.{Files, Paths}
 
 import scala.tools.nsc.io._
 import java.util.jar.Attributes.Name
@@ -130,10 +131,11 @@ trait BytecodeWriters extends HasReporter{
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile) {
       assert(outfile != null,
              "Precisely this override requires its invoker to hand out a non-null AbstractFile.")
-      val outstream = new FileOutputStream(outfile)
-
-      try outstream.write(jclassBytes, 0, jclassBytes.length)
-      finally outstream.close()
+      Files.write(outfile.toPath,jclassBytes)
+//      val outstream = new FileOutputStream(outfile)
+//
+//      try outstream.write(jclassBytes, 0, jclassBytes.length)
+//      finally outstream.close()
       informProgress("wrote '" + label + "' to " + outfile)
     }
 
