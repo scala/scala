@@ -41,14 +41,14 @@ trait BytecodeWriters extends HasReporter{
   /**
    * @param clsName cls.getName
    */
-  def getFile(base: AbstractFile, clsName: String, suffix: String, knownDirectories : collection.concurrent.Map[JFile, DirInfo]): AbstractFile = {
+  def getFile(base: AbstractFile, clsName: String, suffix: String, knownDirectories : collection.concurrent.Map[JFile, DirInfo]): JFile = {
     val pathParts = BytecodeWriters.pathSplitterPattern.split(clsName)
     val file = pathParts.foldLeft (base.file) { case (dir, element) =>
       new JFile(dir,element)
     }
     val parentDir = file.getParentFile
     knownDirectories.getOrElseUpdate(parentDir, new DirInfo(parentDir)).checkDir
-    AbstractFile.getFile(file)
+    file
   }
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {
@@ -63,7 +63,7 @@ trait BytecodeWriters extends HasReporter{
   }
 
   trait BytecodeWriter {
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile): Unit
     def close(): Unit = ()
     def isSingleThreaded = true
 
@@ -76,7 +76,7 @@ trait BytecodeWriters extends HasReporter{
     )
     val writer = new Jar(jfile).jarWriter(jarMainAttrs: _*)
 
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile) {
       assert(outfile == null,
              "The outfile formal param is there just because ClassBytecodeWriter overrides this method and uses it.")
       val path = jclassName + ".class"
@@ -116,7 +116,7 @@ trait BytecodeWriters extends HasReporter{
       finally pw.close()
     }
 
-    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile) {
       super.writeClass(label, jclassName, jclassBytes, outfile)
 
       val segments = jclassName.split("[./]")
@@ -128,10 +128,10 @@ trait BytecodeWriters extends HasReporter{
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {
-    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+    def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile) {
       assert(outfile != null,
              "Precisely this override requires its invoker to hand out a non-null AbstractFile.")
-      val outstream = outfile.output
+      val outstream = new FileOutputStream(outfile)
 
       try outstream.write(jclassBytes, 0, jclassBytes.length)
       finally outstream.close()
@@ -144,7 +144,7 @@ trait BytecodeWriters extends HasReporter{
   trait DumpBytecodeWriter extends BytecodeWriter {
     val baseDir = Directory(settings.Ydumpclasses.value).createDirectory()
 
-    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: JFile) {
       super.writeClass(label, jclassName, jclassBytes, outfile)
 
       val pathName = jclassName
