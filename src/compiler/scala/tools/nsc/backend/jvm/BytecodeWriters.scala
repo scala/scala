@@ -43,12 +43,11 @@ trait BytecodeWriters extends HasReporter{
    */
   def getFile(base: AbstractFile, clsName: String, suffix: String, knownDirectories : collection.concurrent.Map[JFile, DirInfo]): JFile = {
     val pathParts = BytecodeWriters.pathSplitterPattern.split(clsName)
-    val file = pathParts.foldLeft (base.file) { case (dir, element) =>
+    val parentDir = pathParts.take(pathParts.length-1).foldLeft (base.file) { case (dir, element) =>
       new JFile(dir,element)
     }
-    val parentDir = file.getParentFile
     knownDirectories.getOrElseUpdate(parentDir, new DirInfo(parentDir)).checkDir
-    file
+    new JFile(parentDir,pathParts.last + suffix)
   }
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {

@@ -529,6 +529,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val runInParallel = settings.YgenBcodeParallel.value
 
       feedPipeline1()
+      val knownDirectories = new collection.concurrent.TrieMap[java.io.File, DirInfo]
       if (runInParallel) {
         reporter.echo(NoPosition, "running GenBCode in parallel")
 
@@ -541,7 +542,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ecOptimise)
         val workers2: List[Future[Unit]] = (1 to 4).map { i => Future(new Worker2(i, q2).run)(ecWorker2) }(scala.collection.breakOut)
         val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 4)).map {
-          i => Future(new Worker3(i, q3, bytecodeWriter).run)(ecWorker3)
+          i => Future(new Worker3(i, q3, bytecodeWriter, knownDirectories).run)(ecWorker3)
         }(scala.collection.breakOut)
 
         val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
@@ -558,7 +559,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         new OptimisationWorkflow(allData).run
         new Worker2(99, q2).run
         val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
-        new Worker3(99, q3, bytecodeWriter).run
+        new Worker3(99, q3, bytecodeWriter, knownDirectories).run
         Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
 
       }
@@ -580,10 +581,9 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     }
 
     /* Pipeline that writes classfile representations to disk. */
-    private class Worker3(id: Int, q3: BlockingQueue[Workflow], bytecodeWriter: BytecodeWriters#BytecodeWriter)
+    private class Worker3(id: Int, q3: BlockingQueue[Workflow], bytecodeWriter: BytecodeWriters#BytecodeWriter,
+                          knownDirectories : collection.concurrent.Map[java.io.File, DirInfo])
       extends ParallelWorker[List[Item3], Unit](id, q3, BackendStats.bcodeWriteTimer) {
-
-      val knownDirectories = new collection.concurrent.TrieMap[java.io.File, DirInfo]
 
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
