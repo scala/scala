@@ -1,0 +1,15 @@
+t8417.scala:5: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+        signature: T.f(x: Any)(y: Any): String
+  given arguments: "hello", "world"
+ after adaptation: T.f(("hello", "world"): (String, String))
+  def g = f("hello", "world")("holy", "moly")
+           ^
+t8417.scala:5: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+        signature: T.f(x: Any)(y: Any): String
+  given arguments: "holy", "moly"
+ after adaptation: T.f(("holy", "moly"): (String, String))
+  def g = f("hello", "world")("holy", "moly")
+                             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

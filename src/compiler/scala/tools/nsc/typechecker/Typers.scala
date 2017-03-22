@@ -3426,29 +3426,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // repeat vararg as often as needed, remove by-name
           val formals = formalTypes(paramTypes, argslen)
 
-          /* Try packing all arguments into a Tuple and apply `fun`
-           * to that. This is the last thing which is tried (after
-           * default arguments)
+          /* Try packing all arguments into a Tuple and apply `fun` to that.
+           * This is the last thing which is tried (after default arguments).
            */
-          def tryTupleApply: Tree = {
-            if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
+          def tryTupleApply: Tree =
+            if (phase.erasedTypes || !eligibleForTupleConversion(paramTypes, argslen)) EmptyTree
+            else {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
-              silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                // Depending on user options, may warn or error here if
-                // a Unit or tuple was inserted.
-                val keepTree = (
-                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
-                  || t.symbol == null       // ditto
-                  || checkValidAdaptation(t, args)
-                )
-                if (keepTree) t else EmptyTree
-              } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
+              // May warn or error if a Unit or tuple was inserted.
+              def validate(t: Tree): Tree = {
+                // regardless of typer's mode
+                val invalidAdaptation = t.symbol != null && !checkValidAdaptation(t, args)
+                // only bail if we're typing an expression (and not inside another application)
+                if (invalidAdaptation && mode.typingExprNotFun) EmptyTree else t
+              }
+              def reset(errors: Seq[AbsTypeError]): Tree = {
+                context.undetparams = savedUndetparams
+                EmptyTree
+              }
+              silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)).map(validate).orElse(reset)
             }
-            else EmptyTree
-          }
 
           /* Treats an application which uses named or default arguments.
            * Also works if names + a vararg used: when names are used, the vararg
