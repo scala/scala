@@ -583,6 +583,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     private class Worker3(id: Int, q3: BlockingQueue[Workflow], bytecodeWriter: BytecodeWriters#BytecodeWriter)
       extends ParallelWorker[List[Item3], Unit](id, q3, BackendStats.bcodeWriteTimer) {
 
+      val knownDirectories = new collection.concurrent.TrieMap[java.io.File, DirInfo]
+
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
 
@@ -606,7 +608,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
           try {
             val outFile =
               if (outFolder == null) null
-              else getFileForClassfile(outFolder, jclassName, ".class")
+              else getFile(outFolder, jclassName, ".class", knownDirectories)
             bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
           }
           catch {

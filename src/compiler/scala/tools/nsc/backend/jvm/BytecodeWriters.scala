@@ -18,6 +18,11 @@ import scala.reflect.internal.util.SourceFile
 /** Can't output a file due to the state of the file system. */
 class FileConflictException(msg: String, val file: AbstractFile) extends IOException(msg)
 
+class DirInfo (val file:JFile) {
+  lazy val checkDir = {
+    if (file.mkdirs() || (file.exists && file.isDirectory)) () else throw new FileConflictException("cant create directory", AbstractFile.getFile(file))
+  }
+}
 object BytecodeWriters {
   private val pathSplitterPattern = Pattern.compile("[./]")
 }
@@ -32,21 +37,18 @@ trait BytecodeWriters extends HasReporter{
   def outputDirectory(source: SourceFile): AbstractFile =
     settings.outputDirs outputDirFor source.file
 
+
   /**
    * @param clsName cls.getName
    */
-  def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    def ensureDirectory(dir: AbstractFile): AbstractFile =
-      if (dir.isDirectory) dir
-      else throw new FileConflictException(s"${base.path}/$clsName$suffix: ${dir.path} is not a directory", dir)
-
-    var dir = Path(base.file)
+  def getFile(base: AbstractFile, clsName: String, suffix: String, knownDirectories : collection.concurrent.Map[JFile, DirInfo]): AbstractFile = {
     val pathParts = BytecodeWriters.pathSplitterPattern.split(clsName)
-    for (part <- pathParts.take(pathParts.length - 1)) {
-      dir = dir / part
+    val file = pathParts.foldLeft (base.file) { case (dir, element) =>
+      new JFile(dir,element)
     }
-    val file = dir.toDirectory.createDirectory() / (pathParts.last + suffix)
-    AbstractFile.getFile(file.createFile(true))
+    val parentDir = file.getParentFile
+    knownDirectories.getOrElseUpdate(parentDir, new DirInfo(parentDir)).checkDir
+    AbstractFile.getFile(file)
   }
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {
@@ -129,7 +131,7 @@ trait BytecodeWriters extends HasReporter{
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
       assert(outfile != null,
              "Precisely this override requires its invoker to hand out a non-null AbstractFile.")
-      val outstream = new DataOutputStream(outfile.bufferedOutput)
+      val outstream = outfile.output
 
       try outstream.write(jclassBytes, 0, jclassBytes.length)
       finally outstream.close()

@@ -8,7 +8,7 @@ package tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{AbstractFile, JFile}
 import GenBCode._
 import BackendReporting._
 import scala.reflect.internal.Flags
@@ -231,14 +231,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters with Has
       withoutReporting(sym.info)
       sym.isErroneous
     }
-
-
-  /*
-   * must-single-thread
-   */
-  def getFileForClassfile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    getFile(base, clsName, suffix)
-  }
 
   var pickledBytes = 0 // statistics
 
