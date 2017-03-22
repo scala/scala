@@ -236,8 +236,8 @@ object BytecodeUtils {
   }
 
   def labelReferences(method: MethodNode): collection.Map[LabelNode, collection.Set[AnyRef]] = {
-    val res = new java.util.IdentityHashMap[LabelNode, mutable.Set[AnyRef]]()
-    def add(l: LabelNode, ref: AnyRef) = res.computeIfAbsent(l, k => mutable.Set[AnyRef]()).add(ref)
+    val res = mutable.AnyRefMap[LabelNode, mutable.Set[AnyRef]]()
+    def add(l: LabelNode, ref: AnyRef) = res.getOrElseUpdate(l, mutable.Set()).add(ref)
 
     method.instructions.iterator().asScala foreach {
       case jump: JumpInsnNode           => add(jump.label, jump)
@@ -253,7 +253,7 @@ object BytecodeUtils {
       method.tryCatchBlocks.iterator().asScala.foreach(l => { add(l.start, l); add(l.handler, l); add(l.end, l) })
     }
 
-    res.asScala
+    res
   }
 
   def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {

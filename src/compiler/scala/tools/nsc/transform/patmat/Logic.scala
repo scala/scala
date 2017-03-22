@@ -7,10 +7,10 @@
 package scala
 package tools.nsc.transform.patmat
 
-import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.language.postfixOps
+
 import scala.collection.mutable
-import scala.reflect.internal.util.{HashSet, NoPosition, Position, Statistics}
+import scala.reflect.internal.util.{NoPosition, Position, Statistics, HashSet}
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -444,8 +444,8 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
-      private val uniques = new java.util.IdentityHashMap[Tree, Var]()
-      def apply(x: Tree): Var = uniques computeIfAbsent (x, k => new Var(x, x.tpe))
+      private val uniques = new mutable.AnyRefMap[Tree, Var]
+      def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
       def unapply(v: Var) = Some(v.path)
     }
     class Var(val path: Tree, staticTp: Type) extends AbsVar {
