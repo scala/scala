@@ -39,8 +39,8 @@ object BuildFrom {
   }
 
   /** Convert an IterableFactory to a BuildFrom */
-  implicit def buildIterableFactory[C[_], E](fact: IterableFactory[C]): BuildFrom[Any, E] { type To = C[E] } = new BuildFrom[Any, E] {
-    type To = C[E]
+  implicit def buildBoundedIterableFactory[E, B >: E](fact: BoundedIterableFactory[B]): BuildFrom[Any, E] { type To = fact.To[E] } = new BuildFrom[Any, E] {
+    type To = fact.To[E]
     def newBuilder(from: Any): Builder[E, To] = fact.newBuilder
     def fromIterable(from: Any)(it: Iterable[E]): To = fact.fromIterable(it)
   }

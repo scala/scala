@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import strawman.collection.TypeConstrainedFromIterable
+import strawman.collection.BoundedIterableFactory
 
 import scala.Int
 import scala.Predef.???
@@ -11,7 +11,7 @@ trait BitSet
     with collection.BitSetLike[BitSet]
     with SortedSet[Int]
 
-object BitSet extends TypeConstrainedFromIterable[Int] {
+object BitSet extends BoundedIterableFactory[Int] {
   type To[_] = BitSet
 
   def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet = ???

@@ -33,7 +33,6 @@ final class TreeSet[A]()(implicit val ordering: Ordering[A])
   // From PolyBuildable
   def newBuilder[E]: Builder[E, Set[E]] = ???
 
-
   // From SetLike
   def contains(elem: A): Boolean = ???
   def subsetOf(that: strawman.collection.Set[A]): Boolean = ???

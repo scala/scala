@@ -88,14 +88,12 @@ trait IterableOps[+A] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[F <: TypeConstrainedFromIterable[A]](fi: F): fi.To[A @uncheckedVariance] =
-    fi.fromIterable(coll)
+  def to(bf: BuildFrom[Iterable[A], A]): bf.To = bf.fromIterable(coll)(coll)
+  // Note that `bf` is not implicit. We never want it to be inferred (because a collection could only rebuild itself
+  // that way) but we do rely on the implicit conversions from the various factory types to BuildFrom.
 
-  // Generic version of the method above that can build anything with BuildFrom. Note that `bf` is not implicit.
-  // We never want it to be inferred (because a collection could only rebuild itself that way) but we do rely on
-  // the implicit conversions from the various factory types to BuildFrom.
-  def to(bf: BuildFrom[Iterable[A], A]): bf.To =
-    bf.fromIterable(coll)(coll)
+  /** Optimized version of `to(BuildFrom)` */
+  def to(fi: BoundedIterableFactory[A]): fi.To[A @uncheckedVariance] = fi.fromIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -195,8 +193,12 @@ trait IterablePolyTransforms[+A, +C[_]] extends Any {
   // sound bcs of VarianceNote
 }
 
-/** Transforms over iterables that can return collections of different element types for which an
-  * implicit evidence is required.
+/** Transforms over iterables that can return collections of different element types for which an implicit
+  * evidence is required. Every constrained collection type `CC` extends an unconstrained collection type `C`
+  * (e.g. `SortedSet[X] extends Set[X]`) so it inherits methods from `IterablePolyTransforms` that do not require
+  * the implicit evidence. These methods can only build a default representation of `C` (e.g. a `HashSet` in the
+  * case of `Set`). The methods in this trait are the same as the ones in `IterablePolyTransforms` but they do
+  * require the implicit evidence, so they can build a new instance of `CC`.
   */
 trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with IterablePolyTransforms[A, C] {
   type Ev[_]
@@ -222,7 +224,9 @@ trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any w
     else View.Empty
   )
 
-  /** Widen this collection to the most specific unconstrained collection type. */
+  /** Widen this collection to the most specific unconstrained collection type. This is required in order to
+    * call methods from `IterablePolyTransforms` to build a new unconstrained collection when no implicit evidence
+    * is available. */
   def unconstrained: C[A @uncheckedVariance]
 }
 
