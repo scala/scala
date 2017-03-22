@@ -195,17 +195,20 @@ abstract class Erasure extends InfoTransform
    * as an immediate parent to support an `invokespecial`.
    */
   def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
-    def isRedundantParent(sym: Symbol) = sym.isInterface || sym.isTrait
+    def isRedundantParent(parent: Symbol, candidate: Symbol) =
+      !parent.isJavaDefined &&
+        parent.isTraitOrInterface &&
+        candidate.isSubClass(parent)
 
     var rest   = parents.tail
     var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
-    while(rest.nonEmpty) {
+    while (rest.nonEmpty) {
       val candidate = rest.head
       if (candidate.typeSymbol.isJavaDefined && candidate.typeSymbol.isInterface) leaves += candidate
       else {
         val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
         if (!nonLeaf) {
-          leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
+          leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol, candidate.typeSymbol) }
           leaves += candidate
         }
       }

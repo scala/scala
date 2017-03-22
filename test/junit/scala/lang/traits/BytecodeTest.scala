@@ -379,6 +379,19 @@ class BytecodeTest extends BytecodeTesting {
     assertEquals(cls, Nil)
   }
 
+  @Test
+  def noMinimizeJavaInterfaces(): Unit = {
+    val jCode = List("interface T { default int f() { return 1; } }" -> "T.java")
+    val code =
+      """trait U extends T { override def f() = 2 }
+        |class C extends T with U { def t = super[T].f }
+      """.stripMargin
+    val List(c, u) = compileClasses(code, jCode)
+    assertEquals(c.interfaces.asScala.toList.sorted, List("T", "U"))
+    val ins = getMethod(c, "t").instructions
+    assert(ins contains Invoke(INVOKESPECIAL, "T", "f", "()I", true), ins.stringLines)
+  }
+
   def ifs(c: ClassNode, expected: List[String]) = assertEquals(expected, c.interfaces.asScala.toList.sorted)
   def invSt(m: Method, receiver: String, method: String = "f$", itf: Boolean = true): Unit =
     assert(m.instructions contains Invoke(INVOKESTATIC, receiver, method, s"(L$receiver;)I", itf), m.instructions.stringLines)
