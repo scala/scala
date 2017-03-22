@@ -1075,11 +1075,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
 
     def exists: Boolean = !isTopLevel || {
+      val isSourceLoader = rawInfo match {
+        case sl: SymLoader => sl.fromSource
+        case _             => false
+      }
       def warnIfSourceLoader() {
-        val isSourceLoader = rawInfo match {
-          case sl: SymLoader => sl.fromSource
-          case _             => false
-        }
         if (isSourceLoader)
           // Predef is completed early due to its autoimport; we used to get here when type checking its
           // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
