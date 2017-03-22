@@ -1293,7 +1293,7 @@ trait ContextErrors {
           case _ => Nil
         }
 
-        context.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
+        context0.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
           (info1.sym, info2.sym) match {
             case (ImplicitAmbiguousMsg(msg), _) => msg.format(treeTypeArgs(tree1))
             case (_, ImplicitAmbiguousMsg(msg)) => msg.format(treeTypeArgs(tree2))
