@@ -1,6 +1,6 @@
 package strawman
 
-import scala.{Any, AnyVal, Array, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException}
+import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException}
 import scala.Predef.String
 import scala.reflect.ClassTag
 
@@ -70,6 +70,13 @@ package object collection extends LowPriority {
       }: scala.PartialFunction[T, String]) mkString " | "
     }
   }
+
+  implicit def optionToIterableOnce[A](maybeA: scala.Option[A]): IterableOnce[A] =
+     new Iterator[A] {
+       private var _hasNext = maybeA.nonEmpty
+       def next(): A = if (_hasNext) { _hasNext = false; maybeA.get } else Iterator.empty.next()
+       def hasNext: Boolean = _hasNext
+     }
 
 }
 
