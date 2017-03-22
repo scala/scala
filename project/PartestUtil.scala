@@ -87,7 +87,7 @@ object PartestUtil {
       token(grepOption <~ Space) ~> token(globOrPattern, tokenCompletion)
     }
 
-    val SrcPath = ((token(srcPathOption) <~ Space) ~ token(StringBasic.examples(Set("files", "pending", "scaladoc")))) map {
+    val SrcPath = ((token(srcPathOption) <~ Space) ~ token(StringBasic.examples(Set("files", "scaladoc")))) map {
       case opt ~ path =>
         srcPath = path
         opt + " " + path

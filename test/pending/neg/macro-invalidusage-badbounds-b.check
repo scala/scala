@@ -1,4 +1,0 @@
-Macros_Test_2.scala:7: error: type arguments [Int] do not conform to macro method foo's type parameter bounds [U <: String]
-  foo[Int]
-     ^
-one error found

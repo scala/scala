@@ -84,7 +84,7 @@ abstract class TailCalls extends Transform {
    * </p>
    * <p>
    *   Assumes: `Uncurry` has been run already, and no multiple
-   *            parameter lists exit.
+   *            parameter lists exist.
    * </p>
    */
   class TailCallElimination(unit: CompilationUnit) extends Transformer {

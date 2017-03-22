@@ -1,6 +1,0 @@
-openImplicits are: List()
-enclosingImplicits are: List((List[Int],scala.this.Predef.implicitly[List[Int]]))
-typetag is: TypeTag[Nothing]
-openImplicits are: List()
-enclosingImplicits are: List((List[String],Test.this.bar[String]))
-typetag is: TypeTag[Nothing]

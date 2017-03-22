@@ -1,3 +1,0 @@
-object Test extends Application {
-  for(n <- List(7,8,9)) nsieve.main(Array(n.toString)) 
-}

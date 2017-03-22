@@ -1,7 +1,0 @@
-t5729.scala:5: error: ambiguous reference to overloaded definition,
-both method join in object Test of type [S](in: Seq[T[S]])String
-and  method join in object Test of type (in: Seq[T[_]])Int
-match argument types (Seq[T[_]])
-  join(null: Seq[T[_]])
-  ^
-one error found

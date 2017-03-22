@@ -1,3 +1,0 @@
-error: macro must not return an expr that contains free type variables (namely: T). have you forgot to use c.TypeTag annotations for type parameters external to a reifee?
-
-java.lang.Error: reflective compilation has failed

@@ -50,7 +50,8 @@ object Osgi {
       "Bundle-SymbolicName" -> (bundleSymbolicName.value + ".source"),
       "Bundle-Version" -> versionProperties.value.osgiVersion,
       "Eclipse-SourceBundle" -> (bundleSymbolicName.value + ";version=\"" + versionProperties.value.osgiVersion + "\";roots:=\".\"")
-    )
+    ),
+    Keys.`package` := bundle.value
   )
 
   def bundleTask(headers: Map[String, String], jarlist: Boolean, fullClasspath: Seq[File], artifactPath: File,

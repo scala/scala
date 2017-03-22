@@ -3,8 +3,8 @@ object Test {
     val MinusZero = Float.box(-0.0f)
     val PlusZero  = Float.box(0.0f)
 
-    assert(PlusZero match { case MinusZero => false ; case _ => true })
-    assert(MinusZero match { case PlusZero => false ; case _ => true })
+    assert(PlusZero match { case MinusZero => true ; case _ => false })
+    assert(MinusZero match { case PlusZero => true ; case _ => false })
     assert((MinusZero: scala.Float) == (PlusZero: scala.Float))
     assert(!(MinusZero equals PlusZero))
 

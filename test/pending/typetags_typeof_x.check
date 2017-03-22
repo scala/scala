@@ -1,8 +1,0 @@
-List[T]
-C
-Int
-List[Any]
-AnyRef{def x: Int}
-Null
-Nothing
-Null
