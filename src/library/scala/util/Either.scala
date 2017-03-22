@@ -10,24 +10,24 @@ package scala
 package util
 
 /** Represents a value of one of two possible types (a disjoint union.)
- *  An instance of Either is either an instance of [[scala.util.Left]] or [[scala.util.Right]].
+ *  An instance of `Either` is an instance of either [[scala.util.Left]] or [[scala.util.Right]].
  *
- *  A common use of Either is as an alternative to [[scala.Option]] for dealing
- *  with possible missing values.  In this usage, [[scala.None]] is replaced
+ *  A common use of `Either` is as an alternative to [[scala.Option]] for dealing
+ *  with possibly missing values.  In this usage, [[scala.None]] is replaced
  *  with a [[scala.util.Left]] which can contain useful information.
  *  [[scala.util.Right]] takes the place of [[scala.Some]].  Convention dictates
- *  that Left is used for failure and Right is used for success.
+ *  that `Left` is used for failure and `Right` is used for success.
  *
- *  For example, you could use `Either[String, Int]` to detect whether a
- *  received input is a String or an Int.
+ *  For example, you could use `Either[String, Int]` to indicate whether a
+ *  received input is a `String` or an `Int`.
  *
  *  {{{
  *  import scala.io.StdIn._
  *  val in = readLine("Type Either a string or an Int: ")
- *  val result: Either[String,Int] = try {
- *      Right(in.toInt)
- *    } catch {
- *      case e: Exception => Left(in)
+ *  val result: Either[String,Int] =
+ *    try Right(in.toInt)
+ *    catch {
+ *      case e: NumberFormatException => Left(in)
  *    }
  *
  *  result match {
@@ -36,13 +36,13 @@ package util
  *  }
  *  }}}
  *
- *  Either is right-biased, which means that Right is assumed to be the default case to
- *  operate on. If it is Left, operations like map, flatMap, ... return the Left value unchanged:
+ *  `Either` is right-biased, which means that `Right` is assumed to be the default case to
+ *  operate on. If it is `Left`, operations like `map` and `flatMap` return the `Left` value unchanged:
  *
  *  {{{
  *  def doubled(i: Int) = i * 2
- *  Right(12).map(doubled) // Right(24)
- *  Left(23).map(doubled)  // Left(23)
+ *  Right(42).map(doubled) // Right(84)
+ *  Left(42).map(doubled)  // Left(42)
  *  }}}
  *
  *  Since `Either` defines the methods `map` and `flatMap`, it can also be used in for comprehensions:
@@ -71,8 +71,9 @@ package util
  *    c <- right2
  *  } yield a + b + c // Left(23.0)
  *
- *  // It is advisable to provide the type of the “missing” value (especially the right value for `Left`)
- *  // as otherwise that type might be inferred as `Nothing` without context:
+ *  // It may be necessary to provide the type of the “missing” value, especially the type
+ *  // of the right value for `Left`. Otherwise, without any context that constrains the type,
+ *  // it might be inferred as `Nothing`:
  *  for {
  *    a <- left23
  *    b <- right1
@@ -96,18 +97,16 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
   /** Projects this `Either` as a `Right`.
    *
    *  Because `Either` is right-biased, this method is not normally needed.
-   *  (It is retained in the API for now for easy cross-compilation between Scala
-   *  2.11 and 2.12.)
    */
   def right = Either.RightProjection(this)
 
   /** Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
    *
    *  @example {{{
-   *  val result: Either[Exception, Value] = possiblyFailingOperation()
+   *  val result = util.Try("42".toInt).toEither
    *  result.fold(
-   *    ex => s"Operation failed with $ex",
-   *    v  => s"Operation produced value: $v"
+   *    e => s"Operation failed with $e",
+   *    v => s"Operation produced value: $v"
    *  )
    *  }}}
    *
@@ -142,12 +141,12 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
   /** Joins an `Either` through `Right`.
    *
-   *  This method requires that the right side of this Either is itself
-   *  an Either type. That is, this must be some type like: {{{
+   *  This method requires that the right side of this `Either` is itself
+   *  an `Either` type. That is, this must be some type like: {{{
    *  Either[A, Either[A, C]]
    *  }}} (which respects the type parameter bounds, shown below.)
    *
-   *  If this instance is a Right[Either[A, C]] then the contained Either[A, C]
+   *  If this instance is a `Right[Either[A, C]]` then the contained `Either[A, C]`
    *  will be returned, otherwise this value will be returned unmodified.
    *
    *  @example {{{
@@ -166,12 +165,12 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
   /** Joins an `Either` through `Left`.
    *
-   *  This method requires that the left side of this Either is itself an
-   *  Either type. That is, this must be some type like: {{{
+   *  This method requires that the left side of this `Either` is itself an
+   *  `Either` type. That is, this must be some type like: {{{
    *  Either[Either[C, B], B]
    *  }}} (which respects the type parameter bounds, shown below.)
    *
-   *  If this instance is a Left[Either[C, B]] then the contained Either[C, B]
+   *  If this instance is a `Left[Either[C, B]]` then the contained `Either[C, B]`
    *  will be returned, otherwise this value will be returned unmodified.
    *
    *  {{{
@@ -190,8 +189,8 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
   /** Executes the given side-effecting function if this is a `Right`.
    *
    *  {{{
-   *  Right(12).foreach(x => println(x)) // prints "12"
-   *  Left(12).foreach(x => println(x))  // doesn't print
+   *  Right(12).foreach(println) // prints "12"
+   *  Left(12).foreach(println)  // doesn't print
    *  }}}
    *  @param f The side-effecting function to execute.
    */
@@ -222,7 +221,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  // Returns false because value of Right is "something" which does not equal "anything".
    *  Right("something") contains "anything"
    *
-   *  // Returns false because there is no value for Right.
+   *  // Returns false because it's not a Right value.
    *  Left("something") contains "something"
    *  }}}
    *
@@ -238,9 +237,9 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  the given predicate to the `Right` value.
    *
    *  {{{
-   *  Right(12).forall(_ > 10) // true
-   *  Right(7).forall(_ > 10)  // false
-   *  Left(12).forall((_: Int) > 10) // true
+   *  Right(12).forall(_ > 10)    // true
+   *  Right(7).forall(_ > 10)     // false
+   *  Left(12).forall(_ => false) // true
    *  }}}
    */
   def forall(f: B => Boolean): Boolean = this match {
@@ -252,9 +251,9 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  the given predicate to the `Right` value.
    *
    *  {{{
-   *  Right(12).exists(_ > 10) // true
-   *  Right(7).exists(_ > 10)  // false
-   *  Left(12).exists((_: Int) > 10)  // false
+   *  Right(12).exists(_ > 10)   // true
+   *  Right(7).exists(_ > 10)    // false
+   *  Left(12).exists(_ => true) // false
    *  }}}
    */
   def exists(p: B => Boolean): Boolean = this match {
@@ -288,9 +287,9 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  returns `Left` with the existing value of `Left` if this is a `Left`.
    *
    * {{{
-   * Right(12).filterOrElse(_ > 10, -1) // Right(12)
-   * Right(7).filterOrElse(_ > 10, -1)  // Left(-1)
-   * Left(12).filterOrElse(_ => false, -1)  // Left(12)
+   * Right(12).filterOrElse(_ > 10, -1)   // Right(12)
+   * Right(7).filterOrElse(_ > 10, -1)    // Left(-1)
+   * Left(7).filterOrElse(_ => false, -1) // Left(7)
    * }}}
    */
   def filterOrElse[AA >: A](p: B => Boolean, zero: => AA): Either[AA, B] = this match {
@@ -420,35 +419,32 @@ object Either {
    *  {{{
    *  // using Option:
    *  def interactWithDB(x: Query): Option[Result] =
-   *    try {
-   *      Some(getResultFromDatabase(x))
-   *    } catch {
-   *      case ex => None
+   *    try Some(getResultFromDatabase(x))
+   *    catch {
+   *      case _: SQLException => None
    *    }
    *
    *  // this will only be executed if interactWithDB returns a Some
-   *  val report = for (r <- interactWithDB(someQuery)) yield generateReport(r)
-   *  if (report.isDefined)
-   *    send(report)
-   *  else
-   *    log("report not generated, not sure why...")
+   *  val report = for (result <- interactWithDB(someQuery)) yield generateReport(result)
+   *  report match {
+   *    case Some(r) => send(r)
+   *    case None    => log("report not generated, not sure why...")
    *  }}}
    *
    *  {{{
    *  // using Either
    *  def interactWithDB(x: Query): Either[Exception, Result] =
-   *    try {
-   *      Right(getResultFromDatabase(x))
-   *    } catch {
-   *      case ex => Left(ex)
+   *    try Right(getResultFromDatabase(x))
+   *    catch {
+   *      case e: SQLException => Left(e)
    *    }
    *
    *   // this will only be executed if interactWithDB returns a Right
-   *   val report = for (r <- interactWithDB(someQuery).right) yield generateReport(r)
-   *   if (report.isRight)
-   *     send(report)
-   *   else
-   *     log("report not generated, reason was " + report.left.get)
+   *   val report = for (result <- interactWithDB(someQuery).right) yield generateReport(result)
+   *   report match {
+   *     case Right(r) => send(r)
+   *     case Left(e)  => log(s"report not generated, reason was $e")
+   *   }
    *   }}}
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
@@ -459,7 +455,7 @@ object Either {
      *  if this is a `Right`.
      *
      * {{{
-     * Left(12).left.get // 12
+     * Left(12).left.get  // 12
      * Right(12).left.get // NoSuchElementException
      * }}}
      *
