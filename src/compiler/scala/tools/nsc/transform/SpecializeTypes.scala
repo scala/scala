@@ -1534,13 +1534,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    @inline final def reportError[T](body: =>T)(handler: TypeError => T): T =
-      try body
-      catch {
-        case te: TypeError =>
-          reporter.error(te.pos, te.msg)
-          handler(te)
-      }
+    override def transformUnit(unit: global.CompilationUnit): Unit = try {
+      super.transformUnit(unit)
+    } catch {
+      case te: TypeError =>
+        reporter.error(te.pos, te.msg)
+    }
 
     override def transform(tree: Tree): Tree = {
       val symbol = tree.symbol
@@ -1631,7 +1630,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             val found = specializedType(tpt.tpe)
             if (found.typeSymbol ne tpt.tpe.typeSymbol) { // the ctor can be specialized
               val inst = New(found, transformTrees(args): _*)
-              reportError(localTyper.typedPos(tree.pos)(inst))(_ => super.transform(tree))
+              localTyper.typedPos(tree.pos)(inst)
             }
             else
               super.transform(tree)
@@ -1722,13 +1721,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (symbol.isPrimaryConstructor)
               localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant(())))))
             else // duplicate the original constructor
-              reportError(duplicateBody(ddef, info(symbol).target))(_ => ddef)
+              duplicateBody(ddef, info(symbol).target)
           }
           else info(symbol) match {
             case Implementation(target) =>
               assert(body.isDefinedAt(target), "sym: " + symbol.fullName + " target: " + target.fullName)
               // we have an rhs, specialize it
-              val tree1 = reportError(duplicateBody(ddef, target))(_ => ddef)
+              val tree1 = duplicateBody(ddef, target)
               debuglog("implementation: " + tree1)
               deriveDefDef(tree1)(transform)
 
@@ -1736,7 +1735,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               logResult("constraints")(satisfiabilityConstraints(typeEnv(symbol))) match {
                 case Some(constraint) if !target.isDeferred =>
                   // we have an rhs, specialize it
-                  val tree1 = reportError(duplicateBody(ddef, target, constraint))(_ => ddef)
+                  val tree1 = duplicateBody(ddef, target, constraint)
                   debuglog("implementation: " + tree1)
                   deriveDefDef(tree1)(transform)
                 case _ =>
@@ -1767,21 +1766,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               })
               debuglog("created special overload tree " + t)
               debuglog("created " + t)
-              reportError {
-                localTyper.typed(t)
-              } {
-                _ => super.transform(tree)
-              }
+              localTyper.typed(t)
 
             case fwd @ Forward(_) =>
               debuglog("forward: " + fwd + ", " + ddef)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
               debuglog("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
-              reportError {
-                localTyper.typed(deriveDefDef(tree)(_ => rhs1))
-              } {
-                _ => super.transform(tree)
-              }
+              localTyper.typed(deriveDefDef(tree)(_ => rhs1))
 
             case SpecializedAccessor(target) =>
               val rhs1 = if (symbol.isGetter)
