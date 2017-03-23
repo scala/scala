@@ -305,7 +305,12 @@ class StrawmanTest {
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
     val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs2: immutable.SortedSet[String] = xs1
-  }
+    val l = List(1,2,3)
+    val s1 = l.to(immutable.TreeSet)
+    val s1t: immutable.TreeSet[Int] = s1
+    val m1 = s1.map(x => x.toString)
+    val m1t: immutable.TreeSet[String] = m1
+   }
 
   def mapOps(xs: Map[Int, String]): Unit = {
     val xs1 = xs.map((k, v) => (v, k))
@@ -331,6 +336,8 @@ class StrawmanTest {
 //    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
     val xs7 = (xs: immutable.Map[String, Int]).map((k, v) => (new Foo, v))
     val xs8: immutable.Map[Foo, Int] = xs7
+    val xs9 = xs6.to(List).to(mutable.HashMap)
+    val xs9t: mutable.HashMap[Int, String] = xs9
   }
 
   def bitSets(xs: immutable.BitSet, ys: BitSet, zs: Set[Int]): Unit = {
@@ -347,6 +354,9 @@ class StrawmanTest {
     val xs10: immutable.Set[Either[Int, Nothing]] = xs9
     val xs11 = xs + 42
     val xs12: immutable.BitSet = xs11
+    val l = List(1, 2, 3)
+    val bs1 = l.to(immutable.BitSet)
+    val bs1t: immutable.BitSet = bs1
   }
 
   @Test

@@ -1,15 +1,16 @@
 package strawman.collection.mutable
 
-import strawman.collection.{IterableFactories, Iterator}
+import strawman.collection.{IterableFactory, Iterator, MonoBuildable, PolyBuildable}
 
-import scala.{Boolean, Option, Unit}
+import scala.{Any, Boolean, Option, Unit}
 import scala.Predef.???
 
 /** Mutable set backed by a hash trie */
 final class HashSet[A]
   extends Set[A]
     with SetLike[A, HashSet]
-    with Buildable[A, HashSet[A]]
+    with MonoBuildable[A, HashSet[A]]
+    with PolyBuildable[A, HashSet]
     with Builder[A, HashSet[A]] {
 
   def iterator(): Iterator[A] = ???
@@ -17,7 +18,8 @@ final class HashSet[A]
   def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
     HashSet.fromIterable(coll)
   protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): HashSet[A] = fromIterable(coll)
-  protected[this] def newBuilder: Builder[A, HashSet[A]] = new HashSet[A]
+  protected[this] def newBuilderWithSameElemType: Builder[A, HashSet[A]] = new HashSet[A]
+  def newBuilder[E]: Builder[E, HashSet[E]] = new HashSet[E]
   def result: HashSet[A] = this
 
   def +=(elem: A): this.type = ???
@@ -33,7 +35,7 @@ final class HashSet[A]
 
 }
 
-object HashSet extends IterableFactories[HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = {
     val result = new HashSet[B]

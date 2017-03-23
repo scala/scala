@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.SortedLike
+import strawman.collection.{ConstrainedMapFactory, SortedLike}
 import strawman.collection.mutable.Builder
 
 import scala.{Option, Ordering}
@@ -40,8 +40,8 @@ final class TreeMap[K, +V]
 
 }
 
-object TreeMap extends SortedMapFactories[TreeMap] {
+object TreeMap extends ConstrainedMapFactory[TreeMap, Ordering] {
 
-  def newBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] = ???
+  def constrainedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] = ???
 
 }

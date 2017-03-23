@@ -1,9 +1,9 @@
 package strawman.collection.mutable
 
-import scala.{Int, Unit, Boolean}
+import scala.{Any, Int, Unit, Boolean}
 import scala.Int._
 import strawman.collection
-import strawman.collection.{Iterator, IterableOnce, IterableFactories, SeqLike}
+import strawman.collection.{Iterator, IterableOnce, IterableFactory, SeqLike, MonoBuildable, PolyBuildable}
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.IndexOutOfBoundsException
@@ -13,7 +13,8 @@ import scala.Predef.{assert, intWrapper}
 class ListBuffer[A]
   extends Seq[A]
     with SeqLike[A, ListBuffer]
-    with Buildable[A, ListBuffer[A]]
+    with MonoBuildable[A, ListBuffer[A]]
+    with PolyBuildable[A, ListBuffer]
     with Builder[A, ListBuffer[A]] {
 
   private var first: List[A] = Nil
@@ -32,7 +33,8 @@ class ListBuffer[A]
   def length = len
   override def knownSize = len
 
-  protected[this] def newBuilder = new ListBuffer[A]
+  protected[this] def newBuilderWithSameElemType = new ListBuffer[A]
+  def newBuilder[E] = new ListBuffer[E]
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.fromIterable(result)
@@ -197,7 +199,7 @@ class ListBuffer[A]
   override def className = "ListBuffer"
 }
 
-object ListBuffer extends IterableFactories[ListBuffer] {
+object ListBuffer extends IterableFactory[ListBuffer] {
 
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 

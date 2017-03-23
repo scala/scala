@@ -1,6 +1,10 @@
 package strawman
 package collection.mutable
 
+import scala.Ordering
+
+import strawman.collection.ConstrainedIterablePolyTransforms
+
 trait SortedSet[A]
   extends collection.SortedSet[A]
     with Set[A]

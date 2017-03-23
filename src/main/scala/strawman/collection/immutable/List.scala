@@ -1,11 +1,11 @@
 package strawman.collection.immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.Nothing
+import scala.{Any, Nothing}
 import scala.Predef.???
 import strawman.collection
-import strawman.collection.{IterableFactories, IterableOnce, LinearSeq, SeqLike}
-import strawman.collection.mutable.{Buildable, Builder, ListBuffer}
+import strawman.collection.{IterableFactory, IterableOnce, LinearSeq, SeqLike, MonoBuildable, PolyBuildable}
+import strawman.collection.mutable.{Builder, ListBuffer}
 
 
 /** Concrete collection type: List */
@@ -13,11 +13,13 @@ sealed trait List[+A]
   extends Seq[A]
      with SeqLike[A, List]
      with LinearSeq[A]
-     with Buildable[A, List[A]] {
+     with MonoBuildable[A, List[A]]
+     with PolyBuildable[A, List] {
 
   def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
 
-  protected[this] def newBuilder = List.newBuilder
+  protected[this] def newBuilderWithSameElemType = List.newBuilder
+  def newBuilder[E] = List.newBuilder
 
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
@@ -51,7 +53,7 @@ case object Nil extends List[Nothing] {
   override def tail = ???
 }
 
-object List extends IterableFactories[List] {
+object List extends IterableFactory[List] {
 
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll

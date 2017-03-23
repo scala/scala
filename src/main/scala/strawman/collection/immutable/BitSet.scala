@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.BitSetFactories
+import strawman.collection.BoundedIterableFactory
 import strawman.collection.mutable.Builder
 
 import scala.Int
@@ -13,8 +13,10 @@ trait BitSet
     with SortedSet[Int]
     with SetMonoTransforms[Int, BitSet] // Override mono transforms ops to return a BitSet rather than a SortedSet[Int]
 
-object BitSet extends BitSetFactories[BitSet] {
+object BitSet extends BoundedIterableFactory[Int] {
+  type To[_] = BitSet
 
-  def newBuilder: Builder[Int, BitSet] = ???
+  def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet = ???
 
+  def newBuilder[E <: Int]: Builder[E, BitSet] = ???
 }

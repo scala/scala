@@ -3,9 +3,9 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.Builder
-import strawman.collection.{IterableFactories, Iterator}
+import strawman.collection.{IterableFactory, Iterator}
 
-import scala.Boolean
+import scala.{Any, Boolean}
 import scala.Predef.???
 
 /** An immutable Set backed by a hash trie */
@@ -32,7 +32,7 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
 
 }
 
-object HashSet extends IterableFactories[HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] = ???
 
