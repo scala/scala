@@ -1,0 +1,5 @@
+inductive-implicits11.scala:9: error: diverging implicit expansion for type Foo[Option[Int],Int]
+starting with method tick in object Foo
+  implicitly[Foo[Option[Int], Int]]
+            ^
+one error found
