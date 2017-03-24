@@ -4296,14 +4296,15 @@ trait Types
    */
   protected[internal] def specializesSym(preLo: Type, symLo: Symbol, preHi: Type, symHi: Symbol, depth: Depth): Boolean =
     (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
-      if (symHi.info == WildcardType) {
+      val symHiInfo = symHi.info
+      if (symHiInfo == WildcardType) {
         if (symHi.isTerm) (!symHi.isStable || symLo.isStable)     // sub-member must remain stable
         else true
       } else {
         // only now that we know symHi is a viable candidate, do the expensive checks: ----V
         require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
 
-        val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
+        val tpHi = symHiInfo.asSeenFrom(preHi, symHi.owner).substThis(preHi.typeSymbol, preLo)
 
         // Should we use memberType or memberInfo?
         // memberType transforms (using `asSeenFrom`) `sym.tpe`,
