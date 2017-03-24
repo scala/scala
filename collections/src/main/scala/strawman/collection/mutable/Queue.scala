@@ -14,189 +14,57 @@ import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Se
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
   *
-  *  @author  Matthias Zenger
-  *  @author  Martin Odersky
-  *  @version 2.8
-  *  @since   1
-  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#queues "Scala's Collection Library overview"]]
-  *  section on `Queues` for more information.
+  *  @author  Pathikrit Bhowmick
   *
-  *  @define Coll `mutable.Queue`
-  *  @define coll mutable queue
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
+  *  @version 2.13
+  *  @since   2.13
   */
-@SerialVersionUID(3L)
-class Queue[A]
-  extends MutableList[A]
-    with LinearSeqOps[A, Queue, Queue[A]]
-    with StrictOptimizedSeqOps[A, Queue, Queue[A]]
-    with Builder[A, Queue[A]]
-    with Cloneable[Queue[A]]
-    with Serializable
-{
-  private[mutable] def this(fst: LinkedList[A], lst: LinkedList[A], lng: Int) = {
-    this()
-    first0 = fst
-    last0 = lst
-    len = lng
-  }
+class Queue[A] extends ArrayDeque[A] {
 
-  override def iterableFactory: SeqFactory[Queue] = Queue
-  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): Queue[A] = iterableFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): Builder[A, Queue[A]] = iterableFactory.newBuilder()
-
-  /** Adds all elements to the queue.
+  /**
+    * Add elements to the end of this queue
     *
-    *  @param  elems       the elements to add.
+    * @param elem
+    * @return this
     */
-  def enqueue(elems: A*): Unit = this ++= elems.toStrawman
+  def enqueue(elem: A): this.type = this += elem
 
-  /** Returns the first element in the queue, and removes this element
-    *  from the queue.
+  /** Enqueue two or more elements at the end of the queue. The last element
+    *  of the sequence will be on end of the queue.
     *
-    *  @throws java.util.NoSuchElementException
-    *  @return the first element of the queue.
+    *  @param   elems      the element sequence.
+    *  @return this
     */
-  def dequeue(): A =
-    if (isEmpty)
-      throw new NoSuchElementException("queue empty")
-    else {
-      val res = first0.elem
-      first0 = first0.next
-      decrementLength()
-      res
-    }
+  def enqueue(elem1: A, elem2: A, elems: A*): this.type = enqueue(elem1).enqueue(elem2).enqueueAll(elems)
 
-  /** Returns the first element in the queue which satisfies the
-    *  given predicate, and removes this element from the queue.
+  /** Enqueues all elements in the given traversable object into the queue. The
+    *  last element in the traversable object will be on front of the new queue.
     *
-    *  @param p   the predicate used for choosing the first element
-    *  @return the first element of the queue for which p yields true
+    *  @param elems the traversable object.
+    *  @return this
     */
-  def dequeueFirst(p: A => Boolean): Option[A] =
-    if (isEmpty)
-      None
-    else if (p(first0.elem)) {
-      val res: Option[A] = Some(first0.elem)
-      first0 = first0.next
-      decrementLength()
-      res
-    } else {
-      val optElem = removeFromList(p)
-      if (optElem != None) decrementLength()
-      optElem
-    }
+  def enqueueAll(elems: strawman.collection.IterableOnce[A]): this.type = this ++= elems
 
-  private def removeFromList(p: A => Boolean): Option[A] = {
-    var leftlst = first0
-    var res: Option[A] = None
-    while (leftlst.next.nonEmpty && !p(leftlst.next.elem)) {
-      leftlst = leftlst.next
-    }
-    if (leftlst.next.nonEmpty) {
-      res = Some(leftlst.next.elem)
-      if (leftlst.next eq last0) last0 = leftlst
-      leftlst.next = leftlst.next.next
-    }
-    res
-  }
-
-  /** Returns all elements in the queue which satisfy the
-    *  given predicate, and removes those elements from the queue.
+  /**
+    * Removes the from element from this queue and return it
     *
-    *  @param p   the predicate used for choosing elements
-    *  @return    a sequence of all elements in the queue for which
-    *             p yields true.
+    * @return
+    * @throws java.util.NoSuchElementException when queue is empty
     */
-  def dequeueAll(p: A => Boolean): Seq[A] = {
-    if (first0.isEmpty)
-      Seq.empty
-    else {
-      val res = new ArrayBuffer[A]
-      while ((first0.nonEmpty) && p(first0.elem)) {
-        res += first0.elem
-        first0 = first0.next
-        decrementLength()
-      }
-      if (first0.isEmpty) res
-      else removeAllFromList(p, res)
-    }
-  }
+  def dequeue(): A = removeHead()
 
-  private def removeAllFromList(p: A => Boolean, res: ArrayBuffer[A]): ArrayBuffer[A] = {
-    var leftlst = first0
-    while (leftlst.next.nonEmpty) {
-      if (p(leftlst.next.elem)) {
-        res += leftlst.next.elem
-        if (leftlst.next eq last0) last0 = leftlst
-        leftlst.next = leftlst.next.next
-        decrementLength()
-      } else leftlst = leftlst.next
-    }
-    res
-  }
-
-  /** Return the proper suffix of this list which starts with the first element that satisfies `p`.
-    *  That element is unlinked from the list. If no element satisfies `p`, return None.
-    */
-  @deprecated("extractFirst inappropriately exposes implementation details. Use dequeue or dequeueAll.", "2.11.0")
-  def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
-    if (isEmpty) None
-    else {
-      var cell = start
-      while ((cell.next.nonEmpty) && !p(cell.next.elem)) {
-        cell = cell.next
-      }
-      if (cell.next.isEmpty)
-        None
-      else {
-        val res: Option[LinkedList[A]] = Some(cell.next)
-        cell.next = cell.next.next
-        decrementLength()
-        res
-      }
-    }
-  }
-
-  /** Returns the first element in the queue, or throws an error if there
-    *  is no element contained in the queue.
+  /**
+    * Dequeues all elements from this stack and return it
     *
-    *  @return the first element.
+    * @return
     */
-  def front: A = head
+  def dequeueAll(): strawman.collection.Seq[A] = removeAll()
 
-
-  // TODO - Don't override this just for new to create appropriate type....
-  override def tail: Queue[A] = {
-    val tl = new Queue[A]
-    tailImpl(tl)
-    tl
-  }
-
-  override def clone(): Queue[A] = {
-    val bf = newSpecificBuilder()
-    bf ++= this
-    bf.result()
-  }
-
-  override def result(): Queue[A] = this
-
-  private[this] def decrementLength(): Unit = {
-    len -= 1
-    if (len == 0) last0 = first0
-  }
-}
-
-
-object Queue extends StrictOptimizedSeqFactory[Queue] {
-  def newBuilder[A](): Builder[A, Queue[A]] = new Queue[A]
-  def empty[A]: Queue[A] = new Queue[A]
-  def from[A](source: IterableOnce[A]): Queue[A] = {
-    val l = new Queue[A]
-    l ++= source
-    l
-  }
+  /**
+    * Returns and removes all elements from the end of this queue which satisfy the given predicate
+    *
+    *  @param f   the predicate used for choosing elements
+    *  @return
+    */
+  def dequeueWhile(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
 }
