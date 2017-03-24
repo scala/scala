@@ -592,11 +592,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
        * but the same vars (given by the LabelDef's params) can be reused,
        * because no LabelDef ends up nested within itself after such duplication.
        */
-      if (!labelDefsAtOrUnder.isEmpty) { // opt
-        for (ld <- labelDefsAtOrUnder.getOrElse(dd.rhs, Nil); ldp <- ld.params; if !locals.contains(ldp.symbol)) {
-          // the tail-calls xform results in symbols shared btw method-params and labelDef-params, thus the guard above.
-          locals.makeLocal(ldp.symbol)
-        }
+      for(ld <- labelDefsAtOrUnder.getOrElse(dd.rhs, Nil); ldp <- ld.params; if !locals.contains(ldp.symbol)) {
+        // the tail-calls xform results in symbols shared btw method-params and labelDef-params, thus the guard above.
+        locals.makeLocal(ldp.symbol)
       }
 
       if (!isAbstractMethod && !isNative) {
