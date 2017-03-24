@@ -3836,7 +3836,7 @@ trait Types
 
 // Hash consing --------------------------------------------------------------
 
-  private val initialUniquesCapacity = 65536
+  private val initialUniquesCapacity = 4096
   private var uniques: util.WeakHashSet[Type] = _
   private var uniqueRunId = NoRunId
 
