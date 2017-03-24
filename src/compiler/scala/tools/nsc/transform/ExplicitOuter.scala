@@ -359,130 +359,117 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
+      val sym = tree.symbol
+      if (sym != null && sym.isType) { //(9)
+        if (sym.isPrivate) sym setFlag notPRIVATE
+        if (sym.isProtected) sym setFlag notPROTECTED
+      }
       tree match {
-        case _: Apply | _: TypeApply =>
-          tree match {
-
-            case Apply(sel @ Select(qual, nme.CONSTRUCTOR), args) if isInner(sel.symbol.owner) =>
-              val outerVal = atPos(tree.pos)(qual match {
-                // it's a call between constructors of same class
-                case _: This  =>
-                  assert(outerParam != NoSymbol, tree)
-                  outerValue
-                case _        =>
-                  gen.mkAttributedQualifier(qual.tpe.prefix match {
-                    case NoPrefix => sel.symbol.owner.outerClass.thisType
-                    case x        => x
-                  })
-              })
-              super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
-
-            // for the new pattern matcher
-            // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
-            // TODO remove the synthetic `<outer>` method from outerFor??
-            case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
-              val outerFor = sel.symbol.owner
-              val acc = outerAccessor(outerFor)
-
-              if (acc == NoSymbol ||
-                // since we can't fix SI-4440 properly (we must drop the outer accessors of final classes when there's no immediate reference to them in sight)
-                // at least don't crash... this duplicates maybeOmittable from constructors
-                (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
-                if (!base.tpe.hasAnnotation(UncheckedClass))
-                  currentRun.reporting.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
-                transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
-              } else {
-                // println("(base, acc)= "+(base, acc))
-                val outerSelect = localTyper typed Apply(Select(base, acc), Nil)
-                // achieves the same as: localTyper typed atPos(tree.pos)(outerPath(base, base.tpe.typeSymbol, outerFor.outerClass))
-                // println("(b, tpsym, outerForI, outerFor, outerClass)= "+ (base, base.tpe.typeSymbol, outerFor, sel.symbol.owner, outerFor.outerClass))
-                // println("outerSelect = "+ outerSelect)
-                transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
+        case Template(parents, self, decls) =>
+          val newDefs = new ListBuffer[Tree]
+          atOwner(tree, currentOwner) {
+            if (!currentClass.isInterface) {
+              if (isInner(currentClass)) {
+                if (hasOuterField(currentClass))
+                  newDefs += outerFieldDef // (1a)
+                newDefs += outerAccessorDef // (1)
               }
+              if (!currentClass.isTrait)
+                for (mc <- currentClass.mixinClasses)
+                  if (outerAccessor(mc) != NoSymbol && !skipMixinOuterAccessor(currentClass, mc))
+                    newDefs += mixinOuterAccessorDef(mc)
+            }
+          }
+          super.transform(
+            deriveTemplate(tree)(decls =>
+              if (newDefs.isEmpty) decls
+              else decls ::: newDefs.toList
+            )
+          )
+        case DefDef(_, _, _, vparamss, _, rhs) =>
+          if (sym.isClassConstructor) {
+            rhs match {
+              case Literal(_) =>
+                sys.error("unexpected case") //todo: remove
+              case _ =>
+                val clazz = sym.owner
+                val vparamss1 =
+                  if (isInner(clazz)) { // (4)
+                    if (isUnderConstruction(clazz.outerClass)) {
+                      reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
+                    }
+                    val outerParam =
+                      sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
+                    ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
+                  } else vparamss
+                super.transform(copyDefDef(tree)(vparamss = vparamss1))
+            }
+          } else
+            super.transform(tree)
 
-            case _ =>
-              val x = super.transform(tree)
-              if (x.tpe eq null) x
-              else x setType transformInfo(currentOwner, x.tpe)
+        case This(qual) =>
+          if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
+          else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
+
+        case Select(qual, name) =>
+          // make not private symbol accessed from inner classes, as well as
+          // symbols accessed from @inline methods
+          //
+          // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
+          // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
+          def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
+          // SI-8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
+          //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
+          if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
+            sym.makeNotPrivate(sym.owner)
+
+          val qsym = qual.tpe.widen.typeSymbol
+          if (sym.isProtected && //(4)
+              (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
+            sym setFlag notPROTECTED
+          super.transform(tree)
+
+        case Apply(sel @ Select(qual, nme.CONSTRUCTOR), args) if isInner(sel.symbol.owner) =>
+          val outerVal = atPos(tree.pos)(qual match {
+            // it's a call between constructors of same class
+            case _: This  =>
+              assert(outerParam != NoSymbol, tree)
+              outerValue
+            case _        =>
+              gen.mkAttributedQualifier(qual.tpe.prefix match {
+                case NoPrefix => sym.owner.outerClass.thisType
+                case x        => x
+              })
+          })
+          super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
+
+        // for the new pattern matcher
+        // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
+        // TODO remove the synthetic `<outer>` method from outerFor??
+        case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
+          val outerFor = sel.symbol.owner
+          val acc = outerAccessor(outerFor)
+
+          if (acc == NoSymbol ||
+              // since we can't fix SI-4440 properly (we must drop the outer accessors of final classes when there's no immediate reference to them in sight)
+              // at least don't crash... this duplicates maybeOmittable from constructors
+              (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
+            if (!base.tpe.hasAnnotation(UncheckedClass))
+              currentRun.reporting.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
+            transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
+          } else {
+            // println("(base, acc)= "+(base, acc))
+            val outerSelect = localTyper typed Apply(Select(base, acc), Nil)
+            // achieves the same as: localTyper typed atPos(tree.pos)(outerPath(base, base.tpe.typeSymbol, outerFor.outerClass))
+            // println("(b, tpsym, outerForI, outerFor, outerClass)= "+ (base, base.tpe.typeSymbol, outerFor, sel.symbol.owner, outerFor.outerClass))
+            // println("outerSelect = "+ outerSelect)
+            transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
           }
 
         case _ =>
-          val sym = tree.symbol
-          if (sym != null && sym.isType) { //(9)
-            if (sym.isPrivate) sym setFlag notPRIVATE
-            if (sym.isProtected) sym setFlag notPROTECTED
-          }
-          tree match {
-            case Template(parents, self, decls) =>
-              val newDefs = new ListBuffer[Tree]
-              atOwner(tree, currentOwner) {
-                if (!currentClass.isInterface) {
-                  if (isInner(currentClass)) {
-                    if (hasOuterField(currentClass))
-                      newDefs += outerFieldDef // (1a)
-                    newDefs += outerAccessorDef // (1)
-                  }
-                  if (!currentClass.isTrait)
-                    for (mc <- currentClass.mixinClasses)
-                      if (outerAccessor(mc) != NoSymbol && !skipMixinOuterAccessor(currentClass, mc))
-                        newDefs += mixinOuterAccessorDef(mc)
-                }
-              }
-              super.transform(
-                deriveTemplate(tree)(decls =>
-                  if (newDefs.isEmpty) decls
-                  else decls ::: newDefs.toList
-                )
-              )
-            case DefDef(_, _, _, vparamss, _, rhs) =>
-              if (sym.isClassConstructor) {
-                rhs match {
-                  case Literal(_) =>
-                    sys.error("unexpected case") //todo: remove
-                  case _ =>
-                    val clazz = sym.owner
-                    val vparamss1 =
-                      if (isInner(clazz)) { // (4)
-                        if (isUnderConstruction(clazz.outerClass)) {
-                          reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
-                        }
-                        val outerParam =
-                          sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
-                        ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
-                      } else vparamss
-                    super.transform(copyDefDef(tree)(vparamss = vparamss1))
-                }
-              } else
-                super.transform(tree)
-
-            case This(qual) =>
-              if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
-              else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
-
-            case Select(qual, name) =>
-              // make not private symbol accessed from inner classes, as well as
-              // symbols accessed from @inline methods
-              //
-              // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
-              // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
-              def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
-              // SI-8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
-              //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
-              if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
-                sym.makeNotPrivate(sym.owner)
-
-              val qsym = qual.tpe.widen.typeSymbol
-              if (sym.isProtected && //(4)
-                (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
-                sym setFlag notPROTECTED
-              super.transform(tree)
-
-            case _ =>
-              val x = super.transform(tree)
-              if (x.tpe eq null) x
-              else x setType transformInfo(currentOwner, x.tpe)
-          }
-
+          val x = super.transform(tree)
+          if (x.tpe eq null) x
+          else x setType transformInfo(currentOwner, x.tpe)
       }
     }
 
