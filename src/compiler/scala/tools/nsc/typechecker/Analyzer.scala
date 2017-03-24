@@ -80,8 +80,7 @@ trait Analyzer extends AnyRef
     val phaseName = "typer"
     val runsAfter = List[String]()
     val runsRightAfter = Some("packageobjects")
-    def newPhase(prev: Phase): StdPhase = new TyperPhase(prev)
-    final class TyperPhase(prev: Phase) extends StdPhase(prev) {
+    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       override def keepsTypeParams = false
       resetTyper()
       // the log accumulates entries over time, even though it should not (Adriaan, Martin said so).
@@ -91,9 +90,8 @@ trait Analyzer extends AnyRef
       override def run() {
         val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
         global.echoPhaseSummary(this)
-        val units = currentRun.units
-        while (units.hasNext) {
-          applyPhase(units.next())
+        for (unit <- currentRun.units) {
+          applyPhase(unit)
           undoLog.clear()
         }
         if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
