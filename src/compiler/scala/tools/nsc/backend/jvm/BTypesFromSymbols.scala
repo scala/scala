@@ -252,7 +252,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
-    val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(allParents)
+    val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(classSym, allParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D
     //   trait T

@@ -14,7 +14,10 @@ trait T extends java.lang.Iterable[String] {
 class C extends T with java.lang.Iterable[String] // super accessor is okay with Iterable as a direct parent
 object Test {
   def main(args: Array[String]): Unit = {
-    val t: T = new C
+    val c = new C
+    c.spliterator
+    c.foo
+    val t: T = c
     t.spliterator
     t.foo
   }

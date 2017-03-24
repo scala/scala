@@ -28,6 +28,8 @@ abstract class Erasure extends InfoTransform
 
   val phaseName: String = "erasure"
 
+  val requiredDirectInterfaces = perRunCaches.newAnyRefMap[Symbol, mutable.Set[Symbol]]()
+
   def newTransformer(unit: CompilationUnit): Transformer =
     new ErasureTransformer(unit)
 
@@ -191,26 +193,21 @@ abstract class Erasure extends InfoTransform
 
   /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
    * This is important on Android because there is otherwise an interface explosion.
-   * This is now restricted to Scala defined ancestors: a Java defined ancestor may need to be listed
-   * as an immediate parent to support an `invokespecial`.
    */
-  def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
-    def isRedundantParent(parent: Symbol, candidate: Symbol) =
-      !parent.isJavaDefined &&
-        parent.isTraitOrInterface &&
-        candidate.isSubClass(parent)
-
+  def minimizeParents(cls: Symbol, parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
+    val requiredDirect: Symbol => Boolean = requiredDirectInterfaces.getOrElse(cls, Set.empty)
     var rest   = parents.tail
     var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
     while (rest.nonEmpty) {
       val candidate = rest.head
-      if (candidate.typeSymbol.isJavaDefined && candidate.typeSymbol.isInterface) leaves += candidate
-      else {
-        val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
-        if (!nonLeaf) {
-          leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol, candidate.typeSymbol) }
-          leaves += candidate
+      val candidateSym = candidate.typeSymbol
+      val required = requiredDirect(candidateSym) || !leaves.exists(t => t.typeSymbol isSubClass candidateSym)
+      if (required) {
+        leaves = leaves filter { t =>
+          val ts = t.typeSymbol
+          requiredDirect(ts) || !ts.isTraitOrInterface || !candidateSym.isSubClass(ts)
         }
+        leaves += candidate
       }
       rest = rest.tail
     }
@@ -224,7 +221,7 @@ abstract class Erasure extends InfoTransform
   def javaSig(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = enteringErasure {
     val isTraitSignature = sym0.enclClass.isTrait
 
-    def superSig(parents: List[Type]) = {
+    def superSig(cls: Symbol, parents: List[Type]) = {
       def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
 
       // a signature should always start with a class
@@ -234,7 +231,7 @@ abstract class Erasure extends InfoTransform
         case _ => tps
       }
 
-      val minParents = minimizeParents(parents)
+      val minParents = minimizeParents(cls, parents)
       val validParents =
         if (isTraitSignature)
           // java is unthrilled about seeing interfaces inherit from classes
@@ -373,7 +370,7 @@ abstract class Erasure extends InfoTransform
         case RefinedType(parents, decls) =>
           jsig(intersectionDominator(parents), primitiveOK = primitiveOK)
         case ClassInfoType(parents, _, _) =>
-          superSig(parents)
+          superSig(tp.typeSymbol, parents)
         case AnnotatedType(_, atp) =>
           jsig(atp, existentiallyBound, toplevel, primitiveOK)
         case BoundedWildcardType(bounds) =>
@@ -1185,6 +1182,10 @@ abstract class Erasure extends InfoTransform
                 reporter.error(tree.pos, s"Unable to emit super reference to ${sym.fullLocationString}, $owner is not accessible in ${localTyper.context.enclClass.owner}")
                 owner
             }
+
+            if (sym.isJavaDefined && qualSym.isTraitOrInterface)
+              requiredDirectInterfaces.getOrElseUpdate(localTyper.context.enclClass.owner, mutable.Set.empty) += qualSym
+
             if (qualSym != owner)
               tree.updateAttachment(new QualTypeSymAttachment(qualSym))
           } else if (!isJvmAccessible(owner, localTyper.context)) {

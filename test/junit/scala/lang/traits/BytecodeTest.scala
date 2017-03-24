@@ -407,6 +407,20 @@ class BytecodeTest extends BytecodeTesting {
     assert(ins contains Invoke(INVOKESPECIAL, "T", "f", "()I", true), ins.stringLines)
   }
 
+  @Test
+  def noMinimizeScalaTraitAccessingJavaMember(): Unit = {
+    val jCode = List("interface A { default int f() { return 1; } }" -> "A.java")
+    val code =
+      """trait U extends A
+        |trait V extends U
+        |class C extends U with V { def t = super.f() }
+      """.stripMargin
+    val List(c, u, v) = compileClasses(code, jCode)
+    assertEquals(c.interfaces.asScala.toList.sorted, List("U", "V"))
+    val ins = getMethod(c, "t").instructions
+    assert(ins contains Invoke(INVOKESPECIAL, "U", "f", "()I", true), ins.stringLines)
+  }
+
   def ifs(c: ClassNode, expected: List[String]) = assertEquals(expected, c.interfaces.asScala.toList.sorted)
   def invSt(m: Method, receiver: String, method: String = "f$", itf: Boolean = true): Unit =
     assert(m.instructions contains Invoke(INVOKESTATIC, receiver, method, s"(L$receiver;)I", itf), m.instructions.stringLines)
