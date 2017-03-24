@@ -357,6 +357,10 @@ trait Implicits {
     /** The type parameters to instantiate */
     val undetParams = if (isView) Nil else context.outer.undetparams
     val wildPt = approximate(pt)
+    private val ptFunctionArity: Int = {
+      val dealiased = pt.dealiasWiden
+      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1 else -1
+    }
 
     private val stableRunDefsForImport = currentRun.runDefinitions
     import stableRunDefsForImport._
@@ -543,9 +547,7 @@ trait Implicits {
               if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
-                val len = args.length - 1
-                hasLength(params, len) &&
-                sym == FunctionClass(len) && {
+                ptFunctionArity > 0 && hasLength(params, ptFunctionArity) && {
                   var ps = params
                   var as = args
                   if (fast) {
