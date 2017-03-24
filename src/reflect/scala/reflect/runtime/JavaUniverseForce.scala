@@ -388,6 +388,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaStrictFPAttr
     definitions.SwitchClass
     definitions.TailrecClass
+    definitions.InductiveClass
     definitions.VarargsClass
     definitions.uncheckedStableClass
     definitions.uncheckedVarianceClass

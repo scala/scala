@@ -1,0 +1,4 @@
+inductive-implicits8.scala:8: error: Noninductive implicit expansion for type Foo[Int]
+  implicitly[Foo[Int]]
+            ^
+one error found

@@ -1,0 +1,4 @@
+inductive-implicits3.scala:192: error: could not find implicit value for parameter e: shapeless.Union.Aux[Int :: shapeless.HNil,Int :: shapeless.HNil,Int :: String :: shapeless.HNil]
+  implicitly[Union.Aux[Int :: HNil, Int :: HNil, Int :: String :: HNil]]
+            ^
+one error found

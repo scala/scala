@@ -1,0 +1,4 @@
+inductive-implicits7.scala:74: error: Inductive implicit expansion for type shapeless.Mapper[Test.Fn.type,Test.L] failed due to missing auxiliary implicit shapeless.Case1[Test.Fn.type,String]
+  val map = Mapper[Fn.type, L]
+                  ^
+one error found

@@ -1,0 +1,40 @@
+inductive-implicits14.scala:21: error: ambiguous implicit values:
+ both value intTC in trait TC0 of type => TC[Int]
+ and method ambig0 in object TC of type [A]=> TC[A]
+ match expected type TC[Int]
+  val h0 = handler(Baz(23))
+                  ^
+inductive-implicits14.scala:24: error: type mismatch;
+ found   : TC[Nothing]
+ required: TC[A]
+Note: Nothing <: A, but trait TC is invariant in type A.
+You may wish to define A as +A instead. (SLS 4.5)
+  val h1 = handler(Bar(23))
+                  ^
+inductive-implicits14.scala:25: error: type mismatch;
+ found   : TC[Nothing]
+ required: TC[Foo[Int]]
+Note: Nothing <: Foo[Int], but trait TC is invariant in type A.
+You may wish to define A as +A instead. (SLS 4.5)
+  h1: TC[Foo[Int]]
+  ^
+inductive-implicits14.scala:27: error: type mismatch;
+ found   : TC[Nothing]
+ required: TC[A]
+Note: Nothing <: A, but trait TC is invariant in type A.
+You may wish to define A as +A instead. (SLS 4.5)
+  val h2: TC[Int] = handler(Bar(23))
+                           ^
+inductive-implicits14.scala:29: error: ambiguous implicit values:
+ both value intTC in trait TC0 of type => TC[Int]
+ and method ambig0 in object TC of type [A]=> TC[A]
+ match expected type TC[Int]
+  val h4 = handler[Int](Bar(23))
+                       ^
+inductive-implicits14.scala:32: error: ambiguous implicit values:
+ both method fooTC in trait TC0 of type [A](implicit ev: TC[A])TC[Foo[A]]
+ and method ambig1 in object TC of type [A <: AnyRef]=> TC[A]
+ match expected type TC[Foo[Foo[Int]]]
+  val h6 = handler[Foo[Foo[Int]]](Bar(23))
+                                 ^
+6 errors found
