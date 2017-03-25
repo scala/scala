@@ -555,8 +555,9 @@ comment.
 
 ## Multi-line and trailing commas
 
-Trailing commas are allowed when followed by a newline and a closing
-parenthesis, square bracket or curly brace (`)`, `]`, and `}`, respectively), such as:
+If a comma is followed by a line end and then a right parenthesis, square
+bracket or curly brace (`)`, `]`, and `}`, respectively) then such a trailing
+comma is ignored. For example:
 
 ```scala
 foo(
