@@ -4599,15 +4599,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           })
           def errorInResult(tree: Tree) = treesInResult(tree) exists (err => typeErrors.exists(_.errPos == err.pos))
 
-          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
+            val newArgs = args.collect( {
+                case AssignOrNamedArg(_, r) => r
+                case t => t
+            })
+          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: newArgs exists errorInResult)
           typingStack.printTyping({
             val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
             if (retry) "second try: " + funStr
             else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
           })
           if (retry) {
+            typingStack.printTyping(s"newArgs: ${newArgs.map(arg => (arg, arg.getClass.getCanonicalName)).mkString(",")};")
             val Select(qual, name) = fun
-            tryTypedArgs(args, forArgMode(fun, mode)) match {
+            val y = forArgMode(fun, mode)
+            val x = tryTypedArgs(newArgs, y)
+            typingStack.printTyping(s"x: ${x}")
+            x match {
               case Some(args1) if !args1.exists(arg => arg.exists(_.isErroneous)) =>
                 val qual1 =
                   if (!pt.isError) adaptToArguments(qual, name, args1, pt)
