@@ -30,13 +30,20 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def staticAnnotations = annotations filter (_.isStatic)
 
     def addThrowsAnnotation(throwableSym: Symbol): Self = {
-      val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
-        debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
-        // in case we encounter polymorphic exception the best we can do is to convert that type to
-        // monomorphic one by introducing existentials, see SI-7009 for details
-        existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)
+      def annInfo = {
+        throwableSym.initialize
+        val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
+          debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
+          // in case we encounter polymorphic exception the best we can do is to convert that type to
+          // monomorphic one by introducing existentials, see SI-7009 for details
+          existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)
+        }
+        AnnotationInfo(appliedType(ThrowsClass, throwableTpe), List(Literal(Constant(throwableTpe))), Nil)
       }
-      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe), List(Literal(Constant(throwableTpe))), Nil)
+      if (isCompilerUniverse) {
+        AnnotationInfo.lazily(annInfo)
+        this.asInstanceOf[Self] // TODO
+      } else this.withAnnotation(annInfo)
     }
 
     /** Tests for, get, or remove an annotation */
