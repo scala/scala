@@ -451,7 +451,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   )
 
   private def hasUnspecializableAnnotation(sym: Symbol): Boolean =
-    sym.ownerChain.exists(_ hasAnnotation UnspecializedClass)
+    sym.ownersIterator.exists(_ hasAnnotation UnspecializedClass)
 
   def isNormalizedMember(m: Symbol) = m.isSpecialized && (info get m exists {
     case NormalizedMember(_)  => true
