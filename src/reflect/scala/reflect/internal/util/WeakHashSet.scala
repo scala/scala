@@ -1,9 +1,11 @@
 package scala
 package reflect.internal.util
 
-import java.lang.ref.{WeakReference, ReferenceQueue}
+import java.lang.ref.{ReferenceQueue, WeakReference}
+
 import scala.annotation.tailrec
 import scala.collection.mutable.{Set => MSet}
+import scala.util.hashing.MurmurHash3
 
 /**
  * A HashSet where the elements are stored weakly. Elements in this set are eligible for GC if no other
@@ -64,19 +66,13 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
    * find the bucket associated with an element's hash code
    */
   private[this] def bucketFor(hash: Int): Int = {
-    // spread the bits around to try to avoid accidental collisions using the
-    // same algorithm as java.util.HashMap
-    var h = hash
-    h ^= h >>> 20 ^ h >>> 12
-    h ^= h >>> 7 ^ h >>> 4
-
     // this is finding h % table.length, but takes advantage of the
     // fact that table length is a power of 2,
     // if you don't do bit flipping in your head, if table.length
     // is binary 100000.. (with n 0s) then table.length - 1
     // is 1111.. with n 1's.
     // In other words this masks on the last n bits in the hash
-    h & (table.length - 1)
+    hash & (table.length - 1)
   }
 
   /**
@@ -180,20 +176,21 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
         elem
       }
 
-      def linkedListLoop(entry: Entry[A]): A = entry match {
+      def linkedListLoop(entry: Entry[A], depth: Int): A = entry match {
         case null                    => add()
         case _                       => {
           val entryElem = entry.get
           if (elem.equals(entryElem)) entryElem
           else {
-            val result = linkedListLoop(entry.tail)
-            result.getClass
+            val result = linkedListLoop(entry.tail, depth + 1)
+            if (depth > 0)
+              result.getClass
             result
           }
         }
       }
 
-      linkedListLoop(oldHead)
+      linkedListLoop(oldHead, 0)
     }
   }
 
