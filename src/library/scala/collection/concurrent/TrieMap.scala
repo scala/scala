@@ -637,8 +637,7 @@ extends scala.collection.concurrent.Map[K, V]
   private var rootupdater = rtupd
   def hashing = hashingobj
   def equality = equalityobj
-  @deprecated("this field will be made private", "2.12.0")
-  @volatile /*private*/ var root = r
+  @volatile private var root = r
 
   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
     INode.newRootNode,
@@ -682,14 +681,11 @@ extends scala.collection.concurrent.Map[K, V]
     } while (obj != TrieMapSerializationEnd)
   }
 
-  @deprecated("this method will be made private", "2.12.0")
-  /*private*/ def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
+  private def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
 
-  @deprecated("this method will be made private", "2.12.0")
-  /*private[collection]*/ def readRoot(abort: Boolean = false): INode[K, V] = RDCSS_READ_ROOT(abort)
+  private[collection] def readRoot(abort: Boolean = false): INode[K, V] = RDCSS_READ_ROOT(abort)
 
-  @deprecated("this method will be made private", "2.12.0")
-  /*private[concurrent]*/ def RDCSS_READ_ROOT(abort: Boolean = false): INode[K, V] = {
+  private[concurrent] def RDCSS_READ_ROOT(abort: Boolean = false): INode[K, V] = {
     val r = /*READ*/root
     r match {
       case in: INode[K, V] => in
@@ -1106,15 +1102,6 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     }
     this.level += 1
     Seq(this)
-  }
-
-  @deprecated("this method will be removed", "2.12.0")
-  def printDebug() {
-    println("ctrie iterator")
-    println(stackpos.mkString(","))
-    println("depth: " + depth)
-    println("curr.: " + current)
-    println(stack.mkString("\n"))
   }
 
 }
