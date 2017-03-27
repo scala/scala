@@ -12,4 +12,18 @@ class RandomTest {
       Assert.assertTrue(s"$c should be alphanumeric", isAlphaNum(c))
     }
   }
+
+  @Test def testNextLongN: Unit = {
+    val testsPerN = 1000
+    val nCats = 100
+    def testOneN(n:Long): Unit = {
+      for (_ <- 0.until(testsPerN)) {
+        val rN = Random.nextLong(n)
+        val inRange = (0 <= rN) && (rN < n)
+        Assert.assertTrue(s"$rN should be within [0, $n)", inRange)
+      }
+    }
+
+    for (_ <- 0.until(nCats)) testOneN(Math.abs(Random.nextLong()))
+  }
 }
