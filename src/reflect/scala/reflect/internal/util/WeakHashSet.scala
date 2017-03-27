@@ -180,13 +180,16 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
         elem
       }
 
-      @tailrec
       def linkedListLoop(entry: Entry[A]): A = entry match {
         case null                    => add()
         case _                       => {
           val entryElem = entry.get
           if (elem.equals(entryElem)) entryElem
-          else linkedListLoop(entry.tail)
+          else {
+            val result = linkedListLoop(entry.tail)
+            result.getClass
+            result
+          }
         }
       }
 
