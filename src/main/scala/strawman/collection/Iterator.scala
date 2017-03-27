@@ -2,11 +2,31 @@ package strawman.collection
 
 import scala.{Boolean, Int, Unit, Nothing, NoSuchElementException}
 
-/** A core Iterator class */
+/** A core Iterator class
+  *
+  * @define consumesIterator
+  * After calling this method, one should discard the iterator it was called
+  * on. Using it is undefined and subject to change.
+  */
 trait Iterator[+A] extends IterableOnce[A] { self =>
   def hasNext: Boolean
   def next(): A
   def iterator() = this
+
+  /** Tests whether a predicate holds for all values produced by this iterator.
+    *  $mayNotTerminateInf
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return        `true` if the given predicate `p` holds for all values
+    *                 produced by this iterator, otherwise `false`.
+    *  @note          Reuse: $consumesIterator
+    */
+  def forall(p: A => Boolean): Boolean = {
+    var res = true
+    while (res && hasNext) res = p(next())
+    res
+  }
+
   def foldLeft[B](z: B)(op: (B, A) => B): B =
     if (hasNext) foldLeft(op(z, next()))(op) else z
   def foldRight[B](z: B)(op: (A, B) => B): B =
@@ -109,12 +129,21 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 }
 
 object Iterator {
+
   val empty: Iterator[Nothing] = new Iterator[Nothing] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
   }
+
+  def single[A](a: A): Iterator[A] = new Iterator[A] {
+    private var consumed: Boolean = false
+    def hasNext = !consumed
+    def next() = if (consumed) empty.next() else { consumed = true; a }
+  }
+
   def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
     val length = xs.length
     def apply(n: Int) = xs(n)
   }.iterator()
+
 }

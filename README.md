@@ -45,3 +45,67 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHOT"
 ~~~
+
+## Implemented collection types
+
+- [x] `List`
+- [x] `LazyList` (aka `Stream` in 2.12)
+- [ ] `Queue`
+- [ ] `Stack`
+- [x] `ArrayOps`
+- [x] `StringOps`
+- [x] `ArrayBuffer`
+- [x] `ListBuffer`
+- [ ] `UnrolledBuffer`
+- [ ] `LinkedList`
+- [ ] `DoubleLinkedList`
+- [ ] `Range` / `NumericRange`
+- [ ] `HashMap`
+- [ ] `TreeMap`
+- [ ] `IntMap` / `LongMap` (?)
+- [ ] `ListMap`
+- [ ] `MultiMap`
+- [ ] `HashSet`
+- [ ] `ListSet`
+- [ ] `TreeSet`
+- [ ] `EqSet`
+- [ ] `BitSet`
+- [x] `View`
+
+## Implemented operations (on the relevant collection types)
+
+### Terminal operations
+
+- [x] `forall`
+- [x] `foreach`
+- [x] `foldLeft`
+- [x] `foldRight`
+- [x] `head`
+- [x] `indexWhere`
+- [x] `isEmpty` / `nonEmpty`
+- [x] `last`
+- [x] `mkString`
+- [x] `size`
+- [x] `sum`
+- [x] `to`
+
+### Transformations keeping the same element type
+
+- [x] `drop`
+- [x] `filter`
+- [x] `partition`
+- [x] `splitAt`
+- [x] `tail`
+- [x] `take`
+- [ ] `groupBy`
+
+### Transformations to collections that can have a different element type
+
+- [x] `++` / `concat`
+- [x] `flatMap`
+- [x] `map`
+- [x] `zip`
+
+### In-place mutating operations
+
+TODO

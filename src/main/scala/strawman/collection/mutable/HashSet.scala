@@ -28,9 +28,7 @@ final class HashSet[A]
 
   def contains(elem: A): Boolean = ???
   def get(elem: A): Option[A] = ???
-  def subsetOf(that: strawman.collection.Set[A]): Boolean = ???
 
-  def & (that: strawman.collection.Set[A]): HashSet[A] = ???
   def ++ (that: strawman.collection.Set[A]): HashSet[A] = ???
 
 }

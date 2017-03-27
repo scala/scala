@@ -74,6 +74,11 @@ object View {
     def iterator() = partition.underlying.iterator().filter(x => partition.p(x) == cond)
   }
 
+  case class SplitAt[A](underlying: Iterable[A], n: Int) {
+    val left = Take(underlying, n)
+    val right = Drop(underlying, n)
+  }
+
   /** A view that drops leading elements of the underlying collection. */
   case class Drop[A](underlying: Iterable[A], n: Int) extends View[A] {
     def iterator() = underlying.iterator().drop(n)
