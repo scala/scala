@@ -37,11 +37,6 @@ sealed trait HashSet[A]
   // From SetLike
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
-  def ++ (that: collection.Set[A]): HashSet[A] =
-    // FIXME Same implementation as in ListSet. We might want to factor them out in immutable.SetMonoTransforms
-    if (that.isEmpty) this
-    else that.foldLeft(this)(_ + _)
-
   def + (elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
   def - (elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))

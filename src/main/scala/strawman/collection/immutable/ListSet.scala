@@ -66,11 +66,6 @@ sealed class ListSet[A]
   def + (elem: A): ListSet[A] = new Node(elem)
   def - (elem: A): ListSet[A] = this
 
-  def ++ (xs: collection.Set[A]): ListSet[A] =
-    if (xs.isEmpty) this
-    else xs.foldLeft(this)(_ + _)
-
-
   def iterator(): strawman.collection.Iterator[A] = {
     def reverseList = {
       var curr: ListSet[A] = this

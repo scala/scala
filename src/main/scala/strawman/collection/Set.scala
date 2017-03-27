@@ -20,6 +20,7 @@ trait Set[A]
 trait SetLike[A, +C[X] <: Set[X]]
   extends IterableLike[A, C]
     with SetMonoTransforms[A, C[A]]
+    with SetPolyTransforms[A, C]
     with (A => Boolean)
     with Equals {
 
@@ -59,7 +60,11 @@ trait SetMonoTransforms[A, +Repr]
 
   def & (that: Set[A]): Repr = this.filter(that)
 
-  def ++ (that: Set[A]): Repr
+}
+
+trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
+
+  def ++ (that: Set[A]): C[A]
 
 }
 

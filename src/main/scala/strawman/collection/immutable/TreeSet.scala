@@ -36,9 +36,6 @@ final class TreeSet[A]()(implicit val ordering: Ordering[A])
   // From SetLike
   def contains(elem: A): Boolean = ???
 
-  // From SetMonoTransforms
-  def ++ (that: strawman.collection.Set[A]): TreeSet[A] = ???
-
   // From immutable.SetMonoTransforms
   def +(elem: A): TreeSet[A] = ???
   def -(elem: A): TreeSet[A] = ???
