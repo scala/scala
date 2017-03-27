@@ -309,7 +309,9 @@ abstract class SymbolLoaders {
       override def classPath: ClassPath = platform.classPath
     }
 
-    protected def description = "class file "+ classfile.toString + " (" + classfile.sizeOption.map(_.toString).getOrElse("?") + " bytes)"
+    protected def description = {
+      "class file "+ classfile.toString + " (" + classfile.sizeOption.map(_.toString).getOrElse("?") + " bytes)"
+    }
 
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
