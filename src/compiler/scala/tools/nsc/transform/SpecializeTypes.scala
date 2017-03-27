@@ -458,12 +458,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                    => false
   })
   def specializedTypeVars(tpes: List[Type]): immutable.Set[Symbol] = {
-    val result = mutable.Set.empty[Symbol]
+    val result = mutable.ListBuffer.empty[Symbol]
     specializedTypeVars1(tpes, result)
     result.toSet
   }
   def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = {
-    val result = mutable.Set.empty[Symbol]
+    val result = mutable.ListBuffer.empty[Symbol]
     specializedTypeVars1(sym, result)
     result.toSet
   }
@@ -475,12 +475,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *      (arrays are considered as Array[@specialized T])
    */
   def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = {
-    val result =mutable.Set.empty[Symbol]
+    val result = mutable.ListBuffer.empty[Symbol]
     specializedTypeVars1(tpe, result)
     result.toSet
   }
 
-  def specializedTypeVars1(tpes: List[Type], result: mutable.Set[Symbol]): Unit = {
+  def specializedTypeVars1(tpes: List[Type], result: mutable.Buffer[Symbol]): Unit = {
     @tailrec def loop(xs: List[Type]): Unit = {
       if (xs.isEmpty) ()
       else {
@@ -490,7 +490,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
     loop(tpes)
   }
-  def specializedTypeVars1(sym: Symbol, result: mutable.Set[Symbol]): Unit = (
+  def specializedTypeVars1(sym: Symbol, result: mutable.Buffer[Symbol]): Unit = (
     if (neverHasTypeParameters(sym)) immutable.Set.empty
     else enteringTyper(specializedTypeVars1(sym.info, result))
     )
@@ -501,7 +501,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     *    - as arguments to type constructors in @specialized positions
     *      (arrays are considered as Array[@specialized T])
     */
-  def specializedTypeVars1(tpe: Type, result: mutable.Set[Symbol]): Unit = tpe match {
+  def specializedTypeVars1(tpe: Type, result: mutable.Buffer[Symbol]): Unit = tpe match {
     case TypeRef(pre, sym, args) =>
       if (sym.isAliasType)
         specializedTypeVars1(tpe.dealiasWiden, result)
@@ -1005,13 +1005,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         List()
       } else {
 
-        val stvars = mutable.Set.empty[Symbol]
+        val stvars = mutable.ListBuffer.empty[Symbol]
         specializedTypeVars1(sym, stvars)
         if (stvars.nonEmpty)
           debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
+        val stvarsSet = stvars.toSet
 
         val tps1 = if (sym.isConstructor) tps filter (sym.info.paramTypes contains _) else tps
-        val tps2 = tps1 filter stvars
+        val tps2 = tps1 filter stvarsSet
         if (!sym.isDeferred)
           addConcreteSpecMethod(sym)
 
