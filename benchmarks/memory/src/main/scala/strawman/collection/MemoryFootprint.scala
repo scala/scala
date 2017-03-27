@@ -3,7 +3,7 @@ package bench
 import strawman.collection.immutable.{LazyList, List}
 
 import scala.{Any, AnyRef, App, Int, Long, Seq, StringContext}
-import scala.Predef.{ArrowAssoc, println}
+import scala.Predef.{ArrowAssoc, println, intWrapper}
 import scala.compat.Platform
 import java.lang.Runtime
 import java.nio.file.{Files, Paths}
@@ -40,6 +40,8 @@ object MemoryFootprint extends App {
       "scala.List"  -> benchmark(scala.List.fill(_)(obj)),
       "List"        -> benchmark(List.fill(_)(obj)),
       "LazyList"    -> benchmark(LazyList.fill(_)(obj)),
+      "scala.HashSet" -> benchmark(n => scala.collection.immutable.HashSet((1 to n).map(_.toString): _*)),
+      "HashSet"     -> benchmark(n => scala.collection.immutable.HashSet((1 to n).map(_.toString): _*)),
       "ArrayBuffer" -> benchmark(ArrayBuffer.fill(_)(obj)),
       "ListBuffer"  -> benchmark(ListBuffer.fill(_)(obj))
     )
