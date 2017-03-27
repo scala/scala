@@ -809,7 +809,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       // classes, or when computing stack map frames) might fail.
       def enterReferencedClass(sym: Symbol): Unit = enteringJVM(classBTypeFromSymbol(sym))
 
-      val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe, enterReferencedClass)
+      val erasedTypeSym = sym.info.typeSymbol
+      val jsOpt: Option[String] =
+        if (erasedTypeSym.isPrimitiveValueClass)
+          None // scala/bug#10351: don't emit a signature if field tp erases to a primitive
+        else
+          erasure.javaSig(sym, memberTpe, enterReferencedClass)
       if (jsOpt.isEmpty) { return null }
 
       val sig = jsOpt.get
