@@ -66,7 +66,7 @@ trait Collections {
     (thiss eq that) || {
       var these = thiss
       var those = that
-      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
+      while (!these.isEmpty && !those.isEmpty && these.head.equals(those.head)) {
         these = these.tail
         those = those.tail
       }
