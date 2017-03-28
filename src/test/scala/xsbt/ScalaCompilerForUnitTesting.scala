@@ -46,14 +46,25 @@ class ScalaCompilerForUnitTesting {
 
   /**
    * Extract used names from src provided as the second argument.
+   * If `assertDefaultScope` is set to true it will fail if there is any name used in scope other then Default
    *
    * The purpose of the first argument is to define names that the second
    * source is going to refer to. Both files are compiled in the same compiler
    * Run but only names used in the second src file are returned.
    */
-  def extractUsedNamesFromSrc(definitionSrc: String, actualSrc: String): Map[String, Set[String]] = {
+  def extractUsedNamesFromSrc(
+    definitionSrc: String,
+    actualSrc: String,
+    assertDefaultScope: Boolean = true
+  ): Map[String, Set[String]] = {
     // we drop temp src file corresponding to the definition src file
     val (Seq(_, tempSrcFile), analysisCallback) = compileSrcs(definitionSrc, actualSrc)
+
+    if (assertDefaultScope) for {
+      (className, used) <- analysisCallback.usedNamesAndScopes
+      analysisCallback.TestUsedName(name, scopes) <- used
+    } assert(scopes.size() == 1 && scopes.contains(UseScope.Default), s"$className uses $name in $scopes")
+
     val classesInActualSrc = analysisCallback.classNames(tempSrcFile).map(_._1)
     classesInActualSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
   }

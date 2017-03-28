@@ -1,6 +1,7 @@
 package xsbt
 
 import sbt.internal.util.UnitSpec
+import xsbti.UseScope
 
 class ExtractUsedNamesSpecification extends UnitSpec {
 
@@ -194,6 +195,72 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
     assert(usedNames === expectedNames)
     ()
+  }
+
+  it should "extract sealed classes scope" in {
+    val sealedClassName = "Sealed"
+    val sealedClass =
+      s"""package base
+        |
+        |sealed class $sealedClassName
+        |object Usage extends $sealedClassName
+        |object Usage2 extends $sealedClassName
+      """.stripMargin
+
+    def findPatMatUsages(in: String): Set[String] = {
+      val compilerForTesting = new ScalaCompilerForUnitTesting
+      val (_, callback) = compilerForTesting.compileSrcs(List(List(sealedClass, in)), reuseCompilerInstance = false)
+      val clientNames = callback.usedNamesAndScopes.filterKeys(!_.startsWith("base."))
+
+      val names: Set[String] = clientNames.flatMap {
+        case (_, usages) =>
+          usages.filter(_.scopes.contains(UseScope.PatMatTarget)).map(_.name)
+      }(collection.breakOut)
+
+      names
+    }
+
+    def classWithPatMatOfType(tpe: String = sealedClassName) =
+      s"""package client
+        |import base._
+        |
+        |class test(a: $tpe) {
+        |  a match {
+        |   case _ => 1
+        |  }
+        |}
+      """.stripMargin
+
+    findPatMatUsages(classWithPatMatOfType()) shouldEqual Set(sealedClassName)
+    // Option is sealed
+    findPatMatUsages(classWithPatMatOfType(s"Option[$sealedClassName]")) shouldEqual Set(sealedClassName, "Option")
+    // Seq and Set is not
+    findPatMatUsages(classWithPatMatOfType(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
+
+    def inNestedCase(tpe: String) =
+      s"""package client
+          |import base._
+          |
+          |class test(a: Any) {
+          |  a match {
+          |   case _: $tpe => 1
+          |  }
+          |}""".stripMargin
+
+    findPatMatUsages(inNestedCase(sealedClassName)) shouldEqual Set()
+
+    val notUsedInPatternMatch =
+      s"""package client
+          |import base._
+          |
+          |class test(a: Any) {
+          |  a match {
+          |   case _ => 1
+          |  }
+          |  val aa: $sealedClassName = ???
+          |}""".stripMargin
+
+    findPatMatUsages(notUsedInPatternMatch) shouldEqual Set()
   }
 
   /**
