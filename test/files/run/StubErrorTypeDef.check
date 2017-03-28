@@ -1,0 +1,16 @@
+error: newSource1.scala:4: overriding type D in class B with bounds <: stuberrors.A;
+ type D has incompatible type
+      new B { type D = E }
+                   ^
+error: newSource1.scala:4: Symbol 'type stuberrors.A' is missing from the classpath.
+This symbol is required by 'type stuberrors.B.D'.
+Make sure that type A is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'B.class' was compiled against an incompatible version of stuberrors.
+      new B { type D = E }
+      ^
+error: newSource1.scala:4: Symbol 'type stuberrors.A' is missing from the classpath.
+This symbol is required by 'class stuberrors.E'.
+Make sure that type A is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'E.class' was compiled against an incompatible version of stuberrors.
+      new B { type D = E }
+                       ^
