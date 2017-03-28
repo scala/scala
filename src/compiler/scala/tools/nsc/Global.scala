@@ -96,6 +96,20 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def erasurePhase: Phase = if (currentRun.isDefined) currentRun.erasurePhase else NoPhase
 
+  /* Override `newStubSymbol` defined in `SymbolTable` to provide us access
+   * to the last tree to typer, whose position is the trigger of stub errors. */
+  override def newStubSymbol(owner: Symbol,
+                             name: Name,
+                             missingMessage: String,
+                             isPackage: Boolean = false): Symbol = {
+    val stubSymbol = super.newStubSymbol(owner, name, missingMessage, isPackage)
+    val stubErrorPosition = {
+      val lastTreeToTyper = analyzer.lastTreeToTyper
+      if (lastTreeToTyper != EmptyTree) lastTreeToTyper.pos else stubSymbol.pos
+    }
+    stubSymbol.setPos(stubErrorPosition)
+  }
+
   // platform specific elements
 
   protected class GlobalPlatform extends {

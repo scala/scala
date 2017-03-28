@@ -1,5 +1,6 @@
-pos: NoPosition missing or invalid dependency detected while loading class file 'U.class'.
-Could not access type T in package pack1,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-A full rebuild may help if 'U.class' was compiled against an incompatible version of pack1. ERROR
+error: newSource1.scala:4: Symbol 'type pack1.T' is missing from the classpath.
+This symbol is required by 'method pack1.U.t'.
+Make sure that type T is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'U.class' was compiled against an incompatible version of pack1.
+      pack2.V.u.t // we have to fail if T.class is missing
+      ^

@@ -366,7 +366,7 @@ abstract class ClassfileParser {
       //   - better owner than `NoSymbol`
       //   - remove eager warning
       val msg = s"Class $name not found - continuing with a stub."
-      if (!settings.isScaladoc) warning(msg)
+      if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
       return NoSymbol.newStubSymbol(name.toTypeName, msg)
     }
     val completer     = new loaders.ClassfileLoader(file)
@@ -1030,8 +1030,11 @@ abstract class ClassfileParser {
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
       val scope       = getScope(jflags)
-      def newStub(name: Name) =
-        owner.newStubSymbol(name, s"Class file for ${entry.externalName} not found").setFlag(JAVA)
+      def newStub(name: Name) = {
+        val stub = owner.newStubSymbol(name, s"Class file for ${entry.externalName} not found")
+        stub.setPos(owner.pos)
+        stub.setFlag(JAVA)
+      }
 
       val (innerClass, innerModule) = if (file == NoAbstractFile) {
         (newStub(name.toTypeName), newStub(name.toTermName))
@@ -1152,7 +1155,11 @@ abstract class ClassfileParser {
         if (enclosing == clazz) entry.scope lookup name
         else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
       )
-      def newStub = enclosing.newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
+      def newStub = {
+        enclosing
+          .newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
+          .setPos(enclosing.pos)
+      }
       member.orElse(newStub)
     }
   }

@@ -1,11 +1,7 @@
-error: missing or invalid dependency detected while loading class file 'Imports.class'.
-Could not access type Wrapper in class scala.tools.nsc.interpreter.IMain.Request,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.Request.
-error: missing or invalid dependency detected while loading class file 'Imports.class'.
-Could not access type Request in class scala.tools.nsc.interpreter.IMain,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
-two errors found
+t5148.scala:4: error: Symbol 'type <none>.Request.Wrapper' is missing from the classpath.
+This symbol is required by 'value scala.tools.nsc.interpreter.Imports.wrapper'.
+Make sure that type Wrapper is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'Imports.class' was compiled against an incompatible version of <none>.Request.
+class IMain extends Imports
+            ^
+one error found

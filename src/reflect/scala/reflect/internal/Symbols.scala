@@ -182,6 +182,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
 
+  protected def newStubSymbol(owner: Symbol,
+                              name: Name,
+                              missingMessage: String,
+                              isPackage: Boolean = false): Symbol = {
+    name match {
+      case n: TypeName  => if (isPackage) new StubPackageClassSymbol(owner, n, missingMessage)
+                           else new StubClassSymbol(owner, n, missingMessage)
+      case _            => new StubTermSymbol(owner, name.toTermName, missingMessage)
+    }
+  }
+
   /** The class for all symbols */
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
           extends SymbolContextApiImpl
@@ -505,9 +516,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  failure to the point when that name is used for something, which is
      *  often to the point of never.
      */
-    def newStubSymbol(name: Name, missingMessage: String, isPackage: Boolean = false): Symbol = name match {
-      case n: TypeName  => if (isPackage) new StubPackageClassSymbol(this, n, missingMessage) else new StubClassSymbol(this, n, missingMessage)
-      case _            => new StubTermSymbol(this, name.toTermName, missingMessage)
+    def newStubSymbol(name: Name, missingMessage: String, isPackage: Boolean = false): Symbol = {
+      // Invoke the overriden `newStubSymbol` in Global that gives us access to typer
+      Symbols.this.newStubSymbol(this, name, missingMessage, isPackage)
     }
 
     /** Given a field, construct a term symbol that represents the source construct that gave rise the field */
@@ -3491,7 +3502,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fail[T](alt: T): T = {
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
-        globalError(missingMessage)
+        globalError(pos, missingMessage)
         if (settings.debug.value)
           (new Throwable).printStackTrace
 
