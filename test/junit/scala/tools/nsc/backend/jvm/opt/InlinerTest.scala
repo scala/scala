@@ -1742,4 +1742,18 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t"))
     assertInvoke(getMethod(c, "m"), "T", "m$")
   }
+
+  @Test
+  def sd350(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def f = 1
+        |  val x = f
+        |}
+      """.stripMargin
+    val List(t) = compileClasses(code)
+    val i = getMethod(t, "$init$")
+    assertDoesNotInvoke(i, "f")
+    assertInvoke(i, "T", "T$_setter_$x_$eq")
+  }
 }
