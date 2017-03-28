@@ -231,9 +231,12 @@ abstract class SymbolTable extends macros.Universe
 
   /** Perform given operation at given phase. */
   @inline final def enteringPhase[T](ph: Phase)(op: => T): T = {
-    val saved = pushPhase(ph)
-    try op
-    finally popPhase(saved)
+    if (ph eq phase) op // opt
+    else {
+      val saved = pushPhase(ph)
+      try op
+      finally popPhase(saved)
+    }
   }
 
   final def findPhaseWithName(phaseName: String): Phase = {
