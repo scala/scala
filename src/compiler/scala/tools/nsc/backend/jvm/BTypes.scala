@@ -308,20 +308,7 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
    * referring to BTypes.
    */
   sealed trait BType {
-    final override def toString: String = this match {
-      case UNIT   => "V"
-      case BOOL   => "Z"
-      case CHAR   => "C"
-      case BYTE   => "B"
-      case SHORT  => "S"
-      case INT    => "I"
-      case FLOAT  => "F"
-      case LONG   => "J"
-      case DOUBLE => "D"
-      case ClassBType(internalName) => "L" + internalName + ";"
-      case ArrayBType(component)    => "[" + component
-      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
-    }
+    final override def toString: String = descriptor
 
     /**
      * @return The Java descriptor of this type. Examples:
@@ -330,7 +317,13 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
      *  - int[]: [I
      *  - Object m(String s, double d): (Ljava/lang/String;D)Ljava/lang/Object;
      */
-    final def descriptor = toString
+    def descriptor : String
+
+    /**
+      * generally used by descriptor to help build the descriptor. Allows several descriptors to be build from the same stringbuilder
+      * @param sb
+      */
+    private[BTypes] def buildDescriptor(sb: java.lang.StringBuilder): Unit
 
     /**
      * @return 0 for void, 2 for long and double, 1 otherwise
@@ -508,8 +501,10 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed trait PrimitiveBType extends BType {
-
+  sealed abstract class PrimitiveBType(override val descriptor:String) extends BType {
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = {
+      sb.append(descriptor)
+    }
     /**
      * The upper bound of two primitive types. The `other` type has to be either a primitive
      * type or Nothing.
@@ -573,15 +568,15 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
     }
   }
 
-  case object UNIT   extends PrimitiveBType
-  case object BOOL   extends PrimitiveBType
-  case object CHAR   extends PrimitiveBType
-  case object BYTE   extends PrimitiveBType
-  case object SHORT  extends PrimitiveBType
-  case object INT    extends PrimitiveBType
-  case object FLOAT  extends PrimitiveBType
-  case object LONG   extends PrimitiveBType
-  case object DOUBLE extends PrimitiveBType
+  case object UNIT   extends PrimitiveBType("V")
+  case object BOOL   extends PrimitiveBType("Z")
+  case object CHAR   extends PrimitiveBType("C")
+  case object BYTE   extends PrimitiveBType("B")
+  case object SHORT  extends PrimitiveBType("S")
+  case object INT    extends PrimitiveBType("I")
+  case object FLOAT  extends PrimitiveBType("F")
+  case object LONG   extends PrimitiveBType("J")
+  case object DOUBLE extends PrimitiveBType("D")
 
   sealed trait RefBType extends BType {
     /**
@@ -858,6 +853,24 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
   final class ClassBType private(val internalName: InternalName) extends RefBType {
+
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(internalName.length + 2)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('L')
+      sb.append(internalName)
+      sb.append(';')
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -1112,6 +1125,22 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
   final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
   final case class ArrayBType(componentType: BType) extends RefBType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('[')
+      componentType.buildDescriptor(sb)
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
     def dimension: Int = componentType match {
       case a: ArrayBType => 1 + a.dimension
       case _ => 1
@@ -1123,7 +1152,25 @@ private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.Link
     }
   }
 
-  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('(')
+      argumentTypes foreach (_.buildDescriptor(sb))
+      sb.append(')')
+      returnType.buildDescriptor(sb)
+      descriptorCache = sb.substring(start)
+
+    } else sb.append(descriptorCache)
+  }
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
    * initializing them requires information from types / symbols, which is not accessible here in
