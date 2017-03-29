@@ -176,10 +176,13 @@ trait Parsers { self: Quasiquotes =>
       }
 
       override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
-        if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
-          val res = ForEnumPlaceholder(in.name) :: Nil
+        if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || in.token == WITH || isStatSep }) {
+          val tree = ForEnumPlaceholder(in.name)
           in.nextToken()
-          res
+          if(in.token == WITH) {
+            in.nextToken()
+            gen.With(tree) :: Nil
+          } else tree :: Nil
         } else super.enumerator(isFirst, allowNestedIf)
     }
   }

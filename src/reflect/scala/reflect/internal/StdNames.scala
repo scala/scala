@@ -748,6 +748,7 @@ trait StdNames {
     val null_ : NameType               = "null"
     val pendingSuperCall: NameType     = "pendingSuperCall"
     val prefix : NameType              = "prefix"
+    val product: NameType              = "product"
     val productArity: NameType         = "productArity"
     val productElement: NameType       = "productElement"
     val productIterator: NameType      = "productIterator"
@@ -852,6 +853,7 @@ trait StdNames {
     val SyntacticValEq: NameType            = "SyntacticValEq"
     val SyntacticValFrom: NameType          = "SyntacticValFrom"
     val SyntacticVarDef: NameType           = "SyntacticVarDef"
+    val SyntacticWith: NameType             = "SyntacticWith"
 
     // unencoded operators
     object raw {

@@ -624,6 +624,11 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Tree): Option[Tree] = gen.Filter.unapply(tree)
     }
 
+    object SyntacticWith extends SyntacticWithExtractor {
+      def apply(tree: Tree): Tree           = gen.With(tree)
+      def unapply(tree: Tree): Option[Tree] = gen.With.unapply(tree)
+    }
+
     // If a tree in type position isn't provided by the user (e.g. `tpt` fields of
     // `ValDef` and `DefDef`, function params etc), then it's going to be parsed as
     // TypeTree with empty original and empty tpe. This extractor matches such trees
@@ -744,18 +749,6 @@ trait ReificationSupport { self: SymbolTable =>
       }
     }
 
-    // transform a chain of withFilter calls into a sequence of for filters
-    protected object UnFilter {
-      def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
-        case UnCheckIfRefutable(_, _) =>
-          Some((tree, Nil))
-        case FilterCall(UnFilter(rhs, rest), UnClosure(_, test)) =>
-          Some((rhs, rest :+ SyntacticFilter(test)))
-        case _ =>
-          Some((tree, Nil))
-      }
-    }
-
     // undo gen.mkCheckIfRefutable
     protected object UnCheckIfRefutable {
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
@@ -768,44 +761,105 @@ trait ReificationSupport { self: SymbolTable =>
       }
     }
 
-    // undo gen.mkFor:makeCombination accounting for possible extra implicit argument
+    // undo gen.mkFor:makeCombination/makeProduct accounting for possible extra implicit argument
     protected class UnForCombination(name: TermName) {
       def unapply(tree: Tree) = tree match {
-        case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: Nil)
+        case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (rhs :: Nil) :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some((lhs, f))
-        case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: _ :: Nil)
+          Some((lhs, rhs))
+        case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (rhs :: Nil) :: _ :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some((lhs, f))
+          Some((lhs, rhs))
         case _ => None
       }
     }
     protected object UnMap     extends UnForCombination(nme.map)
     protected object UnForeach extends UnForCombination(nme.foreach)
     protected object UnFlatMap extends UnForCombination(nme.flatMap)
+    protected object UnProduct extends UnForCombination(nme.product)
+
+    // transform a chain of withFilter calls into a sequence of for filters
+    protected object UnFilter {
+      def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
+        case UnCheckIfRefutable(_, _) =>
+          Some((tree, Nil))
+        case FilterCall(UnFilter(rhs, rest), UnClosure(_, test)) =>
+          Some((rhs, rest :+ test))
+        case _ =>
+          Some((tree, Nil))
+      }
+    }
+
+    protected object UnFilterWithPat {
+      def unapply(patRhs: (Tree, Tree)): Option[((Tree, Tree), List[Tree])] = patRhs match {
+        case (pat, UnFilter(nrhs, tests)) => Some((pat, nrhs), tests)
+        case _ => None
+      }
+    }
+
+    protected object MaybeBind {
+      def unapply(tree: Tree): Option[Tree] = tree match {
+        case Bind(_, body) => Some(body)
+        case _ => Some(tree)
+      }
+    }
+
+    protected object UnProductWithPat {
+      def unapply(patRhs: (Tree, Tree)): Option[((Tree, Tree), (Tree, Tree))] = patRhs match {
+        case (MaybeBind(SyntacticTuple(List(lpat, rpat))), UnProduct(lhs, rhs)) =>
+          Some((lpat, lhs), (rpat, rhs))
+        case _ => None
+      }
+    }
+
+    protected object UnValEqs {
+      def unapply(patRhs: (Tree, Tree)): Option[((Tree, Tree), List[(Tree, Tree)])] = patRhs match {
+        case (MaybeBind(SyntacticTuple(_)), UnMap(lhs, UnClosure(pat, UnPatSeqWithRes(pats, _)))) =>
+          Some((pat, lhs), pats)
+        case _ => None
+      }
+    }
+
+    // extractor for section of a for comprehension which does not contain any `flatMap`s or `foreach`es
+    // i.e. it may be a combination of generators, guards and assignments where all the generators are combined
+    // with each other using `product`
+    protected abstract class AbstractUnForStep(lhsOfProduct: Boolean) { ThisUnForStep =>
+      private def maybeWith(tree: Tree) =
+        if(lhsOfProduct) SyntacticWith(tree) else tree
+
+      def unapply(patRhs: (Tree, Tree)): Option[List[Tree]] = patRhs match {
+        case UnProductWithPat(UnForStepInner(rest), (pat, rhs)) =>
+          Some(rest :+ maybeWith(SyntacticValFrom(pat, rhs)))
+        case UnValEqs(ThisUnForStep(rest), pats) =>
+          val valeqs = pats.map { case (pat, rhs) => maybeWith(SyntacticValEq(pat, rhs))  }
+          Some(rest ::: valeqs)
+        case UnFilterWithPat((pat, rhs), Nil) =>
+          Some(List(maybeWith(SyntacticValFrom(pat, rhs))))
+        case UnFilterWithPat(ThisUnForStep(rest), tests) =>
+          val filters = tests.map(t => maybeWith(SyntacticFilter(t)))
+          Some(rest ::: filters)
+      }
+    }
+    protected object UnForStep extends AbstractUnForStep(lhsOfProduct = false)
+    protected object UnForStepInner extends AbstractUnForStep(lhsOfProduct = true)
 
     // undo desugaring done in gen.mkFor
     protected object UnFor {
       def unapply(tree: Tree): Option[(List[Tree], Tree)] = {
         val interm = tree match {
-          case UnFlatMap(UnFilter(rhs, filters), UnClosure(pat, UnFor(rest, body))) =>
-            Some(((pat, rhs), filters ::: rest, body))
-          case UnForeach(UnFilter(rhs, filters), UnClosure(pat, UnFor(rest, body))) =>
-            Some(((pat, rhs), filters ::: rest, body))
-          case UnMap(UnFilter(rhs, filters), UnClosure(pat, cbody)) =>
-            Some(((pat, rhs), filters, gen.Yield(cbody)))
-          case UnForeach(UnFilter(rhs, filters), UnClosure(pat, cbody)) =>
-            Some(((pat, rhs), filters, cbody))
+          case UnFlatMap(rhs, UnClosure(pat, UnFor(rest, body))) =>
+            Some(((pat, rhs), rest, body))
+          case UnForeach(rhs, UnClosure(pat, UnFor(rest, body))) =>
+            Some(((pat, rhs), rest, body))
+          case UnMap(rhs, UnClosure(pat, cbody)) =>
+            Some(((pat, rhs), Nil, gen.Yield(cbody)))
+          case UnForeach(rhs, UnClosure(pat, cbody)) =>
+            Some(((pat, rhs), Nil, cbody))
           case _ => None
         }
-        interm.flatMap {
-          case ((Bind(_, SyntacticTuple(_)) | SyntacticTuple(_),
-                 UnFor(SyntacticValFrom(pat, rhs) :: innerRest, gen.Yield(UnPatSeqWithRes(pats, elems2)))),
-                outerRest, fbody) =>
-            val valeqs = pats.map { case (pat, rhs) => SyntacticValEq(pat, rhs) }
-            Some((SyntacticValFrom(pat, rhs) :: innerRest ::: valeqs ::: outerRest, fbody))
-          case ((pat, rhs), filters, body) =>
-            Some((SyntacticValFrom(pat, rhs) :: filters, body))
+        interm.map {
+          case (UnForStep(lrest), rest, body) =>
+            (lrest ::: rest, body)
         }
       }
     }
@@ -815,10 +869,12 @@ trait ReificationSupport { self: SymbolTable =>
       require(enums.nonEmpty, "enumerators can't be empty")
       enums.head match {
         case SyntacticValFrom(_, _) =>
+        case SyntacticWith(SyntacticValFrom(_, _)) =>
         case t => throw new IllegalArgumentException(s"$t is not a valid first enumerator of for loop")
       }
       enums.tail.foreach {
         case SyntacticValEq(_, _) | SyntacticValFrom(_, _) | SyntacticFilter(_) =>
+        case SyntacticWith(SyntacticValEq(_, _) | SyntacticValFrom(_, _) | SyntacticFilter(_)) =>
         case t => throw new IllegalArgumentException(s"$t is not a valid representation of a for loop enumerator")
       }
       enums

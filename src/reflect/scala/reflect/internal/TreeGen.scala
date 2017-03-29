@@ -577,6 +577,25 @@ abstract class TreeGen {
     }
   }
 
+  object With {
+    def apply(tree: Tree) =
+      Select(tree, nme.WITHkw).updateAttachment(ForAttachment)
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case Select(enum, nme.WITHkw)
+        if tree.hasAttachment[ForAttachment.type] => Some(enum)
+      case _ => None
+    }
+  }
+
+  object MaybeWith {
+    def apply(tree: Tree, prod: Boolean) =
+      if (prod) With(tree) else tree
+    def unapply(tree: Tree): Option[(Tree, Boolean)] = tree match {
+      case With(t) => Some((t, true))
+      case t => Some((t, false))
+    }
+  }
+
   /** Encode/decode body of for yield loop as q"`yield`($tree)" */
   object Yield {
     def apply(tree: Tree): Tree =
@@ -692,20 +711,46 @@ abstract class TreeGen {
         rangePos(genpos.source, genpos.start, genpos.point, end)
       }
 
+    def makeProduct(posOfWith: Position, lhs: Tree, rhs: Tree): Tree = {
+      val selectPos =
+        if (posOfWith == NoPosition) NoPosition
+        else if(lhs.pos == NoPosition) posOfWith
+        else rangePos(posOfWith.source, lhs.pos.start, posOfWith.point, posOfWith.end)
+      Apply(
+        Select(lhs, nme.product).setPos(selectPos).updateAttachment(ForAttachment),
+        List(rhs)
+      ).setPos(wrappingPos(posOfWith, List(lhs, rhs)).makeTransparent)
+    }
+
+
+    def maybeMakeWith(tree: Tree, posOfWith: Position, wrap: Boolean) =
+      if(wrap) With(tree).setPos(posOfWith union tree.pos) else tree
+
     enums match {
-      case (t @ ValFrom(pat, rhs)) :: Nil =>
+      case (t @ MaybeWith(ValFrom(pat, rhs), _)) :: Nil =>
         makeCombination(closurePos(t.pos), mapName, rhs, pat, body)
-      case (t @ ValFrom(pat, rhs)) :: (rest @ (ValFrom(_, _) :: _)) =>
-        makeCombination(closurePos(t.pos), flatMapName, rhs, pat,
-                        mkFor(rest, sugarBody))
-      case (t @ ValFrom(pat, rhs)) :: Filter(test) :: rest =>
-        mkFor(ValFrom(pat, makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)).setPos(t.pos) :: rest, sugarBody)
-      case (t @ ValFrom(pat, rhs)) :: rest =>
-        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
-        assert(!valeqs.isEmpty)
+      case (wt1 @ With(t1 @ ValFrom(pat1, rhs1))) :: (wt2 @ MaybeWith(t2 @ ValFrom(pat2, rhs2), hasWith)) :: rest =>
+        val pat = atPos((pat1.pos union pat2.pos).makeTransparent) { mkTuple(List(pat1, pat2)) }
+        val rhs = makeProduct(wt1.pos, rhs1, rhs2)
+        val combined = maybeMakeWith(ValFrom(pat, rhs).setPos(t1.pos union t2.pos), wt2.pos, hasWith)
+        mkFor(combined :: rest, sugarBody)
+      case (t @ ValFrom(pat, rhs)) :: (rest @ MaybeWith(ValFrom(_, _), _) :: _) =>
+        makeCombination(closurePos(t.pos), flatMapName, rhs, pat, mkFor(rest, sugarBody))
+      case (t1 @ MaybeWith(ValFrom(pat, rhs), hasWith1)) :: (t2 @ MaybeWith(Filter(test), hasWith2)) :: rest =>
+        val filteredRhs = makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)
+        val filtered = maybeMakeWith(ValFrom(pat, filteredRhs).setPos(t1.pos), t2.pos, hasWith1 && hasWith2)
+        mkFor(filtered :: rest, sugarBody)
+      case (t @ MaybeWith(ValFrom(pat, rhs), hasWith)) :: rest =>
+        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile {
+          case MaybeWith(ValEq(_, _), _) => true
+          case _ => false
+        }
+        assert(valeqs.nonEmpty)
         val rest1 = rest.drop(valeqs.length)
-        val pats = valeqs map { case ValEq(pat, _) => pat }
-        val rhss = valeqs map { case ValEq(_, rhs) => rhs }
+        val pats = valeqs map { case MaybeWith(ValEq(pat, _), _) => pat }
+        val rhss = valeqs map { case MaybeWith(ValEq(_, rhs), _) => rhs }
+        val allHaveWith = hasWith && (valeqs forall { case With(_) => true; case _ => false })
+        val lastWithPos = valeqs.last.pos
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
         val pdefs = (defpats, rhss).zipped flatMap mkPatDef
@@ -717,7 +762,9 @@ abstract class TreeGen {
         val pos1 =
           if (t.pos == NoPosition) NoPosition
           else rangePos(t.pos.source, t.pos.start, t.pos.point, rhs1.pos.end)
-        val vfrom1 = ValFrom(atPos(wrappingPos(allpats)) { mkTuple(allpats) }, rhs1).setPos(pos1)
+        val vfrom1 = maybeMakeWith(
+          ValFrom(atPos(wrappingPos(allpats)) { mkTuple(allpats)}, rhs1).setPos(pos1),
+          lastWithPos, allHaveWith)
         mkFor(vfrom1 :: rest1, sugarBody)
       case _ =>
         EmptyTree //may happen for erroneous input
