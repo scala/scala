@@ -76,7 +76,8 @@ class FutureTests extends MinimalScalaTest {
       }
       Await.ready(waiting, 2000 millis)
 
-      ms.size mustBe (4)
+      if (ms.size != 4)
+        assert(ms.size != 4, "Expected 4 throwables, found: " + ms)
       //FIXME should check
     }
   }
