@@ -74,7 +74,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 
 ## Implemented operations (on the relevant collection types)
 
-### Terminal operations
+### Operations not returning a collection
 
 - [x] `forall`
 - [x] `foreach`
@@ -89,7 +89,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `sum`
 - [x] `to`
 
-### Transformations keeping the same element type
+### Transformations to collections having the same element type
 
 - [x] `drop`
 - [x] `filter`

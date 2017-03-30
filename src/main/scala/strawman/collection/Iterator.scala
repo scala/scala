@@ -27,8 +27,13 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     res
   }
 
-  final def foldLeft[B](z: B)(op: (B, A) => B): B =
-    if (hasNext) foldLeft(op(z, next()))(op) else z
+  def foldLeft[B](z: B)(op: (B, A) => B): B = {
+    var result = z
+    while (hasNext) {
+      result = op(result, next())
+    }
+    result
+  }
 
   def foldRight[B](z: B)(op: (A, B) => B): B =
     if (hasNext) op(next(), foldRight(z)(op)) else z

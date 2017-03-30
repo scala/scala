@@ -3,8 +3,9 @@ package strawman.collection.immutable
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Unit}
+import scala.{Any, AnyRef, Int, Long, Unit}
 import scala.Predef.intWrapper
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
@@ -15,43 +16,43 @@ import scala.Predef.intWrapper
 @State(Scope.Benchmark)
 class ScalaHashSetBenchmark {
 
-  @Param(scala.Array("8", "64", "512", "4096", "32768", "262144"/*, "2097152"*/))
+  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: scala.collection.immutable.HashSet[AnyRef] = _
-  var obj: Any = _
+  var xs: scala.collection.immutable.HashSet[Long] = _
+  var xss: scala.Array[scala.collection.immutable.HashSet[Long]] = _
+  var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    xs = scala.collection.immutable.HashSet((1 to size).map(_.toString): _*)
-    obj = ""
+    def freshCollection() = scala.collection.immutable.HashSet((1 to size).map(_.toLong): _*)
+    xs = freshCollection()
+    xss = scala.Array.fill(1000)(freshCollection())
+    randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
   }
 
   @Benchmark
-  def cons(): Any = {
-    var ys = scala.collection.immutable.HashSet.empty[Any]
-    var i = 0
+  //  @OperationsPerInvocation(size)
+  def cons(bh: Blackhole): Unit = {
+    var ys = scala.collection.immutable.HashSet.empty[Long]
+    var i = 0L
     while (i < size) {
-      ys = ys + obj // Note: we should test different cases: colliding values as well as non-colliding values, etc.
-      i += 1
+      ys = ys + i
+      i = i + 1
     }
-    ys
+    bh.consume(ys)
   }
 
   @Benchmark
-  def uncons(): Any = xs.tail
+  def uncons(bh: Blackhole): Unit = bh.consume(xs.tail)
 
   @Benchmark
-  def concat(): Any = xs ++ xs
+  def concat(bh: Blackhole): Unit = bh.consume(xs ++ xs)
 
   @Benchmark
-  def foreach(): Any = {
-    var n = 0
-    xs.foreach(x => if (x eq null) n += 1)
-    n
-  }
+  def foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
 
   @Benchmark
-  def map(): Any = xs.map(x => if (x eq null) "foo" else "bar")
+  def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
 }
