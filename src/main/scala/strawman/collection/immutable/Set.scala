@@ -30,8 +30,11 @@ trait SetPolyTransforms[A, +C[X] <: Set[X] with SetLike[X, C]]
 
   protected def coll: C[A]
 
-  def ++ (that: collection.Set[A]): C[A] =
-    if (that.isEmpty) coll
-    else that.foldLeft[C[A]](coll)(_ + _)
+  def ++ (that: collection.Set[A]): C[A] = {
+    var result: C[A] = coll
+    val it = that.iterator()
+    while (it.hasNext) result = result + it.next()
+    result
+  }
 
 }

@@ -76,9 +76,9 @@ trait IterableOps[+A] extends Any {
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    var lst = head
-    for (x <- this)
-      lst = x
+    val it = iterator()
+    var lst = it.next()
+    while (it.hasNext) lst = it.next()
     lst
   }
 
@@ -200,10 +200,7 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
     *  @return  a pair of ${coll}s consisting of the first `n`
     *           elements of this $coll, and the other elements.
     */
-  def splitAt(n: Int): (Repr, Repr) = {
-    val sa = View.SplitAt(coll, n)
-    (fromIterableWithSameElemType(sa.left), fromIterableWithSameElemType(sa.right))
-  }
+  def splitAt(n: Int): (Repr, Repr) = (take(n), drop(n))
 
   /** A collection containing the first `n` elements of this collection. */
   def take(n: Int): Repr = fromIterableWithSameElemType(View.Take(coll, n))
