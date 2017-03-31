@@ -7,70 +7,50 @@ object ForProps extends QuasiquoteProperties("for") {
   case class ForEnums(value: List[Tree])
 
   def genSimpleBind: Gen[Bind] =
-    for(name <- genTermName)
+    for (name <- genTermName)
       yield pq"$name @ _"
 
-  def maybeWith(enumGen: Gen[Tree]): Gen[Tree] =
-    for(enum <- enumGen; wrap <- Arbitrary.arbitrary[Boolean])
-      yield if (wrap) fq"$enum with" else enum
-
   def genForFilter: Gen[Tree] =
-    for(cond <- genIdent(genTermName))
+    for (cond <- genIdent(genTermName))
       yield fq"if $cond"
 
   def genForFrom: Gen[Tree] =
-    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName))
-      yield fq"$lhs <- $rhs"
+    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName); useWith <- Arbitrary.arbitrary[Boolean])
+      yield {
+        val gen = fq"$lhs <- $rhs"
+        if(useWith) fq"$gen with" else gen
+      }
 
   def genForEq: Gen[Tree] =
-    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName))
+    for (lhs <- genSimpleBind; rhs <- genIdent(genTermName))
       yield fq"$lhs = $rhs"
 
+  def removeTrailingWiths(enums: List[Tree]): List[Tree] = enums match {
+    case fq"$head with" :: (tail @ (fq"if $guard" :: _)) =>
+      head :: removeTrailingWiths(tail)
+    case fq"$head with" :: (tail @ (fq"$pat = $expr" :: _)) =>
+      head :: removeTrailingWiths(tail)
+    case fq"$head with" :: Nil =>
+      head :: Nil
+    case head :: tail =>
+      head :: removeTrailingWiths(tail)
+    case Nil => Nil
+  }
+
   def genForEnums(size: Int): Gen[ForEnums] =
-    for(first <- maybeWith(genForFrom); rest <- listOfN(size, maybeWith(oneOf(genForFrom, genForFilter, genForEq))))
-      yield ForEnums(first :: rest)
+    for (first <- genForFrom; rest <- listOfN(size, oneOf(genForFrom, genForFilter, genForEq)))
+      yield ForEnums(removeTrailingWiths(first :: rest))
 
   implicit val arbForEnums: Arbitrary[ForEnums] = arbitrarySized(genForEnums)
 
-  object MaybeWith {
-    def apply(tree: Tree, hasWith: Boolean): Tree =
-      if (hasWith) fq"$tree with" else tree
-    def unapply(tree: Tree): Option[(Tree, Boolean)] = tree match {
-      case fq"$enum with" => Some((enum, true))
-      case _ => Some((tree, false))
-    }
-  }
-
-  // `with` keyword after Filter and ValEq is allowed, but all the Filters and ValEqs between two ValFroms must
-  // have that keyword or otherwise it's ignored and lost during parsing
-  private def stripRedundantWiths(enums: List[Tree]): List[Tree] = {
-    def loop(enums: List[Tree], keepWithUp: Boolean): (List[Tree], Boolean) = enums match {
-      case MaybeWith(t@fq"$pat <- $res", hasWith) :: rest =>
-        val (tailRes, keepWithDown) = loop(rest, hasWith)
-        (MaybeWith(t, hasWith && keepWithDown) :: tailRes, true)
-      case MaybeWith(t, hasWith) :: rest =>
-        val (tailRes, keepWithDown) = loop(rest, keepWithUp && hasWith)
-        (MaybeWith(t, hasWith && keepWithUp && keepWithDown) :: tailRes, hasWith && keepWithDown)
-      case Nil =>
-        (Nil, false)
-    }
-    val (result, _) = loop(enums, keepWithUp = false)
-    result
-  }
-
   property("construct-reconstruct for") = forAll { (enums: ForEnums, body: Tree) =>
-    try {
-      val SyntacticFor(recoveredEnums, recoveredBody) = SyntacticFor(enums.value, body)
-      recoveredEnums ≈ stripRedundantWiths(enums.value) && recoveredBody ≈ body
-    } catch {
-      case e => e.printStackTrace()
-        throw e
-    }
+    val SyntacticFor(recoveredEnums, recoveredBody) = SyntacticFor(enums.value, body)
+    recoveredEnums ≈ enums.value && recoveredBody ≈ body
   }
 
   property("construct-reconstruct for-yield") = forAll { (enums: ForEnums, body: Tree) =>
     val SyntacticForYield(recoveredEnums, recoveredBody) = SyntacticForYield(enums.value, body)
-    recoveredEnums ≈ stripRedundantWiths(enums.value) && recoveredBody ≈ body
+    recoveredEnums ≈ enums.value && recoveredBody ≈ body
   }
 
   val abcde = List(fq"a <-b", fq"if c", fq"d = e")

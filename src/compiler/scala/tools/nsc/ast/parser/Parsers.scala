@@ -717,6 +717,7 @@ self =>
 
     def isStatSep: Boolean = isStatSep(in.token)
 
+
 /* --------- COMMENT AND ATTRIBUTE COLLECTION ----------------------------- */
 
     /** A hook for joining the comment associated with a definition.
@@ -1815,16 +1816,8 @@ self =>
     def enumerators(): List[Tree] = {
       val enums = new ListBuffer[Tree]
       enums ++= enumerator(isFirst = true)
-      def nextEnum() = enums.last match {
-        case gen.With(_) =>
-          // allow trailing `with`
-          in.token != RBRACE && in.token != RPAREN
-        case _ if isStatSep =>
-          in.nextToken()
-          true
-        case _ => false
-      }
-      while (nextEnum()) {
+      while (isStatSep) {
+        in.nextToken()
         enums ++= enumerator(isFirst = false)
       }
       enums.toList
@@ -1834,20 +1827,11 @@ self =>
       if (in.token == IF && !isFirst) makeFilter(in.offset, guard()) :: Nil
       else generator(!isFirst, allowNestedIf)
 
-    def filter(): Tree = {
-      val filter = makeFilter(in.offset, guard())
-      if(in.token == WITH) {
-        val pointOfWith = in.offset
-        in.nextToken()
-        mkWith(filter, pointOfWith, in.lastOffset)
-      } else filter
-    }
-
     /** {{{
      *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
      *  }}}
      */
-    def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
+    def generator(eqOK: Boolean, allowNested: Boolean = true): List[Tree] = {
       val start  = in.offset
       val hasVal = in.token == VAL
       if (hasVal)
@@ -1866,34 +1850,31 @@ self =>
       else accept(LARROW)
       val rhs = expr()
 
-      def loop(): List[Tree] =
-        if (in.token != IF) Nil
-        else makeFilter(in.offset, guard()) :: loop()
-
-      val tail =
-        if (allowNestedIf) loop()
-        else Nil
-
       // why max? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
-      val genEnd = in.lastOffset max start
+      val genPos = r2p(start, point, in.lastOffset max start)
+      val genr = gen.mkGenerator(genPos, pat, hasEq, rhs)
 
-      val hasWith = in.token == WITH
-      val pointOfWith = in.offset
-      if(hasWith) {
+      val hasWith = !hasEq && in.token == WITH
+      val head = if(hasWith) {
+        val offsetOfWith = in.offset
         in.nextToken()
-      }
+        gen.With(genr).setPos(r2p(start, offsetOfWith, in.lastOffset))
+      } else genr
 
-      val tail1 = if(hasWith) tail.map(t => mkWith(t, t.pos.point, t.pos.end)) else tail
-      val genPos = r2p(start, point, genEnd)
-      val head = gen.mkGenerator(genPos, pat, hasEq, rhs)
-      val head1 = if (hasWith) mkWith(head, pointOfWith, in.lastOffset) else head
-      head1 :: tail1
+      def nestedFilters(): List[Tree] =
+        if (in.token != IF) Nil
+        else makeFilter(in.offset, guard()) :: nestedFilters()
+
+      val tail =
+        if(!allowNested) Nil
+        else if(hasWith) generator(eqOK = false)
+        else nestedFilters()
+
+      head :: tail
     }
 
     def makeFilter(start: Offset, tree: Tree) = gen.Filter(tree).setPos(r2p(start, tree.pos.point, tree.pos.end))
-
-    def mkWith(tree: Tree, point: Offset, end: Offset) = gen.With(tree).setPos(r2p(tree.pos.start, point, end))
 
 /* -------- PATTERNS ------------------------------------------- */
 

@@ -780,13 +780,15 @@ trait ReificationSupport { self: SymbolTable =>
 
     // transform a chain of withFilter calls into a sequence of for filters
     protected object UnFilter {
-      def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
+      def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
         case UnCheckIfRefutable(_, _) =>
-          Some((tree, Nil))
-        case FilterCall(UnFilter(rhs, rest), UnClosure(_, test)) =>
-          Some((rhs, rest :+ test))
+          None
+        case FilterCall(rhs, UnClosure(_, test)) => rhs match {
+          case UnFilter(finalRhs, filters) => Some((finalRhs, filters :+ test))
+          case _ => Some((rhs, test :: Nil))
+        }
         case _ =>
-          Some((tree, Nil))
+          None
       }
     }
 
@@ -820,28 +822,35 @@ trait ReificationSupport { self: SymbolTable =>
       }
     }
 
-    // extractor for section of a for comprehension which does not contain any `flatMap`s or `foreach`es
-    // i.e. it may be a combination of generators, guards and assignments where all the generators are combined
-    // with each other using `product`
-    protected abstract class AbstractUnForStep(lhsOfProduct: Boolean) { ThisUnForStep =>
-      private def maybeWith(tree: Tree) =
-        if(lhsOfProduct) SyntacticWith(tree) else tree
+    protected abstract class AbstractUnProducts(inner: Boolean) {
+      private def maybeWith(tree: Tree) = if(inner) SyntacticWith(tree) else tree
 
       def unapply(patRhs: (Tree, Tree)): Option[List[Tree]] = patRhs match {
-        case UnProductWithPat(UnForStepInner(rest), (pat, rhs)) =>
+        case UnProductWithPat(UnProductsInner(rest), (pat, rhs)) =>
           Some(rest :+ maybeWith(SyntacticValFrom(pat, rhs)))
-        case UnValEqs(ThisUnForStep(rest), pats) =>
-          val valeqs = pats.map { case (pat, rhs) => maybeWith(SyntacticValEq(pat, rhs))  }
-          Some(rest ::: valeqs)
-        case UnFilterWithPat((pat, rhs), Nil) =>
-          Some(List(maybeWith(SyntacticValFrom(pat, rhs))))
-        case UnFilterWithPat(ThisUnForStep(rest), tests) =>
-          val filters = tests.map(t => maybeWith(SyntacticFilter(t)))
-          Some(rest ::: filters)
+        case (pat, rhs) =>
+          Some(maybeWith(SyntacticValFrom(pat, rhs)) :: Nil)
       }
     }
-    protected object UnForStep extends AbstractUnForStep(lhsOfProduct = false)
-    protected object UnForStepInner extends AbstractUnForStep(lhsOfProduct = true)
+
+    protected object UnProducts extends AbstractUnProducts(inner = false)
+    protected object UnProductsInner extends AbstractUnProducts(inner = true)
+
+    // extractor of sequence of for comprehension enumerators which start with arrow generators
+    // joined using `with` keyword followed by any combination of filters and assignments,
+    // i.e. there are no `flatMap`s or `foreach`es in a sequence matched by this extractor
+    protected object UnForStep {
+      def unapply(patRhs: (Tree, Tree)): Option[List[Tree]] = patRhs match {
+        case UnValEqs(UnForStep(rest), pats) =>
+          val valeqs = pats.map { case (pat, rhs) => SyntacticValEq(pat, rhs)  }
+          Some(rest ::: valeqs)
+        case UnFilterWithPat(UnForStep(rest), tests) =>
+          val filters = tests.map(SyntacticFilter(_))
+          Some(rest ::: filters)
+        case UnProducts(generators) =>
+          Some(generators)
+      }
+    }
 
     // undo desugaring done in gen.mkFor
     protected object UnFor {
