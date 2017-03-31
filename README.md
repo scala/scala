@@ -65,9 +65,9 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [ ] `IntMap` / `LongMap` (?)
 - [ ] `ListMap`
 - [ ] `MultiMap`
-- [ ] `HashSet`
-- [ ] `ListSet`
-- [ ] `TreeSet`
+- [x] `HashSet`
+- [x] `ListSet`
+- [x] `TreeSet`
 - [ ] `EqSet`
 - [ ] `BitSet`
 - [x] `View`
@@ -76,6 +76,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 
 ### Operations not returning a collection
 
+- [x] `firstKey`
 - [x] `forall`
 - [x] `foreach`
 - [x] `foldLeft`
@@ -84,6 +85,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `indexWhere`
 - [x] `isEmpty` / `nonEmpty`
 - [x] `last`
+- [x] `lastKey`
 - [x] `mkString`
 - [x] `size`
 - [x] `sum`
@@ -92,8 +94,10 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 ### Transformations to collections having the same element type
 
 - [x] `drop`
+- [x] `empty`
 - [x] `filter`
 - [x] `partition`
+- [x] `range`
 - [x] `splitAt`
 - [x] `tail`
 - [x] `take`

@@ -10,4 +10,11 @@ trait SortedLike[A, +Repr] {
   def ordering: Ordering[A]
 
   def range(from: A, until: A): Repr
+
+  /** Returns the first key of the collection. */
+  def firstKey: A
+
+  /** Returns the last key of the collection. */
+  def lastKey: A
+
 }

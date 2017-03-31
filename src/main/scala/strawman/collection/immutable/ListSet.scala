@@ -28,6 +28,8 @@ object ListSet extends IterableFactory[ListSet] {
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 
+  def empty[A <: Any]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
+
 }
 
 /**
@@ -65,6 +67,8 @@ sealed class ListSet[A]
 
   def + (elem: A): ListSet[A] = new Node(elem)
   def - (elem: A): ListSet[A] = this
+
+  def empty: ListSet[A] = ListSet.empty
 
   def iterator(): strawman.collection.Iterator[A] = {
     var curr: ListSet[A] = this

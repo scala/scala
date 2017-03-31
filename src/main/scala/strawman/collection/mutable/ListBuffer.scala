@@ -205,4 +205,6 @@ object ListBuffer extends IterableFactory[ListBuffer] {
 
   def newBuilder[A]: Builder[A, ListBuffer[A]] = new ListBuffer[A]
 
+  def empty[A <: Any]: ListBuffer[A] = new ListBuffer[A]
+
 }

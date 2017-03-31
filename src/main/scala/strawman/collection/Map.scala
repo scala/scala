@@ -52,8 +52,7 @@ trait ConstrainedMapFactory[+C[_, _], Ev[_]] { self =>
   def constrainedFromIterable[K : Ev, V](it: Iterable[(K, V)]): C[K, V] =
     constrainedNewBuilder[K, V].++=(it).result
 
-  def empty[K : Ev, V]: C[K, V] =
-    constrainedNewBuilder[K, V].result
+  def empty[K : Ev, V]: C[K, V]
 
   def apply[K : Ev, V](elems: (K, V)*): C[K, V] =
     constrainedNewBuilder[K, V].++=(elems.toStrawman).result

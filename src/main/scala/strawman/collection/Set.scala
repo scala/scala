@@ -60,6 +60,11 @@ trait SetMonoTransforms[A, +Repr]
 
   def & (that: Set[A]): Repr = this.filter(that)
 
+  /** The empty set of the same type as this set
+    * @return  an empty set of type `Repr`.
+    */
+  def empty: Repr
+
 }
 
 trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {

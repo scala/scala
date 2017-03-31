@@ -1,5 +1,7 @@
 package strawman.collection
 
+import scala.language.implicitConversions
+
 import scala.Any
 import scala.annotation.implicitNotFound
 import mutable.Builder

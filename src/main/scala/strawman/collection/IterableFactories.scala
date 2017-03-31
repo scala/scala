@@ -25,7 +25,7 @@ trait BoundedIterableFactory[-B] { self =>
 
   def fromIterable[E <: B](it: Iterable[E]): To[E]
 
-  def empty[A <: B]: To[A] = fromIterable(View.Empty)
+  def empty[A <: B]: To[A]
 
   def apply[A <: B](xs: A*): To[A] = fromIterable(View.Elems(xs: _*))
 
@@ -42,7 +42,7 @@ trait IterableFactory[+C[_]] extends BoundedIterableFactory[Any] with FromIterab
 /** Base trait for companion objects of collections that require an implicit evidence */
 trait ConstrainedIterableFactory[+CC[X], Ev[_]] extends ConstrainedFromIterable[CC, Ev] {
 
-  def empty[A : Ev]: CC[A] = constrainedFromIterable(View.Empty)
+  def empty[A : Ev]: CC[A]
 
   def apply[A : Ev](xs: A*): CC[A] = constrainedFromIterable(View.Elems(xs: _*))
 

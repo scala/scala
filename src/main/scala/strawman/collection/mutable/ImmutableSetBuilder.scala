@@ -12,7 +12,7 @@ import scala.Unit
   */
 class ImmutableSetBuilder[
   A,
-  C[X] <: strawman.collection.immutable.Set[X] with strawman.collection.immutable.SetLike[X, C]
+  C[X] <: strawman.collection.immutable.Set[X] with strawman.collection.immutable.SetMonoTransforms[X, C[X]]
 ](empty: C[A])
   extends ReusableBuilder[A, C[A]] {
 

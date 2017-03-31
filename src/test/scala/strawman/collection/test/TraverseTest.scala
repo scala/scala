@@ -40,7 +40,7 @@ class TraverseTest {
       case (_             ,  Left(a)) => Left(a)
     }.map(_.result)
 
-  //  @Test
+  @Test
   def optionSequence1Test: Unit = {
     val xs1 = immutable.List(Some(1), None, Some(2))
     val o1 = optionSequence1(xs1)
@@ -66,6 +66,7 @@ class TraverseTest {
     val o4t: Option[immutable.TreeMap[Int, String]] = o4
   }
 
+  @Test
   def eitherSequenceTest: Unit = {
     val xs3 = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
     val e1 = eitherSequence(xs3)

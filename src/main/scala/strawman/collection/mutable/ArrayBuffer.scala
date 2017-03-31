@@ -140,6 +140,8 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
 
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
 
+  def empty[A <: Any]: ArrayBuffer[A] = new ArrayBuffer[A]()
+
 }
 
 class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {

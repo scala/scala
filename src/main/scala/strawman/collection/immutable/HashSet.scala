@@ -30,16 +30,16 @@ sealed trait HashSet[A]
 
   import HashSet.nullToEmpty
 
-  // From IterablePolyTransforms
   def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
   protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
-  // From SetLike
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
   def + (elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
   def - (elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+
+  override def empty: HashSet[A] = HashSet.empty
 
   override def tail: HashSet[A] = this - head
 
@@ -64,11 +64,15 @@ sealed trait HashSet[A]
 
 object HashSet extends IterableFactory[HashSet] {
 
-  def fromIterable[A](it: collection.Iterable[A]): HashSet[A] = newBuilder[A].++=(it).result
+  def fromIterable[A](it: collection.Iterable[A]): HashSet[A] =
+    it match {
+      case hs: HashSet[A] => hs
+      case _ => newBuilder[A].++=(it).result
+    }
 
   def newBuilder[A]: Builder[A, HashSet[A]] = new ImmutableSetBuilder[A, HashSet](empty[A])
 
-  override def empty[A <: Any]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
+  def empty[A <: Any]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
   private object EmptyHashSet extends HashSet[Any] {
 

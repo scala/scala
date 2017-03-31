@@ -1,6 +1,11 @@
 package strawman
 package collection.immutable
 
+import strawman.collection.mutable.Builder
+import strawman.collection.IterableFactory
+
+import scala.Any
+
 /** Base trait for immutable set collections */
 trait Set[A]
   extends collection.Set[A]
@@ -37,4 +42,10 @@ trait SetPolyTransforms[A, +C[X] <: Set[X] with SetLike[X, C]]
     result
   }
 
+}
+
+object Set extends IterableFactory[Set] {
+  def empty[A <: Any]: Set[A] = HashSet.empty
+  def newBuilder[A <: Any]: Builder[A, Set[A]] = HashSet.newBuilder
+  def fromIterable[E](it: strawman.collection.Iterable[E]): Set[E] = HashSet.fromIterable(it)
 }
