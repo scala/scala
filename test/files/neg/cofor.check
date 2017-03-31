@@ -1,0 +1,7 @@
+cofor.scala:54: error: ')' expected but '@' found.
+  val result : StreamZipper[Person] => (Person, Boolean, Int) = cofor (p @ Person(_, age)) {
+                                                                         ^
+cofor.scala:54: error: ';' expected but ')' found.
+  val result : StreamZipper[Person] => (Person, Boolean, Int) = cofor (p @ Person(_, age)) {
+                                                                                         ^
+two errors found

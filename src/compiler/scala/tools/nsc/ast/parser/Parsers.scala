@@ -1508,6 +1508,21 @@ self =>
             tree setPos tree.pos.withStart(start)
           else tree
         adjustStart(parseFor)
+      case COFOR if settings.YcoforExtension =>
+        val start = in.skipToken()
+        def parseCoFor = atPos(start) {
+          val inputPattern = inParens(gen.patvarTransformer.transform(noSeq.pattern1()))
+          val enums =
+            inBraces(cofor_enumerators())
+          newLinesOpt()
+          accept(YIELD)
+          gen.mkCoFor(inputPattern, enums, expr())
+        }
+        def adjustStart(tree: Tree) =
+          if (tree.pos.isRange && start < tree.pos.start)
+            tree setPos tree.pos.withStart(start)
+          else tree
+        adjustStart(parseCoFor)
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
@@ -1797,6 +1812,38 @@ self =>
       if (in.token == IF) { in.nextToken(); stripParens(postfixExpr()) }
       else EmptyTree
 
+    /** {{{
+     *  Enumerators ::= Generator {semi Enumerator}
+     *  Enumerator  ::=  Generator
+     *  }}}
+     */
+    def cofor_enumerators(): List[Tree] = {
+      val enums = new ListBuffer[Tree]
+      enums ++= cofor_generator
+      while (isStatSep) {
+        in.nextToken()
+        enums ++= cofor_generator
+      }
+      enums.toList
+    }
+
+    /** {{{
+     *  Generator ::= Pattern1 (`<-') Expr
+     *  }}}
+     */
+    def cofor_generator: List[Tree] = {
+      val start = in.offset
+      val pat = noSeq.pattern1()
+      val point = in.offset
+
+      accept(LARROW)
+      val rhs = expr()
+      // why max? IDE stress tests have shown that lastOffset could be less than start,
+      // I guess this happens if instead if a for-expression we sit on a closing paren.
+      val genPos = r2p(start, point, in.lastOffset max start)
+      gen.mkCoForGenerator(genPos, pat, rhs) +: Nil
+    }
+    
     /** {{{
      *  Enumerators ::= Generator {semi Enumerator}
      *  Enumerator  ::=  Generator
