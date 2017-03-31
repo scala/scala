@@ -28,7 +28,9 @@ class ListBufferBenchmark {
     def freshCollection() = ListBuffer((1 to size).map(_.toLong): _*)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
-    randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+    if (size > 0) {
+      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+    }
   }
 
   @Benchmark
