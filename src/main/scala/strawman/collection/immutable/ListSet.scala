@@ -67,16 +67,13 @@ sealed class ListSet[A]
   def - (elem: A): ListSet[A] = this
 
   def iterator(): strawman.collection.Iterator[A] = {
-    def reverseList = {
-      var curr: ListSet[A] = this
-      var res: List[A] = Nil
-      while (!curr.isEmpty) {
-        res = curr.elem :: res
-        curr = curr.next
-      }
-      res
+    var curr: ListSet[A] = this
+    var res: List[A] = Nil
+    while (!curr.isEmpty) {
+      res = curr.elem :: res
+      curr = curr.next
     }
-    reverseList.iterator()
+    res.iterator()
   }
 
   protected def elem: A = throw new NoSuchElementException("elem of empty set")

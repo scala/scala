@@ -41,6 +41,8 @@ sealed trait HashSet[A]
 
   def - (elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
 
+  override def tail: HashSet[A] = this - head
+
   protected def get0(key: A, hash: Int, level: Int): Boolean
 
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
@@ -99,6 +101,12 @@ object HashSet extends IterableFactory[HashSet] {
 
     def iterator(): Iterator[A] = Iterator.single(key)
 
+    override def foreach[U](f: A => U): Unit = f(key)
+
+    override def head: A = key
+
+    override def tail: HashSet[A] = HashSet.empty[A]
+
     override def size: Int = 1
 
     protected def get0(key: A, hash: Int, level: Int) =
@@ -123,6 +131,10 @@ object HashSet extends IterableFactory[HashSet] {
   private[immutable] final class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A]) extends LeafHashSet[A] {
 
     override def size = ks.size
+
+    def iterator(): Iterator[A] = ks.iterator()
+
+    override def foreach[U](f: A => U): Unit = ks.foreach(f)
 
     protected def get0(key: A, hash: Int, level: Int) =
       if (hash == this.hash) ks.contains(key) else false
@@ -149,9 +161,6 @@ object HashSet extends IterableFactory[HashSet] {
             new HashSetCollision1(hash, ks1)
         }
       } else this
-
-    def iterator: Iterator[A] = ks.iterator
-    override def foreach[U](f: A => U): Unit = ks.foreach(f)
 
     private def writeObject(out: java.io.ObjectOutputStream) {
       // this cannot work - reading things in might produce different
@@ -213,11 +222,19 @@ object HashSet extends IterableFactory[HashSet] {
     // assertion has to remain disabled until SI-6197 is solved
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
 
+    override def size = size0
+
     def iterator(): Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
 
-    override def size = size0
+    override def foreach[U](f: A => U): Unit = {
+      var i = 0
+      while (i < elems.length) {
+        elems(i).foreach(f)
+        i += 1
+      }
+    }
 
     protected def get0(key: A, hash: Int, level: Int) = {
       val index = (hash >>> level) & 0x1f
