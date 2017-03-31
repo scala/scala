@@ -875,17 +875,24 @@ trait ReificationSupport { self: SymbolTable =>
 
     // check that enumerators are valid
     protected def mkEnumerators(enums: List[Tree]): List[Tree] = {
-      require(enums.nonEmpty, "enumerators can't be empty")
-      enums.head match {
-        case SyntacticValFrom(_, _) =>
-        case SyntacticWith(SyntacticValFrom(_, _)) =>
-        case t => throw new IllegalArgumentException(s"$t is not a valid first enumerator of for loop")
+      def validate(enums: List[Tree], first: Boolean = false, afterWith: Boolean = false): Unit = enums match {
+        case SyntacticValFrom(_, _) :: rest =>
+          validate(rest)
+        case SyntacticWith(SyntacticValFrom(_, _)) :: rest =>
+          validate(rest, afterWith = true)
+        case (SyntacticValEq(_, _) | SyntacticFilter(_)) :: rest if !first && !afterWith =>
+          validate(rest)
+        case t :: _ if first =>
+          throw new IllegalArgumentException(s"$t is not a valid first enumerator of for loop")
+        case t :: _ if afterWith =>
+          throw new IllegalArgumentException(s"$t is not a valid enumerator of for loop to follow `with` keyword")
+        case t :: _ =>
+          throw new IllegalArgumentException(s"$t is not a valid representation of a for loop enumerator")
+        case Nil if first =>
+          throw new IllegalArgumentException("enumerators can't be empty")
+        case Nil =>
       }
-      enums.tail.foreach {
-        case SyntacticValEq(_, _) | SyntacticValFrom(_, _) | SyntacticFilter(_) =>
-        case SyntacticWith(SyntacticValEq(_, _) | SyntacticValFrom(_, _) | SyntacticFilter(_)) =>
-        case t => throw new IllegalArgumentException(s"$t is not a valid representation of a for loop enumerator")
-      }
+      validate(enums, first = true)
       enums
     }
 
