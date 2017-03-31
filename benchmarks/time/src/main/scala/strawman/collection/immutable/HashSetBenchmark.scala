@@ -27,10 +27,10 @@ class HashSetBenchmark {
   def initData(): Unit = {
     def freshCollection() = HashSet((1 to size).map(_.toLong): _*)
     xs = freshCollection()
-    xss = scala.Array.fill(1000)(freshCollection())
-    if (size > 0) {
-      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
-    }
+//    xss = scala.Array.fill(1000)(freshCollection())
+//    if (size > 0) {
+//      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+//    }
   }
 
   @Benchmark
