@@ -36,16 +36,16 @@ sealed trait LocalReporter {
 }
 
 trait AsyncReporter extends LocalReporter {
-  var pending: StoreReporter = _
+  private final var pending: StoreReporter = _
 
   override def innerReporter: Reporter = {
-    if (pending == null) pending = new StoreReporter
+    if (pending eq null) pending = new StoreReporter
     pending
   }
 
   def relayReports(reporter:Reporter) = {
     val buffered = pending
-    if (buffered != null) {
+    if (buffered ne null) {
       buffered.infos foreach {
         case buffered.Info(pos, msg, buffered.ERROR) => reporter.error(pos, msg)
         case buffered.Info(pos, msg, buffered.INFO) => reporter.echo(pos, msg)

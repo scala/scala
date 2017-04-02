@@ -117,12 +117,11 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                   nextStageSuccess(currentWork, process(item))
                 } catch {
                   case t: Throwable =>
-                    currentWork.pending.error(currentWork.cunit.body.pos, t.getMessage)
+                    reporter.error(currentWork.cunit.body.pos, t.getMessage)
                     t.printStackTrace()
                     nextStageFailed(currentWork, t)
-                }
-                timer.stop(start)
-              case Failure(f) => //TODO
+                } finally timer.stop(start)
+              case Failure(f) =>
                 nextStageFailed(currentWork, f)
             }
           }
