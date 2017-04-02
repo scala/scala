@@ -202,4 +202,12 @@ object Test extends App {
   ((2 seconds fromNow).timeLeft: FiniteDuration) < 4.seconds mustBe true
   val finite3: FiniteDuration = 3.5 seconds span
 
+  // scala/bug#9949
+  Duration(-1.0, DAYS) mustBe Duration(-1, DAYS)
+  Duration("-10 s").toNanos mustBe -10000000000L
+  Duration(1.0, DAYS) mustBe Duration(1, DAYS)
+  Duration("10 s").toNanos mustBe 10000000000L
+  
+  // scala/bug#10320
+  Duration("6803536004516701ns").toNanos mustBe 6803536004516701L
 }
