@@ -75,7 +75,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
-  def currentRunSettings = curRun.runSettings
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
