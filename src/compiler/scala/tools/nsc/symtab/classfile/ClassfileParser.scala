@@ -380,11 +380,41 @@ abstract class ClassfileParser {
   }
 
   private def lookupClass(name: Name) = try {
-    if (name containsChar '.')
-      rootMirror getClassByName name
-    else
+    def lookupTopLevel = {
+      if (name containsChar '.')
+        rootMirror getClassByName name
+      else
       // FIXME - we shouldn't be doing ad hoc lookups in the empty package, getClassByName should return the class
-      definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
+        definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
+    }
+
+    // For inner classes we usually don't get here: `classNameToSymbol` already returns the symbol
+    // of the inner class based on the InnerClass table. However, if the classfile is missing the
+    // InnerClass entry for `name`, it might still be that there exists an inner symbol (because
+    // some other classfile _does_ have an InnerClass entry for `name`). In this case, we want to
+    // return the actual inner symbol (C.D, with owner C), not the top-level symbol C$D. This is
+    // what the logic below is for (see PR #5822 / scala/bug#9937).
+    val split = if (isScalaRaw) -1 else name.lastIndexOf('$')
+    if (split > 0 && split < name.length) {
+      val outerName = name.subName(0, split)
+      val innerName = name.subName(split + 1, name.length).toTypeName
+      val outerSym = classNameToSymbol(outerName)
+
+      // If the outer class C cannot be found, look for a top-level class C$D
+      if (outerSym.isInstanceOf[StubSymbol]) lookupTopLevel
+      else {
+        // We have a java-defined class name C$D and look for a member D of C. But we don't know if
+        // D is declared static or not, so we have to search both in class C and its companion.
+        val r = if (outerSym == clazz)
+          staticScope.lookup(innerName) orElse
+            instanceScope.lookup(innerName)
+        else
+          lookupMemberAtTyperPhaseIfPossible(outerSym, innerName) orElse
+            lookupMemberAtTyperPhaseIfPossible(outerSym.companionModule, innerName)
+        r orElse lookupTopLevel
+      }
+    } else
+      lookupTopLevel
   } catch {
     // The handler
     //   - prevents crashes with deficient InnerClassAttributes (scala/bug#2464, 0ce0ad5)
