@@ -255,7 +255,10 @@ trait Implicits {
           this.sym == that.sym
       case _ => false
     }
-    override def hashCode = name.## + pre.## + sym.##
+    override def hashCode = {
+      import scala.util.hashing.MurmurHash3._
+      finalizeHash(mix(mix(productSeed, name.##), sym.##), 2)
+    }
     override def toString = (
       if (tpeCache eq null) name + ": ?"
       else name + ": " + tpe
