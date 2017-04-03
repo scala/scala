@@ -150,7 +150,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                      plain:          asm.tree.ClassNode,
                      bean:           asm.tree.ClassNode,
                      sourceFilePath: String,
-                     outPath:        DirInfo)
+                     outPath:        OutputDirectories)
     /*
      *  An item of queue-3 (the last queue before serializing to disk) contains three of these
      *  (one for each of mirror, plain, and bean classes).
@@ -166,7 +166,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     case class Item3(mirror:     SubItem3,
                      plain:      SubItem3,
                      bean:       SubItem3,
-                     outPath:    DirInfo)
+                     outPath:    OutputDirectories)
 
 
 
@@ -176,7 +176,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     abstract class Worker1() {
       import scala.util.{Try, Success, Failure}
 
-      protected def outputFolder(workflow: Workflow) : DirInfo
+      protected def outputFolder(workflow: Workflow) : OutputDirectories
 
       //TODO should be a scalac param
       val checkCaseInsensitively = true
@@ -207,11 +207,11 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        *  returns an Item2.
        *
        */
-      def visit(item: Item1, cunit:CompilationUnit, outFolder:DirInfo) = {
+      def visit(item: Item1, cunit:CompilationUnit, outFolder:OutputDirectories) = {
         val cd = item.cd
         val claszSymbol = cd.symbol
 
-        if (checkCaseInsensitively) {
+        if (checkCaseInsensitively || outFolder.caseInsensitive) {
           // GenASM checks this before classfiles are emitted, https://github.com/scala/scala/commit/e4d1d930693ac75d8eb64c2c3c69f2fc22bec739
           val lowercaseJavaClassName = claszSymbol.javaClassName.toLowerCase
           caseInsensitively.get(lowercaseJavaClassName) match {
@@ -223,6 +223,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                 s"Class ${claszSymbol.javaClassName} differs only in case from ${dupClassSym.javaClassName}. " +
                   "Such classes will overwrite one another on case-insensitive filesystems."
               )
+              //TODO consider error if outFolder.caseInsensitive
           }
         }
 
@@ -272,21 +273,21 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         new SingleOutputWorker1(null)
       else settings.outputDirs.getSingleOutput match {
         case Some(dir) =>
-          new SingleOutputWorker1(new DirInfo(dir))
+          new SingleOutputWorker1(OutputDirectories (dir))
         case _ => new MultiOutputWorker1()
       }
     }
-    class SingleOutputWorker1(val folder : DirInfo) extends Worker1 {
-      override protected def outputFolder(workflow: Workflow): DirInfo = folder
+    class SingleOutputWorker1(val folder : OutputDirectories) extends Worker1 {
+      override protected def outputFolder(workflow: Workflow): OutputDirectories = folder
     }
     class MultiOutputWorker1() extends Worker1 {
-      val knownDirectories = mutable.Map[AbstractFile, DirInfo]()
+      val knownDirectories = mutable.Map[AbstractFile, OutputDirectories]()
 
-      override protected def outputFolder(workflow: Workflow): DirInfo =
+      override protected def outputFolder(workflow: Workflow): OutputDirectories =
         if (workflow.item1.nonEmpty) {
           try {
             val dir = outputDirectory(workflow.cunit.source)
-            knownDirectories.getOrElseUpdate(outputDirectory(workflow.cunit.source), new DirInfo(dir))
+            knownDirectories.getOrElseUpdate(outputDirectory(workflow.cunit.source), OutputDirectories(dir))
           } catch {
             case t: Throwable =>
               reporter.error(workflow.cunit.body.pos, s"Couldn't create file for ${workflow.cunit.source}\n${t.getMessage}")
@@ -623,17 +624,18 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
       override def waitReady: Unit = ()
 
-      def sendToDisk(cfr: SubItem3, outFolder: DirInfo) {
+      def sendToDisk(cfr: SubItem3, outFolder: OutputDirectories) {
         if (cfr != null) {
           val SubItem3(jclassName, jclassBytes) = cfr
           try {
             val path =
-              if (outFolder == null) null
+              if (outFolder eq null) null
               else getFile(outFolder, jclassName, ".class")
             bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, path)
           }
           catch {
             case e: FileConflictException =>
+              //should we understand duplicates?
               reporter.error(NoPosition, s"error writing $jclassName: ${e.getMessage}")
           }
         }
