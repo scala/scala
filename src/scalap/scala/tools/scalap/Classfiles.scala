@@ -26,6 +26,9 @@ object Classfiles {
   final val CONSTANT_METHODREF = 10
   final val CONSTANT_INTFMETHODREF = 11
   final val CONSTANT_NAMEANDTYPE = 12
+  final val CONSTANT_METHODHANDLE = 15
+  final val CONSTANT_METHODTYPE = 16
+  final val CONSTANT_INVDYNAMIC = 18
 
   final val constantTagToString = Map(
     CONSTANT_UTF8 -> "UTF8",
@@ -39,7 +42,10 @@ object Classfiles {
     CONSTANT_FIELDREF -> "Field",
     CONSTANT_METHODREF -> "Method",
     CONSTANT_INTFMETHODREF -> "InterfaceMethod",
-    CONSTANT_NAMEANDTYPE -> "NameAndType"
+    CONSTANT_NAMEANDTYPE -> "NameAndType",
+    CONSTANT_METHODHANDLE -> "MethodHandle",
+    CONSTANT_METHODTYPE -> "MethodType",
+    CONSTANT_INVDYNAMIC -> "InvokeDynamic"
   )
 }
 
