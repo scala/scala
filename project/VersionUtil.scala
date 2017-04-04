@@ -163,10 +163,7 @@ object VersionUtil {
   /** Build a dependency to a Scala module with the given group and artifact ID */
   def scalaDep(group: String, artifact: String, versionProp: String = null, scope: String = null, compatibility: String = "binary") = {
     val vp = if(versionProp eq null) artifact else versionProp
-    // TODO for 2.13.0-M1 -- eventually it will no longer work to use 2.12 modules,
-    // but at the moment, there aren't any 2.13.0-M1 modules to use yet, so hardcode 2.12 for now.
-    // val m = group % (artifact + "_" + versionProps(s"scala.$compatibility.version")) % versionNumber(vp)
-    val m = group % (artifact + "_2.12") % versionNumber(vp)
+    val m = group % (artifact + "_" + versionProps(s"scala.$compatibility.version")) % versionNumber(vp)
     val m2 = if(scope eq null) m else m % scope
     // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`:
     m2.exclude("org.scala-lang", "*")
