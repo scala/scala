@@ -360,7 +360,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
             bTypes.inliner.runInliner()
           if (optClosureInvocations)
             bTypes.closureOptimizer.rewriteClosureApplyInvocations()
-          for (i <- 0 to allData.size) {
+          for (i <- 0 until allData.size) {
             allData(i).item2.complete(downstreams(i))
           }
         }
