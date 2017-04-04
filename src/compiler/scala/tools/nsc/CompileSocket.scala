@@ -191,6 +191,8 @@ class CompileSocket extends CompileOutputCommon {
   }
 
   // XXX way past time for this to be central
+  // MARK
+  // Compact but misses NumberFormatException: Try(x.toInt).toOption
   def parseInt(x: String): Option[Int] =
     try   { Some(x.toInt) }
     catch { case _: NumberFormatException => None }
