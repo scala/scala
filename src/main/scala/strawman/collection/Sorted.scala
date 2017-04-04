@@ -9,6 +9,12 @@ trait SortedLike[A, +Repr] {
 
   def ordering: Ordering[A]
 
+  /** Creates a ranged projection of this collection with both a lower-bound
+    *  and an upper-bound.
+    *
+    *  @param from The lower-bound (inclusive) of the ranged projection.
+    *  @param until The upper-bound (exclusive) of the ranged projection.
+    */
   def range(from: A, until: A): Repr
 
   /** Returns the first key of the collection. */

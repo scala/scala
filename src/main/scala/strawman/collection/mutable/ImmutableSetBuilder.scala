@@ -1,8 +1,6 @@
 package strawman
 package collection.mutable
 
-import scala.Unit
-
 /** The canonical builder for immutable Sets.
   *
   *  @tparam A      The type of the elements that will be contained in this set.
@@ -12,13 +10,9 @@ import scala.Unit
   */
 class ImmutableSetBuilder[
   A,
-  C[X] <: strawman.collection.immutable.Set[X] with strawman.collection.immutable.SetMonoTransforms[X, C[X]]
+  C[X] <: collection.immutable.Set[X] with collection.immutable.SetMonoTransforms[X, C[X]]
 ](empty: C[A])
-  extends ReusableBuilder[A, C[A]] {
+  extends ImmutableBuilder[A, C[A]](empty) {
 
-  type Coll = C[A]
-  protected var elems: Coll = empty
   def +=(x: A): this.type = { elems = elems + x; this }
-  def clear(): Unit = { elems = empty }
-  def result(): Coll = elems
 }

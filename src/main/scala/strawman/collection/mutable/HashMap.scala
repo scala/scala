@@ -1,6 +1,7 @@
-package strawman.collection.mutable
+package strawman
+package collection.mutable
 
-import strawman.collection.{IterableOnce, Iterator, MapFactory}
+import strawman.collection.{Iterator, MapFactory}
 
 import scala.{Option, Unit}
 import scala.Predef.???
@@ -24,19 +25,18 @@ final class HashMap[K, V]
   def -=(elem: (K, V)): this.type = ???
   def put(key: K, value: V): Option[V] = ???
 
-  // From MapPolyTransforms
-  def map[K2, V2](f: (K, V) => (K2, V2)): HashMap[K2, V2] = ???
-  def flatMap[K2, V2](f: (K, V) => IterableOnce[(K2, V2)]): HashMap[K2, V2] = ???
-
   // From IterablePolyTransforms
   def fromIterable[B](coll: strawman.collection.Iterable[B]): Iterable[B] = ???
   // From IterableMonoTransforms
   protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[(K, V)]): HashMap[K, V] = ???
 
+  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = ???
 }
 
 object HashMap extends MapFactory[HashMap] {
 
   def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] = ???
+
+  def empty[K, V]: HashMap[K, V] = new HashMap[K, V]
 
 }
