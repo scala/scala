@@ -19,6 +19,7 @@ import scala.xml.Elem
 import scala.xml.dtd.DocType
 import scala.collection._
 import java.io.Writer
+import java.net.URI
 
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
@@ -145,8 +146,14 @@ abstract class HtmlPage extends Page { thisPage =>
         <span class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</span>
     case Tooltip(tooltip) =>
       <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
-    case LinkToExternal(name, url) =>
-      <a href={ url } class="extype" target="_top">{ inlineToHtml(text) }</a>
+    case LinkToExternalTpl(name, baseUrlString, dtpl: TemplateEntity) =>
+      val baseUrl = new URI(Page.makeUrl(baseUrlString, Page.templateToPath(dtpl)))
+      val url = if (name.isEmpty) baseUrl
+                else new URI(baseUrl.getScheme, baseUrl.getSchemeSpecificPart, name)
+      if (hasLinks)
+        <a href={ url.toString } class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</a>
+      else
+        <span class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</span>
     case _ =>
       inlineToHtml(text)
   }
