@@ -45,10 +45,10 @@ trait BaseTypeSeqs {
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
     private[this] val typeSymbols = {
-      val tmp = new Array[Symbol](elems.length)
+      val tmp = new Array[Int](elems.length)
       var i = 0
       while (i < elems.length) {
-        tmp(i) = elems(i).typeSymbol
+        tmp(i) = elems(i).typeSymbol.id
         i += 1
       }
       tmp
@@ -105,13 +105,14 @@ trait BaseTypeSeqs {
     def rawElem(i: Int) = elems(i)
 
     /** The type symbol of the type at i'th position in this sequence */
-    def typeSymbol(i: Int): Symbol = typeSymbols(i)
+    def typeSymbol(i: Int): Symbol = elems(i).typeSymbol
 
     final def baseTypeIndex(sym: Symbol): Int = {
+      val symId = sym.id
       var i = 0
       val len = length
       while (i < len) {
-        if (typeSymbols(i) eq sym) return i
+        if (typeSymbols(i) == symId) return i
         i += 1
       }
       -1
