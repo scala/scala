@@ -614,6 +614,9 @@ trait Namers extends MethodSynthesis {
     }
 
     class CompleterWrapper(completer: TypeCompleter) extends TypeCompleter {
+      // override important when completer.isInstanceOf[PolyTypeCompleter]!
+      override val typeParams = completer.typeParams
+
       val tree = completer.tree
 
       override def complete(sym: Symbol): Unit = {
