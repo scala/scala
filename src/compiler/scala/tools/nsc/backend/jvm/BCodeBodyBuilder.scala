@@ -1357,7 +1357,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, isSerializable, markers)
       if (isSerializable)
-        addIndyLambdaImplMethod(cnode.name, implMethodHandle :: Nil)
+        addIndyLambdaImplMethod(cnode.name, implMethodHandle)
     }
   }
 
