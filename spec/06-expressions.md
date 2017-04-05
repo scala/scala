@@ -1422,6 +1422,7 @@ The *shape* of an argument expression $e$, written  $\mathit{shape}(e)$, is
 a type that is defined as follows:
   - For a function expression `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$: (Any $, \ldots ,$ Any) => $\mathit{shape}(b)$`,
     where `Any` occurs $n$ times in the argument type.
+  - For a pattern-matching anonymous function definition `{ case ... }`: `PartialFunction[Any, Nothing]`.
   - For a named argument `$n$ = $e$`: $\mathit{shape}(e)$.
   - For all other expressions: `Nothing`.
 
