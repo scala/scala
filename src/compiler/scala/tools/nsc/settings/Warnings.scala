@@ -85,7 +85,7 @@ trait Warnings {
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
-    val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:-patvars,_.")
+    val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -129,7 +129,10 @@ trait Warnings {
     descr   = "Enable or disable specific warnings",
     domain  = LintWarnings,
     default = Some(List("_"))
-  ).withPostSetHook { s => if (s contains Unused) List("-patvars","_").foreach(warnUnused.add) }
+  ).withPostSetHook { s =>
+    val unused = List("imports", "privates", "locals", "implicits")
+    if (s contains Unused) unused.foreach(warnUnused.add)
+  }
 
   allLintWarnings foreach {
     case w if w.yAliased =>
