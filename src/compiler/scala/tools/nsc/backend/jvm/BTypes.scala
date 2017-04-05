@@ -478,20 +478,7 @@ abstract class BTypes {
      *  - for an OBJECT type, the 'L' and ';' are not part of the range of the created Type
      *  - for an ARRAY type, the full descriptor is part of the range
      */
-    def toASMType: asm.Type = this match {
-      case UNIT   => asm.Type.VOID_TYPE
-      case BOOL   => asm.Type.BOOLEAN_TYPE
-      case CHAR   => asm.Type.CHAR_TYPE
-      case BYTE   => asm.Type.BYTE_TYPE
-      case SHORT  => asm.Type.SHORT_TYPE
-      case INT    => asm.Type.INT_TYPE
-      case FLOAT  => asm.Type.FLOAT_TYPE
-      case LONG   => asm.Type.LONG_TYPE
-      case DOUBLE => asm.Type.DOUBLE_TYPE
-      case ClassBType(internalName) => asm.Type.getObjectType(internalName) // see (*) above
-      case a: ArrayBType            => asm.Type.getObjectType(a.descriptor)
-      case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
-    }
+    def toASMType: asm.Type
 
     def asRefBType       : RefBType       = this.asInstanceOf[RefBType]
     def asArrayBType     : ArrayBType     = this.asInstanceOf[ArrayBType]
@@ -499,7 +486,9 @@ abstract class BTypes {
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed abstract class PrimitiveBType(override val descriptor:String) extends BType {
+  sealed abstract class PrimitiveBType(
+      override val descriptor:String,
+      override val toASMType: asm.Type) extends BType {
     private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = {
       sb.append(descriptor)
     }
@@ -567,15 +556,15 @@ abstract class BTypes {
     }
   }
 
-  case object UNIT   extends PrimitiveBType("V")
-  case object BOOL   extends PrimitiveBType("Z")
-  case object CHAR   extends PrimitiveBType("C")
-  case object BYTE   extends PrimitiveBType("B")
-  case object SHORT  extends PrimitiveBType("S")
-  case object INT    extends PrimitiveBType("I")
-  case object FLOAT  extends PrimitiveBType("F")
-  case object LONG   extends PrimitiveBType("J")
-  case object DOUBLE extends PrimitiveBType("D")
+  case object UNIT   extends PrimitiveBType("V",asm.Type.VOID_TYPE)
+  case object BOOL   extends PrimitiveBType("Z",asm.Type.BOOLEAN_TYPE)
+  case object CHAR   extends PrimitiveBType("C",asm.Type.CHAR_TYPE)
+  case object BYTE   extends PrimitiveBType("B",asm.Type.BYTE_TYPE)
+  case object SHORT  extends PrimitiveBType("S",asm.Type.SHORT_TYPE)
+  case object INT    extends PrimitiveBType("I",asm.Type.INT_TYPE)
+  case object FLOAT  extends PrimitiveBType("F",asm.Type.FLOAT_TYPE)
+  case object LONG   extends PrimitiveBType("J",asm.Type.LONG_TYPE)
+  case object DOUBLE extends PrimitiveBType("D",asm.Type.DOUBLE_TYPE)
 
   sealed trait RefBType extends BType {
     /**
@@ -869,6 +858,16 @@ abstract class BTypes {
 
       descriptorCache = sb.substring(start)
     } else sb.append(descriptorCache)
+
+
+    /**
+      * The asm.Type corresponding to this BType.
+      *
+      * Note about asm.Type.getObjectType (*): For class types, the method expects the internal
+      * name, i.e. without the surrounding 'L' and ';'.
+      */
+    override lazy val toASMType = asm.Type.getObjectType(internalName)
+
 
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
@@ -1181,6 +1180,15 @@ abstract class BTypes {
       descriptorCache = sb.substring(start)
     } else sb.append(descriptorCache)
 
+
+    /**
+      * For array types on the other hand, the method expects a full descriptor,
+      * for example "[Ljava/lang/String;".
+      *
+      */
+    override lazy val toASMType = asm.Type.getObjectType(descriptor)
+
+
     def dimension: Int = componentType match {
       case a: ArrayBType => 1 + a.dimension
       case _ => 1
@@ -1212,6 +1220,8 @@ abstract class BTypes {
       descriptorCache = sb.substring(start)
 
     } else sb.append(descriptorCache)
+
+    override lazy val toASMType = asm.Type.getMethodType(descriptor)
   }
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
