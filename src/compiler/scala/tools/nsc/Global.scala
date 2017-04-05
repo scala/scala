@@ -1545,9 +1545,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
 
   class PerRunSettingsGlobal extends PerRunSettings {
-    override val isScala211: Boolean = settings.isScala211
-    override val isScala212: Boolean = settings.isScala212
-    val isScala213: Boolean = settings.isScala213
+    override val isScala213: Boolean = settings.isScala213
+    override val isScala212: Boolean = isScala213 || settings.isScala212
+    override val isScala211: Boolean = isScala212 || settings.isScala211
+
     val debug = settings.debug.boolValue
 
     override val Xexperimental = settings.Xexperimental
