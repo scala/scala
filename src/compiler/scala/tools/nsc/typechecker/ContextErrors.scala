@@ -7,7 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal

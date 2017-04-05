@@ -12,8 +12,6 @@ import java.util
 import scala.tools.asm.util.{CheckClassAdapter, Textifier, TraceClassVisitor, TraceMethodVisitor}
 import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 

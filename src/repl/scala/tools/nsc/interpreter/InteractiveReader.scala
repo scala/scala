@@ -57,7 +57,7 @@ object InteractiveReader {
  */
 class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
   import java.util.concurrent.SynchronousQueue
-  import scala.compat.Platform.EOL
+  import java.lang.System.{lineSeparator => EOL}
 
   private val result = new SynchronousQueue[Option[String]]
   @volatile private var running: Boolean = _

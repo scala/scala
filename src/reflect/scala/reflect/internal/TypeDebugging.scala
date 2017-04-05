@@ -57,7 +57,7 @@ trait TypeDebugging {
   /** Light color wrappers.
    */
   object typeDebug {
-    import scala.Console._
+    import scala.io.AnsiColor._
 
     private val colorsOk = scala.util.Properties.coloredOutputEnabled
     private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s

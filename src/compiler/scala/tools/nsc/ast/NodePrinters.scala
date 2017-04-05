@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast
 
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 import symtab.Flags._
 import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
