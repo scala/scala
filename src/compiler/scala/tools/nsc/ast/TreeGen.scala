@@ -71,8 +71,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
     mkMethodCall(ScalaRunTimeModule, meth, targs, args)
 
-  def mkSysErrorCall(message: String): Tree =
-    mkMethodCall(Sys_error, List(Literal(Constant(message))))
+  def mkThrowNewRuntimeException(message: String) =
+    Throw(RuntimeExceptionClass.tpe, Literal(Constant(message)))
 
   /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
    *
