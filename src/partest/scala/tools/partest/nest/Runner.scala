@@ -297,10 +297,11 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     b.toList
   }
 
+  // diff logfile checkfile
   def currentDiff = {
     val logged = file2String(logFile).linesIfNonEmpty.toList
-    val (other, othername) = if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
-    compareContents(original = other, revised = logged, originalName = othername, revisedName = logFile.getName)
+    val (checked, checkname) = if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
+    compareContents(original = logged, revised = checked, originalName = logFile.getName, revisedName = checkname)
   }
 
   val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
@@ -392,8 +393,11 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
         val bestDiff =
           if (updating.isEmpty) ""
           else if (checkFile.canRead)
-            withTempFile(outFile, fileBase, filteredCheck) { f =>
-              gitDiff(logFile, f) getOrElse f"diff $logFile $checkFile%n$diff"
+            gitRunner match {
+              case None => diff
+              case _    => withTempFile(outFile, fileBase, filteredCheck) { f =>
+                gitDiff(logFile, f) getOrElse diff
+              }
             }
           else diff
         _transcript append bestDiff
