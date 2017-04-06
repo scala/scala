@@ -105,7 +105,7 @@ trait Namers extends MethodSynthesis {
 
     def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] =
       mmap(vparamss) { param =>
-        enterInScope(assignMemberSymbol(param, mask = ValueParameterFlags)) setInfo monoTypeCompleter(param)
+        enterInScope(assignMemberSymbol(param, mask = ValueParameterFlags)) setInfo new MonoTypeCompleter(param)
       }
 
     protected def owner       = context.owner
@@ -337,8 +337,10 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def createImportSymbol(tree: Import) =
-      NoSymbol.newImport(tree.pos) setInfo (namerOf(tree.symbol) importTypeCompleter tree)
+    def createImportSymbol(tree: Import) = {
+      val importNamer = namerOf(tree.symbol)
+      NoSymbol.newImport(tree.pos) setInfo new importNamer.ImportTypeCompleter(tree)
+    }
 
     /** All PackageClassInfoTypes come from here. */
     def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
@@ -428,7 +430,8 @@ trait Namers extends MethodSynthesis {
 
     def enterModuleDef(tree: ModuleDef) = {
       val sym = enterModuleSymbol(tree)
-      sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
+      val mcsNamer = namerOf(sym)
+      sym.moduleClass setInfo new mcsNamer.ModuleClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
       validateCompanionDefs(tree)
       sym
@@ -588,17 +591,6 @@ trait Namers extends MethodSynthesis {
       noDuplicates(selectors map (_.rename), AppearsTwice)
     }
 
-    class CompleterWrapper(completer: TypeCompleter) extends TypeCompleter {
-      // override important when completer.isInstanceOf[PolyTypeCompleter]!
-      override val typeParams = completer.typeParams
-
-      val tree = completer.tree
-
-      override def complete(sym: Symbol): Unit = {
-        completer.complete(sym)
-      }
-    }
-
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
       /* Assign the types of the class parameters to the parameters of the
        * copy method. See comment in `Unapplies.caseClassCopyMeth`
@@ -692,7 +684,8 @@ trait Namers extends MethodSynthesis {
       }
 
     def completerOf(tree: MemberDef): TypeCompleter = {
-      val mono = namerOf(tree.symbol) monoTypeCompleter tree
+      val treeNamer = namerOf(tree.symbol)
+      val mono = new treeNamer.MonoTypeCompleter(tree)
       val tparams = treeInfo.typeParameters(tree)
       if (tparams.isEmpty) mono
       else {
@@ -822,49 +815,57 @@ trait Namers extends MethodSynthesis {
       NoSymbol
     }
 
-    def monoTypeCompleter(tree: MemberDef) = mkTypeCompleter(tree) { sym =>
-      // this early test is there to avoid infinite baseTypes when
-      // adding setters and getters --> bug798
-      // It is a def in an attempt to provide some insulation against
-      // uninitialized symbols misleading us. It is not a certainty
-      // this accomplishes anything, but performance is a non-consideration
-      // on these flag checks so it can't hurt.
-      def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
+    def monoTypeCompleter(tree: MemberDef) = new MonoTypeCompleter(tree)
+    class MonoTypeCompleter(tree: MemberDef) extends TypeCompleterBase(tree) {
+      override def completeImpl(sym: Symbol): Unit = {
+        // this early test is there to avoid infinite baseTypes when
+        // adding setters and getters --> bug798
+        // It is a def in an attempt to provide some insulation against
+        // uninitialized symbols misleading us. It is not a certainty
+        // this accomplishes anything, but performance is a non-consideration
+        // on these flag checks so it can't hurt.
+        def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
 
-      val annotations = annotSig(tree.mods.annotations)
+        val annotations = annotSig(tree.mods.annotations)
 
-      val tp = typeSig(tree, annotations)
+        val tp = typeSig(tree, annotations)
 
-      findCyclicalLowerBound(tp) andAlso { sym =>
-        if (needsCycleCheck) {
-          // neg/t1224:  trait C[T] ; trait A { type T >: C[T] <: C[C[T]] }
-          // To avoid an infinite loop on the above, we cannot break all cycles
-          log(s"Reinitializing info of $sym to catch any genuine cycles")
-          sym reset sym.info
-          sym.initialize
+        findCyclicalLowerBound(tp) andAlso { sym =>
+          if (needsCycleCheck) {
+            // neg/t1224:  trait C[T] ; trait A { type T >: C[T] <: C[C[T]] }
+            // To avoid an infinite loop on the above, we cannot break all cycles
+            log(s"Reinitializing info of $sym to catch any genuine cycles")
+            sym reset sym.info
+            sym.initialize
+          }
         }
+
+        sym.setInfo(if (!sym.isJavaDefined) tp else RestrictJavaArraysMap(tp))
+
+        if (needsCycleCheck) {
+          log(s"Needs cycle check: ${sym.debugLocationString}")
+          if (!typer.checkNonCyclic(tree.pos, tp))
+            sym setInfo ErrorType
+        }
+
+        validate(sym)
       }
-
-      sym.setInfo(if (!sym.isJavaDefined) tp else RestrictJavaArraysMap(tp))
-
-      if (needsCycleCheck) {
-        log(s"Needs cycle check: ${sym.debugLocationString}")
-        if (!typer.checkNonCyclic(tree.pos, tp))
-          sym setInfo ErrorType
-      }
-
-      validate(sym)
     }
 
-    def moduleClassTypeCompleter(tree: ModuleDef) = mkTypeCompleter(tree) { sym =>
-      val moduleSymbol = tree.symbol
-      assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
-      moduleSymbol.info // sets moduleClass info as a side effect.
+    def moduleClassTypeCompleter(tree: ModuleDef) = new ModuleClassTypeCompleter(tree)
+    class ModuleClassTypeCompleter(tree: ModuleDef) extends TypeCompleterBase(tree) {
+      override def completeImpl(sym: Symbol): Unit = {
+        val moduleSymbol = tree.symbol
+        assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
+        moduleSymbol.info // sets moduleClass info as a side effect.
+      }
     }
 
-
-    def importTypeCompleter(imp: Import) = mkTypeCompleter(imp) { sym =>
-      sym setInfo importSig(imp)
+    def importTypeCompleter(tree: Import) = new ImportTypeCompleter(tree)
+    class ImportTypeCompleter(imp: Import) extends TypeCompleterBase(imp) {
+      override def completeImpl(sym: Symbol): Unit = {
+        sym setInfo importSig(imp)
+      }
     }
 
     import AnnotationInfo.{mkFilter => annotationFilter}
@@ -881,57 +882,62 @@ trait Namers extends MethodSynthesis {
 
     // complete the type of a value definition (may have a method symbol, for those valdefs that never receive a field,
     // as specified by Field.noFieldFor)
-    def valTypeCompleter(tree: ValDef) = mkTypeCompleter(tree) { fieldOrGetterSym =>
-      val mods = tree.mods
-      val isGetter = fieldOrGetterSym.isMethod
-      val annots =
-        if (mods.annotations.isEmpty) Nil
-        else {
-          val annotSigs = annotSig(mods.annotations)
+    def valTypeCompleter(tree: ValDef) = new ValTypeCompleter(tree)
+    class ValTypeCompleter(tree: ValDef) extends TypeCompleterBase(tree) {
+      override def completeImpl(fieldOrGetterSym: Symbol): Unit = {
+        val mods = tree.mods
+        val isGetter = fieldOrGetterSym.isMethod
+        val annots =
+          if (mods.annotations.isEmpty) Nil
+          else {
+            val annotSigs = annotSig(mods.annotations)
             if (isGetter) filterAccessorAnnots(annotSigs, tree) // if this is really a getter, retain annots targeting either field/getter
             else annotSigs filter annotationFilter(FieldTargetClass, !mods.isParamAccessor)
-        }
+          }
 
-      // must use typeSig, not memberSig (TODO: when do we need to switch namers?)
-      val sig = typeSig(tree, annots)
+        // must use typeSig, not memberSig (TODO: when do we need to switch namers?)
+        val sig = typeSig(tree, annots)
 
-      fieldOrGetterSym setInfo (if (isGetter) NullaryMethodType(sig) else sig)
+        fieldOrGetterSym setInfo (if (isGetter) NullaryMethodType(sig) else sig)
 
-      validate(fieldOrGetterSym)
+        validate(fieldOrGetterSym)
+      }
     }
 
     // knowing `isBean`, we could derive `isSetter` from `valDef.name`
-    def accessorTypeCompleter(valDef: ValDef, missingTpt: Boolean, isBean: Boolean, isSetter: Boolean) = mkTypeCompleter(valDef) { accessorSym =>
-      context.unit.synthetics get accessorSym match {
-        case Some(ddef: DefDef) =>
-          // `accessorSym` is the accessor for which we're completing the info (tree == ddef),
-          // while `valDef` is the field definition that spawned the accessor
-          // NOTE: `valTypeCompleter` handles abstract vals, trait vals and lazy vals, where the ValDef carries the getter's symbol
+    def accessorTypeCompleter(valDef: ValDef, missingTpt: Boolean, isBean: Boolean, isSetter: Boolean) = new AccessorTypeCompleter(valDef, missingTpt, isBean, isSetter)
+    class AccessorTypeCompleter(valDef: ValDef, missingTpt: Boolean, isBean: Boolean, isSetter: Boolean) extends TypeCompleterBase(valDef) {
+      override def completeImpl(accessorSym: Symbol): Unit = {
+        context.unit.synthetics get accessorSym match {
+          case Some(ddef: DefDef) =>
+            // `accessorSym` is the accessor for which we're completing the info (tree == ddef),
+            // while `valDef` is the field definition that spawned the accessor
+            // NOTE: `valTypeCompleter` handles abstract vals, trait vals and lazy vals, where the ValDef carries the getter's symbol
 
-          // reuse work done in valTypeCompleter if we already computed the type signature of the val
-          // (assuming the field and accessor symbols are distinct -- i.e., we're not in a trait)
-          val valSig =
-            if ((accessorSym ne valDef.symbol) && valDef.symbol.isInitialized) valDef.symbol.info
-            else typeSig(valDef, Nil) // don't set annotations for the valdef -- we just want to compute the type sig (TODO: dig deeper and see if we can use memberSig)
+            // reuse work done in valTypeCompleter if we already computed the type signature of the val
+            // (assuming the field and accessor symbols are distinct -- i.e., we're not in a trait)
+            val valSig =
+              if ((accessorSym ne valDef.symbol) && valDef.symbol.isInitialized) valDef.symbol.info
+              else typeSig(valDef, Nil) // don't set annotations for the valdef -- we just want to compute the type sig (TODO: dig deeper and see if we can use memberSig)
 
-          // patch up the accessor's tree if the valdef's tpt was not known back when the tree was synthesized
-          // can't look at `valDef.tpt` here because it may have been completed by now (this is why we pass in `missingTpt`)
-          // HACK: a param accessor `ddef.tpt.tpe` somehow gets out of whack with `accessorSym.info`, so always patch it back...
-          //       (the tpt is typed in the wrong namer, using the class as owner instead of the outer context, which is where param accessors should be typed)
-          if (missingTpt || accessorSym.isParamAccessor) {
-            if (!isSetter) ddef.tpt setType valSig
-            else if (ddef.vparamss.nonEmpty && ddef.vparamss.head.nonEmpty) ddef.vparamss.head.head.tpt setType valSig
-            else throw new TypeError(valDef.pos, s"Internal error: could not complete parameter/return type for $ddef from $accessorSym")
-          }
+            // patch up the accessor's tree if the valdef's tpt was not known back when the tree was synthesized
+            // can't look at `valDef.tpt` here because it may have been completed by now (this is why we pass in `missingTpt`)
+            // HACK: a param accessor `ddef.tpt.tpe` somehow gets out of whack with `accessorSym.info`, so always patch it back...
+            //       (the tpt is typed in the wrong namer, using the class as owner instead of the outer context, which is where param accessors should be typed)
+            if (missingTpt || accessorSym.isParamAccessor) {
+              if (!isSetter) ddef.tpt setType valSig
+              else if (ddef.vparamss.nonEmpty && ddef.vparamss.head.nonEmpty) ddef.vparamss.head.head.tpt setType valSig
+              else throw new TypeError(valDef.pos, s"Internal error: could not complete parameter/return type for $ddef from $accessorSym")
+            }
 
-          val mods = valDef.mods
-          val annots =
-            if (mods.annotations.isEmpty) Nil
-            else filterAccessorAnnots(annotSig(mods.annotations), valDef, isSetter, isBean)
+            val mods = valDef.mods
+            val annots =
+              if (mods.annotations.isEmpty) Nil
+              else filterAccessorAnnots(annotSig(mods.annotations), valDef, isSetter, isBean)
 
-          // for a setter, call memberSig to attribute the parameter (for a bean, we always use the regular method sig completer since they receive method types)
-          // for a regular getter, make sure it gets a NullaryMethodType (also, no need to recompute it: we already have the valSig)
-          val sig =
+            // for a setter, call memberSig to attribute the parameter (for a bean, we always use the regular method sig completer since they receive method types)
+            // for a regular getter, make sure it gets a NullaryMethodType (also, no need to recompute it: we already have the valSig)
+            val sig =
             if (isSetter || isBean) typeSig(ddef, annots)
             else {
               if (annots.nonEmpty) annotate(accessorSym, annots)
@@ -939,16 +945,17 @@ trait Namers extends MethodSynthesis {
               NullaryMethodType(valSig)
             }
 
-          accessorSym setInfo pluginsTypeSigAccessor(sig, typer, valDef, accessorSym)
+            accessorSym setInfo pluginsTypeSigAccessor(sig, typer, valDef, accessorSym)
 
-          if (!isBean && accessorSym.isOverloaded)
-            if (isSetter) ddef.rhs.setType(ErrorType)
-            else GetterDefinedTwiceError(accessorSym)
+            if (!isBean && accessorSym.isOverloaded)
+              if (isSetter) ddef.rhs.setType(ErrorType)
+              else GetterDefinedTwiceError(accessorSym)
 
-          validate(accessorSym)
+            validate(accessorSym)
 
-        case _ =>
-          throw new TypeError(valDef.pos, s"Internal error: no synthetic tree found for bean accessor $accessorSym")
+          case _ =>
+            throw new TypeError(valDef.pos, s"Internal error: no synthetic tree found for bean accessor $accessorSym")
+        }
       }
     }
 
@@ -993,11 +1000,14 @@ trait Namers extends MethodSynthesis {
     }
 
 
-    def selfTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      val selftpe = typer.typedType(tree).tpe
-      sym setInfo {
-        if (selftpe.typeSymbol isNonBottomSubClass sym.owner) selftpe
-        else intersectionType(List(sym.owner.tpe, selftpe))
+    def selfTypeCompleter(tree: Tree) = new SelfTypeCompleter(tree)
+    class SelfTypeCompleter(tree: Tree) extends TypeCompleterBase(tree) {
+      override def completeImpl(sym: Symbol): Unit = {
+        val selftpe = typer.typedType(tree).tpe
+        sym setInfo {
+          if (selftpe.typeSymbol isNonBottomSubClass sym.owner) selftpe
+          else intersectionType(List(sym.owner.tpe, selftpe))
+        }
       }
     }
 
@@ -1071,7 +1081,7 @@ trait Namers extends MethodSynthesis {
 
       val sym = (
         if (hasType || hasName) {
-          owner.typeOfThis = if (hasType) selfTypeCompleter(tpt) else owner.tpe_*
+          owner.typeOfThis = if (hasType) new SelfTypeCompleter(tpt) else owner.tpe_*
           val selfSym = owner.thisSym setPos self.pos
           if (hasName) selfSym setName name else selfSym
         }
@@ -1165,7 +1175,7 @@ trait Namers extends MethodSynthesis {
       val res = GenPolyType(tparams0, resultType)
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
-      // Already assign the type to the class symbol (monoTypeCompleter will do it again).
+      // Already assign the type to the class symbol (MonoTypeCompleter will do it again).
       // Allows isDerivedValueClass to look at the info.
       clazz setInfo pluginsTp
       if (clazz.isDerivedValueClass) {
@@ -1179,7 +1189,7 @@ trait Namers extends MethodSynthesis {
 
     private def moduleSig(mdef: ModuleDef): Type = {
       val moduleSym = mdef.symbol
-      // The info of both the module and the moduleClass symbols need to be assigned. monoTypeCompleter assigns
+      // The info of both the module and the moduleClass symbols need to be assigned. MonoTypeCompleter assigns
       // the result of typeSig to the module symbol. The module class info is assigned here as a side-effect.
       val result = templateSig(mdef.impl)
       val pluginsTp = pluginsTypeSig(result, typer, mdef, WildcardType)
@@ -1579,7 +1589,7 @@ trait Namers extends MethodSynthesis {
                 // (a val's name ends in a " ", so can't compare to def)
                 val overridingSym = if (isGetter) vdef.symbol else vdef.symbol.getterIn(valOwner)
 
-                // We're called from an accessorTypeCompleter, which is completing the info for the accessor's symbol,
+                // We're called from an AccessorTypeCompleter, which is completing the info for the accessor's symbol,
                 // which may or may not be `vdef.symbol` (see isGetter above)
                 val overridden = safeNextOverriddenSymbol(overridingSym)
 
@@ -1722,7 +1732,7 @@ trait Namers extends MethodSynthesis {
     }
 
     /**
-     * TypeSig is invoked by monoTypeCompleters. It returns the type of a definition which
+     * TypeSig is invoked by MonoTypeCompleters. It returns the type of a definition which
      * is then assigned to the corresponding symbol (typeSig itself does not need to assign
      * the type to the symbol, but it can if necessary).
      */
@@ -1913,10 +1923,9 @@ trait Namers extends MethodSynthesis {
     }
   }
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {
-    val tree = t
-    def completeImpl(sym: Symbol) = c(sym)
-  }
+  // NOTE: only meant for monomorphic definitions,
+  // do not use to wrap existing completers (see CompleterWrapper for that)
+  abstract class TypeCompleterBase[T <: Tree](val tree: T) extends LockingTypeCompleter with FlagAgnosticCompleter
 
   trait LockingTypeCompleter extends TypeCompleter {
     def completeImpl(sym: Symbol): Unit
@@ -1957,6 +1966,22 @@ trait Namers extends MethodSynthesis {
       if (defnSym.isAbstractType)
         newNamer(ctx.makeNewScope(tree, tree.symbol)) enterSyms tparams //@M
       restp complete sym
+    }
+  }
+
+  /**
+    * Wrap an existing completer to do some post/pre-processing of the completed type.
+    *
+    * @param completer
+    */
+  class CompleterWrapper(completer: TypeCompleter) extends TypeCompleter {
+    // override important when completer.isInstanceOf[PolyTypeCompleter]!
+    override val typeParams = completer.typeParams
+
+    val tree = completer.tree
+
+    override def complete(sym: Symbol): Unit = {
+      completer.complete(sym)
     }
   }
 
