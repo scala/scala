@@ -48,7 +48,7 @@ trait Warnings {
 
   BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
     warnUnused.add(s"${if (s) "" else "-"}imports")
-  } withDeprecationMessage s"Enable -Ywarn-unused:imports"
+  } //withDeprecationMessage s"Enable -Ywarn-unused:imports"
 
   val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
