@@ -78,8 +78,8 @@ class ExtractUsedNamesSpecification extends UnitSpec {
       if (scalaVersion.contains("2.10")) Set("Nothing", "Any") else Set()
     val namesA = standardNames ++ Set("A") ++ versionDependentNames
     val namesAX = standardNames ++ Set("X", "x", "T", "A")
-    val namesB = Set("B", "A", "Int", "<init>", "scala")
-    val namesC = Set("<init>", "C", "B")
+    val namesB = Set("B", "A", "Int", "A;init;", "scala")
+    val namesC = Set("B;init;", "C", "B")
     val namesD = standardNames ++ Set("D", "C", "X", "foo", "Int", "T")
     assert(usedNames("A") === namesA)
     assert(usedNames("A.X") === namesAX)
@@ -301,8 +301,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     // The default parent of a class is "AnyRef" which is an alias for "Object"
     "AnyRef",
     "Object",
-    // class receives a default constructor which is internally called "<init>"
-    "<init>"
+    "java;lang;Object;init;"
   )
 
 }

@@ -170,11 +170,9 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     }
 
     val addSymbol: (JavaSet[Name], Symbol) => Unit = { (names: JavaSet[Name], symbol: Symbol) =>
-      if (!ignoredSymbol(symbol)) {
-        val name = symbol.name
-        // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
-        if (!isEmptyName(name))
-          names.add(name)
+      // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
+      if (!ignoredSymbol(symbol) && !isEmptyName(symbol.name)) {
+        names.add(mangledName(symbol))
         ()
       }
     }
@@ -209,7 +207,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     private object PatMatDependencyTraverser extends TypeDependencyTraverser {
       override def addDependency(symbol: global.Symbol): Unit = {
         if (!ignoredSymbol(symbol) && symbol.isSealed) {
-          val name = symbol.name
+          val name = mangledName(symbol)
           if (!isEmptyName(name)) {
             val existingScopes = _currentScopedNamesCache.get(name)
             if (existingScopes == null)

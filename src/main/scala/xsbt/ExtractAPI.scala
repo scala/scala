@@ -691,8 +691,8 @@ class ExtractAPI[GlobalType <: Global](
 
   private def simpleName(s: Symbol): String = {
     val n = s.unexpandedName
-    val n2 = if (n.toString == "<init>") n else n.decode
-    n2.toString.trim
+    val n2 = if (n == nme.CONSTRUCTOR) constructorNameAsString(s.enclClass) else n.decode.toString
+    n2.trim
   }
 
   private def staticAnnotations(annotations: List[AnnotationInfo]): List[AnnotationInfo] = {
