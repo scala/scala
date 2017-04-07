@@ -1422,7 +1422,7 @@ trait Implicits {
         pt match {
           case Function1(_, out) =>
             // must inline to avoid capturing result
-            def prohibit(sym: Symbol) = (sym.tpe <:< out) && {
+            def prohibit(sym: Symbol) = ((isFullyDefined(out) || !settings.isScala213) && sym.tpe <:< out) && {
               maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
               true
             }
