@@ -5,4 +5,9 @@ object Test {
   }
 
   def f(implicit x: DummyImplicit) = 42                     // no warn DummyImplicit
+
+
+  def f(x: Int)(y: Int = 1) = x + y                         // no warn default getter
+
+  def g(@deprecated("","") x: Int) = 42                     // no warn deprecated
 }

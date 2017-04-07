@@ -567,10 +567,16 @@ trait TypeDiagnostics {
           && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
           //&& !(m.isVal && m.info.resultType =:= typeOf[Unit])      // Unit val is uninteresting
         )
-        def isUnusedParam(m: Symbol): Boolean = isUnusedTerm(m) && !(m.isParamAccessor && (
-          m.owner.isImplicit ||
-          targets.exists(s => s.isParameter && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
-        ))
+        def isUnusedParam(m: Symbol): Boolean = (
+             isUnusedTerm(m)
+          && !m.isDeprecated
+          && !m.owner.isDefaultGetter
+          && !(m.isParamAccessor && (
+            m.owner.isImplicit ||
+            targets.exists(s => s.isParameter
+              && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
+          ))
+        )
         def sympos(s: Symbol): Int =
           if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
         def treepos(t: Tree): Int =
