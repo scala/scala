@@ -444,7 +444,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
-      private val uniques = new mutable.HashMap[Tree, Var]
+      private val uniques = new mutable.AnyRefMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
       def unapply(v: Var) = Some(v.path)
     }

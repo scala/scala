@@ -54,20 +54,14 @@ trait PatternMatching extends Transform
 
   def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
 
-  class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class MatchTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
         val translated = translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
-        try {
-          localTyper.typed(translated) setType origTp
-        } catch {
-          case x: (Types#TypeError) =>
-            // TODO: this should never happen; error should've been reported during type checking
-            reporter.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
-            translated
-        }
+        localTyper.typed(translated) setType origTp
+
       case Try(block, catches, finalizer) =>
         treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
@@ -219,7 +213,7 @@ trait Interface extends ast.TreeDSL {
           case _          => false
         }
         val toSyms = to.map(_.symbol)
-        object substIdentsForTrees extends Transformer {
+        object substIdentsForTrees extends BaseTransformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
             // important: only type when actually substituting and when original tree was typed

@@ -23,13 +23,10 @@ trait Namers extends MethodSynthesis {
   import global._
   import definitions._
 
-  var _lockedCount = 0
-  def lockedCount = this._lockedCount
-
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
    *  Does the same for any trees containing EmptyTrees.
    */
-  private class TypeTreeSubstituter(cond: Name => Boolean) extends Transformer {
+  private class TypeTreeSubstituter(cond: Name => Boolean) extends BaseTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if cond(name) => TypeTree()
       case _                         => super.transform(tree)
@@ -1315,11 +1312,6 @@ trait Namers extends MethodSynthesis {
       if (mexists(vparamss)(_.symbol.hasDefault) || mexists(overridden.paramss)(_.hasDefault))
         addDefaultGetters(meth, ddef, vparamss, tparams,  overridden)
 
-      // fast track macros, i.e. macros defined inside the compiler, are hardcoded
-      // hence we make use of that and let them have whatever right-hand side they need
-      // (either "macro ???" as they used to or just "???" to maximally simplify their compilation)
-      if (fastTrack contains meth) meth setFlag MACRO
-
       // macro defs need to be typechecked in advance
       // because @macroImpl annotation only gets assigned during typechecking
       // otherwise macro defs wouldn't be able to robustly coexist with their clients
@@ -1636,7 +1628,7 @@ trait Namers extends MethodSynthesis {
 
         val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
         checkSelectors(newImport)
-        context.unit.transformed(imp) = newImport
+        transformed(imp) = newImport
         // copy symbol and type attributes back into old expression
         // so that the structure builder will find it.
         expr setSymbol expr1.symbol setType expr1.tpe
@@ -1871,9 +1863,9 @@ trait Namers extends MethodSynthesis {
     def completeImpl(sym: Symbol): Unit
 
     override def complete(sym: Symbol) = {
-      _lockedCount += 1
+      lockedCount += 1
       try completeImpl(sym)
-      finally _lockedCount -= 1
+      finally lockedCount -= 1
     }
   }
 

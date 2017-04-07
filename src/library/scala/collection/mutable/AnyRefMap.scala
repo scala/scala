@@ -125,8 +125,11 @@ extends AbstractMap[K, V]
   }
 
   override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
-    val i = seekEntry(hashOf(key), key)
-    if (i < 0) default else _values(i).asInstanceOf[V]
+    if (size == 0) default
+    else {
+      val i = seekEntry(hashOf(key), key)
+      if (i < 0) default else _values(i).asInstanceOf[V]
+    }
   }
 
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {

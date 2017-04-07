@@ -183,8 +183,8 @@ abstract class TreeGen {
     if (!treeInfo.admitsTypeSelection(tree)) NoType
     else tree match {
       case This(_)         => ThisType(tree.symbol)
-      case Ident(_)        => singleType(tree.symbol.owner.thisType, tree.symbol)
-      case Select(qual, _) => singleType(qual.tpe, tree.symbol)
+      case Ident(_)        => if (tree.tpe.isInstanceOf[ModuleTypeRef]) tree.tpe.narrow else singleType(tree.symbol.owner.thisType, tree.symbol)
+      case Select(qual, _) => if (tree.tpe.isInstanceOf[ModuleTypeRef]) tree.tpe.narrow else singleType(qual.tpe, tree.symbol)
       case _               => NoType
     }
   )
@@ -231,7 +231,10 @@ abstract class TreeGen {
 
       val tree = Select(pkgQualifier, sym)
       if (pkgQualifier.tpe == null) tree
-      else tree setType (qual.tpe memberType sym)
+      else tree setType {
+        if (sym.rawowner == ObjectClass || sym.rawowner == AnyClass) sym.tpeHK // opt for asInstanceOf
+        else (qual.tpe memberType sym)
+      }
     }
   }
 

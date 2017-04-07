@@ -9,9 +9,10 @@ package tools.nsc
 package backend
 package jvm
 
+import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
@@ -74,6 +75,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
     }
     private val poison1 = Item1(Int.MaxValue, null, null)
     private val q1 = new java.util.LinkedList[Item1]
+    private val asyncClassfileWriter = java.util.concurrent.Executors.newFixedThreadPool(4)
 
     /* ---------------- q2 ---------------- */
 
@@ -348,6 +350,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
       val needsOutfileForSymbol = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
       buildAndSendToDisk(needsOutfileForSymbol)
+      asyncClassfileWriter.shutdown()
+      asyncClassfileWriter.awaitTermination(1024, TimeUnit.DAYS)
 
       // closing output files.
       bytecodeWriter.close()
@@ -384,8 +388,12 @@ abstract class GenBCode extends BCodeSyncAndTry {
       (new Worker2).run()
 
       val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
-      drainQ3()
-      Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
+      asyncClassfileWriter.submit(new Runnable {
+        override def run(): Unit = {
+          drainQ3()
+          Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
+        }
+      })
 
     }
 
@@ -409,7 +417,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
           }
           catch {
             case e: FileConflictException =>
-              error(s"error writing $jclassName: ${e.getMessage}")
+              global.synchronized { error(s"error writing $jclassName: ${e.getMessage}") }
+            case e: java.nio.file.FileSystemException =>
+              global.synchronized {
+                if (settings.debug)
+                  e.printStackTrace()
+                error(s"error writing $jclassName: ${e.getClass.getName} ${e.getMessage}")
+              }
           }
         }
       }

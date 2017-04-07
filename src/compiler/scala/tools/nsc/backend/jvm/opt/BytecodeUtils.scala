@@ -235,9 +235,9 @@ object BytecodeUtils {
     (Type.getArgumentsAndReturnSizes(methodNode.desc) >> 2) - (if (isStaticMethod(methodNode)) 1 else 0)
   }
 
-  def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
-    val res = mutable.Map.empty[LabelNode, Set[AnyRef]]
-    def add(l: LabelNode, ref: AnyRef) = if (res contains l) res(l) = res(l) + ref else res(l) = Set(ref)
+  def labelReferences(method: MethodNode): collection.Map[LabelNode, collection.Set[AnyRef]] = {
+    val res = mutable.AnyRefMap[LabelNode, mutable.Set[AnyRef]]()
+    def add(l: LabelNode, ref: AnyRef) = res.getOrElseUpdate(l, mutable.Set()).add(ref)
 
     method.instructions.iterator().asScala foreach {
       case jump: JumpInsnNode           => add(jump.label, jump)
@@ -253,7 +253,7 @@ object BytecodeUtils {
       method.tryCatchBlocks.iterator().asScala.foreach(l => { add(l.start, l); add(l.handler, l); add(l.end, l) })
     }
 
-    res.toMap
+    res
   }
 
   def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {

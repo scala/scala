@@ -750,12 +750,12 @@ trait Trees extends api.Trees {
     val treeCopy: TreeCopier = newStrictTreeCopier
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, impl0)
-      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (impl0 == impl) => t
+      if (mods0 == mods) && (name0 == name) && sameElementsRef(tparams0, tparams) && (impl0 == impl) => t
       case _ => treeCopy.ClassDef(tree, mods, name, tparams, impl)
     }
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) = tree match {
       case t @ PackageDef(pid0, stats0)
-      if (pid0 == pid) && (stats0 == stats) => t
+      if (pid0 == pid) && sameElementsRef(stats0, stats) => t
       case _ => treeCopy.PackageDef(tree, pid, stats)
     }
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
@@ -770,33 +770,33 @@ trait Trees extends api.Trees {
     }
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
       case t @ DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0)
-      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) &&
-         (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0) => t
+      if (mods0 == mods) && (name0 == name) && (sameElementsRef(tparams0, tparams)) &&
+         (sameElementsRef(vparamss0, vparamss)) && (tpt0 == tpt) && (rhs == rhs0) => t
       case _ => treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree) = tree match {
       case t @ TypeDef(mods0, name0, tparams0, rhs0)
-      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs) => t
+      if (mods0 == mods) && (name0 == name) && sameElementsRef(tparams0, tparams) && (rhs0 == rhs) => t
       case _ => treeCopy.TypeDef(tree, mods, name, tparams, rhs)
     }
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) = tree match {
       case t @ LabelDef(name0, params0, rhs0)
-      if (name0 == name) && (params0 == params) && (rhs0 == rhs) => t
+      if (name0 == name) && sameElementsRef(params0, params) && (rhs0 == rhs) => t
       case _ => treeCopy.LabelDef(tree, name, params, rhs)
     }
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) = tree match {
       case t @ Import(expr0, selectors0)
-      if (expr0 == expr) && (selectors0 == selectors) => t
+      if (expr0 == expr) && sameElementsRef(selectors0, selectors) => t
       case _ => treeCopy.Import(tree, expr, selectors)
     }
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) = tree match {
       case t @ Template(parents0, self0, body0)
-      if (parents0 == parents) && (self0 == self) && (body0 == body) => t
+      if sameElementsRef(parents0, parents) && (self0 == self) && (body0 == body) => t
       case _ => treeCopy.Template(tree, parents, self, body)
     }
     def Block(tree: Tree, stats: List[Tree], expr: Tree) = tree match {
       case t @ Block(stats0, expr0)
-      if ((stats0 == stats) && (expr0 == expr)) => t
+      if (sameElementsRef(stats0, stats) && (expr0 == expr)) => t
       case _ => treeCopy.Block(tree, stats, expr)
     }
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) = tree match {
@@ -806,7 +806,7 @@ trait Trees extends api.Trees {
     }
     def Alternative(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Alternative(trees0)
-      if trees0 == trees => t
+      if sameElementsRef(trees0, trees) => t
       case _ => treeCopy.Alternative(tree, trees)
     }
     def Star(tree: Tree, elem: Tree) = tree match {
@@ -821,17 +821,17 @@ trait Trees extends api.Trees {
     }
     def UnApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ UnApply(fun0, args0)
-      if (fun0 == fun) && (args0 == args) => t
+      if (fun0 == fun) && sameElementsRef(args0, args) => t
       case _ => treeCopy.UnApply(tree, fun, args)
     }
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) = tree match {
       case t @ ArrayValue(elemtpt0, trees0)
-      if (elemtpt0 == elemtpt) && (trees0 == trees) => t
+      if (elemtpt0 == elemtpt) && sameElementsRef(trees0, trees) => t
       case _ => treeCopy.ArrayValue(tree, elemtpt, trees)
     }
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) = tree match {
       case t @ Function(vparams0, body0)
-      if (vparams0 == vparams) && (body0 == body) => t
+      if sameElementsRef(vparams0, vparams) && (body0 == body) => t
       case _ => treeCopy.Function(tree, vparams, body)
     }
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
@@ -851,7 +851,7 @@ trait Trees extends api.Trees {
     }
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =  tree match {
       case t @ Match(selector0, cases0)
-      if (selector0 == selector) && (cases0 == cases) => t
+      if (selector0 == selector) && sameElementsRef(cases0, cases) => t
       case _ => treeCopy.Match(tree, selector, cases)
     }
     def Return(tree: Tree, expr: Tree) = tree match {
@@ -861,7 +861,7 @@ trait Trees extends api.Trees {
     }
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) = tree match {
       case t @ Try(block0, catches0, finalizer0)
-      if (block0 == block) && (catches0 == catches) && (finalizer0 == finalizer) => t
+      if (block0 == block) && sameElementsRef(catches0, catches) && (finalizer0 == finalizer) => t
       case _ => treeCopy.Try(tree, block, catches, finalizer)
     }
     def Throw(tree: Tree, expr: Tree) = tree match {
@@ -881,17 +881,17 @@ trait Trees extends api.Trees {
     }
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ TypeApply(fun0, args0)
-      if (fun0 == fun) && (args0 == args) => t
+      if (fun0 == fun) && sameElementsRef(args0, args) => t
       case _ => treeCopy.TypeApply(tree, fun, args)
     }
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ Apply(fun0, args0)
-      if (fun0 == fun) && (args0 == args) => t
+      if (fun0 == fun) && sameElementsRef(args0, args) => t
       case _ => treeCopy.Apply(tree, fun, args)
     }
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) = tree match {
       case t @ ApplyDynamic(qual0, args0)
-      if (qual0 == qual) && (args0 == args) => t
+      if (qual0 == qual) && sameElementsRef(args0, args) => t
       case _ => treeCopy.ApplyDynamic(tree, qual, args)
     }
     def Super(tree: Tree, qual: Tree, mix: TypeName) = tree match {
@@ -955,7 +955,7 @@ trait Trees extends api.Trees {
     }
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) = tree match {
       case t @ AppliedTypeTree(tpt0, args0)
-      if (tpt0 == tpt) && (args0 == args) => t
+      if (tpt0 == tpt) && sameElementsRef(args0, args) => t
       case _ => treeCopy.AppliedTypeTree(tree, tpt, args)
     }
     def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree) = tree match {
@@ -965,7 +965,7 @@ trait Trees extends api.Trees {
     }
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[MemberDef]) = tree match {
       case t @ ExistentialTypeTree(tpt0, whereClauses0)
-      if (tpt0 == tpt) && (whereClauses0 == whereClauses) => t
+      if (tpt0 == tpt) && sameElementsRef(whereClauses0, whereClauses) => t
       case _ => treeCopy.ExistentialTypeTree(tree, tpt, whereClauses)
     }
   }
@@ -1201,6 +1201,7 @@ trait Trees extends api.Trees {
 
   // --- generic traversers and transformers
 
+  // DUPLICATED to InternalTraverse#traverse
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
     import traverser._
 
@@ -1208,10 +1209,10 @@ trait Trees extends api.Trees {
       traverseModifiers(md.mods)
       traverseName(md.name)
       md match {
-        case ClassDef(_, _, tparams, impl)             => traverseParams(tparams) ; traverse(impl)
-        case ModuleDef(_, _, impl)                     => traverse(impl)
-        case ValDef(_, _, tpt, rhs)                    => traverseTypeAscription(tpt) ; traverse(rhs)
-        case TypeDef(_, _, tparams, rhs)               => traverseParams(tparams) ; traverse(rhs)
+        case ClassDef(_, _, tparams, impl) => traverseParams(tparams); traverse(impl)
+        case ModuleDef(_, _, impl) => traverse(impl)
+        case ValDef(_, _, tpt, rhs) => traverseTypeAscription(tpt); traverse(rhs)
+        case TypeDef(_, _, tparams, rhs) => traverseParams(tparams); traverse(rhs)
         case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
           traverseParams(tparams)
           traverseParamss(vparamss)
@@ -1327,17 +1328,278 @@ trait Trees extends api.Trees {
 
     if (tree.canHaveAttrs) {
       tree match {
-        case PackageDef(pid, stats)  => traverse(pid) ; traverseStats(stats, mclass(tree.symbol))
-        case md: ModuleDef           => traverseMemberDef(md, mclass(tree.symbol))
-        case md: MemberDef           => traverseMemberDef(md, tree.symbol)
-        case Function(vparams, body) => atOwner(tree.symbol) { traverseParams(vparams) ; traverse(body) }
-        case _                       => traverseComponents()
+        case PackageDef(pid, stats) => traverse(pid); traverseStats(stats, mclass(tree.symbol))
+        case md: ModuleDef => traverseMemberDef(md, mclass(tree.symbol))
+        case md: MemberDef => traverseMemberDef(md, tree.symbol)
+        case Function(vparams, body) => atOwner(tree.symbol) {
+          traverseParams(vparams); traverse(body)
+        }
+        case _ => traverseComponents()
       }
     }
   }
 
-  //OPT ordered according to frequency to speed it up.
-  override protected def itransform(transformer: Transformer, tree: Tree): Tree = {
+  class InternalTraverser extends super.Traverser {
+    // Duplicated from itraverse
+    override def traverse(tree: Tree): Unit = {
+      def traverseMemberDef(md: MemberDef, owner: Symbol): Unit = atOwner(owner) {
+        traverseModifiers(md.mods)
+        traverseName(md.name)
+        md match {
+          case ClassDef(_, _, tparams, impl) => traverseParams(tparams); traverse(impl)
+          case ModuleDef(_, _, impl) => traverse(impl)
+          case ValDef(_, _, tpt, rhs) => traverseTypeAscription(tpt); traverse(rhs)
+          case TypeDef(_, _, tparams, rhs) => traverseParams(tparams); traverse(rhs)
+          case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+            traverseParams(tparams)
+            traverseParamss(vparamss)
+            traverseTypeAscription(tpt)
+            traverse(rhs)
+        }
+      }
+      def traverseComponents(): Unit = tree match {
+        case LabelDef(name, params, rhs) =>
+          traverseName(name)
+          traverseParams(params)
+          traverse(rhs)
+        case Import(expr, selectors) =>
+          traverse(expr)
+          selectors foreach traverseImportSelector
+        case Annotated(annot, arg) =>
+          traverse(annot)
+          traverse(arg)
+        case Template(parents, self, body) =>
+          traverseParents(parents)
+          traverseSelfType(self)
+          traverseStats(body, tree.symbol)
+        case Block(stats, expr) =>
+          traverseTrees(stats)
+          traverse(expr)
+        case CaseDef(pat, guard, body) =>
+          traversePattern(pat)
+          traverseGuard(guard)
+          traverse(body)
+        case Alternative(trees) =>
+          traverseTrees(trees)
+        case Star(elem) =>
+          traverse(elem)
+        case Bind(name, body) =>
+          traverseName(name)
+          traverse(body)
+        case UnApply(fun, args) =>
+          traverse(fun)
+          traverseTrees(args)
+        case ArrayValue(elemtpt, trees) =>
+          traverse(elemtpt)
+          traverseTrees(trees)
+        case Assign(lhs, rhs) =>
+          traverse(lhs)
+          traverse(rhs)
+        case AssignOrNamedArg(lhs, rhs) =>
+          traverse(lhs)
+          traverse(rhs)
+        case If(cond, thenp, elsep) =>
+          traverse(cond)
+          traverse(thenp)
+          traverse(elsep)
+        case Match(selector, cases) =>
+          traverse(selector)
+          traverseCases(cases)
+        case Return(expr) =>
+          traverse(expr)
+        case Try(block, catches, finalizer) =>
+          traverse(block)
+          traverseCases(catches)
+          traverse(finalizer)
+        case Throw(expr) =>
+          traverse(expr)
+        case New(tpt) =>
+          traverse(tpt)
+        case Typed(expr, tpt) =>
+          traverse(expr)
+          traverseTypeAscription(tpt)
+        case TypeApply(fun, args) =>
+          traverse(fun)
+          traverseTypeArgs(args)
+        case Apply(fun, args) =>
+          traverse(fun)
+          traverseTrees(args)
+        case ApplyDynamic(qual, args) =>
+          traverse(qual)
+          traverseTrees(args)
+        case Super(qual, mix) =>
+          traverse(qual)
+          traverseName(mix)
+        case This(qual) =>
+          traverseName(qual)
+        case Select(qualifier, selector) =>
+          traverse(qualifier)
+          traverseName(selector)
+        case Ident(name) =>
+          traverseName(name)
+        case ReferenceToBoxed(idt) =>
+          traverse(idt)
+        case Literal(const) =>
+          traverseConstant(const)
+        case TypeTree() =>
+          ;
+        case SingletonTypeTree(ref) =>
+          traverse(ref)
+        case SelectFromTypeTree(qualifier, selector) =>
+          traverse(qualifier)
+          traverseName(selector)
+        case CompoundTypeTree(templ) =>
+          traverse(templ)
+        case AppliedTypeTree(tpt, args) =>
+          traverse(tpt)
+          traverseTypeArgs(args)
+        case TypeBoundsTree(lo, hi) =>
+          traverse(lo)
+          traverse(hi)
+        case ExistentialTypeTree(tpt, whereClauses) =>
+          traverse(tpt)
+          traverseTrees(whereClauses)
+        case _ =>
+          xtraverse(this, tree)
+      }
+
+      if (tree.canHaveAttrs) {
+        tree match {
+          case PackageDef(pid, stats) => traverse(pid); traverseStats(stats, mclass(tree.symbol))
+          case md: ModuleDef => traverseMemberDef(md, mclass(tree.symbol))
+          case md: MemberDef => traverseMemberDef(md, tree.symbol)
+          case Function(vparams, body) => atOwner(tree.symbol) {
+            traverseParams(vparams); traverse(body)
+          }
+          case _ => traverseComponents()
+        }
+      }
+    }
+  }
+  class InternalTransformer extends super.Transformer {
+    // DUPLICATED from itransform
+    override def transform(tree: Tree): Tree = {
+      // begin itransform
+      tree match {
+        case Ident(name) =>
+          treeCopy.Ident(tree, name)
+        case Select(qualifier, selector) =>
+          treeCopy.Select(tree, transform(qualifier), selector)
+        case Apply(fun, args) =>
+          treeCopy.Apply(tree, transform(fun), transformTrees(args))
+        case TypeTree() =>
+          treeCopy.TypeTree(tree)
+        case Literal(value) =>
+          treeCopy.Literal(tree, value)
+        case This(qual) =>
+          treeCopy.This(tree, qual)
+        case ValDef(mods, name, tpt, rhs) =>
+          atOwner(tree.symbol) {
+            treeCopy.ValDef(tree, transformModifiers(mods),
+              name, transform(tpt), transform(rhs))
+          }
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          atOwner(tree.symbol) {
+            treeCopy.DefDef(tree, transformModifiers(mods), name,
+              transformTypeDefs(tparams), transformValDefss(vparamss),
+              transform(tpt), transform(rhs))
+          }
+        case Block(stats, expr) =>
+          treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
+        case If(cond, thenp, elsep) =>
+          treeCopy.If(tree, transform(cond), transform(thenp), transform(elsep))
+        case CaseDef(pat, guard, body) =>
+          treeCopy.CaseDef(tree, transform(pat), transform(guard), transform(body))
+        case TypeApply(fun, args) =>
+          treeCopy.TypeApply(tree, transform(fun), transformTrees(args))
+        case AppliedTypeTree(tpt, args) =>
+          treeCopy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
+        case Bind(name, body) =>
+          treeCopy.Bind(tree, name, transform(body))
+        case Function(vparams, body) =>
+          atOwner(tree.symbol) {
+            treeCopy.Function(tree, transformValDefs(vparams), transform(body))
+          }
+        case Match(selector, cases) =>
+          treeCopy.Match(tree, transform(selector), transformCaseDefs(cases))
+        case New(tpt) =>
+          treeCopy.New(tree, transform(tpt))
+        case Assign(lhs, rhs) =>
+          treeCopy.Assign(tree, transform(lhs), transform(rhs))
+        case AssignOrNamedArg(lhs, rhs) =>
+          treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
+        case Try(block, catches, finalizer) =>
+          treeCopy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
+        case EmptyTree =>
+          tree
+        case Throw(expr) =>
+          treeCopy.Throw(tree, transform(expr))
+        case Super(qual, mix) =>
+          treeCopy.Super(tree, transform(qual), mix)
+        case TypeBoundsTree(lo, hi) =>
+          treeCopy.TypeBoundsTree(tree, transform(lo), transform(hi))
+        case Typed(expr, tpt) =>
+          treeCopy.Typed(tree, transform(expr), transform(tpt))
+        case Import(expr, selectors) =>
+          treeCopy.Import(tree, transform(expr), selectors)
+        case Template(parents, self, body) =>
+          treeCopy.Template(tree, transformTrees(parents), transformValDef(self), transformStats(body, tree.symbol))
+        case ClassDef(mods, name, tparams, impl) =>
+          atOwner(tree.symbol) {
+            treeCopy.ClassDef(tree, transformModifiers(mods), name,
+              transformTypeDefs(tparams), transformTemplate(impl))
+          }
+        case ModuleDef(mods, name, impl) =>
+          atOwner(mclass(tree.symbol)) {
+            treeCopy.ModuleDef(tree, transformModifiers(mods),
+              name, transformTemplate(impl))
+          }
+        case TypeDef(mods, name, tparams, rhs) =>
+          atOwner(tree.symbol) {
+            treeCopy.TypeDef(tree, transformModifiers(mods), name,
+              transformTypeDefs(tparams), transform(rhs))
+          }
+        case LabelDef(name, params, rhs) =>
+          treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
+        case PackageDef(pid, stats) =>
+          treeCopy.PackageDef(
+            tree, transform(pid).asInstanceOf[RefTree],
+            atOwner(mclass(tree.symbol)) {
+              transformStats(stats, currentOwner)
+            }
+          )
+        case Annotated(annot, arg) =>
+          treeCopy.Annotated(tree, transform(annot), transform(arg))
+        case SingletonTypeTree(ref) =>
+          treeCopy.SingletonTypeTree(tree, transform(ref))
+        case SelectFromTypeTree(qualifier, selector) =>
+          treeCopy.SelectFromTypeTree(tree, transform(qualifier), selector)
+        case CompoundTypeTree(templ) =>
+          treeCopy.CompoundTypeTree(tree, transformTemplate(templ))
+        case ExistentialTypeTree(tpt, whereClauses) =>
+          treeCopy.ExistentialTypeTree(tree, transform(tpt), transformMemberDefs(whereClauses))
+        case Return(expr) =>
+          treeCopy.Return(tree, transform(expr))
+        case Alternative(trees) =>
+          treeCopy.Alternative(tree, transformTrees(trees))
+        case Star(elem) =>
+          treeCopy.Star(tree, transform(elem))
+        case UnApply(fun, args) =>
+          treeCopy.UnApply(tree, transform(fun), transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+        case ArrayValue(elemtpt, trees) =>
+          treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
+        case ApplyDynamic(qual, args) =>
+          treeCopy.ApplyDynamic(tree, transform(qual), transformTrees(args))
+        case ReferenceToBoxed(idt) =>
+          treeCopy.ReferenceToBoxed(tree, transform(idt) match { case idt1: Ident => idt1 })
+        case _ =>
+          xtransform(this, tree)
+      }
+    }
+  }
+
+  // DUPLICATED with InternalTransformer#transform
+  override protected final def itransform(transformer: Transformer, tree: Tree): Tree = {
     import transformer._
     val treeCopy = transformer.treeCopy
 
@@ -1358,13 +1620,13 @@ trait Trees extends api.Trees {
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
           treeCopy.ValDef(tree, transformModifiers(mods),
-                          name, transform(tpt), transform(rhs))
+            name, transform(tpt), transform(rhs))
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
           treeCopy.DefDef(tree, transformModifiers(mods), name,
-                          transformTypeDefs(tparams), transformValDefss(vparamss),
-                          transform(tpt), transform(rhs))
+            transformTypeDefs(tparams), transformValDefss(vparamss),
+            transform(tpt), transform(rhs))
         }
       case Block(stats, expr) =>
         treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
@@ -1409,17 +1671,17 @@ trait Trees extends api.Trees {
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
           treeCopy.ClassDef(tree, transformModifiers(mods), name,
-                            transformTypeDefs(tparams), transformTemplate(impl))
+            transformTypeDefs(tparams), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(mclass(tree.symbol)) {
           treeCopy.ModuleDef(tree, transformModifiers(mods),
-                             name, transformTemplate(impl))
+            name, transformTemplate(impl))
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
           treeCopy.TypeDef(tree, transformModifiers(mods), name,
-                           transformTypeDefs(tparams), transform(rhs))
+            transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
         treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
@@ -1459,18 +1721,20 @@ trait Trees extends api.Trees {
     }
   }
 
-  private def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)
+  //OPT ordered according to frequency to speed it up.
+
+  protected def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)
 
   // --- specific traversers and transformers
 
-  class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
+  class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends InternalTraverser {
     override def traverse(tree: Tree) {
       val t = if (pf isDefinedAt tree) pf(tree) else tree
       super.traverse(t)
     }
   }
 
-  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
+  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends InternalTraverser {
     final def change(sym: Symbol) = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
@@ -1497,7 +1761,7 @@ trait Trees extends api.Trees {
     }
   }
 
-  private class ShallowDuplicator(orig: Tree) extends Transformer {
+  private class ShallowDuplicator(orig: Tree) extends InternalTransformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(tree: Tree) =
       if (tree eq orig) super.transform(tree)
@@ -1505,7 +1769,7 @@ trait Trees extends api.Trees {
   }
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
-  class TreeReplacer(from: Tree, to: Tree, positionAware: Boolean) extends Transformer {
+  class TreeReplacer(from: Tree, to: Tree, positionAware: Boolean) extends InternalTransformer {
     override def transform(t: Tree): Tree = {
       if (t == from) to
       else if (!positionAware || (t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
@@ -1522,7 +1786,7 @@ trait Trees extends api.Trees {
   // occur multiple times in the `tree` passed to `transform`,
   // otherwise, the resulting Tree would be a graph, not a tree... this breaks all sorts of stuff,
   // notably concerning the mutable aspects of Trees (such as setting their .tpe)
-  class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
+  class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends InternalTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
@@ -1538,7 +1802,7 @@ trait Trees extends api.Trees {
 
   /** Substitute clazz.this with `to`. `to` must be an attributed tree.
    */
-  class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
+  class ThisSubstituter(clazz: Symbol, to: => Tree) extends InternalTransformer {
     val newtpe = to.tpe
     override def transform(tree: Tree) = {
       tree modifyType (_.substThis(clazz, newtpe))
@@ -1549,7 +1813,7 @@ trait Trees extends api.Trees {
     }
   }
 
-  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {
+  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends InternalTraverser {
     override def traverse(tree: Tree) {
       tree modifyType typeMap
       if (tree.isDef)
@@ -1580,7 +1844,7 @@ trait Trees extends api.Trees {
    *  without copying, and trees that define symbols with an `info` that refer
    *  a symbol in `from` will have a new type assigned.
    */
-  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
+  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = new SubstSymMap(from, to)
     private var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
@@ -1630,14 +1894,14 @@ trait Trees extends api.Trees {
   }
 
 
-  class ForeachTreeTraverser(f: Tree => Unit) extends Traverser {
+  class ForeachTreeTraverser(f: Tree => Unit) extends InternalTraverser {
     override def traverse(t: Tree) {
       f(t)
       super.traverse(t)
     }
   }
 
-  class FilterTreeTraverser(p: Tree => Boolean) extends Traverser {
+  class FilterTreeTraverser(p: Tree => Boolean) extends InternalTraverser {
     val hits = mutable.ListBuffer[Tree]()
     override def traverse(t: Tree) {
       if (p(t)) hits += t
@@ -1645,7 +1909,7 @@ trait Trees extends api.Trees {
     }
   }
 
-  class CollectTreeTraverser[T](pf: PartialFunction[Tree, T]) extends Traverser {
+  class CollectTreeTraverser[T](pf: PartialFunction[Tree, T]) extends InternalTraverser {
     val results = mutable.ListBuffer[T]()
     override def traverse(t: Tree) {
       if (pf.isDefinedAt(t)) results += pf(t)
@@ -1653,7 +1917,7 @@ trait Trees extends api.Trees {
     }
   }
 
-  class FindTreeTraverser(p: Tree => Boolean) extends Traverser {
+  class FindTreeTraverser(p: Tree => Boolean) extends InternalTraverser {
     var result: Option[Tree] = None
     override def traverse(t: Tree) {
       if (result.isEmpty) {
@@ -1664,7 +1928,7 @@ trait Trees extends api.Trees {
   }
 
   private lazy val duplicator = new Duplicator(focusPositions = true)
-  private class Duplicator(focusPositions: Boolean) extends Transformer {
+  private class Duplicator(focusPositions: Boolean) extends InternalTransformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(t: Tree) = {
       val t1 = super.transform(t)
@@ -1672,7 +1936,7 @@ trait Trees extends api.Trees {
       t1
     }
   }
-  trait TreeStackTraverser extends Traverser {
+  trait TreeStackTraverser extends InternalTraverser {
     import collection.mutable
     val path: mutable.Stack[Tree] = mutable.Stack()
     abstract override def traverse(t: Tree) = {
@@ -1682,7 +1946,7 @@ trait Trees extends api.Trees {
   }
 
   /** Tracks the classes currently under construction during a transform */
-  trait UnderConstructionTransformer extends Transformer {
+  trait UnderConstructionTransformer extends InternalTransformer {
     import collection.mutable
 
     protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz

@@ -37,10 +37,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-  // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
-  // is cached here and re-used in typedDefDef / typedValDef
-  // Also used to cache imports type-checked by namer.
-  val transformed = new mutable.AnyRefMap[Tree, Tree]
+  object transformed {
+    def update(orig: Tree, typedTree: Tree): Unit = orig.updateAttachment(typedTree)
+    def apply(orig: Tree): Tree = orig.attachments.get[Tree].get
+    def remove(orig: Tree) = {
+      if (orig.attachments.contains[Tree]) {
+        orig.attachments.get[Tree] match {
+          case opt @ Some(tree) =>
+            orig.removeAttachment[Tree]
+            opt
+          case _ =>
+            None
+        }
+      } else None
+    }
+    def contains(t: Tree) = t.attachments.contains[Tree]
+  }
 
   final val shortenImports = false
 
@@ -109,14 +121,56 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
+  abstract class CheckDead {
+    def apply(tree: Tree): Tree
+    def updateExpr[A](fn: Tree)(f: => A): A
+    def inMode(mode: Mode, tree: Tree): Tree
+  }
+  object NoOpCheckDead extends CheckDead {
+    def apply(tree: Tree): Tree = tree
+    def updateExpr[A](fn: Tree)(f: => A): A = f
+    def inMode(mode: Mode, tree: Tree): Tree = tree
+  }
+  class CheckingCheckDead(unit: CompilationUnit) extends CheckDead {
+    private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+    // The method being applied to `tree` when `apply` is called.
+    private def expr = exprStack.top
+
+    private def exprOK =
+      (expr != Object_synchronized) &&
+      !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
+
+    private def treeOK(tree: Tree) = {
+      val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+      tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+    }
+
+    @inline def updateExpr[A](fn: Tree)(f: => A): A = {
+      if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+        exprStack push fn.symbol
+        try f finally exprStack.pop()
+      } else f
+    }
+    def apply(tree: Tree): Tree = {
+      // Error suppression (in context.warning) would squash some of these warnings.
+      // It is presumed if you are using a -Y option you would really like to hear
+      // the warnings you've requested; thus, use reporter.warning.
+      if (unit.exists && treeOK(tree) && exprOK)
+        reporter.warning(tree.pos, "dead code following this construct")
+      tree
+    }
+
+    // The checkDead call from typedArg is more selective.
+    def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
+  }
+
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
     import typeDebug.ptTree
     import TyperErrorGen._
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
-
-    private val transformed: mutable.Map[Tree, Tree] = unit.transformed
 
     val infer = new Inferencer {
       def context = Typer.this.context
@@ -253,6 +307,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     var context = context0
     def context1 = context
+    private val checkDead: CheckDead = if (settings.warnDeadCode.value) new CheckingCheckDead(if (context == null) NoCompilationUnit else context.unit) else NoOpCheckDead
 
     // for use with silent type checking to when we can't have results with undetermined type params
     // note that this captures the context var
@@ -867,7 +922,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // SO-10066 Need to patch the enclosing tree in the context to make translation of Dynamic
                 //          work during fallback typechecking below.
                 val resetContext: Context = {
-                  object substResetForOriginal extends Transformer {
+                  object substResetForOriginal extends BaseTransformer {
                     override def transform(tree: Tree): Tree = {
                       if (tree eq original) resetTree
                       else super.transform(tree)
@@ -1859,7 +1914,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (noSerializable) Nil
           else {
             clazz.makeSerializable()
-            List(TypeTree(SerializableTpe) setPos clazz.pos.focus)
+            TypeTree(SerializableTpe).setPos(clazz.pos.focus) :: Nil
           }
         )
       })
@@ -2425,7 +2480,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           block match {
             case Block(List(classDef @ ClassDef(_, _, _, _)), Apply(Select(New(_), _), _)) =>
               val classDecls = classDef.symbol.info.decls
-              val visibleMembers = pt match {
+              lazy val visibleMembers = pt match {
                 case WildcardType                           => classDecls.toList
                 case BoundedWildcardType(TypeBounds(lo, _)) => lo.members
                 case _                                      => pt.members
@@ -4871,17 +4926,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
-        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name) orElse {
+        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
+        if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
-          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-            if ((qual1 ne qual) && !qual1.isErrorTyped)
-              return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-          }
-          NoSymbol
+          val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+          if ((qual1 ne qual) && !qual1.isErrorTyped)
+            return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
+
         if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
           qual setType tree.symbol.owner.tpe
 
@@ -5046,7 +5100,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
+              val tree1 = if (qual == EmptyTree) tree else {
+                val pos = tree.pos
+                Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+              }
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
             // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.

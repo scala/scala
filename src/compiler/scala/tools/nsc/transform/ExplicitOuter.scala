@@ -67,7 +67,7 @@ abstract class ExplicitOuter extends InfoTransform
     result
   }
 
-  class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
+  class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends BaseTransformer {
     override def transform(tree: Tree) = tree match {
       case Bind(_, body) if toRemove(tree.symbol) => super.transform(body)
       case _                                      => super.transform(tree)
@@ -202,7 +202,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  values for outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
-  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with UnderConstructionTransformer {
+  abstract class OuterPathTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) with UnderConstructionTransformer {
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 

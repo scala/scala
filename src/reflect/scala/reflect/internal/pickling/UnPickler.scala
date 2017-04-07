@@ -61,7 +61,7 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length)
 
     /** A map from symbols to their associated `decls` scopes */
-    private val symScopes = mutable.HashMap[Symbol, Scope]()
+    private val symScopes = mutable.AnyRefMap[Symbol, Scope]()
 
     private def expect(expected: Int, msg: => String) {
       val tag = readByte()
@@ -394,7 +394,18 @@ abstract class UnPickler {
         case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // SI-7596 account for overloading
         case SUPERtpe                  => SuperType(readTypeRef(), readTypeRef())
         case CONSTANTtpe               => ConstantType(readConstantRef())
-        case TYPEREFtpe                => TypeRef(readTypeRef(), readSymbolRef(), readTypes())
+        case TYPEREFtpe                =>
+          val pre = readTypeRef()
+          val sym = readSymbolRef()
+          val targs = readTypes()
+          if (targs.isEmpty) {
+            val tycon = sym.tpeHK
+            tycon match {
+              case TypeRef(pre1, _, _) if pre1 eq pre =>
+                tycon
+              case _ => TypeRef(pre, sym, targs)
+            }
+          } else TypeRef(pre, sym, targs)
         case TYPEBOUNDStpe             => TypeBounds(readTypeRef(), readTypeRef())
         case REFINEDtpe | CLASSINFOtpe => CompoundType(readSymbolRef(), readTypes())
         case METHODtpe                 => MethodTypeRef(readTypeRef(), readSymbols())

@@ -83,7 +83,9 @@ abstract class Pickler extends SubComponent {
     private val rootOwner = root.owner
     private var entries   = new Array[AnyRef](256)
     private var ep        = 0
-    private val index     = new LinkedHashMap[AnyRef, Int]
+    private val index     = new LinkedHashMap[AnyRef, Int] {
+      override protected def initialSize = 256
+    }
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
 
     private def isRootSym(sym: Symbol) =

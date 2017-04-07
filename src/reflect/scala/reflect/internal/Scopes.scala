@@ -59,6 +59,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** the hash table
      */
     private[Scopes] var hashtable: Array[ScopeEntry] = null
+    private var hashtableEntries: Int = 0
 
     /** a cache for all elements, to be used by symbol iterator.
      */
@@ -70,10 +71,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** size and mask of hash tables
-     *  todo: make hashtables grow?
      */
-    private val HASHSIZE = 0x80
-    private val HASHMASK = 0x7f
+    private val INIT_HASHSIZE = 0x80
+    private def HASHMASK = INIT_HASHSIZE * factor - 1
+    private def RESIZE_THRESHOLD = 1.5
+    private var factor = 1
 
     /** the threshold number of entries from which a hashtable is constructed.
      */
@@ -106,9 +108,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     protected def enterEntry(e: ScopeEntry) {
       flushElemsCache()
-      if (hashtable ne null)
+      if (hashtable ne null) {
         enterInHash(e)
-      else if (size >= MIN_HASH)
+        val numEntries = hashtableEntries
+        if (numEntries > (INIT_HASHSIZE * factor).toDouble * RESIZE_THRESHOLD) {
+          resize(numEntries)
+        }
+      } else if (size >= MIN_HASH)
         createHash()
     }
 
@@ -116,6 +122,24 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       val i = e.sym.name.start & HASHMASK
       e.tail = hashtable(i)
       hashtable(i) = e
+      hashtableEntries += 1
+    }
+
+    private def resize(currrentSize: Int): Unit = {
+      assert(hashtable != null)
+      factor *= 2
+      hashtable = new Array[ScopeEntry](INIT_HASHSIZE * factor)
+      flushElemsCache()
+      val buffer = new collection.mutable.ArrayBuffer[ScopeEntry](currrentSize)
+      var elem = elems
+      while (elem != null) {
+        if (elem.owner == this) {
+          elem.tail = null
+          buffer += elem
+        }
+        elem = elem.next
+      }
+      buffer.reverseIterator.foreach(enterInHash)
     }
 
     /** enter a symbol
@@ -139,7 +163,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     private def createHash() {
-      hashtable = new Array[ScopeEntry](HASHSIZE)
+      hashtable = new Array[ScopeEntry](INIT_HASHSIZE)
       enterAllInHash(elems)
     }
 
@@ -205,6 +229,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           e1.tail = e.tail
         }
       }
+      hashtableEntries -= 1
       flushElemsCache()
     }
 
@@ -301,7 +326,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
         while ((e ne null) && e.sym.name != name) {
-          e = e.tail
+           e = e.tail
         }
       } else {
         e = elems

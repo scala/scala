@@ -74,13 +74,13 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(new java.util.concurrent.ConcurrentHashMap[InternalName, ClassBType]().asScala)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
    * in the call graph to remember its source position, which is required for inliner warnings.
    */
-  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(new java.util.concurrent.ConcurrentHashMap[MethodInsnNode, Position]().asScala)
 
   /**
    * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
@@ -298,19 +298,29 @@ abstract class BTypes {
    * referring to BTypes.
    */
   sealed trait BType {
-    final override def toString: String = this match {
-      case UNIT   => "V"
-      case BOOL   => "Z"
-      case CHAR   => "C"
-      case BYTE   => "B"
-      case SHORT  => "S"
-      case INT    => "I"
-      case FLOAT  => "F"
-      case LONG   => "J"
-      case DOUBLE => "D"
-      case ClassBType(internalName) => "L" + internalName + ";"
-      case ArrayBType(component)    => "[" + component
-      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
+    final override def toString: String = {
+      val builder = new java.lang.StringBuilder(64)
+      buildString(builder)
+      builder.toString
+    }
+
+    final def buildString(builder: java.lang.StringBuilder): Unit = this match {
+      case UNIT   => builder.append('V')
+      case BOOL   => builder.append('Z')
+      case CHAR   => builder.append('C')
+      case BYTE   => builder.append('B')
+      case SHORT  => builder.append('S')
+      case INT    => builder.append('I')
+      case FLOAT  => builder.append('F')
+      case LONG   => builder.append('J')
+      case DOUBLE => builder.append('D')
+      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
+      case ArrayBType(component)    => builder.append('['); component.buildString(builder)
+      case MethodBType(args, res)   =>
+        builder.append('(')
+        args.foreach(_.buildString(builder))
+        builder.append(')')
+        res.buildString(builder)
     }
 
     /**

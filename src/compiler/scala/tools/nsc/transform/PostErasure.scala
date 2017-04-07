@@ -19,7 +19,7 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
   def newTransformer(unit: CompilationUnit): Transformer = new PostErasureTransformer(unit)
   override def changesBaseClasses = false
 
-  class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class PostErasureTransformer(unit: CompilationUnit) extends BaseTypingTransformer(unit) {
     override def transform(tree: Tree) = {
       def finish(res: Tree) = logResult(s"Posterasure reduction\n  Old: $tree\n  New")(res)
 

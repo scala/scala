@@ -102,13 +102,15 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
-         (numericWeight contains sub)
+         sub.rawowner == ScalaPackageClass // opt
+      && sup.rawowner == ScalaPackageClass // opt
+      && (numericWeight contains sub)
       && (numericWeight contains sup)
       && (numericWeight(sup) % numericWeight(sub) == 0)
     )
 
     /** Is symbol a numeric value class? */
-    def isNumericValueClass(sym: Symbol) = ScalaNumericValueClasses contains sym
+    def isNumericValueClass(sym: Symbol) = sym.rawowner == ScalaPackageClass && ScalaNumericValueClassesArrayList.contains(sym)
 
     def isGetClass(sym: Symbol) = (
          sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabilize`.
@@ -139,6 +141,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BooleanTpe   = BooleanClass.tpe
 
     lazy val ScalaNumericValueClasses = ScalaValueClasses filterNot Set[Symbol](UnitClass, BooleanClass)
+    lazy val ScalaNumericValueClassesArrayList = java.util.Arrays.asList(ScalaNumericValueClasses.toArray : _*)
     lazy val ScalaValueClassesNoUnit  = ScalaValueClasses filterNot (_ eq UnitClass)
     lazy val ScalaValueClasses: List[ClassSymbol] = List(
       UnitClass,
@@ -151,6 +154,7 @@ trait Definitions extends api.StandardDefinitions {
       FloatClass,
       DoubleClass
     )
+    lazy val ScalaValueClassesArrayList = java.util.Arrays.asList(ScalaValueClasses.toArray: _*)
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
     def underlyingOfValueClass(clazz: Symbol): Type =
@@ -396,8 +400,8 @@ trait Definitions extends api.StandardDefinitions {
     def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
     def isJavaVarArgs(params: Seq[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: Seq[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
-    def isVarArgsList(params: Seq[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
-    def isVarArgTypes(formals: Seq[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
+    def isVarArgsList(params: List[Symbol])  = (params ne Nil) && isRepeatedParamType(params.last.tpe)
+    def isVarArgTypes(formals: List[Type])   = (formals ne Nil) && isRepeatedParamType(formals.last)
 
     def firstParamType(tpe: Type): Type = tpe.paramTypes match {
       case p :: _ => p
@@ -562,7 +566,8 @@ trait Definitions extends api.StandardDefinitions {
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
-      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) })
+      val seqArrayList: java.util.List[ClassSymbol] = java.util.Arrays.asList(seq.toArray: _*)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {
         val arity = args.length
@@ -601,9 +606,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && TupleClass.seqArrayList.contains(unspecializedSymbol(sym))
+    def isFunctionSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && FunctionClass.seqArrayList.contains(unspecializedSymbol(sym))
+    def isProductNSymbol(sym: Symbol) = sym.rawowner == ScalaPackageClass && ProductClass.seqArrayList.contains(unspecializedSymbol(sym))
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -1397,7 +1402,7 @@ trait Definitions extends api.StandardDefinitions {
     private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
-    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
+    def isPrimitiveValueClass(sym: Symbol) = sym.rawowner == ScalaPackageClass && ScalaValueClassesArrayList.contains(sym)
     def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */

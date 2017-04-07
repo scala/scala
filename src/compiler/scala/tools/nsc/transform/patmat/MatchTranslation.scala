@@ -580,7 +580,7 @@ trait MatchTranslation {
         else super.subPatRefs(binder)
 
       protected def spliceApply(binder: Symbol): Tree = {
-        object splice extends Transformer {
+        object splice extends BaseTransformer {
           def binderRef(pos: Position): Tree =
             REF(binder) setPos pos
           override def transform(t: Tree) = t match {
