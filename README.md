@@ -14,7 +14,7 @@ In order to get in touch with Scala contributors, join the
 
 # Reporting issues
 
-Please report bugs at the scala/bug issue tracker. We use the scala/scala-dev tracker for coordinating bigger work items.
+Please report bugs at the [scala/bug issue tracker](https://github.com/scala/bug/issues). We use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues) for coordinating bigger work items.
 
 # Get in touch!
 If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
