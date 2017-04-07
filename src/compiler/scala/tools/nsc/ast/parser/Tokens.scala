@@ -42,6 +42,8 @@ object Tokens extends CommonTokens {
   final val YIELD = 86
   final val MATCH = 95
 
+  final val COFOR = 126
+  
   /** special symbols */
   final val HASH = 130
   final val USCORE = 131

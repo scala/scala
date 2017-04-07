@@ -724,7 +724,202 @@ abstract class TreeGen {
 
     }
   }
+  
+  /** Create tree for cofor-comprehension <cofor (inputPattern) (enums) yield body> 
+  *  where mapName, coflatMapName and extract are used.
+  *  Note that the type of the tree is set by the call-site. It always returns a function
+  *  from some comonad to a result. It can't start an expression!
+  *  The creation performs the following rewrite rules:
+  *
+  *  1.
+  *	
+  *    cofor ((x1,x2,x3)) {P_1 <- G_1; P_2 <- G_2; ...} ...
+  *      ==>
+  *      input => { 
+  *      val enums1 =  input.map(input => (input._1, (input._2, (input._3, ())))).coflatMap(env => {
+  *      		val x1 = env1.map(((e1) => e1._1));
+  *					val x2 = env1.map(((e2) => e2._2._1));
+  *					val x3 = env1.map(((e2) => e2._2._2._1));
+  *					(G_1, env1.extract)
+  * 			}).coflatMap(env => {
+  * 				val P_1 = env1.map(((e1) => e1._1));
+  *      		val x1 = env1.map(((e1) => e1._2._1));
+  *					val x2 = env1.map(((e2) => e2._2._2._1));
+  *					val x3 = env1.map(((e2) => e2._2._2._2._1));
+  *					(G_2, env1.extract)			
+  * 			});
+  * 		{
+  * 			  val P_2 = env1.map(((e1) => e1._1));
+  * 			  val P_1 = env1.map(((e1) => e1._2._1));
+  *      		val x1 = env1.map(((e1) => e1._2._2._1));
+  *					val x2 = env1.map(((e2) => e2._2._2._2._1));
+  *					val x3 = env1.map(((e2) => e2._2._2._2._2._1));
+  * 				yield_expression
+  * 		}
+  * 		};
+  *
+  * 	note that: (x1,x2,x3...) and (P_1, P_2 .. ) can be any patten (e.g.: cofor (p @ Person(name, age)) )
+  * 
+  *
+  *  @param inputPattern     The input expression of the cofor
+  *  @param enums            The enumerators in the cofor expression
+  *  @param body    		     The body of the yield expression
+  *  @param fresh            A source of new names
+  */
+  def mkCoFor(inputPattern: Tree, enums: List[Tree], body: Tree)(implicit fresh: FreshNameCreator): Tree = {
 
+    def makeClosure(pos: Position, pat: Tree, body: Tree): Tree = {
+      def wrapped = wrappingPos(List(pat, body))
+      def splitpos = (if (pos != NoPosition) wrapped.withPoint(pos.point) else pos).makeTransparent
+      matchVarPattern(pat) match {
+        case Some((name, tpt)) =>
+          Function(
+            List(atPos(pat.pos) { ValDef(Modifiers(PARAM), name.toTermName, tpt, EmptyTree) }),
+            body) setPos splitpos
+        case None =>
+          atPos(splitpos) {
+            mkVisitor(List(CaseDef(pat, EmptyTree, body)), checkExhaustive = false)
+          }
+      }
+    }
+
+    def generateEnv(pos: Position, genIdx: Int, envNames: List[Tree], envName: Tree): List[Tree] = {
+
+      val allNames = envNames.take(genIdx).reverse 
+
+      // env.map(e$14 -> e$14._2._2._1)
+      def buildTupleExtractor(idx: Int) = Apply(Select(envName, nme.map) setPos pos, List {
+              val tmpe = Ident(freshTermName("e"))
+
+              // compose $idx times "._2" over $tmpe variable
+              // e.g.: (idx = 3) ===> e._2._2._2
+              val composeSnd: Tree => Tree = t => Select(t, nme._2) setPos pos 
+              val sndCompositions = List.fill(idx)(composeSnd).foldLeft[Tree](tmpe) {
+                (acc, e) => e(acc)
+              }
+              // at the end, add "._1" to the previous "._2" composition
+              makeClosure(pos, tmpe, Select(sndCompositions, nme._1) setPos pos)
+            })
+      
+      
+      allNames.zipWithIndex.flatMap {
+        case (Ident(name), idx) => // TODO: are we ever here or in the next case???
+          List(ValDef(Modifiers(0), name.toTermName , TypeTree(NoType), buildTupleExtractor(idx)))
+        case (Bind(name, _), idx) => 
+          List(ValDef(Modifiers(0), name.toTermName , TypeTree(NoType), buildTupleExtractor(idx)))
+        case (name, idx) =>
+          val comonadWithPatternToExtract = buildTupleExtractor(idx)
+          // (name, tree, pos)
+          val allVarsinCurrentGeneratorPattern = getVariables(name)
+          val tmpe = Ident(freshTermName("e"))
+          
+          val vars = allVarsinCurrentGeneratorPattern.map(v => (v._1, Match(
+          tmpe.duplicate,
+          List(
+              CaseDef(name.duplicate, EmptyTree, Ident(v._1))))))
+          //vars.foreach(v => println(s"${v._1} of type: ${v._2}"))
+           
+           /*
+            * for each variable (e.g. r1)
+            * val r1 = thecomonad.map(e$x => {
+            * 	val hahaha = e$x match {
+            * 		case ....... => .....
+            * 	}
+            *   hahaha.thepattern
+            * })
+            */
+          vars.map(v => 
+            ValDef(Modifiers(ARTIFACT) /* TODO: is needed? */, v._1.toTermName , TypeTree(NoType),
+               Apply(Select(comonadWithPatternToExtract.duplicate, nme.map) setPos pos updateAttachment CoforAttachment, 
+                   List{
+                     makeClosure(pos, tmpe.duplicate, v._2) setPos pos updateAttachment CoforAttachment
+                     }) setPos pos) )
+          // get all variables & patterns
+          
+      }
+    }
+    // for each generator we extract the previous environment into local variables
+    // and append it with (generatorExpr, env.extract)
+    // then, we put everything coflatMap'ed on the previous step
+    def makeCombination(pos: Position, genIdx: Int, envNames: List[Tree], prev: Tree, qual: Tree): Tree = {
+      val envName = Ident(freshTermName("env"))
+
+      val lastBlockExpr = mkTuple(qual +: (Select(envName, nme.extract) setPos qual.pos updateAttachment CoforAttachment) +: Nil)
+      val bodyExpr = generateEnv(pos, genIdx, envNames, envName) :+ lastBlockExpr
+
+      val envFunc = makeClosure(pos, envName, Block(bodyExpr: _*))
+
+
+      Apply(Select(prev, nme.coflatMap) setPos qual.pos updateAttachment CoforAttachment,
+        List(envFunc)) setPos pos
+    }
+
+    /* The position of the closure that starts with generator at position `genpos`. */
+    def closurePos(genpos: Position) =
+      if (genpos == NoPosition) NoPosition
+      else {
+        val end = body.pos match {
+          case NoPosition => genpos.point
+          case bodypos    => bodypos.end
+        }
+        rangePos(genpos.source, genpos.start, genpos.point, end)
+      }
+    
+    
+    def mkTuplePairs(ident: Ident, inputPattern: Tree): (Tree, List[Name]) = {
+      val inputVariables = getVariables(inputPattern)
+      val inputExtractions = inputVariables.map(v => Match(
+          ident.duplicate,
+          List(
+              CaseDef(inputPattern.duplicate, EmptyTree, Ident(v._1)))))
+      (inputExtractions.foldRight[Tree](mkLiteralUnit) {
+        (elem, acc) => mkTuple(elem +: acc +: Nil)
+      }, inputVariables.map(_._1))
+    }
+
+    // we must have at least one generator (Parsers takes care of it). Where is NonEmptyList??
+    val pos = closurePos(enums.head.pos)
+    val inputTermName = Ident(freshTermName("input"))
+
+
+    /*
+     * creates the initial environment according to the inputNames
+     * inputNames.size match {
+     * 	case 1 => x => (x, ())
+     *  case n => x => (x._1, (x._2, (... , ())))
+     */
+    val xIdent = Ident("x")
+    
+    val (iEnv, inputVariables) = mkTuplePairs(xIdent, inputPattern)
+    val inputIdentifiers = inputVariables.map(Ident.apply) 
+    val inputNamesCount = inputVariables.size
+    
+    val initialEnv = makeClosure(pos, xIdent, iEnv) 
+
+    val firstPhase = Apply(Select(inputTermName, nme.map) setPos pos updateAttachment CoforAttachment,
+      List(initialEnv)) setPos pos
+
+    // names of enumerator patterns:
+    // x <- foo(...); y <- bar(...) ===> List(inputnames, x,y)
+    val envNames = inputIdentifiers.reverse ++ enums.map { case ValFrom(pat, _) => pat }
+
+    // compose generator desugared trees with the initial environment (firstPhase)
+    val enumsDesugar = enums.zipWithIndex.foldLeft[Tree](firstPhase) {
+      (acc, e) =>
+        val (enum @ ValFrom(pat, rhs), idx) = e
+        makeCombination(closurePos(enum.pos), idx + inputNamesCount, envNames, acc, rhs)
+    }
+    // assign the generators desugared trees to a local variable
+    val enumsBodyName = freshTermName("enums")
+    val enumsBody = ValDef(Modifiers(0), enumsBodyName, TypeTree(NoType), enumsDesugar)
+
+    // generate the body part of the cofor (the yield statement)
+    val lastPhase = generateEnv(pos, enums.size + inputNamesCount, envNames, Ident(enumsBodyName)) :+ body
+
+    // compose all
+    makeClosure(pos, inputTermName, Block(enumsBody, Block(lastPhase: _*))) setPos pos
+
+  }
   /** Create tree for pattern definition <val pat0 = rhs> */
   def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
     mkPatDef(Modifiers(0), pat, rhs)
@@ -801,7 +996,11 @@ abstract class TreeGen {
     if (valeq) ValEq(pat1, rhs).setPos(pos)
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
-
+  
+  def mkCoForGenerator(pos: Position, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): Tree = {
+    val pat1 = patvarTransformer.transform(pat)
+    ValFrom(pat1, rhs).setPos(pos)
+  }
   def mkCheckIfRefutable(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator) =
     if (treeInfo.isVarPatternDeep(pat)) rhs
     else {

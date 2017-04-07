@@ -172,6 +172,7 @@ trait StdNames {
     final val CASEkw: TermName      = kw("case")
     final val CLASSkw: TermName     = kw("class")
     final val CATCHkw: TermName     = kw("catch")
+	final val COFORkw: TermName     = kw("cofor")
     final val DEFkw: TermName       = kw("def")
     final val DOkw: TermName        = kw("do")
     final val ELSEkw: TermName      = kw("else")
@@ -667,6 +668,7 @@ trait StdNames {
     val canEqual_ : NameType           = "canEqual"
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = "clone"
+	val coflatMap : NameType           = "coflatMap"
     val collection: NameType           = "collection"
     val conforms: NameType             = "$conforms" // dollar prefix to avoid accidental shadowing
     val copy: NameType                 = "copy"
@@ -688,6 +690,7 @@ trait StdNames {
     val error: NameType                = "error"
     val ex: NameType                   = "ex"
     val experimental: NameType         = "experimental"
+	val extract: NameType              = "extract"
     val f: NameType                    = "f"
     val false_ : NameType              = "false"
     val filter: NameType               = "filter"
