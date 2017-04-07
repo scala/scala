@@ -1,4 +1,0 @@
-t8072.scala:4: error: value ifParSeq is not a member of List[Int]
-  val y = x.ifParSeq[Int](throw new Exception).otherwise(0)  // Shouldn't compile
-            ^
-one error found

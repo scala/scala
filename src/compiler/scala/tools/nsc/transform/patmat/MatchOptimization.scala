@@ -116,8 +116,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
               case _ =>
             }
 
-            debug.patmat("sharedPrefix: "+ sharedPrefix)
-            debug.patmat("suffix: "+ sharedPrefix)
+            debug.patmat(s"sharedPrefix: $sharedPrefix")
+            debug.patmat(s"suffix: $suffix")
             // if the shared prefix contains interesting conditions (!= True)
             // and the last of such interesting shared conditions reuses another treemaker's test
             // replace the whole sharedPrefix by a ReusingCondTreeMaker

@@ -1,7 +1,11 @@
+package scala.build
+
 import sbt._
 import Keys._
-import java.util.Properties
+import java.util.{Date, Locale, Properties, TimeZone}
 import java.io.{File, FileInputStream}
+import java.text.SimpleDateFormat
+
 import scala.collection.JavaConverters._
 import BuildSettings.autoImport._
 
@@ -49,19 +53,21 @@ object VersionUtil {
   /** Compute the canonical, Maven and OSGi version number from `baseVersion` and `baseVersionSuffix`.
     * Examples of the generated versions:
     *
-    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed", "2.11.8-SNAPSHOT",         "2.11.8.v20151215-133023-7559aed")
-    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed", "2.11.8-7559aed-SNAPSHOT", "2.11.8.v20151215-133023-7559aed")
-    * ("2.11.8", "SHA-NIGHTLY" ) -> ("2.11.8-7559aed-nightly",         "2.11.8-7559aed-nightly",  "2.11.8.v20151215-133023-NIGHTLY-7559aed")
-    * ("2.11.8", ""            ) -> ("2.11.8",                         "2.11.8",                  "2.11.8.v20151215-133023-VFINAL-7559aed")
-    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                      "2.11.8-M3",               "2.11.8.v20151215-133023-M3-7559aed")
-    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                     "2.11.8-RC4",              "2.11.8.v20151215-133023-RC4-7559aed")
-    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                     "2.11.8-RC4",              "2.11.8.v20151215-133023-RC4-7559aed")
+    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed", "2.11.8-bin-SNAPSHOT",         "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed", "2.11.8-bin-7559aed-SNAPSHOT", "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA"         ) -> ("2.11.8-7559aed",                 "2.11.8-bin-7559aed",          "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.0", "SHA"         ) -> ("2.11.0-7559aed",                 "2.11.0-pre-7559aed",          "2.11.0.v20151215-133023-7559aed")
+    * ("2.11.8", ""            ) -> ("2.11.8",                         "2.11.8",                      "2.11.8.v20151215-133023-VFINAL-7559aed")
+    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                      "2.11.8-M3",                   "2.11.8.v20151215-133023-M3-7559aed")
+    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                     "2.11.8-RC4",                  "2.11.8.v20151215-133023-RC4-7559aed")
+    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                     "2.11.8-RC4",                  "2.11.8.v20151215-133023-RC4-7559aed")
     *
     * A `baseVersionSuffix` of "SNAPSHOT" is the default, which is used for local snapshot builds. The PR validation
-    * job uses "SHA-SNAPSHOT". A proper version number for a nightly build can be computed with "SHA-nightly". An empty
+    * job uses "SHA-SNAPSHOT". A proper version number for an integration build can be computed with "SHA". An empty
     * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
     * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
+    val log = sLog.value
 
     val (base, suffix) = {
       val (b, s) = (baseVersion.value, baseVersionSuffix.value)
@@ -72,23 +78,44 @@ object VersionUtil {
       } else (b, s)
     }
 
-    def executeTool(tool: String) = {
-      val cmd =
-        if (System.getProperty("os.name").toLowerCase.contains("windows"))
-          s"cmd.exe /c tools\\$tool.bat -p"
-        else s"tools/$tool"
-      Process(cmd).lines.head
+    val (dateObj, sha) = {
+      try {
+        // Use JGit to get the commit date and SHA
+        import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+        import org.eclipse.jgit.revwalk.RevWalk
+        val db = new FileRepositoryBuilder().findGitDir.build
+        val head = db.resolve("HEAD")
+        if(head eq null) {
+          log.info("No git HEAD commit found -- Using current date and 'unknown' SHA")
+          (new Date, "unknown")
+        } else {
+          val commit = new RevWalk(db).parseCommit(head)
+          (new Date(commit.getCommitTime.toLong * 1000L), commit.getName.substring(0, 7))
+        }
+      } catch { case ex: Exception =>
+        log.error("Could not determine commit date + SHA: "+ex)
+        log.trace(ex)
+        (new Date, "unknown")
+      }
+    }
+    val date = {
+      val df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ENGLISH)
+      df.setTimeZone(TimeZone.getTimeZone("UTC"))
+      df.format(dateObj)
     }
 
-    val date = executeTool("get-scala-commit-date")
-    val sha = executeTool("get-scala-commit-sha").substring(0, 7)
+    val Patch = """\d+\.\d+\.(\d+)""".r
+    def cross = base match {
+      case Patch(p) if p.toInt > 0 => "bin"
+      case _ => "pre"
+    }
 
     val (canonicalV, mavenSuffix, osgiV, release) = suffix match {
-      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-SNAPSHOT",      s"$base.v$date-$sha",         false)
-      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
-      case "SHA-NIGHTLY"  => (s"$base-$sha-nightly", s"-$sha-nightly",  s"$base.v$date-NIGHTLY-$sha", true)
-      case ""             => (s"$base",              "",                s"$base.v$date-VFINAL-$sha",  true)
-      case suffix         => (s"$base-$suffix",      s"-$suffix",       s"$base.v$date-$suffix-$sha", true)
+      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-$cross-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$cross-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case "SHA"          => (s"$base-$sha",         s"-$cross-$sha",          s"$base.v$date-$sha",         false)
+      case ""             => (s"$base",              "",                       s"$base.v$date-VFINAL-$sha",  true)
+      case suffix         => (s"$base-$suffix",      s"-$suffix",              s"$base.v$date-$suffix-$sha", true)
     }
 
     Versions(canonicalV, base, mavenSuffix, osgiV, sha, date, release)
@@ -136,10 +163,7 @@ object VersionUtil {
   /** Build a dependency to a Scala module with the given group and artifact ID */
   def scalaDep(group: String, artifact: String, versionProp: String = null, scope: String = null, compatibility: String = "binary") = {
     val vp = if(versionProp eq null) artifact else versionProp
-    // TODO for 2.13.0-M1 -- eventually it will no longer work to use 2.12 modules,
-    // but at the moment, there aren't any 2.13.0-M1 modules to use yet, so hardcode 2.12 for now.
-    // val m = group % (artifact + "_" + versionProps(s"scala.$compatibility.version")) % versionNumber(vp)
-    val m = group % (artifact + "_2.12") % versionNumber(vp)
+    val m = group % (artifact + "_" + versionProps(s"scala.$compatibility.version")) % versionNumber(vp)
     val m2 = if(scope eq null) m else m % scope
     // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`:
     m2.exclude("org.scala-lang", "*")

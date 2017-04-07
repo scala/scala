@@ -172,4 +172,43 @@ class RangeConsistencyTest {
     assert(r.sum(possiblyNotDefaultNumeric) == Int.MinValue)
     assert(nr.sum(possiblyNotDefaultNumeric) == Int.MinValue)
   }
+
+  @Test
+  def test_SI10086()  {
+    implicit val customIntegral =
+      new Numeric.IntIsIntegral with Ordering.IntOrdering {}
+
+    val nr = NumericRange(1, 10, 1)
+    assert(nr.min == 1)
+    assert(nr.max == 9)
+
+    // Also test with custom ordering.
+    assert(nr.min(customIntegral.reverse) == 9)
+    assert(nr.max(customIntegral.reverse) == 1)
+
+    case class A(v: Int)
+
+    implicit object aIsIntegral extends scala.math.Integral[A] {
+      def compare(x: A, y: A): Int = x.v.compare(y.v)
+      def fromInt(x: Int): A = A(x)
+      def minus(x: A, y: A): A = A(x.v - y.v)
+      def negate(x: A): A = A(-x.v)
+      def plus(x: A, y: A): A = A(x.v + y.v)
+      def times(x: A, y: A): A = A(x.v * y.v)
+      def quot(x: A, y: A): A = A(x.v / y.v)
+      def rem(x: A, y: A): A = A(x.v % y.v)
+      def toDouble(x: A): Double = x.v.toDouble
+      def toFloat(x: A): Float = x.v.toFloat
+      def toInt(x: A): Int = x.v
+      def toLong(x: A): Long = x.v.toLong
+    }
+
+    val r = NumericRange(A(1), A(10), A(1))
+    assert(r.min == A(1))
+    assert(r.max == A(9))
+
+    // Also test with custom ordering.
+    assert(r.min(aIsIntegral.reverse) == A(9))
+    assert(r.max(aIsIntegral.reverse) == A(1))
+  }
 }

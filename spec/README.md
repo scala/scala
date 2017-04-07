@@ -8,7 +8,11 @@ Third, we'd like to support different output formats. An html page per chapter w
 
 ## Editing
 
-We use Jekyll 2 and [Redcarpet](https://github.com/vmg/redcarpet) to generate the html. Essentially, this is what github pages use.
+At the time of writing we are using Jekyll 3.3.0 and [Redcarpet 3.3.2](https://github.com/vmg/redcarpet) to generate the html.
+
+Check `Gemfile` for the current versions.
+
+We aim to track the configuration GitHub Pages use but at times differences will arise as GitHub Pages evolves.
 
 ## Building
 

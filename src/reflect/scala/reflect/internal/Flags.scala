@@ -92,7 +92,9 @@ class ModifierFlags {
   final val ABSTRACT      = 1 << 3        // abstract class, or used in conjunction with abstract override.
                                           // Note difference to DEFERRED!
   final val DEFERRED      = 1 << 4        // was `abstract' for members | trait is virtual
-  final val INTERFACE     = 1 << 7        // symbol is an interface (i.e. a trait which defines only abstract methods)
+  final val INTERFACE     = 1 << 7        // symbol is an interface. the flag is set for:
+                                          //  - scala-defined traits with only abstract methods or fields
+                                          //  - any java-defined interface (even if it has default methods)
   final val MUTABLE       = 1 << 12       // symbol is a mutable variable.
   final val PARAM         = 1 << 13       // symbol is a (value or type) parameter to a method
   final val MACRO         = 1 << 15       // symbol is a macro definition
@@ -161,7 +163,7 @@ class Flags extends ModifierFlags {
 
   final val LOCKED        = 1L << 39      // temporary flag to catch cyclic dependencies
   final val SPECIALIZED   = 1L << 40      // symbol is a generated specialized member
-  final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge
+  final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge (but not a bridge at the bytecode level)
 
   final val VARARGS       = 1L << 43      // symbol is a Java-style varargs method
   final val TRIEDCOOKING  = 1L << 44      // `Cooking` has been tried on this symbol

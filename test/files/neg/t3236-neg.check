@@ -1,0 +1,34 @@
+AnnotationTest.scala:3: error: annotation argument needs to be a constant; found: Constants.ConstIdent
+  @IntAnnotation(Constants.ConstIdent)
+                           ^
+AnnotationTest.scala:4: error: annotation argument needs to be a constant; found: Constants.ConstSelect
+  @IntAnnotation(Constants.ConstSelect)
+                           ^
+AnnotationTest.scala:6: error: annotation argument needs to be a constant; found: Constants.ConstOpExpr1
+  @IntAnnotation(Constants.ConstOpExpr1)
+                           ^
+AnnotationTest.scala:7: error: annotation argument needs to be a constant; found: Constants.ConstOpExpr2
+  @IntAnnotation(Constants.ConstOpExpr2)
+                           ^
+AnnotationTest.scala:8: error: annotation argument needs to be a constant; found: Constants.ConstOpExpr3
+  @BooleanAnnotation(Constants.ConstOpExpr3)
+                               ^
+AnnotationTest.scala:9: error: annotation argument needs to be a constant; found: Constants.ConstOpExpr4
+  @IntAnnotation(Constants.ConstOpExpr4)
+                           ^
+AnnotationTest.scala:10: error: annotation argument needs to be a constant; found: Constants.NonFinalConst
+  @IntAnnotation(Constants.NonFinalConst)
+                           ^
+AnnotationTest.scala:11: error: value NonStaticConst is not a member of object Constants
+  @IntAnnotation(Constants.NonStaticConst)
+                           ^
+AnnotationTest.scala:12: error: value NonConst is not a member of object Constants
+  @IntAnnotation(Constants.NonConst)
+                           ^
+AnnotationTest.scala:13: error: annotation argument needs to be a constant; found: Constants.ConstCastExpr
+  @ShortAnnotation(Constants.ConstCastExpr)
+                             ^
+AnnotationTest.scala:15: error: annotation argument needs to be a constant; found: Constants.StringAdd
+  @StringAnnotation(Constants.StringAdd)
+                              ^
+11 errors found

@@ -11,6 +11,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction._
+import scala.annotation.tailrec
 
 /** An interface to enable higher configurability of diagnostic messages
  *  regarding type errors.  This is barely a beginning as error messages are
@@ -274,19 +275,54 @@ trait TypeDiagnostics {
     if (AnyRefTpe <:< req) notAnyRefMessage(found) else ""
   }
 
+  def finalOwners(tpe: Type): Boolean = (tpe.prefix == NoPrefix) || recursivelyFinal(tpe)
+
+  @tailrec
+  final def recursivelyFinal(tpe: Type): Boolean = {
+    val prefix = tpe.prefix
+    if (prefix != NoPrefix) {
+      if (prefix.typeSymbol.isFinal) {
+        recursivelyFinal(prefix)
+      } else {
+        false
+      }
+    } else {
+      true
+    }
+  }
+
   // TODO - figure out how to avoid doing any work at all
   // when the message will never be seen.  I though context.reportErrors
   // being false would do that, but if I return "<suppressed>" under
   // that condition, I see it.
   def foundReqMsg(found: Type, req: Type): String = {
-    def baseMessage = (
-      ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
-       "\n required: " + req + existentialContext(req) + explainAlias(req)
-    )
-    (   withDisambiguation(Nil, found, req)(baseMessage)
-      + explainVariance(found, req)
-      + explainAnyVsAnyRef(found, req)
-    )
+    val foundWiden = found.widen
+    val reqWiden = req.widen
+    val sameNamesDifferentPrefixes =
+      foundWiden.typeSymbol.name == reqWiden.typeSymbol.name &&
+        foundWiden.prefix.typeSymbol != reqWiden.prefix.typeSymbol
+    val easilyMistakable =
+      sameNamesDifferentPrefixes &&
+      !req.typeSymbol.isConstant &&
+      finalOwners(foundWiden) && finalOwners(reqWiden) &&
+      !found.typeSymbol.isTypeParameterOrSkolem && !req.typeSymbol.isTypeParameterOrSkolem
+
+    if (easilyMistakable) {
+      val longestNameLength = foundWiden.nameAndArgsString.length max reqWiden.nameAndArgsString.length
+      val paddedFoundName = foundWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+      val paddedReqName = reqWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+      ";\n found   : " + (paddedFoundName + s" (in ${found.prefix.typeSymbol.fullNameString}) ") + explainAlias(found) +
+       "\n required: " + (paddedReqName + s" (in ${req.prefix.typeSymbol.fullNameString}) ") + explainAlias(req)
+    } else {
+      def baseMessage = {
+        ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
+         "\n required: " + req + existentialContext(req) + explainAlias(req)
+      }
+      (withDisambiguation(Nil, found, req)(baseMessage)
+        + explainVariance(found, req)
+        + explainAnyVsAnyRef(found, req)
+        )
+    }
   }
 
   def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {
@@ -314,14 +350,6 @@ trait TypeDiagnostics {
     private var postQualifiedWith: List[Symbol] = Nil
     def restoreName()     = sym.name = savedName
     def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
-
-    /** Prepend java.lang, scala., or Predef. if this type originated
-     *  in one of those.
-     */
-    def qualifyDefaultNamespaces() = {
-      val intersect = Set(trueOwner, aliasOwner) intersect UnqualifiedOwners
-      if (intersect.nonEmpty && tp.typeSymbolDirect.name == tp.typeSymbol.name) preQualify()
-    }
 
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
@@ -413,12 +441,6 @@ trait TypeDiagnostics {
         //   b) Otherwise, append (in <owner>)
         if (td1 string_== td2)
           tds foreach (_.nameQualify())
-
-        // If they have the same simple name, and either of them is in the
-        // scala package or predef, qualify with scala so it is not confusing why
-        // e.g. java.util.Iterator and Iterator are different types.
-        if (td1 name_== td2)
-          tds foreach (_.qualifyDefaultNamespaces())
 
         // If they still print identically:
         //   a) If they are type parameters with different owners, append (in <owner>)

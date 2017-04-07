@@ -26,7 +26,7 @@ package blackbox
  *  Refer to the documentation of top-level traits in this package to learn the details.
  *
  *  If a macro def refers to a macro impl that uses `blackbox.Context`, then this macro def becomes a blackbox macro,
- *  which means that its expansion will be upcast to its return type, enforcing faithfullness of that macro to its
+ *  which means that its expansion will be upcast to its return type, enforcing faithfulness of that macro to its
  *  type signature. Whitebox macros, i.e. the ones defined with `whitebox.Context`, aren't bound by this restriction,
  *  which enables a number of important use cases, but they are also going to enjoy less support than blackbox macros,
  *  so choose wisely. See the [[http://docs.scala-lang.org/overviews/macros/overview.html Macros Guide]] for more information.

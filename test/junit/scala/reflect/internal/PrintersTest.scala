@@ -556,7 +556,7 @@ class ClassPrintTest {
 
   @Test def testCaseClassWithParams3 = assertPrintedCode(sm"""
     |{
-    |  case class X(implicit x: scala.Int, s: scala.Predef.String);
+    |  case class X()(implicit x: scala.Int, s: scala.Predef.String);
     |  ()
     |}""")
 

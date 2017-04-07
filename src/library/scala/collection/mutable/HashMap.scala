@@ -11,7 +11,6 @@ package collection
 package mutable
 
 import generic._
-import scala.collection.parallel.mutable.ParHashMap
 
 /** This class implements mutable maps using a hashtable.
  *
@@ -42,7 +41,6 @@ extends AbstractMap[A, B]
    with Map[A, B]
    with MapLike[A, B, HashMap[A, B]]
    with HashTable[A, DefaultEntry[A, B]]
-   with CustomParallelizable[(A, B), ParHashMap[A, B]]
    with Serializable
 {
   initWithContents(contents)
@@ -54,8 +52,6 @@ extends AbstractMap[A, B]
   override def size: Int = tableSize
 
   def this() = this(null)
-
-  override def par = new ParHashMap[A, B](hashTableContents)
 
   // contains and apply overridden to avoid option allocations.
   override def contains(key: A): Boolean = findEntry(key) != null
@@ -72,15 +68,43 @@ extends AbstractMap[A, B]
     else Some(e.value)
   }
 
-  override def getOrElseUpdate(key: A, value: => B): B = {
-    val i = index(elemHashCode(key))
-    val e = findEntry0(key, i)
-    if (e ne null) e.value
+  override def getOrElseUpdate(key: A, defaultValue: => B): B = {
+    val hash = elemHashCode(key)
+    val i = index(hash)
+    val entry = findEntry(key, i)
+    if (entry != null) entry.value
     else {
-      val newEntry = createNewEntry(key, value)
-      addEntry0(newEntry, i)
-      newEntry.value
+      val table0 = table
+      val default = defaultValue
+      // Avoid recomputing index if the `defaultValue()` hasn't triggered
+      // a table resize.
+      val newEntryIndex = if (table0 eq table) i else index(hash)
+      addEntry(createNewEntry(key, default), newEntryIndex)
     }
+  }
+
+  /* inlined HashTable.findEntry0 to preserve its visibility */
+  private[this] def findEntry(key: A, h: Int): Entry = {
+    var e = table(h).asInstanceOf[Entry]
+    while (notFound(key, e))
+      e = e.next
+    e
+  }
+  private[this] def notFound(key: A, e: Entry): Boolean = (e != null) && !elemEquals(e.key, key)
+
+  /* inlined HashTable.addEntry0 to preserve its visibility */
+  private[this] def addEntry(e: Entry, h: Int): B = {
+    if (tableSize >= threshold) addEntry(e)
+    else addEntry0(e, h)
+    e.value
+  }
+
+  /* extracted to make addEntry inlinable */
+  private[this] def addEntry0(e: Entry, h: Int) {
+    e.next = table(h).asInstanceOf[Entry]
+    table(h) = e
+    tableSize += 1
+    nnSizeMapAdd(h)
   }
 
   override def put(key: A, value: B): Option[B] = {

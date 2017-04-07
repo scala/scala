@@ -1,4 +1,3 @@
-warning: there were two deprecation warnings (since 2.12.0); re-run with -deprecation for details
 
 [check 'abcdefghi'] len = 9
 sub(0, 9) == 'abcdefghi'

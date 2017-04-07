@@ -115,19 +115,4 @@ package object scala {
   type Right[+A, +B] = scala.util.Right[A, B]
   val Right = scala.util.Right
 
-  // Annotations which we might move to annotation.*
-/*
-  type SerialVersionUID = annotation.SerialVersionUID
-  type deprecated = annotation.deprecated
-  type deprecatedName = annotation.deprecatedName
-  type inline = annotation.inline
-  type native = annotation.native
-  type noinline = annotation.noinline
-  type remote = annotation.remote
-  type specialized = annotation.specialized
-  type transient = annotation.transient
-  type throws  = annotation.throws
-  type unchecked = annotation.unchecked.unchecked
-  type volatile = annotation.volatile
-  */
 }

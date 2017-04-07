@@ -59,7 +59,7 @@ trait TypeDebugging {
   object typeDebug {
     import scala.Console._
 
-    private val colorsOk = sys.props contains "scala.color"
+    private val colorsOk = scala.util.Properties.coloredOutputEnabled
     private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
     private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
 

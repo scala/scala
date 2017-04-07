@@ -416,7 +416,7 @@ abstract class SymbolTable extends macros.Universe
    */
   def isCompilerUniverse = false
 
-  @deprecated("use enteringPhase", "2.10.0") // Used in SBT 0.12.4
+  @deprecated("use enteringPhase", "2.10.0") // Used in sbt 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
 
 

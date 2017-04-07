@@ -106,6 +106,15 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     case _                               => super.:+(elem)(bf)
   }
 
+  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Queue[A], B, That]): That = {
+    if (bf eq Queue.ReusableCBF) {
+      val thatQueue = that.asInstanceOf[Queue[B]]
+      new Queue[B](thatQueue.in ++ (thatQueue.out reverse_::: this.in), this.out).asInstanceOf[That]
+    } else {
+      super.++(that)(bf)
+    }
+  }
+
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
@@ -113,16 +122,15 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
    */
   def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
 
-  /** Returns a new queue with all elements provided by an `Iterable` object
-   *  added at the end of the queue.
+  /** Creates a new queue with all elements provided by an `Iterable` object
+   *  added at the end of the old queue.
    *
-   *  The elements are prepended in the order they are given out by the
+   *  The elements are appended in the order they are given out by the
    *  iterator.
    *
    *  @param  iter        an iterable object
    */
-  def enqueue[B >: A](iter: Iterable[B]) =
-    new Queue(iter.toList reverse_::: in, out)
+  def enqueue[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.

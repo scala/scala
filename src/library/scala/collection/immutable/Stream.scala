@@ -1119,11 +1119,11 @@ object Stream extends SeqFactory[Stream] {
     /** Construct a stream consisting of a given first element followed by elements
      *  from a lazily evaluated Stream.
      */
-    def #::(hd: A): Stream[A] = cons(hd, tl)
+    def #::[B >: A](hd: B): Stream[B] = cons(hd, tl)
     /** Construct a stream consisting of the concatenation of the given stream and
      *  a lazily evaluated Stream.
      */
-    def #:::(prefix: Stream[A]): Stream[A] = prefix append tl
+    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix append tl
   }
 
   /** A wrapper method that adds `#::` for cons and `#:::` for concat as operations

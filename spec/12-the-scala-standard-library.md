@@ -141,7 +141,7 @@ Byte - Short
 whereas `Double` is the highest-ranked.  Ranking does _not_
 imply a [conformance relationship](03-types.html#conformance); for
 instance `Int` is not a subtype of `Long`.  However, object
-[`Predef`](#the-predef-object) defines [views](07-implicit-parameters-and-views.html#views)
+[`Predef`](#the-predef-object) defines [views](07-implicits.html#views)
 from every numeric value type to all higher-ranked numeric value types.
 Therefore, lower-ranked types are implicitly converted to higher-ranked types
 when required by the [context](06-expressions.html#implicit-conversions).
@@ -363,10 +363,6 @@ case class Tuple$n$[+T_1, ..., +T_n](_1: T_1, ..., _$n$: T_$n$) {
 }
 ```
 
-The implicitly imported [`Predef`](#the-predef-object) object defines
-the names `Pair` as an alias of `Tuple2` and `Triple`
-as an alias for `Tuple3`.
-
 ### The `Function` Classes
 
 Scala defines function classes `Function$n$` for $n = 1 , \ldots , 22$.
@@ -467,7 +463,7 @@ val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
 
 The instantiation of an array with a polymorphic element type $T$ requires
 information about type $T$ at runtime.
-This information is synthesized by adding a [context bound](07-implicit-parameters-and-views.html#context-bounds-and-view-bounds)
+This information is synthesized by adding a [context bound](07-implicits.html#context-bounds-and-view-bounds)
 of `scala.reflect.ClassTag` to type $T$.
 An example is the
 following implementation of method `mkArray`, which creates
@@ -671,7 +667,7 @@ object Predef {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions -----------------------------
-  def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  def identity[A](x: A): A         = x
   def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
@@ -709,41 +705,12 @@ object Predef {
 ```
 
 ```scala
-  // tupling ---------------------------------------------------------
-
-  type Pair[+A, +B] = Tuple2[A, B]
-  object Pair {
-    def apply[A, B](x: A, y: B) = Tuple2(x, y)
-    def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-  }
-
-  type Triple[+A, +B, +C] = Tuple3[A, B, C]
-  object Triple {
-    def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
-    def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
-  }
-
   // Printing and reading -----------------------------------------------
 
   def print(x: Any) = Console.print(x)
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.printf(text.format(xs: _*))
-
-  def readLine(): String = Console.readLine()
-  def readLine(text: String, args: Any*) = Console.readLine(text, args)
-  def readBoolean() = Console.readBoolean()
-  def readByte() = Console.readByte()
-  def readShort() = Console.readShort()
-  def readChar() = Console.readChar()
-  def readInt() = Console.readInt()
-  def readLong() = Console.readLong()
-  def readFloat() = Console.readFloat()
-  def readDouble() = Console.readDouble()
-  def readf(format: String) = Console.readf(format)
-  def readf1(format: String) = Console.readf1(format)
-  def readf2(format: String) = Console.readf2(format)
-  def readf3(format: String) = Console.readf3(format)
 
   // Implicit conversions ------------------------------------------------
 

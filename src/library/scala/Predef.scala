@@ -109,7 +109,7 @@ import scala.io.StdIn
  * @groupprio conversions-array-to-wrapped-array 110
  * @groupdesc conversions-array-to-wrapped-array Conversions from Arrays to WrappedArrays.
  */
-object Predef extends LowPriorityImplicits with DeprecatedPredef {
+object Predef extends LowPriorityImplicits {
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.
@@ -283,24 +283,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    */
   def ??? : Nothing = throw new NotImplementedError
 
-  // tupling ------------------------------------------------------------
-
-  @deprecated("use built-in tuple syntax or Tuple2 instead", "2.11.0")
-  type Pair[+A, +B] = Tuple2[A, B]
-  @deprecated("use built-in tuple syntax or Tuple2 instead", "2.11.0")
-  object Pair {
-    def apply[A, B](x: A, y: B) = Tuple2(x, y)
-    def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-  }
-
-  @deprecated("use built-in tuple syntax or Tuple3 instead", "2.11.0")
-  type Triple[+A, +B, +C] = Tuple3[A, B, C]
-  @deprecated("use built-in tuple syntax or Tuple3 instead", "2.11.0")
-  object Triple {
-    def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
-    def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
-  }
-
   // implicit classes -----------------------------------------------------
 
   /** @group implicit-classes-any */
@@ -332,33 +314,19 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def +(other: String): String = String.valueOf(self) + other
   }
 
-  implicit final class RichException(private val self: Throwable) extends AnyVal {
-    import scala.compat.Platform.EOL
-    @deprecated("use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
-  }
-
-  // Sadly we have to do `@deprecatedName(null, "2.12.0")` because
-  // `@deprecatedName(since="2.12.0")` incurs a warning about
-  //   Usage of named or default arguments transformed this annotation constructor call into a block.
-  //   The corresponding AnnotationInfo will contain references to local values and default getters
-  //   instead of the actual argument trees
-  // and `@deprecatedName(Symbol("<none>"), "2.12.0")` crashes scalac with
-  //   scala.reflect.internal.Symbols$CyclicReference: illegal cyclic reference involving object Symbol
-  // in run/repl-no-imports-no-predef-power.scala.
-  /** @group implicit-classes-char */
-  implicit final class SeqCharSequence(@deprecated("will be made private", "2.12.0") @deprecatedName(null, "2.12.0") val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
-    def length: Int                                     = __sequenceOfChars.length
-    def charAt(index: Int): Char                        = __sequenceOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(__sequenceOfChars.slice(start, end))
-    override def toString                               = __sequenceOfChars mkString ""
+  implicit final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+    def length: Int                                     = sequenceOfChars.length
+    def charAt(index: Int): Char                        = sequenceOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
+    override def toString                               = sequenceOfChars mkString ""
   }
 
   /** @group implicit-classes-char */
-  implicit final class ArrayCharSequence(@deprecated("will be made private", "2.12.0") @deprecatedName(null, "2.12.0") val __arrayOfChars: Array[Char]) extends CharSequence {
-    def length: Int                                     = __arrayOfChars.length
-    def charAt(index: Int): Char                        = __arrayOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(__arrayOfChars, start, end)
-    override def toString                               = __arrayOfChars mkString ""
+  implicit final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
+    def length: Int                                     = arrayOfChars.length
+    def charAt(index: Int): Char                        = arrayOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
+    override def toString                               = arrayOfChars mkString ""
   }
 
   implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
@@ -504,9 +472,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /** @group type-constraints */
   implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
 
-  @deprecated("use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
-  def conforms[A]: A <:< A = $conforms[A]
-
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
    * @see `<:<` for expressing subtyping constraints
@@ -532,33 +497,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
      */
     implicit def dummyImplicit: DummyImplicit = new DummyImplicit
   }
-}
-
-private[scala] trait DeprecatedPredef {
-  self: Predef.type =>
-
-  // Deprecated stubs for any who may have been calling these methods directly.
-  @deprecated("use `ArrowAssoc`", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A]                                      = new ArrowAssoc(x)
-  @deprecated("use `Ensuring`", "2.11.0") def any2Ensuring[A](x: A): Ensuring[A]                                            = new Ensuring(x)
-  @deprecated("use `StringFormat`", "2.11.0") def any2stringfmt(x: Any): StringFormat[Any]                                  = new StringFormat(x)
-  @deprecated("use `Throwable` directly", "2.11.0") def exceptionWrapper(exc: Throwable)                                    = new RichException(exc)
-  @deprecated("use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
-  @deprecated("use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
-
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readLine(): String                 = StdIn.readLine()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readLine(text: String, args: Any*) = StdIn.readLine(text, args: _*)
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readBoolean()                      = StdIn.readBoolean()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readByte()                         = StdIn.readByte()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readShort()                        = StdIn.readShort()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readChar()                         = StdIn.readChar()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readInt()                          = StdIn.readInt()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readLong()                         = StdIn.readLong()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readFloat()                        = StdIn.readFloat()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readDouble()                       = StdIn.readDouble()
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readf(format: String)              = StdIn.readf(format)
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readf1(format: String)             = StdIn.readf1(format)
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readf2(format: String)             = StdIn.readf2(format)
-  @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readf3(format: String)             = StdIn.readf3(format)
 }
 
 /** The `LowPriorityImplicits` class provides implicit values that

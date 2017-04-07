@@ -1,0 +1,12 @@
+maxwarns.scala:12: warning: method x in object X is deprecated (since forever): just to annoy people
+  def a = x
+          ^
+maxwarns.scala:14: warning: method x in object X is deprecated (since forever): just to annoy people
+  def b = x
+          ^
+maxwarns.scala:16: warning: method x in object X is deprecated (since forever): just to annoy people
+  def c = x
+          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

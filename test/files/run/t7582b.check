@@ -1,5 +1,5 @@
-InlineHolder.scala:9: warning: p1/InlineHolder$::inlinable()I is annotated @inline but could not be inlined:
-The callee p1/InlineHolder$::inlinable()I contains the instruction INVOKESTATIC p1/PackageProtectedJava.protectedMethod ()I
+InlineHolder_2.scala:9: warning: p1/InlineHolder$::inlinable()I is annotated @inline but could not be inlined:
+The callee p1/InlineHolder$::inlinable()I contains the instruction INVOKESTATIC p1/PackageProtectedJava_1.protectedMethod ()I
 that would cause an IllegalAccessError when inlined into class O$.
   def x = p1.InlineHolder.inlinable
                           ^

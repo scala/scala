@@ -189,7 +189,7 @@ abstract class RefChecks extends Transform {
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
           log(s"Generating varargs bridge for ${member.fullLocationString} of type $bridgetpe")
 
-          val newFlags = (member.flags | VBRIDGE | ARTIFACT) & ~PRIVATE
+          val newFlags = (member.flags | VBRIDGE) & ~PRIVATE
           val bridge   = member.cloneSymbolImpl(clazz, newFlags) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
@@ -1130,7 +1130,7 @@ abstract class RefChecks extends Transform {
     }
     /** Sensibility check examines flavors of equals. */
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
-      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && !currentOwner.isSynthetic =>
+      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
         checkSensibleEquals(pos, qual, name, fn.symbol, args.head)
       case _ =>
     }
@@ -1158,6 +1158,7 @@ abstract class RefChecks extends Transform {
         }
       }
       checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
+      checkUndesiredProperties(rtpe.typeSymbol.primaryConstructor, tree.pos)
       tree
     }
 
@@ -1412,6 +1413,12 @@ abstract class RefChecks extends Transform {
         transformTrees(annots flatMap (_.args))
       }
 
+      def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { level =>
+        if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred)
+          reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
+      }
+      if (settings.isScala213) checkIsElidable(tree.symbol)
+
       tree match {
         case m: MemberDef =>
           val sym = m.symbol
@@ -1425,7 +1432,7 @@ abstract class RefChecks extends Transform {
           analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
 
         case tpt@TypeTree() =>
-          if(tpt.original != null) {
+          if (tpt.original != null) {
             tpt.original foreach {
               case dc@TypeTreeWithDeferredRefCheck() =>
                 applyRefchecksToAnnotations(dc.check()) // #2416

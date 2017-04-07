@@ -168,7 +168,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       } else if (scalaPrimitives.isArraySet(code)) {
         val List(a1, a2) = args
         genLoad(a1, INT)
-        genLoad(a2)
+        genLoad(a2, elementType)
         generatedType = UNIT
         bc.astore(elementType)
       } else {
@@ -630,7 +630,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
-          val nativeKind = tpeTK(expr)
+          val nativeKind = typeToBType(fun.symbol.firstParam.info)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
@@ -918,7 +918,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         (args zip params) filterNot isTrivial
       }
 
-      // first push *all* arguments. This makes sure muliple uses of the same labelDef-var will all denote the (previous) value.
+      // first push *all* arguments. This makes sure multiple uses of the same labelDef-var will all denote the (previous) value.
       aps foreach { case (arg, param) => genLoad(arg, locals(param).tk) } // `locals` is known to contain `param` because `genDefDef()` visited `labelDefsAtOrUnder`
 
       // second assign one by one to the LabelDef's variables.
@@ -1264,14 +1264,22 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genEqEqPrimitive(l: Tree, r: Tree, success: asm.Label, failure: asm.Label, targetIfNoJump: asm.Label, pos: Position) {
 
       /* True if the equality comparison is between values that require the use of the rich equality
-       * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
+       * comparator (scala.runtime.BoxesRunTime.equals). This is the case when either side of the
        * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
-       * When it is statically known that both sides are equal and subtypes of Number of Character,
-       * not using the rich equality is possible (their own equals method will do ok.)
+       *
+       * When it is statically known that both sides are equal and subtypes of Number or Character,
+       * not using the rich equality is possible (their own equals method will do ok), except for
+       * java.lang.Float and java.lang.Double: their `equals` have different behavior around `NaN`
+       * and `-0.0`, see Javadoc (scala-dev#329).
        */
       val mustUseAnyComparator: Boolean = {
-        val areSameFinals = l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe)
-        !areSameFinals && platform.isMaybeBoxed(l.tpe.typeSymbol) && platform.isMaybeBoxed(r.tpe.typeSymbol)
+        platform.isMaybeBoxed(l.tpe.typeSymbol) && platform.isMaybeBoxed(r.tpe.typeSymbol) && {
+          val areSameFinals = l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe) && {
+            val sym = l.tpe.typeSymbol
+            sym != BoxedFloatClass && sym != BoxedDoubleClass
+          }
+          !areSameFinals
+        }
       }
 
       if (mustUseAnyComparator) {

@@ -276,7 +276,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           // SelectFromTypeTree otherwise. See #3567.
           // Select nodes can be later
           // converted in the typechecker to SelectFromTypeTree if the class
-          // turns out to be an instance ionner class instead of a static inner class.
+          // turns out to be an instance inner class instead of a static inner class.
           def typeSelect(t: Tree, name: Name) = t match {
             case Ident(_) | Select(_, _) => Select(t, name)
             case _ => SelectFromTypeTree(t, name.toTypeName)
@@ -572,10 +572,48 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
-      if (in.token == EQUALS && !mods.isParameter) skipTo(COMMA, SEMI)
+
+      /** Tries to detect final static literals syntactically and returns a constant type replacement */
+      def optConstantTpe(): Tree = {
+        def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
+
+        def forConst(const: Constant): Tree = {
+          if (in.token != SEMI) tpt1
+          else {
+            def isStringTyped = tpt1 match {
+              case Ident(TypeName("String")) => true
+              case _ => false
+            }
+            if (const.tag == StringTag && isStringTyped) constantTpe(const)
+            else if (tpt1.tpe != null && (const.tag == BooleanTag || const.isNumeric)) {
+              // for example, literal 'a' is ok for float. 127 is ok for byte, but 128 is not.
+              val converted = const.convertTo(tpt1.tpe)
+              if (converted == null) tpt1
+              else constantTpe(converted)
+            } else tpt1
+          }
+        }
+
+        in.nextToken() // EQUALS
+        if (mods.hasFlag(Flags.STATIC) && mods.isFinal) {
+          val neg = in.token match {
+            case MINUS | BANG => in.nextToken(); true
+            case _ => false
+          }
+          tryLiteral(neg).map(forConst).getOrElse(tpt1)
+        } else tpt1
+      }
+
+      val tpt2: Tree =
+        if (in.token == EQUALS && !mods.isParameter) {
+          val res = optConstantTpe()
+          skipTo(COMMA, SEMI)
+          res
+        } else tpt1
+
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
-        ValDef(mods1, name, tpt1, blankExpr)
+        ValDef(mods1, name, tpt2, blankExpr)
       }
     }
 
@@ -829,6 +867,25 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       case AT        => annotationDecl(mods)
       case CLASS     => joinComment(classDecl(mods))
       case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+    }
+
+    def tryLiteral(negate: Boolean = false): Option[Constant] = {
+      val l = in.token match {
+        case TRUE      => !negate
+        case FALSE     => negate
+        case CHARLIT   => in.name.charAt(0)
+        case INTLIT    => in.intVal(negate).toInt
+        case LONGLIT   => in.intVal(negate)
+        case FLOATLIT  => in.floatVal(negate).toFloat
+        case DOUBLELIT => in.floatVal(negate)
+        case STRINGLIT => in.name.toString
+        case _         => null
+      }
+      if (l == null) None
+      else {
+        in.nextToken()
+        Some(Constant(l))
+      }
     }
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq

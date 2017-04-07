@@ -266,7 +266,7 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     // undo gen.mkTemplate
-    protected object UnMkTemplate {
+    protected class UnMkTemplate(isCaseClass: Boolean) {
       def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
         val Template(parents, selfType, _) = templ
         val tbody = treeInfo.untypecheckedTemplBody(templ)
@@ -296,8 +296,9 @@ trait ReificationSupport { self: SymbolTable =>
             result(ctorMods, Nil, edefs, body)
           else {
             // undo conversion from (implicit ... ) to ()(implicit ... ) when it's the only parameter section
+            // except that case classes require the explicit leading empty parameter list
             val vparamssRestoredImplicits = ctorVparamss match {
-              case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit => tail
+              case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit && !isCaseClass => tail
               case other => other
             }
             // undo flag modifications by merging flag info from constructor args and fieldDefs
@@ -314,7 +315,9 @@ trait ReificationSupport { self: SymbolTable =>
           }
         }
       }
+      def asCase = new UnMkTemplate(isCaseClass = true)
     }
+    protected object UnMkTemplate extends UnMkTemplate(isCaseClass = false)
 
     protected def mkSelfType(tree: Tree) = tree match {
       case vd: ValDef =>
@@ -346,9 +349,15 @@ trait ReificationSupport { self: SymbolTable =>
 
       def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
                                        List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
-        case ClassDef(mods, name, tparams, UnMkTemplate(parents, selfType, ctorMods, vparamss, earlyDefs, body))
-          if !ctorMods.isTrait && !ctorMods.hasFlag(JAVA) =>
-          Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+        case ClassDef(mods, name, tparams, impl) =>
+          val X = if (mods.isCase) UnMkTemplate.asCase else UnMkTemplate
+          impl match {
+            case X(parents, selfType, ctorMods, vparamss, earlyDefs, body)
+                if (!ctorMods.isTrait && !ctorMods.hasFlag(JAVA)) =>
+              Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+            case _ =>
+              None
+          }
         case _ =>
           None
       }

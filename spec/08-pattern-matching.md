@@ -217,8 +217,8 @@ and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if 
 This case is further discussed [below](#pattern-sequences).
 
 ###### Example
-The `Predef` object contains a definition of an
-extractor object `Pair`:
+
+If we define an extractor object `Pair`:
 
 ```scala
 object Pair {

@@ -107,19 +107,20 @@ class Path private[io] (val jfile: JFile) {
   def /(child: Directory): Directory = /(child: Path).toDirectory
   def /(child: File): File = /(child: Path).toFile
 
-  /** If this path is a container, recursively iterate over its contents.
+  /** If this path is a directory, recursively iterate over its contents.
    *  The supplied condition is a filter which is applied to each element,
-   *  with that branch of the tree being closed off if it is true.  So for
-   *  example if the condition is true for some subdirectory, nothing
-   *  under that directory will be in the Iterator; but otherwise each
-   *  file and subdirectory underneath it will appear.
+   *  with that branch of the tree being closed off if it is false.
+   *  So for example if the condition is false for some subdirectory, nothing
+   *  under that directory will be in the Iterator. If it's true, all files for
+   *  which the condition holds and are directly in that subdirectory are in the
+   *  Iterator, and all sub-subdirectories are recursively evaluated
    */
   def walkFilter(cond: Path => Boolean): Iterator[Path] =
     if (isFile) toFile walkFilter cond
     else if (isDirectory) toDirectory walkFilter cond
     else Iterator.empty
 
-  /** Equivalent to walkFilter(_ => false).
+  /** Equivalent to walkFilter(_ => true).
    */
   def walk: Iterator[Path] = walkFilter(_ => true)
 

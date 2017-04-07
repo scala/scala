@@ -1,3 +1,5 @@
+package scala.build
+
 import ParserUtil._
 import sbt._
 import sbt.complete.Parser._
@@ -5,7 +7,7 @@ import sbt.complete.Parsers._
 import sbt.complete._
 
 object ScalaOptionParser {
-  /** A SBT parser for the Scala command line runners (scala, scalac, etc) */
+  /** An sbt parser for the Scala command line runners (scala, scalac, etc) */
   def scalaParser(entryPoint: String, globalBase: File): Parser[String] = {
     def BooleanSetting(name: String): Parser[String] =
       token(name)
@@ -83,7 +85,7 @@ object ScalaOptionParser {
   private def booleanSettingNames = List("-X", "-Xcheckinit", "-Xdev", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xfull-lubs", "-Xfuture", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
     "-Xno-forwarders", "-Xno-patmat-analysis", "-Xno-uescape", "-Xnojline", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xstrict-inference", "-Xverify", "-Y",
     "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
-    "-Yeta-expand-keeps-star", "-Yide-debug", "-Yinfer-argument-types", "-Yinfer-by-name",
+    "-Yide-debug", "-Yinfer-argument-types",
     "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
     "-Yno-completion", "-Yno-generic-signatures", "-Yno-imports", "-Yno-predef",
     "-Yoverride-objects", "-Yoverride-vars", "-Ypatmat-debug", "-Yno-adapted-args", "-Ypartial-unification", "-Ypos-debug", "-Ypresentation-debug",

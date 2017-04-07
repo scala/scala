@@ -89,7 +89,7 @@ package object util {
   implicit class StackTraceOps(private val e: Throwable) extends AnyVal with StackTracing {
     /** Format the stack trace, returning the prefix consisting of frames that satisfy
      *  a given predicate.
-     *  The format is similar to the typical case described in the JavaDoc
+     *  The format is similar to the typical case described in the Javadoc
      *  for [[java.lang.Throwable#printStackTrace]].
      *  If a stack trace is truncated, it will be followed by a line of the form
      *  `... 3 elided`, by analogy to the lines `... 3 more` which indicate

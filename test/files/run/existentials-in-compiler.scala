@@ -79,7 +79,7 @@ package extest {
       exitingTyper {
         clazz.info
         println(clazz.defString)
-        println("    " + classExistentialType(clazz) + "\n")
+        println("    " + classExistentialType(clazz.owner.typeOfThis, clazz) + "\n")
       }
     }
   }

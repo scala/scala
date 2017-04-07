@@ -12,7 +12,6 @@ package collection
 import generic._
 import mutable.{ Builder, MapBuilder }
 import scala.annotation.migration
-import parallel.ParMap
 
 /** A template trait for maps, which associate keys with values.
  *
@@ -59,7 +58,6 @@ trait MapLike[K, +V, +This <: MapLike[K, V, This] with Map[K, V]]
      with IterableLike[(K, V), This]
      with GenMapLike[K, V, This]
      with Subtractable[K, This]
-     with Parallelizable[(K, V), ParMap[K, V]]
 {
 self =>
 
@@ -343,8 +341,6 @@ self =>
     foreach(result += _)
     result
   }
-
-  protected[this] override def parCombiner = ParMap.newCombiner[K, V]
 
   /** Appends all bindings of this map to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string

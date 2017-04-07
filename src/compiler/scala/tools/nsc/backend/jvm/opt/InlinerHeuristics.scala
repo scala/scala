@@ -125,7 +125,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
         if (callsite.isInlineAnnotated && callee.canInlineFromSource) {
           // By default, we only emit inliner warnings for methods annotated @inline. However, we don't
           // want to be unnecessarily noisy with `-opt-warnings:_`: for example, the inliner heuristic
-          // would attempty to inline `Function1.apply$sp$II`, as it's higher-order (the receiver is
+          // would attempt to inline `Function1.apply$sp$II`, as it's higher-order (the receiver is
           // a function), and it's concrete (forwards to `apply`). But because it's non-final, it cannot
           // be inlined. So we only create warnings here for methods annotated @inline.
           Some(Left(CalleeNotFinal(

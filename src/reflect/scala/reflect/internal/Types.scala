@@ -91,15 +91,12 @@ trait Types
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
    */
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
   private final val sharperSkolems = sys.props contains "scalac.experimental.sharper-skolems"
-
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   /** Caching the most recent map has a 75-90% hit rate. */
   private object substTypeMapCache {
@@ -312,8 +309,16 @@ trait Types
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
 
+    /** Should this be printed as an infix type (@showAsInfix class &&[T, U])? */
+    def isShowAsInfixType: Boolean = false
+
     /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
+
+    /** If this is a lazy type corresponding to a subclass add it to its
+     *  parents children
+     */
+    def forceDirectSuperclasses: Unit = ()
 
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
@@ -961,6 +966,8 @@ trait Types
      *  read better as "object Foo" here and "Foo.type" the rest of the time.
      */
     def directObjectString = safeToString
+
+    def nameAndArgsString = typeSymbol.name.toString
 
     /** A test whether a type contains any unification type variables.
      *  Overridden with custom logic except where trivially true.
@@ -2100,6 +2107,15 @@ trait Types
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
+
+    /* It only makes sense to show 2-ary type constructors infix.
+     * By default we do only if it's a symbolic name. */
+    override def isShowAsInfixType: Boolean =
+      hasLength(args, 2) &&
+        sym.getAnnotation(ShowAsInfixAnnotationClass)
+         .map(_ booleanArg 0 getOrElse true)
+         .getOrElse(!Character.isUnicodeIdentifierStart(sym.decodedName.head))
+
     private[Types] def invalidateTypeRefCaches(): Unit = {
       parentsCache = null
       parentsPeriod = NoPeriod
@@ -2307,6 +2323,8 @@ trait Types
     private def preString  = if (needsPreString) pre.prefixString else ""
     private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
 
+    override def nameAndArgsString = typeSymbol.name.toString + argsString
+
     private def refinementDecls = fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
     private def refinementString = (
       if (sym.isStructuralRefinement)
@@ -2324,6 +2342,22 @@ trait Types
       case Nil        => noArgsString
       case arg :: Nil => s"($arg,)"
       case _          => args.mkString("(", ", ", ")")
+    }
+    private def infixTypeString: String = {
+      /* SLS 3.2.8: all infix types have the same precedence.
+       * In A op B op' C, op and op' need the same associativity.
+       * Therefore, if op is left associative, anything on its right
+       * needs to be parenthesized if it's an infix type, and vice versa. */
+      // we should only get here after `isShowInfixType` says we have 2 args
+      val l :: r :: Nil = args
+
+      val isRightAssoc = typeSymbol.decodedName endsWith ":"
+
+      val lstr = if (isRightAssoc && l.isShowAsInfixType) s"($l)" else l.toString
+
+      val rstr = if (!isRightAssoc && r.isShowAsInfixType) s"($r)" else r.toString
+
+      s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
       case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
@@ -2348,6 +2382,8 @@ trait Types
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
+        else if (isShowAsInfixType)
+          infixTypeString
         else if (isTupleTypeDirect(this))
           tupleTypeString
         else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
@@ -2696,6 +2732,19 @@ trait Types
         arg.toString
     }
 
+    override def nameAndArgsString: String = underlying match {
+      case TypeRef(_, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+        sym.name + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
+      case TypeRef(_, sym, args) =>
+        sym.name + args.mkString("[", ",", "]") + existentialClauses
+      case _ => underlying.typeSymbol.name + existentialClauses
+    }
+
+    private def existentialClauses = {
+      val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
+      if (settings.explaintypes) "(" + str + ")" else str
+    }
+
     /** An existential can only be printed with wildcards if:
      *   - the underlying type is a typeref
      *   - every quantified variable appears at most once as a type argument and
@@ -2714,7 +2763,7 @@ trait Types
             tpe.typeSymbol.isRefinementClass && (tpe.parents exists isQuantified)
           }
           val (wildcardArgs, otherArgs) = args partition (arg => qset contains arg.typeSymbol)
-          wildcardArgs.distinct == wildcardArgs &&
+          wildcardArgs.toSet.size == wildcardArgs.size &&
           !(otherArgs exists (arg => isQuantified(arg))) &&
           !(wildcardArgs exists (arg => isQuantified(arg.typeSymbol.info.bounds))) &&
           !(qset contains sym) &&
@@ -2724,17 +2773,13 @@ trait Types
     }
 
     override def safeToString: String = {
-      def clauses = {
-        val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
-        if (settings.explaintypes) "(" + str + ")" else str
-      }
       underlying match {
         case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
-          "(" + underlying + ")" + clauses
+          "(" + underlying + ")" + existentialClauses
         case _ =>
-          "" + underlying + clauses
+          "" + underlying + existentialClauses
       }
     }
 
@@ -2823,13 +2868,13 @@ trait Types
   // now, pattern-matching returns the most recent constr
   object TypeVar {
     @inline final def trace[T](action: String, msg: => String)(value: T): T = {
-      if (traceTypeVars) {
-        val s = msg match {
-          case ""   => ""
-          case str  => "( " + str + " )"
-        }
-        Console.err.println("[%10s] %-25s%s".format(action, value, s))
-      }
+      // Uncomment the following for a compiler that has some diagnostics about type inference
+      // I doubt this is ever useful in the wild, so a recompile will be needed
+//    val s = msg match {
+//      case ""   => ""
+//      case str  => "( " + str + " )"
+//    }
+//    Console.err.println("[%10s] %-25s%s".format(action, value, s))
       value
     }
 
@@ -2850,7 +2895,9 @@ trait Types
         val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
 
         if (exclude) new TypeConstraint
-        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
+        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(
+          new TypeConstraint(bounds)
+        )
       }
       else new TypeConstraint
     }
@@ -2879,7 +2926,9 @@ trait Types
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
 
-      trace("create", "In " + tv.originLocation)(tv)
+      trace("create", "In " + tv.originLocation)(
+        tv
+      )
     }
     private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
       createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
@@ -2983,7 +3032,9 @@ trait Types
       else if (newArgs.size == params.size) {
         val tv = TypeVar(origin, constr, newArgs, params)
         tv.linkSuspended(this)
-        TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
+        TypeVar.trace("applyArgs", s"In $originLocation, apply args ${newArgs.mkString(", ")} to $originName")(
+          tv
+        )
       }
       else
         TypeVar(typeSymbol).setInst(ErrorType)
@@ -3002,31 +3053,20 @@ trait Types
     // only one of them is in the set of tvars that need to be solved, but
     // they share the same TypeConstraint instance
 
-    // When comparing to types containing skolems, remember the highest level
-    // of skolemization. If that highest level is higher than our initial
-    // skolemizationLevel, we can't re-use those skolems as the solution of this
-    // typevar, which means we'll need to repack our inst into a fresh existential.
-    // were we compared to skolems at a higher skolemizationLevel?
-    // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
-    // see SI-5729 for why this is still experimental
-    private var encounteredHigherLevel = false
-    private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
-
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
-    def setInst(tp: Type): this.type = {
-      if (tp eq this) {
+    def setInst(tp: Type): this.type =
+      if (tp ne this) {
+        undoLog record this
+        constr.inst = TypeVar.trace("setInst", s"In $originLocation, $originName=$tp")(
+          tp
+        )
+        this
+      } else {
         log(s"TypeVar cycle: called setInst passing $this to itself.")
-        return this
+        this
       }
-      undoLog record this
-      // if we were compared against later typeskolems, repack the existential,
-      // because skolems are only compatible if they were created at the same level
-      val res = if (shouldRepackType) repackExistential(tp) else tp
-      constr.inst = TypeVar.trace("setInst", "In " + originLocation + ", " + originName + "=" + res)(res)
-      this
-    }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
@@ -3251,19 +3291,13 @@ trait Types
       case ts: TypeSkolem => ts.level > level
       case _              => false
     }
-    // side-effects encounteredHigherLevel
-    private def containsSkolemAboveLevel(tp: Type) =
-      (tp exists isSkolemAboveLevel) && { encounteredHigherLevel = true ; true }
 
-     /** Can this variable be related in a constraint to type `tp`?
+
+    /** Can this variable be related in a constraint to type `tp`?
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
       */
-    def isRelatable(tp: Type) = (
-         shouldRepackType               // short circuit if we already know we've seen higher levels
-      || !containsSkolemAboveLevel(tp)  // side-effects tracking boolean
-      || enableTypeVarExperimentals     // -Xexperimental: always say we're relatable, track consequences
-    )
+    def isRelatable(tp: Type) = !(tp exists isSkolemAboveLevel)
 
     override def normalize: Type = (
       if (instValid) inst
@@ -3311,7 +3345,7 @@ trait Types
       // to never be resumed with the current implementation
       assert(!suspended, this)
       TypeVar.trace("clone", originLocation)(
-        TypeVar(origin, constr.cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+        TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
   }
@@ -3953,7 +3987,7 @@ trait Types
    *        any corresponding non-variant type arguments of bt1 and bt2 are the same
    */
   def isPopulated(tp1: Type, tp2: Type): Boolean = {
-    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1.dealias, tp2.dealias) match {
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2, (sym1, sym2))
         (    pre1 =:= pre2
@@ -4161,7 +4195,7 @@ trait Types
    *  The specification-enumerated non-value types are method types, polymorphic
    *  method types, and type constructors.  Supplements to the specified set of
    *  non-value types include: types which wrap non-value symbols (packages
-   *  abd statics), overloaded types. Varargs and by-name types T* and (=>T) are
+   *  and statics), overloaded types. Varargs and by-name types T* and (=>T) are
    *  not designated non-value types because there is code which depends on using
    *  them as type arguments, but their precise status is unclear.
    */
@@ -4260,7 +4294,7 @@ trait Types
       case mt1 @ MethodType(params1, res1) =>
         tp2 match {
           case mt2 @ MethodType(params2, res2) =>
-            // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performancewise?)
+            // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performance-wise?)
             mt1.isImplicit == mt2.isImplicit &&
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
             matchesQuantified(params1, params2, res1, res2)
@@ -4705,7 +4739,7 @@ trait Types
     case _                                => Depth(1)
   }
 
-  //OPT replaced with tailrecursive function to save on #closures
+  //OPT replaced with tail recursive function to save on #closures
   // was:
   //    var d = 0
   //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!

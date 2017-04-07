@@ -188,7 +188,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    * Data for emitting an EnclosingMethod attribute. None if `classSym` is a member class (not
    * an anonymous or local class). See doc in BTypes.
    *
-   * The class is parametrized by two functions to obtain a bytecode class descriptor for a class
+   * The class is parameterized by two functions to obtain a bytecode class descriptor for a class
    * symbol, and to obtain a method signature descriptor fro a method symbol. These function depend
    * on the implementation of GenASM / GenBCode, so they need to be passed in.
    */
@@ -332,7 +332,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
             failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
           else if (companion.isTrait)
             failNoForwarder("companion is a trait")
-          // Now either succeeed, or issue some additional warnings for things which look like
+          // Now either succeed, or issue some additional warnings for things which look like
           // attempts to be java main methods.
         else (possibles exists definitions.isJavaMainMethod) || {
             possibles exists { m =>
@@ -541,9 +541,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      * symbol (sym.annotations) or type (as an AnnotatedType, eliminated by erasure).
      *
      * For Scala annotations this is OK: they are stored in the pickle and ignored by the backend.
-     * Java annoations on the other hand are additionally emitted to the classfile in Java's format.
+     * Java annotations on the other hand are additionally emitted to the classfile in Java's format.
      *
-     * This means that [[Type]] instances within an AnnotaionInfo reach the backend non-erased. Examples:
+     * This means that [[Type]] instances within an AnnotationInfo reach the backend non-erased. Examples:
      *   - @(javax.annotation.Resource @annotation.meta.getter) val x = 0
      *     Here, annotationInfo.atp is an AnnotatedType.
      *   - @SomeAnnotation[T] val x = 0

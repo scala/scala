@@ -82,7 +82,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
   }
 
   /**
-   * De-serialize the attribute into an InlineInfo. The attribute starts at cr.b(off), but we don't
+   * Deserialize the attribute into an InlineInfo. The attribute starts at cr.b(off), but we don't
    * need to access that array directly, we can use the `read` methods provided by the ClassReader.
    *
    * `buf` is a pre-allocated character array that is guaranteed to be long enough to hold any

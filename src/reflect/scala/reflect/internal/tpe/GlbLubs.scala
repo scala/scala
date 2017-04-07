@@ -136,7 +136,7 @@ private[internal] trait GlbLubs {
           mergePrefixAndArgs(ts1, Covariant, depth) match {
             case NoType => loop(pretypes, tails)
             case tp if strictInference && willViolateRecursiveBounds(tp, ts0, ts1) =>
-              log(s"Breaking recursion in lublist, advancing frontier and discaring merged prefix/args from $tp")
+              log(s"Breaking recursion in lublist, advancing frontier and discarding merged prefix/args from $tp")
               loop(pretypes, tails)
             case tp =>
               loop(tp :: pretypes, tails)

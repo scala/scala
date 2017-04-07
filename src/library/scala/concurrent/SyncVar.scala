@@ -92,7 +92,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, set has been
   // deprecated in order to eventually be able to make "setting" private
   @deprecated("use `put` to ensure a value cannot be overwritten without a corresponding `take`", "2.10.0")
-  // NOTE: Used by SBT 0.13.0-M2 and below
+  // NOTE: Used by sbt 0.13.0-M2 and below
   def set(x: A): Unit = setVal(x)
 
   /** Place a value in the SyncVar. If the SyncVar already has a stored value,
@@ -112,7 +112,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, unset has been
   // deprecated in order to eventually be able to make "unsetting" private
   @deprecated("use `take` to ensure a value is never discarded", "2.10.0")
-  // NOTE: Used by SBT 0.13.0-M2 and below
+  // NOTE: Used by sbt 0.13.0-M2 and below
   def unset(): Unit = synchronized {
     isDefined = false
     value = null.asInstanceOf[A]

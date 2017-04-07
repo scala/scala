@@ -372,8 +372,8 @@ objects of type $S$.
 
 ###### Example
 
-The `Predef` object contains a definition which establishes `Pair`
-as an alias of the parameterized class `Tuple2`:
+Suppose we make `Pair` an alias of the parameterized class `Tuple2`,
+as follows:
 
 ```scala
 type Pair[+A, +B] = Tuple2[A, B]
@@ -404,7 +404,7 @@ function definitions.  In this section we consider only type parameter
 definitions with lower bounds `>: $L$` and upper bounds
 `<: $U$` whereas a discussion of context bounds
 `: $U$` and view bounds `<% $U$`
-is deferred to [here](07-implicit-parameters-and-views.html#context-bounds-and-view-bounds).
+is deferred to [here](07-implicits.html#context-bounds-and-view-bounds).
 
 The most general form of a first-order type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
@@ -587,7 +587,7 @@ FunDef             ::=  FunSig [‘:’ Type] ‘=’ Expr
 FunSig             ::=  id [FunTypeParamClause] ParamClauses
 FunTypeParamClause ::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
 ParamClauses       ::=  {ParamClause} [[nl] ‘(’ ‘implicit’ Params ‘)’]
-ParamClause        ::=  [nl] ‘(’ [Params] ‘)’}
+ParamClause        ::=  [nl] ‘(’ [Params] ‘)’
 Params             ::=  Param {‘,’ Param}
 Param              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
 ParamType          ::=  Type
@@ -669,6 +669,15 @@ def f(a: Int = 0)(b: Int = a + 1) = b // OK
 f(10)()                               // returns 11 (not 1)
 ```
 
+If an [implicit argument](07-implicits.html#implicit-parameters)
+is not found by implicit search, it may be supplied using a default argument.
+
+```scala
+implicit val i: Int = 2
+def f(implicit x: Int, s: String = "hi") = s * x
+f                                     // "hihi"
+```
+
 ### By-Name Parameters
 
 ```ebnf
@@ -686,7 +695,7 @@ The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
 classes for which a `val` prefix is implicitly generated. The
 by-name modifier is also disallowed for
-[implicit parameters](07-implicit-parameters-and-views.html#implicit-parameters).
+[implicit parameters](07-implicits.html#implicit-parameters).
 
 ###### Example
 The declaration

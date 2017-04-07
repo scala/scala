@@ -16,7 +16,7 @@ object iq {
       Console.println("Empty")
     }
 
-    /* Test enqueing. */
+    /* Test enqueueing. */
     val q2 = q.enqueue(42).enqueue(0)
     val qa = q :+ 42 :+ 0
     assert(q2 == qa)
@@ -25,12 +25,18 @@ object iq {
     assert(q2 == qb)
     val qc = 42 +: q :+ 0
     assert(q2 == qc)
+    assert(q ++ qa == qa)
+    val qdr =  1 +: 2 +: 3 +: 4 +: q
+    val qcon1 = 1 +: 2 +: q
+    val qcon2 = q :+ 3 :+ 4
+    val qd = qcon1 ++ qcon2
+    assert(qd == qdr)
 
     Console.println("q2: " + q2)
     Console.println("qa: " + qa)
     Console.println("qb: " + qb)
     Console.println("qc: " + qc)
-    
+
     /* Test is empty and dequeue.
      * Expected: Head: 42
      */
@@ -45,7 +51,7 @@ object iq {
         q3
       }
 
-    /* Test sequence enqueing. */
+    /* Test sequence enqueueing. */
     val q5: Queue[Any] = q4.enqueue(List(1,2,3,4,5,6,7,8,9))
     /* Test toString.
      * Expected: q5: Queue(0,1,2,3,4,5,6,7,8,9)
@@ -55,6 +61,10 @@ object iq {
      * Expected: q5[5]: 5
      */
     Console.println("q5[5]: " + q5(5))
+
+    val q5alt: Queue[Any] = q4.enqueue(collection.Iterable(1,2,3,4,5,6,7,8,9))
+    Console.println("q5alt: " + q5alt)
+    assert(q5alt.sameElements(q5))
 
     val q5c: Queue[Int] = Queue.empty.enqueue(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 

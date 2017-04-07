@@ -1,3 +1,5 @@
+package scala.build
+
 // It would be nice to use sbt-mima-plugin here, but the plugin is missing
 // at least two features we need:
 // * ability to run MiMa twice, swapping `curr` and `prev`, to detect
@@ -49,7 +51,7 @@ object MiMa {
       "--curr", curr.getAbsolutePath,
       "--filters", filter.getAbsolutePath,
       "--generate-filters",
-      // !!! Command line MiMa (which we call rathan the SBT Plugin for reasons alluded to in f2d0f1e85) incorrectly
+      // !!! Command line MiMa (which we call rather than the sbt Plugin for reasons alluded to in f2d0f1e85) incorrectly
       //     defaults to no checking (!) if this isn't specified. Fixed in https://github.com/typesafehub/migration-manager/pull/138
       //     TODO: Try out the new "--direction both" mode of MiMa
       "--direction", "backwards"

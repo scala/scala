@@ -70,7 +70,7 @@ trait StdNames {
       val suffix = s takeRight edge
 
       val cs = s.toArray
-      val bytes = Codec toUTF8 cs
+      val bytes = Codec.toUTF8(new scala.runtime.ArrayCharSequence(cs, 0, cs.length))
       md5 update bytes
       val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
 
@@ -1110,6 +1110,7 @@ trait StdNames {
     final val ELSEkw: TermName         = kw("else")
     final val ENUMkw: TermName         = kw("enum")
     final val EXTENDSkw: TermName      = kw("extends")
+    final val FALSEkw: TermName        = kw("false")
     final val FINALkw: TermName        = kw("final")
     final val FINALLYkw: TermName      = kw("finally")
     final val FLOATkw: TermName        = kw("float")
@@ -1139,6 +1140,7 @@ trait StdNames {
     final val THROWkw: TermName        = kw("throw")
     final val THROWSkw: TermName       = kw("throws")
     final val TRANSIENTkw: TermName    = kw("transient")
+    final val TRUEkw: TermName         = kw("true")
     final val TRYkw: TermName          = kw("try")
     final val VOIDkw: TermName         = kw("void")
     final val VOLATILEkw: TermName     = kw("volatile")

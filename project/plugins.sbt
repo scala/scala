@@ -19,4 +19,13 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.11"
+libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.13"
+
+libraryDependencies ++= Seq(
+  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
+  "org.slf4j" % "slf4j-nop" % "1.7.23"
+)
+
+concurrentRestrictions in Global := Seq(
+  Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970
+)

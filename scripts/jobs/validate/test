@@ -17,7 +17,7 @@ case $prDryRun in
 
     # build quick using STARR built upstream, as specified by scalaVersion
     # (in that sense it's locker, since it was built with starr by that upstream job);
-    # and run JUnit tests, partest, OSGi tests, MiMa and scaladoc
+    # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
     $SBT \
        -Dstarr.version=$scalaVersion \
        --warn \

@@ -537,7 +537,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
-    lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
+    lazy val MethodHandleClass = getClassIfDefined("java.lang.invoke.MethodHandle")
+    lazy val VarHandleClass = getClassIfDefined("java.lang.invoke.VarHandle")
 
     // Option classes
     lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
@@ -666,8 +667,8 @@ trait Definitions extends api.StandardDefinitions {
       isBundle && isBlackbox
     }
 
-    def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)
-    def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
+    def isListType(tp: Type)     = tp.typeSymbol.isNonBottomSubClass(ListClass)
+    def isIterableType(tp: Type) = tp.typeSymbol.isNonBottomSubClass(IterableClass)
 
     // These "direct" calls perform no dealiasing. They are most needed when
     // printing types when one wants to preserve the true nature of the type.
@@ -974,19 +975,15 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
-     *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
+     *  which have upper/lower bounds LB1/UB1, LB2/UB2, ..., LBn/UBn,
      *  returns an existential type of the form
      *
-     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
+     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... En >: LBn <: UBn }.
      */
-    // TODO Review the way this is used. I see two potential problems:
-    //  1. `existentialAbstraction` here doesn't create fresh existential type symbols, it just
-    //     uses the class type parameter symbols directly as the list of quantified symbols.
-    //     See SI-8244 for the trouble that this can cause.
-    //     Compare with callers of `typeParamsToExistentials` (used in Java raw type handling)
-    //  2. Why don't we require a prefix? Could its omission lead to wrong results in CheckabilityChecker?
-    def classExistentialType(clazz: Symbol): Type =
-      existentialAbstraction(clazz.typeParams, clazz.tpe_*)
+    def classExistentialType(prefix: Type, clazz: Symbol): Type = {
+      val eparams = typeParamsToExistentials(clazz, clazz.unsafeTypeParams)
+      newExistentialType(eparams, typeRef(prefix, clazz, eparams.map(_.tpeHK)))
+    }
 
     // members of class scala.Any
 
@@ -1420,6 +1417,8 @@ trait Definitions extends api.StandardDefinitions {
       case _                  => false
     }
 
+    lazy val ShowAsInfixAnnotationClass = rootMirror.getClassIfDefined("scala.annotation.showAsInfix")
+
     // todo: reconcile with javaSignature!!!
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -1567,9 +1566,12 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+      private lazy val PolymorphicSignatureClass = MethodHandleClass.companionModule.info.decl(TypeName("PolymorphicSignature"))
 
-      def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
-      private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
+      def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
+        val owner = sym.safeOwner
+        (owner == MethodHandleClass || owner == VarHandleClass) && sym.hasAnnotation(PolymorphicSignatureClass)
+      }
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
     }

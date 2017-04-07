@@ -316,8 +316,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
 
-    def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
-    def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)
+    def stringArg(index: Int)  = constantAtIndex(index) map (_.stringValue)
+    def intArg(index: Int)     = constantAtIndex(index) map (_.intValue)
+    def booleanArg(index: Int) = constantAtIndex(index) map (_.booleanValue)
     def symbolArg(index: Int) = argAtIndex(index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)

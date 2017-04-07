@@ -180,6 +180,9 @@ sealed class TreeMap[A, B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       this
     }
 
+    override def valuesIterator: Iterator[B] = RB.valuesIterator(tree, from, until)
+    override def keysIterator: Iterator[A] = RB.keysIterator(tree, from, until)
+
     override def clone() = super.clone().rangeImpl(from, until)
   }
 }

@@ -166,7 +166,7 @@ abstract class ExplicitOuter extends InfoTransform
       if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)
       else tp
 
-    case ClassInfoType(parents, decls, clazz) =>
+    case ClassInfoType(parents, decls, clazz) if !clazz.isJava =>
       var decls1 = decls
       if (isInner(clazz) && !clazz.isInterface) {
         decls1 = decls.cloneScope

@@ -1,0 +1,44 @@
+
+scala> import scala.annotation.showAsInfix
+import scala.annotation.showAsInfix
+
+scala> class &&[T,U]
+defined class $amp$amp
+
+scala> def foo: Int && Boolean = ???
+foo: Int && Boolean
+
+scala> def foo: Int && Boolean && String = ???
+foo: Int && Boolean && String
+
+scala> def foo: Int && (Boolean && String) = ???
+foo: Int && (Boolean && String)
+
+scala> @showAsInfix type Mappy[T, U] = Map[T, U]
+defined type alias Mappy
+
+scala> def foo: Int Mappy (Boolean && String) = ???
+foo: Int Mappy (Boolean && String)
+
+scala> @showAsInfix(false) class ||[T,U]
+defined class $bar$bar
+
+scala> def foo: Int || Boolean = ???
+foo: ||[Int,Boolean]
+
+scala> class &:[L, R]
+defined class $amp$colon
+
+scala> def foo: Int &: String = ???
+foo: Int &: String
+
+scala> def foo: Int &: Boolean &: String = ???
+foo: Int &: Boolean &: String
+
+scala> def foo: (Int && String) &: Boolean = ???
+foo: (Int && String) &: Boolean
+
+scala> def foo: Int && (Boolean &: String) = ???
+foo: Int && (Boolean &: String)
+
+scala> :quit

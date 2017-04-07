@@ -320,7 +320,7 @@ would not typecheck.
 
 ### Named and Default Arguments
 
-If an application might uses named arguments $p = e$ or default
+If an application is to use named arguments $p = e$ or default
 arguments, the following conditions must hold.
 
 - For every named argument $p_i = e_i$ which appears left of a positional argument
@@ -330,7 +330,7 @@ arguments, the following conditions must hold.
   argument defines a parameter which is already specified by a
   positional argument.
 - Every formal parameter $p_j:T_j$ which is not specified by either a positional
-  or a named argument has a default argument.
+  or named argument has a default argument.
 
 If the application uses named or default
 arguments the following transformation is applied to convert it into
@@ -455,7 +455,7 @@ $e$.
 
 Type applications can be omitted if
 [local type inference](#local-type-inference) can infer best type parameters
-for a polymorphic functions from the types of the actual function arguments
+for a polymorphic function from the types of the actual function arguments
 and the expected result type.
 
 ## Tuples
@@ -1422,6 +1422,7 @@ The *shape* of an argument expression $e$, written  $\mathit{shape}(e)$, is
 a type that is defined as follows:
   - For a function expression `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$: (Any $, \ldots ,$ Any) => $\mathit{shape}(b)$`,
     where `Any` occurs $n$ times in the argument type.
+  - For a pattern-matching anonymous function definition `{ case ... }`: `PartialFunction[Any, Nothing]`.
   - For a named argument `$n$ = $e$`: $\mathit{shape}(e)$.
   - For all other expressions: `Nothing`.
 

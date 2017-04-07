@@ -486,23 +486,8 @@ object RedBlackTree {
       else findLeftMostOrPopOnEmpty(goLeft(tree))
 
     private[this] def pushNext(tree: Tree[A, B]) {
-      try {
-        stackOfNexts(index) = tree
-        index += 1
-      } catch {
-        case _: ArrayIndexOutOfBoundsException =>
-          /*
-           * Either the tree became unbalanced or we calculated the maximum height incorrectly.
-           * To avoid crashing the iterator we expand the path array. Obviously this should never
-           * happen...
-           *
-           * An exception handler is used instead of an if-condition to optimize the normal path.
-           * This makes a large difference in iteration speed!
-           */
-          assert(index >= stackOfNexts.length)
-          stackOfNexts :+= null
-          pushNext(tree)
-      }
+      stackOfNexts(index) = tree
+      index += 1
     }
     private[this] def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
@@ -516,9 +501,10 @@ object RedBlackTree {
        *
        * According to {@see Integer#numberOfLeadingZeros} ceil(log_2(n)) = (32 - Integer.numberOfLeadingZeros(n - 1))
        *
-       * We also don't store the deepest nodes in the path so the maximum path length is further reduced by one.
+       * Although we don't store the deepest nodes in the path during iteration,
+       * we potentially do so in `startFrom`.
        */
-      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2 - 1
+      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0

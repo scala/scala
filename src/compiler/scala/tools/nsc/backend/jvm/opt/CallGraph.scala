@@ -285,7 +285,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           //   final case class :: / final case object Nil
           //   (l: List).map // can be inlined
           // we need to know that
-          //   - the recevier is sealed
+          //   - the receiver is sealed
           //   - what are the children of the receiver
           //   - all children are final
           //   - none of the children overrides map

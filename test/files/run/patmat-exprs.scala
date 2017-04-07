@@ -344,13 +344,13 @@ trait Pattern {
   }
 
 
-  case class Zero[T] (implicit num: NumericOps[T]) extends Leaf[T] {
+  case class Zero[T]()(implicit num: NumericOps[T]) extends Leaf[T] {
     def derivative(variable: Var[T]) = Zero[T]
     def eval(f: Any => Any) = num.zero
     override def toString = "0"
   }
 
-  case class One[T] (implicit num: NumericOps[T]) extends Leaf[T] {
+  case class One[T]()(implicit num: NumericOps[T]) extends Leaf[T] {
     def derivative(variable: Var[T]) = Zero[T]
     def eval(f: Any => Any) = num.one
     override def toString = "1"

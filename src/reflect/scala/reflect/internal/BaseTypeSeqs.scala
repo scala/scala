@@ -33,6 +33,9 @@ trait BaseTypeSeqs {
   protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     new BaseTypeSeq(parents, elems)
 
+  protected def newMappedBaseTypeSeq(orig: BaseTypeSeq, f: Type => Type) =
+    new MappedBaseTypeSeq(orig, f)
+
   /** Note: constructor is protected to force everyone to use the factory method newBaseTypeSeq instead.
    *  This is necessary because when run from reflection every base type sequence needs to have a
    *  SynchronizedBaseTypeSeq as mixin.
@@ -125,7 +128,7 @@ trait BaseTypeSeqs {
       newBaseTypeSeq(parents, arr)
     }
 
-    def lateMap(f: Type => Type): BaseTypeSeq = new MappedBaseTypeSeq(this, f)
+    def lateMap(f: Type => Type): BaseTypeSeq = newMappedBaseTypeSeq(this, f)
 
     def exists(p: Type => Boolean): Boolean = elems exists p
 

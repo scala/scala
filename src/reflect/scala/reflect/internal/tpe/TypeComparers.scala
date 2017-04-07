@@ -404,7 +404,7 @@ trait TypeComparers {
               sym2.isClass && {
                 val base = tr1 baseType sym2
                 // During bootstrap, `base eq NoType` occurs about 2.5 times as often as `base ne NoType`.
-                // The extra check seems like a worthwhile optimization (about 2.5M useless calls to isSubtype saved during that run).
+                // The extra check seems like a worthwhile optimization (about 2.5M useless calls to isSubType saved during that run).
                 (base ne tr1) && (base ne NoType) && isSubType(base, tr2, depth)
               }
               ||

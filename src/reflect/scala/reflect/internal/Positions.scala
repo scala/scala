@@ -255,7 +255,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
               val annTrees = mdef.mods.annotations match {
                 case Nil if mdef.symbol != null =>
                   // After typechecking, annotations are moved from the modifiers
-                  // to the annotation on the symbol of the anotatee.
+                  // to the annotation on the symbol of the annotatee.
                   mdef.symbol.annotations.map(_.original)
                 case anns => anns
               }

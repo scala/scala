@@ -1,7 +1,7 @@
 # Scala library benchmarks
 
-This directory is a standalone SBT project, within the Scala project,
-that makes use of the [SBT plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
+This directory is a standalone sbt project, within the Scala project,
+that makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
 
 ## Running a benchmark
 
@@ -16,10 +16,10 @@ Using this example, one would simply run
 
     jmh:runMain scala.collection.mutable.OpenHashMapRunner
 
-in SBT, run _from this directory_ (`test/benchmarks`).
+in sbt, run _from this directory_ (`test/benchmarks`).
 
 The JMH results can be found under `target/jmh-results/`.
-`target` gets deleted on an SBT `clean`,
+`target` gets deleted on an sbt `clean`,
 so you should copy these files out of `target` if you wish to preserve them.
 
 ## Creating a benchmark and runner

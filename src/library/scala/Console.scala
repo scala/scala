@@ -122,7 +122,7 @@ import scala.util.DynamicVariable
  *             a body of code. Threadsafe by virtue of [[scala.util.DynamicVariable]].
  *
  */
-object Console extends DeprecatedConsole with AnsiColor {
+object Console extends AnsiColor {
   private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
   private val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
   private val inVar  = new DynamicVariable[BufferedReader](
@@ -277,64 +277,4 @@ object Console extends DeprecatedConsole with AnsiColor {
    *  @group console-output
    */
   def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
-}
-
-private[scala] abstract class DeprecatedConsole {
-  self: Console.type =>
-
-  /** Internal usage only. */
-  protected def setOutDirect(out: PrintStream): Unit
-  protected def setErrDirect(err: PrintStream): Unit
-  protected def setInDirect(in: BufferedReader): Unit
-
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readBoolean(): Boolean                     = StdIn.readBoolean()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readByte(): Byte                           = StdIn.readByte()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readChar(): Char                           = StdIn.readChar()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readDouble(): Double                       = StdIn.readDouble()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readFloat(): Float                         = StdIn.readFloat()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readInt(): Int                             = StdIn.readInt()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readLine(): String                         = StdIn.readLine()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readLine(text: String, args: Any*): String = StdIn.readLine(text, args: _*)
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readLong(): Long                           = StdIn.readLong()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readShort(): Short                         = StdIn.readShort()
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readf(format: String): List[Any]           = StdIn.readf(format)
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readf1(format: String): Any                = StdIn.readf1(format)
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readf2(format: String): (Any, Any)         = StdIn.readf2(format)
-  @deprecated("use the method in scala.io.StdIn", "2.11.0") def readf3(format: String): (Any, Any, Any)    = StdIn.readf3(format)
-
-  /** Sets the default output stream.
-   *
-   *  @param out the new output stream.
-   */
-  @deprecated("use withOut", "2.11.0") def setOut(out: PrintStream): Unit = setOutDirect(out)
-
-  /** Sets the default output stream.
-   *
-   *  @param out the new output stream.
-   */
-  @deprecated("use withOut", "2.11.0") def setOut(out: OutputStream): Unit = setOutDirect(new PrintStream(out))
-
-  /** Sets the default error stream.
-   *
-   *  @param err the new error stream.
-   */
-  @deprecated("use withErr", "2.11.0") def setErr(err: PrintStream): Unit = setErrDirect(err)
-
-  /** Sets the default error stream.
-   *
-   *  @param err the new error stream.
-   */
-  @deprecated("use withErr", "2.11.0") def setErr(err: OutputStream): Unit = setErrDirect(new PrintStream(err))
-
-  /** Sets the default input stream.
-   *
-   *  @param reader specifies the new input stream.
-   */
-  @deprecated("use withIn", "2.11.0") def setIn(reader: Reader): Unit = setInDirect(new BufferedReader(reader))
-
-  /** Sets the default input stream.
-   *
-   *  @param in the new input stream.
-   */
-  @deprecated("use withIn", "2.11.0") def setIn(in: InputStream): Unit = setInDirect(new BufferedReader(new InputStreamReader(in)))
 }

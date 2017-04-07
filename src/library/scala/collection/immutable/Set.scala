@@ -13,7 +13,6 @@ package collection
 package immutable
 
 import generic._
-import parallel.immutable.ParSet
 
 /** A generic trait for immutable sets.
  *  $setNote
@@ -30,7 +29,6 @@ trait Set[A] extends Iterable[A]
                 with scala.collection.Set[A]
                 with GenericSetTemplate[A, Set]
                 with SetLike[A, Set[A]]
-                with Parallelizable[A, ParSet[A]]
 {
   override def companion: GenericCompanion[Set] = Set
 
@@ -53,7 +51,6 @@ trait Set[A] extends Iterable[A]
   }
   
   override def seq: Set[A] = this
-  protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }
 
 /** $factoryInfo
@@ -193,7 +190,7 @@ object Set extends ImmutableSetFactory[Set] {
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def + (elem: A): Set[A] =
       if (contains(elem)) this
-      else new HashSet[A] + (elem1, elem2, elem3, elem4, elem)
+      else new HashSet[A] + elem1 + elem2 + elem3 + elem4 + elem
     def - (elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)

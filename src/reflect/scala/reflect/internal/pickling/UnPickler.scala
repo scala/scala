@@ -219,9 +219,10 @@ abstract class UnPickler {
 
         def moduleAdvice(missing: String): String = {
           val module =
-            if      (missing.startsWith("scala.xml"))                Some(("org.scala-lang.modules", "scala-xml"))
-            else if (missing.startsWith("scala.util.parsing"))       Some(("org.scala-lang.modules", "scala-parser-combinators"))
-            else if (missing.startsWith("scala.swing"))              Some(("org.scala-lang.modules", "scala-swing"))
+            if      (missing.startsWith("scala.xml"))                 Some(("org.scala-lang.modules", "scala-xml"))
+            else if (missing.startsWith("scala.util.parsing"))        Some(("org.scala-lang.modules", "scala-parser-combinators"))
+            else if (missing.startsWith("scala.swing"))               Some(("org.scala-lang.modules", "scala-swing"))
+            else if (missing.startsWith("scala.collection.parallel")) Some(("org.scala-lang.modules", "scala-parallel-collections"))
             else None
 
           (module map { case (group, art) =>
@@ -377,7 +378,7 @@ abstract class UnPickler {
 
       def readThisType(): Type = {
         val sym = readSymbolRef() match {
-          case stub: StubSymbol => stub.setFlag(PACKAGE)
+          case stub: StubSymbol => stub.setFlag(PACKAGE | MODULE)
           case sym => sym
         }
         ThisType(sym)
@@ -385,7 +386,7 @@ abstract class UnPickler {
 
       // We're stuck with the order types are pickled in, but with judicious use
       // of named parameters we can recapture a declarative flavor in a few cases.
-      // But it's still a rat's nest of adhockery.
+      // But it's still a rat's nest of ad-hockery.
       (tag: @switch) match {
         case NOtpe                     => NoType
         case NOPREFIXtpe               => NoPrefix

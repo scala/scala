@@ -1,10 +1,10 @@
-t8217-local-alias-requires-rhs.scala:3: error: only classes can have declared but undefined members
+t8217-local-alias-requires-rhs.scala:3: error: only traits and abstract classes can have declared but undefined members
     type A
          ^
-t8217-local-alias-requires-rhs.scala:6: error: only classes can have declared but undefined members
+t8217-local-alias-requires-rhs.scala:6: error: only traits and abstract classes can have declared but undefined members
     type B
          ^
-t8217-local-alias-requires-rhs.scala:14: error: only classes can have declared but undefined members
+t8217-local-alias-requires-rhs.scala:14: error: only traits and abstract classes can have declared but undefined members
   def this(a: Any) = { this(); type C }
                                     ^
 three errors found

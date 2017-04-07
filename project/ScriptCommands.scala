@@ -1,3 +1,5 @@
+package scala.build
+
 import sbt._
 import Keys._
 import BuildSettings.autoImport._

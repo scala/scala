@@ -82,7 +82,7 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
  *  needs to be called to finalize the hash.
  */
 @deprecated("use the object MurmurHash3 instead", "2.10.0")
-// NOTE: Used by SBT 0.13.0-M2 and below
+// NOTE: Used by sbt 0.13.0-M2 and below
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.
   // Don't change these without consulting a hashing expert!

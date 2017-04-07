@@ -199,7 +199,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
 
   override /*SeqLike*/
   def indexWhere(p: A => Boolean, from: Int): Int = {
-    val start = from max 0
+    val start = math.max(from, 0)
     negLength(start + segmentLength(!p(_), start))
   }
 

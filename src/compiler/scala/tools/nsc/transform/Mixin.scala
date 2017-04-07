@@ -32,7 +32,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     * we cannot emit PROTECTED methods in interfaces on the JVM,
     * but knowing that these trait methods are protected means we won't emit static forwarders.
     *
-    * JVMLS: "Methods of interfaces may have any of the flags in Table 4.6-A set
+    * JVMS: "Methods of interfaces may have any of the flags in Table 4.6-A set
     * except ACC_PROTECTED, ACC_FINAL, ACC_SYNCHRONIZED, and ACC_NATIVE (JLS §9.4)."
     *
     * TODO: can we just set the right flags from the start??
@@ -137,7 +137,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
    */
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
     debuglog(s"mixing into $clazz: ${member.defString}")
-    // This attachment is used to instruct the backend about which methids in traits require
+    // This attachment is used to instruct the backend about which methods in traits require
     // a static trait impl method. We remove this from the new symbol created for the method
     // mixed into the subclass.
     member.removeAttachment[NeedStaticImpl.type]

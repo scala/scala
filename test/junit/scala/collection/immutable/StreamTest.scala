@@ -117,4 +117,10 @@ class StreamTest {
     assert((0 #:: 1 #:: s) == (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (==)")
     assert((0 #:: 1 #:: s) equals (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (equals)")
   }
+
+  @Test
+  def t9886: Unit = {
+    assertEquals(Stream(None, Some(1)), None #:: Stream(Some(1)))
+    assertEquals(Stream(None, Some(1)), Stream(None) #::: Stream(Some(1)))
+  }
 }

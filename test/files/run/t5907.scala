@@ -86,7 +86,7 @@ object Test extends App {
   }
 }
 
-case class C1(implicit x: Int) {
+case class C1()(implicit x: Int) {
   override def toString = s"c1: $x"
 }
 case class C2()(y: Int) {

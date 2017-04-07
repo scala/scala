@@ -121,6 +121,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def knownDirectSubclasses = {
       // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
       if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+
+      enclosingPackage.info.decls.foreach { sym =>
+        if(sourceFile == sym.sourceFile) {
+          sym.rawInfo.forceDirectSuperclasses
+        }
+      }
+
+      if(!isPastTyper)
+        updateAttachment(KnownDirectSubclassesCalled)
+
       children
     }
 
@@ -799,7 +809,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isDerivedValueClass =
       isClass && !hasFlag(PACKAGE | TRAIT) &&
-      info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
+      !phase.erasedTypes && info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
 
     final def isMethodWithExtension =
       isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR) && !isMacro && !isSpecialized
@@ -3298,7 +3308,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet
-    override def addChild(sym: Symbol) { childSet = childSet + sym }
+    override def addChild(sym: Symbol) {
+      if(!isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type] && !childSet.contains(sym))
+        globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+
+      childSet = childSet + sym
+    }
 
     def anonOrRefinementString = {
       if (hasCompleteInfo) {
@@ -3661,9 +3676,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   val AllOps = SymbolOps(isFlagRelated = false, mask = 0L)
   def FlagOps(mask: Long) = SymbolOps(isFlagRelated = true, mask = mask)
 
-  private def relevantSymbols(syms: Seq[Symbol]) = syms.flatMap(sym => List(sym, sym.moduleClass, sym.sourceModule))
-  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = relevantSymbols(syms).foreach(_.markFlagsCompleted(mask))
-  def markAllCompleted(syms: Symbol*): Unit = relevantSymbols(syms).foreach(_.markAllCompleted)
+  private def forEachRelevantSymbols(syms: Seq[Symbol], fn: Symbol => Unit): Unit =
+    syms.foreach { sym =>
+          fn(sym)
+          fn(sym.moduleClass)
+          fn(sym.sourceModule)
+    }
+
+  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = forEachRelevantSymbols(syms, _.markFlagsCompleted(mask))
+  def markAllCompleted(syms: Symbol*): Unit = forEachRelevantSymbols(syms, _.markAllCompleted)
 }
 
 object SymbolsStats {

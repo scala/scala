@@ -9,7 +9,7 @@ warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this ma
              ^
 warn-inferred-any.scala:25: warning: a type was inferred to be `Any`; this may indicate a programming error.
   def za = f(1, "one")
-             ^
+           ^
 error: No warnings can be incurred under -Xfatal-warnings.
 four warnings found
 one error found

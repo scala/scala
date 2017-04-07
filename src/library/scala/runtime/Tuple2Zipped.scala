@@ -85,7 +85,7 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     (b1.result(), b2.result())
   }
 
-  def exists(@deprecatedName('f) p: (El1, El2) => Boolean): Boolean = {
+  def exists(p: (El1, El2) => Boolean): Boolean = {
     val elems2 = coll2.iterator
 
     for (el1 <- coll1) {
@@ -98,7 +98,7 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     false
   }
 
-  def forall(@deprecatedName('f) p: (El1, El2) => Boolean): Boolean =
+  def forall(p: (El1, El2) => Boolean): Boolean =
     !exists((x, y) => !p(x, y))
 
   def foreach[U](f: (El1, El2) => U): Unit = {

@@ -177,14 +177,14 @@ self =>
     }
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
-   *  over them (as opposed to partitioning them, as is done in grouped.)
-   *  "Sliding window" step is 1 by default.
+   *  over them (as opposed to partitioning them, as is done in `grouped`.)
+   *  The "sliding window" step is set to one.
    *  @see [[scala.collection.Iterator]], method `sliding`
    *
    *  @param size the number of elements per group
    *  @return An iterator producing ${coll}s of size `size`, except the
-   *          last and the only element will be truncated if there are
-   *          fewer elements than size.
+   *          last element (which may be the only element) will be truncated
+   *          if there are fewer than `size` elements remaining to be grouped.
    */
   def sliding(size: Int): Iterator[Repr] = sliding(size, 1)
 
@@ -196,8 +196,8 @@ self =>
    *  @param step the distance between the first elements of successive
    *         groups
    *  @return An iterator producing ${coll}s of size `size`, except the
-   *          last and the only element will be truncated if there are
-   *          fewer elements than size.
+   *          last element (which may be the only element) will be truncated
+   *          if there are fewer than `size` elements remaining to be grouped.
    */
   def sliding(size: Int, step: Int): Iterator[Repr] =
     for (xs <- iterator.sliding(size, step)) yield {

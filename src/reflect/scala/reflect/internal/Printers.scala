@@ -775,7 +775,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             }
             // constructor's params processing (don't print single empty constructor param list)
             vparamss match {
-              case Nil | List(Nil) if (!mods.isCase && !ctorMods.hasFlag(AccessFlags)) =>
+              case Nil | List(Nil) if !mods.isCase && !ctorMods.hasFlag(AccessFlags) =>
               case _ => vparamss foreach printConstrParams
             }
             parents

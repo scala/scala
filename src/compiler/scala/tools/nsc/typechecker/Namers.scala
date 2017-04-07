@@ -115,7 +115,7 @@ trait Namers extends MethodSynthesis {
     protected def owner       = context.owner
     def contextFile = context.unit.source.file
     def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
-      case ex: TypeError =>
+      case ex: TypeError if !global.propagateCyclicReferences =>
         // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
         alt
@@ -220,7 +220,10 @@ trait Namers extends MethodSynthesis {
 
     private def inCurrentScope(m: Symbol): Boolean = {
       if (owner.isClass) owner == m.owner
-      else m.owner.isClass && context.scope == m.owner.info.decls
+      else context.scope.lookupSymbolEntry(m) match {
+        case null => false
+        case entry => entry.owner eq context.scope
+      }
     }
 
     /** Enter symbol into context's scope and return symbol itself */
@@ -902,9 +905,10 @@ trait Namers extends MethodSynthesis {
     // Annotations on ValDefs can be targeted towards the following: field, getter, setter, beanGetter, beanSetter, param.
     // The defaults are:
     //   - (`val`-, `var`- or plain) constructor parameter annotations end up on the parameter, not on any other entity.
-    //   - val/var member annotations solely end up on the underlying field, except in traits (@since 2.12),
+    //   - val/var member annotations solely end up on the underlying field, except in traits and for all lazy vals (@since 2.12),
     //     where there is no field, and the getter thus holds annotations targeting both getter & field.
-    //     As soon as there is a field/getter (in subclasses mixing in the trait), we triage the annotations.
+    //     As soon as there is a field/getter (in subclasses mixing in the trait, or after expanding the lazy val during the fields phase),
+    //     we triage the annotations.
     //
     // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
     // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
@@ -918,15 +922,17 @@ trait Namers extends MethodSynthesis {
           BeanPropertyAnnotationLimitationError(tree)
       }
 
+      val canTriageAnnotations = isSetter || !fields.getterTreeAnnotationsTargetFieldAndGetter(owner, mods)
+
       def filterAccessorAnnotations: AnnotationInfo => Boolean =
-        if (isSetter || !owner.isTrait)
+        if (canTriageAnnotations)
           annotationFilter(if (isSetter) SetterTargetClass else GetterTargetClass, defaultRetention = false)
         else (ann =>
           annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
             annotationFilter(GetterTargetClass, defaultRetention = true)(ann))
 
       def filterBeanAccessorAnnotations: AnnotationInfo => Boolean =
-        if (isSetter || !owner.isTrait)
+        if (canTriageAnnotations)
           annotationFilter(if (isSetter) BeanSetterTargetClass else BeanGetterTargetClass, defaultRetention = false)
         else (ann =>
           annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
@@ -1028,12 +1034,33 @@ trait Namers extends MethodSynthesis {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
+
+      val parentTrees = typer.typedParentTypes(templ)
+
+      val pending = mutable.ListBuffer[AbsTypeError]()
+      parentTrees foreach { tpt =>
+        val ptpe = tpt.tpe
+        if(!ptpe.isError) {
+          val psym = ptpe.typeSymbol
+          val sameSourceFile = context.unit.source.file == psym.sourceFile
+
+          if (psym.isSealed && !phase.erasedTypes)
+            if (sameSourceFile)
+              psym addChild context.owner
+            else
+              pending += ParentSealedInheritanceError(tpt, psym)
+          if (psym.isLocalToBlock && !phase.erasedTypes)
+            psym addChild context.owner
+        }
+      }
+      pending.foreach(ErrorUtils.issueTypeError)
+
       def checkParent(tpt: Tree): Type = {
         if (tpt.tpe.isError) AnyRefTpe
         else tpt.tpe
       }
 
-      val parents = typer.typedParentTypes(templ) map checkParent
+      val parents = parentTrees map checkParent
 
       enterSelf(templ.self)
 
@@ -1827,6 +1854,12 @@ trait Namers extends MethodSynthesis {
 
   abstract class TypeCompleter extends LazyType {
     val tree: Tree
+    override def forceDirectSuperclasses: Unit = {
+      tree.foreach {
+        case dt: DefTree => global.withPropagateCyclicReferences(Option(dt.symbol).map(_.maybeInitialize))
+        case _ =>
+      }
+    }
   }
 
   def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {
@@ -1922,12 +1955,12 @@ trait Namers extends MethodSynthesis {
     //         Doing this generally would trigger cycles; that's what we also
     //         use the lower-level scan through the current Context as a fall back.
     if (!currentRun.compiles(owner)) owner.initialize
-    original.companionSymbol orElse {
-      ctx.lookup(original.name.companionName, owner).suchThat(sym =>
-        (original.isTerm || sym.hasModuleFlag) &&
-        (sym isCoDefinedWith original)
-      )
-    }
+
+    if (original.isModuleClass) original.sourceModule
+    else if (!owner.isTerm && owner.hasCompleteInfo)
+      original.companionSymbol
+    else
+      ctx.lookupCompanionInIncompleteOwner(original)
   }
 
   /** A version of `Symbol#linkedClassOfClass` that works with local companions, ala `companionSymbolOf`. */

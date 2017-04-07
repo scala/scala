@@ -31,8 +31,6 @@ object OpenHashMap {
   final private class OpenEntry[Key, Value](var key: Key,
                                             var hash: Int,
                                             var value: Option[Value])
-
-  private[mutable] def nextPositivePowerOfTwo(i : Int) = 1 << (32 - Integer.numberOfLeadingZeros(i - 1))
 }
 
 /** A mutable hash map based on an open hashing scheme. The precise scheme is
@@ -67,7 +65,7 @@ extends AbstractMap[Key, Value]
 
   override def empty: OpenHashMap[Key, Value] = OpenHashMap.empty[Key, Value]
 
-  private[this] val actualInitialSize = OpenHashMap.nextPositivePowerOfTwo(initialSize)
+  private[this] val actualInitialSize = HashTable.nextPositivePowerOfTwo(initialSize)
 
   private var mask = actualInitialSize - 1
 

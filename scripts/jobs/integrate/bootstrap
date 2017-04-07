@@ -3,16 +3,13 @@
 # Script Overview
 #  - determine scala version
 #  - determine module versions
-#  - build minimal core (aka locker) of Scala, use the determined version number, publish to private-repo
-#  - build those modules where a binary compatible version doesn't exist, publish to private-repo
-#  - build Scala using the previously built core and bootstrap modules, publish to private-repo (overwrites the minimal core version on private-repo)
-#  - for releases (not nightlies)
+#  - build minimal core (aka locker) of Scala, use the determined version number, publish to scala-integration
+#  - build those modules where a binary compatible version doesn't exist, publish to scala-integration
+#  - build Scala using the previously built core and bootstrap modules, publish to scala-integration
+#  - for releases
 #    - stage Scala on sonatype
 #    - rebuild modules that needed a rebuild with this Scala build, and stage them on sonatype
-#  - for nightlies
-#    - force rebuild all modules and publish them locally (for testing purposes)
 #  - the Scala version is serialized to jenkins.properties, which is passed downstream to scala-release jobs
-#    - this removes the need to tag scala/scala-dist (it's still encouraged for releases, but not a hard requirement)
 
 
 # Specifying the Scala version:
@@ -21,21 +18,16 @@
 #    - Or have the current HEAD tagged as v$base$suffix
 #    - To prevent staging on sonatype (for testing), set publishToSonatype to anything but "yes"
 #    - Note: After building a release, the jenkins job provides an updated versions.properties file as artifact.
-#      Put this file in the Scala repo and create a pull request, and also update the file build.number.
+#      Put this file in the Scala repo and create a pull request, also update `baseVersion in Global` in build.sbt.
 #
-# - Otherwise, a nightly release is built:
-#    - version number is read from the build.number file, extended with -$sha-nightly
+# - Otherwise, an integration build is performed:
+#    - version number is read from the build.sbt, extended with -[bin|pre]-$sha
 
 
-# Specifying module versions: there are two modes
-#  - If moduleVersioning="versions.properties" (default): in this mode we use release versions for the modules.
-#    - Module versions are read from the versions.properties file.
-#    - Set <MODULE>_VER to override the default, e.g. XML_VER="1.0.4".
-#    - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
-#
-#  - Otherwise (moduleVersioning has some other value): in this mode we use nightly version numbers for modules.
-#    - By default the script sets all <MODULE>_REF to "HEAD", override to build a specific revision.
-#    - The <MODULE>_VER is set to a nightly version, for example "1.0.3-7-g14888a2-nightly" (you can't override <MODULE>_VER)
+# Specifying module versions. We use release versions for modules.
+#  - Module versions are read from the versions.properties file.
+#  - Set <MODULE>_VER to override the default, e.g. XML_VER="1.0.4".
+#  - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
 
 
 # Modules are automatically built if necessary.
@@ -56,7 +48,7 @@
 #            to be re-built using the 2.11.1 release, we could not use 2.11.0. We could also not release the modules
 #            after 2.11.1 was out, because that way the scala-library-all pom of 2.11.1 would depend on the old modules.
 #
-# (*) https://github.com/sbt/sbt/blob/0.13.8/util/cross/src/main/input_sources/CrossVersionUtil.scala#L39
+# (*) https://github.com/sbt/sbt/blob/v0.13.13/util/cross/src/main/input_sources/CrossVersionUtil.scala#L41
 
 
 # Binary incompatible changes in Modules: example with Scala 2.11 / 2.12 and scala-parser-combinators
@@ -69,7 +61,7 @@
 #
 # Note: It's still OK for a module to release a binary incompatible version to maven, for example
 # scala-parser-combinators_2.11 % 1.1.0. Users can depend on this in their sbt build. But for the
-# distribution (tar/zip archives, scala-library-all) we have to stay on the binary compatible version.
+# distribution (tar/zip archives) we have to stay on the binary compatible version.
 
 
 # Requirements
@@ -81,8 +73,6 @@
 
 # Note: private-repo used to be private-repo.typesafe.com. now we're running artifactory on scala-ci.typesafe.com/artifactory
 
-
-moduleVersioning=${moduleVersioning-"versions.properties"}
 
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
@@ -108,10 +98,16 @@ mkdir -p $baseDir/ivy2
 rm -rf $baseDir/resolutionScratch_
 mkdir -p $baseDir/resolutionScratch_
 
-# repo used to publish "locker" scala to (to start the bootstrap)
-releaseTempRepoCred="private-repo"
-releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-release-temp/"}
-generateRepositoriesConfig $releaseTempRepoUrl
+# repo to publish builds
+integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
+
+generateRepositoriesConfig $integrationRepoUrl
+
+# ARGH trying to get this to work on multiple versions of sbt-extras...
+# the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
+# the new version of sbt-extras ignores sbt-dir, so we pass it in as -Dsbt.global.base
+# need to set sbt-dir to one that has the gpg.sbt plugin config
+sbtArgs="-ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
 
 ##### git
 gfxd() {
@@ -155,12 +151,7 @@ function st_stagingRepoClose() {
   echo "{\"data\":{\"description\":\"$message\",\"stagedRepositoryIds\":[\"$repo\"]}}" | st_curl -X POST -d @- "$stApi/staging/bulk/close"
 }
 
-
-# ARGH trying to get this to work on multiple versions of sbt-extras...
-# the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
-# the new version of sbt-extras ignores sbt-dir, so we pass it in as -Dsbt.global.base
-# need to set sbt-dir to one that has the gpg.sbt plugin config
-sbtArgs="-ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
+#### sbt tools
 
 sbtBuild() {
   echo "### sbtBuild: "$SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
@@ -178,22 +169,21 @@ sbtResolve() {
       'show update' >> $baseDir/logs/resolution 2>&1
 }
 
-# Oh boy... can't use scaladoc to document scala-xml/scala-parser-combinators
-# if scaladoc depends on the same version of scala-xml/scala-parser-combinators.
+# Oh boy... can't use scaladoc to document scala-xml if scaladoc depends on the same version of scala-xml.
 # Even if that version is available through the project's resolvers, sbt won't look past this project.
 # SOOOOO, we set the version to a dummy (-DOC), generate documentation,
 # then set the version to the right one and publish (which won't re-gen the docs).
 # Also tried publish-local without docs using 'set publishArtifact in (Compile, packageDoc) := false' and republishing, no dice.
 
-# Each buildModule() function is invoked twice: first to build against locker and publish to private-repo, then
+# Each buildModule() function is invoked twice: first to build against locker and publish to artifactory, then
 # to build against the release and publish to sonatype (or publish-local if publishToSonatype is not "yes").
-# In the second round, sbtResolve is always true: the module will be found in the private-repo!
+# In the second round, sbtResolve is always true: the module will be found in the artifactory!
 # Therefore, if MODULE_BUILT is "yes" (in the second round), we know that we need to build (and publish) the
 # module again.
 #
-# Note: we tried an alternative solution in which sbtResolve would not look at private-repo, but that fails. For example,
+# Note: we tried an alternative solution in which sbtResolve would not look at artifactory, but that fails. For example,
 # scala-xml depends on scala-library, so sbt tries to find the scala-library of the version that we are currently building,
-# which exists only in private-repo.
+# which exists only in artifactory.
 
 docTask() {
   if [[ "$STARR_REF" != "" && "$1" != "yes" ]]; then
@@ -216,17 +206,6 @@ buildXML() {
   fi
 }
 
-buildParsers() {
-  if [ "$PARSERS_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-parser-combinators" $PARSERS_VER )
-  then echo "Found scala-parser-combinators $PARSERS_VER; not building."
-  else
-    update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    doc="$(docTask $PARSERS_BUILT)"
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean "$doc" 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
-    PARSERS_BUILT="yes"
-  fi
-}
-
 buildPartest() {
   if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
   then echo "Found scala-partest $PARTEST_VER; not building."
@@ -238,19 +217,8 @@ buildPartest() {
   fi
 }
 
-buildSwing() {
-  if [ "$SWING_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-swing" $SWING_VER )
-  then echo "Found scala-swing $SWING_VER; not building."
-  else
-    update scala scala-swing "$SWING_REF" && gfxd
-    doc="$(docTask $SWING_BUILT)"
-    sbtBuild 'set version := "'$SWING_VER'"' $clean "$doc" test "${buildTasks[@]}"
-    SWING_BUILT="yes"
-  fi
-}
-
-# should only be called with publishTasks publishing to private-repo
-buildScalacheck(){
+# should only be called with publishTasks publishing to artifactory
+buildScalaCheck(){
   if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
@@ -261,14 +229,12 @@ buildScalacheck(){
   fi
 }
 
-# build modules, using ${buildTasks[@]} (except for Scalacheck, which is hard-coded to publish to private-repo)
+# build modules, using ${buildTasks[@]} (except for ScalaCheck, which is hard-coded to publish to artifactory)
 buildModules() {
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
+  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildXML
-  buildParsers
-  buildSwing
-  # buildScalacheck
+  # buildScalaCheck
   buildPartest
 }
 
@@ -276,8 +242,6 @@ buildPublishedModules() {
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
   buildTasks=($publishSonatypeTaskModules)
   buildXML
-  buildParsers
-  buildSwing
   buildPartest
 }
 
@@ -294,20 +258,19 @@ scalaVerToBinary() {
   local patch="$(echo $2 | sed -e "s#$RE#\3#")"
 
   # The binary version is majMin (e.g. "2.12") if
-  #  - there's no suffix            : 2.12.0, 2.12.1
-  #  - the suffix starts with "-bin": 2.12.0-bin-M1
-  #  - the patch version is > 0     : 2.12.1-M1, 1.12.3-RC2, 2.12.1-sha-nightly, 2.12.2-SNAPSHOT
+  #  - there's no suffix                         : 2.12.0, 2.12.1
+  #  - the suffix starts with "-bin"             : 2.12.1-bin-sha, 2.12.1-bin-sha-custom, 2.12.1-bin-SNAPSHOT
+  #  - the suffix is \w+ and patch version is > 0: 2.12.1-M1, 2.12.1-RC2 (also 2.12.1-sha, 2.12.1-SNAPSHOT, which we don't use)
   #
-  # Otherwise, the binary version is the full version: 2.12.0-M1, 2.12.0-RC2, 2.12.0-sha-nightly, 2.12.0-SNAPSHOT
+  # Otherwise, the binary version is the full version: 2.12.0-M1, 2.12.0-RC2, 2.12.0-pre-sha, 2.12.0-pre-SNAPSHOT
+  # (also 2.12.0-sha, 2.12.0-SNAPSHOT, which we don't use)
   #
-  # Adapted from sbt: https://github.com/sbt/sbt/blob/0.13.8/util/cross/src/main/input_sources/CrossVersionUtil.scala#L39
+  # Adapted from sbt: https://github.com/sbt/sbt/blob/v0.13.13/util/cross/src/main/input_sources/CrossVersionUtil.scala#L42
   #
-  # Note: during the pre-release cycle of a major release (e.g. before 2.12.0), the SCALA_BINARY_VER of nightly / SNAPSHOT
-  # versions is the full version, e.g. 2.12.0-sha-nightly, so modules are always re-built. This is in line with what sbt
-  # does: for example, with scalaVersion := "2.12.0-SNAPSHOT", sbt will resolve scala-xml as scala-xml_2.12.0-SNAPSHOT.
-  # Once the 2.12.0 release is out, the binary version is 2.12 for all versions (e.g. for 2.12.1-sha-nightly).
+  # During the pre-release cycle of a major release (e.g. before 2.12.0), the SCALA_BINARY_VER of integration / SNAPSHOT
+  # versions is the full version, e.g. 2.12.0-pre-sha, so modules are always re-built.
 
-  if [[ "$3" == "" || "${3:0:4}" == "-bin" || "$patch" != "0" ]]; then
+  if [[ "$3" == "" || "${3:0:4}" == "-bin" || ("$patch" != "0" && "$3" =~ ^-[a-zA-Z0-9_]+$) ]]; then
     echo "$majMin"
   else
     echo "$1"
@@ -318,7 +281,7 @@ determineScalaVersion() {
   cd $WORKSPACE
   parseScalaProperties "versions.properties"
 
-  # each of the branches below defines the following vars: SCALA_VER_BASE, SCALA_VER_SUFFIX, SCALADOC_SOURCE_LINKS_VER, publishToSonatype
+  # each of the branches below defines the following vars: SCALA_VER_BASE, SCALA_VER_SUFFIX, publishToSonatype
   if [ -z "$SCALA_VER_BASE" ]; then
     echo "No SCALA_VER_BASE specified."
 
@@ -326,12 +289,11 @@ determineScalaVersion() {
 
     if [ -z "$scalaTag" ]
     then
-      echo "No tag found, building nightly snapshot."
-      $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA-NIGHTLY"' generateBuildCharacterPropertiesFile
+      echo "No tag found, running an integration build."
+      $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
       parseScalaProperties "buildcharacter.properties"
       SCALA_VER_BASE="$maven_version_base"
       SCALA_VER_SUFFIX="$maven_version_suffix"
-      SCALADOC_SOURCE_LINKS_VER=$(git rev-parse HEAD)
 
       # TODO: publish nightly snapshot using this script - currently it's a separate jenkins job still running at EPFL.
       publishToSonatype="no"
@@ -341,7 +303,6 @@ determineScalaVersion() {
       local RE='v*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)' # don't change this to make it more accurate, it's not worth it
       SCALA_VER_BASE="$(echo $scalaTag | sed -e "s#$RE#\1.\2.\3#")"
       SCALA_VER_SUFFIX="$(echo $scalaTag | sed -e "s#$RE#\4#")"
-      SCALADOC_SOURCE_LINKS_VER=$scalaTag
 
       if [ "$SCALA_VER_BASE" == "$scalaTag" ]; then
         echo "Could not parse version $scalaTag"
@@ -351,8 +312,6 @@ determineScalaVersion() {
     fi
   else
     publishToSonatype=${publishToSonatype-"yes"} # unless forced previously, publish
-    # if version base/suffix are provided, we assume a corresponding tag exists for the scaladoc source links
-    SCALADOC_SOURCE_LINKS_VER="v$SCALA_VER_BASE$SCALA_VER_SUFFIX"
   fi
 
   SCALA_VER="$SCALA_VER_BASE$SCALA_VER_SUFFIX"
@@ -366,51 +325,18 @@ determineScalaVersion() {
   echo "Building Scala $SCALA_VER."
 }
 
-deriveVersion() {
-  update $1 $2 $3 &> /dev/null
-  echo "$(git describe --tag --match=v* | cut -dv -f2)-nightly"
-}
-
-deriveVersionAnyTag() {
-  update $1 $2 $3 &> /dev/null
-  echo "$(git describe --tag | cut -dv -f2)-nightly"
-}
-
-# determineScalaVersion must have been called
+# determineScalaVersion must have been called (versions.properties is parsed to env vars)
 deriveModuleVersions() {
-  if [ "$moduleVersioning" == "versions.properties" ]; then
-    # use versions.properties as defaults when no version specified on the command line
-                  XML_VER=${XML_VER-$scala_xml_version_number}
-              PARSERS_VER=${PARSERS_VER-$scala_parser_combinators_version_number}
-                SWING_VER=${SWING_VER-$scala_swing_version_number}
-              PARTEST_VER=${PARTEST_VER-$partest_version_number}
-           SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
+         XML_VER=${XML_VER-$scala_xml_version_number}
+     PARTEST_VER=${PARTEST_VER-$partest_version_number}
+  SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
 
-                  XML_REF="v$XML_VER"
-              PARSERS_REF="v$PARSERS_VER"
-                SWING_REF="v$SWING_VER"
-              PARTEST_REF="v$PARTEST_VER"
-           SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
-   else
-    # use HEAD as default when no revision is specified on the command line
-                 XML_REF=${XML_REF-"HEAD"}
-             PARSERS_REF=${PARSERS_REF-"HEAD"}
-               SWING_REF=${SWING_REF-"HEAD"}
-             PARTEST_REF=${PARTEST_REF-"HEAD"}
-          SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
+         XML_REF="v$XML_VER"
+     PARTEST_REF="v$PARTEST_VER"
+  SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
 
-                 XML_VER=$(deriveVersion scala scala-xml "$XML_REF")
-             PARSERS_VER=$(deriveVersion scala scala-parser-combinators "$PARSERS_REF")
-               SWING_VER=$(deriveVersion scala scala-swing "$SWING_REF")
-             PARTEST_VER=$(deriveVersion scala scala-partest "$PARTEST_REF")
-          SCALACHECK_VER=$(deriveVersionAnyTag rickynils scalacheck "$SCALACHECK_REF")
-  fi
-
-  echo "Module versions (versioning strategy: $moduleVersioning):"
-  echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
-  echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
 }
@@ -422,32 +348,39 @@ createNetrcFile() {
   grep 'password=' $1 | sed 's/password=\(.*\)/password \1/' >> $netrcFile
 }
 
+# deletes existing artifacts (core and modules) matching the $SCALA_VER from the repository passed as argument
 removeExistingBuilds() {
-  createNetrcFile "$HOME/.credentials-private-repo"
-  local netrcFile="$HOME/.credentials-private-repo-netrc"
+  local repoUrl=$1
+  local repoPrefix="https://scala-ci.typesafe.com/artifactory/"
+  if [[ $repoUrl == "$repoPrefix"* ]]; then
+    local repoId=${1#$repoPrefix}
+    local storageApiUrl="${repoPrefix}api/storage/$repoId"
 
-  local storageApiUrl=`echo $releaseTempRepoUrl | sed 's/\(scala-release-temp\)/api\/storage\/\1/'`
-  local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
+    createNetrcFile "$HOME/.credentials-private-repo"
+    local netrcFile="$HOME/.credentials-private-repo-netrc"
 
-  for module in $scalaLangModules; do
-    local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | endswith(\"$SCALA_VER\")) | .uri"`
-    for artifact in $artifacts; do
-      echo "Deleting $releaseTempRepoUrl$module$artifact"
-      curl -s --netrc-file $netrcFile -X DELETE $releaseTempRepoUrl$module$artifact
+    # "module" is not a scala module (like scala-xml), but an artifact of a boostrap build. the variable
+    # contains: "org/scala-lang/modules", "org/scala-lang/scala-compiler", "org/scala-lang/scala-library", ...
+    local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
+
+    for module in $scalaLangModules; do
+      local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | endswith(\"$SCALA_VER\")) | .uri"`
+      for artifact in $artifacts; do
+        echo "Deleting $repoUrl$module$artifact"
+        curl -s --netrc-file $netrcFile -X DELETE $repoUrl$module$artifact
+      done
     done
-  done
+  else
+    echo "Unknown repo, not deleting anything: $repoUrl"
+  fi
 }
 
 constructUpdatedModuleVersions() {
   updatedModuleVersions=()
 
-  # force the new module versions for building the core. these may be different from the values in versions.properties,
-  # either because the variables (XML_VER) were provided, or because we're building the modules from HEAD.
-  # in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-parser-combinators.version.number=$PARSERS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-swing.version.number=$SWING_VER")
+  # force the new module versions for building the core. these may be different from the values in versions.properties
+  # if the variables (XML_VER) were provided. in the common case, the values are the same as in versions.properties.
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
-
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
   # updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
@@ -457,7 +390,7 @@ constructUpdatedModuleVersions() {
   if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi
 }
 
-# build locker (scala + modules) and quick, publishing everything to private-repo
+# build locker (scala + modules) and quick, publishing everything to artifactory
 bootstrap() {
   echo "### Bootstrapping"
 
@@ -468,14 +401,14 @@ bootstrap() {
       echo "### Building STARR"
 
       STARR_DIR=./scala-starr
-      STARR_VER_SUFFIX="-$(git rev-parse --short $STARR_REF)-nightly"
+      STARR_VER_SUFFIX="-$(git rev-parse --short $STARR_REF)-starr"
       STARR_VER=$SCALA_VER_BASE$STARR_VER_SUFFIX
       rm -rf "$STARR_DIR"
       (
         git clone --reference $WORKSPACE/.git $WORKSPACE/.git $STARR_DIR
         cd $STARR_DIR
         git co $STARR_REF
-        $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $releaseTempRepoUrl $STARR_VER" $clean publish >> $baseDir/logs/builds 2>&1
+        $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish >> $baseDir/logs/builds 2>&1
       )
   fi
 
@@ -489,7 +422,7 @@ bootstrap() {
   # publish more than just core: partest needs scalap
   # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $releaseTempRepoUrl $SCALA_VER" $clean publish >> $baseDir/logs/builds 2>&1
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish >> $baseDir/logs/builds 2>&1
 
   echo "### Building modules using locker"
 
@@ -511,8 +444,6 @@ bootstrap() {
   # Rebuild Scala with these modules so that all binary versions are consistent.
   # Update versions.properties to new modules.
   # Sanity check: make sure the Scala test suite passes / docs can be generated with these modules.
-  # don't skip locker (-Dlocker.skip=1), or stability will fail
-  # overwrite "locker" version of scala at private-repo with bootstrapped version
   cd $baseDir
   rm -rf build/
 
@@ -520,7 +451,7 @@ bootstrap() {
       --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapQuick $releaseTempRepoUrl $SCALA_VER" \
+      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
       $clean \
       $sbtBuildTask \
       dist/mkQuick \
@@ -545,7 +476,7 @@ testStability() {
       --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapQuick $releaseTempRepoUrl $SCALA_VER" \
+      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
       $clean \
       dist/mkQuick
   mv build/quick build/strap
@@ -565,7 +496,7 @@ publishSonatype() {
       --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapPublish $releaseTempRepoUrl $SCALA_VER" \
+      "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
       $publishSonatypeTaskCore
 
   echo "### Publishing modules to sonatype"
@@ -593,7 +524,7 @@ determineScalaVersion
 
 deriveModuleVersions
 
-removeExistingBuilds
+removeExistingBuilds $integrationRepoUrl
 
 bootstrap
 
