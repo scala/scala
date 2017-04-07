@@ -5,12 +5,12 @@
 
 package scala.tools.nsc
 
-import java.io.FileNotFoundException
+import java.io._
 import java.security.SecureRandom
-import io.{ File, Path, Socket }
+
+import io.{File, Path, Socket}
 import scala.tools.util.CompileOutputCommon
 import scala.reflect.internal.util.StringOps.splitWhere
-import scala.sys.process._
 
 trait HasCompileSocket {
   def compileSocket: CompileSocket
@@ -92,15 +92,11 @@ class CompileSocket extends CompileOutputCommon {
     Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) ++ serverClassArgs filterNot (_ == "")
 
   /** Start a new server. */
-  private def startNewServer(vmArgs: String) = {
+  private def startNewServer(vmArgs: String): Unit = {
     val cmd = serverCommand((vmArgs split " ").toSeq)
-    info("[Executing command: %s]" format cmd.mkString(" "))
+    info(s"[Executing command: ${cmd.mkString(" ")}]")
 
-    // Hiding inadequate daemonized implementation from public API for now
-    Process(cmd) match {
-      case x: ProcessBuilder.AbstractBuilder => x.daemonized().run()
-      case x                                 => x.run()
-    }
+    new java.lang.ProcessBuilder(cmd.toArray: _*).inheritIO().start()
   }
 
   /** The port identification file */

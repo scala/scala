@@ -65,7 +65,7 @@ object ClassPathMemoryConsumptionTester {
     val settings = new TestSettings()
     settings.processArguments(args, processAll = true)
     if (settings.classpath.isDefault)
-      settings.classpath.value = sys.props("java.class.path")
+      settings.classpath.value = System.getProperty("java.class.path", ".")
     settings
   }
 

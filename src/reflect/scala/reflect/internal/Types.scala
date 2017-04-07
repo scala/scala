@@ -95,8 +95,8 @@ trait Types
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
    */
-  private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
-  private final val sharperSkolems = sys.props contains "scalac.experimental.sharper-skolems"
+  private final val propagateParameterBoundsToTypeVars = System.getProperty("scalac.debug.prop-constraints") != null
+  private final val sharperSkolems = System.getProperty("scalac.experimental.sharper-skolems") != null
 
   /** Caching the most recent map has a 75-90% hit rate. */
   private object substTypeMapCache {
@@ -4176,7 +4176,7 @@ trait Types
     case ThisType(sym)                         => !sym.isPackageClass   // excludes packages
     case TypeRef(_, sym, _)                    => !sym.isPackageClass   // excludes packages
     case PolyType(_, _)                        => true                  // poly-methods excluded earlier
-    case tp                                    => sys.error("isValueElseNonValue called with third-way type " + tp)
+    case tp                                    => throw new IllegalArgumentException("isValueElseNonValue called with third-way type " + tp)
   }
 
   /** SLS 3.2, Value Types

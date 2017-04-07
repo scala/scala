@@ -17,7 +17,7 @@ import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
 
-import scala.concurrent.Lock
+import java.util.concurrent.locks._
 import scala.text._
 
 /**
@@ -64,11 +64,11 @@ abstract class TreeBrowsers {
       val frame = new BrowserFrame(pName)
       frame.setTreeModel(tm)
 
-      val lock = new Lock()
+      val lock = new ReentrantLock()
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.acquire()
+      lock.lock()
     }
   }
 
@@ -169,13 +169,13 @@ abstract class TreeBrowsers {
      * especially symbols/types would change while the window is visible.
      */
     def createFrame(lock: Lock): Unit = {
-      lock.acquire() // keep the lock until the user closes the window
+      lock.lock() // keep the lock until the user closes the window
 
       frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
-        override def windowClosed(e: WindowEvent): Unit = lock.release()
+        override def windowClosed(e: WindowEvent): Unit = lock.unlock()
       })
 
       jTree = new JTree(treeModel) {
@@ -643,7 +643,7 @@ abstract class TreeBrowsers {
                         toDocument(thistpe) :/: ", " :/:
                         toDocument(supertpe) ::")"))
       case _ =>
-        sys.error("Unknown case: " + t.toString +", "+ t.getClass)
+        abort("Unknown case: " + t.toString +", "+ t.getClass)
     }
   }
 

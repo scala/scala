@@ -74,7 +74,9 @@ object Origins {
   private val thisClass = this.getClass.getName
 
   locally {
-    sys.addShutdownHook(counters.values foreach (_.purge()))
+    Runtime.getRuntime.addShutdownHook(new Thread(() =>
+      counters.values foreach (_.purge()))
+    )
   }
 
   case class OriginId(className: String, methodName: String) {

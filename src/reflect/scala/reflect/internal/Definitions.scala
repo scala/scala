@@ -322,6 +322,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NullPointerExceptionClass      = getClassByName(sn.NPException)
     lazy val ThrowableClass                 = getClassByName(sn.Throwable)
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
+    lazy val RuntimeExceptionClass          = requiredClass[RuntimeException]
 
     lazy val UninitializedFieldConstructor = UninitializedErrorClass.primaryConstructor
 
@@ -336,8 +337,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val DynamicClass               = requiredClass[Dynamic]
 
     // fundamental modules
-    lazy val SysPackage = getPackageObject("scala.sys")
-      def Sys_error    = getMemberMethod(SysPackage, nme.error)
 
     // Modules whose members are in the default namespace
     // SI-5941: ScalaPackage and JavaLangPackage are never ever shared between mirrors

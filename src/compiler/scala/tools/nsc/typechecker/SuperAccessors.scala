@@ -79,7 +79,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private val accDefs = mutable.Map[Symbol, ListBuffer[Tree]]()
 
     private def storeAccessorDefinition(clazz: Symbol, tree: Tree) = {
-      val buf = accDefs.getOrElse(clazz, sys.error("no acc def buf for "+clazz))
+      val buf = accDefs.getOrElse(clazz, abort(s"no acc def buf for $clazz"))
       buf += typers(clazz) typed tree
     }
     private def ensureAccessor(sel: Select, mixName: TermName = nme.EMPTY) = {

@@ -1659,7 +1659,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                   debuglog("implementation: " + tree1)
                   deriveDefDef(tree1)(transform)
                 case _ =>
-                  deriveDefDef(tree)(_ => localTyper typed gen.mkSysErrorCall("Fatal error in code generation: this should never be called."))
+                  deriveDefDef(tree)(_ => localTyper typed gen.mkThrowNewRuntimeException("Fatal error in code generation: this should never be called."))
               }
 
             case SpecialOverride(target) =>

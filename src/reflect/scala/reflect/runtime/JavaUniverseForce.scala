@@ -233,6 +233,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.NullPointerExceptionClass
     definitions.ThrowableClass
     definitions.UninitializedErrorClass
+    definitions.RuntimeExceptionClass
     definitions.UninitializedFieldConstructor
     definitions.PartialFunctionClass
     definitions.AbstractPartialFunctionClass
@@ -241,7 +242,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StringModule
     definitions.ClassClass
     definitions.DynamicClass
-    definitions.SysPackage
     definitions.UnqualifiedModules
     definitions.UnqualifiedOwners
     definitions.PredefModule

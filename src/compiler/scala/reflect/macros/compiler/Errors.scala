@@ -1,7 +1,7 @@
 package scala.reflect.macros
 package compiler
 
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 import scala.reflect.macros.util.Traces
 
 trait Errors extends Traces {

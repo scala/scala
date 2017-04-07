@@ -309,10 +309,8 @@ trait Logic extends Debugging  {
 
     }
 
-    // TODO: remove since deprecated
-    val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
-    if (budgetProp.isSet) {
-      reportWarning(s"Please remove -D${budgetProp.key}, it is ignored.")
+    if (System.getProperty("scalac.patmat.analysisBudget") != null) {
+      reportWarning(s"Please remove -Dscalac.patmat.analysisBudget, it is ignored.")
     }
 
     // convert finite domain propositional logic with subtyping to pure boolean propositional logic
@@ -724,7 +722,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     // (At least conceptually: `true` is an instance of class `Boolean`)
     private def widenToClass(tp: Type): Type =
       if (tp.typeSymbol.isClass) tp
-      else if (tp.baseClasses.isEmpty) sys.error("Bad type: " + tp)
+      else if (tp.baseClasses.isEmpty) throw new IllegalArgumentException("Bad type: " + tp)
       else tp.baseType(tp.baseClasses.head)
 
     object TypeConst extends TypeConstExtractor {

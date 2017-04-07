@@ -31,8 +31,8 @@ extends AbstractFile {
   val lastModified: Long = System.currentTimeMillis
 
   override def file = null
-  override def input = sys.error("directories cannot be read")
-  override def output = sys.error("directories cannot be written")
+  override def input = throw new IllegalStateException("directories cannot be read")
+  override def output = throw new IllegalStateException("directories cannot be written")
 
   /** Does this abstract file denote an existing file? */
   def create() { unsupported() }

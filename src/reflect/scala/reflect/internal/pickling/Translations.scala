@@ -42,7 +42,7 @@ trait Translations {
     case (_: Symbol, _: AnnotationInfo) => SYMANNOT       // symbol annotations, i.e. on terms
     case (_: Symbol, _: List[_])        => CHILDREN       // the direct subclasses of a sealed symbol
     case _: Modifiers                   => MODIFIERS
-    case _                              => sys.error(s"unpicklable entry ${shortClassOfInstance(ref)} $ref")
+    case _                              => throw new IllegalStateException(s"unpicklable entry ${shortClassOfInstance(ref)} $ref")
   }
 
   /** Local symbols only. The assessment of locality depends

@@ -1622,7 +1622,7 @@ abstract class RefChecks extends Transform {
                   } else if (dd.rhs == EmptyTree) {
                     // pretend it had a stub implementation
                     sym resetFlag DEFERRED
-                    deriveDefDef(dd)(_ => typed(gen.mkSysErrorCall("native method stub")))
+                    deriveDefDef(dd)(_ => typed(gen.mkThrowNewRuntimeException("native method stub")))
                   } else tree
                 } else tree
 

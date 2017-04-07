@@ -10,7 +10,7 @@ import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.NoSourceFile
 import java.lang.{Class => jClass}
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
 import scala.reflect.io.NoAbstractFile
