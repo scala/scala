@@ -36,10 +36,8 @@ import scala.build._
 import VersionUtil._
 
 // Scala dependencies:
-val scalaSwingDep                = scalaDep("org.scala-lang.modules", "scala-swing")
 val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
-val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-parser-combinators")
-val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest",              versionProp = "partest")
+val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
 
 // Non-Scala dependencies:
 val junitDep          = "junit"                  % "junit"           % "4.11"
@@ -718,22 +716,6 @@ lazy val manual = configureAsSubproject(project)
     classDirectory in Compile := (target in Compile).value / "classes"
   )
 
-lazy val libraryAll = Project("library-all", file(".") / "target" / "library-all-src-dummy")
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(
-    name := "scala-library-all",
-    publishArtifact in (Compile, packageBin) := false,
-    publishArtifact in (Compile, packageSrc) := false,
-    libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, scalaSwingDep),
-    apiURL := None,
-    fixPom(
-      "/project/name" -> <name>Scala Library Powerpack</name>,
-      "/project/description" -> <description>The Scala Standard Library and Official Modules</description>
-    )
-  )
-  .dependsOn(library, reflect)
-
 lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-dist-src-dummy")
   .settings(commonSettings)
   .settings(disableDocs)
@@ -778,7 +760,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
     ),
     publishArtifact in (Compile, packageSrc) := false
   )
-  .dependsOn(libraryAll, compiler, scalap)
+  .dependsOn(library, reflect, compiler, scalap)
 
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
@@ -886,7 +868,7 @@ lazy val root: Project = (project in file("."))
     incOptions := incOptions.value.withNameHashing(!antStyle.value).withAntStyle(antStyle.value)
   )
   .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
-    scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
+    scaladoc, scalap, partestExtras, junit, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
@@ -898,7 +880,7 @@ lazy val distDependencies = Seq(replJline, replJlineEmbedded, compiler, library,
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
-    libraryDependencies ++= Seq(scalaSwingDep, jlineDep),
+    libraryDependencies ++= Seq(jlineDep),
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
       val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
@@ -911,7 +893,7 @@ lazy val dist = (project in file("dist"))
     mkPack := Def.task { (buildDirectory in ThisBuild).value / "pack" }.dependsOn(packagedArtifact in (Compile, packageBin), mkBin).value,
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
-      val extraDeps = Set(scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
+      val extraDeps = Set(scalaXmlDep)
       val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
       def uniqueModule(m: ModuleID) = (m.organization, m.name.replaceFirst("_.*", ""))
       val extraModules = extraDeps.map(uniqueModule)
@@ -1064,7 +1046,6 @@ intellij := {
       moduleDeps(interactive).value,
       moduleDeps(junit).value,
       moduleDeps(library).value,
-      // moduleDeps(libraryAll).value,          // No sources
       moduleDeps(manual).value,
       moduleDeps(partestExtras).value,
       moduleDeps(partestJavaAgent).value,
