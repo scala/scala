@@ -1,10 +1,10 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.reflect.internal.PerRunSettings
 import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
-import scala.tools.nsc.settings.ScalaSettings
 import scala.util.control.ControlThrowable
 
 /**
@@ -74,14 +74,14 @@ object BackendReporting {
   def tryEither[A, B](op: => Either[A, B]): Either[A, B] = try { op } catch { case Invalid(e) => Left(e.asInstanceOf[A]) }
 
   sealed trait OptimizerWarning {
-    def emitWarning(settings: ScalaSettings): Boolean
+    def emitWarning(runSettings: PerRunSettings): Boolean
   }
 
   // Method withFilter in RightBiasedEither requires an implicit empty value. Taking the value here
   // in scope allows for-comprehensions that desugar into withFilter calls (for example when using a
   // tuple de-constructor).
   implicit object emptyOptimizerWarning extends OptimizerWarning {
-    def emitWarning(settings: ScalaSettings): Boolean = false
+    def emitWarning(runSettings: PerRunSettings): Boolean = false
   }
 
   sealed trait MissingBytecodeWarning extends OptimizerWarning {
@@ -106,17 +106,17 @@ object BackendReporting {
           missingClass.map(c => s" Reason:\n$c").getOrElse("")
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = this match {
+    def emitWarning(runSettings: PerRunSettings) : Boolean = this match {
       case ClassNotFound(_, javaDefined) =>
-        if (javaDefined) settings.optWarningNoInlineMixed
-        else settings.optWarningNoInlineMissingBytecode
+        if (javaDefined) runSettings.optWarningNoInlineMixed
+        else runSettings.optWarningNoInlineMissingBytecode
 
       case m @ MethodNotFound(_, _, _, missing) =>
         if (m.isArrayMethod) false
-        else settings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        else runSettings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(runSettings))
 
       case FieldNotFound(_, _, _, missing) =>
-        settings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        runSettings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(runSettings))
     }
   }
 
@@ -135,9 +135,9 @@ object BackendReporting {
         s"Failed to get the type of class symbol $classFullName due to SI-9111."
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case NoClassBTypeInfoMissingBytecode(cause)         => cause.emitWarning(settings)
-      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => settings.optWarningNoInlineMissingBytecode
+    def emitWarning(runSettings: PerRunSettings) : Boolean = this match {
+      case NoClassBTypeInfoMissingBytecode(cause)         => cause.emitWarning(runSettings)
+      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => runSettings.optWarningNoInlineMissingBytecode
     }
   }
 
@@ -166,13 +166,13 @@ object BackendReporting {
         s"Error while computing the inline information for method $warningMessageSignature:\n" + cause
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case MethodInlineInfoIncomplete(_, _, _, cause)               => cause.emitWarning(settings)
+    def emitWarning(runSettings: PerRunSettings) : Boolean = this match {
+      case MethodInlineInfoIncomplete(_, _, _, cause)               => cause.emitWarning(runSettings)
 
-      case MethodInlineInfoMissing(_, _, _, Some(cause))            => cause.emitWarning(settings)
-      case MethodInlineInfoMissing(_, _, _, None)                   => settings.optWarningNoInlineMissingBytecode
+      case MethodInlineInfoMissing(_, _, _, Some(cause))            => cause.emitWarning(runSettings)
+      case MethodInlineInfoMissing(_, _, _, None)                   => runSettings.optWarningNoInlineMissingBytecode
 
-      case MethodInlineInfoError(_, _, _, cause)                    => cause.emitWarning(settings)
+      case MethodInlineInfoError(_, _, _, cause)                    => cause.emitWarning(runSettings)
     }
   }
 
@@ -224,9 +224,9 @@ object BackendReporting {
       warning + reason
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = {
-      settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed) ||
-        annotatedInline && settings.optWarningEmitAtInlineFailed
+    def emitWarning(runSettings: PerRunSettings) : Boolean = {
+      runSettings.optWarningAnyInlineFailed ||
+        annotatedInline && runSettings.optWarningEmitAtInlineFailed
     }
   }
   case class CalleeNotFinal(calleeDeclarationClass: InternalName, name: String, descriptor: String,  annotatedInline: Boolean) extends CannotInlineWarning
@@ -246,7 +246,8 @@ object BackendReporting {
   // but at the place where it's created (in findIllegalAccess) we don't have the necessary data (calleeName, calleeDescriptor).
   case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
     override def toString = "The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory)."
-    def emitWarning(settings: ScalaSettings): Boolean = settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
+    //FIXME
+    def emitWarning(runSettings: PerRunSettings) : Boolean = runSettings.optWarningAnyInlineFailed
   }
 
   /**
@@ -256,9 +257,10 @@ object BackendReporting {
   sealed trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
     def pos: Position
 
-    override def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case RewriteClosureAccessCheckFailed(_, cause) => cause.emitWarning(settings)
-      case RewriteClosureIllegalAccess(_, _)         => settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
+    override def emitWarning(runSettings: PerRunSettings) : Boolean = this match {
+      case RewriteClosureAccessCheckFailed(_, cause) => cause.emitWarning(runSettings)
+        //FIXME
+      case RewriteClosureIllegalAccess(_, _)         => runSettings.optWarningAnyInlineFailed
     }
 
     override def toString: String = this match {
@@ -289,11 +291,11 @@ object BackendReporting {
         s"Cannot read ScalaInlineInfo version $version in classfile $internalName. Use a more recent compiler."
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case NoInlineInfoAttribute(_)                             => settings.optWarningNoInlineMissingScalaInlineInfoAttr
-      case ClassNotFoundWhenBuildingInlineInfoFromSymbol(cause) => cause.emitWarning(settings)
-      case ClassSymbolInfoFailureSI9111(_)                      => settings.optWarningNoInlineMissingBytecode
-      case UnknownScalaInlineInfoVersion(_, _)                  => settings.optWarningNoInlineMissingScalaInlineInfoAttr
+    def emitWarning(runSettings: PerRunSettings): Boolean = this match {
+      case NoInlineInfoAttribute(_)                             => runSettings.optWarningNoInlineMissingScalaInlineInfoAttr
+      case ClassNotFoundWhenBuildingInlineInfoFromSymbol(cause) => cause.emitWarning(runSettings)
+      case ClassSymbolInfoFailureSI9111(_)                      => runSettings.optWarningNoInlineMissingBytecode
+      case UnknownScalaInlineInfoVersion(_, _)                  => runSettings.optWarningNoInlineMissingScalaInlineInfoAttr
     }
   }
 

@@ -393,7 +393,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     def emitInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
       val node = new MethodInsnNode(opcode, owner, name, desc, itf)
       jmethod.instructions.add(node)
-      if (settings.optInlinerEnabled) callsitePositions(node) = pos
+      if (runSettings.optInlinerEnabled) callsitePositions(node) = pos
     }
 
     // can-multi-thread

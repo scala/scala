@@ -1866,7 +1866,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
-      if (settings.isScala211  && mdef.symbol == PredefModule)
+      if (currentRunSettings.isScala211  && mdef.symbol == PredefModule)
         ensurePredefParentsAreInSameSourceFile(impl2)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
@@ -3354,7 +3354,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // and lubbing the argument types (we treat SAM and FunctionN types equally, but non-function arguments
             // do not receive special treatment: they are typed under WildcardType.)
             val altArgPts =
-              if (settings.isScala212 && args.exists(treeInfo.isFunctionMissingParamType))
+              if (currentRunSettings.isScala212 && args.exists(treeInfo.isFunctionMissingParamType))
                 try alts.map(alt => formalTypes(alt.info.paramTypes, argslen).map(ft => (ft, alt))).transpose // do least amount of work up front
                 catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
               else args.map(_ => Nil) // will type under argPt == WildcardType

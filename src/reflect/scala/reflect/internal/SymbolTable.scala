@@ -61,7 +61,7 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
-  protected def isDeveloper: Boolean = settings.debug
+  protected def isDeveloper: Boolean = settings.debug.boolValue
 
   @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)
@@ -209,6 +209,15 @@ abstract class SymbolTable extends macros.Universe
 
   /** The run identifier of the given period. */
   final def runId(period: Period): RunId = period >> 8
+
+  trait RunSettings {
+    val runSettings: PerRunSettings = PerRunSettings
+  }
+
+  protected def PerRunSettings: PerRunSettings
+
+  def currentRun: RunSettings with RunReporting
+  def currentRunSettings = currentRun.runSettings
 
   /** The phase identifier of the given period. */
   final def phaseId(period: Period): Phase#Id = period & 0xFF

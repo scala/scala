@@ -133,7 +133,7 @@ abstract class RefChecks extends Transform {
           case _                          => false
         }
         val haveDefaults = methods filter (
-          if (settings.isScala211)
+          if (currentRunSettings.isScala211)
              (sym => mexists(sym.info.paramss)(_.hasDefault) && !nme.isProtectedAccessorName(sym.name))
           else
             (sym => hasDefaultParam(sym.info) && !nme.isProtectedAccessorName(sym.name))
@@ -1417,7 +1417,7 @@ abstract class RefChecks extends Transform {
         if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred)
           reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
       }
-      if (settings.isScala213) checkIsElisible(tree.symbol)
+      if (currentRunSettings.isScala213) checkIsElisible(tree.symbol)
 
       tree match {
         case m: MemberDef =>

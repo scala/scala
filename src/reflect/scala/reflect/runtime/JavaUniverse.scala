@@ -2,8 +2,7 @@ package scala
 package reflect
 package runtime
 
-import scala.reflect.internal.{TreeInfo, SomePhase}
-import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
+import scala.reflect.internal.{PerRunSettings, SimplePerRunSettings, SomePhase, TreeInfo, SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
 import scala.reflect.api.{TypeCreator, Universe}
 
@@ -28,11 +27,16 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   }
 
   // minimal Run to get Reporting wired
-  def currentRun = new RunReporting {}
+  def currentRun = new RunReporting with RunSettings{}
   class PerRunReporting extends PerRunReportingBase {
     def deprecationWarning(pos: Position, msg: String, since: String): Unit = reporter.warning(pos, msg)
   }
   protected def PerRunReporting = new PerRunReporting
+  final class PerRunSettingsJava extends SimplePerRunSettings {
+    override val isScala211: Boolean = settings.isScala211
+    override val isScala212: Boolean = settings.isScala212
+  }
+  protected def PerRunSettings = new PerRunSettingsJava
 
 
   type TreeCopier = InternalTreeCopierOps
