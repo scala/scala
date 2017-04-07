@@ -13,13 +13,10 @@ object Test {
 
   def f5[@sp(Int) A, B <: Object](a: A, b: B)  = { val c = caller; print(""); c }
 
-  // `uncurryTreeType` calls a TypeMap on the call to this method and we end up with new
-  // type parameter symbols, which are not found in `TypeEnv.includes(typeEnv(member), env)`
-  // in `specSym`. (One of `uncurry`'s tasks is to expand type aliases in signatures.)
   type T = Object
-  def todo1[@sp(Int) A, B <: T](a: A, b: String)           = { val c = caller; print(""); c }
-  def todo2[@sp(Int) A, B <: AnyRef](a: A, b: String)      = { val c = caller; print(""); c }
-  def todo3[B <: List[A], @specialized(Int) A](a: A, b: B) = { val c = caller; print(""); c }
+  def aliasF1[@sp(Int) A, B <: T](a: A, b: String)           = { val c = caller; print(""); c }
+  def aliasF2[@sp(Int) A, B <: AnyRef](a: A, b: String)      = { val c = caller; print(""); c }
+  def aliasF3[B <: List[A], @specialized(Int) A](a: A, b: B) = { val c = caller; print(""); c }
 
   def main(args: Array[String]) {
     val s = ""
@@ -36,10 +33,9 @@ object Test {
           |f4(Boolean) ${f4(Boolean,Nil)}
           |f4(String)  ${f4("",Nil)}
           |
-          |// Ideally these would be specialized
-          |todo1 ${todo1(1,s)}
-          |todo2 ${todo2(1,s)}
-          |todo3 ${todo3(1,List(0))}""".stripMargin
+          |aliasF1 ${aliasF1(1,s)}
+          |aliasF2 ${aliasF2(1,s)}
+          |aliasF3 ${aliasF3(1,List(0))}""".stripMargin
     println(result)
   }
 }

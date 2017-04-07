@@ -34,6 +34,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def recursionTable = _recursionTable
   def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
+  private var _lockedCount = 0
+  def lockedCount = this._lockedCount
+  def lockedCount_=(i: Int) = _lockedCount = i
+
+
   @deprecated("Global existential IDs no longer used", "2.12.1")
   private var existentialIds = 0
   @deprecated("Global existential IDs no longer used", "2.12.1")
@@ -1062,7 +1067,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = (
-         !isConstructor
+         canMatchInheritedSymbols
       && allOverriddenSymbols.forall(_.owner.isRefinementClass) // this includes allOverriddenSymbols.isEmpty
     )
 
@@ -1079,11 +1084,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
 
     def exists: Boolean = !isTopLevel || {
-      val isSourceLoader = rawInfo match {
-        case sl: SymLoader => sl.fromSource
-        case _             => false
-      }
       def warnIfSourceLoader() {
+        val isSourceLoader = rawInfo match {
+          case sl: SymLoader => sl.fromSource
+          case _             => false
+        }
         if (isSourceLoader)
           // Predef is completed early due to its autoimport; we used to get here when type checking its
           // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
@@ -1269,7 +1274,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def javaSimpleName: Name = addModuleSuffix(simpleName.dropLocal)
     def javaBinaryName: Name = name.newName(javaBinaryNameString)
-    def javaBinaryNameString: String = fullName('/', moduleSuffix)
+    def javaBinaryNameString: String = {
+      if (javaBinaryNameStringCache == null)
+        javaBinaryNameStringCache = fullName('/', moduleSuffix)
+      javaBinaryNameStringCache
+    }
+    private[this] var javaBinaryNameStringCache: String = null
     def javaClassName: String  = fullName('.', moduleSuffix)
 
     /** The encoded full path name of this symbol, where outer names and inner names
@@ -1935,7 +1945,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         var alts0: List[Symbol] = alternatives
         var alts1: List[Symbol] = Nil
 
-        while (alts0.nonEmpty) {
+        while (!alts0.isEmpty) {
           if (cond(alts0.head))
             alts1 ::= alts0.head
           else
@@ -2309,9 +2319,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       matchingSymbolInternal(site, site.nonPrivateMemberAdmitting(name, admit))
 
     private def matchingSymbolInternal(site: Type, candidate: Symbol): Symbol = {
-      def qualifies(sym: Symbol) = !sym.isTerm || ((site memberType this) matches (site memberType sym))
+      def qualifies(sym: Symbol) = !sym.isTerm || {
+        val result = ((site memberType this) matches (site memberType sym))
+        result
+      }
       //OPT cut down on #closures by special casing non-overloaded case
-      if (candidate.isOverloaded) candidate filter qualifies
+      if (candidate == NoSymbol) NoSymbol
+      else if (candidate.isOverloaded) candidate filter qualifies
       else if (qualifies(candidate)) candidate
       else NoSymbol
     }
@@ -2361,15 +2375,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Returns all symbols overridden by this symbol. */
     final def allOverriddenSymbols: List[Symbol] = {
-      def loop(xs: List[Symbol]): List[Symbol] = xs match {
-        case Nil     => Nil
+      @tailrec
+      def loop(xs: List[Symbol], result: List[Symbol]): List[Symbol] = xs match {
+        case Nil     => result
         case x :: xs =>
           overriddenSymbol(x) match {
-            case NoSymbol => loop(xs)
-            case sym      => sym :: loop(xs)
+            case NoSymbol => loop(xs, result)
+            case sym      => loop(xs, sym :: result)
           }
       }
-      if (isOverridingSymbol) loop(owner.ancestors) else Nil
+      if (isOverridingSymbol) loop(owner.ancestors, Nil) else Nil
     }
 
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
@@ -2909,6 +2924,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi {
+    private[this] var mtpeRunId        = NoRunId
+    private[this] var mtpePre: Type    = _
+    private[this] var mtpeResult: Type = _
+    private[this] var mtpeInfo: Type   = _
+
     override def isLabel         = this hasFlag LABEL
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
@@ -2925,6 +2945,34 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // unfortunately having the CASEACCESSOR flag does not actually mean you
     // are a case accessor (you can also be a field.)
     override def isCaseAccessorMethod = isCaseAccessor
+
+    def typeAsMemberOf(pre: Type): Type = {
+      // We used to cache member types more pervasively, but we can't get away with that
+      // any more because of t8011.scala, which demonstrates a problem with the extention methods
+      // phase. As it moves a method body to an extension methid in the companion, it substitutes
+      // the new type parameter symbols into the method body, which mutates the base type sequence of
+      // a local class symbol. We can no longer assume that`mtpePre eq pre` is a sufficient condition
+      // to use the cached result here.
+      //
+      // Rather than throwing away the baby with the bathwater, lets at least try to keep the caching
+      // in place until after the compiler has completed the typer phase.
+      //
+      // Out of caution, I've also disable caching if there are active type completers, which also
+      // mutate symbol infos during val and def return type inference based the overriden member.
+      if (isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
+
+      if (mtpeRunId == currentRunId) {
+        if ((mtpePre eq pre) && (mtpeInfo eq info)) return {
+          mtpeResult
+        }
+      }
+      val res = pre.computeMemberType(this)
+      mtpeRunId = currentRunId
+      mtpePre = pre
+      mtpeInfo = info
+      mtpeResult = res
+      res
+    }
 
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
@@ -3032,7 +3080,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
-    private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
+    private def newTypeRef(targs: List[Type]) = newPrefix match {
+      case NoPrefix => TypeRef(NoPrefix, this, targs) //opt
+      case _        => typeRef(newPrefix, this, targs)
+    }
 
     /** A polymorphic type symbol has two distinct "types":
      *

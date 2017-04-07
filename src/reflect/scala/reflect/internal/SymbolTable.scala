@@ -403,7 +403,7 @@ abstract class SymbolTable extends macros.Universe
   }
 
   /** The set of all installed infotransformers. */
-  var infoTransformers = new InfoTransformer {
+  var infoTransformers: InfoTransformer = new InfoTransformer {
     val pid = NoPhase.id
     val changesBaseClasses = true
     def transform(sym: Symbol, tpe: Type): Type = tpe

@@ -7,17 +7,18 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
-import util.Statistics
+import util.{Statistics, TriState}
 import util.ThreeValues._
 import Variance._
 import Depth._
 import TypeConstants._
+import scala.util.hashing.MurmurHash3
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -409,7 +410,7 @@ trait Types
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (parents.nonEmpty) parents.head else ObjectTpe
+    def firstParent = if (parents ne Nil) parents.head else ObjectTpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -696,21 +697,23 @@ trait Types
      *  }}}
      */
     def memberInfo(sym: Symbol): Type = {
-//      assert(sym ne NoSymbol, this)
+      require(sym ne NoSymbol, this)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym.tpeHK match {
-      case OverloadedType(_, alts) => OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym match {
+      case meth: MethodSymbol =>
+        meth.typeAsMemberOf(this)
+      case _ =>
+        computeMemberType(sym)
+    }
+
+    def computeMemberType(sym: Symbol): Type = sym.tpeHK match { //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
+      case OverloadedType(_, alts) =>
+        OverloadedType(this, alts)
       case tp =>
-        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
-        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
-        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
-        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
-        // from what it is now, and the cache won't know simply by looking at `pre`.
-        if (sym eq NoSymbol) NoType
-        else tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -784,6 +787,7 @@ trait Types
 
     /** Does this type contain a reference to this symbol? */
     def contains(sym: Symbol): Boolean = new ContainsCollector(sym).collect(this)
+    def containsNoNormalize(sym: Symbol): Boolean = new ContainsCollectorNoNormalize(sym).collect(this)
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
@@ -902,20 +906,7 @@ trait Types
      *  @return    the index of given class symbol in the BaseTypeSeq of this type,
      *             or -1 if no base type with given class symbol exists.
      */
-    def baseTypeIndex(sym: Symbol): Int = {
-      val bts = baseTypeSeq
-      var lo = 0
-      var hi = bts.length - 1
-      while (lo <= hi) {
-        val mid = (lo + hi) / 2
-        val btssym = bts.typeSymbol(mid)
-        if (sym == btssym) return mid
-        else if (sym isLess btssym) hi = mid - 1
-        else if (btssym isLess sym) lo = mid + 1
-        else abort("sym is neither `sym == btssym`, `sym isLess btssym` nor `btssym isLess sym`")
-      }
-      -1
-    }
+    def baseTypeIndex(sym: Symbol): Int = baseTypeSeq.baseTypeIndex(sym)
 
     /** If this is a ExistentialType, PolyType or MethodType, a copy with cloned type / value parameters
      *  owned by `owner`. Identity for all other types.
@@ -1071,7 +1062,26 @@ trait Types
    */
   abstract class UniqueType extends Type with Product {
     final override val hashCode = computeHashCode
-    protected def computeHashCode = scala.runtime.ScalaRunTime._hashCode(this)
+    // DUPLICATED from MurmurHash3.productHash to replace ## with hashCode
+    protected def computeHashCode: Int = {
+      val seed = MurmurHash3.productSeed
+      val arr = productArity
+      val result = if (arr == 0) {
+        productPrefix.hashCode
+      }
+      else {
+        var h = seed
+        var i = 0
+        while (i < arr) {
+          val elementHashCode = productElement(i).hashCode()
+          if (elementHashCode == PoisonHashCode) return PoisonHashCode
+          h = MurmurHash3.mix(h, productElement(i).hashCode())
+          i += 1
+        }
+        MurmurHash3.finalizeHash(h, arr)
+      }
+      avoidPoisonHashCode(result)
+    }
   }
 
  /** A base class for types that defer some operations
@@ -1085,7 +1095,8 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-  }
+    override def boundSyms: Set[Symbol] = emptySymbolSet
+ }
 
   /** A base class for types that represent a single value
    *  (single-types and this-types).
@@ -1106,13 +1117,15 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-/*
-    override def typeOfThis: Type = typeSymbol.typeOfThis
-    override def bounds: TypeBounds = TypeBounds(this, this)
-    override def prefix: Type = NoType
-    override def typeArgs: List[Type] = List()
-    override def typeParams: List[Symbol] = List()
-*/
+    override def boundSyms: Set[Symbol] = emptySymbolSet
+
+    /*
+        override def typeOfThis: Type = typeSymbol.typeOfThis
+        override def bounds: TypeBounds = TypeBounds(this, this)
+        override def prefix: Type = NoType
+        override def typeArgs: List[Type] = List()
+        override def typeParams: List[Symbol] = List()
+    */
   }
 
   /** An object representing an erroneous type */
@@ -1343,11 +1356,14 @@ trait Types
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi)
 
   object TypeBounds extends TypeBoundsExtractor {
-    def empty: TypeBounds           = apply(NothingTpe, AnyTpe)
+    val empty: TypeBounds           = unique(new UniqueTypeBounds(NothingTpe, AnyTpe)).asInstanceOf[TypeBounds]
     def upper(hi: Type): TypeBounds = apply(NothingTpe, hi)
     def lower(lo: Type): TypeBounds = apply(lo, AnyTpe)
+    val anyAny:          TypeBounds = unique(new UniqueTypeBounds(AnyTpe, AnyTpe)).asInstanceOf[TypeBounds]
     def apply(lo: Type, hi: Type): TypeBounds = {
-      unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
+      if ((lo eq AnyTpe) && (hi eq AnyTpe)) anyAny
+      else if ((lo eq NothingTpe) && (hi eq AnyTpe)) empty
+      else unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
     }
   }
 
@@ -1917,8 +1933,21 @@ trait Types
     // to a java or scala symbol, but it does matter whether it occurs in java or scala code.
     // TypeRefs w/o type params that occur in java signatures/code are considered raw types, and are
     // represented as existential types.
-    override def isHigherKinded = (typeParams ne Nil)
+    override def isHigherKinded: Boolean = {
+      if (phase.erasedTypes) false
+      else {
+        if (isHigherKindedCache == currentRunId) true
+        else if (-isHigherKindedCache == currentRunId) false
+        else {
+          val result = typeParams ne Nil
+          isHigherKindedCache = (if (result) 1 else -1) * currentRunId
+          result
+        }
+      }
+    }
     override def typeParams     = if (isDefinitionsInitialized) sym.typeParams else sym.unsafeTypeParams
+    // encoding: currentRunId = true, -currentRunId = false, otherwise unknown or stale.
+    private var isHigherKindedCache: Int = NoRunId
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
@@ -2130,17 +2159,31 @@ trait Types
     private var normalized: Type                       = _
 
     //OPT specialize hashCode
-    override final def computeHashCode = {
+    override final def computeHashCode: Int = {
       import scala.util.hashing.MurmurHash3._
-      val hasArgs = args ne Nil
       var h = productSeed
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
-      if (hasArgs)
-        finalizeHash(mix(h, args.hashCode()), 3)
-      else
-        finalizeHash(h, 2)
+      var i = 0
+      var elem = args
+      while (elem ne Nil) {
+        val elemHashCode = elem.head.hashCode()
+        if (elemHashCode == PoisonHashCode) return PoisonHashCode
+        h = mix(h, elemHashCode)
+        elem = elem.tail
+        i += 1
+      }
+      avoidPoisonHashCode(finalizeHash(h, 2 + i))
     }
+    //OPT specialize equals
+    override final def equals(other: Any): Boolean = {
+      other match {
+        case otherTypeRef: TypeRef =>
+          pre.equals(otherTypeRef.pre) && sym.eq(otherTypeRef.sym) && sameElementsEquals(args, otherTypeRef.args)
+        case _ => false
+      }
+    }
+
 
     // interpret symbol's info in terms of the type's prefix and type args
     protected def relativeInfo: Type = appliedType(sym.info.asSeenFrom(pre, sym.owner), argsOrDummies)
@@ -2490,8 +2533,13 @@ trait Types
 
     private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
       case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
-        areTrivialParams(rest)
+        val collector = new ContainsCollectorNoNormalize(p)
+        def containsP(tp: Type): Boolean = collector.collect(tp)
+        @tailrec def typesContain(tps: List[Type]): Boolean = tps match {
+          case tp :: rest => (containsP(tp) || typesContain(rest))
+          case _ => false
+        }
+        p.tpe.isTrivial && !typesContain(paramTypes) && !containsP(resultType) && areTrivialParams(rest)
       case _ =>
         true
     }
@@ -2979,6 +3027,8 @@ trait Types
     }
   }
 
+  final private val PoisonHashCode = Int.MinValue
+  final private def avoidPoisonHashCode(code: Int): Int = if (code == PoisonHashCode) code + 1 else code
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
@@ -2995,7 +3045,7 @@ trait Types
 
     // We don't want case class equality/hashing as TypeVar-s are mutable,
     // and TypeRefs based on them get wrongly `uniqued` otherwise. See SI-7226.
-    override def hashCode(): Int = System.identityHashCode(this)
+    override def hashCode(): Int = PoisonHashCode
     override def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
 
     def untouchable = false   // by other typevars
@@ -3604,7 +3654,12 @@ trait Types
       if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
         throw new RecoverableCyclicReference(sym)
 
-      TypeRef(pre, sym, args)
+      if ((args eq Nil) && (pre eq NoPrefix)) {
+        val result = sym.tpeHK // opt lean on TypeSymbol#tyconCache, rather than interning a type ref.
+        // assert(result eq TypeRef(pre, sym, args))
+        result
+      }
+      else TypeRef(pre, sym, args)
     case _ =>
       typeRef(pre, sym, args)
   }
@@ -3781,11 +3836,13 @@ trait Types
 
 // Hash consing --------------------------------------------------------------
 
-  private val initialUniquesCapacity = 4096
+  private val initialUniquesCapacity = 65536
   private var uniques: util.WeakHashSet[Type] = _
   private var uniqueRunId = NoRunId
 
-  protected def unique[T <: Type](tp: T): T = {
+  protected def unique[T <: Type](tp: T): T = if (tp.hashCode() == PoisonHashCode)
+    tp
+  else {
     if (Statistics.canEnable) Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
@@ -3796,7 +3853,10 @@ trait Types
       // as a) this is now a weak set, and b) it is discarded completely before the next run.
       uniqueRunId = currentRunId
     }
-    (uniques findEntryOrUpdate tp).asInstanceOf[T]
+    val result = (uniques findEntryOrUpdate tp).asInstanceOf[T]
+
+    if (Statistics.canEnable && (result eq tp)) Statistics.incCounter(rawTypeNewEntries)
+    result
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -3900,7 +3960,7 @@ trait Types
     && isRawIfWithoutArgs(sym)
   )
 
-  def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
+  def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(hi :: SingletonClass.tpe :: Nil))
 
   /**
    * A more persistent version of `Type#memberType` which does not require
@@ -4239,38 +4299,43 @@ trait Types
    */
   protected[internal] def specializesSym(preLo: Type, symLo: Symbol, preHi: Type, symHi: Symbol, depth: Depth): Boolean =
     (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
-      // only now that we know symHi is a viable candidate ^^^^^^^, do the expensive checks: ----V
-      require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
+      if (symHi.info == WildcardType) {
+        if (symHi.isTerm) (!symHi.isStable || symLo.isStable)     // sub-member must remain stable
+        else true
+      } else {
+        // only now that we know symHi is a viable candidate, do the expensive checks: ----V
+        require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
 
-      val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
+        val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
 
-      // Should we use memberType or memberInfo?
-      // memberType transforms (using `asSeenFrom`) `sym.tpe`,
-      // whereas memberInfo performs the same transform on `sym.info`.
-      // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
-      // For type symbols, however, the `.info` of an abstract type member
-      // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
-      // so that `sym.tpe <:< sym.info`, but not the other way around.
-      //
-      // Thus, for the strongest (correct) result,
-      // we should use `memberType` on the low side.
-      //
-      // On the high side, we should use the result appropriate
-      // for the right side of the `<:<` above (`memberInfo`).
-      val tpLo = preLo.memberType(symLo)
+        // Should we use memberType or memberInfo?
+        // memberType transforms (using `asSeenFrom`) `sym.tpe`,
+        // whereas memberInfo performs the same transform on `sym.info`.
+        // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
+        // For type symbols, however, the `.info` of an abstract type member
+        // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
+        // so that `sym.tpe <:< sym.info`, but not the other way around.
+        //
+        // Thus, for the strongest (correct) result,
+        // we should use `memberType` on the low side.
+        //
+        // On the high side, we should use the result appropriate
+        // for the right side of the `<:<` above (`memberInfo`).
+        val tpLo = preLo.memberType(symLo)
 
-      debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
-      debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
+        debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
+        debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
 
-      if (symHi.isTerm)
-        (isSubType(tpLo, tpHi, depth)        &&
-         (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
-         (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
-      else if (symHi.isAbstractType)
-        ((tpHi.bounds containsType tpLo) &&
-         kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
-      else // we know `symHi.isAliasType` (see above)
-        tpLo =:= tpHi
+        if (symHi.isTerm)
+          (isSubType(tpLo, tpHi, depth)        &&
+            (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
+            (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
+        else if (symHi.isAbstractType)
+          ((tpHi.bounds containsType tpLo) &&
+            kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+        else // we know `symHi.isAliasType` (see above)
+          tpLo =:= tpHi
+      }
     }
 
   /** A function implementing `tp1` matches `tp2`. */
@@ -4760,7 +4825,7 @@ trait Types
   }
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
-    case tp :: rest => (tp contains sym) || typesContain(rest, sym)
+    case tp :: rest => (tp containsNoNormalize sym) || typesContain(rest, sym)
     case _ => false
   }
 
@@ -4804,6 +4869,7 @@ object TypeConstants {
 object TypesStats {
   import BaseTypeSeqsStats._
   val rawTypeCount        = Statistics.newCounter   ("#raw type creations")
+  val rawTypeNewEntries   = Statistics.newSubCounter("  of which are new entries", rawTypeCount)
   val subtypeCount        = Statistics.newCounter   ("#subtype ops")
   val sametypeCount       = Statistics.newCounter   ("#sametype ops")
   val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")
@@ -4824,7 +4890,6 @@ object TypesStats {
   val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
-
   /* Commented out, because right now this does not inline, so creates a closure which will distort statistics
   @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
     val start = Statistics.pushTimer(typeOpsStack, c)

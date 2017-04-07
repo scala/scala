@@ -18,29 +18,22 @@ trait UnCurry {
    */
   case class VarargsSymbolAttachment(varargMethod: Symbol)
 
-  /** Note: changing tp.normalize to tp.dealias in this method leads to a single
-   *  test failure: run/t5688.scala, where instead of the expected output
-   *    Vector(ta, tb, tab)
-   *  we instead get
-   *    Vector(tab, tb, tab)
-   *  I think that difference is not the product of sentience but of randomness.
-   *  Let us figure out why it is and then change this method.
-   */
-  private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
-
-  val uncurry: TypeMap = new TypeMap {
-    def apply(tp0: Type): Type = {
-      val tp = expandAlias(tp0)
+  val uncurry: TypeMap = new UncurryInfoTypeMap
+  private class UncurryInfoTypeMap extends TypeMap {
+    def apply(tp: Type): Type = {
       tp match {
-        case MethodType(params, MethodType(params1, restpe)) =>
-          // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
-          val packSymbolsMap = new TypeMap {
-            // Wrapping in a TypeMap to reuse the code that opts for a fast path if the function is an identity.
-            def apply(tp: Type): Type = packSymbols(params, tp)
-          }
-          val existentiallyAbstractedParam1s = packSymbolsMap.mapOver(params1)
-          val substitutedResult = restpe.substSym(params1, existentiallyAbstractedParam1s)
-          apply(MethodType(params ::: existentiallyAbstractedParam1s, substitutedResult))
+        case mt @ MethodType(params, MethodType(params1, restpe)) =>
+          if (mt.isDependentMethodType) {
+            // && mexists(mt.paramss)(_.info exists (_.isImmediatelyDependent))) ??
+            // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
+            val packSymbolsMap = new TypeMap {
+              // Wrapping in a TypeMap to reuse the code that opts for a fast path if the function is an identity.
+              def apply(tp: Type): Type = packSymbols(params, tp)
+            }
+            val existentiallyAbstractedParam1s = packSymbolsMap.mapOver(params1)
+            val substitutedResult = restpe.substSym(params1, existentiallyAbstractedParam1s)
+            apply(MethodType(params ::: existentiallyAbstractedParam1s, substitutedResult))
+          } else apply(MethodType(params ::: params1, restpe)) // fast path
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           abort("unexpected curried method types with intervening existential")
         case MethodType(h :: t, restpe) if h.isImplicit =>
@@ -50,7 +43,7 @@ trait UnCurry {
         case DesugaredParameterType(desugaredTpe) =>
           apply(desugaredTpe)
         case _ =>
-          expandAlias(mapOver(tp))
+          mapOver(tp)
       }
     }
   }
@@ -68,9 +61,8 @@ trait UnCurry {
       }
   }
 
-  private val uncurryType = new TypeMap {
-    def apply(tp0: Type): Type = {
-      val tp = expandAlias(tp0)
+  private class UncurryTypeTypeMap extends TypeMap {
+    def apply(tp: Type): Type = {
       tp match {
         case ClassInfoType(parents, decls, clazz) if !clazz.isJavaDefined =>
           val parents1 = parents mapConserve uncurry
@@ -102,6 +94,8 @@ trait UnCurry {
     }
   }
 
+
+  private val uncurryType = new UncurryTypeTypeMap
   private def varargForwarderSym(currentClass: Symbol, origSym: Symbol, newInfo: Type): Symbol = {
     val forwSym = origSym.cloneSymbol(currentClass, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED, origSym.name.toTermName).withoutAnnotations
 

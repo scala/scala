@@ -384,7 +384,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     def run() {
       echoPhaseSummary(this)
-      currentRun.units foreach applyPhase
+      val units = currentRun.units
+      while (units.hasNext)
+        applyPhase(units.next())
     }
 
     def apply(unit: CompilationUnit): Unit
@@ -396,12 +398,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
-    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
+    private def beforeUnit(unit: CompilationUnit): Unit = {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
+    }
+
+    @deprecated
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
+      beforeUnit(unit)
       if (!cancelled(unit)) {
         currentRun.informUnitStarting(this, unit)
         try withCurrentUnitNoLog(unit)(task)
@@ -409,6 +416,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
+    @inline
     final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit) {
       val unit0 = currentUnit
       try {
@@ -420,7 +428,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
+    final def applyPhase(unit: CompilationUnit) = {
+      beforeUnit(unit)
+      if (!cancelled(unit)) {
+        currentRun.informUnitStarting(this, unit)
+        val unit0 = currentUnit
+        currentRun.currentUnit = unit
+        try apply(unit)
+        finally {
+          currentRun.currentUnit = unit0
+          currentRun.advanceUnit()
+        }
+      }
+    }
   }
 
   // phaseName = "parser"
@@ -1112,10 +1132,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
-    val symSource = new mutable.HashMap[Symbol, AbstractFile]
+    val symSource = new mutable.AnyRefMap[Symbol, AbstractFile]
 
     /** A map from compiled top-level symbols to their picklers */
-    val symData = new mutable.HashMap[Symbol, PickleBuffer]
+    val symData = new mutable.AnyRefMap[Symbol, PickleBuffer]
 
     private var phasec: Int  = 0   // phases completed
     private var unitc: Int   = 0   // units completed this phase
@@ -1324,9 +1344,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
-      else if (symSource.isDefinedAt(sym)) true
       else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClassOrDummy)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
+      else if (symSource.isDefinedAt(sym)) true
       else false
 
     /** Is this run allowed to redefine the given symbol? Usually this is true
@@ -1420,11 +1440,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       reporter.reset()
       warnDeprecatedAndConflictingSettings(unitbuf.head)
       globalPhase = fromPhase
+      val profiler = profile.Profiler(settings)
 
       while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
+        val profileBefore = profiler.before(phase)
         globalPhase.run()
+        profiler.after(phase, profileBefore)
 
         // progress update
         informTime(globalPhase.description, startTime)
@@ -1459,6 +1482,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
         advancePhase()
       }
+      profiler.finished()
 
       reporting.summarizeErrors()
 

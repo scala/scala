@@ -87,7 +87,7 @@ abstract class TailCalls extends Transform {
    *            parameter lists exist.
    * </p>
    */
-  class TailCallElimination(unit: CompilationUnit) extends Transformer {
+  class TailCallElimination(unit: CompilationUnit) extends BaseTransformer {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason
@@ -206,8 +206,9 @@ abstract class TailCalls extends Transform {
     def transform(tree: Tree, nctx: TailContext): Tree = {
       val saved = ctx
       ctx = nctx
-      try transform(tree)
-      finally this.ctx = saved
+      val result = transform(tree)
+      this.ctx = saved
+      result
     }
 
     def yesTailTransform(tree: Tree): Tree = transform(tree, ctx.yesTailContext())

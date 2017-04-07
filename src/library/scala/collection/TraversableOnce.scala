@@ -291,7 +291,11 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toTraversable: Traversable[A]
 
-  def toList: List[A] = to[List]
+  def toList: List[A] = {
+    val buffer = new mutable.ListBuffer[A]()
+    buffer ++= seq
+    buffer.result
+  }
 
   def toIterable: Iterable[A] = toStream
 

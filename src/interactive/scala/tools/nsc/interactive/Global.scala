@@ -329,7 +329,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   override def signalDone(context: Context, old: Tree, result: Tree) {
     val canObserveTree = (
          interruptsEnabled
-      && analyzer.lockedCount == 0
+      && lockedCount == 0
       && !context.bufferErrors // SI-7558 look away during exploratory typing in "silent mode"
     )
     if (canObserveTree) {
@@ -635,7 +635,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     unit.problems.clear()
     unit.body = EmptyTree
     unit.status = NotLoaded
-    unit.transformed.clear()
   }
 
   /** Parse unit and create a name index, unless this has already been done before */

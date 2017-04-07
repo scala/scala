@@ -11,6 +11,7 @@ import scala.tools.asm
 import scala.annotation.switch
 import scala.collection.mutable
 import GenBCode._
+import scala.collection.JavaConverters._
 import scala.tools.asm.tree.MethodInsnNode
 import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 
@@ -640,10 +641,14 @@ abstract class BCodeIdiomatic extends SubComponent {
    * The entry-value for a LabelDef entry-key always contains the entry-key.
    *
    */
-  class LabelDefsFinder extends Traverser {
-    val result = mutable.Map.empty[Tree, List[LabelDef]]
+  class LabelDefsFinder(rhs: Tree) extends Traverser {
+    val result = new java.util.IdentityHashMap[Tree, List[LabelDef]]().asScala
     var acc: List[LabelDef] = Nil
+    var directResult: List[LabelDef] = Nil
 
+    def apply(): Unit = {
+      traverse(rhs)
+    }
     /*
      * can-multi-thread
      */
@@ -660,6 +665,7 @@ abstract class BCodeIdiomatic extends SubComponent {
         acc = saved
       } else {
         result += (tree -> acc)
+        if (tree eq rhs) directResult = acc
         acc = acc ::: saved
       }
     }

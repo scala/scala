@@ -2613,7 +2613,7 @@ trait Trees { self: Universe =>
    *  Future-proofs against new node types.
    *  @group Traversal
    */
-  protected def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
+  def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
   /** The type of tree modifiers (not a tree, but rather part of DefTrees).
    *  @group Traversal

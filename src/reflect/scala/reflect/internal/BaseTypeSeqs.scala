@@ -44,6 +44,15 @@ trait BaseTypeSeqs {
   self =>
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
+    private[this] val typeSymbols = {
+      val tmp = new Array[Symbol](elems.length)
+      var i = 0
+      while (i < elems.length) {
+        tmp(i) = elems(i).typeSymbol
+        i += 1
+      }
+      tmp
+    }
 
     /** The number of types in the sequence */
     def length: Int = elems.length
@@ -96,7 +105,17 @@ trait BaseTypeSeqs {
     def rawElem(i: Int) = elems(i)
 
     /** The type symbol of the type at i'th position in this sequence */
-    def typeSymbol(i: Int): Symbol = elems(i).typeSymbol
+    final def typeSymbol(i: Int): Symbol = typeSymbols(i)
+
+    final def baseTypeIndex(sym: Symbol): Int = {
+      var i = 0
+      val len = length
+      while (i < len) {
+        if (typeSymbols(i) eq sym) return i
+        i += 1
+      }
+      -1
+    }
 
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
@@ -233,7 +252,6 @@ trait BaseTypeSeqs {
   class MappedBaseTypeSeq(orig: BaseTypeSeq, f: Type => Type) extends BaseTypeSeq(orig.parents map f, orig.elems) {
     override def apply(i: Int) = f(orig.apply(i))
     override def rawElem(i: Int) = f(orig.rawElem(i))
-    override def typeSymbol(i: Int) = orig.typeSymbol(i)
     override def toList = orig.toList map f
     override def copy(head: Type, offset: Int) = (orig map f).copy(head, offset)
     override def map(g: Type => Type) = lateMap(g)

@@ -16,7 +16,7 @@ object MainBench extends Driver with EvalLoop {
 
   override def newCompiler() = theCompiler
 
-  val NIter = 50
+  val NIter = System.getProperty("scala.benchmark.iterations", "50").toInt
   val NBest = 10
 
   override def main(args: Array[String]) = {

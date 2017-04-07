@@ -89,15 +89,15 @@ object ScalaOptionParser {
     "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
     "-Yno-completion", "-Yno-generic-signatures", "-Yno-imports", "-Yno-predef",
     "-Yoverride-objects", "-Yoverride-vars", "-Ypatmat-debug", "-Yno-adapted-args", "-Ypartial-unification", "-Ypos-debug", "-Ypresentation-debug",
-    "-Ypresentation-strict", "-Ypresentation-verbose", "-Yquasiquote-debug", "-Yrangepos", "-Yreify-copypaste", "-Yreify-debug", "-Yrepl-class-based",
+    "-Ypresentation-strict", "-Ypresentation-verbose", "-Yprofile-enabled", "-Yquasiquote-debug", "-Yrangepos", "-Yreify-copypaste", "-Yreify-debug", "-Yrepl-class-based",
     "-Yrepl-sync", "-Yshow-member-pos", "-Yshow-symkinds", "-Yshow-symowners", "-Yshow-syms", "-Yshow-trees", "-Yshow-trees-compact", "-Yshow-trees-stringified", "-Ytyper-debug",
     "-Ywarn-adapted-args", "-Ywarn-dead-code", "-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard",
     "-deprecation", "-explaintypes", "-feature", "-help", "-no-specialization", "-nobootcp", "-nowarn", "-optimise", "-print", "-unchecked", "-uniqid", "-usejavacp", "-usemanifestcp", "-verbose", "-version")
   private def stringSettingNames = List("-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
-    "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript")
+    "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-Yprofile-destination", "-d", "-dependencyfile", "-encoding", "-Xscript")
   private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp")
   private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")
-  private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before", "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint")
+  private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before", "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint", "-Yprofile-external-tool", "-Yprofile-run-gc")
   private def multiStringSettingNames = List("-Xmacro-settings", "-Xplugin", "-Xplugin-disable", "-Xplugin-require")
   private def intSettingNames = List("-Xmax-classfile-name", "-Xelide-below", "-Ypatmat-exhaust-depth", "-Ypresentation-delay", "-Yrecursion")
   private def choiceSettingNames = Map[String, List[String]](

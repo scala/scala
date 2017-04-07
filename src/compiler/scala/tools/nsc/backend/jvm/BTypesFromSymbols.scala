@@ -108,8 +108,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
-    assertClassNotArrayNotPrimitive(classSym)
-    assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
 
     if (classSym == NothingClass) srNothingRef
     else if (classSym == NullClass) srNullRef
@@ -174,7 +172,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def primitiveOrClassToBType(sym: Symbol): BType = {
       assertClassNotArray(sym)
-      primitiveTypeToBType.getOrElse(sym, classBTypeFromSymbol(sym))
+      if (sym.isPrimitiveValueClass) primitiveTypeToBType(sym) else classBTypeFromSymbol(sym)
     }
 
     /**
@@ -217,11 +215,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def assertClassNotArray(sym: Symbol): Unit = {
     assert(sym.isClass, sym)
     assert(sym != definitions.ArrayClass || isCompilingArray, sym)
-  }
-
-  def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
-    assertClassNotArray(sym)
-    assert(!primitiveTypeToBType.contains(sym) || isCompilingPrimitive, sym)
   }
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
@@ -607,11 +600,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
               annotatedInline   = info.annotatedInline,
               annotatedNoInline = info.annotatedNoInline)
             if (methodSym.isMixinConstructor)
-              List((staticMethodSignature, staticMethodInfo))
+              (staticMethodSignature, staticMethodInfo) :: Nil
             else
-              List((signature, info), (staticMethodSignature, staticMethodInfo))
+              (signature, info) :: (staticMethodSignature, staticMethodInfo) :: Nil
           } else
-            List((signature, info))
+            (signature, info) :: Nil
         }
     }).toMap
 

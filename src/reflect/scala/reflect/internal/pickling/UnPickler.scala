@@ -61,7 +61,7 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length)
 
     /** A map from symbols to their associated `decls` scopes */
-    private val symScopes = mutable.HashMap[Symbol, Scope]()
+    private val symScopes = mutable.AnyRefMap[Symbol, Scope]()
 
     private def expect(expected: Int, msg: => String) {
       val tag = readByte()
