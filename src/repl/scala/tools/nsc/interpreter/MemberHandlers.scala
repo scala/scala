@@ -141,7 +141,8 @@ trait MemberHandlers {
           if (replProps.vids) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
           else ""
 
-        val nameString = colorName(prettyName) + vidString
+        val modifier = if (member.mods.isMutable) "var" else "val"
+        val nameString = s"$modifier ${colorName(prettyName)}" + vidString
         val typeString = colorType(req typeOf name)
         s""" + "$nameString: $typeString = " + $resultString"""
       }
