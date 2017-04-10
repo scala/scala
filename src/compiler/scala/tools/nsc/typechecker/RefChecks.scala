@@ -1661,7 +1661,7 @@ abstract class RefChecks extends Transform {
               case tp @ ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
               case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
-                // SI-7694 Allow code synthetizers to disable checking of bounds for TypeTrees based on inferred LUBs
+                // SI-7694 Allow code synthesizers to disable checking of bounds for TypeTrees based on inferred LUBs
                 // which might not conform to the constraints.
                 skipBounds = true
               case tp: TypeRef =>

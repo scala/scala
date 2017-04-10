@@ -234,7 +234,7 @@ self =>
       else currentRun.parsing.incompleteInputError(o2p(offset), msg)
     }
 
-    /** parse unit. If there are inbalanced braces,
+    /** parse unit. If there are unbalanced braces,
      *  try to correct them and reparse.
      */
     def smartParse(): Tree = withSmartParsing {
@@ -812,7 +812,7 @@ self =>
         false
       } else true
 
-    /** Strip the artifitial `Parens` node to create a tuple term Tree. */
+    /** Strip the artificial `Parens` node to create a tuple term Tree. */
     def stripParens(t: Tree) = t match {
       case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts, t.pos.point) }
       case _ => t

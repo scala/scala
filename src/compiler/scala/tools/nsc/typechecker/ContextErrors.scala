@@ -376,7 +376,7 @@ trait ContextErrors {
         }
         issueNormalTypeError(sel, errMsg)
         // the error has to be set for the copied tree, otherwise
-        // the error remains persistent acros multiple compilations
+        // the error remains persistent across multiple compilations
         // and causes problems
         //setError(sel)
       }

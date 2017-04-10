@@ -904,7 +904,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (meth.isConstructor) cantAdapt
         // (4.2) eta-expand method value when function or sam type is expected
         else if (isFunctionType(pt) || (!mt.params.isEmpty && samOf(pt).exists)) {
-          // SI-9536 `!mt.params.isEmpty &&`: for backwards compatiblity with 2.11,
+          // SI-9536 `!mt.params.isEmpty &&`: for backwards compatibility with 2.11,
           // we don't adapt a zero-arg method value to a SAM
           // In 2.13, we won't do any eta-expansion for zero-arg method values, but we should deprecate first
 
@@ -2404,7 +2404,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
-          // This is very tricky stuff, because we are navigating the Skylla and Charybdis of
+          // This is very tricky stuff, because we are navigating the Scylla and Charybdis of
           // anonymous classes and what to return from them here. On the one hand, we cannot admit
           // every non-private member of an anonymous class as a part of the structural type of the
           // enclosing block. This runs afoul of the restriction that a structural type may not
@@ -2978,7 +2978,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
                 // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
 
-                // If we are sure this function type provides all the necesarry info, so that we won't have
+                // If we are sure this function type provides all the necessary info, so that we won't have
                 // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
                 // and rest assured we won't end up right back here (and keep recursing)
                 if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt
@@ -3091,7 +3091,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           result
       }
 
-      // TODO: adapt to new trait field encoding, figure out why this exaemption is made
+      // TODO: adapt to new trait field encoding, figure out why this exemption is made
       // 'accessor' and 'accessed' are so similar it becomes very difficult to
       //follow the logic, so I renamed one to something distinct.
       def accesses(looker: Symbol, accessed: Symbol) = accessed.isLocalToThis && (
@@ -4842,7 +4842,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!(context.unit.isJava && cls.isClass && !cls.isModuleClass)) NoSymbol else {
           val companion = companionSymbolOf(cls, context)
           if (!companion.exists) NoSymbol
-          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
+          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionForJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
         }
 
       /* Attribute a selection where `tree` is `qual.name`.
