@@ -257,16 +257,16 @@ class MutableSettings(val errorFn: String => Unit)
     private var outputDirs: List[(AbstractFile, AbstractFile)] = Nil
 
     /** If this is not None, the output location where all
-     *  classes should go.
-     */
+      *  classes should go.
+      */
     private var singleOutDir: Option[AbstractFile] = None
 
     /** Add a destination directory for sources found under srcdir.
-     *  Both directories should exits.
-     */
+      *  Both directories should exits.
+      */
     def add(srcDir: String, outDir: String): Unit = // used in ide?
       add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),
-          checkDir(AbstractFile.getDirectory(outDir), outDir))
+        checkDir(AbstractFile.getDirectory(outDir), outDir))
 
     /** Check that dir is exists and is a directory. */
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
@@ -276,11 +276,11 @@ class MutableSettings(val errorFn: String => Unit)
         new PlainFile(Path(name))
       else
         throw new FatalError(name + " does not exist or is not a directory")
-    )
+      )
 
     /** Set the single output directory. From now on, all files will
-     *  be dumped in there, regardless of previous calls to 'add'.
-     */
+      *  be dumped in there, regardless of previous calls to 'add'.
+      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
       setSingleOutput(checkDir(dst, outDir, allowJar = true))
@@ -289,8 +289,8 @@ class MutableSettings(val errorFn: String => Unit)
     def getSingleOutput: Option[AbstractFile] = singleOutDir
 
     /** Set the single output directory. From now on, all files will
-     *  be dumped in there, regardless of previous calls to 'add'.
-     */
+      *  be dumped in there, regardless of previous calls to 'add'.
+      */
     def setSingleOutput(dir: AbstractFile) {
       singleOutDir = Some(dir)
     }
@@ -304,7 +304,7 @@ class MutableSettings(val errorFn: String => Unit)
     def outputs: List[(AbstractFile, AbstractFile)] = outputDirs
 
     /** Return the output directory for the given file.
-     */
+      */
     def outputDirFor(src: AbstractFile): AbstractFile = {
       def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
         src.path.startsWith(srcDir.path)
@@ -316,28 +316,28 @@ class MutableSettings(val errorFn: String => Unit)
             case Some((_, d)) => d
             case _ =>
               throw new FatalError("Could not find an output directory for "
-                                   + src.path + " in " + outputs)
+                + src.path + " in " + outputs)
           }
       }
     }
 
     /** Return the source file path(s) which correspond to the given
-     *  classfile path and SourceFile attribute value, subject to the
-     *  condition that source files are arranged in the filesystem
-     *  according to Java package layout conventions.
-     *
-     *  The given classfile path must be contained in at least one of
-     *  the specified output directories. If it does not then this
-     *  method returns Nil.
-     *
-     *  Note that the source file is not required to exist, so assuming
-     *  a valid classfile path this method will always return a list
-     *  containing at least one element.
-     *
-     *  Also that if two or more source path elements target the same
-     *  output directory there will be two or more candidate source file
-     *  paths.
-     */
+      *  classfile path and SourceFile attribute value, subject to the
+      *  condition that source files are arranged in the filesystem
+      *  according to Java package layout conventions.
+      *
+      *  The given classfile path must be contained in at least one of
+      *  the specified output directories. If it does not then this
+      *  method returns Nil.
+      *
+      *  Note that the source file is not required to exist, so assuming
+      *  a valid classfile path this method will always return a list
+      *  containing at least one element.
+      *
+      *  Also that if two or more source path elements target the same
+      *  output directory there will be two or more candidate source file
+      *  paths.
+      */
     def srcFilesFor(classFile : AbstractFile, srcPath : String) : List[AbstractFile] = {
       def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
         classFile.path.startsWith(outDir.path)
@@ -345,8 +345,8 @@ class MutableSettings(val errorFn: String => Unit)
       singleOutDir match {
         case Some(d) =>
           d match {
-              case _: VirtualDirectory | _: io.ZipArchive => Nil
-              case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
+            case _: VirtualDirectory | _: io.ZipArchive => Nil
+            case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
           }
         case None =>
           (outputs filter (isBelow _).tupled) match {

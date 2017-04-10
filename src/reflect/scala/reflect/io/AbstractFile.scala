@@ -42,7 +42,7 @@ object AbstractFile {
    * backed by it. Otherwise, returns `null`.
    */
   def getDirectory(file: File): AbstractFile =
-    if (file.isDirectory) new PlainFile(file)
+    if (file.isDirectory) new PlainDirectory(file.toDirectory)
     else if (file.isFile && Path.isExtensionJarOrZip(file.jfile)) ZipArchive fromFile file
     else null
 
@@ -236,8 +236,14 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
     if (lookup != null) lookup
     else {
       val jfile = new JFile(file, name)
-      if (isDir) jfile.mkdirs() else jfile.createNewFile()
-      new PlainFile(jfile)
+      val path = new Path(jfile)
+      if (isDir) {
+        jfile.mkdirs()
+        new PlainDirectory(path.toDirectory)
+      } else {
+        jfile.createNewFile()
+        new PlainFile(jfile)
+      }
     }
   }
 

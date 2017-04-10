@@ -74,27 +74,29 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeFromInternalName: concurrent.TrieMap[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
    * in the call graph to remember its source position, which is required for inliner warnings.
    */
-  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
-
+  val callsitePositions: concurrent.TrieMap[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+  private def emptyConcSet[T <: AnyRef] = {
+    java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap[T, java.lang.Boolean]).asScala
+  }
   /**
    * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
    * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
    * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
    */
-  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
-  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(emptyConcSet[MethodInsnNode])
+  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(emptyConcSet[MethodInsnNode])
 
   /**
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
-  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
+  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(emptyConcSet[InternalName])
 
   /**
    * Cache, contains methods whose unreachable instructions are eliminated.
@@ -106,14 +108,14 @@ abstract class BTypes {
    * This cache allows running dead code elimination whenever an analyzer is used. If the method
    * is already optimized, DCE can return early.
    */
-  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(emptyConcSet[MethodNode])
 
   /**
    * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
    * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
    * computation only when necessary.
    */
-  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(emptyConcSet[MethodNode])
 
   /**
    * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
@@ -122,24 +124,32 @@ abstract class BTypes {
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
    */
-  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
+//value is not exposed and is synchronized on access
+private val indyLambdaImplMethods: concurrent.TrieMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(TrieMap.empty[InternalName, mutable.LinkedHashSet[asm.Handle]])
   def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
     if (handle.isEmpty) Nil else {
       val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
-      val added = handle.filterNot(set)
-      set ++= handle
-      added
+      set.synchronized {
+        handle.foldLeft(List.empty[asm.Handle]) {
+          case (added, next) =>
+            if (set.add(next)) next :: added else added
+        }
+      }
     }
   }
   def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
     if (handle.nonEmpty)
-      indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) --= handle
+      indyLambdaImplMethods.get(hostClass) match {
+        case Some(xs) => xs.synchronized(xs --= handle)
+        case None =>
+      }
   }
 
-  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
-    indyLambdaImplMethods.getOrNull(hostClass) match {
-      case null => Nil
-      case xs => xs
+  private val NO_HANDLES = new Array[asm.Handle](0)
+  def getIndyLambdaImplMethods(hostClass: InternalName): Array[asm.Handle] = {
+    indyLambdaImplMethods.get(hostClass) match {
+      case None => NO_HANDLES
+      case Some(xs) => xs.synchronized(xs.toArray)
     }
   }
 
@@ -258,7 +268,7 @@ abstract class BTypes {
   def inlineInfoFromClassfile(classNode: ClassNode): InlineInfo = {
     def fromClassfileAttribute: Option[InlineInfo] = {
       if (classNode.attrs == null) None
-      else classNode.attrs.asScala.collect({ case a: InlineInfoAttribute => a}).headOption.map(_.inlineInfo)
+      else classNode.attrs.asScala.collectFirst{ case a: InlineInfoAttribute => a.inlineInfo}
     }
 
     def fromClassfileWithoutAttribute = {
@@ -272,13 +282,13 @@ abstract class BTypes {
       // require special handling. Excluding is OK because they are never inlined.
       // Here we are parsing from a classfile and we don't need to do anything special. Many of these
       // primitives don't even exist, for example Any.isInstanceOf.
-      val methodInfos = classNode.methods.asScala.map(methodNode => {
+      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         (methodNode.name + methodNode.desc, info)
-      }).toMap
+      })(scala.collection.breakOut)
       InlineInfo(
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),
@@ -298,20 +308,7 @@ abstract class BTypes {
    * referring to BTypes.
    */
   sealed trait BType {
-    final override def toString: String = this match {
-      case UNIT   => "V"
-      case BOOL   => "Z"
-      case CHAR   => "C"
-      case BYTE   => "B"
-      case SHORT  => "S"
-      case INT    => "I"
-      case FLOAT  => "F"
-      case LONG   => "J"
-      case DOUBLE => "D"
-      case ClassBType(internalName) => "L" + internalName + ";"
-      case ArrayBType(component)    => "[" + component
-      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
-    }
+    final override def toString: String = descriptor
 
     /**
      * @return The Java descriptor of this type. Examples:
@@ -320,7 +317,13 @@ abstract class BTypes {
      *  - int[]: [I
      *  - Object m(String s, double d): (Ljava/lang/String;D)Ljava/lang/Object;
      */
-    final def descriptor = toString
+    def descriptor : String
+
+    /**
+      * generally used by descriptor to help build the descriptor. Allows several descriptors to be build from the same stringbuilder
+      * @param sb
+      */
+    private[BTypes] def buildDescriptor(sb: java.lang.StringBuilder): Unit
 
     /**
      * @return 0 for void, 2 for long and double, 1 otherwise
@@ -498,8 +501,10 @@ abstract class BTypes {
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed trait PrimitiveBType extends BType {
-
+  sealed abstract class PrimitiveBType(override val descriptor:String) extends BType {
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = {
+      sb.append(descriptor)
+    }
     /**
      * The upper bound of two primitive types. The `other` type has to be either a primitive
      * type or Nothing.
@@ -563,15 +568,15 @@ abstract class BTypes {
     }
   }
 
-  case object UNIT   extends PrimitiveBType
-  case object BOOL   extends PrimitiveBType
-  case object CHAR   extends PrimitiveBType
-  case object BYTE   extends PrimitiveBType
-  case object SHORT  extends PrimitiveBType
-  case object INT    extends PrimitiveBType
-  case object FLOAT  extends PrimitiveBType
-  case object LONG   extends PrimitiveBType
-  case object DOUBLE extends PrimitiveBType
+  case object UNIT   extends PrimitiveBType("V")
+  case object BOOL   extends PrimitiveBType("Z")
+  case object CHAR   extends PrimitiveBType("C")
+  case object BYTE   extends PrimitiveBType("B")
+  case object SHORT  extends PrimitiveBType("S")
+  case object INT    extends PrimitiveBType("I")
+  case object FLOAT  extends PrimitiveBType("F")
+  case object LONG   extends PrimitiveBType("J")
+  case object DOUBLE extends PrimitiveBType("D")
 
   sealed trait RefBType extends BType {
     /**
@@ -847,7 +852,25 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final case class ClassBType(internalName: InternalName) extends RefBType {
+  final class ClassBType private(val internalName: InternalName) extends RefBType {
+
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(internalName.length + 2)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('L')
+      sb.append(internalName)
+      sb.append(';')
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -867,8 +890,6 @@ abstract class BTypes {
       _info = i
       checkInfoConsistency()
     }
-
-    classBTypeFromInternalName(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
       if (info.isLeft) return
@@ -896,11 +917,6 @@ abstract class BTypes {
       assert(info.get.nestedClasses.forall(c => ifInit(c)(_.isNestedClass.get)), info.get.nestedClasses)
     }
 
-    /**
-     * @return The class name without the package prefix
-     */
-    def simpleName: String = internalName.split("/").last
-
     def isInterface: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_INTERFACE) != 0)
 
     def superClassesTransitive: Either[NoClassBTypeInfo, List[ClassBType]] = info.flatMap(i => i.superClass match {
@@ -909,13 +925,14 @@ abstract class BTypes {
     })
 
     /**
-     * The prefix of the internal name until the last '/', or the empty string.
+     * packageInternalName - The prefix of the internal name until the last '/', or the empty string.
+     * simpleName - The class name without the package prefix
      */
-    def packageInternalName: String = {
+    lazy val (packageInternalName:String, simpleName: String) = {
       val name = internalName
       name.lastIndexOf('/') match {
-        case -1 => ""
-        case i  => name.substring(0, i)
+        case -1 => ("", name)
+        case i  => (name.substring(0, i), name.substring(i+1))
       }
     }
 
@@ -1048,6 +1065,13 @@ abstract class BTypes {
       "scala/Null",
       "scala/Nothing"
     )
+
+    def apply(internalName: InternalName) : ClassBType = {
+      classBTypeFromInternalName.getOrElseUpdate(internalName, new ClassBType(internalName))
+    }
+
+    def unapply(classBType: ClassBType): Option[InternalName] = Some(classBType.internalName)
+
   }
 
   /**
@@ -1101,6 +1125,22 @@ abstract class BTypes {
   final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
   final case class ArrayBType(componentType: BType) extends RefBType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('[')
+      componentType.buildDescriptor(sb)
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
     def dimension: Int = componentType match {
       case a: ArrayBType => 1 + a.dimension
       case _ => 1
@@ -1112,7 +1152,25 @@ abstract class BTypes {
     }
   }
 
-  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('(')
+      argumentTypes foreach (_.buildDescriptor(sb))
+      sb.append(')')
+      returnType.buildDescriptor(sb)
+      descriptorCache = sb.substring(start)
+
+    } else sb.append(descriptorCache)
+  }
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
    * initializing them requires information from types / symbols, which is not accessible here in

@@ -76,7 +76,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * host a static field in the enclosing class. This allows us to add this method to interfaces
    * that define lambdas in default methods.
    */
-  def addLambdaDeserialize(classNode: ClassNode, implMethods: Iterable[Handle]): Unit = {
+  def addLambdaDeserialize(classNode: ClassNode, implMethods: Array[Handle]): Unit = {
     val cw = classNode
 
     // Make sure to reference the ClassBTypes of all types that are used in the code generated
@@ -92,7 +92,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
       mv.visitCode()
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods.toArray: _*)
+      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods: _*)
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }

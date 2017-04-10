@@ -284,6 +284,8 @@ trait ScalaSettings extends AbsScalaSettings
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
 
+  val YgenBcodeParallel          = BooleanSetting("-YgenBcodeParallel", "run the back end in parallel")
+
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
     helpArg = "strategy",
