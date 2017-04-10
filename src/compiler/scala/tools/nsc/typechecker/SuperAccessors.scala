@@ -315,7 +315,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                  * A trait which extends a class and accesses a protected member
                  *  of that class cannot implement the necessary accessor method
                  *  because jvm access restrictions require the call site to be
-                 *  in an actual subclass, and an interface cannot extenda class.
+                 *  in an actual subclass, and an interface cannot extend a class.
                  *  So, non-trait classes inspect their ancestors for any such situations
                  *  and generate the accessors.  See SI-2296.
                  *

@@ -439,7 +439,7 @@ trait Contexts { self: Analyzer =>
      * Construct a child context. The parent and child will share the report buffer.
      * Compare with `makeSilent`, in which the child has a fresh report buffer.
      *
-     * If `tree` is an `Import`, that import will be avaiable at the head of
+     * If `tree` is an `Import`, that import will be available at the head of
      * `Context#imports`.
      */
     def make(tree: Tree = tree, owner: Symbol = owner,

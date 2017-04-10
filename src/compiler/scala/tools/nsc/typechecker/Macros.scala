@@ -697,7 +697,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       //   foo(Foo(23, "foo", true))
       //
       // In the snippet above, even though we know that there's a fundep going from T to U
-      // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
+      // (in a sense that a datatype's uniform representation is unambiguously determined by the data type,
       // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
       // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
       //
