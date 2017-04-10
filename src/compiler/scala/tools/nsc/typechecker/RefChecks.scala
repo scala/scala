@@ -323,8 +323,6 @@ abstract class RefChecks extends Transform {
         import pair._
         val member   = low
         val other    = high
-        def memberTp = lowType
-        def otherTp  = highType
 
 //        debuglog(s"Checking validity of ${member.fullLocationString} overriding ${other.fullLocationString}")
 

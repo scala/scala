@@ -1,1 +1,1 @@
--Xfatal-warnings -Xlint:-infer-any,_
+-Xfatal-warnings -Xlint:missing-interpolator

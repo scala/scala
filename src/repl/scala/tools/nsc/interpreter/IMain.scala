@@ -751,11 +751,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     lazy val evalClass = load(evalPath)
 
     def evalEither = callEither(resultName) match {
-      case Left(ex) => ex match {
-          case ex: NullPointerException => Right(null)
-          case ex => Left(unwrap(ex))
-      }
-      case Right(result) => Right(result)
+      case Right(result)                 => Right(result)
+      case Left(_: NullPointerException) => Right(null)
+      case Left(e)                       => Left(unwrap(e))
     }
 
     def compile(source: String): Boolean = compileAndSaveRun(label, source)
@@ -789,7 +787,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings.map{case (pos, (msg, since)) => (pos, msg)})
+      val warnings = loop(run.reporting.allConditionalWarnings.map{ case (pos, (msg, since@_)) => (pos, msg) })
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }

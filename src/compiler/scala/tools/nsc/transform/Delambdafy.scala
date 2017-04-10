@@ -347,7 +347,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     // recursively find methods that refer to 'this' directly or indirectly via references to other methods
     // for each method found add it to the referrers set
     private def refersToThis(symbol: Symbol): Boolean = {
-      var seen = mutable.Set[Symbol]()
+      val seen = mutable.Set[Symbol]()
       def loop(symbol: Symbol): Boolean = {
         if (seen(symbol)) false
         else {
