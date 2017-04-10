@@ -154,7 +154,9 @@ trait MemberHandlers {
     override def resultExtractionCode(req: Request) = {
       val nameString = colorName(name)
       val typeString = colorType(req typeOf name)
-      if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
+      val nameSeparator = if (member.vparamss.isEmpty) ": " else ""
+
+      if (mods.isPublic) s""" + "def $nameString$nameSeparator$typeString\\n"""" else ""
     }
   }
 
