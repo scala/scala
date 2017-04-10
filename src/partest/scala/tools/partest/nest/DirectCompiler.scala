@@ -7,12 +7,10 @@ package scala.tools.partest
 package nest
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError }
+import scala.tools.nsc.{ Global, Settings, CompilerCommand }
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
-import scala.tools.nsc.util.{ FakePos, stackTraceString }
 import scala.reflect.io.AbstractFile
-import scala.reflect.internal.util.Position
-import java.io.{ BufferedReader, PrintWriter, FileReader, Writer, FileWriter }
+import java.io.{ PrintWriter, FileWriter }
 
 class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends ConsoleReporter(settings, Console.in, writer) {
   shortname = true
@@ -72,7 +70,6 @@ class DirectCompiler(val runner: Runner) {
 
   def compile(opts0: List[String], sources: List[File]): TestState = {
     import runner.{ sources => _, _ }
-    import ClassPath.{join, split}
 
     // adding codelib.jar to the classpath
     // codelib provides the possibility to override standard reify

@@ -9,7 +9,7 @@ package nest
 
 import utils.Properties._
 import scala.tools.nsc.Properties.{ versionMsg, propOrFalse, setProp }
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import TestKinds._
 import scala.reflect.internal.util.Collections.distinctBy
 

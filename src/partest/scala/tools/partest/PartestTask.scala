@@ -11,9 +11,8 @@ package partest
 
 import scala.tools.nsc.Properties.propOrFalse
 import scala.tools.ant.sabbus.CompilationPathProperty
-import java.lang.reflect.Method
 import org.apache.tools.ant.Task
-import org.apache.tools.ant.types.{ Reference, FileSet }
+import org.apache.tools.ant.types.Reference
 import org.apache.tools.ant.types.Commandline.Argument
 import scala.tools.ant.ScalaTask
 import nest.NestUI

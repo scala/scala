@@ -1,7 +1,5 @@
 package scala.tools.partest
 
-import scala.tools.nsc.util.stackTraceString
-
 sealed abstract class TestState {
   def testFile: java.io.File
   def what: String

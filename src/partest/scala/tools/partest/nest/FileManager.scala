@@ -8,16 +8,7 @@
 package scala.tools.partest
 package nest
 
-import java.io.{
-  File,
-  IOException,
-  OutputStreamWriter,
-  FileOutputStream
-}
-import java.net.URI
-import scala.reflect.io.AbstractFile
-import scala.collection.mutable
-import scala.reflect.internal.util.ScalaClassLoader
+import java.io.{ File, IOException }
 import java.net.URLClassLoader
 
 object FileManager {

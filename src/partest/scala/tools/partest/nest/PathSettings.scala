@@ -5,7 +5,6 @@
 package scala.tools.partest
 package nest
 
-import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.{ Path, File, Directory }
 import scala.tools.nsc.Properties.{ propOrNone }
 import Path._
@@ -41,19 +40,6 @@ object PathSettings {
 
   // Directory <root>/test/files or .../scaladoc
   def srcDir = Directory(testRoot / testSourcePath toCanonical)
-
-  // Directory <root>/test/files/lib
-  private def srcLibDir = Directory(srcDir / "lib")
-
-  // Directory <root>/build
-  private def buildDir: Directory = {
-    val bases      = testRoot :: testRoot.parents
-    // In the classic "ant" build, the relevant subdirectory is called build,
-    // but in the postmodern "sbt" build, it is called target.  Look for both.
-    val dirs = Path.onlyDirs(bases flatMap (x => List(x / "build", x / "target")))
-
-    dirs.headOption getOrElse sys.error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
-  }
 
   def srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
   def srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)

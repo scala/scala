@@ -7,7 +7,7 @@ package scala.tools
 import java.util.concurrent.{ Callable, ExecutorService }
 import scala.concurrent.duration.Duration
 import scala.sys.process.javaVmArguments
-import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
+import scala.tools.nsc.util.Exceptional
 
 package object partest {
   type File         = java.io.File
