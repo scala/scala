@@ -155,7 +155,7 @@ sort(yss)
 The call above will be completed by passing two nested implicit arguments:
 
 ```scala
-sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered)) .
+sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered))
 ```
 
 The possibility of passing implicit arguments to implicit arguments
@@ -218,7 +218,7 @@ which implicit arguments are searched is
 
 ```scala
 List[List[Int]] => Ordered[List[List[Int]]],
-List[Int] => Ordered[List[Int]]
+List[Int] => Ordered[List[Int]],
 Int => Ordered[Int]
 ```
 
@@ -290,7 +290,7 @@ or the call-by-name category).
 Class `scala.Ordered[A]` contains a method
 
 ```scala
-  def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean .
+  def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean
 ```
 
 Assume two lists `xs` and `ys` of type `List[Int]`

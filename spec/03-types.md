@@ -507,7 +507,7 @@ Assume the class definitions
 
 ```scala
 class Ref[T]
-abstract class Outer { type T } .
+abstract class Outer { type T }
 ```
 
 Here are some examples of existential types:
@@ -530,7 +530,7 @@ Ref[_ <: java.lang.Number]
 The type `List[List[_]]` is equivalent to the existential type
 
 ```scala
-List[List[t] forSome { type t }] .
+List[List[t] forSome { type t }]
 ```
 
 ###### Example
