@@ -48,4 +48,15 @@ class StdNamesTest {
     test((nme.EMPTY, "T1", ""), TermName(s"T1$SPECIALIZED_SUFFIX"))
     test((nme.EMPTY, "", ""), SPECIALIZED_SUFFIX)
   }
+
+  @Test def defaultGetterComposition(): Unit = {
+    import nme.{DEFAULT_GETTER_STRING, DEFAULT_GETTER_INIT_STRING, defaultGetterName, splitDefaultGetterName}
+    val name = TermName("f")
+    val getter = defaultGetterName(name, 42)
+    val ungotten = splitDefaultGetterName(getter)
+    assertEquals(TermName("f" + DEFAULT_GETTER_STRING + 42), getter)
+    assertEquals((name, 42), ungotten)
+    assertEquals(TermName(DEFAULT_GETTER_INIT_STRING + 42), defaultGetterName(nme.CONSTRUCTOR, 42))
+    assertEquals((nme.CONSTRUCTOR, 42), splitDefaultGetterName(defaultGetterName(nme.CONSTRUCTOR, 42)))
+  }
 }

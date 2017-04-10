@@ -1451,24 +1451,32 @@ abstract class RefChecks extends Transform {
 
     private def isSimpleCaseApply(tree: Tree): Boolean = {
       val sym = tree.symbol
-      def isClassTypeAccessible(tree: Tree): Boolean = tree match {
-        case TypeApply(fun, targs) =>
-          isClassTypeAccessible(fun)
-        case Select(module, apply) =>
-          ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
+      def isClassTypeAccessible(tree: Tree): Boolean = {
+        def check(t: Tree): Boolean = t match {
+          case TypeApply(fun, targs@_) => check(fun)
+          case Select(module, apply@_) => (
+            // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
             //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
             treeInfo.isQualifierSafeToElide(module) &&
               // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
               // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
               module.symbol.companionClass.isClass
-            )
+          )
+        }
+        tree match {
+          case Select(module, apply) => !tree.tpe.isHigherKinded && check(tree)
+          case _ => check(tree)
+        }
       }
+      def isInCompanion = currentOwner.ownerChain.exists(_.companion == tree.tpe.finalResultType.typeSymbol)
 
       sym.name == nme.apply &&
         !(sym hasFlag STABLE) && // ???
         sym.isCase &&
-        isClassTypeAccessible(tree) &&
-        !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+        isClassTypeAccessible(tree) && (
+             !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(sym)
+          || (isInCompanion && !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isPrivateThis)
+        )
     }
 
     private def transformCaseApply(tree: Tree) = {
@@ -1490,6 +1498,24 @@ abstract class RefChecks extends Transform {
       toConstructor(tree.pos, tree.tpe)
     }
 
+    def transformCaseApplyArgs(args: List[Tree]): List[Tree] = {
+      def transformCaseApplyArg(arg: Tree) = {
+        val (name, pos) = nme.splitDefaultGetterName(arg.symbol.name)
+        assert(name == nme.apply)
+        val getter = nme.defaultGetterName(nme.CONSTRUCTOR, pos)
+        new Transformer {
+          override def transform(t: Tree): Tree = t match {
+            case Select(qual, n) if n == arg.symbol.name =>
+              Select(qual.duplicate, getter)
+            case TypeApply(Select(qual, n), args) if n == arg.symbol.name =>
+              TypeApply(Select(qual.duplicate, getter), args.map(_.duplicate))
+            case _ => t.duplicate
+          }
+        }.transform(arg)
+      }
+      args.map { tree => if (treeInfo.isDefaultGetter(tree)) transformCaseApplyArg(tree) else tree }
+    }
+
     private def transformApply(tree: Apply): Tree = tree match {
       case Apply(
         Select(qual, nme.withFilter),
@@ -1502,14 +1528,24 @@ abstract class RefChecks extends Transform {
           transform(qual)
 
       case Apply(fn, args) =>
-        // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
-        // analyses in the pattern matcher
-        if (!inPattern) {
-          checkImplicitViewOptionApply(tree.pos, fn, args)
-          checkSensible(tree.pos, fn, args)
-        }
-        currentApplication = tree
-        tree
+        currentApplication = (
+          if (tree.symbol.name == nme.apply && tree.symbol.isCase && isSimpleCaseApply(fn)) {
+            localTyper.typed {
+              atPos(tree.pos) {
+                Apply(fn, transformCaseApplyArgs(args))
+              }
+            }
+          } else {
+            // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
+            // analyses in the pattern matcher
+            if (!inPattern) {
+              checkImplicitViewOptionApply(tree.pos, fn, args)
+              checkSensible(tree.pos, fn, args)
+            }
+            tree
+          }
+        )
+        currentApplication
     }
     private def transformSelect(tree: Select): Tree = {
       val Select(qual, _) = tree
@@ -1773,6 +1809,126 @@ abstract class RefChecks extends Transform {
       } finally {
         localTyper = savedLocalTyper
         currentApplication = savedCurrentApplication
+      }
+    }
+
+    override def transformUnit(unit: CompilationUnit): Unit = {
+      super.transformUnit(unit)
+      if (settings.warnUnused) {
+        checkUnused(unit)
+      }
+    }
+  }
+
+  object checkUnused {
+    val ignoreNames: Set[TermName] = Set(TermName("readResolve"), TermName("readObject"), TermName("writeObject"), TermName("writeReplace"))
+
+    class UnusedPrivates extends Traverser {
+      val defnTrees = ListBuffer[MemberDef]()
+      val targets   = mutable.Set[Symbol]()
+      val setVars   = mutable.Set[Symbol]()
+      val treeTypes = mutable.Set[Type]()
+
+      def defnSymbols = defnTrees.toList map (_.symbol)
+      def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
+
+      def qualifiesTerm(sym: Symbol) = (
+           (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock)
+        && !nme.isLocalName(sym.name)
+        && !sym.isParameter
+        && !sym.isParamAccessor       // could improve this, but it's a pain
+        && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
+        && !(sym.isGetter && sym.accessed.isEarlyInitialized)
+      )
+      def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
+      def qualifies(sym: Symbol) = (
+           (sym ne null)
+        && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
+      )
+
+      override def traverse(t: Tree): Unit = {
+        t match {
+          case t: MemberDef if qualifies(t.symbol)   => defnTrees += t
+          case t: RefTree if t.symbol ne null        => targets += t.symbol
+          case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
+          case _                                     =>
+        }
+        // Only record type references which don't originate within the
+        // definition of the class being referenced.
+        if (t.tpe ne null) {
+          for (tp <- t.tpe ; if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
+            tp match {
+              case NoType | NoPrefix    =>
+              case NullaryMethodType(_) =>
+              case MethodType(_, _)     =>
+              case _                    =>
+                log(s"$tp referenced from $currentOwner")
+                treeTypes += tp
+            }
+          }
+          // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
+          t.tpe.prefix foreach {
+            case SingleType(_, sym) => targets += sym
+            case _                 =>
+          }
+        }
+        super.traverse(t)
+      }
+      def isUnusedType(m: Symbol): Boolean = (
+            m.isType
+        && !m.isTypeParameterOrSkolem // would be nice to improve this
+        && (m.isPrivate || m.isLocalToBlock)
+        && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
+      )
+      def isUnusedTerm(m: Symbol): Boolean = (
+           (m.isTerm)
+        && (m.isPrivate || m.isLocalToBlock)
+        && !targets(m)
+        && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
+        && !ignoreNames(m.name.toTermName)        // serialization methods
+        && !isConstantType(m.info.resultType)     // subject to constant inlining
+        && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
+      )
+      def unusedTypes = defnTrees.toList filter (t => isUnusedType(t.symbol))
+      def unusedTerms = defnTrees.toList filter (v => isUnusedTerm(v.symbol))
+      // local vars which are never set, except those already returned in unused
+      def unsetVars = localVars filter (v => !setVars(v) && !isUnusedTerm(v))
+    }
+
+    def apply(unit: CompilationUnit) = {
+      val p = new UnusedPrivates
+      p traverse unit.body
+      val unused = p.unusedTerms
+      unused foreach { defn: DefTree =>
+        val sym             = defn.symbol
+        val pos = (
+          if (defn.pos.isDefined) defn.pos
+          else if (sym.pos.isDefined) sym.pos
+          else sym match {
+            case sym: TermSymbol => sym.referenced.pos
+            case _               => NoPosition
+          }
+        )
+        val why = if (sym.isPrivate) "private" else "local"
+        val what = (
+          if (sym.isDefaultGetter) "default argument"
+          else if (sym.isConstructor) "constructor"
+          else if (sym.isVar || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))) "var"
+          else if (sym.isVal || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE))) || sym.isLazy) "val"
+          else if (sym.isSetter) "setter"
+          else if (sym.isMethod) "method"
+          else if (sym.isModule) "object"
+          else "term"
+        )
+        reporter.warning(pos, s"$why $what in ${sym.owner} is never used")
+      }
+      p.unsetVars foreach { v =>
+        reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
+      }
+      p.unusedTypes foreach { t =>
+        val sym = t.symbol
+        val why = if (sym.isPrivate) "private" else "local"
+        reporter.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
       }
     }
   }
