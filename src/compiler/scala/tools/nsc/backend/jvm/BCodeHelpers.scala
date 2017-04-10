@@ -233,7 +233,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       sym.isErroneous
     }
 
-  @inline def withoutReporting[T](fn : => T) = {
+  @inline private def withoutReporting[T](fn : => T) = {
     val currentReporter = reporter
     reporter = NoReporter
     try fn finally reporter = currentReporter
