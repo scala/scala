@@ -19,7 +19,7 @@ Please report bugs at the [scala/bug issue tracker](https://github.com/scala/bug
 # Get in touch!
 If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
 
-                                                                                                  | username                                                       | talk to me about...                               |
+|                                                                                                 | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/adriaanm"      height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
  <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | build, developer docs, community build, Jenkins, library, the welcome-to-Scala experience |
