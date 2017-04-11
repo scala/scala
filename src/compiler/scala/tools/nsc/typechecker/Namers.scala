@@ -664,7 +664,17 @@ trait Namers extends MethodSynthesis {
 
           if (suppress) {
             sym setInfo ErrorType
+
+            // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
+            // because we don't know when the completer runs with respect to this loop in addSynthetics
+            //  for (sym <- scope)
+            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+            //      if (!sym.initialize.hasFlag(IS_ERROR))
+            //        newStats += typedStat(tree)
+            // If we're already in the loop, set the IS_ERROR flag and trigger the condition `sym.initialize.hasFlag(IS_ERROR)`
             sym setFlag IS_ERROR
+            // Or, if we are not yet in the addSynthetics loop, we can just retract our symbol from the synthetics for this unit.
+            companionContext.unit.synthetics -= sym
 
             // Don't unlink in an error situation to generate less confusing error messages.
             // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
