@@ -55,6 +55,10 @@ trait GenTypes {
       case tpe @ ConstantType(value) =>
         mirrorBuildCall(nme.ConstantType, reifyProduct(value))
       case tpe @ TypeRef(pre, sym, args) =>
+        if (isPossibleConcretePath(pre, sym)) {
+          pre.typeSymbolDirect.updateAttachment(TypeIsConcrete)
+          sym.updateAttachment(TypeIsConcrete)
+        }
         reifyBuildCall(nme.TypeRef, pre, sym, args)
       case tpe @ TypeBounds(lo, hi) =>
         reifyBuildCall(nme.TypeBounds, lo, hi)

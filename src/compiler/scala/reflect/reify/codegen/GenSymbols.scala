@@ -140,7 +140,7 @@ trait GenSymbols {
   def reifyFreeType(binding: Tree): Tree =
     reifyIntoSymtab(binding.symbol) { sym =>
       if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
-      state.reificationIsConcrete = false
+      if (!sym.hasAttachment[TypeIsConcrete.type]) state.reificationIsConcrete = false
       val name: TermName = nme.REIFY_FREE_PREFIX append sym.name
       Reification(name, binding, mirrorBuildCall(nme.newFreeType, reify(sym.name.toString), mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
     }

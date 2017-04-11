@@ -99,6 +99,14 @@ trait GenUtils {
     case TypeRef(SingleType(_, _), sym, _) if sym.isAbstractType && !sym.isExistential => true
     case _ => false
   }
+  
+  def isPossibleConcretePath(pre: Type, sym: Symbol) = (pre, pre.widen) match {
+    case (SingleType(_,_), RefinedType(_,_)) => sym.info match {
+      case TypeBounds(_,_) => false
+      case _ => true
+    }
+    case _ => false
+  }
 
   def isCrossStageTypeBearer(tree: Tree): Boolean = tree match {
     case TypeApply(hk, _) => isCrossStageTypeBearer(hk)
