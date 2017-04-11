@@ -4,6 +4,6 @@ package foo {
   trait YourTrait {
     def implementMe(f: Int => (String, Bippy)): Unit
     def overrideMe[T <: Bippy](x: T): T = x
-    def overrideMeAlso(x: Map[Int, Set[Bippy]]) = 5
+    def overrideMeAlso(x: Map[Int, Set[Bippy]]) = x.keys.head
   }
 }

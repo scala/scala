@@ -1,1 +1,1 @@
--Xlint -Xfatal-warnings
+-Xlint:by-name-right-associative -Xfatal-warnings

@@ -52,7 +52,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
   }
 
   /** Browse the top-level of given abstract file `src` and enter
-   *  eny encountered top-level classes and modules in `root`
+   *  any encountered top-level classes and modules in `root`
    */
   def browseTopLevel(root: Symbol, src: AbstractFile) {
 

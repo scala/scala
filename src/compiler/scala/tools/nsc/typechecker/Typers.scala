@@ -904,7 +904,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (meth.isConstructor) cantAdapt
         // (4.2) eta-expand method value when function or sam type is expected
         else if (isFunctionType(pt) || (!mt.params.isEmpty && samOf(pt).exists)) {
-          // SI-9536 `!mt.params.isEmpty &&`: for backwards compatiblity with 2.11,
+          // SI-9536 `!mt.params.isEmpty &&`: for backwards compatibility with 2.11,
           // we don't adapt a zero-arg method value to a SAM
           // In 2.13, we won't do any eta-expansion for zero-arg method values, but we should deprecate first
 
@@ -2404,7 +2404,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
-          // This is very tricky stuff, because we are navigating the Skylla and Charybdis of
+          // This is very tricky stuff, because we are navigating the Scylla and Charybdis of
           // anonymous classes and what to return from them here. On the one hand, we cannot admit
           // every non-private member of an anonymous class as a part of the structural type of the
           // enclosing block. This runs afoul of the restriction that a structural type may not
@@ -2978,7 +2978,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
                 // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
 
-                // If we are sure this function type provides all the necesarry info, so that we won't have
+                // If we are sure this function type provides all the necessary info, so that we won't have
                 // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
                 // and rest assured we won't end up right back here (and keep recursing)
                 if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt
@@ -3091,7 +3091,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           result
       }
 
-      // TODO: adapt to new trait field encoding, figure out why this exaemption is made
+      // TODO: adapt to new trait field encoding, figure out why this exemption is made
       // 'accessor' and 'accessed' are so similar it becomes very difficult to
       //follow the logic, so I renamed one to something distinct.
       def accesses(looker: Symbol, accessed: Symbol) = accessed.isLocalToThis && (
@@ -3099,8 +3099,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
         )
 
-      def checkNoDoubleDefs: Unit = {
-        val scope = if (inBlock) context.scope else context.owner.info.decls
+      def checkNoDoubleDefs(scope: Scope): Unit = {
         var e = scope.elems
         while ((e ne null) && e.owner == scope) {
           var e1 = scope.lookupNextEntry(e)
@@ -3143,8 +3142,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def addSynthetics(stats: List[Tree]): List[Tree] = {
-        val scope = if (inBlock) context.scope else context.owner.info.decls
+      def addSynthetics(stats: List[Tree], scope: Scope): List[Tree] = {
         var newStats = new ListBuffer[Tree]
         var moreToAdd = true
         while (moreToAdd) {
@@ -3219,11 +3217,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val stats1 = stats mapConserve typedStat
       if (phase.erasedTypes) stats1
       else {
+        val scope = if (inBlock) context.scope else context.owner.info.decls
+
         // As packages are open, it doesn't make sense to check double definitions here. Furthermore,
         // it is expensive if the package is large. Instead, such double definitions are checked in `Namers.enterInScope`
         if (!context.owner.isPackageClass)
-          checkNoDoubleDefs
-        addSynthetics(stats1)
+          checkNoDoubleDefs(scope)
+
+        addSynthetics(stats1, scope)
       }
     }
 
@@ -3428,29 +3429,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // repeat vararg as often as needed, remove by-name
           val formals = formalTypes(paramTypes, argslen)
 
-          /* Try packing all arguments into a Tuple and apply `fun`
-           * to that. This is the last thing which is tried (after
-           * default arguments)
+          /* Try packing all arguments into a Tuple and apply `fun` to that.
+           * This is the last thing which is tried (after default arguments).
            */
-          def tryTupleApply: Tree = {
-            if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
+          def tryTupleApply: Tree =
+            if (phase.erasedTypes || !eligibleForTupleConversion(paramTypes, argslen)) EmptyTree
+            else {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
-              silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                // Depending on user options, may warn or error here if
-                // a Unit or tuple was inserted.
-                val keepTree = (
-                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
-                  || t.symbol == null       // ditto
-                  || checkValidAdaptation(t, args)
-                )
-                if (keepTree) t else EmptyTree
-              } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
+              // May warn or error if a Unit or tuple was inserted.
+              def validate(t: Tree): Tree = {
+                // regardless of typer's mode
+                val invalidAdaptation = t.symbol != null && !checkValidAdaptation(t, args)
+                // only bail if we're typing an expression (and not inside another application)
+                if (invalidAdaptation && mode.typingExprNotFun) EmptyTree else t
+              }
+              def reset(errors: Seq[AbsTypeError]): Tree = {
+                context.undetparams = savedUndetparams
+                EmptyTree
+              }
+              silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)).map(validate).orElse(reset)
             }
-            else EmptyTree
-          }
 
           /* Treats an application which uses named or default arguments.
            * Also works if names + a vararg used: when names are used, the vararg
@@ -4268,7 +4269,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val name = tree.name
         val body = tree.body
         name match {
-          case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
+          case name: TypeName  =>
+            assert(body == EmptyTree, s"${context.unit} typedBind: ${name.debugString} ${body} ${body.getClass}")
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else {
@@ -4844,7 +4846,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!(context.unit.isJava && cls.isClass && !cls.isModuleClass)) NoSymbol else {
           val companion = companionSymbolOf(cls, context)
           if (!companion.exists) NoSymbol
-          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
+          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionForJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
         }
 
       /* Attribute a selection where `tree` is `qual.name`.

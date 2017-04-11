@@ -797,7 +797,7 @@ abstract class TreeGen {
 
   /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
   def mkGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree)(implicit fresh: FreshNameCreator): Tree = {
-    val pat1 = patvarTransformer.transform(pat)
+    val pat1 = patvarTransformerForFor.transform(pat)
     if (valeq) ValEq(pat1, rhs).setPos(pos)
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
@@ -894,11 +894,15 @@ abstract class TreeGen {
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)
    */
-  object patvarTransformer extends Transformer {
+  class PatvarTransformer(forFor: Boolean) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
-      case Ident(name) if (treeInfo.isVarPattern(tree) && name != nme.WILDCARD) =>
-        atPos(tree.pos)(Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD))))
-      case Typed(id @ Ident(name), tpt) if (treeInfo.isVarPattern(id) && name != nme.WILDCARD) =>
+      case Ident(name) if treeInfo.isVarPattern(tree) && name != nme.WILDCARD =>
+        atPos(tree.pos) {
+          val b = Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
+          if (!forFor && isPatVarWarnable) b
+          else b updateAttachment AtBoundIdentifierAttachment
+        }
+      case Typed(id @ Ident(name), tpt) if treeInfo.isVarPattern(id) && name != nme.WILDCARD =>
         atPos(tree.pos.withPoint(id.pos.point)) {
           Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
             Typed(Ident(nme.WILDCARD), tpt)
@@ -918,6 +922,15 @@ abstract class TreeGen {
         tree
     }
   }
+
+  /** Can be overridden to depend on settings.warnUnusedPatvars. */
+  def isPatVarWarnable: Boolean = true
+
+  /** Not in for comprehensions, whether to warn unused pat vars depends on flag. */
+  object patvarTransformer       extends PatvarTransformer(forFor = false)
+
+  /** Tag pat vars in for comprehensions. */
+  object patvarTransformerForFor extends PatvarTransformer(forFor = true)
 
   // annotate the expression with @unchecked
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {

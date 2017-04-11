@@ -1,1 +1,1 @@
--Xfatal-warnings -Ywarn-unused-import
+-Xfatal-warnings -Ywarn-unused:imports

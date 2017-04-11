@@ -261,8 +261,8 @@ class MutableSettings(val errorFn: String => Unit)
      */
     private var singleOutDir: Option[AbstractFile] = None
 
-    /** Add a destination directory for sources found under srcdir.
-     *  Both directories should exits.
+    /** Add a destination directory for sources found under `srcDir`.
+     *  Both directories should exist.
      */
     def add(srcDir: String, outDir: String): Unit = // used in ide?
       add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),

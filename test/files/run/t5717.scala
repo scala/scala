@@ -1,7 +1,7 @@
 import scala.tools.partest._
 import java.io.File
 
-object Test extends StoreReporterDirectTest {
+object Test extends DirectTest {
   def code = ???
 
   def compileCode(code: String) = {

@@ -10,7 +10,7 @@ trait GenAnnotationInfos {
   // however, when reifying free and tough types, we're forced to reify annotation infos as is
   // why is that bad? take a look inside
   def reifyAnnotationInfo(ann: AnnotationInfo): Tree = {
-    val reifiedArgs = ann.args map { arg =>
+    ann.args.foreach { arg =>
       val saved1 = reifyTreeSymbols
       val saved2 = reifyTreeTypes
 

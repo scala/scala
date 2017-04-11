@@ -1,0 +1,9 @@
+warn-unused-implicits.scala:11: warning: parameter value s in method f is never used
+       )(implicit s: String): Int = {  // warn
+                  ^
+warn-unused-implicits.scala:31: warning: parameter value s in method i is never used
+  def i(implicit s: String, t: Int) = t           // yes, warn
+                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

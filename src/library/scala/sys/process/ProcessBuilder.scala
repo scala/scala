@@ -257,10 +257,9 @@ trait ProcessBuilder extends Source with Sink {
     */
   def run(connectInput: Boolean): Process
 
-  /** Starts the process represented by this builder, blocks until it exits, and
-    * returns the exit code.  Standard output and error are sent to the given
-    * ProcessLogger.  The newly started process reads from standard input of the
-    * current process if `connectInput` is true.
+  /** Starts the process represented by this builder.  Standard output and error
+    * are sent to the given ProcessLogger.  The newly started process reads from
+    * standard input of the current process if `connectInput` is true.
     */
   def run(log: ProcessLogger, connectInput: Boolean): Process
 
