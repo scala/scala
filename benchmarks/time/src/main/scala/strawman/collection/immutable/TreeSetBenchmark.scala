@@ -14,32 +14,32 @@ import scala.Predef.intWrapper
 @Warmup(iterations = 12)
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
-class LazyListBenchmark {
+class TreeSetBenchmark {
 
-  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
+  @Param(scala.Array(/*"0", */"1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: LazyList[Long] = _
-  var xss: scala.Array[LazyList[Long]] = _
+  var xs: TreeSet[Long] = _
+  var xss: scala.Array[TreeSet[Long]] = _
   var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    def freshCollection() = LazyList((1 to size).map(_.toLong): _*)
+    def freshCollection() = TreeSet((1 to size).map(_.toLong): _*)
     xs = freshCollection()
-    xss = scala.Array.fill(1000)(freshCollection())
-    if (size > 0) {
-      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
-    }
+//    xss = scala.Array.fill(1000)(freshCollection())
+//    if (size > 0) {
+//      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+//    }
   }
 
   @Benchmark
-  //  @OperationsPerInvocation(size)
+//  @OperationsPerInvocation(size)
   def cons(bh: Blackhole): Unit = {
-    var ys = LazyList.empty[Long]
+    var ys = TreeSet.empty[Long]
     var i = 0L
     while (i < size) {
-      ys = i #:: ys
+      ys = ys + i // Note: In the case of TreeSet, always inserting elements that are already ordered creates a bias
       i = i + 1
     }
     bh.consume(ys)
@@ -54,26 +54,6 @@ class LazyListBenchmark {
   @Benchmark
   def foreach(bh: Blackhole): Unit = {
     xs.foreach(x => bh.consume(x))
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def lookupLast(bh: Blackhole): Unit = {
-    var i = 0
-    while (i < 1000) {
-      bh.consume(xss(i)(size - 1))
-      i = i + 1
-    }
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def randomLookup(bh: Blackhole): Unit = {
-    var i = 0
-    while (i < 1000) {
-      bh.consume(xs(randomIndices(i)))
-      i = i + 1
-    }
   }
 
   @Benchmark

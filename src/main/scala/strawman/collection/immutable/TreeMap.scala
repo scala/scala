@@ -44,4 +44,6 @@ object TreeMap extends ConstrainedMapFactory[TreeMap, Ordering] {
 
   def constrainedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] = ???
 
+  def empty[K: Ordering, V]: TreeMap[K, V] = ???
+
 }

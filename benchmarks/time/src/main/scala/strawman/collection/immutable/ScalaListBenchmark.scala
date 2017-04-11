@@ -3,7 +3,10 @@ package strawman.collection.immutable
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
-import scala.{Any, AnyRef, Int, Unit}
+import org.openjdk.jmh.infra.Blackhole
+
+import scala.{Any, AnyRef, Int, Long, Unit}
+import scala.Predef.intWrapper
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -13,46 +16,75 @@ import scala.{Any, AnyRef, Int, Unit}
 @State(Scope.Benchmark)
 class ScalaListBenchmark {
 
-  @Param(scala.Array("8", "64", "512", "4096", "32768", "262144"/*, "2097152"*/))
+  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: scala.List[AnyRef] = _
-  var obj: Any = _
+  var xs: scala.List[Long] = _
+  var xss: scala.Array[scala.List[Long]] = _
+  var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    xs = scala.List.fill(size)("")
-    obj = ""
-  }
-
-  @Benchmark
-  def cons(): Any = {
-    var ys = scala.List.empty[Any]
-    var i = 0
-    while (i < size) {
-      ys = obj :: ys
-      i += 1
+    def freshCollection() = scala.List((1 to size).map(_.toLong): _*)
+    xs = freshCollection()
+    xss = scala.Array.fill(1000)(freshCollection())
+    if (size > 0) {
+      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
-    ys
   }
 
   @Benchmark
-  def uncons(): Any = xs.tail
-
-  @Benchmark
-  def concat(): Any = xs ++ xs
-
-  @Benchmark
-  def foreach(): Any = {
-    var n = 0
-    xs.foreach(x => if (x eq null) n += 1)
-    n
+  //  @OperationsPerInvocation(size)
+  def cons(bh: Blackhole): Unit = {
+    var ys = scala.List.empty[Long]
+    var i = 0L
+    while (i < size) {
+      ys = i :: ys
+      i = i + 1
+    }
+    bh.consume(ys)
   }
 
   @Benchmark
-  def lookup(): Any = xs(size - 1)
+  def uncons(bh: Blackhole): Unit = bh.consume(xs.tail)
 
   @Benchmark
-  def map(): Any = xs.map(x => if (x eq null) "foo" else "bar")
+  def concat(bh: Blackhole): Unit = bh.consume(xs ++ xs)
+
+  @Benchmark
+  def foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
+
+  @Benchmark
+  //  @OperationsPerInvocation(size)
+  def foreach_while(bh: Blackhole): Unit = {
+    var ys = xs
+    while (ys.nonEmpty) {
+      bh.consume(ys.head)
+      ys = ys.tail
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def lookupLast(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xss(i)(size - 1))
+      i = i + 1
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def randomLookup(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xs(randomIndices(i)))
+      i = i + 1
+    }
+  }
+
+  @Benchmark
+  def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
 }

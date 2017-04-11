@@ -7,7 +7,7 @@ scalaVersion in ThisBuild := "2.12.2-ebe1180-SNAPSHOT" // from https://github.co
 scalaBinaryVersion in ThisBuild := "2.12"
 
 scalacOptions in ThisBuild ++=
-  Seq("-deprecation", "-unchecked", "-Yno-imports", "-language:higherKinds")
+  Seq("-deprecation", "-feature", "-unchecked", "-opt-warnings", "-Yno-imports", "-language:higherKinds", "-opt:l:classpath")
 
 testOptions in ThisBuild += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a")
 

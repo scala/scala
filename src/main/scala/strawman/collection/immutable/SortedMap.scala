@@ -16,7 +16,13 @@ trait SortedMapLike[K, +V, +C[X, +Y] <: SortedMap[X, Y]]
   extends SortedLike[K, C[K, V]]
     with SortedMapPolyTransforms[K, V, C]
     with MapLike[K, V, Map] // Inherited Map operations can only return a `Map` because they don’t take an evidence `Ordering`
-    with MapMonoTransforms[K, V, C[K, V]] // Operations that return the same collection type can return a `SortedMap`, though
+    with MapMonoTransforms[K, V, C[K, V]] { // Operations that return the same collection type can return a `SortedMap`, though
+
+  def firstKey: K = head._1
+
+  def lastKey: K = last._1
+
+}
 
 /** Polymorphic transformation methods for sorted Maps */
 trait SortedMapPolyTransforms[K, +V, +C[X, Y] <: Sorted[X]]

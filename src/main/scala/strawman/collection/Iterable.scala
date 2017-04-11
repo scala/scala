@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, Int, StringContext, Unit}
+import scala.{Any, Array, Boolean, Int, Numeric, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
@@ -50,6 +50,8 @@ trait IterableOps[+A] extends Any {
    */
   def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
+  def forall(p: A => Boolean): Boolean = iterator().forall(p)
+
   /** Fold left */
   def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)
 
@@ -67,6 +69,18 @@ trait IterableOps[+A] extends Any {
 
   /** The first element of the collection. */
   def head: A = iterator().next()
+
+  /** Selects the last element.
+    * $orderDependent
+    * @return The last element of this $coll.
+    * @throws NoSuchElementException If the $coll is empty.
+    */
+  def last: A = {
+    val it = iterator()
+    var lst = it.next()
+    while (it.hasNext) lst = it.next()
+    lst
+  }
 
   /** The number of elements in this collection, if it can be cheaply computed,
     *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
@@ -132,6 +146,25 @@ trait IterableOps[+A] extends Any {
 
   override def toString = s"$className(${mkString(", ")})"
 
+
+  /** Sums up the elements of this collection.
+    *
+    *   @param   num  an implicit parameter defining a set of numeric operations
+    *                 which includes the `+` operator to be used in forming the sum.
+    *   @tparam  B    the result type of the `+` operator.
+    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
+    *
+    *   @usecase def sum: A
+    *     @inheritdoc
+    *
+    *     @return       the sum of all elements in this $coll of numbers of type `Int`.
+    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+    *     can be used as element type of the $coll and as result type of `sum`.
+    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+    *
+    */
+  def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
+
 }
 
 
@@ -157,6 +190,17 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
     val pn = View.Partition(coll, p)
     (fromIterableWithSameElemType(pn.left), fromIterableWithSameElemType(pn.right))
   }
+
+  /** Splits this $coll into two at a given position.
+    *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
+    *         `(c take n, c drop n)`.
+    *  $orderDependent
+    *
+    *  @param n the position at which to split.
+    *  @return  a pair of ${coll}s consisting of the first `n`
+    *           elements of this $coll, and the other elements.
+    */
+  def splitAt(n: Int): (Repr, Repr) = (take(n), drop(n))
 
   /** A collection containing the first `n` elements of this collection. */
   def take(n: Int): Repr = fromIterableWithSameElemType(View.Take(coll, n))
@@ -262,7 +306,7 @@ trait PolyBuildable[+A, +C[_]] extends Any with FromIterable[C] {
 
 /** Base trait for strict collections that can be built using a builder for element types with an implicit evidence.
   * @tparam  A    the element type of the collection
-  * @tparam C     the type constructor of the underlying collection
+  * @tparam CC    the type constructor of the underlying collection
   */
 trait ConstrainedPolyBuildable[+A, +CC[_], Ev[_]] extends Any with ConstrainedFromIterable[CC, Ev] {
 

@@ -19,4 +19,6 @@ object BitSet extends BoundedIterableFactory[Int] {
   def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet = ???
 
   def newBuilder[E <: Int]: Builder[E, BitSet] = ???
+
+  def empty[A <: Int]: BitSet = ???
 }

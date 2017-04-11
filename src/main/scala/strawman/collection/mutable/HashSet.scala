@@ -27,10 +27,9 @@ final class HashSet[A]
   def clear(): Unit = ???
 
   def contains(elem: A): Boolean = ???
+  def empty: HashSet[A] = HashSet.empty
   def get(elem: A): Option[A] = ???
-  def subsetOf(that: strawman.collection.Set[A]): Boolean = ???
 
-  def & (that: strawman.collection.Set[A]): HashSet[A] = ???
   def ++ (that: strawman.collection.Set[A]): HashSet[A] = ???
 
 }
@@ -46,5 +45,7 @@ object HashSet extends IterableFactory[HashSet] {
   }
 
   def newBuilder[A]: Builder[A, HashSet[A]] = new HashSet[A]
+
+  def empty[A <: Any]: HashSet[A] = new HashSet[A]
 
 }

@@ -18,7 +18,7 @@ class ListBuffer[A]
     with Builder[A, ListBuffer[A]] {
 
   private var first: List[A] = Nil
-  private var last: ::[A] = null
+  private var last0: ::[A] = null
   private var aliased = false
   private var len = 0
 
@@ -39,7 +39,7 @@ class ListBuffer[A]
   private def copyElems(): Unit = {
     val buf = ListBuffer.fromIterable(result)
     first = buf.first
-    last = buf.last
+    last0 = buf.last0
     aliased = false
   }
 
@@ -58,15 +58,15 @@ class ListBuffer[A]
   def +=(elem: A) = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
-    if (len == 0) first = last1 else last.next = last1
-    last = last1
+    if (len == 0) first = last1 else last0.next = last1
+    last0 = last1
     len += 1
     this
   }
 
   private def locate(i: Int): Predecessor[A] =
     if (i == 0) null
-    else if (i == len) last
+    else if (i == len) last0
     else {
       var j = i - 1
       var p = first
@@ -152,7 +152,7 @@ class ListBuffer[A]
     val buf = new ListBuffer[A]
     for (elem <- this) buf += f(elem)
     first = buf.first
-    last = buf.last
+    last0 = buf.last0
     this
   }
 
@@ -204,5 +204,7 @@ object ListBuffer extends IterableFactory[ListBuffer] {
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
   def newBuilder[A]: Builder[A, ListBuffer[A]] = new ListBuffer[A]
+
+  def empty[A <: Any]: ListBuffer[A] = new ListBuffer[A]
 
 }

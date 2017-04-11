@@ -1,11 +1,17 @@
 package strawman
 package collection
 
-import scala.{Any, Boolean, Equals, Int}
+import scala.{Any, Boolean, Equals, inline, Int}
 import scala.util.hashing.MurmurHash3
 
-
-/** Base trait for set collections */
+/** Base trait for set collections.
+  *
+  * A set is a collection that contains no duplicate elements.
+  *
+  * @author Martin Odersky
+  * @author Aleksandar Prokopec
+  * @since 2.9
+  */
 trait Set[A]
   extends Iterable[A]
     with SetLike[A, Set]
@@ -14,13 +20,23 @@ trait Set[A]
 trait SetLike[A, +C[X] <: Set[X]]
   extends IterableLike[A, C]
     with SetMonoTransforms[A, C[A]]
+    with SetPolyTransforms[A, C]
+    with (A => Boolean)
     with Equals {
 
   protected def coll: C[A]
 
   def contains(elem: A): Boolean
 
-  def subsetOf(that: Set[A]): Boolean
+  /** Tests if some element is contained in this set.
+    *
+    *  This method is equivalent to `contains`. It allows sets to be interpreted as predicates.
+    *  @param elem the element to test for membership.
+    *  @return  `true` if `elem` is contained in this set, `false` otherwise.
+    */
+  @inline final def apply(elem: A): Boolean = this.contains(elem)
+
+  def subsetOf(that: Set[A]): Boolean = this.forall(that)
 
   def canEqual(that: Any) = true
 
@@ -42,9 +58,18 @@ trait SetLike[A, +C[X] <: Set[X]]
 trait SetMonoTransforms[A, +Repr]
   extends IterableMonoTransforms[A, Repr] {
 
-  def & (that: Set[A]): Repr
+  def & (that: Set[A]): Repr = this.filter(that)
 
-  def ++ (that: Set[A]): Repr
+  /** The empty set of the same type as this set
+    * @return  an empty set of type `Repr`.
+    */
+  def empty: Repr
+
+}
+
+trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
+
+  def ++ (that: Set[A]): C[A]
 
 }
 
