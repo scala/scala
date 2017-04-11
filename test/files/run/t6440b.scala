@@ -56,6 +56,10 @@ object Test extends StoreReporterDirectTest {
 
     // bad symbolic reference error expected (but no stack trace!)
     compileCode(app2)
-    println(filteredInfos.mkString("\n"))
+    import scala.reflect.internal.util.Position
+    filteredInfos.map { report =>
+      print(if (report.severity == storeReporter.ERROR) "error: " else "")
+      println(Position.formatMessage(report.pos, report.msg, true))
+    }
   }
 }

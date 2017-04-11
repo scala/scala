@@ -18,12 +18,12 @@ import convert._
  *
  *  The following conversions are supported via `asScala` and `asJava`:
  *{{{
- *    scala.collection.Iterable               <=> java.lang.Iterable
- *    scala.collection.Iterator               <=> java.util.Iterator
- *    scala.collection.mutable.Buffer         <=> java.util.List
- *    scala.collection.mutable.Set            <=> java.util.Set
- *    scala.collection.mutable.Map            <=> java.util.Map
- *    scala.collection.mutable.concurrent.Map <=> java.util.concurrent.ConcurrentMap
+ *    scala.collection.Iterable       <=> java.lang.Iterable
+ *    scala.collection.Iterator       <=> java.util.Iterator
+ *    scala.collection.mutable.Buffer <=> java.util.List
+ *    scala.collection.mutable.Set    <=> java.util.Set
+ *    scala.collection.mutable.Map    <=> java.util.Map
+ *    scala.collection.concurrent.Map <=> java.util.concurrent.ConcurrentMap
  *}}}
  *  The following conversions are supported via `asScala` and through
  *  specially-named extension methods to convert to Java collections, as shown:

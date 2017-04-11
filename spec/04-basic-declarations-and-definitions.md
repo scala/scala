@@ -91,7 +91,7 @@ expands to
 ```scala
 case object Red extends Color
 case object Green extends Color
-case object Blue extends Color .
+case object Blue extends Color
 ```
 -->
 
@@ -144,7 +144,7 @@ value definition `val $p$ = $e$` is expanded as follows:
 val $\$ x$ = $e$ match {case $p$ => ($x_1 , \ldots , x_n$)}
 val $x_1$ = $\$ x$._1
 $\ldots$
-val $x_n$ = $\$ x$._n  .
+val $x_n$ = $\$ x$._n
 ```
 
 Here, $\$ x$ is a fresh name.

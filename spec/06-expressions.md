@@ -222,9 +222,14 @@ the linearization of class `D` is `{D, B, A, Root}`.
 Then we have:
 
 ```scala
-(new A).superA == "Root",
-                          (new C).superB = "Root", (new C).superC = "B",
-(new D).superA == "Root", (new D).superB = "A",    (new D).superD = "B",
+(new A).superA == "Root"
+
+(new C).superB == "Root"
+(new C).superC == "B"
+
+(new D).superA == "Root"
+(new D).superB == "A"
+(new D).superD == "B"
 ```
 
 Note that the `superB` function returns different results

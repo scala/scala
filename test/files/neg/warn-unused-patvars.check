@@ -1,0 +1,12 @@
+warn-unused-patvars.scala:9: warning: private val x in trait Boundings is never used
+  private val x = 42                      // warn, sanity check
+              ^
+warn-unused-patvars.scala:28: warning: local val x in method v is never used
+    val D(x) = d                          // warn, fixme
+         ^
+warn-unused-patvars.scala:32: warning: local val x in method w is never used
+    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

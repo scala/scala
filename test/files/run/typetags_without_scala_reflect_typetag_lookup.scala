@@ -38,6 +38,6 @@ object Test extends StoreReporterDirectTest {
     compileApp();
     // we should get "missing or invalid dependency detected" errors, because we're trying to use an implicit that can't be unpickled
     // but we don't know the number of these errors and their order, so I just ignore them all
-    println(filteredInfos.filterNot(_.msg.contains("missing or invalid dependency detected")).mkString("\n"))
+    println(filteredInfos.filterNot(_.msg.contains("is missing from the classpath")).mkString("\n"))
   }
 }

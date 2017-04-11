@@ -553,6 +553,7 @@ abstract class ClassfileParser {
         val name = readName()
         val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
         var info = pool.getType(sym, u2)
+        var removedOuterParameter = false
         if (name == nme.CONSTRUCTOR)
           info match {
             case MethodType(params, restpe) =>
@@ -567,6 +568,7 @@ abstract class ClassfileParser {
                    * ClassfileParser for 1 executes, and clazz.owner is the package.
                    */
                   assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                  removedOuterParameter = true
                   params.tail
                 case _ =>
                   params
@@ -586,7 +588,7 @@ abstract class ClassfileParser {
         // parsed from SignatureATTR
         sym setInfo info
         propagatePackageBoundary(jflags, sym)
-        parseAttributes(sym, info)
+        parseAttributes(sym, info, removedOuterParameter)
         if (jflags.isVarargs)
           sym modifyInfo arrayToRepeated
 
@@ -769,7 +771,7 @@ abstract class ClassfileParser {
     GenPolyType(ownTypeParams, tpe)
   } // sigToType
 
-  def parseAttributes(sym: Symbol, symtype: Type) {
+  def parseAttributes(sym: Symbol, symtype: Type, removedOuterParameter: Boolean = false) {
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.typeSymbol == BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
@@ -804,16 +806,24 @@ abstract class ClassfileParser {
           else devWarning(s"failure to convert $c to $symtype")
         case tpnme.MethodParametersATTR =>
           def readParamNames(): Unit = {
-            import tools.asm.Opcodes.ACC_SYNTHETIC
+            import scala.tools.asm.Opcodes.ACC_SYNTHETIC
             val paramCount = u1
             var i = 0
+            if (removedOuterParameter && i < paramCount) {
+              in.skip(4)
+              i += 1
+            }
+            var remainingParams = sym.paramss.head // Java only has exactly one parameter list
             while (i < paramCount) {
               val name = pool.getName(u2)
               val access = u2
-              if ((access & ACC_SYNTHETIC) != ACC_SYNTHETIC) { // name not synthetic
-                val params = sym.paramss.head // Java only has exactly one parameter list
-                params(i).name = name.encode
-                params(i).resetFlag(SYNTHETIC)
+              if (remainingParams.nonEmpty) {
+                val param = remainingParams.head
+                remainingParams = remainingParams.tail
+                if ((access & ACC_SYNTHETIC) != ACC_SYNTHETIC) { // name not synthetic
+                  param.name = name.encode
+                  param.resetFlag(SYNTHETIC)
+                }
               }
               i += 1
             }
@@ -1051,8 +1061,11 @@ abstract class ClassfileParser {
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
       val scope       = getScope(jflags)
-      def newStub(name: Name) =
-        owner.newStubSymbol(name, s"Class file for ${entry.externalName} not found").setFlag(JAVA)
+      def newStub(name: Name) = {
+        val stub = owner.newStubSymbol(name, s"Class file for ${entry.externalName} not found")
+        stub.setPos(owner.pos)
+        stub.setFlag(JAVA)
+      }
 
       val (innerClass, innerModule) = if (file == NoAbstractFile) {
         (newStub(name.toTypeName), newStub(name.toTermName))
@@ -1174,7 +1187,11 @@ abstract class ClassfileParser {
         if (enclosing == clazz) entry.scope lookup name
         else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
       }
-      def newStub = enclosing.newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
+      def newStub = {
+        enclosing
+          .newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
+          .setPos(enclosing.pos)
+      }
       member.orElse(newStub)
     }
   }

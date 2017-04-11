@@ -1,0 +1,18 @@
+warn-unused-params.scala:9: warning: parameter value b in method f is never used
+        b: String,               // warn
+        ^
+warn-unused-params.scala:32: warning: parameter value s in method i is never used
+  def i(implicit s: String) = 42           // yes, warn
+                 ^
+warn-unused-params.scala:49: warning: parameter value u in class Unusing is never used
+class Unusing(u: Int) {       // warn
+              ^
+warn-unused-params.scala:59: warning: parameter value s in class CaseyAtTheBat is never used
+case class CaseyAtTheBat(k: Int)(s: String)        // warn
+                                 ^
+warn-unused-params.scala:62: warning: parameter value readResolve in method f is never used
+  def f(readResolve: Int) = 42           // warn
+        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

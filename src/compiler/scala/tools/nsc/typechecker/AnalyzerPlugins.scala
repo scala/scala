@@ -38,7 +38,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * Let analyzer plugins modify the type that has been computed for a tree.
      *
      * @param tpe   The type inferred by the type checker, initially (for first plugin) `tree.tpe`
-     * @param typer The yper that type checked `tree`
+     * @param typer The typer that type checked `tree`
      * @param tree  The type-checked tree
      * @param mode  Mode that was used for typing `tree`
      * @param pt    Expected type that was used for typing `tree`

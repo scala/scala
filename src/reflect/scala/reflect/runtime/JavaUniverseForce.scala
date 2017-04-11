@@ -40,6 +40,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SAMFunction
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
+    this.AtBoundIdentifierAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
@@ -459,8 +460,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DoubleTpe
     definitions.BooleanTpe
     definitions.ScalaNumericValueClasses
-    definitions.ScalaValueClasses
     definitions.ScalaValueClassesNoUnit
+    definitions.ScalaValueClasses
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType

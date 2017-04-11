@@ -119,6 +119,10 @@ final class ListBuffer[A]
   // Don't use the inherited size, which forwards to a List and is O(n).
   override def size = length
 
+  // Override with efficient implementations using the extra size information available to ListBuffer.
+  override def isEmpty: Boolean = len == 0
+  override def nonEmpty: Boolean = len > 0
+
   // Implementations of abstract methods in Buffer
 
   override def apply(n: Int): A =
