@@ -13,7 +13,7 @@ import collection.Iterator
 import scala.annotation.tailrec
 import scala.annotation.meta.getter
 
-import scala.{Array, Boolean, inline, Int, None, NoSuchElementException, Option, Ordering, Serializable, Some, sys, Unit}
+import scala.{Array, Boolean, `inline`, Int, None, NoSuchElementException, Option, Ordering, Serializable, Some, sys, Unit}
 import java.lang.{Integer, String}
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
@@ -96,7 +96,7 @@ private[collection] object RedBlackTree {
 
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
 
-  private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U) {
+  private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
     if (tree.right ne null) _foreach(tree.right, f)
@@ -104,7 +104,7 @@ private[collection] object RedBlackTree {
 
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
 
-  private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U) {
+  private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = {
     if (tree.left ne null) _foreachKey(tree.left, f)
     f((tree.key))
     if (tree.right ne null) _foreachKey(tree.right, f)
@@ -422,7 +422,7 @@ private[collection] object RedBlackTree {
   }
 
   /*
-   * Forcing direct fields access using the @inline annotation helps speed up
+   * Forcing direct fields access using the @`inline` annotation helps speed up
    * various operations (especially smallest/greatest and update/delete).
    *
    * Unfortunately the direct field access is not guaranteed to work (but
@@ -431,12 +431,12 @@ private[collection] object RedBlackTree {
    * An alternative is to implement the these classes using plain old Java code...
    */
   sealed abstract class Tree[A, +B](
-    @(inline @getter) final val key: A,
-    @(inline @getter) final val value: B,
-    @(inline @getter) final val left: Tree[A, B],
-    @(inline @getter) final val right: Tree[A, B])
+    @(`inline` @getter) final val key: A,
+    @(`inline` @getter) final val value: B,
+    @(`inline` @getter) final val left: Tree[A, B],
+    @(`inline` @getter) final val right: Tree[A, B])
     extends Serializable {
-    @(inline @getter) final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
+    @(`inline` @getter) final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
     def black: Tree[A, B]
     def red: Tree[A, B]
   }
@@ -458,11 +458,11 @@ private[collection] object RedBlackTree {
   }
 
   object RedTree {
-    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
+    @`inline` def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
     def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
   object BlackTree {
-    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
+    @`inline` def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
@@ -485,7 +485,7 @@ private[collection] object RedBlackTree {
       else if (tree.left eq null) tree
       else findLeftMostOrPopOnEmpty(goLeft(tree))
 
-    private[this] def pushNext(tree: Tree[A, B]) {
+    private[this] def pushNext(tree: Tree[A, B]): Unit = {
       stackOfNexts(index) = tree
       index += 1
     }
