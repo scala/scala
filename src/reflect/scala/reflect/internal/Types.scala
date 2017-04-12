@@ -3876,8 +3876,8 @@ trait Types
   }
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
-    val eparams = mapWithIndex(tparams)((tparam, i) =>
-      clazz.newExistential(newTypeName("?"+i), clazz.pos) setInfo tparam.info.bounds)
+    val eparams = tparams map (tparam =>
+      clazz.newExistential(tparam.name.toTypeName, clazz.pos) setInfo tparam.info.bounds)
 
     eparams map (_ substInfo (tparams, eparams))
   }

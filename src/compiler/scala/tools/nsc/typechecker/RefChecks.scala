@@ -704,7 +704,7 @@ abstract class RefChecks extends Transform {
                           // Compilation has already failed so we shouldn't have to worry overmuch
                           // about forcing types.
                           if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
-                            ". To implement a raw type, use %s[_]".format(pa)
+                            s". To implement this raw type, use ${rawToExistential(pa)}"
                           else if (pa.prefix =:= pc.prefix)
                             ": their type parameters differ"
                           else
