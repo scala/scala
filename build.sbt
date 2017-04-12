@@ -3,8 +3,32 @@ organization in ThisBuild := "ch.epfl.scala"
 version in ThisBuild := "0.2.0-SNAPSHOT"
 
 resolvers in ThisBuild += "scala-pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots"
+
+// Scala 2.12
+
+/*
 scalaVersion in ThisBuild := "2.12.2-ebe1180-SNAPSHOT" // from https://github.com/scala/scala/pull/5742
+
 scalaBinaryVersion in ThisBuild := "2.12"
+*/
+
+// Dotty
+scalaOrganization in ThisBuild := "ch.epfl.lamp"
+
+scalaBinaryVersion := "2.11"
+
+scalaVersion := "0.1.1-SNAPSHOT"
+
+def dottyEnable(project: Project): Project = dottyEnableWithVersion(project, dottyLatestNightlyBuild.get)
+def dottyEnableWithVersion(project: Project, dottyVersion: String): Project =
+  project
+    .settings(
+      scalaVersion := dottyVersion,
+      // `scalacOption +=` keeps existing options such as -Xwarn-unused-import
+      // which are invalid with Dotty.
+      scalacOptions := Seq("-language:Scala2")
+    )
+    .enablePlugins(DottyPlugin)
 
 scalacOptions in ThisBuild ++=
   Seq("-deprecation", "-feature", "-unchecked", "-opt-warnings", "-Yno-imports", "-language:higherKinds", "-opt:l:classpath")
@@ -45,7 +69,7 @@ val collections =
           password <- sys.env.get("SONATYPE_PASSWORD")
         } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
       ).toList
-    )
+    ).configure(dottyEnable)
 
 val timeBenchmark =
   project.in(file("benchmarks/time"))
