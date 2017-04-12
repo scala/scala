@@ -43,7 +43,7 @@ sealed trait HashMap[K, +V]
   protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
     HashMap.fromIterable(it)
 
-  def - (key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
+  def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
 
   def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] =
     updated0(key, computeHash(key), 0, value, null, null)

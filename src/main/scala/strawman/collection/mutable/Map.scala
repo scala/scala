@@ -2,7 +2,7 @@ package strawman.collection.mutable
 
 import strawman.collection.IterableMonoTransforms
 
-import scala.Option
+import scala.{inline, Option}
 
 /** Base type of mutable Maps */
 trait Map[K, V]
@@ -15,7 +15,14 @@ trait MapLike[K, V, +C[X, Y] <: Map[X, Y]]
     with Iterable[(K, V)]
     with Growable[(K, V)] {
 
-  def -= (elem: (K, V)): this.type
+  /** Removes a single element from this $coll.
+    *
+    *  @param elem  the element to remove.
+    *  @return the $coll itself
+    */
+  def removeInPlace(elem: (K, V)): this.type
+  /** Alias for `removeInPlace` */
+  @inline final def -= (elem: (K, V)): this.type = removeInPlace(elem)
 
   def put(key: K, value: V): Option[V]
 

@@ -7,9 +7,6 @@ import strawman.collection.{IterableMonoTransforms, IterableOnce}
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>
 
-  /** Append an element */
-  def +=(x: A): this.type
-
   /** Clears the contents of this builder.
    *  After execution of this method the builder will contain no elements.
    */
@@ -20,9 +17,9 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
   /** A builder resulting from this builder my mapping the result using `f`. */
   def mapResult[NewTo](f: To => NewTo) = new Builder[A, NewTo] {
-    def +=(x: A): this.type = { self += x; this }
+    def addInPlace(x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
-    override def ++=(xs: IterableOnce[A]): this.type = { self ++= xs; this }
+    override def addAllInPlace(xs: IterableOnce[A]): this.type = { self ++= xs; this }
     def result: NewTo = f(self.result)
   }
 }
@@ -30,12 +27,15 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 class StringBuilder extends Builder[Char, String] {
   private val sb = new java.lang.StringBuilder
 
-  def += (x: Char) = { sb.append(x); this }
+  def addInPlace(x: Char) = { sb.append(x); this }
 
   def clear() = sb.setLength(0)
 
-  /** Overloaded version of `++=` that takes a string */
-  def ++= (s: String) = { sb.append(s); this }
+  /** Overloaded version of `addAllInPlace` that takes a string */
+  def addAllInPlace(s: String): this.type = { sb.append(s); this }
+
+  /** Alias for `addAllInPlace` */
+  def ++= (s: String): this.type = addAllInPlace(s)
 
   def result = sb.toString
 

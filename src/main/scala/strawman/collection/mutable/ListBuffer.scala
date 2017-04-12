@@ -55,7 +55,7 @@ class ListBuffer[A]
     first = Nil
   }
 
-  def +=(elem: A) = {
+  def addInPlace(elem: A) = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
     if (len == 0) first = last1 else last0.next = last1

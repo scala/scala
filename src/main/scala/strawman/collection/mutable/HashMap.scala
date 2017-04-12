@@ -18,11 +18,11 @@ final class HashMap[K, V]
   def get(key: K): Option[V] = ???
 
   // From Growable
-  def +=(elem: (K, V)): this.type = ???
+  def addInPlace(elem: (K, V)): this.type = ???
   def clear(): Unit = ???
 
   // From mutable.MapLike
-  def -=(elem: (K, V)): this.type = ???
+  def removeInPlace(elem: (K, V)): this.type = ???
   def put(key: K, value: V): Option[V] = ???
 
   // From IterablePolyTransforms

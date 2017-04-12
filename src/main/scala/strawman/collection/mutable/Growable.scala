@@ -1,7 +1,7 @@
 package strawman.collection.mutable
 
 import strawman.collection.IterableOnce
-import scala.Unit
+import scala.{inline, Unit}
 import scala.annotation.tailrec
 import strawman.collection.{toOldSeq, toNewSeq}
 
@@ -16,7 +16,10 @@ trait Growable[-A] {
    *  @param elem  the element to $add.
    *  @return the $coll itself
    */
-  def +=(elem: A): this.type
+  def addInPlace(elem: A): this.type
+
+  /** Alias for `addInPlace` */
+  @inline final def += (elem: A): this.type = addInPlace(elem)
 
   /** ${Add}s two or more elements to this $coll.
    *
@@ -25,14 +28,14 @@ trait Growable[-A] {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
-  def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
+  @inline final def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
 
   /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
    *  @param xs   the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def ++=(xs: IterableOnce[A]): this.type = {
+  def addAllInPlace(xs: IterableOnce[A]): this.type = {
     @tailrec def loop(xs: scala.collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
         this += xs.head
@@ -47,6 +50,9 @@ trait Growable[-A] {
     // for List. Maybe we should just simplify the code by deferring to iterator foreach?
     this
   }
+
+  /** Alias for `addAllInPlace` */
+  @inline final def ++= (xs: IterableOnce[A]): this.type = addAllInPlace(xs)
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.

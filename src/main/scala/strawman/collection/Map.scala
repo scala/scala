@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
+import scala.{Any, Boolean, inline, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base Map type */
@@ -92,10 +92,17 @@ trait MapPolyTransforms[K, +V, +C[X, Y]]
 /** Operations that return a Map collection with different types values (e.g. `concat`) */
 trait MapValuePolyTransforms[K, +V, +C[X, Y]] {
 
+  /** Adds all key/value pairs in a traversable collection to this map, returning
+    * a new map.
+    *
+    *  @param    xs  the collection containing the added key/value pairs
+    *  @tparam   V2  the type of the added values
+    *  @return   a new map with the given bindings added to this map
+    */
   def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2]
 
   /** Alias for `concat` */
-  final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = concat(xs)
+  @inline final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = concat(xs)
 
 }
 

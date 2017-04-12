@@ -2,7 +2,7 @@ package strawman.collection.mutable
 
 import strawman.collection
 import strawman.collection.IterableOnce
-import scala.{Int, Boolean, Unit, Option, Some, None}
+import scala.{inline, Int, Boolean, Unit, Option, Some, None}
 import scala.Predef.???
 
 /** Base trait for mutable sets */
@@ -11,8 +11,15 @@ trait Set[A]
     with SetLike[A, Set]
     with Growable[A] {
 
-  def +=(elem: A): this.type
-  def -=(elem: A): this.type
+  def addInPlace(elem: A): this.type
+  /** Removes a single element from this $coll.
+    *
+    *  @param elem  the element to remove.
+    *  @return the $coll itself
+    */
+  def removeInPlace(elem: A): this.type
+  /** Alias for `removeInPlace` */
+  @inline final def -= (elem: A): this.type = removeInPlace(elem)
 
   def contains(elem: A): Boolean
   def get(elem: A): Option[A]

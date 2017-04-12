@@ -65,8 +65,8 @@ sealed class ListSet[A]
 
   def contains(elem: A): Boolean = false
 
-  def + (elem: A): ListSet[A] = new Node(elem)
-  def - (elem: A): ListSet[A] = this
+  def add(elem: A): ListSet[A] = new Node(elem)
+  def remove(elem: A): ListSet[A] = this
 
   def empty: ListSet[A] = ListSet.empty
 
@@ -108,9 +108,9 @@ sealed class ListSet[A]
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))
 
-    override def + (e: A): ListSet[A] = if (contains(e)) this else new Node(e)
+    override def add(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def - (e: A): ListSet[A] = removeInternal(e, this, Nil)
+    override def remove(e: A): ListSet[A] = removeInternal(e, this, Nil)
 
     @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
       if (cur.isEmpty) acc.last
