@@ -69,9 +69,8 @@ class TraverseTest {
 
   @Test
   def eitherSequenceTest: Unit = {
-    val xs3 = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
+    val xs3: mutable.ListBuffer[Either[Int, String]] = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
     val e1 = eitherSequence(xs3)
     val e1t: Either[Int, mutable.ListBuffer[String]] = e1
   }
-
 }
