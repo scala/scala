@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import collection.{BitOperations, Hashing, Iterator, MapFactory}
+import collection.{Hashing, Iterator, MapFactory}
 import collection.mutable.{Builder, ImmutableMapBuilder}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
@@ -99,7 +99,7 @@ sealed trait HashMap[K, +V]
 
 }
 
-object HashMap extends MapFactory[HashMap] with BitOperations.Int {
+object HashMap extends MapFactory[HashMap] {
 
   def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
     new ImmutableMapBuilder[K, V, HashMap](empty[K, V])
@@ -535,10 +535,7 @@ object HashMap extends MapFactory[HashMap] with BitOperations.Int {
             thati += 1
             thisi += 1
           } else {
-            // condition below is due to 2 things:
-            // 1) no unsigned int compare on JVM
-            // 2) 0 (no lsb) should always be greater in comparison
-            if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
+            if (Integer.compareUnsigned(thislsb - 1, thatlsb - 1) < 0) {
               val m = thiselems(thisi)
               totalelems += m.size
               merged(i) = m
@@ -562,7 +559,5 @@ object HashMap extends MapFactory[HashMap] with BitOperations.Int {
       case _ => sys.error("section supposed to be unreachable.")
     }
   }
-
-
 
 }
