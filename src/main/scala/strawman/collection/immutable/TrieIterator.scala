@@ -55,7 +55,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case _                                  => false
   }
 
-  final class DupIterator(xs: Array[Iterable[T]]) extends TrieIterator[T](xs) {
+  final class DupIterator(xs: Array[Iterable[T]] @uV) extends TrieIterator[T](xs) {
     override def initDepth                                     = outer.depth
     override def initArrayStack: Array[Array[Iterable[T @uV]]] = outer.arrayStack
     override def initPosStack                                  = outer.posStack
