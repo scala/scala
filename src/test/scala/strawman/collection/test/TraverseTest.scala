@@ -9,6 +9,7 @@ import strawman.collection._
 
 import scala.{Any, Either, Int, Left, None, Option, Right, Some, Unit}
 import scala.Predef.ArrowAssoc
+import scala.math.Ordering
 import java.lang.String
 
 class TraverseTest {
@@ -58,7 +59,7 @@ class TraverseTest {
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
     val o2 = optionSequence(xs2)(
-     BuildFrom.buildFromConstrainedPolyBuildable[math.Ordering, immutable.TreeSet, Option[String], String])
+     BuildFrom.buildFromConstrainedPolyBuildable[Ordering, immutable.TreeSet, Option[String], String])
     val o2t: Option[immutable.TreeSet[String]] = o2
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
