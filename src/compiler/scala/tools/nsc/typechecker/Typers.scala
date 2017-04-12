@@ -3093,6 +3093,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val scope = if (inBlock) context.scope else context.owner.info.decls
         var newStats = new ListBuffer[Tree]
         var moreToAdd = true
+        val retractErroneousSynthetics = settings.isScala212
+
         while (moreToAdd) {
           val initElems = scope.elems
           // SI-5877 The decls of a package include decls of the package object. But we don't want to add
@@ -3101,7 +3103,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             inBlock || !context.isInPackageObject(sym, context.owner)
           for (sym <- scope)
             for (tree <- context.unit.synthetics get sym if shouldAdd(sym)) { // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
-              newStats += typedStat(tree) // might add even more synthetics to the scope
+              // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
+              if (!(retractErroneousSynthetics && sym.initialize.hasFlag(IS_ERROR)))
+                newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
             }
           // the type completer of a synthetic might add more synthetics. example: if the
