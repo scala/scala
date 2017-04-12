@@ -57,7 +57,8 @@ class TraverseTest {
     val o1t: Option[immutable.List[Int]] = o1
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
-    val o2 = optionSequence(xs2)
+    val o2 = optionSequence(xs2)(
+     BuildFrom.buildFromConstrainedPolyBuildable[math.Ordering, immutable.TreeSet, Option[String], String])
     val o2t: Option[immutable.TreeSet[String]] = o2
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
