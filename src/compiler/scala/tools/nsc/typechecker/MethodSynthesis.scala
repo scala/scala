@@ -146,8 +146,8 @@ trait MethodSynthesis {
         // if there's no field symbol, the ValDef tree receives the getter symbol and thus is not a synthetic
         if (fieldSym != NoSymbol) {
           context.unit.synthetics(getterSym) = getter.derivedTree(getterSym)
-          getterSym setInfo new namer.AccessorTypeCompleter(tree, tree.tpt.isEmpty, isBean = false, isSetter = false)
-        } else getterSym setInfo new namer.ValTypeCompleter(tree)
+          getterSym setInfo namer.accessorTypeCompleter(tree, tree.tpt.isEmpty, isBean = false, isSetter = false)
+        } else getterSym setInfo namer.valTypeCompleter(tree)
 
         enterInScope(getterSym)
 
@@ -155,17 +155,17 @@ trait MethodSynthesis {
           val setter = Setter(tree)
           val setterSym = setter.createSym
           context.unit.synthetics(setterSym) = setter.derivedTree(setterSym)
-          setterSym setInfo new namer.AccessorTypeCompleter(tree, tree.tpt.isEmpty, isBean = false, isSetter = true)
+          setterSym setInfo namer.accessorTypeCompleter(tree, tree.tpt.isEmpty, isBean = false, isSetter = true)
           enterInScope(setterSym)
         }
 
         // TODO: delay emitting the field to the fields phase (except for private[this] vals, which only get a field and no accessors)
         if (fieldSym != NoSymbol) {
-          fieldSym setInfo new namer.ValTypeCompleter(tree)
+          fieldSym setInfo namer.valTypeCompleter(tree)
           enterInScope(fieldSym)
         }
       } else {
-        getterSym setInfo new namer.ValTypeCompleter(tree)
+        getterSym setInfo namer.valTypeCompleter(tree)
         enterInScope(getterSym)
       }
 
@@ -208,11 +208,11 @@ trait MethodSynthesis {
           sym
         }
 
-        val getterCompleter = new namer.AccessorTypeCompleter(tree, missingTpt, isBean = true, isSetter = false)
+        val getterCompleter = namer.accessorTypeCompleter(tree, missingTpt, isBean = true, isSetter = false)
         enterInScope(deriveBeanAccessor(if (hasBeanProperty) "get" else "is") setInfo getterCompleter)
 
         if (tree.mods.isMutable) {
-          val setterCompleter = new namer.AccessorTypeCompleter(tree, missingTpt, isBean = true, isSetter = true)
+          val setterCompleter = namer.accessorTypeCompleter(tree, missingTpt, isBean = true, isSetter = true)
           enterInScope(deriveBeanAccessor("set") setInfo setterCompleter)
         }
       }

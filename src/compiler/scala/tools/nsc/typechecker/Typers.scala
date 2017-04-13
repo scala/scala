@@ -3168,7 +3168,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           for (sym <- scope)
             // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
             for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
-              newStats += typedStat(tree) // might add even more synthetics to the scope
+              // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
+              if (!sym.initialize.hasFlag(IS_ERROR))
+                newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
             }
           // the type completer of a synthetic might add more synthetics. example: if the

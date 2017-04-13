@@ -105,7 +105,7 @@ trait Namers extends MethodSynthesis {
 
     def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] =
       mmap(vparamss) { param =>
-        enterInScope(assignMemberSymbol(param, mask = ValueParameterFlags)) setInfo new MonoTypeCompleter(param)
+        enterInScope(assignMemberSymbol(param, mask = ValueParameterFlags)) setInfo monoTypeCompleter(param)
       }
 
     protected def owner       = context.owner
@@ -337,10 +337,8 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def createImportSymbol(tree: Import) = {
-      val importNamer = namerOf(tree.symbol)
-      NoSymbol.newImport(tree.pos) setInfo new importNamer.ImportTypeCompleter(tree)
-    }
+    def createImportSymbol(tree: Import) =
+      NoSymbol.newImport(tree.pos) setInfo (namerOf(tree.symbol) importTypeCompleter tree)
 
     /** All PackageClassInfoTypes come from here. */
     def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
@@ -430,8 +428,7 @@ trait Namers extends MethodSynthesis {
 
     def enterModuleDef(tree: ModuleDef) = {
       val sym = enterModuleSymbol(tree)
-      val mcsNamer = namerOf(sym)
-      sym.moduleClass setInfo new mcsNamer.ModuleClassTypeCompleter(tree)
+      sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
       validateCompanionDefs(tree)
       sym
@@ -667,7 +664,17 @@ trait Namers extends MethodSynthesis {
 
           if (suppress) {
             sym setInfo ErrorType
+
+            // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
+            // because we don't know when the completer runs with respect to this loop in addSynthetics
+            //  for (sym <- scope)
+            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+            //      if (!sym.initialize.hasFlag(IS_ERROR))
+            //        newStats += typedStat(tree)
+            // If we're already in the loop, set the IS_ERROR flag and trigger the condition `sym.initialize.hasFlag(IS_ERROR)`
             sym setFlag IS_ERROR
+            // Or, if we are not yet in the addSynthetics loop, we can just retract our symbol from the synthetics for this unit.
+            companionContext.unit.synthetics -= sym
 
             // Don't unlink in an error situation to generate less confusing error messages.
             // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
@@ -684,8 +691,7 @@ trait Namers extends MethodSynthesis {
       }
 
     def completerOf(tree: MemberDef): TypeCompleter = {
-      val treeNamer = namerOf(tree.symbol)
-      val mono = new treeNamer.MonoTypeCompleter(tree)
+      val mono = namerOf(tree.symbol) monoTypeCompleter tree
       val tparams = treeInfo.typeParameters(tree)
       if (tparams.isEmpty) mono
       else {
@@ -1081,7 +1087,7 @@ trait Namers extends MethodSynthesis {
 
       val sym = (
         if (hasType || hasName) {
-          owner.typeOfThis = if (hasType) new SelfTypeCompleter(tpt) else owner.tpe_*
+          owner.typeOfThis = if (hasType) selfTypeCompleter(tpt) else owner.tpe_*
           val selfSym = owner.thisSym setPos self.pos
           if (hasName) selfSym setName name else selfSym
         }
@@ -1175,7 +1181,7 @@ trait Namers extends MethodSynthesis {
       val res = GenPolyType(tparams0, resultType)
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
-      // Already assign the type to the class symbol (MonoTypeCompleter will do it again).
+      // Already assign the type to the class symbol (monoTypeCompleter will do it again).
       // Allows isDerivedValueClass to look at the info.
       clazz setInfo pluginsTp
       if (clazz.isDerivedValueClass) {
@@ -1189,7 +1195,7 @@ trait Namers extends MethodSynthesis {
 
     private def moduleSig(mdef: ModuleDef): Type = {
       val moduleSym = mdef.symbol
-      // The info of both the module and the moduleClass symbols need to be assigned. MonoTypeCompleter assigns
+      // The info of both the module and the moduleClass symbols need to be assigned. monoTypeCompleter assigns
       // the result of typeSig to the module symbol. The module class info is assigned here as a side-effect.
       val result = templateSig(mdef.impl)
       val pluginsTp = pluginsTypeSig(result, typer, mdef, WildcardType)
@@ -1589,7 +1595,7 @@ trait Namers extends MethodSynthesis {
                 // (a val's name ends in a " ", so can't compare to def)
                 val overridingSym = if (isGetter) vdef.symbol else vdef.symbol.getterIn(valOwner)
 
-                // We're called from an AccessorTypeCompleter, which is completing the info for the accessor's symbol,
+                // We're called from an accessorTypeCompleter, which is completing the info for the accessor's symbol,
                 // which may or may not be `vdef.symbol` (see isGetter above)
                 val overridden = safeNextOverriddenSymbol(overridingSym)
 
@@ -1732,7 +1738,7 @@ trait Namers extends MethodSynthesis {
     }
 
     /**
-     * TypeSig is invoked by MonoTypeCompleters. It returns the type of a definition which
+     * TypeSig is invoked by monoTypeCompleters. It returns the type of a definition which
      * is then assigned to the corresponding symbol (typeSig itself does not need to assign
      * the type to the symbol, but it can if necessary).
      */
@@ -1921,6 +1927,11 @@ trait Namers extends MethodSynthesis {
         case _ =>
       }
     }
+  }
+
+  @deprecated("Instantiate TypeCompleterBase (for monomorphic, non-wrapping completer) or CompleterWrapper directly.", "2.12.2")
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleterBase(t) {
+    def completeImpl(sym: Symbol) = c(sym)
   }
 
   // NOTE: only meant for monomorphic definitions,
