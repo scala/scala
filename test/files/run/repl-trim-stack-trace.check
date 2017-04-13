@@ -1,0 +1,28 @@
+Welcome to Scala
+Type in expressions for evaluation. Or try :help.
+
+scala> def f = throw new Exception("Uh-oh")
+f: Nothing
+
+scala> f
+java.lang.Exception: Uh-oh
+  at .f(<console>:11)
+  ... ??? elided
+
+scala> def f = throw new Exception("")
+f: Nothing
+
+scala> f
+java.lang.Exception:
+  at .f(<console>:11)
+  ... ??? elided
+
+scala> def f = throw new Exception
+f: Nothing
+
+scala> f
+java.lang.Exception
+  at .f(<console>:11)
+  ... ??? elided
+
+scala> :quit
