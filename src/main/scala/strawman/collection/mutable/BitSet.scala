@@ -3,13 +3,17 @@ package collection.mutable
 
 import strawman.collection.BoundedIterableFactory
 
-import scala.Int
+import scala.{Array, Int, Long}
 import scala.Predef.???
 
 trait BitSet
   extends collection.BitSet
     with collection.BitSetLike[BitSet]
-    with SortedSet[Int]
+    with SortedSet[Int] {
+
+  private[collection] def elems: Array[Long]
+
+}
 
 object BitSet extends BoundedIterableFactory[Int] {
   type To[_] = BitSet

@@ -89,6 +89,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `indexWhere`
 - [x] `isDefinedAt`
 - [x] `isEmpty` / `nonEmpty`
+- [x] `keysIteratorFrom`
 - [x] `last`
 - [x] `lastKey`
 - [x] `mkString`
@@ -104,6 +105,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [ ] `groupBy`
 - [x] `partition`
 - [x] `range`
+- [x] `rangeImpl`
 - [x] `splitAt`
 - [x] `tail`
 - [x] `take`
