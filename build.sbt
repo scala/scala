@@ -17,10 +17,10 @@ scalaOrganization in ThisBuild := "ch.epfl.lamp"
 
 scalaBinaryVersion := "2.11"
 
-scalaVersion := "0.1.1-SNAPSHOT"
+scalaVersion := dottyLatestNightlyBuild.get
 
 def dottyEnable(project: Project): Project = dottyEnableWithVersion(project, dottyLatestNightlyBuild.get)
-def dottyEnableWithVersion(project: Project, dottyVersion: String): Project =
+def dottyEnableWithVersion(project: Project, dottyVersion: String) : Project =
   project
     .settings(
       scalaVersion := dottyVersion,
