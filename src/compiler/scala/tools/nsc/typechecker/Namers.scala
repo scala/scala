@@ -691,7 +691,20 @@ trait Namers extends MethodSynthesis {
 
           if (suppress) {
             sym setInfo ErrorType
+            // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
+            // because we don't know when the completer runs with respect to this loop in addSynthetics
+            //  for (sym <- scope)
+            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+            //      if (!sym.initialize.hasFlag(IS_ERROR))
+            //        newStats += typedStat(tree)
+            //  (1) If we're already in the loop, set the IS_ERROR flag and trigger the condition
+            //      `sym.initialize.hasFlag(IS_ERROR)` in typedStats::addSynthetics,
+            //  (2) Or, if we are not yet in the addSynthetics loop (and we're not going to emit an error anyway),
+            //      we unlink the symbol from its scope.
             sym setFlag IS_ERROR
+
+            // For good measure. Removing it from its owner's scope and setting the IS_ERROR flag is enough to exclude it from addSynthetics
+            companionContext.unit.synthetics -= sym
 
             // Don't unlink in an error situation to generate less confusing error messages.
             // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
@@ -702,7 +715,7 @@ trait Namers extends MethodSynthesis {
             // I hesitate to provide more info, because it would involve a WildCard or something for its result type,
             // which could upset other code paths)
             if (!scopePartiallyCompleted)
-              companionContext.scope.unlink(sym)
+              companionContext.scope.unlink(sym) // (2)
           }
         }
       }
@@ -770,7 +783,7 @@ trait Namers extends MethodSynthesis {
         val completer =
           if (sym hasFlag SYNTHETIC) {
             if (name == nme.copy) copyMethodCompleter(tree)
-            else if (sym hasFlag CASE) applyUnapplyMethodCompleter(tree, context)
+            else if (settings.isScala212 && (sym hasFlag CASE)) applyUnapplyMethodCompleter(tree, context)
             else completerOf(tree)
           } else completerOf(tree)
 
