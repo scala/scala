@@ -341,7 +341,7 @@ class ExtractAPI[GlobalType <: Global](
   def linearizedAncestorTypes(info: Type): List[Type] = info.baseClasses.tail.map(info.baseType)
 
   private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure = {
-    new xsbti.api.Structure(types(s, bases), processDefinitions(s, declared), lzy(processDefinitions(s, inherited)))
+    new xsbti.api.Structure(lzy(types(s, bases)), lzy(processDefinitions(s, declared)), lzy(processDefinitions(s, inherited)))
   }
   private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
     sort(defs.toArray).flatMap((d: Symbol) => definition(in, d))
