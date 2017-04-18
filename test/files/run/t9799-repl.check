@@ -1,0 +1,33 @@
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+object X {
+  import scala.language.implicitConversions
+  implicit def bar(a: Array[String]) = new Foo(a)
+  class Foo(a: Array[String]) {
+    def toX: Seq[String] = a.toSeq
+  }
+}
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined object X
+
+scala> import X._
+import X._
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+class Bar(s: String) {
+  val x = Array(s).toX
+}
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined class Bar
+
+scala> :quit
