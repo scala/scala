@@ -462,7 +462,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       jumpDest = immutable.Map.empty[ /* LabelDef */ Symbol, asm.Label ]
       // populate labelDefsAtOrUnder
       val ldf = new LabelDefsFinder(dd.rhs)
-      ldf.traverse(dd.rhs)
+      ldf(dd.rhs)
       labelDefsAtOrUnder = ldf.result
       labelDef = ldf.directResult.map(ld => (ld.symbol -> ld)).toMap
       // check previous invocation of genDefDef exited as many varsInScope as it entered.
