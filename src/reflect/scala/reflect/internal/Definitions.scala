@@ -322,6 +322,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NullPointerExceptionClass      = getClassByName(sn.NPException)
     lazy val ThrowableClass                 = getClassByName(sn.Throwable)
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
+    lazy val IllegalArgExceptionClass       = requiredClass[IllegalArgumentException]
 
     lazy val UninitializedFieldConstructor = UninitializedErrorClass.primaryConstructor
 
