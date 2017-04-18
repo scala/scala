@@ -1,5 +1,5 @@
 scalaHome := Some(file("../../build/pack"))
-scalaVersion := "2.11.10"
+scalaVersion := "2.11.11"
 scalacOptions ++= Seq("-feature", "-Yopt:l:classpath")
 
 lazy val root = (project in file(".")).

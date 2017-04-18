@@ -12,7 +12,7 @@ javac -version
 ant -version
 
 ant \
-  -Dstarr.version=2.11.10 \
+  -Dstarr.version=2.11.11 \
   -Dscalac.args.optimise=-optimise \
   -Dlocker.skip=1 \
   test
