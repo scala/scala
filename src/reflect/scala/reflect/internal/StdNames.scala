@@ -720,6 +720,7 @@ trait StdNames {
     val materializeClassTag: NameType  = "materializeClassTag"
     val materializeWeakTypeTag: NameType = "materializeWeakTypeTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
+    val member : NameType              = "member"
     val moduleClass : NameType         = "moduleClass"
     val mkAnnotation: NameType         = "mkAnnotation"
     val mkEarlyDef: NameType           = "mkEarlyDef"
