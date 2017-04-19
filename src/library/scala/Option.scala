@@ -227,7 +227,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  @return `true` if the option has an element that is equal (as
    *  determined by `==`) to `elem`, `false` otherwise.
    */
-  final def contains[A1 >: A](elem: A1): Boolean =
+  final def contains(elem: Any): Boolean =
     !isEmpty && this.get == elem
 
   /** Returns true if this option is nonempty '''and''' the predicate

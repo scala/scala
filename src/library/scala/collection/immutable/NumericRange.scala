@@ -179,7 +179,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   def containsTyped(x: T): Boolean =
     isWithinBoundaries(x) && (((x - start) % step) == zero)
 
-  override def contains[A1 >: T](x: A1): Boolean =
+  override def contains(x: Any): Boolean =
     try containsTyped(x.asInstanceOf[T])
     catch { case _: ClassCastException => false }
 
