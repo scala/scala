@@ -24,6 +24,22 @@ object Option {
    */
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
+  /** Option factories for values received from some Java API. Without this,
+    * nulls can trigger NullPointerException, in some scenarios. Also, convert
+    * to appropriate Scala AnyVals that guarantee the inner value won't be null.
+    *
+    *  @param  x the value (java.lang.xxx)
+    *  @return   Some(value) if value != null, None if value == null    # value is converted to a Scala AnyVal
+    */
+  def apply(x: java.lang.Boolean): Option[Boolean] = if (x == null) None else Some(x)
+  def apply(x: java.lang.Character): Option[Char] = if (x == null) None else Some(x)
+  def apply(x: java.lang.Byte): Option[Byte] =      if (x == null) None else Some(x)
+  def apply(x: java.lang.Short): Option[Short] =    if (x == null) None else Some(x)
+  def apply(x: java.lang.Integer): Option[Int] =    if (x == null) None else Some(x)
+  def apply(x: java.lang.Long): Option[Long] =      if (x == null) None else Some(x)
+  def apply(x: java.lang.Float): Option[Float] =    if (x == null) None else Some(x)
+  def apply(x: java.lang.Double): Option[Double] =  if (x == null) None else Some(x)
+
   /** An Option factory which returns `None` in a manner consistent with
    *  the collections hierarchy.
    */
@@ -335,6 +351,18 @@ final case class Some[+A](x: A) extends Option[A] {
   def get = x
 }
 
+/** Ensure that applying `Some` to `java.lang` values creates the same type as applying `Option`.
+ */
+object Some {
+  def apply(x: java.lang.Boolean): Option[Boolean] = Some(x: Boolean)
+  def apply(x: java.lang.Character): Option[Char] = Some(x: Char)
+  def apply(x: java.lang.Byte): Option[Byte] = Some(x: Byte)
+  def apply(x: java.lang.Short): Option[Short] = Some(x: Short)
+  def apply(x: java.lang.Integer): Option[Int] = Some(x: Int)
+  def apply(x: java.lang.Long): Option[Long] = Some(x: Long)
+  def apply(x: java.lang.Float): Option[Float] = Some(x: Float)
+  def apply(x: java.lang.Double): Option[Double] = Some(x: Double)
+}
 
 /** This case object represents non-existent values.
  *
