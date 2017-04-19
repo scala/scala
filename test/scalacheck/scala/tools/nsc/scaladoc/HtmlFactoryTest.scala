@@ -629,7 +629,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4014: Scaladoc omits @author: no authors") = {
-    val noAuthors = createTemplates("SI-4014_0.scala")("Foo.html")
+    val noAuthors = createTemplates("t4014_0.scala")("Foo.html")
 
     noAuthors match {
       case node: scala.xml.Node => {
@@ -641,7 +641,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4014: Scaladoc omits @author: one author") = {
-    val oneAuthor = createTemplates("SI-4014_1.scala")("Foo.html")
+    val oneAuthor = createTemplates("t4014_1.scala")("Foo.html")
 
     oneAuthor match {
       case node: scala.xml.Node => {
@@ -654,7 +654,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4014: Scaladoc omits @author: two authors") = {
-    val twoAuthors = createTemplates("SI-4014_2.scala")("Foo.html")
+    val twoAuthors = createTemplates("t4014_2.scala")("Foo.html")
 
     twoAuthors match {
       case node: scala.xml.Node => {
@@ -704,7 +704,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
 
     property("scala/bug#8514: No inconsistencies") =
-      checkText("SI-8514.scala")(
+      checkText("t8514.scala")(
         (Some("a/index"),
          """class A extends AnyRef
             Some doc here
@@ -748,7 +748,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
     }
 
-    val files = createTemplates("SI-8144.scala")
+    val files = createTemplates("t8144.scala")
 
     def check(pagePath: String)(f: NodeSeq => org.scalacheck.Prop): org.scalacheck.Prop =
       files(pagePath) match {
@@ -778,7 +778,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
-    createTemplates("SI-9599.scala")("X.html") match {
+    createTemplates("t9599.scala")("X.html") match {
       case node: scala.xml.Node => node.text.contains("todo3todo2todo1")
       case _ => false
     }

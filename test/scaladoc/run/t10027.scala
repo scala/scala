@@ -4,7 +4,7 @@ import scala.tools.partest.ScaladocJavaModelTest
 
 object Test extends ScaladocJavaModelTest {
 
-  override def resourceFile = "SI-10027.java"
+  override def resourceFile = "t10027.java"
   override def scaladocSettings = ""
 
   // just make sure it compiles
