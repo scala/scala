@@ -16,7 +16,7 @@ object Test extends App {
   try {
     println(tb.eval(rtextractor))
   } catch {
-    // this is the current behaviour, rather than the desired behavior; see SI-5465
+    // this is the current behaviour, rather than the desired behavior; see scala/bug#5465
     case _: ToolBoxError => println("error!")
   }
 }

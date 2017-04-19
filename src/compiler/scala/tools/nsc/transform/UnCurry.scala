@@ -76,7 +76,7 @@ abstract class UnCurry extends InfoTransform
     private val noApply           = mutable.HashSet[Tree]()
     private val newMembers        = mutable.Map[Symbol, mutable.Buffer[Tree]]()
 
-    // Expand `Function`s in constructors to class instance creation (SI-6666, SI-8363)
+    // Expand `Function`s in constructors to class instance creation (scala/bug#6666, scala/bug#8363)
     // We use Java's LambdaMetaFactory (LMF), which requires an interface for the sam's owner
     private def mustExpandFunction(fun: Function) = {
       // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
@@ -266,7 +266,7 @@ abstract class UnCurry extends InfoTransform
           assert(toArraySym != NoSymbol)
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)
-            // Don't want bottom types getting any further than this (SI-4024)
+            // Don't want bottom types getting any further than this (scala/bug#4024)
             if (tp.typeSymbol.isBottomClass) getClassTag(AnyTpe)
             else if (!tag.isEmpty) tag
             else if (tp.bounds.hi ne tp) getClassTag(tp.bounds.hi)
@@ -428,7 +428,7 @@ abstract class UnCurry extends InfoTransform
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
-            // Remove default argument trees from parameter ValDefs, SI-4812
+            // Remove default argument trees from parameter ValDefs, scala/bug#4812
             val vparamssNoRhs = dd.vparamss mapConserve (_ mapConserve {p =>
               treeCopy.ValDef(p, p.mods, p.name, p.tpt, EmptyTree)
             })
@@ -464,7 +464,7 @@ abstract class UnCurry extends InfoTransform
               super.transform(tree)
 
           case Apply(fn, args) =>
-            val needLift = needTryLift || !fn.symbol.isLabel // SI-6749, no need to lift in args to label jumps.
+            val needLift = needTryLift || !fn.symbol.isLabel // scala/bug#6749, no need to lift in args to label jumps.
             withNeedLift(needLift) {
               val formals = fn.tpe.paramTypes
               treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
@@ -640,7 +640,7 @@ abstract class UnCurry extends InfoTransform
      * This violates the principle that each compiler phase should produce trees that
      * can be retyped (see [[scala.tools.nsc.typechecker.TreeCheckers]]), and causes
      * a practical problem in `erasure`: it is not able to correctly determine if
-     * such a signature overrides a corresponding signature in a parent. (SI-6443).
+     * such a signature overrides a corresponding signature in a parent. (scala/bug#6443).
      *
      * This transformation erases the dependent method types by:
      *   - Widening the formal parameter type to existentially abstract
@@ -691,7 +691,7 @@ abstract class UnCurry extends InfoTransform
               // declared type and assign this to a synthetic val. Later, we'll patch
               // the method body to refer to this, rather than the parameter.
               val tempVal: ValDef = {
-                // SI-9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect
+                // scala/bug#9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect
                 // tree transformations. For example, compiling:
                 // ```
                 //   def foo(c: Ctx)(l: c.Tree): Unit = {

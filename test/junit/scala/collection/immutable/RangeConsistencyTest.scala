@@ -47,7 +47,7 @@ class RangeConsistencyTest {
     (if (end < ep1) List(NR(start, ep1, step)) else Nil)
   }
   
-  // Motivated by SI-4370: Wrong result for Long.MinValue to Long.MaxValue by Int.MaxValue
+  // Motivated by scala/bug#4370: Wrong result for Long.MinValue to Long.MaxValue by Int.MaxValue
   @Test
   def rangeChurnTest() {
     val rn = new Random(4370)

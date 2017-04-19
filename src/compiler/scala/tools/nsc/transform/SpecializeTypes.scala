@@ -554,7 +554,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        * specialized subclass of "clazz" throughout this file.
        */
 
-      // SI-5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
+      // scala/bug#5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
       // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
       // evaluating the info after creating the specialized class will mess the specialized class signature, so we'd
       // better evaluate it before creating the new class symbol
@@ -564,7 +564,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       bytecodeClazz.info
 
       val sClass = clazz.owner.newClass(clazzName, clazz.pos, (clazz.flags | SPECIALIZED) & ~CASE)
-      sClass.setAnnotations(clazz.annotations) // SI-8574 important that the subclass picks up @SerialVersionUID, @strictfp, etc.
+      sClass.setAnnotations(clazz.annotations) // scala/bug#8574 important that the subclass picks up @SerialVersionUID, @strictfp, etc.
 
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long, newName: Name = null) =
         member.cloneSymbol(sClass, flagFn(member.flags | SPECIALIZED), newName)
@@ -847,7 +847,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     sym :: (
       if (!sym.isMethod || enteringTyper(sym.typeParams.isEmpty)) Nil
       else if (sym.hasDefault) {
-        /* Specializing default getters is useless, also see SI-7329 . */
+        /* Specializing default getters is useless, also see scala/bug#7329 . */
         sym.resetFlag(SPECIALIZED)
         Nil
       } else {
@@ -1045,7 +1045,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           clazz.info.decls.enter(om)
           foreachWithIndex(om.paramss) { (params, i) =>
             foreachWithIndex(params) { (param, j) =>
-              param.name = overriding.paramss(i)(j).name // SI-6555 Retain the parameter names from the subclass.
+              param.name = overriding.paramss(i)(j).name // scala/bug#6555 Retain the parameter names from the subclass.
             }
           }
           debuglog(s"specialized overload $om for ${overriding.name.decode} in ${pp(env)}: ${om.info}")
@@ -1310,7 +1310,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     protected override def newBodyDuplicator(context: Context) = new BodyDuplicator(context)
   }
 
-  /** Introduced to fix SI-7343: Phase ordering problem between Duplicators and Specialization.
+  /** Introduced to fix scala/bug#7343: Phase ordering problem between Duplicators and Specialization.
    * brief explanation: specialization rewires class parents during info transformation, and
    * the new info then guides the tree changes. But if a symbol is created during duplication,
    * which runs after specialization, its info is not visited and thus the corresponding tree
@@ -1471,7 +1471,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           val residualTreeType = tree match {
             case TypeApply(fun, targs) if fun.symbol == symbol =>
-              // SI-6308 Handle methods with only some type parameters specialized.
+              // scala/bug#6308 Handle methods with only some type parameters specialized.
               //         drop the specialized type parameters from the PolyType, and
               //         substitute in the type environment.
               val GenPolyType(tparams, tpe) = fun.tpe

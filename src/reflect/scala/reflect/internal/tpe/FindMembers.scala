@@ -25,7 +25,7 @@ trait FindMembers {
     private def selectorClass: Symbol = {
       if (_selectorClass eq null) {
         _selectorClass = tpe match {
-          case tt: ThisType => tt.sym // SI-7507 the first base class is not necessarily the selector class.
+          case tt: ThisType => tt.sym // scala/bug#7507 the first base class is not necessarily the selector class.
           case _            => initBaseClasses.head
         }
       }
@@ -33,10 +33,10 @@ trait FindMembers {
     }
 
     // Cache for the narrowed type of `tp` (in `tp.findMember`).
-    // This is needed to avoid mismatched existential types are reported in SI-5330.
+    // This is needed to avoid mismatched existential types are reported in scala/bug#5330.
     private[this] var _self: Type = null
     protected def self: Type = {
-      // TODO: use narrow only for modules? (correct? efficiency gain?) (<-- Note: this comment predates SI-5330)
+      // TODO: use narrow only for modules? (correct? efficiency gain?) (<-- Note: this comment predates scala/bug#5330)
       if (_self eq null) _self = narrowForFindMember(tpe)
       _self
     }
@@ -109,7 +109,7 @@ trait FindMembers {
           // SLS 3.2.7 A compound type T1 with . . . with Tn {R } represents objects with members as given in
           //           the component types T1, ..., Tn and the refinement {R }
           //
-          //           => private members should be included from T1, ... Tn. (SI-7475)
+          //           => private members should be included from T1, ... Tn. (scala/bug#7475)
           refinementParents :::= currentBaseClass.parentSymbols
         else if (currentBaseClass.isClass)
           seenFirstNonRefinementClass = true // only inherit privates of refinement parents after this point
@@ -180,7 +180,7 @@ trait FindMembers {
     /** Same as a call to narrow unless existentials are visible
      *  after widening the type. In that case, narrow from the widened
      *  type instead of the proxy. This gives buried existentials a
-     *  chance to make peace with the other types. See SI-5330.
+     *  chance to make peace with the other types. See scala/bug#5330.
      */
     private def narrowForFindMember(tp: Type): Type = {
       val w = tp.widen

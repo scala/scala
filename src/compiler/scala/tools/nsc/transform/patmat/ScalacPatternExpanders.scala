@@ -136,7 +136,7 @@ trait ScalacPatternExpanders {
         case _              => applyMethodTypes(fn.tpe)
       }
 
-      /** Rather than let the error that is SI-6675 pollute the entire matching
+      /** Rather than let the error that is scala/bug#6675 pollute the entire matching
        *  process, we will tuple the extractor before creation Aligned so that
        *  it contains known good values.
        */

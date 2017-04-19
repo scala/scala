@@ -789,7 +789,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
-        docComments.put(bSym, DocComment(bComment, bPos)) // put the comment in the list, don't parse it yet, closes SI-4898
+        docComments.put(bSym, DocComment(bComment, bPos)) // put the comment in the list, don't parse it yet, closes scala/bug#4898
         bSym
       }
 
@@ -797,7 +797,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       if (allSyms.isEmpty)
         member.toList
       else
-        // Use cases replace the original definitions - SI-5054
+        // Use cases replace the original definitions - scala/bug#5054
         allSyms flatMap { makeMember0(_, member) }
     }
   }
@@ -886,7 +886,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
-              // SI-4922 `sym == aSym` is insufficient if `aSym` is a clone of symbol
+              // scala/bug#4922 `sym == aSym` is insufficient if `aSym` is a clone of symbol
               //         of the parameter in the tree, as can happen with type parameterized methods.
               def isCorrespondingParam(sym: Symbol) = (
                 sym != null &&
@@ -1013,7 +1013,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def localShouldDocument(aSym: Symbol): Boolean =
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
 
-  /** Filter '@bridge' methods only if *they don't override non-bridge methods*. See SI-5373 for details */
+  /** Filter '@bridge' methods only if *they don't override non-bridge methods*. See scala/bug#5373 for details */
   def isPureBridge(sym: Symbol) = sym.isBridge && sym.allOverriddenSymbols.forall(_.isBridge)
 
   // the classes that are excluded from the index should also be excluded from the diagrams

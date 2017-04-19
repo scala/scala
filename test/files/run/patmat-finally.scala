@@ -1,4 +1,4 @@
-/** Test pattern matching and finally, see SI-5929. */
+/** Test pattern matching and finally, see scala/bug#5929. */
 object Test extends App {
   def bar(s1: Object, s2: Object) {
     s1 match {

@@ -161,7 +161,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       import runDefinitions._
       val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = macroImplRef
 
-      // todo. refactor when fixing SI-5498
+      // todo. refactor when fixing scala/bug#5498
       def className: String = {
         def loop(sym: Symbol): String = sym match {
           case sym if sym.isTopLevel =>
@@ -442,7 +442,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
               val fingerprint = implParams(min(j, implParams.length - 1))
               val duplicatedArg = duplicateAndKeepPositions(arg)
               fingerprint match {
-                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: scala/bug#5752
                 case LiftedUntyped => duplicatedArg
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
@@ -651,8 +651,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
         typecheck("blackbox typecheck", expanded1, outerPt)
       } else {
-        // whitebox expansions need to be typechecked against WildcardType first in order to avoid SI-6992 and SI-8048
-        // then we typecheck against innerPt, not against outerPt in order to prevent SI-8209
+        // whitebox expansions need to be typechecked against WildcardType first in order to avoid scala/bug#6992 and scala/bug#8048
+        // then we typecheck against innerPt, not against outerPt in order to prevent scala/bug#8209
         val expanded1 = typecheck("whitebox typecheck #0", expanded0, WildcardType)
         val expanded2 = typecheck("whitebox typecheck #1", expanded1, innerPt)
         typecheck("whitebox typecheck #2", expanded2, outerPt)
@@ -674,7 +674,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       //
       // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
       // the undetermined type params. Therefore we need to do something ourselves or otherwise this
-      // expandee will forever remain not expanded (see SI-5692). A traditional way out of this conundrum
+      // expandee will forever remain not expanded (see scala/bug#5692). A traditional way out of this conundrum
       // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
       // but sometimes, if the inferencer lacks information, it will be forced to approximate.
       //

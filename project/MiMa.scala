@@ -81,7 +81,7 @@ object MiMa {
 
 }
 
-// use the SI-7934 workaround to silence a deprecation warning on an sbt API
+// use the scala/bug#7934 workaround to silence a deprecation warning on an sbt API
 // we have no choice but to call.  on the lack of any suitable alternative,
 // see https://gitter.im/sbt/sbt-dev?at=5616e2681b0e279854bd74a4 :
 // "it's my intention to eventually come up with a public API" says Eugene Y

@@ -16,7 +16,7 @@ class ArraySortingTest {
     def compare(a: CantSortMe, b: CantSortMe) = a.i compare b.i
   }
   
-  // Tests SI-7837
+  // Tests scala/bug#7837
   @Test
   def sortByTest() {
     val test = Array(1,2,3,4,1,3,5,7,1,4,8,1,1,1,1)

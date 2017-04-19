@@ -11,7 +11,7 @@ object Test {
     bar(a)
   }
 
-  /** Check SI-8330 for details */
+  /** Check scala/bug#8330 for details */
   def expectedUnitInABranch(b: Boolean): Boolean = {
     if (b) {
       val x = 12

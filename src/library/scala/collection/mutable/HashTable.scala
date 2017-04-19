@@ -425,7 +425,7 @@ private[collection] object HashTable {
       * h = h + (h << 4)
       * h ^ (h >>> 10)
       * }}}
-      * the rest of the computation is due to SI-5293
+      * the rest of the computation is due to scala/bug#5293
       */
     protected final def improve(hcode: Int, seed: Int): Int = rotateRight(byteswap32(hcode), seed)
   }

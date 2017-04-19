@@ -835,7 +835,7 @@ abstract class BTypes {
    * The `info` field contains either the class information on an error message why the info could
    * not be computed. There are two reasons for an erroneous info:
    *   1. The ClassBType was built from a class symbol that stems from a java source file, and the
-   *      symbol's type could not be completed successfully (SI-9111)
+   *      symbol's type could not be completed successfully (scala/bug#9111)
    *   2. The ClassBType should be built from a classfile, but the class could not be found on the
    *      compilation classpath.
    *
@@ -947,7 +947,7 @@ abstract class BTypes {
 
     def inlineInfoAttribute: Either[NoClassBTypeInfo, InlineInfoAttribute] = info.map(i => {
       // InlineInfos are serialized for classes being compiled. For those the info was built by
-      // buildInlineInfoFromClassSymbol, which only adds a warning under SI-9111, which in turn
+      // buildInlineInfoFromClassSymbol, which only adds a warning under scala/bug#9111, which in turn
       // only happens for class symbols of java source files.
       // we could put this assertion into InlineInfoAttribute, but it is more safe to put it here
       // where it affect only GenBCode, and not add any assertion to GenASM in 2.11.6.

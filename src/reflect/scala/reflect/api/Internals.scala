@@ -60,7 +60,7 @@ trait Internals { self: Universe =>
     /** Creates an importer that moves reflection artifacts between universes.
      *  @see [[Importer]]
      */
-    // SI-6241: move importers to a mirror
+    // scala/bug#6241: move importers to a mirror
     def createImporter(from0: Universe): Importer { val from: from0.type }
 
     /**
@@ -902,7 +902,7 @@ trait Internals { self: Universe =>
    *
    *  @group Internal
    */
-  // SI-6241: move importers to a mirror
+  // scala/bug#6241: move importers to a mirror
   trait Importer {
     /** The source universe of reflection artifacts that will be processed.
      *  The target universe is universe that created this importer with `mkImporter`.

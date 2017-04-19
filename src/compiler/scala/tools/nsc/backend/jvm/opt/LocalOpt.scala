@@ -76,7 +76,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   + enables UPSTREAM:
  *     - box-unbox elimination (a removed checkcast may be a box consumer)
  *   + enables downstream:
- *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast, see SI-9540)
+ *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast, see scala/bug#9540)
  *
  * push-pop (when a POP is the only consumer of a value, remove the POP and its producer)
  *   + enables UPSTREAM:

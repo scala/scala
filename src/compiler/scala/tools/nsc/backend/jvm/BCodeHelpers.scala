@@ -86,7 +86,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     // phase travel necessary: after flatten, the name includes the name of outer classes.
     // if some outer name contains $anon, a non-anon class is considered anon.
     if (delambdafyInline() && exitingPickler(sym.rawowner.isAnonymousFunction)) {
-      // SI-9105: special handling for anonymous functions under delambdafy:inline.
+      // scala/bug#9105: special handling for anonymous functions under delambdafy:inline.
       //
       //   class C { def t = () => { def f { class Z } } }
       //
@@ -220,7 +220,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
 
   /**
-   * This is a hack to work around SI-9111. The completer of `methodSym` may report type errors. We
+   * This is a hack to work around scala/bug#9111. The completer of `methodSym` may report type errors. We
    * cannot change the typer context of the completer at this point and make it silent: the context
    * captured when creating the completer in the namer. However, we can temporarily replace
    * global.reporter (it's a var) to store errors.
@@ -579,7 +579,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         case Some(retentionAnnot) =>
           retentionAnnot.assocs.contains(nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))
         case _ =>
-          // SI-8926: if the annotation class symbol doesn't have a @RetentionPolicy annotation, the
+          // scala/bug#8926: if the annotation class symbol doesn't have a @RetentionPolicy annotation, the
           // annotation is emitted with visibility `RUNTIME`
           true
       }
@@ -886,7 +886,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      */
     private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
       def staticForwarderGenericSignature: String = {
-        // SI-3452 Static forwarder generation uses the same erased signature as the method if forwards to.
+        // scala/bug#3452 Static forwarder generation uses the same erased signature as the method if forwards to.
         // By rights, it should use the signature as-seen-from the module class, and add suitable
         // primitive and value-class boxing/unboxing.
         // But for now, just like we did in mixin, we just avoid writing a wrong generic signature
@@ -905,7 +905,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       /* Forwarders must not be marked final,
        *  as the JVM will not allow redefinition of a final static method,
-       *  and we don't know what classes might be subclassing the companion class.  See SI-4827.
+       *  and we don't know what classes might be subclassing the companion class.  See scala/bug#4827.
        */
       // TODO: evaluate the other flags we might be dropping on the floor here.
       // TODO: ACC_SYNTHETIC ?

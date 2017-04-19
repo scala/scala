@@ -76,7 +76,7 @@ class AbstractFileClassLoaderTest {
     assertEquals("lo tone", (x getResource "bass").slurp())
   }
 
-  // SI-8843
+  // scala/bug#8843
   @Test
   def afclGetsResources(): Unit = {
     val (fuzz, booz) = fuzzBuzzBooz

@@ -276,7 +276,7 @@ abstract class Erasure extends InfoTransform
               else "*"
             } else tp match {
               case PolyType(_, res) =>
-                "*" // SI-7932
+                "*" // scala/bug#7932
               case _ =>
                 boxedSig(tp)
             }
@@ -836,7 +836,7 @@ abstract class Erasure extends InfoTransform
     private def checkNoDeclaredDoubleDefs(base: Symbol) {
       val decls = base.info.decls
 
-      // SI-8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
+      // scala/bug#8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
       //         a scope rehash while were iterating and we can see the same entry twice!
       //         Inspection of SymbolPairs (the basis of OverridingPairs), suggests that it is immune
       //         from this sort of bug as it copies the symbols into a temporary scope *before* any calls to `.info`,
@@ -1094,7 +1094,7 @@ abstract class Erasure extends InfoTransform
                 //    of the refinement is a primitive and another is AnyRef. In that case
                 //    we get a primitive form of _getClass trying to target a boxed value
                 //    so we need replace that method name with Object_getClass to get correct behavior.
-                //    See SI-5568.
+                //    See scala/bug#5568.
                 tree setSymbol Object_getClass
               } else {
                 devWarning(s"The symbol '${fn.symbol}' was intercepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
@@ -1146,7 +1146,7 @@ abstract class Erasure extends InfoTransform
           if (!isJvmAccessible(owner) && qual.tpe != null) {
             qual match {
               case Super(_, _) =>
-                // Insert a cast here at your peril -- see SI-5162.
+                // Insert a cast here at your peril -- see scala/bug#5162.
                 reporter.error(tree.pos, s"Unable to access ${tree.symbol.fullLocationString} with a super reference.")
                 tree
               case _ =>
@@ -1200,7 +1200,7 @@ abstract class Erasure extends InfoTransform
           val tree1 = preErase(tree)
           tree1 match {
             case TypeApply(fun, targs @ List(targ)) if (fun.symbol == Any_asInstanceOf  || fun.symbol == Object_synchronized) && targ.tpe == UnitTpe =>
-              // SI-9066 prevent transforming `o.asInstanceOf[Unit]` to `o.asInstanceOf[BoxedUnit]`.
+              // scala/bug#9066 prevent transforming `o.asInstanceOf[Unit]` to `o.asInstanceOf[BoxedUnit]`.
               // adaptMember will then replace the call by a reference to BoxedUnit.UNIT.
               treeCopy.TypeApply(tree1, transform(fun), targs).clearType()
             case EmptyTree | TypeTree() =>

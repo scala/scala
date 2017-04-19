@@ -360,7 +360,7 @@ trait Solving extends Logic {
 
       simplified match {
         case And(props) =>
-          // SI-6942:
+          // scala/bug#6942:
           // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
           props.map(cnfFor).reduce(_ ++ _)
         case p          =>

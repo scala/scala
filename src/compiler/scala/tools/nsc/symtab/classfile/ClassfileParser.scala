@@ -367,7 +367,7 @@ abstract class ClassfileParser {
   }
 
   def stubClassSymbol(name: Name): Symbol = {
-    // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+    // scala/bug#5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
     // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
     // that are not in their correct place (see bug for details)
 
@@ -387,8 +387,8 @@ abstract class ClassfileParser {
       definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
   } catch {
     // The handler
-    //   - prevents crashes with deficient InnerClassAttributes (SI-2464, 0ce0ad5)
-    //   - was referenced in the bugfix commit for SI-3756 (4fb0d53), not sure why
+    //   - prevents crashes with deficient InnerClassAttributes (scala/bug#2464, 0ce0ad5)
+    //   - was referenced in the bugfix commit for scala/bug#3756 (4fb0d53), not sure why
     //   - covers the case when a type alias in a package object shadows a class symbol,
     //     getClassByName throws a MissingRequirementError (scala-dev#248)
     case _: FatalError =>
@@ -430,7 +430,7 @@ abstract class ClassfileParser {
       }
     }
 
-    val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (SI-7532)
+    val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (scala/bug#7532)
     if (isTopLevel) {
       val c = pool.getClassSymbol(nameIdx)
       // scala-dev#248: when a type alias (in a package object) shadows a class symbol, getClassSymbol returns a stub
@@ -560,7 +560,7 @@ abstract class ClassfileParser {
               // if this is a non-static inner class, remove the explicit outer parameter
               val paramsNoOuter = innerClasses getEntry currentClass match {
                 case Some(entry) if !isScalaRaw && !entry.jflags.isStatic =>
-                  /* About `clazz.owner.hasPackageFlag` below: SI-5957
+                  /* About `clazz.owner.hasPackageFlag` below: scala/bug#5957
                    * For every nested java class A$B, there are two symbols in the scala compiler.
                    *  1. created by SymbolLoader, because of the existence of the A$B.class file, owner: package
                    *  2. created by ClassfileParser of A when reading the inner classes, owner: A
@@ -575,7 +575,7 @@ abstract class ClassfileParser {
               }
               val newParams = paramsNoOuter match {
                 case (init :+ tail) if jflags.isSynthetic =>
-                  // SI-7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
+                  // scala/bug#7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
                   // are added when an inner class needs to access a private constructor.
                   init
                 case _ =>
@@ -846,8 +846,8 @@ abstract class ClassfileParser {
           if (isScalaAnnot || !isScala) {
             // For Scala classfiles we are only interested in the scala signature annotations. Other
             // annotations should be skipped (the pickle contains the symbol's annotations).
-            // Skipping them also prevents some spurious warnings / errors related to SI-7014,
-            // SI-7551, pos/5165b
+            // Skipping them also prevents some spurious warnings / errors related to scala/bug#7014,
+            // scala/bug#7551, pos/5165b
             val scalaSigAnnot = parseAnnotations(onlyScalaSig = isScalaAnnot)
             if (isScalaAnnot) scalaSigAnnot match {
               case Some(san: AnnotationInfo) =>
@@ -964,7 +964,7 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
     }
 
-    // TODO SI-9296 duplicated code, refactor
+    // TODO scala/bug#9296 duplicated code, refactor
     /* Parse and return a single annotation.  If it is malformed,
      * return None.
      */
@@ -1018,10 +1018,10 @@ abstract class ClassfileParser {
     def parseExceptions(len: Int) {
       val nClasses = u2
       for (n <- 0 until nClasses) {
-        // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (SI-7065)
+        // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (scala/bug#7065)
         val cls = pool.getClassSymbol(u2)
         // we call initialize due to the fact that we call Symbol.isMonomorphicType in addThrowsAnnotation
-        // and that method requires Symbol to be forced to give the right answers, see SI-7107 for details
+        // and that method requires Symbol to be forced to give the right answers, see scala/bug#7107 for details
         cls.initialize
         sym.addThrowsAnnotation(cls)
       }

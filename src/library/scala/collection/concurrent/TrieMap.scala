@@ -934,7 +934,7 @@ extends scala.collection.concurrent.Map[K, V]
 
   ////////////////////////////////////////////////////////////////////////////
   //
-  // SI-10177 These methods need overrides as the inherited implementations
+  // scala/bug#10177 These methods need overrides as the inherited implementations
   // call `.iterator` more than once, which doesn't guarantee a coherent
   // view of the data if there is a concurrent writer
   // Note that the we don't need overrides for keysIterator or valuesIterator

@@ -734,7 +734,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       // Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest)
       def splitAtSuper(stats: List[Tree]) = {
         def isConstr(tree: Tree): Boolean = tree match {
-          case Block(_, expr) => isConstr(expr) // SI-6481 account for named argument blocks
+          case Block(_, expr) => isConstr(expr) // scala/bug#6481 account for named argument blocks
           case _              => (tree.symbol ne null) && tree.symbol.isConstructor
         }
         val (pre, rest0)       = stats span (!isConstr(_))

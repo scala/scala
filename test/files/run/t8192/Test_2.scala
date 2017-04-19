@@ -30,7 +30,7 @@ object Test extends App {
 
   Macros.foo
   println("runtime")
-  // SI-8367 primaryConstructor for Java-defined classes is unstable, so I'm commenting this out
+  // scala/bug#8367 primaryConstructor for Java-defined classes is unstable, so I'm commenting this out
   // test(typeOf[File].typeSymbol.asClass)
   test(definitions.ScalaPackageClass)
   test(definitions.ListModule.moduleClass.asClass)

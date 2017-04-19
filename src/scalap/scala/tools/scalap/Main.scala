@@ -207,7 +207,7 @@ object Main extends Main {
     case Some(cp) =>
       AggregateClassPath(new ClassPathFactory(settings).classesInExpandedPath(cp))
     case _ =>
-      settings.classpath.value = "." // include '.' in the default classpath SI-6669
+      settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
       new PathResolver(settings).result
   }
 }

@@ -13,7 +13,7 @@ class Main[NextType <: Node](value: Node { type T = NextType })
         new Main[AType]( (value: AType).prepend )
 }
 
-/* we've been back-and-forth on this one -- see PRs on SI-8177 for the reasoning
+/* we've been back-and-forth on this one -- see PRs on scala/bug#8177 for the reasoning
 I think it should compile and that the following error is due to broken =:= on existentials
  found   : Node{type T = _1.type} where val _1: Node{type T = NextType}
  required: Node{type T = Main.this.AType}
@@ -34,7 +34,7 @@ Node{type T = NextType} <:< Node{type T = NextType} with Singleton
 
 hmmm.. might the with Singleton be throwing a wrench in our existential house?
 
-Behold the equivalent program which type checks without the fix for SI-8177.
+Behold the equivalent program which type checks without the fix for scala/bug#8177.
 (Expand type alias, convert type member to type param;
 note the covariance to encode subtyping on type members.)
 

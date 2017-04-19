@@ -42,7 +42,7 @@ object Test {
     f.setAccessible(true)
     assert(f.get(o) != null)
     o.get
-    assert(f.get(o) != null) // SI-9365
+    assert(f.get(o) != null) // scala/bug#9365
   }
 }
 

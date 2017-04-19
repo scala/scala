@@ -543,7 +543,7 @@ private[internal] trait TypeMaps {
       // reasons which aren't yet fully clear, we can arrive here holding a type
       // parameter whose owner is rhsSym, and which shares the name of an actual
       // type parameter of rhsSym, but which is not among the type parameters of
-      // rhsSym. One can see examples of it at SI-4365.
+      // rhsSym. One can see examples of it at scala/bug#4365.
       val argIndex = rhsSym.typeParams indexWhere (lhsSym.name == _.name)
       // don't be too zealous with the exceptions, see #2641
       if (argIndex < 0 && rhs.parents.exists(typeIsErroneous))
@@ -594,7 +594,7 @@ private[internal] trait TypeMaps {
         else if (!matchesPrefixAndClass(pre, clazz)(tparam.owner))
           loop(nextBase.prefix, clazz.owner)
         else nextBase match {
-          case NoType                         => loop(NoType, clazz.owner) // backstop for SI-2797, must remove `SingletonType#isHigherKinded` and run pos/t2797.scala to get here.
+          case NoType                         => loop(NoType, clazz.owner) // backstop for scala/bug#2797, must remove `SingletonType#isHigherKinded` and run pos/t2797.scala to get here.
           case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
           case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
           case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
@@ -946,7 +946,7 @@ private[internal] trait TypeMaps {
      *
      * (1) If `T` is stable, we can just use that.
      *
-     * (2) SI-3873: it'd be unsound to instantiate `param.type` to an unstable `T`,
+     * (2) scala/bug#3873: it'd be unsound to instantiate `param.type` to an unstable `T`,
      * so we approximate to `X forSome {type X <: T with Singleton}` -- we can't soundly say more.
      */
     def apply(tp: Type): Type = tp match {

@@ -564,7 +564,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       // debug assert((params.map(p => locals(p.symbol).tk)) == asmMethodType(methSymbol).getArgumentTypes.toList, "debug")
 
       if (params.size > MaximumJvmParameters) {
-        // SI-7324
+        // scala/bug#7324
         reporter.error(methSymbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters.")
         return
       }

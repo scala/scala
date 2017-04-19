@@ -241,7 +241,7 @@ trait MatchTranslation {
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
         val swatches = { // switch-catches
-          // SI-7459 must duplicate here as we haven't committed to switch emission, and just figuring out
+          // scala/bug#7459 must duplicate here as we haven't committed to switch emission, and just figuring out
           //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in
           //         `TypedSubstitution#Substitution`. That is called indirectly by `emitTypeSwitch`.
           val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
@@ -498,7 +498,7 @@ trait MatchTranslation {
         val paramAccessors = aligner.wholeType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
-        // binders corresponding to mutable fields should be stored (SI-5158, SI-6070)
+        // binders corresponding to mutable fields should be stored (scala/bug#5158, scala/bug#6070)
         // make an exception for classes under the scala package as they should be well-behaved,
         // to optimize matching on List
         val hasRepeated = paramAccessors.lastOption match {
@@ -587,7 +587,7 @@ trait MatchTranslation {
             // duplicated with the extractor Unapplied
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
               treeCopy.Apply(t, x, binderRef(i.pos) :: Nil)
-            // SI-7868 Account for numeric widening, e.g. <unapplySelector>.toInt
+            // scala/bug#7868 Account for numeric widening, e.g. <unapplySelector>.toInt
             case Apply(x, List(i @ (sel @ Select(Ident(nme.SELECTOR_DUMMY), name)))) =>
               treeCopy.Apply(t, x, treeCopy.Select(sel, binderRef(i.pos), name) :: Nil)
             case _ =>

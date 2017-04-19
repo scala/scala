@@ -73,7 +73,7 @@ trait GenSymbols {
        */
       val hasPackagelessParent = sym.ownerChain.tail.tail exists (_.isEmptyPackageClass)
       if (sym.isStatic && (sym.isClass || sym.isModule) && !hasPackagelessParent) {
-        // SI-6238: if applicable, emit references to StandardDefinitions instead of staticClass/staticModule calls
+        // scala/bug#6238: if applicable, emit references to StandardDefinitions instead of staticClass/staticModule calls
         val resolver = if (sym.isType) nme.staticClass else nme.staticModule
         mirrorMirrorCall(resolver, reify(sym.fullName))
       } else {

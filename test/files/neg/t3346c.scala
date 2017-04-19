@@ -1,6 +1,6 @@
 object Test extends App {
   //
-  // An attempt to workaround SI-2712, foiled by SI-3346
+  // An attempt to workaround scala/bug#2712, foiled by scala/bug#3346
   //
   trait TC[M[_]]
 
@@ -14,7 +14,7 @@ object Test extends App {
 
   foo[EitherInt, String](eii)
 
-  // This one needs SI-2712 Higher Order Unification
+  // This one needs scala/bug#2712 Higher Order Unification
   //foo(eii) // not inferred
 
   // A workaround is to provide a set of implicit conversions that take values

@@ -709,7 +709,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *  Almost transparently. Unfortunately metadata isn't limited to just signatures (i.e. lists of members).
      *  It also includes flags (which determine e.g. whether a class is sealed or not), annotations and privateWithin.
-     *  This gives rise to unpleasant effects like in SI-6277, when a flag test called on an uninitialize symbol
+     *  This gives rise to unpleasant effects like in scala/bug#6277, when a flag test called on an uninitialize symbol
      *  produces incorrect results.
      *
      *  One might think that the solution is simple: automatically call the completer
@@ -777,7 +777,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * Note: the METHOD flag is added lazily in the info transformer of the UnCurry phase.
      * This means that forcing the `sym.info` may change the value of `sym.isMethod`. Forcing the
      * info is in the responsibility of the caller. Doing it eagerly here was tried (0ccdb151f) but
-     * has proven to lead to bugs (SI-8907).
+     * has proven to lead to bugs (scala/bug#8907).
      *
      * Here's an example where one can see all four of FF FT TF TT for (isStatic, isMethod) at
      * various phases.
@@ -937,7 +937,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Does this symbol denote a stable value, ignoring volatility?
      *
-     * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
+     * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. scala/bug#6815
      */
     final def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
     final def hasVolatileType = tpe.isVolatile && !hasAnnotation(uncheckedStableClass)
@@ -1087,7 +1087,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         if (isSourceLoader)
           // Predef is completed early due to its autoimport; we used to get here when type checking its
           // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
-          // Since the fix for SI-7335 Predef parents must be defined in Predef.scala, and we should not
+          // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
           // get here anymore.
           devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.")
       }
@@ -1577,7 +1577,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasRawInfo: Boolean = infos ne null
     def hasCompleteInfo = hasRawInfo && rawInfo.isComplete
 
-    // does not run adaptToNewRun, which is prone to trigger cycles (SI-8029)
+    // does not run adaptToNewRun, which is prone to trigger cycles (scala/bug#8029)
     // TODO: give this a better name if you understand the intent of the caller.
     //       Is it something to do with `reallyExists` or `isStale`?
     final def rawInfoIsNoType: Boolean = {
@@ -1636,7 +1636,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
       } else if (infos ne infos.oldest) {
-        // SI-8871 Discard all but the first element of type history. Specialization only works in the resident
+        // scala/bug#8871 Discard all but the first element of type history. Specialization only works in the resident
         // compiler / REPL if re-run its info transformer in this run to correctly populate its
         // per-run caches, e.g. typeEnv
         adaptInfos(infos.oldest)
@@ -1760,7 +1760,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def classBound: Type = {
       val tp = refinedType(info.parents, owner)
-      // SI-4589 refinedType only creates a new refinement class symbol before erasure; afterwards
+      // scala/bug#4589 refinedType only creates a new refinement class symbol before erasure; afterwards
       //         the first parent class is returned, to which we must not add members.
       if (!phase.erasedTypes) {
         val thistp = tp.typeSymbol.thisType
@@ -1856,7 +1856,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Convenience for the overwhelmingly common case
     def addAnnotation(sym: Symbol, args: Tree*): this.type = {
-      // The assertion below is meant to prevent from issues like SI-7009 but it's disabled
+      // The assertion below is meant to prevent from issues like scala/bug#7009 but it's disabled
       // due to problems with cycles while compiling Scala library. It's rather shocking that
       // just checking if sym is monomorphic type introduces nasty cycles. We are definitively
       // forcing too much because monomorphism is a local property of a type that can be checked
@@ -2043,7 +2043,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def caseFieldAccessors: List[Symbol] = {
       // We can't rely on the ordering of the case field accessors within decls --
-      // handling of non-public parameters seems to change the order (see SI-7035.)
+      // handling of non-public parameters seems to change the order (see scala/bug#7035.)
       //
       // Luckily, the constrParamAccessors are still sorted properly, so sort the field-accessors using them
       // (need to undo name-mangling, including the sneaky trailing whitespace)
@@ -2067,7 +2067,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val localField = owner.info decl localName
 
       if (localField == NoSymbol && this.hasFlag(MIXEDIN)) { // TODO: fields phase does not (yet?) add MIXEDIN in setMixedinAccessorFlags
-        // SI-8087: private[this] fields don't have a `localName`. When searching the accessed field
+        // scala/bug#8087: private[this] fields don't have a `localName`. When searching the accessed field
         // for a mixin accessor of such a field, we need to look for `name` instead.
         // The phase travel ensures that the field is found (`owner` is the trait class symbol, the
         // field gets removed from there in later phases).
@@ -2088,7 +2088,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def outerClass: Symbol =
       if (this == NoSymbol) {
-        // ideally we shouldn't get here, but it's better to harden against this than suffer the infinite loop in SI-9133
+        // ideally we shouldn't get here, but it's better to harden against this than suffer the infinite loop in scala/bug#9133
         devWarningDumpStack("NoSymbol.outerClass", 15)
         NoSymbol
       } else if (owner.isClass) owner
@@ -2683,7 +2683,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else briefParentsString(tp.parents)
       )
       def isStructuralThisType = (
-        // prevents disasters like SI-8158
+        // prevents disasters like scala/bug#8158
         owner.isInitialized && owner.isStructuralRefinement && tp == owner.tpe
       )
       if (isType) typeParamsString(tp) + (
@@ -2847,8 +2847,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def outerSource: Symbol =
-      // SI-6888 Approximate the name to workaround the deficiencies in `nme.originalName`
-      //         in the face of classes named '$'. SI-2806 remains open to address the deeper problem.
+      // scala/bug#6888 Approximate the name to workaround the deficiencies in `nme.originalName`
+      //         in the face of classes named '$'. scala/bug#2806 remains open to address the deeper problem.
       if (unexpandedName endsWith (nme.OUTER)) initialize.referenced
       else NoSymbol
 

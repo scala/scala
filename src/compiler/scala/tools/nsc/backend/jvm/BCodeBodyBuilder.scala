@@ -67,7 +67,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           if (!isStatic) { genLoadQualifier(lhs) }
           genLoad(rhs, symInfoTK(lhs.symbol))
           lineNumber(tree)
-          // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, SI-4283
+          // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, scala/bug#4283
           val receiverClass = qual.tpe.typeSymbol
           fieldStore(lhs.symbol, receiverClass)
 
@@ -331,7 +331,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = symInfoTK(sym)
           val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
           def genLoadQualUnlessElidable() { if (!qualSafeToElide) { genLoadQualifier(tree) } }
-          // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, SI-4283
+          // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, scala/bug#4283
           def receiverClass = qualifier.tpe.typeSymbol
           if (sym.isModule) {
             genLoadQualUnlessElidable()
@@ -1304,7 +1304,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genLoad(l, ObjectRef)
           genCZJUMP(success, failure, TestOp.EQ, ObjectRef, targetIfNoJump)
         } else if (isNonNullExpr(l)) {
-          // SI-7852 Avoid null check if L is statically non-null.
+          // scala/bug#7852 Avoid null check if L is statically non-null.
           genLoad(l, ObjectRef)
           genLoad(r, ObjectRef)
           genCallMethod(Object_equals, InvokeStyle.Virtual, pos)

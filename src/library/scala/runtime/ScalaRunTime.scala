@@ -36,7 +36,7 @@ object ScalaRunTime {
   /** Return the class object representing an array with element class `clazz`.
    */
   def arrayClass(clazz: jClass[_]): jClass[_] = {
-    // newInstance throws an exception if the erasure is Void.TYPE. see SI-5680
+    // newInstance throws an exception if the erasure is Void.TYPE. see scala/bug#5680
     if (clazz == java.lang.Void.TYPE) classOf[Array[Unit]]
     else java.lang.reflect.Array.newInstance(clazz, 0).getClass
   }

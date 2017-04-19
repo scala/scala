@@ -61,7 +61,7 @@ trait ModelFactoryTypeSupport {
         case TypeRef(pre, aSym, targs) =>
           val preSym = pre.widen.typeSymbol
 
-          // SI-3314/SI-4888: Classes, Traits and Types can be inherited from a template to another:
+          // scala/bug#3314/scala/bug#4888: Classes, Traits and Types can be inherited from a template to another:
           // class Enum { abstract class Value }
           // class Day extends Enum { object Mon extends Value /*...*/ }
           // ===> in such cases we have two options:
@@ -104,7 +104,7 @@ trait ModelFactoryTypeSupport {
                 }
             }
 
-          // SI-4360 Showing prefixes when necessary
+          // scala/bug#4360 Showing prefixes when necessary
           // We check whether there's any directly accessible type with the same name in the current template OR if the
           // type is inherited from one template to another. There may be multiple symbols with the same name in scope,
           // but we won't show the prefix if our symbol is among them, only if *it's not* -- that's equal to showing
@@ -306,7 +306,7 @@ trait ModelFactoryTypeSupport {
       nameBuffer = null
     }
 
-    // SI-4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
+    // scala/bug#4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
     // same type based on the template the type is shown in.
     if (settings.docNoPrefixes)
       typeCache.getOrElseUpdate(aType, createTypeEntity)

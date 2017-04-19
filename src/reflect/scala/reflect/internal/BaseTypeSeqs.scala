@@ -170,7 +170,7 @@ trait BaseTypeSeqs {
       val index = new Array[Int](nparents)
       var i = 0
       for (p <- parents) {
-        val parentBts = p.dealias.baseTypeSeq // dealias need for SI-8046.
+        val parentBts = p.dealias.baseTypeSeq // dealias need for scala/bug#8046.
         pbtss(i) =
           if (parentBts eq undetBaseTypeSeq) AnyClass.info.baseTypeSeq
           else parentBts

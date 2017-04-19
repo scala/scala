@@ -446,7 +446,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
           templStats foreach SingleUseTraverser.apply
           // println("usedIn: " + usedIn)
 
-          // only consider usages from non-transient lazy vals (SI-9365)
+          // only consider usages from non-transient lazy vals (scala/bug#9365)
           val singlyUsedIn = usedIn.filter {
             case (_, member :: Nil) if member.name.endsWith(nme.LAZY_SLOW_SUFFIX) =>
               val lazyAccessor = member.owner.info.decl(member.name.stripSuffix(nme.LAZY_SLOW_SUFFIX))

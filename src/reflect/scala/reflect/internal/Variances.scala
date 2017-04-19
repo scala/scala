@@ -67,7 +67,7 @@ trait Variances {
        *  this is OK because such aliases are expanded for variance checking.
        *  However, for an alias which might be externally visible, we must assume Invariant,
        *  because there may be references to the type parameter that are not checked,
-       *  leading to unsoundness (see SI-6566).
+       *  leading to unsoundness (see scala/bug#6566).
        */
       def relativeVariance(tvar: Symbol): Variance = {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
@@ -185,7 +185,7 @@ trait Variances {
         case CompoundTypeTree(templ) =>
           super.traverse(tree)
 
-        // SI-7872 These two cases make sure we don't miss variance exploits
+        // scala/bug#7872 These two cases make sure we don't miss variance exploits
         // in originals, e.g. in `foo[({type l[+a] = List[a]})#l]`
         case tt @ TypeTree() if tt.original != null =>
           super.traverse(tt.original)

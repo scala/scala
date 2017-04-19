@@ -210,7 +210,7 @@ abstract class RefChecks extends Transform {
         //   member method with the Scala vararg type.
         //
         // @PP: Can't call nonPrivateMembers because we will miss refinement members,
-        //   which have been marked private. See SI-4729.
+        //   which have been marked private. See scala/bug#4729.
         for (member <- nonTrivialMembers(clazz)) {
           log(s"Considering $member for java varargs bridge in $clazz")
           if (!member.isDeferred && member.isMethod && hasRepeatedParam(member.info)) {
@@ -427,7 +427,7 @@ abstract class RefChecks extends Transform {
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
           } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { // (*)
-            // (*) Synthetic exclusion for (at least) default getters, fixes SI-5178. We cannot assign the OVERRIDE flag to
+            // (*) Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
                 emitOverrideError(
@@ -962,7 +962,7 @@ abstract class RefChecks extends Transform {
 
     def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.warnOptionImplicit) (fn, args) match {
       case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
-        reporter.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
+        reporter.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // scala/bug#6567
       case _ =>
     }
 
@@ -1019,7 +1019,7 @@ abstract class RefChecks extends Transform {
       def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
       def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
       def isJavaNumber(s: Symbol)  = s isSubClass JavaNumberClass
-      // includes java.lang.Number if appropriate [SI-5779]
+      // includes java.lang.Number if appropriate [scala/bug#5779]
       def isAnyNumber(s: Symbol)     = isScalaNumber(s) || isJavaNumber(s)
       def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
       // used to short-circuit unrelatedTypes check if both sides are special
@@ -1133,7 +1133,7 @@ abstract class RefChecks extends Transform {
       case _ =>
     }
 
-    // SI-6276 warn for trivial recursion, such as `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
+    // scala/bug#6276 warn for trivial recursion, such as `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
     // TODO: Move to abide rule. Also, this does not check that the def is final or not overridden, for example
     def checkInfiniteLoop(sym: Symbol, rhs: Tree): Unit =
       if (!sym.isValueParameter && sym.paramss.isEmpty) {
@@ -1177,7 +1177,7 @@ abstract class RefChecks extends Transform {
         assert(index == 0, index)
         try transform(tree) :: Nil
         finally if (currentLevel.maxindex > 0) {
-          // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see SI-4717
+          // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
           debuglog("refsym = " + currentLevel.refsym)
           reporter.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
         }
@@ -1373,7 +1373,7 @@ abstract class RefChecks extends Transform {
     private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
       case TypeRef(pre, sym, args) =>
         tree match {
-          case tt: TypeTree if tt.original == null => // SI-7783 don't warn about inferred types
+          case tt: TypeTree if tt.original == null => // scala/bug#7783 don't warn about inferred types
                                                       // FIXME: reconcile this check with one in resetAttrs
           case _ => checkUndesiredProperties(sym, tree.pos)
         }
@@ -1453,10 +1453,10 @@ abstract class RefChecks extends Transform {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
         case Select(module, apply) =>
-          ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
+          ( // scala/bug#4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
             //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
             treeInfo.isQualifierSafeToElide(module) &&
-              // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
+              // scala/bug#5626 Classes in refinement types cannot be constructed with `new`. In this case,
               // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
               module.symbol.companionClass.isClass
             )
@@ -1481,7 +1481,7 @@ abstract class RefChecks extends Transform {
 
       tree foreach {
         case i@Ident(_) =>
-          enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
+          enterReference(i.pos, i.symbol) // scala/bug#5390 need to `enterReference` for `a` in `a.B()`
         case _ =>
       }
       loop(tree)
@@ -1533,7 +1533,7 @@ abstract class RefChecks extends Transform {
       // will recurse to this point with `Select(C, apply)`, which will have a type `[T](...)C[T]`.
       //
       // We don't need to perform the check on the Select node, and `!isHigherKinded will guard against this
-      // redundant (and previously buggy, SI-9546) consideration.
+      // redundant (and previously buggy, scala/bug#9546) consideration.
       if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
         transformCaseApply(tree)
       } else {
@@ -1631,13 +1631,13 @@ abstract class RefChecks extends Transform {
             localTyper = localTyper.atOwner(tree, currentOwner)
             validateBaseTypes(currentOwner)
             checkOverloadedRestrictions(currentOwner, currentOwner)
-            // SI-7870 default getters for constructors live in the companion module
+            // scala/bug#7870 default getters for constructors live in the companion module
             checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
             val bridges = addVarargBridges(currentOwner) // TODO: do this during uncurry?
             checkAllOverrides(currentOwner)
             checkAnyValSubclass(currentOwner)
             if (currentOwner.isDerivedValueClass)
-              currentOwner.primaryConstructor makeNotPrivate NoSymbol // SI-6601, must be done *after* pickler!
+              currentOwner.primaryConstructor makeNotPrivate NoSymbol // scala/bug#6601, must be done *after* pickler!
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
@@ -1659,7 +1659,7 @@ abstract class RefChecks extends Transform {
               case tp @ ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
               case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
-                // SI-7694 Allow code synthesizers to disable checking of bounds for TypeTrees based on inferred LUBs
+                // scala/bug#7694 Allow code synthesizers to disable checking of bounds for TypeTrees based on inferred LUBs
                 // which might not conform to the constraints.
                 skipBounds = true
               case tp: TypeRef =>
@@ -1733,7 +1733,7 @@ abstract class RefChecks extends Transform {
             }
           case Apply(fun, args) if fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol) =>
             savingInPattern {
-              // SI-7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
+              // scala/bug#7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
               //         that we are in the user-supplied code in the case body.
               //
               //         Relies on the translation of:
@@ -1745,7 +1745,7 @@ abstract class RefChecks extends Transform {
               super.transform(result)
             }
           case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            deriveValDef(result)(transform) // SI-7716 Don't refcheck the tpt of the synthetic val that holds the selector.
+            deriveValDef(result)(transform) // scala/bug#7716 Don't refcheck the tpt of the synthetic val that holds the selector.
           case _ =>
             super.transform(result)
         }
@@ -1756,7 +1756,7 @@ abstract class RefChecks extends Transform {
             if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
               varianceValidator.traverse(result)
           case tt @ TypeTree() if tt.original != null =>
-            varianceValidator.traverse(tt.original) // See SI-7872
+            varianceValidator.traverse(tt.original) // See scala/bug#7872
           case _ =>
         }
 

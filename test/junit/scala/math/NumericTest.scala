@@ -11,14 +11,14 @@ import scala.math.Numeric.FloatAsIfIntegral
 @RunWith(classOf[JUnit4])
 class NumericTest {
 
-  /* Test for SI-8102 */
+  /* Test for scala/bug#8102 */
   @Test
   def testAbs {
     assertTrue(-0.0.abs equals 0.0)
     assertTrue(-0.0f.abs equals 0.0f)
   }
   
-  /* Test for SI-9348 */
+  /* Test for scala/bug#9348 */
   @Test
   def testFloatAsIfIntegral {
     val num = scala.math.Numeric.FloatAsIfIntegral
@@ -26,7 +26,7 @@ class NumericTest {
     assertTrue(num.quot(1.0f, 0.3f) equals 3.0f)
   }
 
-  /* Test for SI-9348 */
+  /* Test for scala/bug#9348 */
   @Test
   def testDoubleAsIfIntegral {
     val num = scala.math.Numeric.DoubleAsIfIntegral
@@ -34,7 +34,7 @@ class NumericTest {
     assertTrue(num.quot(0.5, 0.15) equals 3.0)
   }
 
-  /* Test for SI-9348 */
+  /* Test for scala/bug#9348 */
   @Test
   def testBigDecimalAsIfIntegral {
     val num = scala.math.Numeric.BigDecimalAsIfIntegral

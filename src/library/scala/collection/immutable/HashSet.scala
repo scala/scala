@@ -521,7 +521,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
         extends HashSet[A] {
     assert(Integer.bitCount(bitmap) == elems.length)
-    // assertion has to remain disabled until SI-6197 is solved
+    // assertion has to remain disabled until scala/bug#6197 is solved
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
 
     override def size = size0

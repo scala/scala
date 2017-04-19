@@ -3,7 +3,7 @@ object Foo { def unapply(x : String)  = Some((x, x)) }
 
 object Test extends App {
 
-// Prints '(x, x)'. Should compile as per SI-6111.
+// Prints '(x, x)'. Should compile as per scala/bug#6111.
 "x" match { case Foo(a) => Console.println(a) }
 
 // Prints '(x,x)' as expected.

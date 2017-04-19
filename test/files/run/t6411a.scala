@@ -57,7 +57,7 @@ object Test extends App {
   test("ya_4", Array(new Y("4")))
   test("yl_5", List(new Y(5)))
   test("yl_5", List(new Y("5")))
-  // FIXME: disabled because of SI-7056
+  // FIXME: disabled because of scala/bug#7056
   // test("yv_6", new Y(6))
   // test("yv_6", new Y("6"))
   test("yni_7", new Y(7))
@@ -73,7 +73,7 @@ object Test extends App {
   test("za_4", Array(new Z("4")))
   test("zl_5", List(new Z(5)))
   test("zl_5", List(new Z("5")))
-  // FIXME: disabled because of SI-7056
+  // FIXME: disabled because of scala/bug#7056
   // test("zv_6", new Z(6))
   // test("zv_6", new Z("6"))
   test("zni_7", new Z(7))

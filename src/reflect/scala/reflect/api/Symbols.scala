@@ -931,17 +931,17 @@ trait Symbols { self: Universe =>
      *  For a Scala package class, NoSymbol.
      *  For a Java class, NoSymbol.
      *
-     *  Known issues: Due to SI-8367, primaryConstructor may return unexpected results
+     *  Known issues: Due to scala/bug#8367, primaryConstructor may return unexpected results
      *  when called for Java classes (for some vague definition of a "Java class", which apparently
      *  not only includes javac-produced classfiles, but also consists of classes defined in
      *  Scala programs under the java.lang package). What's even worse, for some Java classes
      *  we can't even guarantee stability of the return value - depending on your classloader configuration
      *  and/or JDK version you might get different primaryConstructor for the same ClassSymbol.
-     *  We have logged these issues at SI-8193.
+     *  We have logged these issues at scala/bug#8193.
      *
      *  @group Class
      */
-    // TODO: SI-8193 I think we should only return a non-empty symbol if called for Scala classes
+    // TODO: scala/bug#8193 I think we should only return a non-empty symbol if called for Scala classes
     // returning something for traits and module classes is outright confusing
     // This, however, will require some refactoring in the compiler, so I'll leave it for later
     // as at the moment we don't have time or risk tolerance for that

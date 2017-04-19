@@ -211,7 +211,7 @@ abstract class UnPickler {
           case nme.ROOTPKG  => loadingMirror.RootPackage
           case _            =>
             val decl = owner match {
-              case stub: StubSymbol => NoSymbol // SI-8502 Don't call .info and fail the stub
+              case stub: StubSymbol => NoSymbol // scala/bug#8502 Don't call .info and fail the stub
               case _ => owner.info.decl(name)
             }
             adjust(decl)
@@ -291,7 +291,7 @@ abstract class UnPickler {
          * (.) ...
          * (1) `local child` represents local child classes, see comment in Pickler.putSymbol.
          *     Since it is not a member, it should not be entered in the owner's scope.
-         * (2) Similarly, we ignore local dummy symbols, as seen in SI-8868
+         * (2) Similarly, we ignore local dummy symbols, as seen in scala/bug#8868
          */
         def shouldEnterInOwnerScope = {
           sym.owner.isClass &&
@@ -391,7 +391,7 @@ abstract class UnPickler {
         case NOtpe                     => NoType
         case NOPREFIXtpe               => NoPrefix
         case THIStpe                   => readThisType()
-        case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // SI-7596 account for overloading
+        case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // scala/bug#7596 account for overloading
         case SUPERtpe                  => SuperType(readTypeRef(), readTypeRef())
         case CONSTANTtpe               => ConstantType(readConstantRef())
         case TYPEREFtpe                => TypeRef(readTypeRef(), readSymbolRef(), readTypes())

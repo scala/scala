@@ -264,7 +264,7 @@ trait PatDefConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"val $pat: $tpt = ((1, 2), 3)","{ val ((1, 2), 3): ((Int, Int), Int) = ((1, 2), 3) }")
   }
 
-  // won't result into pattern match due to SI-8211
+  // won't result into pattern match due to scala/bug#8211
   property("unquote typed pat into pat def") = test {
     val pat = pq"x: Int"
     assertEqAst(q"val $pat = 2", "{ val x: Int = 2 }")

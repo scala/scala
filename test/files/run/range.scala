@@ -36,7 +36,7 @@ object Test {
 
     def gr1 = NumericRange(x, x, x)
     def gr2 = NumericRange.inclusive(x, x, x)
-    def gr3 = NumericRange(x, x * fromInt(4), x * fromInt(2))  // SI-9348
+    def gr3 = NumericRange(x, x * fromInt(4), x * fromInt(2))  // scala/bug#9348
     def gr4 = NumericRange(x, x * fromInt(-2), x * fromInt(-2))
     def gr5 = NumericRange(x, x * fromInt(10), x)
     def gr6 = NumericRange.inclusive(x, x * fromInt(10), x)
@@ -58,7 +58,7 @@ object Test {
 
     val _grs = List[GR[_]](
       GR(BigDecimal(5.0)),
-      GR(BigDecimal(0.25)),  // SI-9348
+      GR(BigDecimal(0.25)),  // scala/bug#9348
       GR(BigInt(5)),
       GR(5L),
       GR(5.0d),

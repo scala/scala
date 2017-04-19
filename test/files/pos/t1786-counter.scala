@@ -26,8 +26,8 @@ object Ok {
   }
 }
 
-// This is why we reverted the fix for SI-1786 -- see SI-6169 for a potential alternative that could be extended to cover this.
-// both objects type check on 2.10.3, but only Ok was accepted by 2.11 after the original fix to SI-1786.
+// This is why we reverted the fix for scala/bug#1786 -- see scala/bug#6169 for a potential alternative that could be extended to cover this.
+// both objects type check on 2.10.3, but only Ok was accepted by 2.11 after the original fix to scala/bug#1786.
 // Fail results in:
 /*
 t1786-counter.scala:10: error: class TupleShape needs to be abstract, since method copy in class ProductNodeShape of type (shapes: Seq[Fail.Shape[_, _, _, _]])Fail.Shape[Level, _, _, _] is not defined

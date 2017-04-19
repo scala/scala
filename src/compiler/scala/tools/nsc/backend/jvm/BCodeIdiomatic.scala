@@ -338,7 +338,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def newarray(elem: BType) {
       elem match {
         case c: RefBType =>
-          /* phantom type at play in `Array(null)`, SI-1513. On the other hand, Array(()) has element type `scala.runtime.BoxedUnit` which isObject. */
+          /* phantom type at play in `Array(null)`, scala/bug#1513. On the other hand, Array(()) has element type `scala.runtime.BoxedUnit` which isObject. */
           jmethod.visitTypeInsn(Opcodes.ANEWARRAY, c.classOrArrayType)
         case _ =>
           assert(elem.isNonVoidPrimitiveType)
@@ -451,7 +451,7 @@ abstract class BCodeIdiomatic extends SubComponent {
         i += 1
       }
 
-      // check for duplicate keys to avoid "VerifyError: unsorted lookupswitch" (SI-6011)
+      // check for duplicate keys to avoid "VerifyError: unsorted lookupswitch" (scala/bug#6011)
       i = 1
       while (i < keys.length) {
         if (keys(i-1) == keys(i)) {

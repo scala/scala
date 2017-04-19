@@ -718,7 +718,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       )
   }
 
-  // SI-8144
+  // scala/bug#8144
   {
     implicit class AttributesAwareNode(val node: NodeSeq) {
 

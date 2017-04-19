@@ -1,4 +1,4 @@
-// SI-8197, see also SI-4592 and SI-4728
+// scala/bug#8197, see also scala/bug#4592 and scala/bug#4728
 class A
 class B
 

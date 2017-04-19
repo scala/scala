@@ -5,7 +5,7 @@ import scala.reflect.runtime.universe._, Flag._
 
 object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction") {
   property("f(..x) = f") = test {
-    // see SI-8008
+    // see scala/bug#8008
     assertThrows[MatchError] {
       val q"f(..$args)" = q"f"
     }

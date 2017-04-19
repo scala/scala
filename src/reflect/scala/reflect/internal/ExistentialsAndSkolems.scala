@@ -20,7 +20,7 @@ trait ExistentialsAndSkolems {
    *  !!!Adriaan: this does not work for hk types.
    *
    *  Skolems will be created at level 0, rather than the current value
-   *  of `skolemizationLevel`. (See SI-7782)
+   *  of `skolemizationLevel`. (See scala/bug#7782)
    */
   def deriveFreshSkolems(tparams: List[Symbol]): List[Symbol] = {
     class Deskolemizer extends LazyType {
