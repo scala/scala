@@ -56,7 +56,7 @@ trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A,
   override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.union(that)(bf)
   override def diff[B >: A](that: GenSeq[B]): Repr = self.diff(that)
   override def intersect[B >: A](that: GenSeq[B]): Repr = self.intersect(that)
-  override def distinct: Repr = self.distinct
+  override def distinctBy[B](f: A => B): Repr = self.distinctBy(f)
   override def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.patch(from, patch, replaced)(bf)
   override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.updated(index, elem)(bf)
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.+:(elem)(bf)

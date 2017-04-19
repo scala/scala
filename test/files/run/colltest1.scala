@@ -84,11 +84,12 @@ object Test extends App {
     assert((ten zip tenPlus) forall { case (x, y) => x + 1 == y })
     val dble = ten flatMap (x => List(x, x))
     assert(dble.distinct == ten)
+    assert(dble.distinctBy(_ % 2) == Seq(1,2))
     assert(ten.length == 10)
     assert(ten(0) == 1 && ten(9) == 10)
     assert((ten lengthCompare 10) == 0 && (ten lengthCompare 1) > 0 && (ten lengthCompare 11) < 0)
     assert((ten isDefinedAt 0) && (ten isDefinedAt 9))
-    assert(!(ten isDefinedAt -1));
+    assert(!(ten isDefinedAt -1))
     assert(!(ten isDefinedAt 10))
     val tenten = ten zip ten
     assert((tenten map (_._1)) == ten)

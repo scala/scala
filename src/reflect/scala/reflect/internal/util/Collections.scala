@@ -146,6 +146,7 @@ trait Collections {
     lb.toList
   }
 
+  @deprecated("Use List#distinctBy instead", "2.12")
   final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
     val buf = new ListBuffer[A]
     val seen = mutable.Set[B]()
