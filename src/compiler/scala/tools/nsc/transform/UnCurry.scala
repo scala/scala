@@ -13,7 +13,12 @@ import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
-/** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
+/**
+ *  - constant fold: trees of type ConstantType are replaced by the corresponding Literal
+ *    (We do this here instead of during erasure, so that it happens before explicitouter,
+ *     which shouldn't see a reference to a final val that will be constant folded away, or it wil make them non-private.
+ *     Similar reasoning applies to tailcalls: constants don't influence code flow.)
+ *  - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
  *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters
@@ -538,21 +543,6 @@ abstract class UnCurry extends InfoTransform
     }
 
     def postTransform(tree: Tree): Tree = exitingUncurry {
-      def applyUnary(): Tree = {
-        // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
-        // whole tree is a polymorphic nullary method application
-        def removeNullary() = tree.tpe match {
-          case MethodType(_, _)           => tree
-          case tp                         => tree setType MethodType(Nil, tp.resultType)
-        }
-        if (tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType])
-          gen.mkApplyIfNeeded(removeNullary())
-        else if (tree.isType)
-          TypeTree(tree.tpe) setPos tree.pos
-        else
-          tree
-      }
-
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableTpe
@@ -605,26 +595,30 @@ abstract class UnCurry extends InfoTransform
           else
             flatdd
 
-        case tree: Try =>
-          if (tree.catches exists (cd => !treeInfo.isCatchCase(cd)))
-            devWarning("VPM BUG - illegal try/catch " + tree.catches)
-          tree
+        case lit: Literal => lit
+        case const: TermTree if const.tpe.isInstanceOf[ConstantType] =>
+          val c = const.tpe.asInstanceOf[ConstantType].value
+          Literal(c) setType const.tpe setPos const.pos // TODO: carry over anything else?
 
-        case Apply(Apply(fn, args), args1) =>
-          treeCopy.Apply(tree, fn, args ::: args1)
+        case Apply(Apply(fn, args), args1) =>  treeCopy.Apply(tree, fn, args ::: args1)
 
-        case Ident(name) =>
-          assert(name != tpnme.WILDCARD_STAR, tree)
-          applyUnary()
-        case Select(_, _) | TypeApply(_, _) =>
-          applyUnary()
+        case _: TypeTree | _: Try    => tree
+        // if tree represents a type, but it's not yet a TypeTree (excluded by case above)
+        case tpTree if tpTree.isType => TypeTree(tpTree.tpe) setPos tpTree.pos
+
+        case _: Ident | _: Select | _: TypeApply if tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType] =>
+          // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
+          // whole tree is a polymorphic nullary method application
+          gen.mkApplyIfNeeded(tree.tpe match {
+            case MethodType(_, _) => tree
+            case tp               => tree setType MethodType(Nil, tp.resultType)
+          })
+
         case ret @ Return(expr) if isNonLocalReturn(ret) =>
-          log("non-local return from %s to %s".format(currentOwner.enclMethod, ret.symbol))
+          log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
-        case TypeTree() =>
-          tree
-        case _ =>
-          if (tree.isType) TypeTree(tree.tpe) setPos tree.pos else tree
+
+        case tree => tree
       }
     }
 

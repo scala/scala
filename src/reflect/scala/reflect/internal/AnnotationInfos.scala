@@ -15,6 +15,7 @@ import scala.language.postfixOps
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   import definitions._
+  import treeInfo.LiteralLike
 
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates
@@ -324,7 +325,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // expression, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.
     def constantAtIndex(index: Int): Option[Constant] =
-      argAtIndex(index) collect { case Literal(x) => x }
+      argAtIndex(index) collect { case LiteralLike(x) => x }
 
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None
@@ -384,7 +385,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   protected[scala] def treeToAnnotation(tree: Tree): Annotation = tree match {
     case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
       def encodeJavaArg(arg: Tree): ClassfileAnnotArg = arg match {
-        case Literal(const) => LiteralAnnotArg(const)
+        case LiteralLike(const) => LiteralAnnotArg(const)
         case Apply(ArrayModule, args) => ArrayAnnotArg(args map encodeJavaArg toArray)
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) => NestedAnnotArg(treeToAnnotation(arg))
         case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
@@ -417,7 +418,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
           None
         // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
-        case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
+        case AnnotationInfo(_, List(LiteralLike(Constant(tpe: Type))), _) =>
           Some(tpe.typeSymbol)
         // new-style: @throws[Exception], @throws[Exception]("cause")
         case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>

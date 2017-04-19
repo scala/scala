@@ -445,9 +445,11 @@ abstract class TreeGen {
     AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Create a literal unit tree that is inserted by the compiler but not
-   *  written by end user. It's important to distinguish the two so that
-   *  quasiquotes can strip synthetic ones away.
-   */
+    * written by end user. It's important to distinguish the two so that
+    * quasiquotes can strip synthetic ones away.
+    *
+    * TODO: there are plenty of `Literal(Constant(()))` left that should probably be replace by a call to this method?
+    */
   def mkSyntheticUnit() = Literal(Constant(())).updateAttachment(SyntheticUnitAttachment)
 
   /** Create block of statements `stats`  */
@@ -456,6 +458,8 @@ abstract class TreeGen {
     else if (!stats.last.isTerm) Block(stats, mkSyntheticUnit())
     else if (stats.length == 1 && doFlatten) stats.head
     else Block(stats.init, stats.last)
+
+  def singleStatementBlock(stat: Tree) = Block(List(stat), mkSyntheticUnit())
 
   /** Create a block that wraps multiple statements but don't
    *  do any wrapping if there is just one statement. Used by

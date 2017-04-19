@@ -124,7 +124,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     /** Overridden to false in scaladoc and/or interactive. */
-    def canAdaptConstantTypeToLiteral = true
     def canTranslateEmptyListToNil    = true
     def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
 
@@ -767,8 +766,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
-     *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
-     *  (0) Convert expressions with constant types to literals (unless in interactive/scaladoc mode)
+     *  (0) For expressions with annotated types, let AnnotationCheckers decide what to do
      *  (1) Resolve overloading, unless mode contains FUNmode
      *  (2) Apply parameterless functions
      *  (3) Apply polymorphic types to fresh instances of their type parameters and
@@ -950,13 +948,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           Select(qual setPos tree.pos.makeTransparent, nme.apply)
         }
       }
-      def adaptConstant(value: Constant): Tree = {
-        val sym = tree.symbol
-        if (sym != null && sym.isDeprecated)
-          context.deprecationWarning(tree.pos, sym)
-
-        treeCopy.Literal(tree, value)
-      }
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
       // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
@@ -1041,7 +1032,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeRef(_, UnitClass, _) => // (12)
               if (!isPastTyper && settings.warnValueDiscard)
                 context.warning(tree.pos, "discarded non-Unit value")
-              return typedPos(tree.pos, mode, pt)(Block(List(tree), Literal(Constant(()))))
+              return typedPos(tree.pos, mode, pt)(gen.singleStatementBlock(tree))
             case TypeRef(_, sym, _) if isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt) =>
               if (!isPastTyper && settings.warnNumericWiden)
                 context.warning(tree.pos, "implicit numeric widening")
@@ -1128,10 +1119,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (treeInfo.isMacroApplication(tree)) adapt(unmarkMacroImplRef(tree), mode, pt, original)
         else tree
       } else tree.tpe match {
-        case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
+        case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (0)
           adaptAnnotations(tree, this, mode, pt)
-        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
-          adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
           adaptAfterOverloadResolution(tree, mode, pt, original)
@@ -1185,7 +1174,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitTpe)) orElse { _ =>
         context.undetparams = savedUndetparams
-        val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
+        val valueDiscard = atPos(tree.pos)(gen.singleStatementBlock(instantiate(tree, mode, WildcardType)))
         typed(valueDiscard, mode, UnitTpe)
       }
     }
@@ -2427,7 +2416,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
-      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
+      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe.deconst
     }
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
@@ -3581,11 +3570,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // e.g. it may have encountered an implicit conversion.
         val ttree = typed(constfold(tr), pt)
         val const: Constant = ttree match {
-          case l @ Literal(c) if !l.isErroneous => c
-          case tree => tree.tpe match {
-            case ConstantType(c)  => c
-            case tpe              => null
-          }
+          case treeInfo.LiteralLike(c) if !ttree.isErroneous => c
+          case _ => null
         }
 
         if (const == null) {
@@ -5197,47 +5183,56 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Warn about likely interpolated strings which are missing their interpolators
       def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
-        // attempt to avoid warning about trees munged by macros
-        def isMacroExpansion = {
-          // context.tree is not the expandee; it is plain new SC(ps).m(args)
-          //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
-          // testing pos works and may suffice
-          //openMacros exists (_.macroApplication.pos includes lit.pos)
-          // tests whether the lit belongs to the expandee of an open macro
-          openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
-            case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
-            case _                                          => false
-          })
-        }
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
-        def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
-          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
-          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
-          case _                                                            => isMacroExpansion
-        }
-        def requiresNoArgs(tp: Type): Boolean = tp match {
-          case PolyType(_, restpe)     => requiresNoArgs(restpe)
-          case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
-          case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
-          case _                       => true                    // catches all others including NullaryMethodType
-        }
-        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+        val couldBeInterpolatedString =
+          context.enclosingApply.tree match {
+            case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => false
+            case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => false
+            case _ =>
+              // attempt to avoid warning about trees munged by macros
+              // context.tree is not the expandee; it is plain new SC(ps).m(args)
+              //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
+              // testing pos works and may suffice
+              //openMacros exists (_.macroApplication.pos includes lit.pos)
+              // tests whether the lit belongs to the expandee of an open macro
+              val isMacroExpansion =
+                openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
+                  case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
+                  case _                                          => false
+                })
 
-        def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
-          def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
-          def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
-          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))
+              !isMacroExpansion
+            }
 
-          if (suspiciousExpr.nonEmpty)
-            warn("detected an interpolated expression") // "${...}"
-          else
-            suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
-        }
-        lit match {
-          case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
-          case _                                                                  =>
+        if (couldBeInterpolatedString) {
+          lit match {
+            case treeInfo.LiteralLike(Constant(s: String)) =>
+              def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
+              def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
+              def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
+
+              if (suspiciousExpr.nonEmpty) warn("detected an interpolated expression") // "${...}"
+              else {
+                def isPlausible(m: Symbol) = {
+                  def requiresNoArgs(tp: Type): Boolean = tp match {
+                    case PolyType(_, restpe)     => requiresNoArgs(restpe)
+                    case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
+                    case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
+                    case _                       => true                    // catches all others including NullaryMethodType
+                  }
+
+                  m.alternatives exists (m => requiresNoArgs(m.info))
+                }
+
+                val plausibleIdents =
+                  InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1))) find isPlausible
+
+                plausibleIdents foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
+              }
+
+            case _ =>
+          }
         }
       }
 
@@ -5256,7 +5251,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }
