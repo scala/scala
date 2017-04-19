@@ -258,7 +258,7 @@ object Sorting {
   // TODO: Remove unnecessary ClassTag (not binary compatible)
   // TODO: make this fast for primitive K (could be specialized if it didn't go through Ordering)
   /** Sort array `a` using function `f` that computes the less-than relation for each element.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K: ClassTag](a: Array[K], f: (K, K) => Boolean): Unit = sort(a, Ordering fromLessThan f)
+  def stableSort(a: Array[]: Unit) = sort(a, Ordering fromLessThan f)
 
   /** A sorted Array, using the Ordering for the elements in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
   def stableSort[K: ClassTag: Ordering](a: Seq[K]): Array[K] = {
