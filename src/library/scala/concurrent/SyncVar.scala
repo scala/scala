@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit
  *  @version 1.0, 10/03/2003
  */
 class SyncVar[A] {
-  private var isDefined: Boolean = false
   private var value: Option[A] = None
 
   /**
@@ -28,7 +27,7 @@ class SyncVar[A] {
    * @return value that is held in this container
    */
   def get: A = synchronized {
-    while (!isDefined) wait()
+    while (value.isEmpty) wait()
     value.get
   }
 
@@ -57,7 +56,7 @@ class SyncVar[A] {
      * to deal with spurious wakeups.
      */
     var rest = timeout
-    while (!isDefined && rest > 0) {
+    while (value.isEmpty && rest > 0) {
       val elapsed = waitMeasuringElapsed(rest)
       rest -= elapsed
     }
@@ -100,13 +99,13 @@ class SyncVar[A] {
   /** Places a value in the SyncVar. If the SyncVar already has a stored value,
    * it waits until another thread takes it */
   def put(x: A): Unit = synchronized {
-    while (isDefined) wait()
+    while (value.isDefined) wait()
     setVal(x)
   }
 
   /** Checks whether a value is stored in the synchronized variable */
   def isSet: Boolean = synchronized {
-    isDefined
+    value.isDefined
   }
 
   // TODO: this method should be private
@@ -116,7 +115,6 @@ class SyncVar[A] {
   @deprecated("Use `take` instead, as `unset` is potentially error-prone", "2.10.0")
   // NOTE: Used by SBT 0.13.0-M2 and below
   def unset(): Unit = synchronized {
-    isDefined = false
     value = None
     notifyAll()
   }
@@ -125,7 +123,6 @@ class SyncVar[A] {
   // deprecation warnings where we use `set` internally. The
   // implementation of `set` was moved to `setVal` to achieve this
   private def setVal(x: A): Unit = synchronized {
-    isDefined = true
     value = Some(x)
     notifyAll()
   }
@@ -134,7 +131,6 @@ class SyncVar[A] {
   // deprecation warnings where we use `unset` internally. The
   // implementation of `unset` was moved to `unsetVal` to achieve this
   private def unsetVal(): Unit = synchronized {
-    isDefined = false
     value = None
     notifyAll()
   }
