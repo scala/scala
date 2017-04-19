@@ -200,7 +200,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case tp =>
         warning(tp.typeSymbol.pos,
           s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
-            "If possible, please file a bug on issues.scala-lang.org.")
+            "If possible, please file a bug on https://github.com/scala/bug/issues.")
 
         tp match {
           case ThisType(ArrayClass)    => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test

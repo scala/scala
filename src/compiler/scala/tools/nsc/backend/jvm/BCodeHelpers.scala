@@ -828,7 +828,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           reporter.warning(sym.pos,
             sm"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
                  |signature: $sig
-                 |if this is reproducible, please report bug at https://issues.scala-lang.org/
+                 |if this is reproducible, please report bug at https://github.com/scala/bug/issues
               """.trim)
           return null
         }
@@ -844,7 +844,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
                  |original type: $memberTpe
                  |normalized type: $normalizedTpe
                  |erasure type: $bytecodeTpe
-                 |if this is reproducible, please report bug at http://issues.scala-lang.org/
+                 |if this is reproducible, please report bug at https://github.com/scala/bug/issues
               """.trim)
            return null
         }
