@@ -213,25 +213,6 @@ object Sorting {
     }
   }
 
-  // Why would you even do this?
-  private def booleanSort(a: Array[Boolean]): Unit = {
-    var i = 0
-    var n = 0
-    while (i < a.length) {
-      if (!a(i)) n += 1
-      i += 1
-    }
-    i = 0
-    while (i < n) {
-      a(i) = false
-      i += 1
-    }
-    while (i < a.length) {
-      a(i) = true
-      i += 1
-    }
-  }
-
   // TODO: add upper bound: T <: AnyRef, propagate to callers below (not binary compatible)
   // Maybe also rename all these methods to `sort`.
   @inline private def sort[T](a: Array[T], ord: Ordering[T]): Unit = a match {
