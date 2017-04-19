@@ -2392,7 +2392,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // withoutAnnotations - see continuations-run/z1673.scala
       // This adjustment is awfully specific to continuations, but AFAICS the
       // whole AnnotationChecker framework is.
-      val pat1 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
+      val pat1 = {
+        context.pattern = true
+        try typedPattern(cdef.pat, pattpe.withoutAnnotations)
+        finally context.pattern = false
+      }
       // When case classes have more than two parameter lists, the pattern ends
       // up typed as a method.  We only pattern match on the first parameter
       // list, so substitute the final result type of the method, i.e. the type
@@ -4890,10 +4894,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           setError(tree)
         }
-          // ignore current variable scope in patterns to enforce linearity
-        val startContext = if (mode.typingPatternOrTypePat) context.outer else context
         val nameLookup   = tree.symbol match {
-          case NoSymbol   => startContext.lookupSymbol(name, qualifies)
+          case NoSymbol   => context.lookupSymbol(name, qualifies)
           case sym        => LookupSucceeded(EmptyTree, sym)
         }
         import InferErrorGen._
@@ -4902,7 +4904,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
             inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner))
               case sym      => typed1(tree setSymbol sym, mode, pt)
                 }
           case LookupSucceeded(qual, sym)   =>

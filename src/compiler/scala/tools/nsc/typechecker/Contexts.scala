@@ -265,6 +265,8 @@ trait Contexts { self: Analyzer =>
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+    def pattern                               = this(Pattern)
+    def pattern_=(value: Boolean)             = this(Pattern) = value
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
@@ -282,6 +284,7 @@ trait Contexts { self: Analyzer =>
 
     /** The next enclosing context (potentially `this`) that has a `CaseDef` as a tree */
     def enclosingCaseDef = nextEnclosing(_.tree.isInstanceOf[CaseDef])
+    def enclosingPattern = nextEnclosing(_.pattern)
 
     /** ...or an Apply. */
     def enclosingApply = nextEnclosing(_.tree.isInstanceOf[Apply])
@@ -482,6 +485,7 @@ trait Contexts { self: Analyzer =>
 
       if (tree != outer.tree)
         c(TypeConstructorAllowed) = false
+      c.pattern = false
 
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
@@ -1021,6 +1025,9 @@ trait Contexts { self: Analyzer =>
      *  the search continuing as long as no qualifying name is found.
      */
     def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
+      // ignore current variable scope in patterns to enforce linearity
+      val enclosingPatternCx = enclosingPattern
+
       var lookupError: NameLookup  = null       // set to non-null if a definite error is encountered
       var inaccessible: NameLookup = null       // records inaccessible symbol for error reporting in case none is found
       var defSym: Symbol           = NoSymbol   // the directly found symbol
@@ -1091,10 +1098,13 @@ trait Contexts { self: Analyzer =>
         defSym = lookupInScope(cx.scope) match {
           case Nil                  => searchPrefix
           case entries @ (hd :: tl) =>
-            // we have a winner: record the symbol depth
-            symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
-            if (tl.isEmpty) hd.sym
-            else newOverloaded(cx.owner, pre, entries)
+            if (hd.owner eq enclosingPatternCx.scope) NoSymbol
+            else {
+              // we have a winner: record the symbol depth
+              symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
+              if (tl.isEmpty) hd.sym
+              else newOverloaded(cx.owner, pre, entries)
+            }
         }
         if (!defSym.exists)
           cx = cx.outer // push further outward
@@ -1548,6 +1558,9 @@ object ContextMode {
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
+  /** Are we typechecking the pattern of the `CaseDef` associated with this context? */
+  final val Pattern: ContextMode                = 1 << 17
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1571,7 +1584,8 @@ object ContextMode {
     StarPatterns           -> "StarPatterns",
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
-    TypeConstructorAllowed -> "TypeConstructorAllowed"
+    TypeConstructorAllowed -> "TypeConstructorAllowed",
+    Pattern                -> "Pattern"
   )
 }
 
