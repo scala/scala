@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Any, Boolean, Equals, inline, Int}
+import scala.{Any, Boolean, Equals, `inline`, Int}
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for set collections.
@@ -34,7 +34,7 @@ trait SetLike[A, +C[X] <: Set[X]]
     *  @param elem the element to test for membership.
     *  @return  `true` if `elem` is contained in this set, `false` otherwise.
     */
-  @inline final def apply(elem: A): Boolean = this.contains(elem)
+  @`inline` final def apply(elem: A): Boolean = this.contains(elem)
 
   def subsetOf(that: Set[A]): Boolean = this.forall(that)
 

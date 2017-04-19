@@ -9,6 +9,7 @@ import strawman.collection._
 
 import scala.{Any, Either, Int, Left, None, Option, Right, Some, Unit}
 import scala.Predef.ArrowAssoc
+import scala.math.Ordering
 import java.lang.String
 
 class TraverseTest {
@@ -38,7 +39,7 @@ class TraverseTest {
       case (Right(builder), Right(b)) => Right(builder += b)
       case (Left(a)       ,        _) => Left(a)
       case (_             ,  Left(a)) => Left(a)
-    }.map(_.result)
+    }.right.map(_.result)
 
   @Test
   def optionSequence1Test: Unit = {
@@ -57,7 +58,8 @@ class TraverseTest {
     val o1t: Option[immutable.List[Int]] = o1
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
-    val o2 = optionSequence(xs2)
+    val o2 = optionSequence(xs2)(
+     BuildFrom.buildFromConstrainedPolyBuildable[Ordering, immutable.TreeSet, Option[String], String])
     val o2t: Option[immutable.TreeSet[String]] = o2
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
@@ -68,9 +70,8 @@ class TraverseTest {
 
   @Test
   def eitherSequenceTest: Unit = {
-    val xs3 = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
+    val xs3: mutable.ListBuffer[Either[Int, String]] = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
     val e1 = eitherSequence(xs3)
     val e1t: Either[Int, mutable.ListBuffer[String]] = e1
   }
-
 }
