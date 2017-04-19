@@ -499,11 +499,13 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
     // The constructor parameter with given name. This means the parameter
     // has given name, or starts with given name, and continues with a `$` afterwards.
     def parameterNamed(name: Name): Symbol = {
-      def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
+      val nameWithSuffix = name.append(nme.NAME_JOIN_STRING)
+      def matchesName(param: Symbol) = param.name == name || param.name == nameWithSuffix
 
       (constrParams filter matchesName) match {
-        case Nil    => abort(name + " not in " + constrParams)
-        case p :: _ => p
+        case Nil      => abort(name + " not in " + constrParams)
+        case p :: Nil => p
+        case _        => abort(name + " matched multiple parameters in " + constrParams)
       }
     }
 
