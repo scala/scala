@@ -886,11 +886,14 @@ transitive relation that satisfies the following conditions.
   that:
     - The bounds on $a_i$ must be weaker than the corresponding bounds declared
       for $a'_i$.
-    - The variance of $a_i$ must match the variance of $a'_i$, where covariance
-      matches covariance, contravariance matches contravariance and any variance
-      matches invariance.
-    - Recursively, these restrictions apply to the corresponding higher-order
-      type parameter clauses of $a_i$ and $a'_i$.
+    - The variance of $a_i$ must match the variance of $a'_i$, where
+      covariance matches covariance, contravariance matches
+      contravariance and any variance matches invariance.  (This is
+      not symmetric; only invariant $a'_i$ matches any variance of
+      $a_i$.)
+    - Recursively, these restrictions apply to the corresponding
+      higher-order type parameter clauses of $a'_i$ and $a_i$.  (Note
+      that the direction of consideration of conformance is reversed.)
 
 A declaration or definition in some compound type of class type $C$
 _subsumes_ another declaration of the same name in some compound type or class
