@@ -1,16 +1,17 @@
 package scala.concurrent.impl
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{TimeoutException, RejectedExecutionException, ConcurrentLinkedQueue, CountDownLatch}
 import org.junit.Assert._
 import org.junit.{ After, Before, Test }
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.forkjoin.{ForkJoinTask, ForkJoinPool}
 import scala.concurrent.impl.Promise.DefaultPromise
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
+import scala.concurrent.duration._
 
 /** Tests for the private class DefaultPromise */
 @RunWith(classOf[JUnit4])
@@ -338,6 +339,30 @@ class DefaultPromiseTest {
       startLatch.countDown()
       doneLatch.await()
       assertEquals(Some(Success(1)), p.value)
+    }
+  }
+
+  /** Test correct promise completion on RejectedExecutionException. */
+  @Test
+  def testRejectedExecutionException = {
+    class CustomForkJoinPool(parallelism: Int) extends ForkJoinPool(parallelism) {
+
+      override def execute(task: ForkJoinTask[_]) = {
+        throw new RejectedExecutionException("Queue capacity exceeded")
+      }
+    }
+
+    val ec = ExecutionContext.fromExecutor(new CustomForkJoinPool(1))
+
+    try {
+      val p = new DefaultPromise[Int]()
+      val f = p.map(_ * 2)(ec)
+      p.complete(Success(1))
+      Await.result(f, 10.second)
+      fail("Promise should should complete with exception")
+    } catch {
+      case e: TimeoutException => fail("Promise should complete with exception")
+      case e: RejectedExecutionException => assert(true)
     }
   }
 

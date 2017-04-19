@@ -41,7 +41,11 @@ private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete
     value = v
     // Note that we cannot prepare the ExecutionContext at this point, since we might
     // already be running on a different thread!
-    try executor.execute(this) catch { case NonFatal(t) => executor reportFailure t }
+    try executor.execute(this) catch { case NonFatal(e) =>
+      executor reportFailure e
+      value = Failure(e)
+      run()
+    }
   }
 }
 
