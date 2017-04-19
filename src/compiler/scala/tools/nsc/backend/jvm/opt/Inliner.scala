@@ -287,7 +287,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     private var actions = List.empty[() => Unit]
     private var methodStateSaved = false
 
-    def apply(a: => Unit): Unit = if (active) actions = (() => a) :: actions
+    def apply(a: => Unit): Unit = this.synchronized(if (active) actions = (() => a) :: actions)
     def rollback(): Unit = if (active) actions.foreach(_.apply())
 
     def saveMethodState(methodNode: MethodNode): Unit = if (active && !methodStateSaved) {

@@ -88,7 +88,8 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
    *  check that it exists.
    */
   def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    new PlainFile(givenPath / name)
+    if (isDirectory) new PlainDirectory((givenPath / name).toDirectory)
+    else new PlainFile(givenPath / name)
 }
 
 private[scala] class PlainNioFile(nioPath: java.nio.file.Path) extends AbstractFile {

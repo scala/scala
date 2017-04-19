@@ -8,7 +8,7 @@ package tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{AbstractFile, JFile}
 import GenBCode._
 import BackendReporting._
 import scala.reflect.internal.Flags
@@ -20,8 +20,8 @@ import scala.reflect.internal.Flags
  *  @version 1.0
  *
  */
-abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
-  import global._
+abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters with HasReporter {
+  import global.{reporter => _, _}
   import definitions._
   import bTypes._
   import coreBTypes._
@@ -228,36 +228,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      val originalReporter = global.reporter
-      val storeReporter = new reporters.StoreReporter()
-      global.reporter = storeReporter
-      try {
-        sym.info
-      } finally {
-        global.reporter = originalReporter
-      }
+      withoutReporting(sym.info)
       sym.isErroneous
     }
-
-
-  /*
-   * must-single-thread
-   */
-  def getFileForClassfile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    getFile(base, clsName, suffix)
-  }
-
-  /*
-   * must-single-thread
-   */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile =
-    _root_.scala.util.Try {
-      outputDirectory(csym)
-    }.recover {
-      case ex: Throwable =>
-        reporter.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
-        null
-    }.get
 
   var pickledBytes = 0 // statistics
 

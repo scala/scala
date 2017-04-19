@@ -258,9 +258,8 @@ object BytecodeUtils {
 
   def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {
     def substList(list: java.util.List[LabelNode]) = {
-      foreachWithIndex(list.asScala.toList) { case (l, i) =>
-        if (l == from) list.set(i, to)
-      }
+      val index = list.indexOf(from)
+      if (index >= 0) list.set(index,to)
     }
     reference match {
       case jump: JumpInsnNode           => jump.label = to
