@@ -167,6 +167,12 @@ object Source {
 
   def fromInputStream(is: InputStream)(implicit codec: Codec): BufferedSource =
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
+
+  def fromClassPath(resource: String, classLdr: ClassLoader = ClassLoader.getSystemClassLoader)(implicit codec: Codec): BufferedSource = {
+    val is = classLdr.getResourceAsStream(resource)
+    createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
+  }
+
 }
 
 /** An iterable representation of source data.
