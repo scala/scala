@@ -264,7 +264,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case TypeRef(_, sym, _) if sym.isAliasType =>
         val tp0 = tp.dealias
         if (tp eq tp0) {
-          devWarning(s"dropExistential did not progress dealiasing $tp, see SI-7126")
+          devWarning(s"dropExistential did not progress dealiasing $tp, see scala/bug#7126")
           tp
         } else {
           val tp1 = dropExistential(tp0)

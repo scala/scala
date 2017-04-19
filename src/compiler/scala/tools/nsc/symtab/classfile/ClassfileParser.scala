@@ -926,7 +926,7 @@ abstract class ClassfileParser {
           val s = module.info.decls.lookup(n)
           if (s != NoSymbol) Some(LiteralAnnotArg(Constant(s)))
           else {
-            warning(s"""While parsing annotations in ${in.file}, could not find $n in enum $module.\nThis is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (SI-7014).""")
+            warning(s"""While parsing annotations in ${in.file}, could not find $n in enum $module.\nThis is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014).""")
             None
           }
 

@@ -459,7 +459,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // to a local class symbol that no longer exists, which is not updated by lambdalift.
       devWarning(innerClassSym.pos,
         s"""The class symbol $innerClassSym with the term symbol ${innerClassSym.rawowner} as `rawowner` reached the backend.
-           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see SI-9392.""".stripMargin)
+           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see scala/bug#9392.""".stripMargin)
       None
     } else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
@@ -575,7 +575,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case methodSym =>
         if (completeSilentlyAndCheckErroneous(methodSym)) {
           // Happens due to scala/bug#9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
-          if (!classSym.isJavaDefined) devWarning("SI-9111 should only be possible for Java classes")
+          if (!classSym.isJavaDefined) devWarning("scala/bug#9111 should only be possible for Java classes")
           warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
           Nil
         } else {

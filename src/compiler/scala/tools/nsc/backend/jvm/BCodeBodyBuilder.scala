@@ -939,8 +939,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val module = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.packageObject match {
-          case NoSymbol => abort(s"SI-5604: Cannot use package as value: $tree")
-          case s        => abort(s"SI-5604: found package class where package object expected: $tree")
+          case NoSymbol => abort(s"scala/bug#5604: Cannot use package as value: $tree")
+          case s        => abort(s"scala/bug#5604: found package class where package object expected: $tree")
         }
       )
       lineNumber(tree)

@@ -1,4 +1,4 @@
-t1909-object.scala:4: warning: !!! SI-1909 Unable to STATICally lift object InnerTrouble$1, which is defined in the self- or super-constructor call of class Kaboom. A VerifyError is likely.
+t1909-object.scala:4: warning: !!! scala/bug#1909 Unable to STATICally lift object InnerTrouble$1, which is defined in the self- or super-constructor call of class Kaboom. A VerifyError is likely.
       object InnerTrouble
              ^
 error: No warnings can be incurred under -Xfatal-warnings.

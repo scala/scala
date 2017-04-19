@@ -1507,7 +1507,7 @@ trait Namers extends MethodSynthesis {
                   // by martin: the null case can happen in IDE; this is really an ugly hack on top of an ugly hack but it seems to work
                   case Some(cda) =>
                     if (cda.companionModuleClassNamer == null) {
-                      devWarning(s"SI-6576 The companion module namer for $meth was unexpectedly null")
+                      devWarning(s"scala/bug#6576 The companion module namer for $meth was unexpectedly null")
                       return
                     }
                     val p = (cda.classWithDefault, cda.companionModuleClassNamer)

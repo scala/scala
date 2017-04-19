@@ -6,7 +6,7 @@ object Test extends DirectTest {
   override def extraSettings: String = "-usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
   override def code = """
-    // SI-5545
+    // scala/bug#5545
     trait F[@specialized(Int) T1, R] {
       def f(v1: T1): R
       def g = v1 => f(v1)
