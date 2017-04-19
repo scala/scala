@@ -1136,7 +1136,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         PublicStaticFinal,
         androidFieldName.toString,
         tdesc_creator,
-        null, // no java-generic-signature
+        "%s<L%s;>;".format(tdesc_creator.dropRight(1), thisName),
         null  // no initial value
       ).visitEnd()
 
