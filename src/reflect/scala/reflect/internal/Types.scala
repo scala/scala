@@ -4584,7 +4584,12 @@ trait Types
 
   /** Members which can be imported into other scopes.
    */
-  def importableMembers(pre: Type): Scope = pre.members filter isImportable
+  def importableMembers(pre: Type): Scope = {
+    def isFlattenedSymbol(sym: Symbol) = sym.owner.isPackageClass && sym.name.containsName(nme.NAME_JOIN_STRING) && {
+      sym.owner.info.member(sym.name.take(sym.name.indexOf(nme.NAME_JOIN_STRING))) != NoSymbol
+    }
+    pre.members filter (m => !isFlattenedSymbol(m) && isImportable(m))
+  }
 
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
