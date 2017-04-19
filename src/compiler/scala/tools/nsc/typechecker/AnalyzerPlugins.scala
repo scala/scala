@@ -276,7 +276,21 @@ trait AnalyzerPlugins { self: Analyzer =>
     def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = stats
   }
 
+  case class ClassAttr(name: String, value: Array[Byte]) 
 
+  trait BackendPlugin {
+    /**
+     * Selectively activate this backend plugin
+     */
+    def isActive(): Boolean = true
+
+    /**
+     * Prepares a list of attributes for being attached to node representing sym
+     *
+     * Attachment of custom attributes occurs during the work of GenASM/GenBCode
+     */
+    def pluginsCustomAttributes(sym: ClassSymbol): List[ClassAttr] = Nil
+  }
 
   /** A list of registered analyzer plugins */
   private var analyzerPlugins: List[AnalyzerPlugin] = Nil
@@ -449,4 +463,20 @@ trait AnalyzerPlugins { self: Analyzer =>
     else macroPlugins.foldLeft(stats)((current, plugin) =>
       if (!plugin.isActive()) current else plugin.pluginsEnterStats(typer, current))
   }
+
+  /** A list of registered backend plugins */
+  private var backendPlugins: List[BackendPlugin] = Nil
+
+  /** Registers a new backend plugin */
+  def addBackendPlugin(plugin: BackendPlugin) {
+    if (!backendPlugins.contains(plugin))
+      backendPlugins = plugin :: backendPlugins
+  }
+
+  /** @see BackendPlugin.pluginsCustomAttributes */
+  def pluginsCustomAttributes(sym: ClassSymbol): List[ClassAttr] =
+    if (backendPlugins.isEmpty) Nil
+    else {
+      (backendPlugins filter (_.isActive()) map (_.pluginsCustomAttributes(sym))).flatten
+    }
 }
