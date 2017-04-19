@@ -201,13 +201,40 @@ sealed abstract class Try[+T] extends Product with Serializable {
 }
 
 object Try {
+  type ExceptionFilter = PartialFunction[Throwable, Boolean]
+
+  val includeNonFatal: ExceptionFilter = { case NonFatal(_) => true }
+  val defaultFilter = includeNonFatal
+
+
   /** Constructs a `Try` using the by-name parameter.  This
    * method will ensure any non-fatal exception is caught and a
    * `Failure` object is returned.
    */
-  def apply[T](r: => T): Try[T] =
+  def apply[T](r: => T): Try[T] = withFilter(defaultFilter)(r)
+
+  /** Constructs a `Try` using the by-name parameter with a customised ExceptionFilter.
+   * This method will ensure any filtered exception is caught and a
+   * `Failure` object is returned. The filter parameter can be used to
+   * specify which exceptions should be caught and returned as a `Failure` object
+   * and which should be bubbled up.
+   * Filters are composable:
+   * @example {{{
+   * class MyException extends RuntimeError
+   * val includeNonFatal: ExceptionFilter = { case NonFatal(_) => true }
+   * vak excludeMyException: ExceptionFilter = { case _: MyException => false }
+   * val includeUnsatisfiedLinkError: ExceptionFilter = { case _: UnsatisfiedLinkError => true }
+   *
+   * Try(excludeMyException orElse includeNonFatal orElse includeUnsatisfiedLinkError) { ... }
+   * }}}
+   *
+   * This will catch any NonFatalExceptions, EXCEPT MyException, and also catch UnsatisfiedLinkErrors.
+   * Please note that the ordering of the composition is important when mixing exclusion and inclusion filters.
+   * Usually best practice is to provide exclusions first and inclusions last.
+   */
+  def withFilter[T](filter: ExceptionFilter)(r: => T): Try[T] =
     try Success(r) catch {
-      case NonFatal(e) => Failure(e)
+      case ex if filter(ex) => Failure(ex)
     }
 }
 
