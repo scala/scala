@@ -979,13 +979,34 @@ self =>
    * // produces: "1, 2, 3, 4, 5, 6"
    * }}}
    */
-  override def distinct: Stream[A] = {
+  override def distinct: Stream[A] = distinctBy(identity)
+
+  /** Builds a new stream from this stream in which elements with duplicate
+   * outputs by `f` are removed. Among elements with the same result by `f`,
+   * only the first one is retained in the resulting `Stream`.
+   *
+   * @return  A new `Stream` which contains the first occurrence of each
+   * element `x` with a unique `y = f(x)`.
+   * @example {{{
+   * // Creates a Stream where every element is followed by its negation
+   * def naturalsFrom(i: Int): Stream[Int] = i #:: { -i #:: naturalsFrom(i + 1) }
+   * naturalsFrom(1) take 6 mkString ", "
+   * // produces: "1, -1, 2, -2, 3, -3"
+   * (naturalsFrom(1) distinctBy (x => math.abs(x))) take 6 mkString ", "
+   * // produces: "1, 2, 3, 4, 5, 6"
+   * }}}
+   */
+  override def distinctBy[B](f: A => B): Stream[A] = {
     // This should use max memory proportional to N, whereas
     // recursively calling distinct on the tail is N^2.
-    def loop(seen: Set[A], rest: Stream[A]): Stream[A] = {
-      if (rest.isEmpty) rest
-      else if (seen(rest.head)) loop(seen, rest.tail)
-      else cons(rest.head, loop(seen + rest.head, rest.tail))
+    def loop(seen: Set[B], rest: Stream[A]): Stream[A] = rest match {
+      case Stream.Empty => rest
+      case cons(x, xs) =>
+        val y = f(x)
+        if (seen(y))
+          loop(seen, xs)
+        else
+          x #:: loop(seen + y, xs)
     }
     loop(Set(), this)
   }
