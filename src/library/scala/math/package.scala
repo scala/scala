@@ -289,6 +289,14 @@ package object math {
     */
   def log10(x: Double): Double = java.lang.Math.log10(x)
 
+  /** Returns the logarithm of the given value to the specified base n.
+    *
+    * @param n the base of the logarithm.
+    * @param value the value to return the logaritm of.
+    * @return the logarithm of the given value to the specified base.
+    */
+  def logN(n: Double, value: Double): Double = log(value) / log(n)
+
   // -----------------------------------------------------------------------
   // trigonometric functions
   // -----------------------------------------------------------------------
