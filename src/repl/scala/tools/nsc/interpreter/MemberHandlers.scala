@@ -214,7 +214,7 @@ trait MemberHandlers {
     val Import(expr, selectors) = imp
     def targetType = intp.global.rootMirror.getModuleIfDefined("" + expr) match {
       case NoSymbol => intp.typeOfExpression("" + expr)
-      case sym      => sym.thisType
+      case sym      => sym.typeSignature
     }
     private def importableTargetMembers = importableMembers(targetType).toList
     // wildcard imports, e.g. import foo._
