@@ -110,44 +110,52 @@ private[process] trait ProcessImpl {
 
   private[process] class PipedProcesses(a: ProcessBuilder, b: ProcessBuilder, defaultIO: ProcessIO, toError: Boolean) extends CompoundProcess {
     protected[this] override def runAndExitValue() = {
-      val currentSource = new SyncVar[Option[InputStream]]
-      val pipeOut       = new PipedOutputStream
-      val source        = new PipeSource(currentSource, pipeOut, a.toString)
+      val source = new PipeSource(a.toString)
+      val sink = new PipeSink(b.toString)
+      source connect sink
       source.start()
-
-      val pipeIn      = new PipedInputStream(pipeOut)
-      val currentSink = new SyncVar[Option[OutputStream]]
-      val sink        = new PipeSink(pipeIn, currentSink, b.toString)
       sink.start()
 
-      def handleOutOrError(fromOutput: InputStream) = currentSource put Some(fromOutput)
+      // Release source and sink in the correct order.
+      // Note: If once connect Source with Sink or Process with Source or Sink, then the order of releasing them
+      // must be Source -> Sink -> Process, otherwise IOException will be thrown.
+      def releaseSourceAndSink() = {
+        source.release()
+        sink.release()
+      }
+
+      def handleOutOrError(fromOutput: InputStream) = source put Some(fromOutput)
 
       val firstIO =
         if (toError)
           defaultIO.withError(handleOutOrError)
         else
           defaultIO.withOutput(handleOutOrError)
-      val secondIO = defaultIO.withInput(toInput => currentSink put Some(toInput))
+      val secondIO = defaultIO.withInput(toInput => sink put Some(toInput))
 
-      val second = b.run(secondIO)
-      val first = a.run(firstIO)
-      try {
-        runInterruptible {
-          val exit1 = first.exitValue()
-          currentSource put None
-          currentSink put None
-          val exit2 = second.exitValue()
-          // Since file redirection (e.g. #>) is implemented as a piped process,
-          // we ignore its exit value so cmd #> file doesn't always return 0.
-          if (b.hasExitValue) exit2 else exit1
-        } {
-          first.destroy()
-          second.destroy()
+      val second =
+        try b.run(secondIO)
+        catch onError { err =>
+          releaseSourceAndSink()
+          throw err
         }
-      }
-      finally {
-        BasicIO close pipeIn
-        BasicIO close pipeOut
+      val first =
+        try a.run(firstIO)
+        catch onError { err =>
+          releaseSourceAndSink()
+          second.destroy()
+          throw err
+        }
+      runInterruptible {
+        val exit1 = first.exitValue()
+        val exit2 = second.exitValue()
+        // Since file redirection (e.g. #>) is implemented as a piped process,
+        // we ignore its exit value so cmd #> file doesn't always return 0.
+        if (b.hasExitValue) exit2 else exit1
+      } {
+        releaseSourceAndSink()
+        first.destroy()
+        second.destroy()
       }
     }
   }
@@ -168,37 +176,54 @@ private[process] trait ProcessImpl {
     }
   }
 
-  private[process] class PipeSource(
-    currentSource: SyncVar[Option[InputStream]],
-    pipe: PipedOutputStream,
-    label: => String
-  ) extends PipeThread(false, () => label) {
+  private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
 
-    final override def run(): Unit = currentSource.get match {
-      case Some(source) =>
-        try runloop(source, pipe)
-        finally currentSource.unset()
+    private[this] val pipe = new PipedOutputStream
+    private[this] val source = new SyncVar[Option[InputStream]]
 
-        run()
-      case None =>
-        currentSource.unset()
-        BasicIO close pipe
+    final override def run(): Unit = {
+      try {
+        source.get match {
+          case Some(in) => runloop(in, pipe)
+          case None =>
+        }
+      }
+      finally BasicIO close pipe
+    }
+
+    final def put(value: Option[InputStream]) = source put value
+
+    final def connect(sink: PipeSink) = sink connect pipe
+
+    final def release(): Unit = {
+      interrupt()
+      source put None
+      join()
     }
   }
-  private[process] class PipeSink(
-    pipe: PipedInputStream,
-    currentSink: SyncVar[Option[OutputStream]],
-    label: => String
-  ) extends PipeThread(true, () => label) {
+  private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
 
-    final override def run(): Unit = currentSink.get match {
-      case Some(sink) =>
-        try runloop(pipe, sink)
-        finally currentSink.unset()
+    private[this] val pipe = new PipedInputStream
+    private[this] val sink = new SyncVar[Option[OutputStream]]
 
-        run()
-      case None =>
-        currentSink.unset()
+    final override def run(): Unit = {
+      try {
+        sink.get match {
+          case Some(out) => runloop(pipe, out)
+          case None =>
+        }
+      }
+      finally BasicIO close pipe
+    }
+
+    final def put(value: Option[OutputStream]) = sink put value
+
+    final def connect(pipeOut: PipedOutputStream) = pipe connect pipeOut
+
+    final def release(): Unit = {
+      interrupt()
+      sink put None
+      join()
     }
   }
 
