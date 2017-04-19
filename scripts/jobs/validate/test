@@ -23,6 +23,7 @@ case $prDryRun in
        --warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
+       test:compile \
        testAll
 
     ;;
