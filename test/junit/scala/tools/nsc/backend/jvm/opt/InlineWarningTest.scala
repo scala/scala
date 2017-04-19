@@ -27,6 +27,7 @@ import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 object InlineWarningTest extends ClearAfterClass.Clearable {
   val argsNoWarn = "-Ybackend:GenBCode -Yopt:l:classpath"
@@ -80,9 +81,9 @@ class InlineWarningTest extends ClearAfterClass {
     }
 
     val warn =
-      """T::f()I is annotated @inline but cannot be inlined: the trait method call could not be rewritten to the static implementation method. Possible reason:
-        |The method f(LT;)I could not be found in the class T$class or any of its parents.
-        |Note that the following parent classes could not be found on the classpath: T$class""".stripMargin
+      sm"""T::f()I is annotated @inline but cannot be inlined: the trait method call could not be rewritten to the static implementation method. Possible reason:
+          |The method f(LT;)I could not be found in the class T$$class or any of its parents.
+          |Note that the following parent classes could not be found on the classpath: T$$class"""
 
     var c = 0
     compileSeparately(List(codeA, codeB), extraArgs = InlineWarningTest.args, afterEach = removeImpl, allowMessage = i => {c += 1; i.msg contains warn})
@@ -123,14 +124,14 @@ class InlineWarningTest extends ClearAfterClass {
       """.stripMargin
 
     val warns = List(
-      """failed to determine if bar should be inlined:
-        |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin,
+      sm"""failed to determine if bar should be inlined:
+          |The method bar()I could not be found in the class A or any of its parents.
+          |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""",
 
-      """B::flop()I is annotated @inline but could not be inlined:
-        |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
-        |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin)
+      sm"""B::flop()I is annotated @inline but could not be inlined:
+          |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
+          |The method bar()I could not be found in the class A or any of its parents.
+          |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""")
 
     var c = 0
     val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.tail.exists(i.msg contains _)})
@@ -162,9 +163,9 @@ class InlineWarningTest extends ClearAfterClass {
       """.stripMargin
 
     val warn =
-      """M::f()I is annotated @inline but could not be inlined:
-        |The callee M::f()I contains the instruction INVOKESPECIAL M.nested$1 ()I
-        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+      sm"""M::f()I is annotated @inline but could not be inlined:
+          |The callee M::f()I contains the instruction INVOKESPECIAL M.nested$$1 ()I
+          |that would cause an IllegalAccessError when inlined into class N"""
 
     var c = 0
     compile(code, allowMessage = i => { c += 1; i.msg contains warn })
@@ -183,12 +184,13 @@ class InlineWarningTest extends ClearAfterClass {
       """.stripMargin
 
     val warn =
-      """C::f()I is annotated @inline but could not be inlined:
-        |The callsite method C::t2()I
-        |does not have the same strictfp mode as the callee C::f()I.""".stripMargin
+      sm"""C::f()I is annotated @inline but could not be inlined:
+          |The callsite method C::t2()I
+          |does not have the same strictfp mode as the callee C::f()I."""
 
     var c = 0
     compile(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
+
 }

@@ -16,6 +16,10 @@ trait StripMarginInterpolator {
    * String escape sequences are '''not''' processed; this interpolator is designed to
    * be used with triple quoted Strings.
    *
+   * Triple quotes preserve platform-specific line endings (see SI-3101), which is
+   * a frequent source of test failures on Windows, so we also normalize to Unix
+   * line endings.
+   *
    * {{{
    * scala> val foo = "f|o|o"
    * foo: String = f|o|o
@@ -37,5 +41,6 @@ trait StripMarginInterpolator {
       case Nil => Nil
     }
     new StringContext(stripped: _*).raw(args: _*)
+      .replaceAll("\r\n", "\n")
   }
 }

@@ -27,8 +27,10 @@ import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 object InlinerTest extends ClearAfterClass.Clearable {
+
   val args = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings"
   var compiler = newCompiler(extraArgs = args)
 
@@ -462,10 +464,10 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
 
     val warn =
-      """B::flop()I is annotated @inline but could not be inlined:
-        |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
-        |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin
+      sm"""B::flop()I is annotated @inline but could not be inlined:
+          |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
+          |The method bar()I could not be found in the class A or any of its parents.
+          |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A"""
 
     var c = 0
     val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; i.msg contains warn})
@@ -890,9 +892,9 @@ class InlinerTest extends ClearAfterClass {
     // is still necessary, otherwise this test crashes.
     // The warning below is the typical warning we get in mixed compilation.
     val warn =
-      """failed to determine if <init> should be inlined:
-        |The method <init>()V could not be found in the class A$Inner or any of its parents.
-        |Note that the following parent classes could not be found on the classpath: A$Inner""".stripMargin
+      sm"""failed to determine if <init> should be inlined:
+          |The method <init>()V could not be found in the class A$$Inner or any of its parents.
+          |Note that the following parent classes could not be found on the classpath: A$$Inner"""
 
     var c = 0
 
@@ -933,9 +935,9 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
 
     val warn =
-      """B::f1()I is annotated @inline but could not be inlined:
-        |The callee B::f1()I contains the instruction INVOKESPECIAL Aa.f1 ()I
-        |that would cause an IllegalAccessError when inlined into class T.""".stripMargin
+      sm"""B::f1()I is annotated @inline but could not be inlined:
+          |The callee B::f1()I contains the instruction INVOKESPECIAL Aa.f1 ()I
+          |that would cause an IllegalAccessError when inlined into class T."""
     var c = 0
     val List(a, b, t) = compile(code, allowMessage = i => {c += 1; i.msg contains warn})
     assert(c == 1, c)
@@ -977,7 +979,7 @@ class InlinerTest extends ClearAfterClass {
   }
 
   @Test
-  def noRedunantNullChecks(): Unit = {
+  def noRedundantNullChecks(): Unit = {
     val code =
       """class C {
         |  @inline final def f: String = "hai!"
@@ -991,4 +993,5 @@ class InlinerTest extends ClearAfterClass {
     assert(2 == t.collect({case Ldc(_, "hai!") => }).size)     // twice the body of f
     assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
   }
+
 }

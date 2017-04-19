@@ -1,4 +1,3 @@
-
 package scala.io
 
 import org.junit.Test
@@ -21,7 +20,7 @@ class SourceTest {
     |readily interchangeable in general, because the
     |laws of arithmetic send signals leftward from
     |the bits that are "least significant."
-    |""".stripMargin.trim
+    |""".stripMargin.trim.replaceAll("\r\n", "\n")  // SI-3101
 
   private def in = new ByteArrayInputStream(sampler.getBytes)
 
