@@ -27,6 +27,10 @@ val collections =
         "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
+      scalacOptions ++= {
+        if (targetingDotty.value) Seq("-language:Scala2")
+        else Nil
+      },
       pomExtra :=
         <developers>
           <developer><id>ichoran</id><name>Rex Kerr</name></developer>
@@ -49,17 +53,6 @@ val collections =
           password <- sys.env.get("SONATYPE_PASSWORD")
         } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
       ).toList
-    )
-    // Dotty support
-    .settings(
-      libraryDependencies ++= {
-        if (targetingDotty.value) Seq("ch.epfl.lamp" % "dotty_2.11" % scalaVersion.value % "scala-tool")
-        else Nil
-      },
-      scalacOptions ++= {
-        if (targetingDotty.value) Seq("-language:Scala2")
-        else Nil
-      }
     )
 
 val timeBenchmark =
