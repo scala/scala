@@ -477,8 +477,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         if ((innerClassSym.isJavaDefined && innerClassSym.rawowner.isModuleClass) ||                      // (1)
             (!isAnonymousOrLocalClass(innerClassSym) && isTopLevelModuleClass(innerClassSym.rawowner))) { // (2)
           // phase travel for linkedCoC - does not always work in late phases
+          // (*) `!sym.isClass` is a workaround for scala-dev#248, linkedCoC can return a type alias
           exitingPickler(innerClassSym.rawowner.linkedClassOfClass) match {
-            case NoSymbol =>
+            case sym if sym == NoSymbol || !sym.isClass => // (*)
               // For top-level modules without a companion class, see doc of mirrorClassClassBType.
               mirrorClassClassBType(exitingPickler(innerClassSym.rawowner))
 
