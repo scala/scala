@@ -373,7 +373,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
   val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some((0, 999)), str => Some(str.toInt))
-
+  val YIgnoreAcessModifier = BooleanSetting("-Yignore-access-mods", "Ignore access flags in toolbox typecheck")
   /**
    * -P "Plugin" settings
    */

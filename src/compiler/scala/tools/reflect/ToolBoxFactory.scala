@@ -136,7 +136,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val currentTyper     = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr2, owner))
           val withImplicitFlag = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
           val withMacroFlag    = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
-          def withContext      (tree: => Tree) = withImplicitFlag(withMacroFlag(tree))
+          val withAccessMode   =
+            if (settings.YIgnoreAcessModifier.isSetByUser) (currentTyper.context.withAccessModeOff[Tree] _)
+            else (currentTyper.context.withAccessModeOn[Tree] _)
+
+          def withContext      (tree: => Tree) = withImplicitFlag(withMacroFlag(withAccessMode(tree)))
 
           val run = new Run
           run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works

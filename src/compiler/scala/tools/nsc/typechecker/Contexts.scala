@@ -393,6 +393,8 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+    @inline final def withAccessModeOff[T](op: => T): T                    = withMode(enabled = AccessModsOff)(op)
+    @inline final def withAccessModeOn[T](op: => T): T                     = withMode(disabled = AccessModsOff)(op)
 
     /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
      *  adapt should then check kind-arity based on the prototypical type's kind
@@ -717,7 +719,7 @@ trait Contexts { self: Analyzer =>
         }
       }
 
-      (pre == NoPrefix) || {
+      contextMode.inAny(AccessModsOff) || (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)
 
         (  (ab.isTerm || ab == rootMirror.RootClass)
@@ -1547,6 +1549,9 @@ object ContextMode {
 
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
+
+  /** Are private and protected modifiers should be turn off during toolbox typecheck. */
+  final val AccessModsOff: ContextMode = 1 << 17
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
