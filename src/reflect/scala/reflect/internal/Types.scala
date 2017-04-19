@@ -3770,12 +3770,11 @@ trait Types
   def containsExistential(tpe: Type) = tpe exists typeIsExistentiallyBound
   def existentialsInType(tpe: Type) = tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
 
-  private def isDummyOf(tpe: Type)(targ: Type) = {
-    val sym = targ.typeSymbol
-    sym.isTypeParameter && sym.owner == tpe.typeSymbol
-  }
+  def isDummyOf(tpe: Type)(targ: Symbol) =
+    targ.isTypeParameter && targ.owner == tpe.typeSymbol
+
   def isDummyAppliedType(tp: Type) = tp.dealias match {
-    case tr @ TypeRef(_, _, args) => args exists isDummyOf(tr)
+    case tr @ TypeRef(_, _, args) => args exists (a => isDummyOf(tr)(a.typeSymbol))
     case _                        => false
   }
 

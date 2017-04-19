@@ -1,0 +1,12 @@
+t9188.scala:3: warning: non-variable type argument Double in type pattern List[Double] (the underlying of List[Double]) is unchecked since it is eliminated by erasure
+    case ds: List[Double] =>  // unchecked warning
+             ^
+t9188.scala:5: warning: abstract type K in type pattern scala.collection.immutable.Vector[K] (the underlying of Vector[K]) is unchecked since it is eliminated by erasure
+    case kx: Vector[K] =>      // no unchecked warning
+             ^
+t9188.scala:7: warning: abstract type K in type pattern A[K] is unchecked since it is eliminated by erasure
+    case ak: A[K] =>
+             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
