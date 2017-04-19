@@ -1372,14 +1372,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         override def traverse(tree: Tree): Unit = if (isValueClass) {
           tree match {
             case _: ModuleDef =>
-              //see https://issues.scala-lang.org/browse/SI-6359
+              //see https://github.com/scala/bug/issues/6359
               implRestriction(tree, "nested object")
-            //see https://issues.scala-lang.org/browse/SI-6444
-            //see https://issues.scala-lang.org/browse/SI-6463
+            //see https://github.com/scala/bug/issues/6444
+            //see https://github.com/scala/bug/issues/6463
             case cd: ClassDef if !cd.symbol.isAnonymousClass => // Don't warn about partial functions, etc. SI-7571
               implRestriction(tree, "nested class") // avoiding Type Tests that might check the $outer pointer.
             case Select(sup @ Super(qual, mix), selector) if selector != nme.CONSTRUCTOR && qual.symbol == clazz && mix != tpnme.EMPTY =>
-              //see https://issues.scala-lang.org/browse/SI-6483
+              //see https://github.com/scala/bug/issues/6483
               implRestriction(sup, "qualified super reference")
             case _ =>
           }
@@ -1389,8 +1389,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       for (stat <- body) {
         def notAllowed(what: String) = context.error(stat.pos, s"$what is not allowed in $where")
         stat match {
-          // see https://issues.scala-lang.org/browse/SI-6444
-          // see https://issues.scala-lang.org/browse/SI-6463
+          // see https://github.com/scala/bug/issues/6444
+          // see https://github.com/scala/bug/issues/6463
           case ClassDef(mods, _, _, _) if isValueClass =>
             implRestriction(stat, s"nested ${ if (mods.isTrait) "trait" else "class" }")
           case _: Import | _: ClassDef | _: TypeDef | EmptyTree => // OK
@@ -1405,7 +1405,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _: ValDef =>
             notAllowed("field definition")
           case _: ModuleDef =>
-            //see https://issues.scala-lang.org/browse/SI-6359
+            //see https://github.com/scala/bug/issues/6359
             implRestriction(stat, "nested object")
           case _ =>
             notAllowed("this statement")

@@ -22,7 +22,7 @@ trait Reshape {
    *    * Transforming Modifiers.annotations into Symbol.annotations
    *    * Transforming Annotated annotations into AnnotatedType annotations
    *    * Transforming Annotated(annot, expr) into Typed(expr, TypeTree(Annotated(annot, _))
-   *    * Non-idempotencies of the typechecker: https://issues.scala-lang.org/browse/SI-5464
+   *    * Non-idempotencies of the typechecker: https://github.com/scala/bug/issues/5464
    */
   val reshape = new Transformer {
     var currentSymbol: Symbol = NoSymbol
@@ -126,7 +126,7 @@ trait Reshape {
      *
      *  Why will it fail? Because reified deftrees (e.g. ClassDef(...)) will generate fresh symbols during that compilation,
      *  so naively reified symbols will become out of sync, which brings really funny compilation errors and/or crashes, e.g.:
-     *  https://issues.scala-lang.org/browse/SI-5230
+     *  https://github.com/scala/bug/issues/5230
      *
      *  To deal with this unpleasant fact, we need to fall back from types to equivalent trees (after all, parser trees don't contain any types, just trees, so it should be possible).
      *  Luckily, these original trees get preserved for us in the `original` field when Trees get transformed into TypeTrees.

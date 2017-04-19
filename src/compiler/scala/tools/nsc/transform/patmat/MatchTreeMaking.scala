@@ -404,7 +404,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         - A singleton type p.type.
           This type pattern matches only the value denoted by the path p
           (that is, a pattern match involved a comparison of the matched value with p using method eq in class AnyRef). // TODO: the actual pattern matcher uses ==, so that's what I'm using for now
-          // https://issues.scala-lang.org/browse/SI-4577 "pattern matcher, still disappointing us at equality time"
+          // https://github.com/scala/bug/issues/4577 "pattern matcher, still disappointing us at equality time"
 
         - A compound type pattern T1 with ... with Tn where each Ti is a type pat- tern.
           This type pattern matches all values that are matched by each of the type patterns Ti.

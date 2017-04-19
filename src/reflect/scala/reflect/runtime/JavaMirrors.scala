@@ -451,7 +451,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         val params = symbol.paramss.flatten
         val perfectMatch = args.length == params.length
         // todo. this doesn't account for multiple vararg parameter lists
-        // however those aren't supported by the mirror API: https://issues.scala-lang.org/browse/SI-6182
+        // however those aren't supported by the mirror API: https://github.com/scala/bug/issues/6182
         // hence I leave this code as is, to be fixed when the corresponding bug is fixed
         val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
         if (!perfectMatch && !varargMatch) {
@@ -1215,7 +1215,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         val childOfTopLevel       = clazz.owner.isTopLevel
         val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
 
-        // suggested in https://issues.scala-lang.org/browse/SI-4023?focusedCommentId=54759#comment-54759
+        // suggested in https://github.com/scala/bug/issues/4023#issuecomment-292387855
         var ownerClazz = classToJava(clazz.owner.asClass)
         if (childOfTopLevelObject)
           ownerClazz = jClass.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)

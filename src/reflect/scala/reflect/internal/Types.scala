@@ -3184,7 +3184,7 @@ trait Types
           } else if (settings.YpartialUnification && arityDelta < 0 && typeArgs.nonEmpty) {
             // Simple algorithm as suggested by Paul Chiusano in the comments on SI-2712
             //
-            //   https://issues.scala-lang.org/browse/SI-2712?focusedCommentId=61270
+            //   https://github.com/scala/bug/issues/2712#issuecomment-292374655
             //
             // Treat the type constructor as curried and partially applied, we treat a prefix
             // as constants and solve for the suffix. For the example in the ticket, unifying

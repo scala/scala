@@ -266,7 +266,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   // Background:
   //  http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
   //  http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-  //  https://issues.scala-lang.org/browse/SI-3872
+  //  https://github.com/scala/bug/issues/3872
   // -----------------------------------------------------------------------------------------
 
   /*  An `asm.ClassWriter` that uses `jvmWiseLUB()`

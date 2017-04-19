@@ -979,7 +979,7 @@ abstract class BTypes {
      * Background:
      *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-     *   https://issues.scala-lang.org/browse/SI-3872
+     *   https://github.com/scala/bug/issues/3872
      */
     def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
@@ -1004,7 +1004,7 @@ abstract class BTypes {
             // Both this and other are classes. The code takes (transitively) all superclasses and
             // finds the first common one.
             // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
-            //  - https://issues.scala-lang.org/browse/SI-3872
+            //  - https://github.com/scala/bug/issues/3872
             firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
         }
 

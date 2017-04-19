@@ -74,7 +74,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *  This solution is very simple, but unfortunately it's also lacking. If we use it, then
    *  signatures of macro defs become transitively dependent on scala-reflect.jar
    *  (because they refer to macro impls, and macro impls refer to *box.Context defined in scala-reflect.jar).
-   *  More details can be found in comments to https://issues.scala-lang.org/browse/SI-5940.
+   *  More details can be found in comments to https://github.com/scala/bug/issues/5940.
    *
    *  Therefore we have to avoid putting macro impls into binding pickles and come up with our own serialization format.
    *  Situation is further complicated by the fact that it's not enough to just pickle macro impl's class name and method name,

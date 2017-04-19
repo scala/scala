@@ -430,7 +430,7 @@ trait Symbols { self: Universe =>
     def privateWithin: Symbol
 
     /** Does this symbol represent the definition of a package?
-     *  Known issues: [[https://issues.scala-lang.org/browse/SI-6732]].
+     *  Known issues: [[https://github.com/scala/bug/issues/6732]].
      *
      *  @group Tests
      */

@@ -352,7 +352,7 @@ trait MatchTranslation {
     /* A pattern binder x@p consists of a pattern variable x and a pattern p.
        The type of the variable x is the static type T of the pattern p.
        This pattern matches any value v matched by the pattern p,
-       provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
+       provided the run-time type of v is also an instance of T,  <-- TODO! https://github.com/scala/bug/issues/1503
        and it binds the variable name to that value.
     */
 

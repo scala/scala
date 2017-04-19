@@ -53,7 +53,7 @@ object Test extends App {
 
   // error: implicit conversions are not applicable because they are ambiguous, both method ToTCValueBin1 ... and  method ToTCValueBin2
   //        annoying!!
-  //        https://issues.scala-lang.org/browse/SI-3346
+  //        https://github.com/scala/bug/issues/3346
   //
   // Works if we remove ToTCValueBin2
   //
