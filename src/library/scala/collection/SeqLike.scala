@@ -497,13 +497,27 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
-  def distinct: Repr = {
+  def distinct: Repr = distinctBy(identity)
+
+  /** Builds a new $coll from this $coll where output elements have distinct
+   *  results by `f`.
+   *  $willNotTerminateInf
+   *
+   *  @return  A new $coll which contains the first occurence of each element
+   *    `x` with a unique `y = f(x)`.
+   *  @example {{{
+   *    List("Steve", "Barbara", "Stephanie", "Bob", "Frank").distinctBy(_.head) =
+   *    List("Steve", "Barbara", "Frank")
+   *  }}}
+   */
+  def distinctBy[B](f: A => B): Repr = {
     val b = newBuilder
-    val seen = mutable.HashSet[A]()
+    val seen = mutable.HashSet[B]()
     for (x <- this) {
-      if (!seen(x)) {
+      val y = f(x)
+      if (!seen(y)) {
         b += x
-        seen += x
+        seen += y
       }
     }
     b.result()
