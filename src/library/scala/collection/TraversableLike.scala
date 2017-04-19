@@ -328,6 +328,42 @@ trait TraversableLike[+A, +Repr] extends Any
 
     b.result
   }
+  
+  /** Partitions elements to ${coll}s according to a given predicate.
+   *
+   *  Example - partition a List of Ints into Lists which none passes a certain threshold (17):
+   *  {{{
+   *     scala> val xs = List(1,2,3,4,5,6,7,8,9,10)
+   *     xs: List[Int] = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+   *
+   *     scala> var y = 0
+   *     y: Int = 0
+   *
+   *     scala> val zss = xs.groupWhile { i =>
+   *          |   if(y + i > 17) {y = i; false}
+   *          |   else {y = y + i; true}
+   *          | }
+   *     zss: Traversable[scala.collection.immutable.List[Int]] = List(List(1, 2, 3, 4, 5), List(6, 7), List(8, 9), List(10))
+   *  }}}
+   * 
+   *  @param p      the predicate on which to partition.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a ${coll} of ${coll}s where each ${coll} was taken as long as the 
+   *                predicate held true.
+   */
+  def groupWhile[That](p: A => Boolean)(implicit bf: CanBuildFrom[Repr, Repr, That]): That = {
+    val outer = bf(repr)
+    var inner = newBuilder
+    for(x <- this) if(p(x)) inner += x
+    else {
+      outer += inner.result
+      inner = newBuilder
+      inner += x
+    }
+    outer += inner.result
+    outer.result
+  }
 
   def forall(p: A => Boolean): Boolean = {
     var result = true
