@@ -254,7 +254,8 @@ TODO:
     </if>
 
     <!-- Add our maven ant tasks -->
-    <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" />
+    <property name="maven.anttasks.version" value="2.1.3"/>
+    <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-${maven.anttasks.version}.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
 
     <!-- Resolve maven dependencies -->
@@ -1878,9 +1879,9 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="publish-core"   depends="pack-maven.core, init.maven">
-    <deploy-one name="scala-compiler" />
-    <deploy-one name="scala-library"  />
-    <deploy-one name="scala-reflect"  />
+    <deploy-one name="scala-compiler" signed="true"/>
+    <deploy-one name="scala-library"  signed="true"/>
+    <deploy-one name="scala-reflect"  signed="true"/>
   </target>
 
   <target name="publish-core-local" depends="pack-maven.core, init.maven">
