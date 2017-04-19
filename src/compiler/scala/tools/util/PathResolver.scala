@@ -236,7 +236,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
    */
   object Calculated {
     def scalaHome           = Defaults.scalaHome
-    def useJavaClassPath    = settings.usejavacp.value || Defaults.useJavaClassPath
+    def useJavaClassPath    = if (settings.usejavacp.isSetByUser) settings.usejavacp.value else Defaults.useJavaClassPath
     def useManifestClassPath= settings.usemanifestcp.value
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
