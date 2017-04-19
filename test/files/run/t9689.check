@@ -1,0 +1,15 @@
+
+scala> import bug._
+import bug._
+
+scala> import Wrap._
+import Wrap._
+
+scala> object Bar extends Foo
+defined object Bar
+
+scala> Bar.foo
+java.lang.AbstractMethodError: Bar$.foo()V
+  ... 69 elided
+
+scala> :quit
