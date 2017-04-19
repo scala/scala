@@ -527,8 +527,10 @@ trait Namers extends MethodSynthesis {
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
-      def checkNotRedundant(pos: Position, from: Name, to0: Name) {
-        def check(to: Name) = {
+      // warn proactively if specific import loses to definition in scope,
+      // since it may result in desired implicit not imported into scope.
+      def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
+        def check(to: Name): Unit = {
           val e = context.scope.lookupEntry(to)
 
           if (e != null && e.owner == context.scope && e.sym.exists)
@@ -540,7 +542,8 @@ trait Namers extends MethodSynthesis {
             defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
           }
         }
-        if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {
+        def isReplMagic(importInfo: ImportInfo): Boolean = importInfo.isExplicitImport(Interpreter_iw.name)
+        if (!tree.symbol.isSynthetic && expr.symbol != null && !context.imports.exists(isReplMagic)) {
           if (base.member(from) != NoSymbol)
             check(to0)
           if (base.member(from.toTypeName) != NoSymbol)
@@ -571,7 +574,6 @@ trait Namers extends MethodSynthesis {
             checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
       }
-
       def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value) {
         def loop(xs: List[Name]): Unit = xs match {
           case Nil      => ()
@@ -581,6 +583,7 @@ trait Namers extends MethodSynthesis {
         }
         loop(names filterNot (x => x == null || x == nme.WILDCARD))
       }
+
       selectors foreach checkSelector
 
       // checks on the whole set
@@ -1710,7 +1713,6 @@ trait Namers extends MethodSynthesis {
         ImportType(expr1)
       }
     }
-
 
     /** Given a case class
      *   case class C[Ts] (ps: Us)

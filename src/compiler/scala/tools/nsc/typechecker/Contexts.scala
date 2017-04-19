@@ -29,7 +29,7 @@ trait Contexts { self: Analyzer =>
     enclClass  = this
     enclMethod = this
 
-    override val depth = 0
+    override lazy val depth = 0
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -224,15 +224,17 @@ trait Contexts { self: Analyzer =>
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
 
-    val depth: Int = {
+    lazy val depth: Int = {
       val increasesDepth = isRootImport || outerIsNoContext || (outer.scope != scope)
       ( if (increasesDepth) 1 else 0 ) + outerDepth
     }
 
-    /** The currently visible imports */
+    /** The currently visible imports, from innermost to outermost. */
     def imports: List[ImportInfo] = outer.imports
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
+
+    /** A root import is never unused and always bumps context depth. (scala/Predef/java.lang and magic REPL imports) */
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
@@ -464,10 +466,11 @@ trait Contexts { self: Analyzer =>
         else prefix
 
       // The blank canvas
-      val c = if (isImport)
-        new Context(tree, owner, scope, unit, this, reporter) with ImportContext
-      else
-        new Context(tree, owner, scope, unit, this, reporter)
+      val c =
+        if (isImport)
+          new Context(tree, owner, scope, unit, this, reporter) with ImportContext
+        else
+          new Context(tree, owner, scope, unit, this, reporter)
 
       // Fields that are directly propagated
       c.variance           = variance
@@ -985,7 +988,7 @@ trait Contexts { self: Analyzer =>
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
     /** Find the symbol of a simple name starting from this context.
-     *  All names are filtered through the "qualifies" predicate,
+     *  All names are filtered through the "qualifies" predicate;
      *  the search continuing as long as no qualifying name is found.
      */
     def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
@@ -996,20 +999,16 @@ trait Contexts { self: Analyzer =>
       var cx: Context              = this       // the context under consideration
       var symbolDepth: Int         = -1         // the depth of the directly found symbol
 
-      def finish(qual: Tree, sym: Symbol): NameLookup = (
-        if (lookupError ne null) lookupError
-        else sym match {
-          case NoSymbol if inaccessible ne null => inaccessible
-          case NoSymbol                         => LookupNotFound
-          case _                                => LookupSucceeded(qual, sym)
-        }
-      )
-      def finishDefSym(sym: Symbol, pre0: Type): NameLookup =
-        if (requiresQualifier(sym))
-          finish(gen.mkAttributedQualifier(pre0), sym)
-        else
-          finish(EmptyTree, sym)
-
+      def finish(qual: Tree, sym: Symbol): NameLookup = sym match {
+        case _ if lookupError ne null         => lookupError
+        case NoSymbol if inaccessible ne null => inaccessible
+        case NoSymbol                         => LookupNotFound
+        case _                                => LookupSucceeded(qual, sym)
+      }
+      def finishDefSym(sym: Symbol, pre0: Type): NameLookup = {
+        val t = if (requiresQualifier(sym)) gen.mkAttributedQualifier(pre0) else EmptyTree
+        finish(t, sym)
+      }
       def isPackageOwnedInDifferentUnit(s: Symbol) = (
         s.isDefinedInPackage && (
              !currentRun.compiles(s)
@@ -1028,16 +1027,6 @@ trait Contexts { self: Analyzer =>
       }
       def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
 
-      def searchPrefix = {
-        cx = cx.enclClass
-        val found0 = lookupInPrefix(name)
-        val found1 = found0 filter accessibleInPrefix
-        if (found0.exists && !found1.exists && inaccessible == null)
-          inaccessible = LookupInaccessible(found0, analyzer.lastAccessCheckDetails)
-
-        found1
-      }
-
       def lookupInScope(scope: Scope) =
         (scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
 
@@ -1046,7 +1035,7 @@ trait Contexts { self: Analyzer =>
 
       // Constructor lookup should only look in the decls of the enclosing class
       // not in the self-type, nor in the enclosing context, nor in imports (SI-4460, SI-6745)
-      if (name == nme.CONSTRUCTOR) return {
+      def lookupCtor: NameLookup = {
         val enclClassSym = cx.enclClass.owner
         val scope = cx.enclClass.prefix.baseType(enclClassSym).decls
         val constructorSym = lookupInScope(scope) match {
@@ -1057,118 +1046,141 @@ trait Contexts { self: Analyzer =>
         finishDefSym(constructorSym, cx.enclClass.prefix)
       }
 
-      // cx.scope eq null arises during FixInvalidSyms in Duplicators
-      while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
-        pre    = cx.enclClass.prefix
-        defSym = lookupInScope(cx.scope) match {
-          case Nil                  => searchPrefix
-          case entries @ (hd :: tl) =>
-            // we have a winner: record the symbol depth
-            symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
-            if (tl.isEmpty) hd.sym
-            else newOverloaded(cx.owner, pre, entries)
+      // Handle name binding precedence. Get the name from enclosing scopes, then get
+      // the name as imported; then choose the higher precedence binding.
+      // The rule is actually: bindings have a given precedence (1-4). In a given scope,
+      // higher precedence wins and equal precedence is ambiguous. Otherwise, inner scoped
+      // name hides if equal or higher precedence. The precedence levels are:
+      // 1) defined here 2) specific import 3) wildcard import 4) defined elsewhere (package-defined in other unit)
+      def doLookup: NameLookup = {
+        def searchPrefix: Symbol = {
+          cx = cx.enclClass
+          val found0 = lookupInPrefix(name)
+          val found1 = found0 filter accessibleInPrefix
+          if (found0.exists && !found1.exists && inaccessible == null)
+            inaccessible = LookupInaccessible(found0, analyzer.lastAccessCheckDetails)
+
+          found1
         }
-        if (!defSym.exists)
-          cx = cx.outer // push further outward
-      }
-      if (symbolDepth < 0)
-        symbolDepth = cx.depth
+        // we have a winner: record the symbol depth
+        def setDepthAt(se: ScopeEntry): Unit = symbolDepth = (cx.depth - cx.scope.nestingLevel) + se.depth
 
-      var impSym: Symbol = NoSymbol
-      var imports        = Context.this.imports
-      def imp1           = imports.head
-      def imp2           = imports.tail.head
-      def sameDepth      = imp1.depth == imp2.depth
-      def imp1Explicit   = imp1 isExplicitImport name
-      def imp2Explicit   = imp2 isExplicitImport name
+        // search enclosing scopes
+        // cx.scope eq null arises during FixInvalidSyms in Duplicators
+        while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
+          pre    = cx.enclClass.prefix
+          defSym = lookupInScope(cx.scope) match {
+            case Nil                  => searchPrefix
+            case se :: Nil            => setDepthAt(se) ; se.sym
+            case entries @ (hd :: tl) => setDepthAt(hd) ; newOverloaded(cx.owner, pre, entries)
+          }
+          if (!defSym.exists) cx = cx.outer // push further outward
+        }
+        if (symbolDepth < 0) symbolDepth = cx.depth
 
-      def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
-        importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
+        var impSym: Symbol = NoSymbol
+        var imports        = Context.this.imports
+        def imp1           = imports.head
+        def imp2           = imports.tail.head
+        def sameDepth      = imp1.depth == imp2.depth
+        def imp1Explicit   = imp1 isExplicitImport name
+        def imp2Explicit   = imp2 isExplicitImport name
 
-      // Java: A single-type-import declaration d in a compilation unit c of package p
-      // that imports a type named n shadows, throughout c, the declarations of:
-      //
-      //  1) any top level type named n declared in another compilation unit of p
-      //
-      // A type-import-on-demand declaration never causes any other declaration to be shadowed.
-      //
-      // Scala: Bindings of different kinds have a precedence defined on them:
-      //
-      //  1) Definitions and declarations that are local, inherited, or made available by a
-      //     package clause in the same compilation unit where the definition occurs have
-      //     highest precedence.
-      //  2) Explicit imports have next highest precedence.
-      def depthOk(imp: ImportInfo) = (
-           imp.depth > symbolDepth
-        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
-      )
+        def lookupImport(imp: ImportInfo, requireExplicit: Boolean): Symbol =
+          importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
-      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
-        impSym = lookupImport(imp1, requireExplicit = false)
-        if (!impSym.exists)
-          imports = imports.tail
-      }
+        def checkUpstreamImports(): Unit = {
+          // We continue walking down the imports as long as the tail is non-empty, which gives us:
+          //   imports  ==  imp1 :: imp2 :: _
+          // And at least one of the following is true:
+          //   - imp1 and imp2 are at the same depth
+          //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
+          def keepLooking = (
+               lookupError == null
+            && imports.tail.nonEmpty
+            && (sameDepth || !imp1Explicit)
+          )
+          // If we find a competitor imp2 which imports the same name, possible outcomes are:
+          //
+          //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
+          //  - same depth, imp1 wild, imp2 wild:            ambiguity check
+          //  - same depth, imp1 explicit, imp2 explicit:    ambiguity check
+          //  - differing depth, imp1 wild, imp2 explicit:   ambiguity check
+          //  - all others:                                  imp1 wins, drop imp2
+          //
+          // The ambiguity check is: if we can verify that both imports refer to the same
+          // symbol (e.g. import foo.X followed by import foo._) then we discard imp2
+          // and proceed. If we cannot, issue an ambiguity error.
+          while (keepLooking) {
+            // If not at the same depth, limit the lookup to explicit imports.
+            // This is desirable from a performance standpoint (compare to
+            // filtering after the fact) but also necessary to keep the unused
+            // import check from being misled by symbol lookups which are not
+            // actually used.
+            val other = lookupImport(imp2, requireExplicit = !sameDepth)
+            def imp1wins() = { imports = imp1 :: imports.tail.tail }
+            def imp2wins() = { impSym = other ; imports = imports.tail }
 
-      if (defSym.exists && impSym.exists) {
-        // imported symbols take precedence over package-owned symbols in different compilation units.
-        if (isPackageOwnedInDifferentUnit(defSym))
-          defSym = NoSymbol
-        // Defined symbols take precedence over erroneous imports.
-        else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
-          impSym = NoSymbol
-        // Otherwise they are irreconcilably ambiguous
-        else
-          return ambiguousDefnAndImport(defSym.alternatives.head.owner, imp1)
-      }
-
-      // At this point only one or the other of defSym and impSym might be set.
-      if (defSym.exists)
-        finishDefSym(defSym, pre)
-      else if (impSym.exists) {
-        // We continue walking down the imports as long as the tail is non-empty, which gives us:
-        //   imports  ==  imp1 :: imp2 :: _
-        // And at least one of the following is true:
-        //   - imp1 and imp2 are at the same depth
-        //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
-        def keepLooking = (
-             lookupError == null
-          && imports.tail.nonEmpty
-          && (sameDepth || !imp1Explicit)
-        )
-        // If we find a competitor imp2 which imports the same name, possible outcomes are:
-        //
-        //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
-        //  - same depth, imp1 wild, imp2 wild:            ambiguity check
-        //  - same depth, imp1 explicit, imp2 explicit:    ambiguity check
-        //  - differing depth, imp1 wild, imp2 explicit:   ambiguity check
-        //  - all others:                                  imp1 wins, drop imp2
-        //
-        // The ambiguity check is: if we can verify that both imports refer to the same
-        // symbol (e.g. import foo.X followed by import foo._) then we discard imp2
-        // and proceed. If we cannot, issue an ambiguity error.
-        while (keepLooking) {
-          // If not at the same depth, limit the lookup to explicit imports.
-          // This is desirable from a performance standpoint (compare to
-          // filtering after the fact) but also necessary to keep the unused
-          // import check from being misled by symbol lookups which are not
-          // actually used.
-          val other = lookupImport(imp2, requireExplicit = !sameDepth)
-          def imp1wins() = { imports = imp1 :: imports.tail.tail }
-          def imp2wins() = { impSym = other ; imports = imports.tail }
-
-          if (!other.exists) // imp1 wins; drop imp2 and continue.
-            imp1wins()
-          else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
-            imp2wins()
-          else resolveAmbiguousImport(name, imp1, imp2) match {
-            case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
-            case _         => lookupError = ambiguousImports(imp1, imp2)
+            if (!other.exists) // imp1 wins; drop imp2 and continue.
+              imp1wins()
+            else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
+              imp2wins()
+            else resolveAmbiguousImport(name, imp1, imp2) match {
+              case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
+              case _         => lookupError = ambiguousImports(imp1, imp2)
+            }
           }
         }
-        // optimization: don't write out package prefixes
-        finish(resetPos(imp1.qual.duplicate), impSym)
+
+        // Java: A single-type-import declaration d in a compilation unit c of package p
+        // that imports a type named n shadows, throughout c, the declarations of:
+        //
+        //  1) any top level type named n declared in another compilation unit of p
+        //
+        // A type-import-on-demand declaration never causes any other declaration to be shadowed.
+        //
+        // Scala: Bindings of different kinds have a precedence defined on them:
+        //
+        //  1) Definitions and declarations that are local, inherited, or made available by a
+        //     package clause in the same compilation unit where the definition occurs have
+        //     highest precedence.
+        //  2) Explicit imports have next highest precedence.
+        def depthOk(imp: ImportInfo) = (
+             imp.depth > symbolDepth
+          || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+        )
+
+        // search imports
+        while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
+          impSym = lookupImport(imp1, requireExplicit = false)
+          if (!impSym.exists) imports = imports.tail
+        }
+
+        // found both in enclosing scope and imported from elsewhere, so pick one
+        if (defSym.exists && impSym.exists) {
+          // imported symbols take precedence over package-owned symbols in different compilation units.
+          if (isPackageOwnedInDifferentUnit(defSym))
+            defSym = NoSymbol
+          // Defined symbols take precedence over erroneous imports.
+          else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
+            impSym = NoSymbol
+          // Otherwise they are irreconcilably ambiguous
+          else
+            return ambiguousDefnAndImport(defSym.alternatives.head.owner, imp1)
+        }
+
+        // At this point only one or the other of defSym and impSym might be set.
+        if (defSym.exists)
+          finishDefSym(defSym, pre)
+        else if (impSym.exists) {
+          checkUpstreamImports()
+          // optimization: don't write out package prefixes
+          finish(resetPos(imp1.qual.duplicate), impSym)
+        }
+        else finish(EmptyTree, NoSymbol)
       }
-      else finish(EmptyTree, NoSymbol)
+      // ctor must be in enclosing class; anything else can be in enclosing contexts or imported
+      if (name == nme.CONSTRUCTOR) lookupCtor else doLookup
     }
 
     /**
@@ -1224,16 +1236,23 @@ trait Contexts { self: Analyzer =>
 
   /** A `Context` focussed on an `Import` tree */
   trait ImportContext extends Context {
-    private val impInfo: ImportInfo = {
+    private[this] lazy val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
-      if (settings.warnUnusedImport && !isRootImport) // excludes java.lang/scala/Predef imports
-        allImportInfos(unit) ::= info
+      if (settings.warnUnusedImport && !isRootImport) allImportInfos(unit) ::= info
       info
     }
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
-    override final def isRootImport = !tree.pos.isDefined
-    override final def toString     = super.toString + " with " + s"ImportContext { $impInfo; outer.owner = ${outer.owner} }"
+    // must be a def for bootstrapping -- TODO: why?
+    override final lazy val isRootImport = !tree.pos.isDefined || {
+      val head = {
+        val all = impInfo.allImportedSymbols.iterator
+        if (all.hasNext) all.next else null
+      }
+      //definitions.Interpreter_iw == head
+      head != null && definitions.Interpreter_iw.fullName == head.fullName
+    }
+    override final def toString = s"${super.toString} with ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
   /** A reporter for use during type checking. It has multiple modes for handling errors.
@@ -1377,7 +1396,6 @@ trait Contexts { self: Analyzer =>
     protected def handleError(pos: Position, msg: String): Unit = reporter.error(pos, msg)
  }
 
-
   private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 
@@ -1416,7 +1434,7 @@ trait Contexts { self: Analyzer =>
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
       case ErrorType        => tree setType NoType // fix for #2870
-      case _                => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info) //debug
+      case _                => throw new FatalError(s"symbol ${tree.symbol} has bad type: ${tree.symbol.info}") //debug
     }
 
     /** Is name imported explicitly, not via wildcard? */

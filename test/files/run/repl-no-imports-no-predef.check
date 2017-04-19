@@ -40,7 +40,7 @@ scala> { import scala.StringContext; s"answer: $answer" }
 res9: String = answer: 42
 
 scala> s"answer: $answer"
-<console>:13: error: not found: value StringContext
+<console>:14: error: not found: value StringContext
        s"answer: $answer"
        ^
 
@@ -172,7 +172,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
 res29: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
-<console>:12: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+<console>:13: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; (x: scala.Int) => x + 1 ;;
        ^
 res30: () => Int = <function0>

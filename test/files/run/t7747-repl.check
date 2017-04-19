@@ -110,7 +110,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
 res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:13: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+<console>:14: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; (x: Int) => x + 1 ;;
        ^
 res16: () => Int = <function0>
@@ -251,27 +251,21 @@ sealed class $read extends _root_.java.io.Serializable {
     super.<init>;
     ()
   };
-  sealed class $iw extends _root_.java.io.Serializable {
-    def <init>() = {
-      super.<init>;
-      ()
-    };
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    sealed class $iw extends _root_.java.io.Serializable {
-      def <init>() = {
-        super.<init>;
-        ()
-      };
-      val res3 = List(BippyBups, PuppyPups, Bingo)
-    };
-    val $iw = new $iw.<init>
-  };
-  val $iw = new $iw.<init>
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line44.$read.INSTANCE.BippyBups;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line44.$read.INSTANCE.BippyBups;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line45.$read.INSTANCE.PuppyPups;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line45.$read.INSTANCE.PuppyPups;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line46.$read.INSTANCE.Bingo;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  import $line46.$read.INSTANCE.Bingo;
+  import _root_.scala.tools.nsc.interpreter.$u007B$u007B;
+  val res3 = List(BippyBups, PuppyPups, Bingo)
 }
 object $read extends scala.AnyRef {
   def <init>() = {
@@ -289,7 +283,7 @@ scala> val a = Sum("A", "B")
 a: Sum = Sum(A,B)
 
 scala> def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
-b: (a: Sum)String
+b: (a: INSTANCE.Sum)String
 
 scala> b(a)
 res4: String = Found Sum

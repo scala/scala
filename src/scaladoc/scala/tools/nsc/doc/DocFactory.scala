@@ -78,16 +78,12 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         }
     )
 
-    modelFactory.makeModel match {
-      case Some(madeModel) =>
-        if (!settings.scaladocQuietRun)
-          println("model contains " + modelFactory.templatesCount + " documentable templates")
-        Some(madeModel)
-      case None =>
-        if (!settings.scaladocQuietRun)
-          println("no documentable class found in compilation units")
-        None
+    val made = modelFactory.makeModel
+    if (!settings.scaladocQuietRun) {
+      if (made.isEmpty) println("no documentable class found in compilation units")
+      else println("model contains " + modelFactory.templatesCount + " documentable templates")
     }
+    made
   }
 
   object NoCompilerRunException extends ControlThrowable { }

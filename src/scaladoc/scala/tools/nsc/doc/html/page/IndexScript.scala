@@ -75,6 +75,13 @@ class IndexScript(universe: doc.Universe) extends Page {
       )
     }
     f(universe.rootPackage).sortBy(_.toString)
+/*
+=======
+  def allPackages = {
+    def unpack(parent: Package): List[Package] = parent.packages.flatMap(p => p :: unpack(p))
+    unpack(universe.rootPackage).sortBy(_.toString)
+>>>>>>> SI-6623 Avoid $iw wrappers in REPL
+*/
   }
 
   def allPackagesWithTemplates: Map[Package, List[DocTemplateEntity]] = {

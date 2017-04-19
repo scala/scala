@@ -31,20 +31,17 @@ abstract class ReplTest extends DirectTest {
     val s = settings
     log("eval(): settings = " + s)
     val lines = ILoop.runForTranscript(code, s, inSession = inSession).lines
-    (if (welcoming) {
-      val welcome = "(Welcome to Scala).*".r
-      //val welcome = Regex.quote(header.lines.next).r
-      //val version = "(.*version).*".r   // version on separate line?
-      //var inHead  = false
-      lines map {
-        //case s @ welcome()        => inHead = true  ; s
-        //case version(s) if inHead => inHead = false ; s
-        case welcome(s) => s
-        case s          => s
+    val headless =
+      if (welcoming) {
+        val welcome = "(Welcome to Scala).*".r
+        lines map {
+          case welcome(s) => s
+          case s          => s
+        }
+      } else {
+        lines drop header.lines.size
       }
-    } else {
-      lines drop header.lines.size
-    }) map normalize
+    headless.map(normalize)
   }
   def show() = eval() foreach println
 }
@@ -52,6 +49,21 @@ abstract class ReplTest extends DirectTest {
 /** Retain and normalize the welcome message. */
 trait Welcoming { this: ReplTest =>
   override def welcoming = true
+}
+
+/** Strip Any.toString's id@abcdef16 hashCodes. These are generally at end of result lines. */
+trait Hashless extends ReplTest {
+  import Hashless._
+  override def normalize(s: String) = {
+    val n = super.normalize(s)
+    n match {
+      case hashless(prefix) => s"$prefix@XXXXXXXX"
+      case _ => n
+    }
+  }
+}
+object Hashless {
+  private val hashless = "(.*)@[a-fA-F0-9]+".r
 }
 
 /** Run a REPL test from a session transcript.

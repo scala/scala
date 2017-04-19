@@ -852,7 +852,7 @@ trait ContextErrors {
           } catch {
             // the code above tries various tricks to detect the relevant portion of the stack trace
             // if these tricks fail, just fall back to uninformative, but better than nothing, getMessage
-            case NonFatal(ex) => // currently giving a spurious warning, see SI-6994
+            case NonFatal(ex) =>
               macroLogVerbose("got an exception when processing a macro generated exception\n" +
                               "offender = " + stackTraceString(realex) + "\n" +
                               "error = " + stackTraceString(ex))

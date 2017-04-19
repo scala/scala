@@ -28,13 +28,13 @@ Forgetting all expression results and named terms: $intp, BippyBungus, x1, x2, x
 Forgetting defined types: BippyBungus
 
 scala> x1 + x2 + x3
-<console>:12: error: not found: value x1
+<console>:11: error: not found: value x1
        x1 + x2 + x3
        ^
-<console>:12: error: not found: value x2
+<console>:11: error: not found: value x2
        x1 + x2 + x3
             ^
-<console>:12: error: not found: value x3
+<console>:11: error: not found: value x3
        x1 + x2 + x3
                  ^
 
@@ -42,7 +42,7 @@ scala> val x1 = 4
 x1: Int = 4
 
 scala> new BippyBungus
-<console>:12: error: not found: type BippyBungus
+<console>:11: error: not found: type BippyBungus
        new BippyBungus
            ^
 

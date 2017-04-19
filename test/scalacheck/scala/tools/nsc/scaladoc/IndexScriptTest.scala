@@ -21,7 +21,7 @@ object IndexScriptTest extends Properties("IndexScript") {
   }
 
   val docFactory = {
-    val settings = new doc.Settings({Console.err.println(_)})
+    val settings = new doc.Settings(Console.err.println(_))
     settings.scaladocQuietRun = true
     settings.nowarn.value = true
     settings.classpath.value = getClasspath
@@ -31,7 +31,7 @@ object IndexScriptTest extends Properties("IndexScript") {
 
   val indexModelFactory = doc.model.IndexModelFactory
 
-  def createIndexScript(path: String) =
+  def createIndexScript(path: String): Option[IndexScript] =
     docFactory.makeUniverse(Left(List(path))) match {
       case Some(universe) =>
         Some(new IndexScript(universe))
@@ -48,7 +48,8 @@ object IndexScriptTest extends Properties("IndexScript") {
           "scala.tools.nsc",
           "scala.tools.nsc.doc",
           "scala.tools.nsc.doc.html",
-          "scala.tools.nsc.doc.html.page"
+          "scala.tools.nsc.doc.html.page",
+          "scala.tools.nsc.interpreter"     // incurred by Contexts.isRootImport
         )
       case None =>
         false
