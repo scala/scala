@@ -90,7 +90,7 @@ sealed class ListMap[K, +V]
 
   def updated[B1 >: V](key: K, value: B1): ListMap[K, B1] = new Node[B1](key, value)
 
-  def - (key: K): ListMap[K, V] = this
+  def remove(key: K): ListMap[K, V] = this
 
   def iterator(): Iterator[(K, V)] = {
     var curr: ListMap[K, V] = this
@@ -149,7 +149,7 @@ sealed class ListMap[K, +V]
       new m.Node[V2](k, v)
     }
 
-    override def - (k: K): ListMap[K, V1] = removeInternal(k, this, Nil)
+    override def remove(k: K): ListMap[K, V1] = removeInternal(k, this, Nil)
 
     @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V1], acc: List[ListMap[K, V1]]): ListMap[K, V1] =
       if (cur.isEmpty) acc.last

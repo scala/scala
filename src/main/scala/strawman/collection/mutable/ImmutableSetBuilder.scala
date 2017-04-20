@@ -14,5 +14,6 @@ class ImmutableSetBuilder[
 ](empty: C[A])
   extends ImmutableBuilder[A, C[A]](empty) {
 
-  def +=(x: A): this.type = { elems = elems + x; this }
+  def addInPlace(x: A): this.type = { elems = elems + x; this }
+
 }

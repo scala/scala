@@ -83,6 +83,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `empty`
 - [x] `filter` / `filterNot`
 - [ ] `groupBy`
+- [x] `intersect`
 - [x] `partition`
 - [x] `range`
 - [x] `splitAt`
@@ -92,7 +93,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 
 ### Transformations to collections that can have a different element type
 
-- [x] `++` / `concat`
+- [x] `++` / `concat` / `union`
 - [x] `flatMap`
 - [x] `map`
 - [x] `merged`

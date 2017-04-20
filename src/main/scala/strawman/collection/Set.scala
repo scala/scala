@@ -58,7 +58,16 @@ trait SetLike[A, +C[X] <: Set[X]]
 trait SetMonoTransforms[A, +Repr]
   extends IterableMonoTransforms[A, Repr] {
 
-  def & (that: Set[A]): Repr = this.filter(that)
+  /** Computes the intersection between this set and another set.
+    *
+    *  @param   that  the set to intersect with.
+    *  @return  a new set consisting of all elements that are both in this
+    *  set and in the given set `that`.
+    */
+  def intersect(that: Set[A]): Repr = this.filter(that)
+
+  /** Alias for `intersect` */
+  @inline final def & (that: Set[A]): Repr = intersect(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `Repr`.
@@ -69,7 +78,34 @@ trait SetMonoTransforms[A, +Repr]
 
 trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
 
-  def ++ (that: Set[A]): C[A]
+  /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
+    *
+    * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
+    *
+    * Example:
+    *  {{{
+    *    scala> val a = Set(1, 2) concat Set(2, 3)
+    *    a: scala.collection.immutable.Set[Int] = Set(1, 2, 3)
+    *  }}}
+    *
+    *  @param that     the collection containing the elements to add.
+    *  @return a new $coll with the given elements added, omitting duplicates.
+    */
+  def concat(that: Set[A]): C[A]
+
+  /** Alias for `concat` */
+  @inline final def ++ (that: Set[A]): C[A] = concat(that)
+
+  /** Computes the union between of set and another set.
+    *
+    *  @param   that  the set to form the union with.
+    *  @return  a new set consisting of all elements that are in this
+    *  set or in the given set `that`.
+    */
+  @inline final def union(that: Set[A]): C[A] = concat(that)
+
+  /** Alias for `union` */
+  @inline final def | (that: Set[A]): C[A] = concat(that)
 
 }
 

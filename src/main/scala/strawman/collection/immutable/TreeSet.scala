@@ -88,14 +88,14 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param elem    a new element to add.
     *  @return        a new $coll containing `elem` and all the elements of this $coll.
     */
-  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+  def add(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
 
   /** Creates a new `TreeSet` with the entry removed.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def - (elem: A): TreeSet[A] =
+  def remove(elem: A): TreeSet[A] =
     if (!RB.contains(tree, elem)) this
     else newSet(RB.delete(tree, elem))
 

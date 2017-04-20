@@ -30,9 +30,9 @@ sealed trait List[+A]
     else prefix.head :: prefix.tail ++: this
 
   /** When concatenating with another list `xs`, avoid copying `xs` */
-  override def ++[B >: A](xs: IterableOnce[B]): List[B] = xs match {
+  override def concat[B >: A](xs: IterableOnce[B]): List[B] = xs match {
     case xs: List[B] => this ++: xs
-    case _ => super.++(xs)
+    case _ => super.concat(xs)
   }
 
   override def className = "List"

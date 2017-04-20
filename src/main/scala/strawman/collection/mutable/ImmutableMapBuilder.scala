@@ -7,6 +7,6 @@ class ImmutableMapBuilder[
 ](empty: C[K, V])
   extends ImmutableBuilder[(K, V), C[K, V]](empty) {
 
-  def += (kv: (K, V)): this.type = { elems = elems + kv; this }
+  def addInPlace(kv: (K, V)): this.type = { elems = elems + kv; this }
 
 }

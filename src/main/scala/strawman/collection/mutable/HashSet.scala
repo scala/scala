@@ -22,15 +22,15 @@ final class HashSet[A]
   def newBuilder[E]: Builder[E, HashSet[E]] = new HashSet[E]
   def result: HashSet[A] = this
 
-  def +=(elem: A): this.type = ???
-  def -=(elem: A): this.type = ???
+  def addInPlace(elem: A): this.type = ???
+  def removeInPlace(elem: A): this.type = ???
   def clear(): Unit = ???
 
   def contains(elem: A): Boolean = ???
   def empty: HashSet[A] = HashSet.empty
   def get(elem: A): Option[A] = ???
 
-  def ++ (that: strawman.collection.Set[A]): HashSet[A] = ???
+  def concat(that: strawman.collection.Set[A]): HashSet[A] = ???
 
 }
 

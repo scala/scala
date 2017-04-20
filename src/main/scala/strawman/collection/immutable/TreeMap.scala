@@ -48,7 +48,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
-  def - (key: K): TreeMap[K,V] =
+  def remove(key: K): TreeMap[K,V] =
     if (!RB.contains(tree, key)) this
     else new TreeMap(RB.delete(tree, key))
 

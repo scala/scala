@@ -4,7 +4,7 @@ package collection.immutable
 import strawman.collection.mutable.Builder
 import strawman.collection.IterableFactory
 
-import scala.Any
+import scala.{Any, inline}
 
 /** Base trait for immutable set collections */
 trait Set[A]
@@ -24,9 +24,26 @@ trait SetLike[A, +C[X] <: Set[X] with SetLike[X, C]]
 trait SetMonoTransforms[A, +Repr]
   extends collection.SetMonoTransforms[A, Repr] {
 
-  def + (elem: A): Repr
+  /** Creates a new set with an additional element, unless the element is
+    *  already present.
+    *
+    *  @param elem the element to be added
+    *  @return a new set that contains all elements of this set and that also
+    *          contains `elem`.
+    */
+  def add(elem: A): Repr
+  /** Alias for `add` */
+  @inline final def + (elem: A): Repr = add(elem)
 
-  def - (elem: A): Repr
+  /** Creates a new set with a given element removed from this set.
+    *
+    *  @param elem the element to be removed
+    *  @return a new set that contains all elements of this set but that does not
+    *          contain `elem`.
+    */
+  def remove(elem: A): Repr
+  /** Alias for `remove` */
+  @inline final def - (elem: A): Repr = remove(elem)
 
 }
 
@@ -35,7 +52,7 @@ trait SetPolyTransforms[A, +C[X] <: Set[X] with SetLike[X, C]]
 
   protected def coll: C[A]
 
-  def ++ (that: collection.Set[A]): C[A] = {
+  def concat (that: collection.Set[A]): C[A] = {
     var result: C[A] = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()

@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, Int, Numeric, StringContext, Unit}
+import scala.{Any, Array, Boolean, inline, Int, Numeric, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
@@ -243,8 +243,19 @@ trait IterablePolyTransforms[+A, +C[_]] extends Any {
   /** Flatmap */
   def flatMap[B](f: A => IterableOnce[B]): C[B] = fromIterable(View.FlatMap(coll, f))
 
-  /** Concatenation */
-  def ++[B >: A](xs: IterableOnce[B]): C[B] = fromIterable(View.Concat(coll, xs))
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+    *  the element types of the two operands.
+    *
+    *  @param xs   the traversable to append.
+    *  @tparam B   the element type of the returned collection.
+    *  @return     a new collection of type `C[B]` which contains all elements
+    *              of this $coll followed by all elements of `xs`.
+    */
+  def concat[B >: A](xs: IterableOnce[B]): C[B] = fromIterable(View.Concat(coll, xs))
+
+  /** Alias for `concat` */
+  @inline final def ++ [B >: A](xs: IterableOnce[B]): C[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
@@ -270,8 +281,19 @@ trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any w
   /** Flatmap */
   def flatMap[B : Ev](f: A => IterableOnce[B]): CC[B] = constrainedFromIterable(View.FlatMap(coll, f))
 
-  /** Concatenation */
-  def ++[B >: A : Ev](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+    *  the element types of the two operands.
+    *
+    *  @param xs   the traversable to append.
+    *  @tparam B   the element type of the returned collection.
+    *  @return     a new collection of type `CC[B]` which contains all elements
+    *              of this $coll followed by all elements of `xs`.
+    */
+  def concat[B >: A : Ev](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
+
+  /** Alias for `concat` */
+  @inline final def ++ [B >: A : Ev](xs: IterableOnce[B]): CC[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B])(implicit ev: Ev[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = constrainedFromIterable(View.Zip(coll, xs))
