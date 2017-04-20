@@ -33,7 +33,7 @@ object BuildFrom {
   }
 
   /** Build the source collection type from a ConstrainedPolyBuildable */
-  implicit def buildFromConstrainedPolyBuildable[Ev[_], Impl[_], CC[_], A, E : Ev]: BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] { type To = CC[E] } = new BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] {
+  implicit def buildFromConstrainedPolyBuildable[Ev[_], CC[_], A, E : Ev]: BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] { type To = CC[E] } = new BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] {
     //TODO: Reuse a prototype instance
     type To = CC[E]
     def newBuilder(from: ConstrainedPolyBuildable[A, CC, Ev]): Builder[E, To] = from.newConstrainedBuilder[E]

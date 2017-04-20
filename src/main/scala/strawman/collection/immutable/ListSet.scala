@@ -114,7 +114,7 @@ sealed class ListSet[A]
 
     @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
       if (cur.isEmpty) acc.last
-      else if (k == cur.elem) acc.foldLeft(cur.next) { case (t, h) => new t.Node(h.elem) }
+      else if (k == cur.elem) acc.foldLeft(cur.next)((t, h) => new t.Node(h.elem)) 
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListSet[A] = ListSet.this

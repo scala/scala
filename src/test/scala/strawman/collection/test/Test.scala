@@ -290,15 +290,15 @@ class StrawmanTest {
   }
 
   def equality(): Unit = {
-    val list = List(1, 2, 3)
-    val lazyList = LazyList(1, 2, 3)
+    val list: Iterable[Int] = List(1, 2, 3)
+    val lazyList: Iterable[Int] = LazyList(1, 2, 3)
     val buffer = ArrayBuffer(1, 2, 3)
     assert(list == lazyList)
     assert(list.## == lazyList.##)
-    assert(list == buffer)
+    assert(list == (buffer: Iterable[Int]))
     assert(list.## == buffer.##)
     buffer += 4
-    assert(list != buffer)
+    assert(list != (buffer: Iterable[Int]))
     assert(list.## != buffer.##)
   }
 

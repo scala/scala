@@ -55,14 +55,14 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case _                                  => false
   }
 
-  final class DupIterator(xs: Array[Iterable[T]]) extends {
-    override val initDepth                                     = outer.depth
-    override val initArrayStack: Array[Array[Iterable[T @uV]]] = outer.arrayStack
-    override val initPosStack                                  = outer.posStack
-    override val initArrayD: Array[Iterable[T @uV]]            = outer.arrayD
-    override val initPosD                                      = outer.posD
-    override val initSubIter                                   = outer.subIter
-  } with TrieIterator[T](xs) {
+  final class DupIterator(xs: Array[Iterable[T]] @uV) extends TrieIterator[T](xs) {
+    override def initDepth                                     = outer.depth
+    override def initArrayStack: Array[Array[Iterable[T @uV]]] = outer.arrayStack
+    override def initPosStack                                  = outer.posStack
+    override def initArrayD: Array[Iterable[T @uV]]            = outer.arrayD
+    override def initPosD                                      = outer.posD
+    override def initSubIter                                   = outer.subIter
+
     final override def getElem(x: AnyRef): T = outer.getElem(x)
   }
 
