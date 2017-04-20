@@ -2138,14 +2138,14 @@ trait Types
       var h = productSeed
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
-      var i = 0
-      var elem = args
-      while (elem ne Nil) {
-        h = mix(h, elem.head.hashCode())
-        elem = elem.tail
-        i += 1
+      var length = 2
+      var elems = args
+      while (elems ne Nil) {
+        h = mix(h, elems.head.hashCode())
+        elems = elems.tail
+        length += 1
       }
-      finalizeHash(h, 2 + i)
+      finalizeHash(h, length)
     }
     //OPT specialize equals
     override final def equals(other: Any): Boolean = {
