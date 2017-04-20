@@ -1,5 +1,7 @@
 package strawman.collection
 
+import strawman.collection.mutable.Builder
+
 import scala.Ordering
 
 /** Base type of sorted sets */
@@ -20,4 +22,10 @@ trait SortedSetLike[A, +C[X] <: SortedSet[X]]
 
   def lastKey: A = last
 
+}
+
+object SortedSet extends ConstrainedIterableFactory[SortedSet, Ordering] {
+  def empty[A : Ordering]: SortedSet[A] = immutable.SortedSet.empty
+  def constrainedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = immutable.SortedSet.constrainedNewBuilder
+  def constrainedFromIterable[E : Ordering](it: Iterable[E]): SortedSet[E] = immutable.SortedSet.constrainedFromIterable(it)
 }

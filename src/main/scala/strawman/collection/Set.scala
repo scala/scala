@@ -109,9 +109,17 @@ trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
 
 }
 
-// Temporary, TODO move to MurmurHash3
-object Set {
+object Set extends IterableFactory[Set] {
 
+  def newBuilder[A]: mutable.Builder[A, Set[A]] = immutable.Set.newBuilder
+  def empty[A <: Any]: Set[A] = immutable.Set.empty
+  def fromIterable[E](it: Iterable[E]): Set[E] =
+    it match {
+      case s: Set[E] => s
+      case _         => newBuilder[E].++=(it).result
+    }
+
+  // Temporary, TODO move to MurmurHash3
   def setHash(xs: Set[_]): Int = unorderedHash(xs, "Set".##)
 
   final def unorderedHash(xs: Iterable[_], seed: Int): Int = {

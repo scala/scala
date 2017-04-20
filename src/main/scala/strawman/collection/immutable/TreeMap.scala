@@ -5,7 +5,7 @@ import strawman.collection.ConstrainedMapFactory
 import strawman.collection.immutable.{RedBlackTree => RB}
 import strawman.collection.mutable.{Builder, ImmutableMapBuilder}
 
-import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Unit}
+import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 
 /** This class implements immutable maps using a tree.
   *
@@ -43,6 +43,8 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
+  def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
+
   def constrainedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
     TreeMap.constrainedNewBuilder[K2, V2].++=(it).result
 
@@ -56,7 +58,9 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def empty: TreeMap[K, V] = TreeMap.empty[K, V](ordering)
 
-  def range(from: K, until: K): TreeMap[K,V] = new TreeMap[K, V](RB.range(tree, from, until))
+  def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMap[K, V](RB.rangeImpl(tree, from, until))
+
+  override def range(from: K, until: K): TreeMap[K,V] = new TreeMap[K, V](RB.range(tree, from, until))
 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 

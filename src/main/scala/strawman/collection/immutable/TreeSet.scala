@@ -5,7 +5,7 @@ import collection.mutable.{Builder, ImmutableSetBuilder}
 import collection.{ConstrainedIterableFactory, ConstrainedPolyBuildable, Iterator}
 import collection.immutable.{RedBlackTree => RB}
 
-import scala.{Boolean, Int, NullPointerException, Ordering, Unit}
+import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
 
 /** This class implements immutable sorted sets using a tree.
   *
@@ -60,6 +60,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def iterator(): Iterator[A] = RB.keysIterator(tree)
 
+  def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
+
   def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
 
   protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): TreeSet[A] =
@@ -81,7 +83,9 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     */
   def empty: TreeSet[A] = TreeSet.empty
 
-  def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
+  override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
+
+  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
 
   /** Creates a new `TreeSet` with the entry added.
     *

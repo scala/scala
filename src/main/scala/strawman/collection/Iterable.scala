@@ -30,13 +30,7 @@ trait IterableLike[+A, +C[X] <: Iterable[X]]
   extends FromIterable[C]
     with IterableOps[A]
     with IterableMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
-    with IterablePolyTransforms[A, C] {
-
-  /** Create a collection of type `C[A]` from the elements of `coll`, which has
-    *  the same element type as this collection. Overridden in StringOps and ArrayOps.
-    */
-  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): C[A]
-}
+    with IterablePolyTransforms[A, C]
 
 /** Operations over iterables. No operation defined here is generic in the
   *  type of the underlying collection.
