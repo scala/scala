@@ -2,10 +2,10 @@ package strawman
 
 package collection.immutable
 
-import strawman.collection.{IterableFactory, Iterator}
+import strawman.collection.{Hashing, IterableFactory, Iterator}
 import strawman.collection.mutable.{Builder, ImmutableSetBuilder}
 
-import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, NoSuchElementException, Serializable, SerialVersionUID, sys, Unit}
+import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, sys}
 import scala.Predef.assert
 import java.lang.Integer
 
@@ -26,6 +26,7 @@ import java.lang.Integer
 sealed trait HashSet[A]
   extends Set[A]
     with SetLike[A, HashSet]
+    with Hashing[A]
     with Serializable {
 
   import HashSet.nullToEmpty
@@ -48,17 +49,6 @@ sealed trait HashSet[A]
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
 
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A]
-
-  protected def computeHash(key: A): Int = improve(elemHashCode(key))
-
-  protected final def improve(hcode: Int): Int = {
-    var h: Int = hcode + ~(hcode << 9)
-    h = h ^ (h >>> 14)
-    h = h + (h << 4)
-    h ^ (h >>> 10)
-  }
-
-  protected final def elemHashCode(elem: A): Int = elem.##
 
 }
 

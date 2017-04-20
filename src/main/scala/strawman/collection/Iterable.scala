@@ -176,8 +176,22 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
   protected def coll: Iterable[A]
   protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): Repr
 
-  /** All elements satisfying predicate `p` */
-  def filter(p: A => Boolean): Repr = fromIterableWithSameElemType(View.Filter(coll, p))
+  /** Selects all elements of this $coll which satisfy a predicate.
+    *
+    *  @param pred  the predicate used to test elements.
+    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
+    *               predicate `pred`. Their order may not be preserved.
+    */
+  def filter(pred: A => Boolean): Repr = fromIterableWithSameElemType(View.Filter(coll, pred))
+
+  /** Selects all elements of this $coll which do not satisfy a predicate.
+    *
+    *  @param pred  the predicate used to test elements.
+    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
+    *               predicate `pred`. Their order may not be preserved.
+    */
+  // TODO Generalize filter and filterNot to avoid the creation of the intermediate function
+  def filterNot(pred: A => Boolean): Repr = fromIterableWithSameElemType(View.Filter(coll, (a: A) => !pred(a)))
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.

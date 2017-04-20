@@ -41,10 +41,11 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [ ] `LinkedList`
 - [ ] `DoubleLinkedList`
 - [ ] `Range` / `NumericRange`
-- [ ] `HashMap`
-- [ ] `TreeMap`
+- [ ] `Vector`
+- [x] `HashMap`
+- [x] `TreeMap`
 - [ ] `IntMap` / `LongMap` (?)
-- [ ] `ListMap`
+- [x] `ListMap`
 - [ ] `MultiMap`
 - [x] `HashSet`
 - [x] `ListSet`
@@ -57,13 +58,17 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 
 ### Operations not returning a collection
 
+- [x] `apply`
+- [x] `contains`
 - [x] `firstKey`
 - [x] `forall`
 - [x] `foreach`
 - [x] `foldLeft`
 - [x] `foldRight`
+- [x] `get`
 - [x] `head`
 - [x] `indexWhere`
+- [x] `isDefinedAt`
 - [x] `isEmpty` / `nonEmpty`
 - [x] `last`
 - [x] `lastKey`
@@ -76,19 +81,21 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 
 - [x] `drop`
 - [x] `empty`
-- [x] `filter`
+- [x] `filter` / `filterNot`
+- [ ] `groupBy`
 - [x] `partition`
 - [x] `range`
 - [x] `splitAt`
 - [x] `tail`
 - [x] `take`
-- [ ] `groupBy`
+- [x] `updated`
 
 ### Transformations to collections that can have a different element type
 
 - [x] `++` / `concat`
 - [x] `flatMap`
 - [x] `map`
+- [x] `merged`
 - [x] `zip`
 
 ### In-place mutating operations
