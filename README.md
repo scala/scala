@@ -8,25 +8,6 @@ Prototype improvements for Scala collections.
 - [Dotty Issue](https://github.com/lampepfl/dotty/issues/818)
 - [Scala Center Proposal](https://github.com/scalacenter/advisoryboard/blob/master/proposals/007-collections.md)
 
-## Build
-
-- Compile the collections and run the
-  tests:
-  
-  ~~~
-  >; compile; test
-  ~~~
-- Run the memory benchmark:
-  
-  ~~~
-  > memoryBenchmark/charts
-  ~~~
-- Run the execution time benchmark:
-  
-  ~~~
-  > timeBenchmark/charts
-  ~~~
-
 ## Use it in your project
 
 We published a 0.1.0 version so that you can experiment with the new design.
