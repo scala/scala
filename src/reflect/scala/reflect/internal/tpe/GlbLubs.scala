@@ -184,8 +184,7 @@ private[internal] trait GlbLubs {
   /** Eliminate from list of types all elements which are a supertype
     *  of some other element of the list. */
   private def elimSuper(ts: List[Type]): List[Type] = ts match {
-    case List() => ts
-    case List(t) => ts
+    case List() | List(_) => ts
     case t :: ts1 =>
       val rest = elimSuper(ts1 filter (t1 => !(t <:< t1)))
       if (rest exists (t1 => t1 <:< t)) rest else t :: rest
