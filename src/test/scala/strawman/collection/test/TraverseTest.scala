@@ -14,15 +14,15 @@ import java.lang.String
 
 class TraverseTest {
 
-  // You can either overload methods for PolyBuildable and ConstrainedPolyBuildable (if you want to support constrained collection types)
+  // You can either overload methods for PolyBuildable and OrderedPolyBuildable (if you want to support ordered collection types)
   def optionSequence1[C[X] <: Iterable[X] with PolyBuildable[X, C], A](xs: C[Option[A]]): Option[C[A]] =
     xs.foldLeft[Option[Builder[A, C[A]]]](Some(xs.newBuilder)) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
 
-  def optionSequence1[Ev[_], CC[_], A](xs: ConstrainedPolyBuildable[Option[A], CC, Ev] with Iterable[Option[A]])(implicit ev: Ev[A]): Option[CC[A]] =
-    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.newConstrainedBuilder)) {
+  def optionSequence1[CC[_], A](xs: OrderedPolyBuildable[Option[A], CC] with Iterable[Option[A]])(implicit ev: Ordering[A]): Option[CC[A]] =
+    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.newOrderedBuilder)) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
@@ -58,8 +58,7 @@ class TraverseTest {
     val o1t: Option[immutable.List[Int]] = o1
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
-    val o2 = optionSequence(xs2)(
-     BuildFrom.buildFromConstrainedPolyBuildable[Ordering, immutable.TreeSet, Option[String], String])
+    val o2 = optionSequence(xs2)
     val o2t: Option[immutable.TreeSet[String]] = o2
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
@@ -70,7 +69,8 @@ class TraverseTest {
 
   @Test
   def eitherSequenceTest: Unit = {
-    val xs3: mutable.ListBuffer[Either[Int, String]] = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
+    val xs3 = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
+    val xs3t: mutable.ListBuffer[Either[Int, String]] = xs3
     val e1 = eitherSequence(xs3)
     val e1t: Either[Int, mutable.ListBuffer[String]] = e1
   }
