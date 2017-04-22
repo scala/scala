@@ -120,15 +120,15 @@ trait MapFactory[+C[_, _]] { self =>
 }
 
 /** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
-trait ConstrainedMapFactory[+C[_, _], Ev[_]] { self =>
+trait OrderedMapFactory[+C[_, _]] { self =>
 
-  def constrainedNewBuilder[K : Ev, V]: Builder[(K, V), C[K, V]]
+  def orderedNewBuilder[K : Ordering, V]: Builder[(K, V), C[K, V]]
 
-  def constrainedFromIterable[K : Ev, V](it: Iterable[(K, V)]): C[K, V] =
-    constrainedNewBuilder[K, V].++=(it).result
+  def orderedFromIterable[K : Ordering, V](it: Iterable[(K, V)]): C[K, V] =
+    orderedNewBuilder[K, V].++=(it).result
 
-  def empty[K : Ev, V]: C[K, V]
+  def empty[K : Ordering, V]: C[K, V]
 
-  def apply[K : Ev, V](elems: (K, V)*): C[K, V] =
-    constrainedNewBuilder[K, V].++=(elems.toStrawman).result
+  def apply[K : Ordering, V](elems: (K, V)*): C[K, V] =
+    orderedNewBuilder[K, V].++=(elems.toStrawman).result
 }

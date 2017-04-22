@@ -3,7 +3,6 @@ package collection.immutable
 
 import strawman.collection.mutable.Builder
 import strawman.collection.ConstrainedIterableFactory
-
 import scala.Ordering
 
 /** Base trait for sorted sets */

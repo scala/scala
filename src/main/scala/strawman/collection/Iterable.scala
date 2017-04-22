@@ -263,17 +263,16 @@ trait IterablePolyTransforms[+A, +C[_]] extends Any {
   * case of `Set`). The methods in this trait are the same as the ones in `IterablePolyTransforms` but they do
   * require the implicit evidence, so they can build a new instance of `CC`.
   */
-trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with IterablePolyTransforms[A, C] {
-  type Ev[_]
+trait OrderedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with IterablePolyTransforms[A, C] {
 
   protected def coll: Iterable[A]
-  protected def constrainedFromIterable[B: Ev](it: Iterable[B]): CC[B]
+  protected def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
   /** Map */
-  def map[B : Ev](f: A => B): CC[B] = constrainedFromIterable(View.Map(coll, f))
+  def map[B : Ordering](f: A => B): CC[B] = orderedFromIterable(View.Map(coll, f))
 
   /** Flatmap */
-  def flatMap[B : Ev](f: A => IterableOnce[B]): CC[B] = constrainedFromIterable(View.FlatMap(coll, f))
+  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = orderedFromIterable(View.FlatMap(coll, f))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -284,24 +283,24 @@ trait ConstrainedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any w
     *  @return     a new collection of type `CC[B]` which contains all elements
     *              of this $coll followed by all elements of `xs`.
     */
-  def concat[B >: A : Ev](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
+  def concat[B >: A : Ordering](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
-  @inline final def ++ [B >: A : Ev](xs: IterableOnce[B]): CC[B] = concat(xs)
+  @inline final def ++ [B >: A : Ordering](xs: IterableOnce[B]): CC[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
-  def zip[B](xs: IterableOnce[B])(implicit ev: Ev[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = constrainedFromIterable(View.Zip(coll, xs))
+  def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = orderedFromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 
-  def collect[B: Ev](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a => 
+  def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
     if (pf.isDefinedAt(a)) View.Elems(pf(a))
     else View.Empty
   )
 
-  /** Widen this collection to the most specific unconstrained collection type. This is required in order to
-    * call methods from `IterablePolyTransforms` to build a new unconstrained collection when no implicit evidence
+  /** Widen this collection to the most specific unordered collection type. This is required in order to
+    * call methods from `IterablePolyTransforms` to build a new unordered collection when no implicit evidence
     * is available. */
-  def unconstrained: C[A @uncheckedVariance]
+  def unordered: C[A @uncheckedVariance]
 }
 
 /** Base trait for strict collections that can be built using a builder.
@@ -338,8 +337,8 @@ trait PolyBuildable[+A, +C[_]] extends Any with FromIterable[C] {
   * @tparam  A    the element type of the collection
   * @tparam CC    the type constructor of the underlying collection
   */
-trait ConstrainedPolyBuildable[+A, +CC[_], Ev[_]] extends Any with ConstrainedFromIterable[CC, Ev] {
+trait OrderedPolyBuildable[+A, +CC[_]] extends Any with OrderedFromIterable[CC] {
 
   /** Creates a new builder. */
-  def newConstrainedBuilder[E : Ev]: Builder[E, CC[E]]
+  def newOrderedBuilder[E : Ordering]: Builder[E, CC[E]]
 }

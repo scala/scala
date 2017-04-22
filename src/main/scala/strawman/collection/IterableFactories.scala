@@ -13,8 +13,8 @@ trait FromIterable[+C[_]] extends Any {
 
 /** Base trait for instances that can construct a collection from an iterable by using an implicit evidence
   * for the element type. */
-trait ConstrainedFromIterable[+CC[_], Ev[_]] extends Any {
-  def constrainedFromIterable[E : Ev](it: Iterable[E]): CC[E]
+trait OrderedFromIterable[+CC[_]] extends Any {
+  def orderedFromIterable[E : Ordering](it: Iterable[E]): CC[E]
 }
 
 /** Base trait for companion objects of collection types that may require an upper bound but no implicit evidence */
@@ -40,13 +40,13 @@ trait IterableFactory[+C[_]] extends BoundedIterableFactory[Any] with FromIterab
 }
 
 /** Base trait for companion objects of collections that require an implicit evidence */
-trait ConstrainedIterableFactory[+CC[X], Ev[_]] extends ConstrainedFromIterable[CC, Ev] {
+trait OrderedIterableFactory[+CC[X]] extends OrderedFromIterable[CC] {
 
-  def empty[A : Ev]: CC[A]
+  def empty[A : Ordering]: CC[A]
 
-  def apply[A : Ev](xs: A*): CC[A] = constrainedFromIterable(View.Elems(xs: _*))
+  def apply[A : Ordering](xs: A*): CC[A] = orderedFromIterable(View.Elems(xs: _*))
 
-  def fill[A : Ev](n: Int)(elem: => A): CC[A] = constrainedFromIterable(View.Fill(n)(elem))
+  def fill[A : Ordering](n: Int)(elem: => A): CC[A] = orderedFromIterable(View.Fill(n)(elem))
 
-  def constrainedNewBuilder[A : Ev]: Builder[A, CC[A]]
+  def orderedNewBuilder[A : Ordering]: Builder[A, CC[A]]
 }

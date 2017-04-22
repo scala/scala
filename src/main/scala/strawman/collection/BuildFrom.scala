@@ -32,12 +32,12 @@ object BuildFrom {
     def fromIterable(from: C[A])(it: Iterable[E]): To = from.fromIterable(it)
   }
 
-  /** Build the source collection type from a ConstrainedPolyBuildable */
-  implicit def buildFromConstrainedPolyBuildable[Ev[_], CC[_], A, E : Ev]: BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] { type To = CC[E] } = new BuildFrom[ConstrainedPolyBuildable[A, CC, Ev], E] {
+  /** Build the source collection type from a OrderedPolyBuildable */
+  implicit def buildFromOrderedPolyBuildable[CC[_], A, E : Ordering]: BuildFrom[OrderedPolyBuildable[A, CC], E] { type To = CC[E] } = new BuildFrom[OrderedPolyBuildable[A, CC], E] {
     //TODO: Reuse a prototype instance
     type To = CC[E]
-    def newBuilder(from: ConstrainedPolyBuildable[A, CC, Ev]): Builder[E, To] = from.newConstrainedBuilder[E]
-    def fromIterable(from: ConstrainedPolyBuildable[A, CC, Ev])(it: Iterable[E]): To = from.constrainedFromIterable(it)
+    def newBuilder(from: OrderedPolyBuildable[A, CC]): Builder[E, To] = from.newOrderedBuilder[E]
+    def fromIterable(from: OrderedPolyBuildable[A, CC])(it: Iterable[E]): To = from.orderedFromIterable(it)
   }
 
   /** Convert an IterableFactory to a BuildFrom */
@@ -47,11 +47,11 @@ object BuildFrom {
     def fromIterable(from: Any)(it: Iterable[E]): To = fact.fromIterable(it)
   }
 
-  /** Convert a ConstrainedIterableFactory to a BuildFrom */
-  implicit def buildConstrainedIterableFactory[CC[_], Ev[_], E : Ev](fact: ConstrainedIterableFactory[CC, Ev]): BuildFrom[Any, E] { type To = CC[E] } = new BuildFrom[Any, E] {
+  /** Convert an OrderedIterableFactory to a BuildFrom */
+  implicit def buildOrderedIterableFactory[CC[_], E : Ordering](fact: OrderedIterableFactory[CC]): BuildFrom[Any, E] { type To = CC[E] } = new BuildFrom[Any, E] {
     type To = CC[E]
-    def newBuilder(from: Any): Builder[E, To] = fact.constrainedNewBuilder
-    def fromIterable(from: Any)(it: Iterable[E]): To = fact.constrainedFromIterable(it)
+    def newBuilder(from: Any): Builder[E, To] = fact.orderedNewBuilder
+    def fromIterable(from: Any)(it: Iterable[E]): To = fact.orderedFromIterable(it)
   }
 
   /** Convert a MapFactory to a BuildFrom */
@@ -61,10 +61,10 @@ object BuildFrom {
     def fromIterable(from: Any)(it: Iterable[(K, V)]): To = fact.fromIterable(it)
   }
 
-  /** Convert a ConstrainedMapFactory to a BuildFrom */
-  implicit def buildConstrainedMapFactory[CC[_, _], Ev[_], K : Ev, V](fact: ConstrainedMapFactory[CC, Ev]): BuildFrom[Any, (K, V)] { type To = CC[K, V] } = new BuildFrom[Any, (K, V)] {
+  /** Convert a OrderedMapFactory to a BuildFrom */
+  implicit def buildOrderedMapFactory[CC[_, _], K : Ordering, V](fact: OrderedMapFactory[CC]): BuildFrom[Any, (K, V)] { type To = CC[K, V] } = new BuildFrom[Any, (K, V)] {
     type To = CC[K, V]
-    def newBuilder(from: Any): Builder[(K, V), To] = fact.constrainedNewBuilder
-    def fromIterable(from: Any)(it: Iterable[(K, V)]): To = fact.constrainedFromIterable(it)
+    def newBuilder(from: Any): Builder[(K, V), To] = fact.orderedNewBuilder
+    def fromIterable(from: Any)(it: Iterable[(K, V)]): To = fact.orderedFromIterable(it)
   }
 }

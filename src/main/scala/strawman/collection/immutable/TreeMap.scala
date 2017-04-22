@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.ConstrainedMapFactory
+import strawman.collection.OrderedMapFactory
 import strawman.collection.immutable.{RedBlackTree => RB}
 import strawman.collection.mutable.{Builder, ImmutableMapBuilder}
 
@@ -100,11 +100,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   *  @define Coll immutable.TreeMap
   *  @define coll immutable tree map
   */
-object TreeMap extends ConstrainedMapFactory[TreeMap, Ordering] {
+object TreeMap extends OrderedMapFactory[TreeMap] {
 
-  def constrainedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
+  def orderedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
     new ImmutableMapBuilder[K, V, TreeMap](empty[K, V])
 
   def empty[K: Ordering, V]: TreeMap[K, V] = new TreeMap()
-
 }
