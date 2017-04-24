@@ -1269,7 +1269,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def javaSimpleName: Name = addModuleSuffix(simpleName.dropLocal)
     def javaBinaryName: Name = name.newName(javaBinaryNameString)
-    def javaBinaryNameString: String = fullName('/', moduleSuffix)
+    def javaBinaryNameString: String = {
+      if (javaBinaryNameStringCache == null)
+        javaBinaryNameStringCache = fullName('/', moduleSuffix)
+      javaBinaryNameStringCache
+    }
+    private[this] var javaBinaryNameStringCache: String = null
     def javaClassName: String  = fullName('.', moduleSuffix)
 
     /** The encoded full path name of this symbol, where outer names and inner names

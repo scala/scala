@@ -235,6 +235,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ThrowableClass
     definitions.UninitializedErrorClass
     definitions.RuntimeExceptionClass
+    definitions.IllegalArgExceptionClass
     definitions.UninitializedFieldConstructor
     definitions.PartialFunctionClass
     definitions.AbstractPartialFunctionClass

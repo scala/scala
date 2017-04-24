@@ -71,14 +71,10 @@ object LambdaDeserializer {
       }
 
       // Lookup the implementation method
-      val implMethod: MethodHandle = try {
-        if (targetMethodMap.containsKey(key)) {
-          targetMethodMap.get(key)
-        } else {
-          throw new IllegalArgumentException("Illegal lambda deserialization")
-        }
-      } catch {
-        case e: ReflectiveOperationException => throw new IllegalArgumentException("Illegal lambda deserialization", e)
+      val implMethod: MethodHandle = if (targetMethodMap.containsKey(key)) {
+        targetMethodMap.get(key)
+      } else {
+        throw new IllegalArgumentException("Illegal lambda deserialization")
       }
 
       val flags: Int = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS

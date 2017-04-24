@@ -872,13 +872,26 @@ abstract class ClassfileParser {
           parseExceptions(attrLen)
 
         case tpnme.SourceFileATTR =>
-          val srcfileLeaf = readName().toString.trim
-          val srcpath = sym.enclosingPackage match {
-            case NoSymbol => srcfileLeaf
-            case rootMirror.EmptyPackage => srcfileLeaf
-            case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
-          }
-          srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
+          if (forInteractive) {
+            // opt: disable this code in the batch compiler for performance reasons.
+            // it appears to be looking for the .java source file mentioned in this attribute
+            // in the output directories of scalac.
+            //
+            // References:
+            // https://issues.scala-lang.org/browse/SI-2689
+            // https://github.com/scala/scala/commit/7315339782f6e19ddd6199768352a91ef66eb27d
+            // https://github.com/scala-ide/scala-ide/commit/786ea5d4dc44065379a05eb3ac65d37f8948c05d
+            //
+            // TODO: can we disable this altogether? Does Scala-IDE actually intermingle source and classfiles in a way
+            //       that this could ever find something?
+            val srcfileLeaf = readName().toString.trim
+            val srcpath = sym.enclosingPackage match {
+              case NoSymbol => srcfileLeaf
+              case rootMirror.EmptyPackage => srcfileLeaf
+              case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
+            }
+            srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
+          } else in.skip(attrLen)
         case tpnme.CodeATTR =>
           if (sym.owner.isInterface) {
             sym setFlag JAVA_DEFAULTMETHOD
