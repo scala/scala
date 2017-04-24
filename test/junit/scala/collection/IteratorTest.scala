@@ -155,7 +155,7 @@ class IteratorTest {
     //Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).toList  // suffices
     Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).map(_.head).toList
   }
-  // SI-3516
+  // scala/bug#3516
   @Test def toStreamIsSufficientlyLazy(): Unit = {
     val results = collection.mutable.ListBuffer.empty[Int]
     def mkIterator = (1 to 5).iterator map (x => { results += x ; x })
@@ -168,7 +168,7 @@ class IteratorTest {
     results += (Stream from 1).toIterator.drop(10).toStream.drop(10).toIterator.next()
     assertSameElements(List(1,1,21), results)
   }
-  // SI-8552
+  // scala/bug#8552
   @Test def indexOfShouldWorkForTwoParams(): Unit = {
     assertEquals(1, List(1, 2, 3).iterator.indexOf(2, 0))
     assertEquals(-1, List(5 -> 0).iterator.indexOf(5, 0))
@@ -176,7 +176,7 @@ class IteratorTest {
     assertEquals(-1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9, 2))
     assertEquals(1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9 -> 2))
   }
-  // SI-9332
+  // scala/bug#9332
   @Test def spanExhaustsLeadingIterator(): Unit = {
     def it = Iterator.iterate(0)(_ + 1).take(6)
     val (x, y) = it.span(_ != 1)
@@ -186,13 +186,13 @@ class IteratorTest {
     assertEquals(1, y.next)
     assertFalse(x.hasNext)   // was true, after advancing underlying iterator
   }
-  // SI-9913
+  // scala/bug#9913
   @Test def `span leading iterator finishes at state -1`(): Unit = {
     val (yes, no) = Iterator(1, 2, 3).span(_ => true)
     assertFalse(no.hasNext)
     assertTrue(yes.hasNext)
   }
-  // SI-9623
+  // scala/bug#9623
   @Test def noExcessiveHasNextInJoinIterator: Unit = {
     var counter = 0
     val exp = List(1,2,3,1,2,3)
@@ -220,7 +220,7 @@ class IteratorTest {
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14
   }
-  // SI-9691
+  // scala/bug#9691
   @Test def bufferedHeadOptionReturnsValueWithHeadOrNone(): Unit = {
     // Checks BufferedIterator returns Some(value) when there is a value
     val validHeadOption = List(1,2,3).iterator.buffered.headOption

@@ -74,7 +74,7 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     }
   }
 
-  // TODO these overrides, and the slow trickle of bugs that they solve (e.g. SI-8479),
+  // TODO these overrides, and the slow trickle of bugs that they solve (e.g. scala/bug#8479),
   //      suggest that we should pursue an alternative design in which the DocDef nodes
   //      are eliminated from the tree before typer, and instead are modelled as tree
   //      attachments.

@@ -197,62 +197,62 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     q"f(..$O)"
   }
 
-  property("SI-8016") = test {
+  property("scala/bug#8016") = test {
     val xs = q"1" :: q"2" :: Nil
     assertEqAst(q"..$xs", "{1; 2}")
     assertEqAst(q"{..$xs}", "{1; 2}")
   }
 
-  property("SI-6842") = test {
+  property("scala/bug#6842") = test {
     val cases: List[Tree] = cq"a => b" :: cq"_ => c" :: Nil
     assertEqAst(q"1 match { case ..$cases }", "1 match { case a => b case _ => c }")
     assertEqAst(q"try 1 catch { case ..$cases }", "try 1 catch { case a => b case _ => c }")
   }
 
-  property("SI-8009") = test {
+  property("scala/bug#8009") = test {
     q"`foo`".asInstanceOf[reflect.internal.SymbolTable#Ident].isBackquoted
   }
 
-  property("SI-8148") = test {
+  property("scala/bug#8148") = test {
     val q"($a, $b) => $_" = q"_ + _"
     assert(a.name != b.name)
   }
 
-  property("SI-7275 a") = test {
+  property("scala/bug#7275 a") = test {
     val t = q"stat1; stat2"
     assertEqAst(q"..$t", "{stat1; stat2}")
   }
 
-  property("SI-7275 b") = test {
+  property("scala/bug#7275 b") = test {
     def f(t: Tree) = q"..$t"
     assertEqAst(f(q"stat1; stat2"), "{stat1; stat2}")
   }
 
-  property("SI-7275 c1") = test {
+  property("scala/bug#7275 c1") = test {
     object O
     implicit val liftO = Liftable[O.type] { _ => q"foo; bar" }
     assertEqAst(q"f(..$O)", "f(foo, bar)")
   }
 
-  property("SI-7275 c2") = test {
+  property("scala/bug#7275 c2") = test {
     object O
     implicit val liftO = Liftable[O.type] { _ => q"{ foo; bar }; { baz; bax }" }
     assertEqAst(q"f(...$O)", "f(foo, bar)(baz, bax)")
   }
 
-  property("SI-7275 d") = test {
+  property("scala/bug#7275 d") = test {
     val l = q"a; b" :: q"c; d" :: Nil
     assertEqAst(q"f(...$l)", "f(a, b)(c, d)")
     val l2: Iterable[Tree] = l
     assertEqAst(q"f(...$l2)", "f(a, b)(c, d)")
   }
 
-  property("SI-7275 e") = test {
+  property("scala/bug#7275 e") = test {
     val t = q"{ a; b }; { c; d }"
     assertEqAst(q"f(...$t)", "f(a, b)(c, d)")
   }
 
-  property("SI-7275 e2") = test {
+  property("scala/bug#7275 e2") = test {
     val t = q"{ a; b }; c; d"
     assertEqAst(q"f(...$t)", "f(a, b)(c)(d)")
   }
@@ -292,11 +292,11 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(a ≈ q"a" && b ≈ q"b" && c ≈ q"c" && d ≈ q"d" && e ≈ q"e" && g ≈ q"g" && h ≈ q"h" && k ≈ q"k" && l ≈ q"l")
   }
 
-  property("SI-8385 a") = test {
+  property("scala/bug#8385 a") = test {
     assertEqAst(q"(foo.x = 1)(2)", "(foo.x = 1)(2)")
   }
 
-  property("SI-8385 b") = test {
+  property("scala/bug#8385 b") = test {
     assertEqAst(q"(() => ())()", "(() => ())()")
   }
 
@@ -313,13 +313,13 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assertEqAst(q"{ case ..$cases }", "{ case a => b case c => d }")
   }
 
-  property("SI-8609 a") = test {
+  property("scala/bug#8609 a") = test {
     val q1 = q"val x = 1"
     val q2 = q"..$q1; val y = 2"
     assert(q2 ≈ q"{ val x = 1; val y = 2 }")
   }
 
-  property("SI-8609 b") = test {
+  property("scala/bug#8609 b") = test {
     val q1 = q"import foo.bar"
     val q2 = q"..$q1; val y = 2"
     assert(q2 ≈ q"{ import foo.bar; val y = 2 }")

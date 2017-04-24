@@ -44,7 +44,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
 
   override lazy val internal: Internal = new SymbolTableInternal {
     override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: Universe # TypeTag[T]): Manifest[T] = {
-      // SI-6239: make this conversion more precise
+      // scala/bug#6239: make this conversion more precise
       val mirror = mirror0.asInstanceOf[Mirror]
       val runtimeClass = mirror.runtimeClass(tag.in(mirror).tpe)
       Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]

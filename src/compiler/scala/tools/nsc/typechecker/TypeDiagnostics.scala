@@ -390,7 +390,7 @@ trait TypeDiagnostics {
   /** This is tricky stuff - we need to traverse types deeply to
    *  explain name ambiguities, which may occur anywhere.  However
    *  when lub explosions come through it knocks us into an n^2
-   *  disaster, see SI-5580.  This is trying to perform the initial
+   *  disaster, see scala/bug#5580.  This is trying to perform the initial
    *  filtering of possibly ambiguous types in a sufficiently
    *  aggressive way that the state space won't explode.
    */

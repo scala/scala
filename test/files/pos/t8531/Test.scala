@@ -2,8 +2,8 @@ package test
 
 // takes > 50s and > 800M heap to compile under 2.11.0
 import foobar._
-class `SI-8531` {
-    //https://issues.scala-lang.org/browse/SI-8531
+class T8531 {
+    //https://github.com/scala/bug/issues/8531
 
   import MyEnum._
   def foo(e1: MyEnum, e2: MyEnum) = (e1, e2) match {

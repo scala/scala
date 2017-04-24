@@ -23,7 +23,7 @@ object Test extends DirectTest {
     compileCode(app)
     modifyClassFile(new File(testOutput.toFile, "test/Annotated.class")) {
       (cn: ClassNode) =>
-        // As investigated https://issues.scala-lang.org/browse/SI-2464?focusedCommentId=64521&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-64521
+        // As investigated https://github.com/scala/bug/issues/2464#issuecomment-292371985
         // classfiles in the wild sometimes lack the required InnerClass attribute for nested enums that
         // are referenced in an annotation. I don't know what compiler or bytecode processor leaves things
         // that way, but this test makes sure we don't crash.

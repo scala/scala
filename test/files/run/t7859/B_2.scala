@@ -7,7 +7,7 @@ object B {
 // We need to test under joint and separate compilation to check
 // that the 'notPRIVATE' flag on the param accessor is pickled.
 //
-// See also SI-6601.
+// See also scala/bug#6601.
 object Test {
   def main(args: Array[String]) {
     unboxA

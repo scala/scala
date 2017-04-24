@@ -95,7 +95,7 @@ trait StdAttachments {
   /** Determines whether a tree should not be expanded, because someone has put SuppressMacroExpansionAttachment on it or one of its children.
    */
   def isMacroExpansionSuppressed(tree: Tree): Boolean =
-    (  settings.Ymacroexpand.value == settings.MacroExpand.None // SI-6812
+    (  settings.Ymacroexpand.value == settings.MacroExpand.None // scala/bug#6812
     || tree.hasAttachment[SuppressMacroExpansionAttachment.type]
     || (tree match {
         // we have to account for the fact that during typechecking an expandee might become wrapped,
@@ -156,7 +156,7 @@ trait StdAttachments {
    *  from typedNamedApply, the applyDynamicNamed argument rewriter, the latter
    *  doesn’t know whether it needs to apply the rewriting because the application
    *  has just been desugared or it needs to hold on because it’s already performed
-   *  a desugaring on this tree. This has led to SI-8006.
+   *  a desugaring on this tree. This has led to scala/bug#8006.
    *
    *  This attachment solves the problem by providing a means of communication
    *  between the two Dynamic desugarers, which solves the aforementioned issue.

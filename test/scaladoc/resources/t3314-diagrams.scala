@@ -1,6 +1,6 @@
 package scala.test.scaladoc {
 
-  /** Check the interaction between SI-3314 and diagrams
+  /** Check the interaction between scala/bug#3314 and diagrams
    *  - the three enumerations below should get valid content diagrams:
    *                       Value
    *              __________/|\__________

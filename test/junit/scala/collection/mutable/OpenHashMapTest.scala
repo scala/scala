@@ -16,7 +16,7 @@ class OpenHashMapTest {
 
     // Reflect to get the private `deleted` field's value, which should be zero.
 
-    /* TODO Doesn't work, due to SI-9306.
+    /* TODO Doesn't work, due to scala/bug#9306.
     import scala.reflect.runtime.{universe => ru}
 
     val mirror = ru.runtimeMirror(m.getClass.getClassLoader)
@@ -47,7 +47,7 @@ class OpenHashMapTest {
     assertEquals(0, field.getInt(m))
   }
 
-  /** Test that an [[OpenHashMap]] frees references to a deleted key (SI-9522). */
+  /** Test that an [[OpenHashMap]] frees references to a deleted key (scala/bug#9522). */
   @Test
   def freesDeletedKey {
     import scala.language.reflectiveCalls

@@ -1,4 +1,4 @@
-// SI-6188 Optimizer incorrectly removes method invocations containing throw expressions
+// scala/bug#6188 Optimizer incorrectly removes method invocations containing throw expressions
 
 import scala.util.Success
 

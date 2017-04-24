@@ -1,4 +1,4 @@
-// SI-6675 DEPRECATED AUTO-TUPLING BECAUSE BAD IDEA -- MEAMAXIMACULPA
+// scala/bug#6675 DEPRECATED AUTO-TUPLING BECAUSE BAD IDEA -- MEAMAXIMACULPA
 // TODO: remove this test case in 2.12, when the deprecation will go into effect and this will no longer compile
 // slightly overkill, but a good test case for implicit resolution in extractor calls,
 // along with the real fix: an extractor pattern with 1 sub-pattern should type check for all extractors

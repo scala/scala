@@ -54,7 +54,7 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
        * prevents original seq from garbage collection,
        * so we use these.take(0) here.
        *
-       * Check SI-8924 for details
+       * Check scala/bug#8924 for details
        */
       val xs = these.toList
       these = these.take(0)

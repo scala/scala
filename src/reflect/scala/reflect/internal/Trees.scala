@@ -622,7 +622,7 @@ trait Trees extends api.Trees {
       super.copyAttrs(tree)
       tree match {
         case other: TypeTree =>
-          // SI-6648 Critical for correct operation of `resetAttrs`.
+          // scala/bug#6648 Critical for correct operation of `resetAttrs`.
           wasEmpty = other.wasEmpty
           if (other.orig != null)
             orig = other.orig.duplicate
@@ -635,7 +635,7 @@ trait Trees extends api.Trees {
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   private def TypeTreeMemberType(sym: Symbol): TypeTree = {
-    // Needed for pos/t4970*.scala. See SI-7853
+    // Needed for pos/t4970*.scala. See scala/bug#7853
     val resType = (if (sym.isLocalToBlock) sym.tpe else (sym.owner.thisType memberType sym)).finalResultType
     atPos(sym.pos.focus)(TypeTree(resType))
   }
@@ -1075,7 +1075,7 @@ trait Trees extends api.Trees {
     override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
     override def tpe_=(t: Type) = setType(t)
 
-    // We silently ignore attempts to add attachments to `EmptyTree`. See SI-8947 for an
+    // We silently ignore attempts to add attachments to `EmptyTree`. See scala/bug#8947 for an
     // example of a bug in macro expansion that this solves.
     override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
     override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
@@ -1481,7 +1481,7 @@ trait Trees extends api.Trees {
       tree match {
         case _: Return =>
           if (tree.symbol == oldowner) {
-            // SI-5612
+            // scala/bug#5612
             if (newowner hasTransOwner oldowner)
               log("NOT changing owner of %s because %s is nested in %s".format(tree, newowner, oldowner))
             else {

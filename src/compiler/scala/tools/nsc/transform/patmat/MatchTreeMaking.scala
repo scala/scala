@@ -69,7 +69,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
        * See TreeMakerToCond#updateSubstitution.
        *
        * Overridden in PreserveSubPatBinders to pretend it replaces the subpattern binders by subpattern refs
-       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       * (Even though we don't do so anymore -- see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
        *
        * TODO: clean this up, would be nicer to have some higher-level way to compute
        * the binders bound by this tree maker and the symbolic values that correspond to them
@@ -133,7 +133,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val ignoredSubPatBinders: Set[Symbol]
 
       // unless `debugInfoEmitVars`, this set should contain the bare minimum for correctness
-      // mutable case class fields need to be stored regardless (SI-5158, SI-6070) -- see override in ProductExtractorTreeMaker
+      // mutable case class fields need to be stored regardless (scala/bug#5158, scala/bug#6070) -- see override in ProductExtractorTreeMaker
       // sub patterns bound to wildcard (_) are never stored as they can't be referenced
       // dirty debuggers will have to get dirty to see the wildcards
       lazy val storedBinders: Set[Symbol] =
@@ -155,7 +155,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       /** The substitution that specifies the trees that compute the values of the subpattern binders.
        *
        * We pretend to replace the subpattern binders by subpattern refs
-       * (Even though we don't do so anymore -- see SI-5158, SI-5739 and SI-6070.)
+       * (Even though we don't do so anymore -- see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
        */
       override def subPatternsAsSubstitution =
         Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
@@ -172,7 +172,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
           in.foreach {
             case tt: TypeTree =>
-              tt.tpe foreach { // SI-7459 e.g. case Prod(t) => new t.u.Foo
+              tt.tpe foreach { // scala/bug#7459 e.g. case Prod(t) => new t.u.Foo
                 case SingleType(_, sym) => ref(sym)
                 case _ =>
               }
@@ -197,7 +197,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
      *
      * The values for the subpatterns, as computed by the extractor call in `extractor`,
      * are stored in local variables that re-use the symbols in `subPatBinders`.
-     * This makes extractor patterns more debuggable (SI-5739).
+     * This makes extractor patterns more debuggable (scala/bug#5739).
      */
     case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(
           val subPatBinders: List[Symbol],
@@ -243,8 +243,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
      *
      * The values for the subpatterns, as specified by the case class fields at the time of extraction,
      * are stored in local variables that re-use the symbols in `subPatBinders`.
-     * This makes extractor patterns more debuggable (SI-5739) as well as
-     * avoiding mutation after the pattern has been matched (SI-5158, SI-6070)
+     * This makes extractor patterns more debuggable (scala/bug#5739) as well as
+     * avoiding mutation after the pattern has been matched (scala/bug#5158, scala/bug#6070)
      *
      * TODO: make this user-definable as follows
      *   When a companion object defines a method `def unapply_1(x: T): U_1`, but no `def unapply` or `def unapplySeq`,
@@ -270,7 +270,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       import CODE._
       val nextBinder = prevBinder // just passing through
 
-      // mutable binders must be stored to avoid unsoundness or seeing mutation of fields after matching (SI-5158, SI-6070)
+      // mutable binders must be stored to avoid unsoundness or seeing mutation of fields after matching (scala/bug#5158, scala/bug#6070)
       def extraStoredBinders: Set[Symbol] = mutableBinders.toSet
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
@@ -404,7 +404,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         - A singleton type p.type.
           This type pattern matches only the value denoted by the path p
           (that is, a pattern match involved a comparison of the matched value with p using method eq in class AnyRef). // TODO: the actual pattern matcher uses ==, so that's what I'm using for now
-          // https://issues.scala-lang.org/browse/SI-4577 "pattern matcher, still disappointing us at equality time"
+          // https://github.com/scala/bug/issues/4577 "pattern matcher, still disappointing us at equality time"
 
         - A compound type pattern T1 with ... with Tn where each Ti is a type pat- tern.
           This type pattern matches all values that are matched by each of the type patterns Ti.
@@ -466,7 +466,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
         if (extractorArgTypeTest) mkDefault
         else expectedTp match {
-          case SingleType(_, sym)                       => mkEqTest(gen.mkAttributedQualifier(expectedTp)) // SI-4577, SI-4897
+          case SingleType(_, sym)                       => mkEqTest(gen.mkAttributedQualifier(expectedTp)) // scala/bug#4577, scala/bug#4897
           case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
           case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))
@@ -565,7 +565,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
               val suppressUnreachable = tree match {
-                case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
+                case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
                 case _ => false
               }
               val suppression = Suppression(suppressExhaustive, suppressUnreachable)

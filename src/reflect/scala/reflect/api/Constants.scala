@@ -76,7 +76,7 @@ package api
  *                                           //   final val BAR: JavaSimpleEnumeration
  *                                           // }
  *
- *    // doesn't work because of https://issues.scala-lang.org/browse/SI-6459
+ *    // doesn't work because of https://github.com/scala/bug/issues/6459
  *    // val enumValue = mirror.reflectField(enumRef.asTerm).get
  *    val enumClass = cm.runtimeClass(enumRef.owner.asClass)
  *    val enumValue = enumClass.getDeclaredField(enumRef.name.toString).get(null)
@@ -172,7 +172,7 @@ trait Constants {
    *                                           //   final val BAR: JavaSimpleEnumeration
    *                                           // }
    *
-   *    // doesn't work because of https://issues.scala-lang.org/browse/SI-6459
+   *    // doesn't work because of https://github.com/scala/bug/issues/6459
    *    // val enumValue = mirror.reflectField(enumRef.asTerm).get
    *    val enumClass = cm.runtimeClass(enumRef.owner.asClass)
    *    val enumValue = enumClass.getDeclaredField(enumRef.name.toString).get(null)

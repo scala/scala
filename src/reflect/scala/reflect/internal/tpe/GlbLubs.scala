@@ -329,7 +329,7 @@ private[internal] trait GlbLubs {
           def lubsym(proto: Symbol): Symbol = {
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
-              // SI-7602 With erroneous code, we could end up with overloaded symbols after filtering
+              // scala/bug#7602 With erroneous code, we could end up with overloaded symbols after filtering
               //         so `suchThat` unsuitable.
               t.nonPrivateMember(proto.name).filter(sym =>
                 sym.tpe matches prototp.substThis(lubThisType.typeSymbol, t)))
@@ -387,7 +387,7 @@ private[internal] trait GlbLubs {
             else lubBase
           }
         }
-      // dropIllegalStarTypes is a localized fix for SI-6897. We should probably
+      // dropIllegalStarTypes is a localized fix for scala/bug#6897. We should probably
       // integrate that transformation at a lower level in master, but lubs are
       // the likely and maybe only spot they escape, so fixing here for 2.10.1.
       existentialAbstraction(tparams, dropIllegalStarTypes(lubType))

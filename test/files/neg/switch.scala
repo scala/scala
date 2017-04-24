@@ -24,7 +24,7 @@ object Main {
     case _                => false
   }
 
-  // has a guard, but since SI-5830 that's ok
+  // has a guard, but since scala/bug#5830 that's ok
   def succ_guard(c: Char) = (c: @switch) match {
     case 'A' | 'B' | 'C'  => true
     case x if x == 'A'    => true

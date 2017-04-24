@@ -3,7 +3,7 @@ import scala.tools.partest.ScaladocModelTest
 
 object Test extends ScaladocModelTest {
 
-  override def resourceFile = "SI-3314-diagrams.scala"
+  override def resourceFile = "t3314-diagrams.scala"
 
   // no need for special settings
   def scaladocSettings = "-diagrams"

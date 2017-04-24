@@ -136,7 +136,7 @@ trait ScalacPatternExpanders {
         case _              => applyMethodTypes(fn.tpe)
       }
 
-      /** Rather than let the error that is SI-6675 pollute the entire matching
+      /** Rather than let the error that is scala/bug#6675 pollute the entire matching
        *  process, we will tuple the extractor before creation Aligned so that
        *  it contains known good values.
        */
@@ -148,7 +148,7 @@ trait ScalacPatternExpanders {
         val tupled = extractor.asSinglePattern
         if (effectivePatternArity(args) == 1 && isTupleType(extractor.typeOfSinglePattern)) {
           val sym = sel.symbol.owner
-          currentRun.reporting.deprecationWarning(sel.pos, sym, s"${sym} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (SI-6675)", "2.11.0")
+          currentRun.reporting.deprecationWarning(sel.pos, sym, s"${sym} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (scala/bug#6675)", "2.11.0")
         }
         tupled
       } else extractor

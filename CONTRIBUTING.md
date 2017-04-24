@@ -32,9 +32,9 @@ The kind of code we can accept depends on the life cycle for the release you're 
 
 #### Bug Fix
 
-Prefix your commit title with "SI-NNNN", where https://issues.scala-lang.org/browse/SI-NNNN tracks the bug you're fixing. We also recommend naming your branch after the JIRA ticket number.
+At the end of the commit message, include "Fixes scala/bug#NNNN", where https://github.com/scala/bug/issues/NNNN tracks the bug you're fixing. We also recommend naming your branch after the ticket number.
 
-Please make sure the JIRA ticket's fix version corresponds to the upcoming milestone for the branch your PR targets. The CI automation will automatically assign the milestone after you open the PR.
+Please make sure the ticket's milestone corresponds to the upcoming milestone for the branch your PR targets. The CI automation will automatically assign the milestone after you open the PR.
 
 #### Enhancement or New Feature
 
@@ -92,8 +92,7 @@ by the commit on the code base, so use the active voice and the
 present tense.  That also makes the commit subjects easy to reuse in
 release notes.
 
-For a bugfix, the title must look like "SI-NNNN - don't crash when
-moon is in wrong phase".
+For a bugfix, the end of the commit message should say "Fixes scala/bug#NNNN".
 
 If a commit purely refactors and is not intended to change behaviour,
 say so.

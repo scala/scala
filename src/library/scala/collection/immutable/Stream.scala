@@ -507,7 +507,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
   }
 
   /** A FilterMonadic which allows GC of the head of stream during processing */
-  @noinline // Workaround SI-9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
+  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override final def withFilter(p: A => Boolean): FilterMonadic[A, Stream[A]] = new Stream.StreamWithFilter(this, p)
 
   /** A lazier Iterator than LinearSeqLike's. */
@@ -1265,7 +1265,7 @@ object Stream extends SeqFactory[Stream] {
     *
     * Because this is not an inner class of `Stream` with a reference to the original
     * head, it is now possible for GC to collect any leading and filtered-out elements
-    * which do not satisfy the filter, while the tail is still processing (see SI-8990).
+    * which do not satisfy the filter, while the tail is still processing (see scala/bug#8990).
     */
   private[immutable] final class StreamWithFilter[A](sl: => Stream[A], p: A => Boolean) extends FilterMonadic[A, Stream[A]] {
     private var s = sl                                              // set to null to allow GC after filtered

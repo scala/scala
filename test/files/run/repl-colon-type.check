@@ -208,7 +208,7 @@ PolyType(
 
 scala> 
 
-scala> // SI-7132 - :type doesn't understand Unit
+scala> // scala/bug#7132 - :type doesn't understand Unit
 
 scala> :type ()
 Unit

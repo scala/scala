@@ -170,7 +170,7 @@ object Plugin {
     val seen = mutable.HashSet[String]()
     val enabled = (fromPaths ::: fromDirs) map {
       case Success((pd, loader)) if seen(pd.classname)        =>
-        // a nod to SI-7494, take the plugin classes distinctly
+        // a nod to scala/bug#7494, take the plugin classes distinctly
         Failure(new PluginLoadException(pd.name, s"Ignoring duplicate plugin ${pd.name} (${pd.classname})"))
       case Success((pd, loader)) if ignoring contains pd.name =>
         Failure(new PluginLoadException(pd.name, s"Disabling plugin ${pd.name}"))

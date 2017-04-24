@@ -45,7 +45,7 @@ class BytecodeTest extends BytecodeTesting {
 
     // this test cannot be implemented using partest because of its mixed-mode compilation strategy:
     // partest first compiles all files with scalac, then the java files, and then again the scala
-    // using the output classpath. this shadows the bug SI-8926.
+    // using the output classpath. this shadows the bug scala/bug#8926.
 
     val annotA =
       """import java.lang.annotation.Retention;
@@ -73,7 +73,7 @@ class BytecodeTest extends BytecodeTesting {
 
     check("A.class", "AnnotA")
 
-    // known issue SI-8928: the visibility of AnnotB should be CLASS, but annotation classes without
+    // known issue scala/bug#8928: the visibility of AnnotB should be CLASS, but annotation classes without
     // a @Retention annotation are currently emitted as RUNTIME.
     check("B.class", "AnnotB")
   }

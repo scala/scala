@@ -43,7 +43,7 @@ class ScriptedTest {
     assert("barbar" == c.eval())
     assert("bazbaz" == c.eval(bindings))
   }
-  @Test def `SI-7933 multiple eval compiled script`() = {
+  @Test def `t7933 multiple eval compiled script`() = {
     val engine = scripted
     val init = """val i = new java.util.concurrent.atomic.AtomicInteger"""
     val code = """i.getAndIncrement()"""
@@ -52,7 +52,7 @@ class ScriptedTest {
     assert(0 == c.eval())
     assert(1 == c.eval())
   }
-  @Test def `SI-8422 captured i/o`() = {
+  @Test def `t8422 captured i/o`() = {
     import java.io.StringWriter
     val engine = scripted
     val ctx    = new SimpleScriptContext
@@ -63,7 +63,7 @@ class ScriptedTest {
     engine.eval(code, ctx)
     assertEquals("hello, world", w.toString)
   }
-  @Test def `SI-8422 captured multi i/o`() = {
+  @Test def `t8422 captured multi i/o`() = {
     import java.io.{ StringWriter, StringReader }
     import scala.compat.Platform.EOL
     val engine = scripted

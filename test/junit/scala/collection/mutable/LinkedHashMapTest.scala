@@ -6,7 +6,7 @@ import org.junit.{ Assert, Test }
 
 import scala.collection.mutable
 
-/* Test for SI-9095 */
+/* Test for scala/bug#9095 */
 @RunWith(classOf[JUnit4])
 class LinkedHashMapTest {
   class TestClass extends mutable.LinkedHashMap[String, Int] {

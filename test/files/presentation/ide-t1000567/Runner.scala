@@ -1,6 +1,6 @@
 import scala.tools.nsc.interactive.tests.InteractiveTest
 
-// also known as SI-5013
+// also known as scala/bug#5013
 
 object Test extends InteractiveTest {
 

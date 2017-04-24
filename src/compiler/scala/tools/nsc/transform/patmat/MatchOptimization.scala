@@ -15,7 +15,7 @@ import scala.reflect.internal.util.Position
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
  * The patmat translation doesn't rely on this, so it could be disabled in principle.
- *  - well, not quite: the backend crashes if we emit duplicates in switches (e.g. SI-7290)
+ *  - well, not quite: the backend crashes if we emit duplicates in switches (e.g. scala/bug#7290)
  */
 // TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
@@ -398,7 +398,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
       private def noGuards(cs: List[CaseDef]): Boolean = !cs.exists(isGuardedCase)
 
-      // must do this before removing guards from cases and collapsing (SI-6011, SI-6048)
+      // must do this before removing guards from cases and collapsing (scala/bug#6011, scala/bug#6048)
       private def unreachableCase(cases: List[CaseDef]): Option[CaseDef] = {
         def loop(cases: List[CaseDef]): Option[CaseDef] = cases match {
           case head :: next :: _ if isDefault(head)                                    => Some(next) // subsumed by the next case, but faster
@@ -438,7 +438,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                     case Literal(const) => const
                     case _              => t
                   }
-                  // SI-7290 Discard duplicate alternatives that would crash the backend
+                  // scala/bug#7290 Discard duplicate alternatives that would crash the backend
                   val distinctAlts = distinctBy(switchableAlts)(extractConst)
                   if (distinctAlts.size < switchableAlts.size) {
                     val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1).take(1)) // report the first duplicated

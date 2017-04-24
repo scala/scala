@@ -1,4 +1,4 @@
-// SI-6102 Wrong bytecode in lazyval + no-op finally clause
+// scala/bug#6102 Wrong bytecode in lazyval + no-op finally clause
 
 object Test {
 
