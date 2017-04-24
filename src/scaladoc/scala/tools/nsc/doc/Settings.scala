@@ -253,7 +253,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
   }
 
-  def appendIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/index.html"
+  def appendIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/"
 
   lazy val extUrlMapping: Map[String, String] = docExternalDoc.value flatMap { s =>
     val idx = s.indexOf("#")
