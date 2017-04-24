@@ -5,7 +5,7 @@ import collection.{Hashing, Iterator, MapFactory}
 import collection.mutable.{Builder, ImmutableMapBuilder}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
-import scala.{Any, AnyRef, Array, Boolean, inline, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
+import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
 import java.lang.{Integer, String, System}
 
 /** This class implements immutable maps using a hash trie.
@@ -155,13 +155,13 @@ object HashMap extends MapFactory[HashMap] {
     * @param size the maximum size of the collection to be generated
     * @return the maximum buffer size
     */
-  @inline private def bufferSize(size: Int): Int = math.min(size + 6, 32 * 7)
+  @`inline` private def bufferSize(size: Int): Int = math.min(size + 6, 32 * 7)
 
   /**
     * In many internal operations the empty map is represented as null for performance reasons. This method converts
     * null to the empty map for use in public methods
     */
-  @inline private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
+  @`inline` private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
 
   private object EmptyHashMap extends HashMap[Any, Nothing] {
 

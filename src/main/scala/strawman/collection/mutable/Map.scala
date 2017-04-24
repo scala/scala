@@ -2,7 +2,7 @@ package strawman.collection.mutable
 
 import strawman.collection.IterableMonoTransforms
 
-import scala.{inline, Option}
+import scala.{`inline`, Option}
 
 /** Base type of mutable Maps */
 trait Map[K, V]
@@ -22,7 +22,7 @@ trait MapLike[K, V, +C[X, Y] <: Map[X, Y]]
     */
   def removeInPlace(elem: (K, V)): this.type
   /** Alias for `removeInPlace` */
-  @inline final def -= (elem: (K, V)): this.type = removeInPlace(elem)
+  @`inline` final def -= (elem: (K, V)): this.type = removeInPlace(elem)
 
   def put(key: K, value: V): Option[V]
 

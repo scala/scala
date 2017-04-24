@@ -153,7 +153,7 @@ sealed class ListMap[K, +V]
 
     @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V1], acc: List[ListMap[K, V1]]): ListMap[K, V1] =
       if (cur.isEmpty) acc.last
-      else if (k == cur.key) acc.foldLeft(cur.next) { case (t, h) => new t.Node(h.key, h.value) }
+      else if (k == cur.key) acc.foldLeft(cur.next) { (t, h) => new t.Node(h.key, h.value) }
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListMap[K, V1] = ListMap.this

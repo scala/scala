@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, inline, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
+import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base Map type */
@@ -102,7 +102,7 @@ trait MapValuePolyTransforms[K, +V, +C[X, Y]] {
   def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2]
 
   /** Alias for `concat` */
-  @inline final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = concat(xs)
+  @`inline` final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = concat(xs)
 
 }
 

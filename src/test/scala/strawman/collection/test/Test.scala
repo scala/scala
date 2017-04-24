@@ -327,9 +327,9 @@ class StrawmanTest {
     val x1 = xs.get("foo")
     val x2: Option[Int] = x1
     val xs1 = xs + ("foo", 1)
-    val xs2: immutable.SortedMap[String, Int] = xs1
+    //val xs2: immutable.SortedMap[String, Int] = xs1  // FIXME: does not work under dotty!
     val xs3 = xs.map(kv => kv._1)
-    val xs4: immutable.Iterable[String] = xs3
+    //val xs4: immutable.Iterable[String] = xs3    // FIXME: does not work under dotty.
     val xs5 = xs.map((k: String, v: Int) => (v, k)) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs6: immutable.SortedMap[Int, String] = xs5
     class Foo

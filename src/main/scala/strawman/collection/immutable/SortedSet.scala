@@ -2,7 +2,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.Builder
-import strawman.collection.ConstrainedIterableFactory
+import strawman.collection.OrderedIterableFactory
 import scala.Ordering
 
 /** Base trait for sorted sets */
@@ -16,8 +16,8 @@ trait SortedSetLike[A, +C[X] <: SortedSet[X]]
     with SetLike[A, Set] // Inherited Set operations return a `Set`
     with SetMonoTransforms[A, C[A]] // Override the return type of Set ops to return C[A]
 
-object SortedSet extends ConstrainedIterableFactory[SortedSet, Ordering] {
+object SortedSet extends OrderedIterableFactory[SortedSet] {
   def empty[A : Ordering]: SortedSet[A] = TreeSet.empty
-  def constrainedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = TreeSet.constrainedNewBuilder
-  def constrainedFromIterable[E : Ordering](it: collection.Iterable[E]): SortedSet[E] = TreeSet.constrainedFromIterable(it)
+  def orderedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = TreeSet.orderedNewBuilder
+  def orderedFromIterable[E : Ordering](it: collection.Iterable[E]): SortedSet[E] = TreeSet.orderedFromIterable(it)
 }

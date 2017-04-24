@@ -4,7 +4,7 @@ package collection.immutable
 import strawman.collection.mutable.Builder
 import strawman.collection.IterableFactory
 
-import scala.{Any, inline}
+import scala.{Any, `inline`}
 
 /** Base trait for immutable set collections */
 trait Set[A]
@@ -33,7 +33,7 @@ trait SetMonoTransforms[A, +Repr]
     */
   def add(elem: A): Repr
   /** Alias for `add` */
-  @inline final def + (elem: A): Repr = add(elem)
+  @`inline` final def + (elem: A): Repr = add(elem)
 
   /** Creates a new set with a given element removed from this set.
     *
@@ -43,7 +43,7 @@ trait SetMonoTransforms[A, +Repr]
     */
   def remove(elem: A): Repr
   /** Alias for `remove` */
-  @inline final def - (elem: A): Repr = remove(elem)
+  @`inline` final def - (elem: A): Repr = remove(elem)
 
 }
 

@@ -28,8 +28,8 @@ sealed abstract class BitSet
 
   // From IterableMonoTransforms
   protected def fromIterableWithSameElemType(coll: collection.Iterable[Int]): BitSet = BitSet.fromIterable(coll)
-  // From ConstrainedIterablePolyTransforms
-  protected def constrainedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.constrainedFromIterable(it)
+  // From OrderedIterablePolyTransforms
+  protected def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.orderedFromIterable(it)
   // From IterablePolyTransforms
   def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
 
@@ -52,7 +52,7 @@ sealed abstract class BitSet
     } else this
   }
 
-  def unconstrained: Set[Int] = this
+  def unordered: Set[Int] = this
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
     */

@@ -40,10 +40,9 @@ trait SortedMapPolyTransforms[K, +V, +C[X, +Y] <: SortedMap[X, Y] with SortedMap
 
   protected def coll: C[K, V]
 
-  def constrainedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): C[K2, V2]
+  def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): C[K2, V2]
 
   // And finally, we add new overloads taking an ordering
   def map[K2, V2](f: (K, V) => (K2, V2))(implicit ordering: Ordering[K2]): C[K2, V2] =
-    constrainedMapFromIterable(View.Map(coll, f.tupled))
-
+    orderedMapFromIterable(View.Map(coll, f.tupled))
 }

@@ -4,7 +4,7 @@ package collection.immutable
 import strawman.collection.MapFactory
 import strawman.collection.mutable.Builder
 
-import scala.inline
+import scala.`inline`
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -36,7 +36,7 @@ trait MapMonoTransforms[K, +V, +Repr <: Map[K, V]]
     */
   def remove(key: K): Repr
   /** Alias for `remove` */
-  @inline final def - (key: K): Repr = remove(key)
+  @`inline` final def - (key: K): Repr = remove(key)
 
   /** The empty map of the same type as this map
     * @return   an empty map of type `Repr`.

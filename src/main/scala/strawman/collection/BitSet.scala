@@ -3,7 +3,7 @@ package collection
 
 import strawman.collection.BitSetLike.{LogWL, WordLength}
 
-import scala.{Array, Boolean, inline, Int, Long, Option, Ordering, Unit}
+import scala.{Array, Boolean, `inline`, Int, Long, Option, Ordering, Unit}
 import scala.Predef.{assert, intWrapper}
 
 /** Base type of bitsets */
@@ -141,7 +141,7 @@ trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
     coll.fromBitMaskNoCopy(words)
   }
 
-  @inline final def ^ (other: BitSet): C = xor(other)
+  @`inline` final def ^ (other: BitSet): C = xor(other)
 
   /**
     * Builds a new bitset by applying a function to all elements of this bitset

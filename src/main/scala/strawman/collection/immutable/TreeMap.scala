@@ -38,15 +38,15 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     coll match {
       case tm: TreeMap[K, V] => tm
-      case _ => TreeMap.constrainedNewBuilder[K, V].++=(coll).result
+      case _ => TreeMap.orderedNewBuilder[K, V].++=(coll).result
     }
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
-  def constrainedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.constrainedNewBuilder[K2, V2].++=(it).result
+  def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
+    TreeMap.orderedNewBuilder[K2, V2].++=(it).result
 
   def get(key: K): Option[V] = RB.get(tree, key)
 

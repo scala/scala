@@ -24,8 +24,8 @@ trait SortedSetLike[A, +C[X] <: SortedSet[X]]
 
 }
 
-object SortedSet extends ConstrainedIterableFactory[SortedSet, Ordering] {
+object SortedSet extends OrderedIterableFactory[SortedSet] {
   def empty[A : Ordering]: SortedSet[A] = immutable.SortedSet.empty
-  def constrainedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = immutable.SortedSet.constrainedNewBuilder
-  def constrainedFromIterable[E : Ordering](it: Iterable[E]): SortedSet[E] = immutable.SortedSet.constrainedFromIterable(it)
+  def orderedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = immutable.SortedSet.orderedNewBuilder
+  def orderedFromIterable[E : Ordering](it: Iterable[E]): SortedSet[E] = immutable.SortedSet.orderedFromIterable(it)
 }

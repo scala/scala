@@ -2,7 +2,7 @@ package strawman.collection.mutable
 
 import strawman.collection
 import strawman.collection.IterableOnce
-import scala.{inline, Int, Boolean, Unit, Option, Some, None}
+import scala.{`inline`, Int, Boolean, Unit, Option, Some, None}
 import scala.Predef.???
 
 /** Base trait for mutable sets */
@@ -19,7 +19,7 @@ trait Set[A]
     */
   def removeInPlace(elem: A): this.type
   /** Alias for `removeInPlace` */
-  @inline final def -= (elem: A): this.type = removeInPlace(elem)
+  @`inline` final def -= (elem: A): this.type = removeInPlace(elem)
 
   def contains(elem: A): Boolean
   def get(elem: A): Option[A]

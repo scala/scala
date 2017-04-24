@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, inline, Int, Numeric, StringContext, Unit}
+import scala.{Any, Array, Boolean, `inline`, Int, Numeric, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
@@ -249,7 +249,7 @@ trait IterablePolyTransforms[+A, +C[_]] extends Any {
   def concat[B >: A](xs: IterableOnce[B]): C[B] = fromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
-  @inline final def ++ [B >: A](xs: IterableOnce[B]): C[B] = concat(xs)
+  @`inline` final def ++ [B >: A](xs: IterableOnce[B]): C[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
@@ -257,7 +257,7 @@ trait IterablePolyTransforms[+A, +C[_]] extends Any {
 }
 
 /** Transforms over iterables that can return collections of different element types for which an implicit
-  * evidence is required. Every constrained collection type `CC` extends an unconstrained collection type `C`
+  * evidence is required. Every ordered collection type `CC` extends an unordered collection type `C`
   * (e.g. `SortedSet[X] extends Set[X]`) so it inherits methods from `IterablePolyTransforms` that do not require
   * the implicit evidence. These methods can only build a default representation of `C` (e.g. a `HashSet` in the
   * case of `Set`). The methods in this trait are the same as the ones in `IterablePolyTransforms` but they do
@@ -283,10 +283,10 @@ trait OrderedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with 
     *  @return     a new collection of type `CC[B]` which contains all elements
     *              of this $coll followed by all elements of `xs`.
     */
-  def concat[B >: A : Ordering](xs: IterableOnce[B]): CC[B] = constrainedFromIterable(View.Concat(coll, xs))
+  def concat[B >: A : Ordering](xs: IterableOnce[B]): CC[B] = orderedFromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
-  @inline final def ++ [B >: A : Ordering](xs: IterableOnce[B]): CC[B] = concat(xs)
+  @`inline` final def ++ [B >: A : Ordering](xs: IterableOnce[B]): CC[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = orderedFromIterable(View.Zip(coll, xs))
