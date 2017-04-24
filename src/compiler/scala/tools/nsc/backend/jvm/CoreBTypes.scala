@@ -103,6 +103,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val jlCloneableRef            : ClassBType = classBTypeFromSymbol(JavaCloneableClass)        // java/lang/Cloneable
   lazy val jiSerializableRef         : ClassBType = classBTypeFromSymbol(JavaSerializableClass)     // java/io/Serializable
   lazy val jlClassCastExceptionRef   : ClassBType = classBTypeFromSymbol(ClassCastExceptionClass)   // java/lang/ClassCastException
+  lazy val jlIllegalArgExceptionRef  : ClassBType = classBTypeFromSymbol(IllegalArgExceptionClass)  // java/lang/IllegalArgumentException
   lazy val juMapRef                  : ClassBType = classBTypeFromSymbol(JavaUtilMap)               // java/util/Map
   lazy val juHashMapRef              : ClassBType = classBTypeFromSymbol(JavaUtilHashMap)           // java/util/HashMap
   lazy val sbScalaBeanInfoRef        : ClassBType = classBTypeFromSymbol(requiredClass[scala.beans.ScalaBeanInfo])
@@ -314,6 +315,7 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def PredefRef                 : ClassBType
   def jlCloneableRef            : ClassBType
   def jiSerializableRef         : ClassBType
+  def jlIllegalArgExceptionRef  : ClassBType
   def juHashMapRef              : ClassBType
   def juMapRef                  : ClassBType
   def jliCallSiteRef            : ClassBType
@@ -379,6 +381,7 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def jlCloneableRef            : ClassBType = _coreBTypes.jlCloneableRef
   def jiSerializableRef         : ClassBType = _coreBTypes.jiSerializableRef
   def jlClassCastExceptionRef   : ClassBType = _coreBTypes.jlClassCastExceptionRef
+  def jlIllegalArgExceptionRef  : ClassBType = _coreBTypes.jlIllegalArgExceptionRef
   def juMapRef                  : ClassBType = _coreBTypes.juMapRef
   def juHashMapRef              : ClassBType = _coreBTypes.juHashMapRef
   def sbScalaBeanInfoRef        : ClassBType = _coreBTypes.sbScalaBeanInfoRef
