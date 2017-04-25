@@ -11,3 +11,5 @@ target/
 .DS_Store
 /tmp/
 /bin/
+/.cache-main
+/.cache-tests
