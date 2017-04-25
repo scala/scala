@@ -555,7 +555,9 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     // Assign `rhs` to class field / trait setter `assignSym`
     def mkAssign(assignSym: Symbol, rhs: Tree): Tree =
       localTyper.typedPos(assignSym.pos) {
-        val qual = Select(This(clazz), assignSym)
+        val qual =
+          if (assignSym.isStaticMember) Select(Ident(clazz), assignSym)
+          else Select(This(clazz), assignSym)
         if (assignSym.isSetter) Apply(qual, List(rhs))
         else Assign(qual, rhs)
       }
@@ -598,7 +600,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       private def triage() = {
         // Constant typed vals are not memoized.
-        def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[ConstantType]
+        def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[ConstantType] || sym.hasFlag(JAVA_ENUM)
 
         // The early initialized field definitions of the class (these are the class members)
         val presupers = treeInfo.preSuperFields(stats)
@@ -700,8 +702,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       // TODO: this should omit fields for non-memoized (constant-typed, unit-typed vals need no storage --
       // all the action is in the getter)
-      def omittableSym(sym: Symbol) = omittableAccessor(sym)
-      def omittableStat(stat: Tree) = omittableSym(stat.symbol)
+      def omittableSym(sym: Symbol): Boolean = omittableAccessor(sym)
+      def omittableStat(stat: Tree): Boolean = omittableSym(stat.symbol)
 
       // The parameter accessor fields which are members of the class
       val paramAccessors =

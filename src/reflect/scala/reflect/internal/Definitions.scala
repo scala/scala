@@ -971,7 +971,10 @@ trait Definitions extends api.StandardDefinitions {
       //  - .owner: the ModuleClassSymbol of the enumeration (object E)
       //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
       // SI-6613 Subsequent runs of the resident compiler demand the phase discipline here.
-      enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
+      if (sym.isJavaDefined)
+        enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
+      else
+        enteringPhaseNotLaterThan(picklerPhase)(sym.owner).tpe
     }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn

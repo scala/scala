@@ -337,8 +337,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             genLoadQualUnlessElidable()
             genLoadModule(tree)
           } else if (sym.isStaticMember) {
-            genLoadQualUnlessElidable()
-            fieldLoad(sym, receiverClass)
+            if (sym.isJavaEnum) {
+              fieldLoad(sym, receiverClass.companionClass)
+            } else {
+              genLoadQualUnlessElidable()
+              fieldLoad(sym, receiverClass)
+            }
           } else {
             genLoadQualifier(tree)
             fieldLoad(sym, receiverClass)

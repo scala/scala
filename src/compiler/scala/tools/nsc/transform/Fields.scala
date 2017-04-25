@@ -84,7 +84,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     else synthFieldsAndAccessors(tp)
 
   // TODO: drop PRESUPER support when we implement trait parameters in 2.13
-  private def excludedAccessorOrFieldByFlags(statSym: Symbol): Boolean = statSym hasFlag PRESUPER
+  private def excludedAccessorOrFieldByFlags(statSym: Symbol): Boolean = statSym hasFlag PRESUPER | JAVA_ENUM
 
   // used for internal communication between info and tree transform of this phase -- not pickled, not in initialflags
   // TODO: reuse MIXEDIN for NEEDS_TREES?
@@ -158,7 +158,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     // Note that a strict unit-typed val does receive a field, because we cannot omit the write to the field
     // (well, we could emit it for non-@volatile ones, if I understand the memory model correctly,
     //  but that seems pretty edge-casey)
-    val constantTyped = tp.isInstanceOf[ConstantType]
+    val constantTyped = tp.isInstanceOf[ConstantType] && tp.asInstanceOf[ConstantType].value.tag != EnumTag
   }
 
   private def fieldTypeForGetterIn(getter: Symbol, pre: Type): Type = getter.info.finalResultType.asSeenFrom(pre, getter.owner)
@@ -355,7 +355,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           }
         }
 
-        if (newDecls nonEmpty) {
+        if (newDecls.nonEmpty) {
           val allDecls = newScope
           origDecls foreach allDecls.enter
           newDecls  foreach allDecls.enter
