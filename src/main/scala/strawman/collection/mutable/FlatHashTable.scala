@@ -268,12 +268,12 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   protected final def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
   // discards the previous sizemap and only allocates a new one
-  protected final def sizeMapInit(tableLength: Int) {
+  protected final def sizeMapInit(tableLength: Int): Unit = {
     sizemap = new Array[Int](calcSizeMapSize(tableLength))
   }
 
   // discards the previous sizemap and populates the new one
-  protected final def sizeMapInitAndRebuild() {
+  protected final def sizeMapInitAndRebuild(): Unit = {
     // first allocate
     sizeMapInit(table.length)
 

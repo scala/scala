@@ -25,7 +25,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
     */
   def incl(elem: A): C
 
-  /** Alias for `add` */
+  /** Alias for `incl` */
   @`inline` final def + (elem: A): C = incl(elem)
 
   /** Creates a new set with a given element removed from this set.
@@ -36,7 +36,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
     */
   def excl(elem: A): C
 
-  /** Alias for `remove` */
+  /** Alias for `excl` */
   @`inline` final def - (elem: A): C = excl(elem)
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
@@ -76,6 +76,6 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
 }
 
 object Set extends IterableFactory[Set] {
-  def empty[A <: Any]: Set[A] = ListSet.empty
+  def empty[A]: Set[A] = ListSet.empty
   def fromIterable[E](it: strawman.collection.Iterable[E]): Set[E] = ListSet.fromIterable(it)
 }

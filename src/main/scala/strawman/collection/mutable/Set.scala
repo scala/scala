@@ -3,7 +3,7 @@ package strawman.collection.mutable
 import strawman.collection
 import strawman.collection.{IterableFactory, IterableOnce}
 
-import scala.{Boolean, Int, None, Option, Some, Unit, inline}
+import scala.{Boolean, Int, None, Option, Some, Unit, `inline`}
 
 /** Base trait for mutable sets */
 trait Set[A] extends Iterable[A]
