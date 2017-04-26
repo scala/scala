@@ -2960,7 +2960,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       //
       // Out of caution, I've also disable caching if there are active type completers, which also
       // mutate symbol infos during val and def return type inference based the overriden member.
-      if (isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
+      if (!isCompilerUniverse || isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
 
       if (mtpeRunId == currentRunId && (mtpePre eq pre) && (mtpeInfo eq info))
         return mtpeResult
