@@ -39,12 +39,40 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   /** Alias for `remove` */
   @`inline` final def - (elem: A): C = excl(elem)
 
-  def union(that: collection.Set[A]): C = {
+  /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
+    *
+    * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
+    *
+    * Example:
+    *  {{{
+    *    scala> val a = Set(1, 2) concat Set(2, 3)
+    *    a: scala.collection.immutable.Set[Int] = Set(1, 2, 3)
+    *  }}}
+    *
+    *  @param that     the collection containing the elements to add.
+    *  @return a new $coll with the given elements added, omitting duplicates.
+    */
+  def concat(that: collection.IterableOnce[A]): C = {
     var result: C = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
     result
   }
+
+  /** Alias for `concat` */
+  @`inline` final def ++ (that: collection.IterableOnce[A]): C = concat(that)
+
+  /** Computes the union between of set and another set.
+    *
+    *  @param   that  the set to form the union with.
+    *  @return  a new set consisting of all elements that are in this
+    *  set or in the given set `that`.
+    */
+  @`inline` final def union(that: collection.IterableOnce[A]): C = concat(that)
+
+  /** Alias for `union` */
+  @`inline` final def | (that: collection.IterableOnce[A]): C = concat(that)
+
 }
 
 object Set extends IterableFactory[Set] {

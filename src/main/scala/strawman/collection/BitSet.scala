@@ -141,7 +141,6 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(coll, f))
 
-  def ++(xs: IterableOnce[Int]): C = fromSpecificIterable(View.Concat(coll, xs))
 }
 
 object BitSetOps {
@@ -149,6 +148,7 @@ object BitSetOps {
   /* Final vals can sometimes be inlined as constants (faster) */
   private[collection] final val LogWL = 6
   private[collection] final val WordLength = 64
+  private[collection] final val MaxSize = (Int.MaxValue >> LogWL) + 1
 
   private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
     var len = elems.length

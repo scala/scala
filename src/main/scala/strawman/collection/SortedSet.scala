@@ -7,7 +7,7 @@ import scala.annotation.unchecked.uncheckedVariance
 /** Base type of sorted sets */
 trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]]
 
-trait SortedSetOps[A, +CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], +C <: SortedSet[A]]
+trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 

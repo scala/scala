@@ -53,17 +53,6 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
   /** Alias for `intersect` */
   @inline final def & (that: Set[A]): C = intersect(that)
 
-  /** Computes the union between of set and another set.
-    *
-    *  @param   that  the set to form the union with.
-    *  @return  a new set consisting of all elements that are in this
-    *  set or in the given set `that`.
-    */
-  def union(that: Set[A]): C
-
-  /** Alias for `union` */
-  @inline final def | (that: Set[A]): C = union(that)
-
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.
     */

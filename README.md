@@ -88,6 +88,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `partition`
 - [x] `range`
 - [x] `rangeImpl`
+- [x] `slice`
 - [x] `splitAt`
 - [x] `tail`
 - [x] `take`
