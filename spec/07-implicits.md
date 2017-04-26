@@ -277,7 +277,7 @@ Views are applied in three situations:
     the implicit scope is the one of $T$.  If such a view is found, the
     selection $e.m$ is converted to `$v$($e$).$m(\mathit{args})$`.
 
-The implicit view, if it is found, can accept is argument $e$ as a
+The implicit view, if it is found, can accept its argument $e$ as a
 call-by-value or as a call-by-name parameter. However, call-by-value
 implicits take precedence over call-by-name implicits.
 
