@@ -52,16 +52,13 @@ abstract class ClassfileParser {
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
-  protected type ThisConstantPool <: ConstantPool
-  protected def newConstantPool: ThisConstantPool
-
   protected var file: AbstractFile     = _     // the class file
   protected var in: AbstractFileReader = _     // the class file reader
   protected var clazz: ClassSymbol = _         // the class symbol containing dynamic members
   protected var staticModule: ModuleSymbol = _ // the module symbol containing static members
   protected var instanceScope: Scope = _       // the scope of all instance definitions
   protected var staticScope: Scope = _         // the scope of all static definitions
-  protected var pool: ThisConstantPool = _     // the classfile's constant pool
+  protected var pool: ConstantPool = _         // the classfile's constant pool
   protected var isScala: Boolean = _           // does class file describe a scala class?
   protected var isScalaAnnot: Boolean = _      // does class file describe a scala class with its pickled info in an annotation?
   protected var isScalaRaw: Boolean = _        // this class file is a scala class with no pickled info
@@ -152,7 +149,7 @@ abstract class ClassfileParser {
       this.isScala      = false
 
       parseHeader()
-      this.pool = newConstantPool
+      this.pool = new ConstantPool
       parseClass()
     }
   }
