@@ -3,7 +3,7 @@ package collection
 
 import strawman.collection.mutable.Builder
 
-import scala.{Any, Int, Nothing}
+import scala.{Any, Int, Ordering, Nothing}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base trait for instances that can construct an unconstrained collection from an iterable */

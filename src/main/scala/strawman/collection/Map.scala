@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
+import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Option, Ordering, PartialFunction, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base Map type */

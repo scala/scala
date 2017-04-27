@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, `inline`, Int, Numeric, StringContext, Unit}
+import scala.{Any, Array, Boolean, `inline`, Int, Numeric, Ordering, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}

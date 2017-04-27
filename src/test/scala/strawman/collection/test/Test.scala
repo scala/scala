@@ -314,7 +314,6 @@ class StrawmanTest {
 
   def mapOps(xs: Map[Int, String]): Unit = {
     val xs1 = xs.map((k, v) => (v, k))
-    val xs1Bis = xs.map { case (k, v) => (v, k) }
     val xs2: strawman.collection.Map[String, Int] = xs1
     val xs3 = xs.map(kv => (kv._2, kv._1))
     val xs4: strawman.collection.Iterable[(String, Int)] = xs3
