@@ -1016,7 +1016,7 @@ trait Implicits {
      *    - the parts of its immediate components (prefix and argument)
      *    - the parts of its base types
      *    - for alias types and abstract types, we take instead the parts
-     *    - of their upper bounds.
+     *      of their upper bounds.
      *  @return For those parts that refer to classes with companion objects that
      *  can be accessed with unambiguous stable prefixes that are not existentially
      *  bound, the implicits infos which are members of these companion objects.
@@ -1067,23 +1067,22 @@ trait Implicits {
         seen += tp
         tp match {
           case TypeRef(pre, sym, args) =>
-            if (sym.isClass) {
-              if (!sym.isAnonOrRefinementClass && !sym.isRoot) {
-                if (sym.isStatic && !(pending contains sym))
-                  infoMap ++= {
-                    infoMapCache get sym match {
-                      case Some(imap) => imap
-                      case None =>
-                        val result = new InfoMap
-                        getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
-                        infoMapCache(sym) = result
-                        result
-                    }
+            if (sym.isClass && !sym.isRoot &&
+                (settings.isScala213 || !sym.isAnonOrRefinementClass)) {
+              if (sym.isStatic && !(pending contains sym))
+                infoMap ++= {
+                  infoMapCache get sym match {
+                    case Some(imap) => imap
+                    case None =>
+                      val result = new InfoMap
+                      getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
+                      infoMapCache(sym) = result
+                      result
                   }
-                else
-                  getClassParts(tp)
-                args foreach getParts
-              }
+                }
+              else
+                getClassParts(tp)
+              args foreach getParts
             } else if (sym.isAliasType) {
               getParts(tp.normalize) // SI-7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
