@@ -69,6 +69,9 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     for (elem <- toRemove)
       -=(elem)
   }
+
+  override def clone(): C = empty ++= coll
+
 }
 
 object Set extends IterableFactory.Delegate[Set](HashSet)

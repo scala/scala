@@ -68,8 +68,6 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
     }
   }
 
-  override def clone() = new HashSet[A] ++= this
-
 }
 
 object HashSet extends IterableFactory[HashSet] {
