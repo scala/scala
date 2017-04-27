@@ -47,7 +47,7 @@ import scala.language.postfixOps
  *  We evaluate "X with conform to P" by checking `X <: P_wild`, where
  *  P_wild is the result of substituting wildcard types in place of
  *  pattern type variables. This is intentionally stricter than
- *  (X matchesPattern P), see SI-8597 for motivating test cases.
+ *  (X matchesPattern P), see scala/bug#8597 for motivating test cases.
  *
  *  Examples of how this info is put to use:
  *  sealed trait A[T] ; class B[T] extends A[T]

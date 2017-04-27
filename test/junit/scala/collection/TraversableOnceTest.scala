@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import scala.util.Random
 
 @RunWith(classOf[JUnit4])
-/* Test for SI-7614 */
+/* Test for scala/bug#7614 */
 class TraversableOnceTest {
   val list = List.fill(1000)(scala.util.Random.nextInt(10000) - 5000)
 

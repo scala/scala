@@ -43,7 +43,7 @@ class RegexTest {
     assertEquals(List((1,2),(3,4),(5,6)), z)
   }
 
-  @Test def `SI-9666: use inline group names`(): Unit = {
+  @Test def `t9666: use inline group names`(): Unit = {
     val r = new Regex("a(?<Bee>b*)c")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -55,7 +55,7 @@ class RegexTest {
     assertFalse(ms.hasNext)
   }
 
-  @Test def `SI-9666: use explicit group names`(): Unit = {
+  @Test def `t9666: use explicit group names`(): Unit = {
     val r = new Regex("a(b*)c", "Bee")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -67,7 +67,7 @@ class RegexTest {
     assertFalse(ms.hasNext)
   }
 
-  @Test def `SI-9666: fall back to explicit group names`(): Unit = {
+  @Test def `t9666: fall back to explicit group names`(): Unit = {
     val r = new Regex("a(?<Bar>b*)c", "Bee")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -85,7 +85,7 @@ class RegexTest {
   type NoMatch = NoSuchElementException
   type NoData  = IllegalStateException
 
-  @Test def `SI-9666: throw on bad name`(): Unit = {
+  @Test def `t9666: throw on bad name`(): Unit = {
     assertThrows[NoGroup] {
       val r = new Regex("a(?<Bar>b*)c")
       val ms = r findAllIn "stuff abbbc more abc and so on"
@@ -106,7 +106,7 @@ class RegexTest {
     }
   }
 
-  @Test def `SI-9827 MatchIterator ergonomics`(): Unit = {
+  @Test def `t9827 MatchIterator ergonomics`(): Unit = {
     val r = "(ab)(cd)".r
     val s = "xxxabcdyyyabcdzzz"
     assertEquals(3, r.findAllIn(s).start)

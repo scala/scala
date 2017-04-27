@@ -10,7 +10,7 @@ import scala.tools.testing.AssertUtil._
 @RunWith(classOf[JUnit4])
 class MutableListTest {
   
-  // Tests SI-8976
+  // Tests scala/bug#8976
   @Test def tailIteratorMustTerminateAtLength(): Unit = {
     val is = MutableList(1,2,3)
     val tl = is.tail

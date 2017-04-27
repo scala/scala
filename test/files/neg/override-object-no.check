@@ -22,7 +22,7 @@ an overriding object must conform to the overridden object's class bound;
                     ^
 override-object-no.scala:52: error: overriding method x in trait A of type => SI9574.Foo.type;
  method x has incompatible type
-  trait B extends A { def x: Bar.type } // should not compile (SI-9574)
+  trait B extends A { def x: Bar.type } // should not compile (scala/bug#9574)
                           ^
 override-object-no.scala:53: error: overriding method x in trait A of type => SI9574.Foo.type;
  object x has incompatible type

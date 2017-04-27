@@ -36,7 +36,7 @@ class SpecVersionTest {
     assertFalse(sut9.isJavaAtLeast("10"))
   }
 
-  // SI-7265
+  // scala/bug#7265
   @Test
   def comparesCorrectly(): Unit = {
     val sut7 = new TestProperties("1.7")

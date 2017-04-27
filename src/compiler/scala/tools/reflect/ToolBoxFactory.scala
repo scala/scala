@@ -69,7 +69,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // then ran it, which typechecked it again, and only then launched the
         // reflective compiler.
         //
-        // However, as observed in https://issues.scala-lang.org/browse/SI-5464
+        // However, as observed in https://github.com/scala/bug/issues/5464
         // current implementation typechecking is not always idempotent.
         // That's why we cannot allow inputs of toolboxes to be typechecked,
         // at least not until the aforementioned issue is closed.

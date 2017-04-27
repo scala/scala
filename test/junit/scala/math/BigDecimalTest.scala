@@ -9,7 +9,7 @@ import java.math.{BigDecimal => BD, MathContext => MC}
 @RunWith(classOf[JUnit4])
 class BigDecimalTest {
   
-  // Motivated by SI-6173: BigDecimal#isWhole implementation is very heap intensive
+  // Motivated by scala/bug#6173: BigDecimal#isWhole implementation is very heap intensive
   @Test
   def isWholeTest() {
     val wholes = List(
@@ -31,7 +31,7 @@ class BigDecimalTest {
     assert(wholes.forall(_.isWhole) && fracs.forall(! _.isWhole))
   }
 
-  // Motivated by SI-6699: BigDecimal.isValidDouble behaves unexpectedly
+  // Motivated by scala/bug#6699: BigDecimal.isValidDouble behaves unexpectedly
   @Test
   def isValidDoubleTest() {
     val valids = List(
@@ -51,7 +51,7 @@ class BigDecimalTest {
     )
   }
   
-  // Motivated by SI-6173: BigDecimal#isWhole implementation is very heap intensive
+  // Motivated by scala/bug#6173: BigDecimal#isWhole implementation is very heap intensive
   @Test
   def doesNotExplodeTest() {
     val troublemaker = BigDecimal("1e1000000000")
@@ -67,7 +67,7 @@ class BigDecimalTest {
     )
   }
   
-  // Motivated by SI-6456: scala.math.BigDecimal should not accept a null value
+  // Motivated by scala/bug#6456: scala.math.BigDecimal should not accept a null value
   @Test
   def refusesNullTest() {
     def isIAE[A](a: => A) = try { a; false } catch { case iae: IllegalArgumentException => true }
@@ -81,7 +81,7 @@ class BigDecimalTest {
     )
   }
   
-  // Motivated by SI-6153: BigDecimal.hashCode() has high collision rate
+  // Motivated by scala/bug#6153: BigDecimal.hashCode() has high collision rate
   @Test
   def hashCodesAgreeTest() {
     val bi: BigInt = 100000

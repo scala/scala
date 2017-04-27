@@ -15,16 +15,16 @@ object DefinitionConstructionProps
     with ImportConstruction {
 
   val x: Tree = q"val x: Int"
-  property("SI-6842 a1") = test { assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0") }
-  property("SI-6842 a2") = test { assertEqAst(q"class C($x)", "class C(val x: Int)") }
-  property("SI-6842 a3") = test { assertEqAst(q"class C { $x => }", "class C { x: Int => }") }
-  property("SI-6842 a4") = test { assertEqAst(q"trait B { $x => }", "trait B { x: Int => }") }
-  property("SI-6842 a5") = test { assertEqAst(q"object A { $x => }", "object A { x: Int => }") }
+  property("scala/bug#6842 a1") = test { assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0") }
+  property("scala/bug#6842 a2") = test { assertEqAst(q"class C($x)", "class C(val x: Int)") }
+  property("scala/bug#6842 a3") = test { assertEqAst(q"class C { $x => }", "class C { x: Int => }") }
+  property("scala/bug#6842 a4") = test { assertEqAst(q"trait B { $x => }", "trait B { x: Int => }") }
+  property("scala/bug#6842 a5") = test { assertEqAst(q"object A { $x => }", "object A { x: Int => }") }
 
   val t: Tree = q"type T"
-  property("SI-6842 b1") = test { assertEqAst(q"def f[$t] = 0", "def f[T] = 0") }
-  property("SI-6842 b2") = test { assertEqAst(q"class C[$t]", "class C[T]") }
-  property("SI-6842 b3") = test { assertEqAst(q"trait B[$t]", "trait B[T]") }
+  property("scala/bug#6842 b1") = test { assertEqAst(q"def f[$t] = 0", "def f[T] = 0") }
+  property("scala/bug#6842 b2") = test { assertEqAst(q"class C[$t]", "class C[T]") }
+  property("scala/bug#6842 b3") = test { assertEqAst(q"trait B[$t]", "trait B[T]") }
 }
 
 trait ClassConstruction { self: QuasiquoteProperties =>
@@ -84,20 +84,20 @@ trait ClassConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"case class C($privx)", "case class C(private[this] val x: Int)")
   }
 
-  property("SI-8333") = test {
+  property("scala/bug#8333") = test {
     assertEqAst(q"{ $NoMods class C }", "{ class C }")
   }
 
-  property("SI-8332") = test {
+  property("scala/bug#8332") = test {
     val args = q"val a: Int; val b: Int"
     assertEqAst(q"class C(implicit ..$args)", "class C(implicit val a: Int, val b: Int)")
   }
 
-  property("SI-8451: inline secondary constructors") = test {
+  property("scala/bug#8451: inline secondary constructors") = test {
     assertEqAst(q"class C(x: Int) { def this() = this(0) }", "class C(x: Int) { def this() = this(0) }")
   }
 
-  property("SI-8451: unquoted secondary constructors") = test {
+  property("scala/bug#8451: unquoted secondary constructors") = test {
     val secondaryCtor = q"def this() = this(0)"
     assertEqAst(q"class C(x: Int) { $secondaryCtor }", "class C(x: Int) { def this() = this(0) }")
   }
@@ -230,7 +230,7 @@ trait ValDefConstruction { self: QuasiquoteProperties =>
   }
 
   // left tree is not a pattern due to Si-8211
-  property("SI-8202") = test {
+  property("scala/bug#8202") = test {
     assertEqAst(q"val (x: Int) = 1", "val x: Int = 1")
   }
 }
@@ -264,7 +264,7 @@ trait PatDefConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"val $pat: $tpt = ((1, 2), 3)","{ val ((1, 2), 3): ((Int, Int), Int) = ((1, 2), 3) }")
   }
 
-  // won't result into pattern match due to SI-8211
+  // won't result into pattern match due to scala/bug#8211
   property("unquote typed pat into pat def") = test {
     val pat = pq"x: Int"
     assertEqAst(q"val $pat = 2", "{ val x: Int = 2 }")

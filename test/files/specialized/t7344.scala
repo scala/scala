@@ -1,4 +1,4 @@
-/* Test for SI-7344, where specialized methods inside the bodies of other
+/* Test for scala/bug#7344, where specialized methods inside the bodies of other
  * methods are not specialized, although they might as well be. The name
  * for the specialized method should not be different depending on the
  * outside method/class' specialization. */
@@ -37,7 +37,7 @@ object Test extends App {
   // that's why they're not in a for loop:
   t1.checkSpecialization("x")
 
-  // Prevented by SI-7579:
+  // Prevented by scala/bug#7579:
   //   The duplicator loses the @specialized annotation,
   //   so our tree transformation doesn't know it needs to
   //   specialize specMe inside the duplicated (and specialized)

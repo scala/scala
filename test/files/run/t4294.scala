@@ -1,6 +1,6 @@
 object Test {
   def main(args: Array[String]) {
-    // Skip test on Avian, see SI-7600 for further information
+    // Skip test on Avian, see scala/bug#7600 for further information
     if (!scala.tools.partest.utils.Properties.isAvian)
       run()
   }

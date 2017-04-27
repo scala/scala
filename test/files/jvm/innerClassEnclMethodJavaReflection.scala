@@ -8,7 +8,7 @@ object Test extends App {
     // Some classes in scala-compiler.jar have references to jline / ant classes, which seem to be
     // not on the classpath. We just skip over those classes.
     // PENDING: for now we also allow missing $anonfun classes: the optimizer may eliminate some closures
-    // that are referred to in EnclosingClass attributes. SI-9136
+    // that are referred to in EnclosingClass attributes. scala/bug#9136
     val allowedMissingPackages = Set("jline", "org.apache.tools.ant", "$anonfun")
 
     def ok(t: Throwable) = {

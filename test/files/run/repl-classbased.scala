@@ -2,7 +2,7 @@
 import scala.tools.partest.ReplTest
 import scala.tools.nsc.Settings
 
-//SI-9740
+//scala/bug#9740
 object Test extends ReplTest {
   override def transformSettings(s: Settings): Settings = {
     s.Yreplclassbased.value = true

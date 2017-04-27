@@ -96,7 +96,7 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
     matches("case class Foo(x: Int)")
   }
 
-  property("SI-7979") = test {
+  property("scala/bug#7979") = test {
     val PARAMACCESSOR = (1 << 29).toLong.asInstanceOf[FlagSet]
     assertThrows[MatchError] {
       val SyntacticClassDef(_, _, _, _, _, _, _, _, _) =
@@ -112,7 +112,7 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
     }
   }
 
-  property("SI-8332") = test {
+  property("scala/bug#8332") = test {
     val q"class C(implicit ..$args)" = q"class C(implicit i: I, j: J)"
     val q"$imods val i: I" :: q"$jmods val j: J" :: Nil = args
     assert(imods.hasFlag(IMPLICIT))
@@ -232,7 +232,7 @@ trait DefDeconstruction { self: QuasiquoteProperties =>
     assert(impl.isEmpty)
   }
 
-  property("SI-8451") = test {
+  property("scala/bug#8451") = test {
     val q"def this(..$params) = this(..$args)" = q"def this(x: Int) = this(0)"
     assert(params ≈ List(q"${Modifiers(PARAM)} val x: Int"))
     assert(args ≈ List(q"0"))

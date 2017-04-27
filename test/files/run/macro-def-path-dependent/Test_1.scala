@@ -1,4 +1,4 @@
-// NOTE: blocked by SI-8049
+// NOTE: blocked by scala/bug#8049
 
 // package test1
 //

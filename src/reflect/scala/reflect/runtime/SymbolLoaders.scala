@@ -100,7 +100,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     // materializing multiple copies of the same symbol in PackageScope is a very popular bug
     // this override does its best to guard against it
     override def enter[T <: Symbol](sym: T): T = {
-      // workaround for SI-7728
+      // workaround for scala/bug#7728
       if (isCompilerUniverse) super.enter(sym)
       else {
         val existing = super.lookupEntry(sym.name)

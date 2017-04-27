@@ -27,7 +27,7 @@ object Test extends ReplTest {
     |:type -v def f[T <: AnyVal] = List[T]().combinations _
     |:type -v def f[T, U >: T](x: T, y: List[U]) = x :: y
     |
-    |// SI-7132 - :type doesn't understand Unit
+    |// scala/bug#7132 - :type doesn't understand Unit
     |:type ()
     |:type println("side effect!")
   """.stripMargin

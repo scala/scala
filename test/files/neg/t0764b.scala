@@ -12,7 +12,7 @@
 //   new Main[Node { type T = A }](v.prepend)
 //   new Main(v.prepend)
 
-// the `fail` comments below denote what didn't compile before SI-8177 fixed all of them
+// the `fail` comments below denote what didn't compile before scala/bug#8177 fixed all of them
 
 package p1 {
   object t0764 {

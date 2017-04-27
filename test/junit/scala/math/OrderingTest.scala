@@ -8,7 +8,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class OrderingTest {
 
-  /* Test for SI-9077 */
+  /* Test for scala/bug#9077 */
   @Test
   def testReverseOrdering {
     def check[T: Ordering](t1: T, t2: T): Unit = {

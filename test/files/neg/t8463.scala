@@ -5,7 +5,7 @@ object Test {
   insertCell(Foo(5))
 }
 
-/* If SI-8230 is fixed, and `viewExists` is changed to no longer leak
+/* If scala/bug#8230 is fixed, and `viewExists` is changed to no longer leak
    ambiguity errors, you might expect the check file for this test to
    change as follows:
 

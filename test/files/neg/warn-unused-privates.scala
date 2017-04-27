@@ -19,7 +19,7 @@ class B1(msg: String) extends A(msg)
 class B2(msg0: String) extends A(msg0)
 class B3(msg0: String) extends A("msg")
 
-/*** Early defs warnings disabled primarily due to SI-6595.
+/*** Early defs warnings disabled primarily due to scala/bug#6595.
  *   The test case is here to assure we aren't issuing false positives;
  *   the ones labelled "warn" don't warn.
  ***/
@@ -72,7 +72,7 @@ trait DefaultArgs {
   def boppy() = bippy(5, 100, 200)
 }
 
-/* SI-7707 Both usages warn default arg because using PrivateRyan.apply, not new.
+/* scala/bug#7707 Both usages warn default arg because using PrivateRyan.apply, not new.
 case class PrivateRyan private (ryan: Int = 42) { def f = PrivateRyan() }
 object PrivateRyan { def f = PrivateRyan() }
 */

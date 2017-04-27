@@ -1,6 +1,6 @@
 // see the following discussions to understand what's being tested here:
-// * https://issues.scala-lang.org/browse/SI-6992
-// * https://issues.scala-lang.org/browse/SI-8048
+// * https://github.com/scala/bug/issues/6992
+// * https://github.com/scala/bug/issues/8048
 // * http://stackoverflow.com/questions/14370842/getting-a-structural-type-with-an-anonymous-classs-methods-from-a-macro
 // * http://stackoverflow.com/questions/18480707/method-cannot-be-accessed-in-macro-generated-class/18485004#18485004
 // * https://groups.google.com/forum/#!topic/scala-internals/eXQt-BPm4i8

@@ -58,7 +58,7 @@ trait EtaExpansion { self: Analyzer =>
           defs += atPos(tree.pos) {
             val rhs = if (byName) {
               val res = typer.typed(Function(List(), tree))
-              new ChangeOwnerTraverser(typer.context.owner, res.symbol) traverse tree // SI-6274
+              new ChangeOwnerTraverser(typer.context.owner, res.symbol) traverse tree // scala/bug#6274
               res
             } else tree
             ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), rhs)
@@ -88,7 +88,7 @@ trait EtaExpansion { self: Analyzer =>
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
-          val name = tree.symbol.name // account for renamed imports, SI-7233
+          val name = tree.symbol.name // account for renamed imports, scala/bug#7233
           treeCopy.Select(tree, liftout(qual, byName = false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree
@@ -104,7 +104,7 @@ trait EtaExpansion { self: Analyzer =>
           sym =>
             val origTpe = sym.tpe
             val isRepeated = definitions.isRepeatedParamType(origTpe)
-            // SI-4176 Don't leak A* in eta-expanded function types. See t4176b.scala
+            // scala/bug#4176 Don't leak A* in eta-expanded function types. See t4176b.scala
             val droppedStarTpe = dropIllegalStarTypes(origTpe)
             val valDef = ValDef(Modifiers(SYNTHETIC | PARAM), sym.name.toTermName, TypeTree(droppedStarTpe), EmptyTree)
             (valDef, isRepeated)

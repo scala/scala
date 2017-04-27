@@ -401,7 +401,7 @@ object Test extends App {
   C4441a().copy()
   C4441b()().copy()()
 
-  // SI-8117
+  // scala/bug#8117
   def f8177(a: Int = 0, b: Int = 0, c: Int = 0) = s"$a $b $c"
   println(f8177(a = 1, 1))
 

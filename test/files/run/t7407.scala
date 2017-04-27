@@ -1,4 +1,4 @@
-// SI-7407
+// scala/bug#7407
 object Test {
 
   def main(args: Array[String]) { println(foo) }

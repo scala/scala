@@ -132,7 +132,7 @@ object BackendReporting {
         cause.toString
 
       case NoClassBTypeInfoClassSymbolInfoFailedSI9111(classFullName) =>
-        s"Failed to get the type of class symbol $classFullName due to SI-9111."
+        s"Failed to get the type of class symbol $classFullName due to scala/bug#9111."
     }
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
@@ -280,7 +280,7 @@ object BackendReporting {
         s"The Scala classfile $internalName does not have a ScalaInlineInfo attribute."
 
       case ClassSymbolInfoFailureSI9111(classFullName) =>
-        s"Failed to get the type of a method of class symbol $classFullName due to SI-9111."
+        s"Failed to get the type of a method of class symbol $classFullName due to scala/bug#9111."
 
       case ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass) =>
         s"Failed to build the inline information: $missingClass"
