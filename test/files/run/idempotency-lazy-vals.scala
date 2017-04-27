@@ -21,7 +21,7 @@ object Test extends App {
   try {
     println(tb.eval(rtlazee))
   } catch {
-    // this is the current behaviour, rather than the desired behavior; see SI-5466
+    // this is the current behaviour, rather than the desired behavior; see scala/bug#5466
     case _: ToolBoxError => println("error!")
   }
 }

@@ -2,13 +2,13 @@ package foo;
 
 // Originally composed to accommodate pull request feedback, this test has
 // uncovered a handful of bugs in FromJavaClassCompleter, namely:
-// * SI-7071 non-public ctors get lost
-// * SI-7072 inner classes are read incorrectly
+// * scala/bug#7071 non-public ctors get lost
+// * scala/bug#7072 inner classes are read incorrectly
 
 // I'm leaving the incorrect results of FromJavaClassCompleters in the check
 // file, so that we get notified when something changes there.
-// ^^^ It's not clear what those incorrect results were, but the fix for SI-7359
-// (backport of fix for SI-6548) has probably resolved some of these. OP, please revisit this comment.
+// ^^^ It's not clear what those incorrect results were, but the fix for scala/bug#7359
+// (backport of fix for scala/bug#6548) has probably resolved some of these. OP, please revisit this comment.
 
 class PackagePrivateJavaClass {
   private int privateField = 0;

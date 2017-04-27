@@ -256,7 +256,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         // clues from the symbols on that one, as implemented here. In general
         // the distinct list is one type and lub becomes the identity.
         // val prefix = lub(alts map (_.info.prefix) distinct)
-        // Now using NoSymbol and NoPrefix always to avoid forcing info (SI-6664)
+        // Now using NoSymbol and NoPrefix always to avoid forcing info (scala/bug#6664)
         NoSymbol.newOverloaded(NoPrefix, alts)
       }
     }

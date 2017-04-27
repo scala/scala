@@ -64,7 +64,7 @@ object Test extends App {
   println(BitSet(2, 0).quickSortAnything)
 
   //need to hint type inferencer,
-  //probably will be able to overcome after https://issues.scala-lang.org/browse/SI-4699  and
+  //probably will be able to overcome after https://github.com/scala/bug/issues/4699  and
   // related issues are  fixed (by moving ev0 parameter from filterMap to toFM), see toFM2
   println("qwe".filterMap((c: Char) => Some(c.toInt)))
   println("qwe".filterMap((c: Char) => Some(c)))

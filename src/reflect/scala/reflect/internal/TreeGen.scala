@@ -121,9 +121,9 @@ abstract class TreeGen {
 
   //          val selType = testedBinder.info
   //
-  //          // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
+  //          // See the test for scala/bug#7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
   //          // generates an outer test based on `patType.prefix` with automatically dealiases.
-  //          // Prefixes can have all kinds of shapes SI-9110
+  //          // Prefixes can have all kinds of shapes scala/bug#9110
   //          val patPre = expectedTp.dealiasWiden.prefix
   //          val selPre = selType.dealiasWiden.prefix
   //
@@ -220,7 +220,7 @@ abstract class TreeGen {
       val needsPackageQualifier = (
            (sym ne null)
         && qualsym.hasPackageFlag
-        && !(sym.isDefinedInPackage || sym.moduleClass.isDefinedInPackage) // SI-7817 work around strangeness in post-flatten `Symbol#owner`
+        && !(sym.isDefinedInPackage || sym.moduleClass.isDefinedInPackage) // scala/bug#7817 work around strangeness in post-flatten `Symbol#owner`
       )
       val pkgQualifier =
         if (needsPackageQualifier) {
@@ -267,7 +267,7 @@ abstract class TreeGen {
    *  and the implementation of Constant#tpe is such that x.tpe becomes
    *  ClassType(value.asInstanceOf[Type]), i.e. java.lang.Class[Type].
    *  Can't find any docs on how/why it's done this way. See ticket
-   *  SI-490 for some interesting comments from lauri alanko suggesting
+   *  scala/bug#490 for some interesting comments from lauri alanko suggesting
    *  that the type given by classOf[T] is too strong and should be
    *  weakened so as not to suggest that classOf[List[String]] is any
    *  different from classOf[List[Int]].

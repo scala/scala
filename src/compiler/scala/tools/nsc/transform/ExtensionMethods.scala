@@ -61,7 +61,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   }
 
   private def companionModuleForce(sym: Symbol) = {
-    sym.andAlso(_.owner.initialize) // See SI-6976. `companionModule` only calls `rawInfo`. (Why?)
+    sym.andAlso(_.owner.initialize) // See scala/bug#6976. `companionModule` only calls `rawInfo`. (Why?)
     sym.companionModule
   }
 
@@ -191,7 +191,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
-            // SI-7859 make param accessors accessible so the erasure can generate unbox operations.
+            // scala/bug#7859 make param accessors accessible so the erasure can generate unbox operations.
             currentOwner.info.decls.foreach(sym => if (sym.isParamAccessor && sym.isMethod) sym.makeNotPrivate(currentOwner))
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
@@ -236,14 +236,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             if (extensionBody.tpe <:< extensionMono.finalResultType)
               extensionBody
             else
-              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems
+              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // scala/bug#7818 e.g. mismatched existential skolems
 
           // Record the extension method. Later, in `Extender#transformStats`, these will be added to the companion object.
           extensionDefs(companion) += DefDef(extensionMeth, castBody)
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.
-          // SI-9542 We form the selection here from the thisType of the companion's owner. This is motivated
+          // scala/bug#9542 We form the selection here from the thisType of the companion's owner. This is motivated
           //         by the test case, and is a valid way to construct the reference because we know that this
           //         method is also enclosed by that owner.
           val sel        = Select(gen.mkAttributedRef(companion.owner.thisType, companion), extensionMeth)
@@ -280,7 +280,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   final class SubstututeRecursion(origMeth: Symbol, extensionMeth: Symbol,
                             unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
-      // SI-6574 Rewrite recursive calls against the extension method so they can
+      // scala/bug#6574 Rewrite recursive calls against the extension method so they can
       //         be tail call optimized later. The tailcalls phases comes before
       //         erasure, which performs this translation more generally at all call
       //         sites.

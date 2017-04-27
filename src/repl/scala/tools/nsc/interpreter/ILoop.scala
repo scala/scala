@@ -939,7 +939,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         asyncMessage(power.banner)
       }
       loadInitFiles()
-      // SI-7418 Now, and only now, can we enable TAB completion.
+      // scala/bug#7418 Now, and only now, can we enable TAB completion.
       in.postInit()
     }
     def loadInitFiles(): Unit = settings match {

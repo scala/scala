@@ -808,12 +808,12 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    // We don't get to see the warning about SI-9111, because it is associated with the MethodInlineInfo
+    // We don't get to see the warning about scala/bug#9111, because it is associated with the MethodInlineInfo
     // of method newT, which is not actually used.
     // The problem is: if we reference `newT` in the scalaCode, the scala code does not compile,
-    // because then SI-9111 triggers during type-checking class C, in the compiler frontend, and
+    // because then scala/bug#9111 triggers during type-checking class C, in the compiler frontend, and
     // we don't even get to the backend.
-    // Nevertheless, the workaround for SI-9111 in BcodeAsmCommon.buildInlineInfoFromClassSymbol
+    // Nevertheless, the workaround for scala/bug#9111 in BcodeAsmCommon.buildInlineInfoFromClassSymbol
     // is still necessary, otherwise this test crashes.
     // The warning below is the typical warning we get in mixed compilation.
     val warn =

@@ -3,7 +3,7 @@ import scala.tools.partest.ScaladocModelTest
 
 object Test extends ScaladocModelTest {
 
-  override def resourceFile = "SI-4360.scala"
+  override def resourceFile = "t4360.scala"
 
   // no need for special settings
   def scaladocSettings = ""

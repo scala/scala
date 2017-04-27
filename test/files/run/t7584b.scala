@@ -8,7 +8,7 @@ object Test extends App {
   fold[Int, Int]((x, y) => f(x, y))(0)
   fold[Int, Int](f(_, _))(0)
 
-  // Used to throw a ClassCastException. Since the fix for SI-7899, these issue type errors.
+  // Used to throw a ClassCastException. Since the fix for scala/bug#7899, these issue type errors.
   // fold[Int, Int](f _)(0)
   // fold[Int, Int](f)(0)
 }

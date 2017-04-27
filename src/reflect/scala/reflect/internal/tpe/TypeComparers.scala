@@ -18,7 +18,7 @@ trait TypeComparers {
   def pendingSubTypes = _pendingSubTypes
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
-    // SI-8146 we used to implement equality here in terms of pairwise =:=.
+    // scala/bug#8146 we used to implement equality here in terms of pairwise =:=.
     //         But, this was inconsistent with hashCode, which was based on the
     //         Type#hashCode, based on the structure of types, not the meaning.
     //         Now, we use `Type#{equals,hashCode}` as the (consistent) basis for
@@ -163,14 +163,14 @@ trait TypeComparers {
   private def equalTypeParamsAndResult(tparams1: List[Symbol], res1: Type, tparams2: List[Symbol], res2: Type) = {
     def subst(info: Type) = info.substSym(tparams2, tparams1)
     // corresponds does not check length of two sequences before checking the predicate,
-    // but SubstMap assumes it has been checked (SI-2956)
+    // but SubstMap assumes it has been checked (scala/bug#2956)
     (     sameLength(tparams1, tparams2)
       && (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= subst(p2.info))
       && (res1 =:= subst(res2))
     )
   }
 
-  // SI-2066 This prevents overrides with incompatible variance in higher order type parameters.
+  // scala/bug#2066 This prevents overrides with incompatible variance in higher order type parameters.
   private def methodHigherOrderTypeParamsSameVariance(sym1: Symbol, sym2: Symbol) = {
     def ignoreVariance(sym: Symbol) = !(sym.isHigherOrderTypeParameter && sym.logicallyEnclosingMember.isMethod)
     !settings.isScala211 || ignoreVariance(sym1) || ignoreVariance(sym2) || sym1.variance == sym2.variance

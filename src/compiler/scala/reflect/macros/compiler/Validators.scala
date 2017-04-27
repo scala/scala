@@ -73,7 +73,7 @@ trait Validators {
 
     // aXXX (e.g. aparamss) => characteristics of the actual macro impl signature extracted from the macro impl ("a" stands for "actual")
     // rXXX (e.g. rparamss) => characteristics of the reference macro impl signature synthesized from the macro def ("r" stands for "reference")
-    // FIXME: cannot write this concisely because of SI-7507
+    // FIXME: cannot write this concisely because of scala/bug#7507
     //lazy val MacroImplSig(atparams, aparamss, aret) = macroImplSig
     //lazy val MacroImplSig(_, rparamss, rret) = referenceMacroImplSig
     lazy val atparams = macroImplSig.tparams

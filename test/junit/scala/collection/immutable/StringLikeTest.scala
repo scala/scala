@@ -8,7 +8,7 @@ import org.junit.runners.JUnit4
 import scala.tools.testing.AssertUtil
 import scala.util.Random
 
-/* Test for SI-8988 */
+/* Test for scala/bug#8988 */
 @RunWith(classOf[JUnit4])
 class StringLikeTest {
   @Test
@@ -42,7 +42,7 @@ class StringLikeTest {
     AssertUtil.assertSameElements(twopairs.split(high), Array(twopairs)) //don't split on characters that are half a surrogate pair
   }
 
-  /* Test for SI-9767 */
+  /* Test for scala/bug#9767 */
   @Test
   def testNumericConversion: Unit = {
     val sOne = " \t\n 1 \n\r\t "

@@ -633,7 +633,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // When an exception is thrown, the stack is cleared before jumping to the handler. When
     // inlining a method that catches an exception, all values that were on the stack before the
-    // call (in addition to the arguments) would be cleared (SI-6157). So we don't inline methods
+    // call (in addition to the arguments) would be cleared (scala/bug#6157). So we don't inline methods
     // with handlers in case there are values on the stack.
     // Alternatively, we could save all stack values below the method arguments into locals, but
     // that would be inefficient: we'd need to pop all parameters, save the values, and push the

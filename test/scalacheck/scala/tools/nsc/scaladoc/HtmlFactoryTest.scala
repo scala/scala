@@ -319,7 +319,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4421") = {
+  property("scala/bug#4421") = {
     createTemplate("SI_4421.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
@@ -329,7 +329,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4589") = {
+  property("scala/bug#4589") = {
     createTemplate("SI_4589.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
@@ -340,7 +340,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4714: Should decode symbolic type alias name.") = {
+  property("scala/bug#4714: Should decode symbolic type alias name.") = {
     createTemplate("SI_4715.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
@@ -350,7 +350,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4287: Default arguments of synthesized constructor") = {
+  property("scala/bug#4287: Default arguments of synthesized constructor") = {
     val files = createTemplates("SI_4287.scala")
 
     files("ClassWithSugar.html") match {
@@ -361,7 +361,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4507: Default arguments of synthesized constructor") = {
+  property("scala/bug#4507: Default arguments of synthesized constructor") = {
     createTemplate("SI_4507.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains("<li>returns silently when evaluating true and true</li>")
@@ -369,40 +369,40 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4898: Use cases and links should not crash scaladoc") = {
+  property("scala/bug#4898: Use cases and links should not crash scaladoc") = {
     createTemplate("SI_4898.scala")
     true
   }
 
-  property("SI-5054: Use cases should override their original members") =
+  property("scala/bug#5054: Use cases should override their original members") =
      checkText("SI_5054_q1.scala")(
        (None,"""def test(): Int""", true)
        //Disabled because the full signature is now displayed
        //(None, """def test(implicit lost: Int): Int""", false)
      )
 
-  property("SI-5054: Use cases should keep their flags - final should not be lost") =
+  property("scala/bug#5054: Use cases should keep their flags - final should not be lost") =
     checkText("SI_5054_q2.scala")((None, """final def test(): Int""", true))
 
-  property("SI-5054: Use cases should keep their flags - implicit should not be lost") =
+  property("scala/bug#5054: Use cases should keep their flags - implicit should not be lost") =
     checkText("SI_5054_q3.scala")((None, """implicit def test(): Int""", true))
 
-  property("SI-5054: Use cases should keep their flags - real abstract should not be lost") =
+  property("scala/bug#5054: Use cases should keep their flags - real abstract should not be lost") =
     checkText("SI_5054_q4.scala")((None, """abstract def test(): Int""", true))
 
-  property("SI-5054: Use cases should keep their flags - traits should not be affected") =
+  property("scala/bug#5054: Use cases should keep their flags - traits should not be affected") =
     checkText("SI_5054_q5.scala")((None, """def test(): Int""", true))
 
-  property("SI-5054: Use cases should keep their flags - traits should not be affected") =
+  property("scala/bug#5054: Use cases should keep their flags - traits should not be affected") =
     checkText("SI_5054_q6.scala")((None, """abstract def test(): Int""", true))
 
-  property("SI-5054: Use case individual signature test") =
+  property("scala/bug#5054: Use case individual signature test") =
     checkText("SI_5054_q7.scala")(
       (None, """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""", true),
       (None, """abstract def test1(): Int [use case] This takes the implicit value in scope.""", true)
     )
 
-  property("SI-5287: Display correct \"Definition classes\"") =
+  property("scala/bug#5287: Display correct \"Definition classes\"") =
     checkText("SI_5287.scala")(
       (None,
           """def method(): Int
@@ -628,8 +628,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4014: Scaladoc omits @author: no authors") = {
-    val noAuthors = createTemplates("SI-4014_0.scala")("Foo.html")
+  property("scala/bug#4014: Scaladoc omits @author: no authors") = {
+    val noAuthors = createTemplates("t4014_0.scala")("Foo.html")
 
     noAuthors match {
       case node: scala.xml.Node => {
@@ -640,8 +640,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4014: Scaladoc omits @author: one author") = {
-    val oneAuthor = createTemplates("SI-4014_1.scala")("Foo.html")
+  property("scala/bug#4014: Scaladoc omits @author: one author") = {
+    val oneAuthor = createTemplates("t4014_1.scala")("Foo.html")
 
     oneAuthor match {
       case node: scala.xml.Node => {
@@ -653,8 +653,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
   }
 
-  property("SI-4014: Scaladoc omits @author: two authors") = {
-    val twoAuthors = createTemplates("SI-4014_2.scala")("Foo.html")
+  property("scala/bug#4014: Scaladoc omits @author: two authors") = {
+    val twoAuthors = createTemplates("t4014_2.scala")("Foo.html")
 
     twoAuthors match {
       case node: scala.xml.Node => {
@@ -703,8 +703,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       case _ => false
     }
 
-    property("SI-8514: No inconsistencies") =
-      checkText("SI-8514.scala")(
+    property("scala/bug#8514: No inconsistencies") =
+      checkText("t8514.scala")(
         (Some("a/index"),
          """class A extends AnyRef
             Some doc here
@@ -718,7 +718,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       )
   }
 
-  // SI-8144
+  // scala/bug#8144
   {
     implicit class AttributesAwareNode(val node: NodeSeq) {
 
@@ -748,7 +748,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
     }
 
-    val files = createTemplates("SI-8144.scala")
+    val files = createTemplates("t8144.scala")
 
     def check(pagePath: String)(f: NodeSeq => org.scalacheck.Prop): org.scalacheck.Prop =
       files(pagePath) match {
@@ -756,18 +756,18 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
         case _ => false
       }
 
-    property("SI-8144: Members' permalink - inner package") = check("some/pack/index.html") { node =>
+    property("scala/bug#8144: Members' permalink - inner package") = check("some/pack/index.html") { node =>
       ("type link" |: node.assertTypeLink("../../some/pack/index.html")) &&
         ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../some/pack/index.html#SomeType")) &&
         ("member: SomeType (class)" |: node.assertMemberLink("types")("some.pack.SomeType", "../../some/pack/index.html#SomeTypeextendsAnyRef"))
     }
 
-    property("SI-8144: Members' permalink - companion object") = check("some/pack/SomeType$.html") { node =>
+    property("scala/bug#8144: Members' permalink - companion object") = check("some/pack/SomeType$.html") { node =>
       ("type link" |: node.assertTypeLink("../../some/pack/SomeType$.html")) &&
         ("member: someVal" |: node.assertMemberLink("allMembers")("some.pack.SomeType#someVal", "../../some/pack/SomeType$.html#someVal:String"))
     }
 
-    property("SI-8144: Members' permalink - class") = check("some/pack/SomeType.html") { node =>
+    property("scala/bug#8144: Members' permalink - class") = check("some/pack/SomeType.html") { node =>
       ("type link" |: node.assertTypeLink("../../some/pack/SomeType.html")) &&
       ("constructor " |: node.assertMemberLink("constructors")("some.pack.SomeType#<init>", "../../some/pack/SomeType.html#<init>(arg:String):some.pack.SomeType")) &&
         ( "member: type TypeAlias" |: node.assertMemberLink("types")("some.pack.SomeType.TypeAlias", "../../some/pack/SomeType.html#TypeAlias=String")) &&
@@ -777,8 +777,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   }
 
-  property("SI-9599 Multiple @todo formatted with comma on separate line") = {
-    createTemplates("SI-9599.scala")("X.html") match {
+  property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
+    createTemplates("t9599.scala")("X.html") match {
       case node: scala.xml.Node => node.text.contains("todo3todo2todo1")
       case _ => false
     }

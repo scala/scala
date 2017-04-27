@@ -6,7 +6,7 @@ import org.junit.{Assert, Test}
 
 import scala.tools.testing.AssertUtil
 
-/* Test for SI-9043 */
+/* Test for scala/bug#9043 */
 @RunWith(classOf[JUnit4])
 class ArrayBufferTest {
   @Test

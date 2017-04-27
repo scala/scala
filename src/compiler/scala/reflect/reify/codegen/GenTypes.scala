@@ -25,7 +25,7 @@ trait GenTypes {
     if (isSemiConcreteTypeMember(tpe))
       return reifySemiConcreteTypeMember(tpe)
 
-    // SI-6242: splicing might violate type bounds
+    // scala/bug#6242: splicing might violate type bounds
     val spliced = spliceType(tpe)
     if (spliced != EmptyTree)
       return spliced

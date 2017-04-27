@@ -7,7 +7,7 @@ import scala.collection.mutable
 import java.io.{ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream}
 
 @RunWith(classOf[JUnit4])
-/* Test for SI-7568  */
+/* Test for scala/bug#7568  */
 class PriorityQueueTest {
   val priorityQueue = new mutable.PriorityQueue[Int]()
   val elements = List.fill(1000)(scala.util.Random.nextInt(Int.MaxValue))

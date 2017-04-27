@@ -8,7 +8,7 @@ class C(v: Any) extends Dynamic {
 object Test extends App {
   // this should be converted to
   // C(42).selectDynamic[Int]("foo").get
-  // but, before fixing SI-6663, became
+  // but, before fixing scala/bug#6663, became
   // C(42).selectDynamic[Nothing]("foo").get
   // leading to a ClassCastException
   var v = new C(42).foo[Int].get

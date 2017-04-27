@@ -1138,7 +1138,7 @@ self =>
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
     def selector(t: Tree): Tree = {
-      val point = if(isIdent) in.offset else in.lastOffset //SI-8459
+      val point = if(isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
         Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
@@ -1973,7 +1973,7 @@ self =>
       def pattern3(): Tree = {
         val top = simplePattern(badPattern3)
         val base = opstack
-        // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
+        // See scala/bug#3189, scala/bug#4832 for motivation. Cf scala/bug#3480 for counter-motivation.
         def isCloseDelim = in.token match {
           case RBRACE => isXML
           case RPAREN => !isXML

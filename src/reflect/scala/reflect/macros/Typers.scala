@@ -112,7 +112,7 @@ trait Typers {
    *  typed trees inside typed trees. Therefore in the current reflection API, there is a need in functions
    *  that go back and forth between untyped and typed trees. For this we have [[typecheck]] and `untypecheck`.
    *
-   *  Note that `untypecheck` is currently afflicted by https://issues.scala-lang.org/browse/SI-5464,
+   *  Note that `untypecheck` is currently afflicted by https://github.com/scala/bug/issues/5464,
    *  which makes it sometimes corrupt trees so that they don't make sense anymore. Unfortunately, there's no workaround for that.
    *  We plan to fix this issue soon, but for now please keep it in mind.
    *

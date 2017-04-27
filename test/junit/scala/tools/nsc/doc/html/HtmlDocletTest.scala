@@ -15,7 +15,7 @@ class HtmlDocletTest {
 
     val out = SyntaxHigh(in).toString
 
-    // SI-9038, this failed with
+    // scala/bug#9038, this failed with
     // "unicode: …" != "unicode: ￢ﾀﾦ"
     assertEquals(in, out)
   }

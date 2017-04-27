@@ -84,7 +84,7 @@ object Test {
     for (set <- sets2 ; x <- set ; y <- set) {
       if (!isIffy(x,y)) {
         assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))
-        // The following is blocked by SI-8150
+        // The following is blocked by scala/bug#8150
         // if (!isIffyB(x,y)) assert(x.## == y.##, "%x/%s != %x/%s from %s.## and %s.##".format(x.##, x.getClass, y.##, y.getClass, x, y))
       }
     }

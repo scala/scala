@@ -28,7 +28,7 @@ object Test extends App {
   }
 
   val g = () => {
-    // Reported as SI-8195, same root cause
+    // Reported as scala/bug#8195, same root cause
     trait Form {
  
       private val runtimeMirror = ru.runtimeMirror(this.getClass.getClassLoader)

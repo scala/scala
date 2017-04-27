@@ -304,7 +304,7 @@ object scalac extends Command {
           "Print a synopsis of compiler phases."),
         Definition(
           CmdOptionBound("Xsource:", Argument("version")),
-          "Treat compiler input as Scala source for the specified version, see SI-8126."),
+          "Treat compiler input as Scala source for the specified version, see scala/bug#8126."),
         Definition(
           CmdOption("Xsource-reader", Argument("classname")),
           "Specify a custom method for reading source files."),

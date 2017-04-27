@@ -20,7 +20,7 @@ class BoxUnboxTest extends RunTesting {
     import scala.tools.testing.AssertUtil._
     import org.junit.Assert._
 
-    def genericNull[T] = null.asInstanceOf[T] // allowed, see SI-4437, point 2
+    def genericNull[T] = null.asInstanceOf[T] // allowed, see scala/bug#4437, point 2
 
     val b = new Integer(1)
     val u = 1
@@ -67,7 +67,7 @@ class BoxUnboxTest extends RunTesting {
     val mp = new java.util.HashMap[Int, Int]
     val n9 = mp.get(0)
     assertEquals(n9, 0)
-    val n10 = mp.get(0) == null                    // SI-602
+    val n10 = mp.get(0) == null                    // scala/bug#602
     assertThrows[AssertionError](assertFalse(n10)) // should not throw
 
     def f(a: Any) = "" + a
@@ -86,7 +86,7 @@ class BoxUnboxTest extends RunTesting {
     val i1 = 1L.asInstanceOf[Int]
     assertEquals(i1, 1)
     assertThrows[ClassCastException] {
-      val i2 = (1L: Any).asInstanceOf[Int] // SI-1448, should not throw. see also SI-4437 point 1.
+      val i2 = (1L: Any).asInstanceOf[Int] // scala/bug#1448, should not throw. see also scala/bug#4437 point 1.
       assertEquals(i2, 1)
     }
   }
@@ -157,9 +157,9 @@ class BoxUnboxTest extends RunTesting {
           f1(               n4[Int])  + // "null"
       "-"                             +
           f1(null.asInstanceOf[VCI])  +
-      npe(f1(  n1.asInstanceOf[VCI])) + // SI-8097
+      npe(f1(  n1.asInstanceOf[VCI])) + // scala/bug#8097
           f1(  n2.asInstanceOf[VCI])  +
-      npe(f1(  n3.asInstanceOf[VCI])) + // SI-8097
+      npe(f1(  n3.asInstanceOf[VCI])) + // scala/bug#8097
           f1(               n4[VCI])  + // "null"
       "-"                             +
           f1(null.asInstanceOf[Unit]) +
@@ -175,9 +175,9 @@ class BoxUnboxTest extends RunTesting {
           f2(               n4[Int])  + // "null"
       "-"                             +
           f2(null.asInstanceOf[VCI])  +
-      npe(f2(  n1.asInstanceOf[VCI])) + // SI-8097
+      npe(f2(  n1.asInstanceOf[VCI])) + // scala/bug#8097
           f2(  n2.asInstanceOf[VCI])  +
-      npe(f2(  n3.asInstanceOf[VCI])) + // SI-8097
+      npe(f2(  n3.asInstanceOf[VCI])) + // scala/bug#8097
           f2(               n4[VCI])  + // "null"
       "-"                             +
           f2(null.asInstanceOf[Unit]) +
@@ -193,9 +193,9 @@ class BoxUnboxTest extends RunTesting {
           f3(               n4[Int])  + // "null"
       "-"                             +
           f3(null.asInstanceOf[VCI])  +
-      npe(f3(  n1.asInstanceOf[VCI])) + // SI-8097
+      npe(f3(  n1.asInstanceOf[VCI])) + // scala/bug#8097
           f3(  n2.asInstanceOf[VCI])  +
-      npe(f3(  n3.asInstanceOf[VCI])) + // SI-8097
+      npe(f3(  n3.asInstanceOf[VCI])) + // scala/bug#8097
           f3(               n4[VCI])  + // "null"
       "-"                             +
           f3(null.asInstanceOf[Unit]) +
@@ -211,10 +211,10 @@ class BoxUnboxTest extends RunTesting {
           f4(               n4[Int])  +
       "-"                             +
           f5(null.asInstanceOf[VCI])  +
-      npe(f5(  n1.asInstanceOf[VCI])) + // SI-8097
+      npe(f5(  n1.asInstanceOf[VCI])) + // scala/bug#8097
           f5(  n2.asInstanceOf[VCI])  +
-      npe(f5(  n3.asInstanceOf[VCI])) + // SI-8097
-      npe(f5(               n4[VCI])) + // SI-8097
+      npe(f5(  n3.asInstanceOf[VCI])) + // scala/bug#8097
+      npe(f5(               n4[VCI])) + // scala/bug#8097
       "-"                             +
           f6(null.asInstanceOf[Unit]) +
           f6(  n1.asInstanceOf[Unit]) +

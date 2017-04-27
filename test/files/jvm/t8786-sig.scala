@@ -55,7 +55,7 @@ object Test extends App {
   check(genSig("m1", sq), "public <T> T A.m1(scala.collection.Seq<T>)")
   check(genSig("m2", sq), "public <T> T A.m2(scala.collection.Seq<T>)")
   check(genSig("m3", sq), "public <T> T A.m3(scala.collection.Seq<T>)")
-  // TODO: the signature for is wrong for T <: Int, SI-9846. The signature should be
+  // TODO: the signature for is wrong for T <: Int, scala/bug#9846. The signature should be
   // `public int A.m4(scala.collection.Seq<java.lang.Object>)`. This is testing the status quo.
   check(genSig("m4", sq), "public <T> T A.m4(scala.collection.Seq<T>)")
   check(genSig("m5", sq), "public <T> T A.m5(scala.collection.Seq<T>)")
@@ -78,7 +78,7 @@ object Test extends App {
   check(genSig("m1", ao), "public <T> T A.m1(T...)")
   check(genSig("m2", ao), "public <T> T A.m2(T...)")
   check(genSig("m3", ao), "public <T> T A.m3(T...)")
-  // testing status quo: signature is wrong for T <: Int, SI-9846
+  // testing status quo: signature is wrong for T <: Int, scala/bug#9846
   check(genSig("m4", ao), "public <T> T A.m4(T...)")
   check(genSig("m5", as), "public <T> T A.m5(T...)")
   check(genSig("m6", as), "public java.lang.String A.m6(java.lang.String...)")
@@ -107,7 +107,7 @@ object Test extends App {
   check(genSig("n1", ob), "public <T> T A.n1(java.lang.Object)")
   check(genSig("n2", ao), "public <T> T A.n2(T[])")
   check(genSig("n3", ob), "public <T> T A.n3(java.lang.Object)")
-  // testing status quo: signature is wrong for T <: Int, SI-9846
+  // testing status quo: signature is wrong for T <: Int, scala/bug#9846
   check(genSig("n4", ob), "public <T> T A.n4(java.lang.Object)")
   check(genSig("n5", as), "public <T> T A.n5(T[])")
   check(genSig("n6", as), "public java.lang.String A.n6(java.lang.String[])")

@@ -112,7 +112,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *
    *  This spawns the compiler at the Namer phase, and pipelines the tree through that compiler.
    *  Currently `compile` does not accept trees that already typechecked, because typechecking isn't idempotent.
-   *  For more info, take a look at https://issues.scala-lang.org/browse/SI-5464.
+   *  For more info, take a look at https://github.com/scala/bug/issues/5464.
    */
   def compile(tree: u.Tree): () => Any
 

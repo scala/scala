@@ -2,7 +2,7 @@ package scala
 package reflect
 package internal
 
-import scala.language.existentials // SI-6541
+import scala.language.existentials // scala/bug#6541
 
 package object util {
 

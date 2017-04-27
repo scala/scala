@@ -3,7 +3,7 @@ Scala Distribution
 
 The Scala distribution requires Java 1.8 or above.
 
-Please report bugs at https://issues.scala-lang.org/.
+Please report bugs at https://github.com/scala/bug/issues.
 We welcome contributions at https://github.com/scala/scala!
 
 Scala Tools

@@ -31,9 +31,9 @@ trait Names {
     // imports that term with a wildcard and then generates a "fresh" name of its own. Given unlucky
     // circumstances these "fresh" names might end up clashing.
     //
-    // TODO: hopefully SI-7823 will provide an ultimate answer to this problem.
-    // In the meanwhile I will also keep open the original issue: SI-6879 "c.freshName is broken".
-    val prefix = if (name.endsWith("$")) name else name + "$" // SI-8425
+    // TODO: hopefully scala/bug#7823 will provide an ultimate answer to this problem.
+    // In the meanwhile I will also keep open the original issue: scala/bug#6879 "c.freshName is broken".
+    val prefix = if (name.endsWith("$")) name else name + "$" // scala/bug#8425
     val sortOfUniqueSuffix = freshNameCreator.newName(nme.FRESH_SUFFIX)
     prefix + sortOfUniqueSuffix
   }

@@ -66,7 +66,7 @@ class DoubleLinkedList[A]() extends AbstractSeq[A]
 
   override def companion: GenericCompanion[DoubleLinkedList] = DoubleLinkedList
 
-  // Accurately clone this collection.  See SI-6296
+  // Accurately clone this collection.  See scala/bug#6296
   override def clone(): DoubleLinkedList[A] = {
     val builder = newBuilder
     builder ++= this

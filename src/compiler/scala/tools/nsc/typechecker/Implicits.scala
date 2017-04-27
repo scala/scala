@@ -94,7 +94,7 @@ trait Implicits {
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
       implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
 
-    // SI-7944 undetermined type parameters that result from inference within typedImplicit land in
+    // scala/bug#7944 undetermined type parameters that result from inference within typedImplicit land in
     //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
     //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
     //         and then filter out any which *were* inferred and are part of the substitutor in the implicit search result.
@@ -418,7 +418,7 @@ trait Implicits {
       def stripped(tp: Type): Type = {
         // `t.typeSymbol` returns the symbol of the normalized type. If that normalized type
         // is a `PolyType`, the symbol of the result type is collected. This is precisely
-        // what we require for SI-5318.
+        // what we require for scala/bug#5318.
         val syms = for (t <- tp; if t.typeSymbol.isTypeParameter) yield t.typeSymbol
         deriveTypeWithWildcards(syms.distinct)(tp)
       }
@@ -452,7 +452,7 @@ trait Implicits {
      *  @pre `info.tpe` does not contain an error
      */
     private def typedImplicit(info: ImplicitInfo, ptChecked: Boolean, isLocalToCallsite: Boolean): SearchResult = {
-      // SI-7167 let implicit macros decide what amounts for a divergent implicit search
+      // scala/bug#7167 let implicit macros decide what amounts for a divergent implicit search
       // imagine a macro writer which wants to synthesize a complex implicit Complex[T] by making recursive calls to Complex[U] for its parts
       // e.g. we have `class Foo(val bar: Bar)` and `class Bar(val x: Int)`
       // then it's quite reasonable for the macro writer to synthesize Complex[Foo] by calling `inferImplicitValue(typeOf[Complex[Bar])`
@@ -614,12 +614,12 @@ trait Implicits {
 
       val itree0 = atPos(pos.focus) {
         if (isLocalToCallsite && !isScaladoc) {
-          // SI-4270 SI-5376 Always use an unattributed Ident for implicits in the local scope,
+          // scala/bug#4270 scala/bug#5376 Always use an unattributed Ident for implicits in the local scope,
           // rather than an attributed Select, to detect shadowing.
           Ident(info.name)
         } else {
           assert(info.pre != NoPrefix, info)
-          // SI-2405 Not info.name, which might be an aliased import
+          // scala/bug#2405 Not info.name, which might be an aliased import
           val implicitMemberName = info.sym.name
           Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
         }
@@ -729,7 +729,7 @@ trait Implicits {
             // re-typecheck)
             //
             // This is just called for the side effect of error detection,
-            // see SI-6966 to see what goes wrong if we use the result of this
+            // see scala/bug#6966 to see what goes wrong if we use the result of this
             // as the SearchResult.
             itree3 match {
               case TypeApply(fun, args)           => typedTypeApply(itree3, EXPRmode, fun, args)
@@ -1085,7 +1085,7 @@ trait Implicits {
                 args foreach getParts
               }
             } else if (sym.isAliasType) {
-              getParts(tp.normalize) // SI-7180 Normalize needed to expand HK type refs
+              getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
             }
@@ -1381,7 +1381,7 @@ trait Implicits {
         val failstart = if (stats) Statistics.startTimer(oftypeFailNanos) else null
         val succstart = if (stats) Statistics.startTimer(oftypeSucceedNanos) else null
 
-        // SI-6667, never search companions after an ambiguous error in in-scope implicits
+        // scala/bug#6667, never search companions after an ambiguous error in in-scope implicits
         val wasAmbiguous = result.isAmbiguousFailure
 
         // TODO: encapsulate
@@ -1416,7 +1416,7 @@ trait Implicits {
           true
         }
         pt match {
-          // SI-10206 don't use subtyping to rule out AnyRef/AnyVal:
+          // scala/bug#10206 don't use subtyping to rule out AnyRef/AnyVal:
           //   - there are several valid structural types that are supertypes of AnyRef (e.g., created by HasMember);
           //     typeSymbol will do the trick (AnyRef is a type alias for Object), while ruling out these structural types
           //   - also don't want to accidentally constrain type vars through using <:<

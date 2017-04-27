@@ -93,7 +93,7 @@ abstract class Pickler extends SubComponent {
      *  for existentially bound variables that have a non-local owner.
      *  Question: Should this be done for refinement class symbols as well?
      *
-     *  Note: tree pickling also finds its way here; e.g. in SI-7501 the pickling
+     *  Note: tree pickling also finds its way here; e.g. in scala/bug#7501 the pickling
      *  of trees in annotation arguments considers the parameter symbol of a method
      *  called in such a tree as "local". The condition `sym.isValueParameter` was
      *  added to fix that bug, but there may be a better way.

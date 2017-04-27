@@ -4,7 +4,7 @@ class Test {
   def bar(a: Boolean, b: scala.collection.mutable.SetLike[Any,scala.collection.mutable.Set[Any]], c: scala.collection.mutable.Buffer[Any]) = if (a) b else c
   // bar produces an ill-bounded LUB in 2.11.8. After this commit, which fixes a bug in existential+refinement lubs, foo also fails.
 }
-// This test case minimizes a case that stated to fail compile after my fixes in SI-5294.
+// This test case minimizes a case that stated to fail compile after my fixes in scala/bug#5294.
 // `foo` used to compile for the wrong reason, `mergePrefixAndArgs` failed to transpose a
 // ragged matrix and skipped to the next level of the base type sequences to find a common type symbol.
 //

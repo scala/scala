@@ -13,9 +13,9 @@ setlocal enableextensions enabledelayedexpansion
 set _LINE_TOOLCP=
 
 rem Use "%~1" to handle spaces in paths. See http://ss64.com/nt/syntax-args.html
-rem SI-7295 The goto here is needed to avoid problems with `scala Script.cmd "arg(with)paren"`,
-rem         we must not evaluate %~2 eagerly, but delayed expansion doesn't seem to allow
-rem         removal of quotation marks.
+rem scala/bug#7295 The goto here is needed to avoid problems with `scala Script.cmd "arg(with)paren"`,
+rem                we must not evaluate %~2 eagerly, but delayed expansion doesn't seem to allow
+rem                removal of quotation marks.
 if not [%~1]==[-toolcp] (
   goto :notoolcp
 )
@@ -25,7 +25,7 @@ shift
 
 :notoolcp
 
-rem SI-8358, SI-8368 -- the default should really be false,
+rem scala/bug#8358, scala/bug#8368 -- the default should really be false,
 rem but I don't want to flip the default during 2.11's RC cycle
 set _OVERRIDE_USEJAVACP="-Dscala.usejavacp=true"
 

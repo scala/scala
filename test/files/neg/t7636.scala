@@ -3,5 +3,5 @@ object Main extends App{
   class C extends ResultTable(Left(5):Either[_,_])(5)
 }
 // Inference of the existential type for the parent type argument
-// E still fails. That looks tricky to fix, see the comments in SI-7636.
+// E still fails. That looks tricky to fix, see the comments in scala/bug#7636.
 // But we at least prevent a cascading NPE.
