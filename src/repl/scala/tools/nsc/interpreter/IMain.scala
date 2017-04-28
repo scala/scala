@@ -63,8 +63,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   object replOutput extends ReplOutput(settings.Yreploutdir) { }
 
-  @deprecated("Use replOutput.dir instead", "2.11.0")
-  def virtualDirectory = replOutput.dir
   // Used in a test case.
   def showDirectory() = replOutput.show(out)
 

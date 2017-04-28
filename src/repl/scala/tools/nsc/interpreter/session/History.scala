@@ -3,9 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
-package session
+package scala.tools.nsc.interpreter.session
 
 /** An implementation-agnostic history interface which makes no
  *  reference to the jline classes.  Very sparse right now.

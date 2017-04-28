@@ -31,7 +31,7 @@ class SimpleHistory extends History {
   def isEmpty = buf.isEmpty
   def clear() = buf.clear()
   def get(idx: Int): CharSequence = buf(idx)
-  def add(item: CharSequence): Unit = buf += item
+  def add(item: CharSequence): Unit = buf += item.toString
   def replace(item: CharSequence): Unit = {
     buf trimEnd 1
     add(item)
@@ -40,7 +40,7 @@ class SimpleHistory extends History {
   def remove(idx: Int): CharSequence        = buf remove idx
   def removeFirst(): CharSequence           = buf remove 0
   def removeLast(): CharSequence            = buf remove lastIndex
-  def set(idx: Int, to: CharSequence): Unit = buf(idx) = to
+  def set(idx: Int, to: CharSequence): Unit = buf(idx) = to.toString
 
   def current()         = if (index >= 0 && index < buf.size) buf(index) else fail("current()")
   def previous()        = (index > 0) && minusOne
