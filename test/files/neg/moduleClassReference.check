@@ -1,0 +1,4 @@
+moduleClassReference.scala:2: error: not found: value Predef$
+  def foo = Predef$.MODULE$ == Predef
+            ^
+one error found
