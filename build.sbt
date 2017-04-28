@@ -757,10 +757,10 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       val fixedManOut = (resourceManaged in Compile).value / "man"
       IO.createDirectory(htmlOut)
       IO.createDirectory(manOut / "man1")
-      toError(runner.value.run("scala.tools.docutil.ManMaker",
+      runner.value.run("scala.tools.docutil.ManMaker",
         (fullClasspath in Compile in manual).value.files,
         Seq(command, htmlOut.getAbsolutePath, manOut.getAbsolutePath),
-        streams.value.log))
+        streams.value.log).foreach(sys.error)
       (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
         // Generated manpages should always use LF only. There doesn't seem to be a good reason
         // for generating them with the platform EOL first and then converting them but that's
