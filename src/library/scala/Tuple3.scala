@@ -23,3 +23,11 @@ final case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + ")"
   
 }
+
+object Tuple3 {
+  implicit def tuple2ToZippedOps[T1, T2, T3](x: (T1, T2, T3))
+    (implicit w1: T1 => TraversableOnce[_],
+              w2: T2 => TraversableOnce[_],
+              w3: T3 => TraversableOnce[_]
+    ): runtime.Tuple3Zipped.Ops[T1, T2, T3] = new runtime.Tuple3Zipped.Ops(x)
+}

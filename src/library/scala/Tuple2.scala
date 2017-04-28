@@ -28,3 +28,10 @@ final case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
 }
+
+object Tuple2 {
+  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))
+    (implicit w1: T1 => TraversableOnce[_],
+              w2: T2 => TraversableOnce[_]
+    ): runtime.Tuple2Zipped.Ops[T1, T2] = new runtime.Tuple2Zipped.Ops(x)
+}
