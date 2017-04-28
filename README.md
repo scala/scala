@@ -92,7 +92,7 @@ https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
 
 ### Using the sbt Build
 
-Core commands:
+Once you've started an `sbt` session you can run one of the core commands:
 
   - `compile` compiles all sub-projects (library, reflect, compiler, scaladoc, etc)
   - `scala` / `scalac` run the REPL / compiler directly from sbt (accept options /
@@ -112,6 +112,11 @@ Core commands:
       binary compatible, we recommend using `-pre`, e.g., `2.13.0-pre-abcd123-SNAPSHOT`.
     - Optionally `set publishArtifact in (Compile, packageDoc) in ThisBuild := false`
       to skip generating / publishing API docs (speeds up the process).
+
+If a command results in an error message like `a module is not authorized to depend on
+itself`, it may be that a global SBT plugin (such as [Ensime](http://ensime.org/)) is
+resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
+temporarily commenting them out in `~/.sbt/0.13/plugins/plugins.sbt`).
 
 #### Sandbox
 
