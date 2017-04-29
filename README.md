@@ -90,6 +90,11 @@ bootstrap build locally.
 For history on how the current scheme was arrived at, see
 https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
 
+Note: If compilation fails with "Out of Memory" errors, try increasing the heap
+size:
+
+  $ SBT_OPTS=-Xmx8192M
+
 ### Using the sbt Build
 
 Once you've started an `sbt` session you can run one of the core commands:
