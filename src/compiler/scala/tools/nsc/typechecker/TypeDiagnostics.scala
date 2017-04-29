@@ -473,7 +473,7 @@ trait TypeDiagnostics {
         "readResolve", "readObject", "writeObject", "writeReplace"
       ).map(TermName(_))
 
-      class UnusedPrivates extends Traverser {
+      class UnusedPrivates(traverseCheck: Tree => Tree, isOriginal: Boolean) extends Traverser {
         val defnTrees = ListBuffer[MemberDef]()
         val targets   = mutable.Set[Symbol]()
         val setVars   = mutable.Set[Symbol]()
@@ -492,6 +492,7 @@ trait TypeDiagnostics {
           && !sym.isParamAccessor       // could improve this, but it's a pain
           && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
           && !(sym.isGetter && sym.accessed.isEarlyInitialized)
+          && (isOriginal || !sym.isMacro)
         )
         def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
         def qualifies(sym: Symbol) = (
@@ -499,7 +500,8 @@ trait TypeDiagnostics {
           && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
         )
 
-        override def traverse(t: Tree): Unit = {
+        override def traverse(t0: Tree): Unit = {
+          val t   = traverseCheck(t0)
           val sym = t.symbol
           t match {
             case m: MemberDef if qualifies(t.symbol)   =>
@@ -606,9 +608,7 @@ trait TypeDiagnostics {
         warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams
       }
 
-      def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
-        val p = new UnusedPrivates
-        p.traverse(unit.body)
+      def process(p: UnusedPrivates): Unit = {
         if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
           for (defn: DefTree <- p.unusedTerms) {
             val sym = defn.symbol
@@ -674,6 +674,26 @@ trait TypeDiagnostics {
           )
           for (s <- p.unusedParams if warnable(s))
             context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
+        }
+      }
+      def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
+        settings.warnMacros.value match {
+          case "none"   =>
+            val only = new UnusedPrivates((t: Tree) => if (hasMacroExpansionAttachment(t)) EmptyTree else t, isOriginal = true)
+            only.traverse(unit.body)
+            process(only)
+          case "before" | "both" =>
+            val first = new UnusedPrivates((t: Tree) => if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t, isOriginal = true)
+            first.traverse(unit.body)
+            process(first)
+          case _ => ()
+        }
+        settings.warnMacros.value match {
+          case "after" | "both" =>
+            val second = new UnusedPrivates((t: Tree) => t, isOriginal = false)
+            second.traverse(unit.body)
+            process(second)
+          case _ => ()
         }
       }
     }

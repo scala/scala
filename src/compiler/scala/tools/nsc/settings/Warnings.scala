@@ -16,7 +16,19 @@ trait Warnings {
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
   // Non-lint warnings.
-
+  val warnMacros           = ChoiceSetting(
+    name    = "-Ywarn-macros",
+    helpArg = "mode",
+    descr   = "Enable lint warnings on macro expansions.",
+    choices = List("none", "before", "after", "both"),
+    default = "before",
+    choicesHelp = List(
+      "Do not inspect expansions or their original trees when generating unused symbol warnings.",
+      "Only inspect unexpanded user-written code for unused symbols.",
+      "Only inspect expanded trees when generating unused symbol warnings.",
+      "Inspect both user-written code and expanded trees when generating unused symbol warnings."
+    )
+  )
   val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
   val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
   val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
