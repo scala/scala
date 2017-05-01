@@ -107,8 +107,7 @@ trait OrderedMapFactory[+CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC
 
   def empty[K : Ordering, V]: CC[K, V]
 
-  def fromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V] =
-    empty[K, V] ++ it
+  def fromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V]
 
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] =
     empty[K, V] ++ elems.toStrawman

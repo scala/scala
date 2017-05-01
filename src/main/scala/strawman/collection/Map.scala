@@ -77,5 +77,5 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
   /** Alias for `concat` */
   @`inline` final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
-}
 
+}
