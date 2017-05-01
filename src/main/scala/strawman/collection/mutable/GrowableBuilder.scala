@@ -15,8 +15,7 @@ import scala.Unit
   * @define Coll `GrowingBuilder`
   * @define coll growing builder
   */
-class GrowableBuilder[Elem, To <: Growable[Elem]](empty: To) extends Builder[Elem, To] {
-  protected var elems: To = empty
+class GrowableBuilder[Elem, To <: Growable[Elem]](elems: To) extends Builder[Elem, To] {
   def clear(): Unit = elems.clear()
   def result: To = elems
   def add(elem: Elem): this.type = { elems += elem; this }
