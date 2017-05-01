@@ -52,8 +52,7 @@ trait SpecificIterableFactory[-A, +C] extends FromSpecificIterable[A, C] {
 trait MapFactory[+CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _]] {
 
   def empty[K, V]: CC[K, V]
-  def fromIterable[K, V](it: Iterable[(K, V)]): CC[K, V] =
-    empty[K, V] ++ it
+  def fromIterable[K, V](it: Iterable[(K, V)]): CC[K, V]
 
   def apply[K, V](elems: (K, V)*): CC[K, V] =
     empty[K, V] ++ elems.toStrawman
@@ -65,6 +64,12 @@ object MapFactory {
     new FromSpecificIterable[(K, V), CC[K, V]] {
       def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = fi.fromIterable[K, V](it)
     }
+
+  class Delegate[C[X, Y]](delegate: MapFactory[C]) extends MapFactory[C] {
+    def fromIterable[K, V](it: Iterable[(K, V)]): C[K, V] = delegate.fromIterable(it)
+    def empty[K, V]: C[K, V] = delegate.empty
+  }
+
 }
 
 trait OrderedFromIterable[+CC[_]] extends Any {

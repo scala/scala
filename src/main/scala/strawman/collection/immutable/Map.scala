@@ -64,6 +64,4 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
 }
 
 // TODO Special case small maps
-object Map extends MapFactory[Map] {
-  def empty[K, V]: Map[K, V] = ListMap.empty[K, V]
-}
+object Map extends MapFactory.Delegate[Map](HashMap)

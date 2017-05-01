@@ -104,6 +104,12 @@ object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 
+  def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] =
+    it match {
+      case hm: HashMap[K, V] => hm
+      case _ => newBuilder[K, V].++=(it).result
+    }
+
   private[collection] abstract class Merger[A, B] {
     def apply(kv1: (A, B), kv2: (A, B)): (A, B)
     def invert: Merger[A, B]
