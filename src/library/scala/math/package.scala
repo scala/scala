@@ -63,6 +63,9 @@ package scala
   *
   * @groupname randomisation Pseudo Random Number Generation
   * @groupprio randomisation 130
+  *
+  * @groupname exact Functions to avoid overflow on primitive types
+  * @groupprio exact 140
   */
 package object math {
   /** The `Double` value that is closer than any other to `e`, the base of
@@ -219,6 +222,52 @@ package object math {
   /** @group signum */
   def signum(x: Double): Double = java.lang.Math.signum(x)
 
+  /** Returns the largest (closest to positive infinity) `Int` value
+    * that is less than or equal to the algebraic quotient. */
+  def floorDiv(x: Int, y: Int): Int = java.lang.Math.floorDiv(x, y)
+
+  /** Returns the largest (closest to positive infinity) `Long` value
+    * that is less than or equal to the algebraic quotient. */
+  def floorDiv(x: Long, y: Long): Long = java.lang.Math.floorDiv(x, y)
+
+  /** Returns the floor modulus of the `Int` arguments. */
+  def floorMod(x: Int, y: Int): Int = java.lang.Math.floorMod(x, y)
+
+  /** Returns the floor modulus of the `Long` arguments. */
+  def floorMod(x: Long, y: Long): Long = java.lang.Math.floorMod(x, y)
+
+  /** Returns the first floating-point argument with the sign of the second floating-point argument. */
+  def copySign(magnitude: Double, sign: Double): Double = java.lang.Math.copySign(magnitude, sign)
+
+  /** Returns the first floating-point argument with the sign of the second floating-point argument. */
+  def copySign(magnitude: Float, sign: Float): Float = java.lang.Math.copySign(magnitude, sign)
+
+  /** Returns the floating-point number adjacent to the first argument in the direction of the second argument. */
+  def nextAfter(start: Double, direction: Double): Double = java.lang.Math.nextAfter(start, direction)
+
+  /** Returns the floating-point number adjacent to the first argument in the direction of the second argument. */
+  def nextAfter(start: Float, direction: Float): Float = java.lang.Math.nextAfter(start, direction)
+
+  /** Returns the floating-point value adjacent to d in the direction of positive infinity. */
+  def nextUp(d: Double): Double = java.lang.Math.nextUp(d)
+
+  /** Returns the floating-point value adjacent to f in the direction of positive infinity. */
+  def nextUp(d: Float): Float = java.lang.Math.nextUp(d)
+
+  /** Returns the floating-point value adjacent to d in the direction of negative infinity. */
+  def nextDown(d: Double): Double = java.lang.Math.nextUp(d)
+
+  /** Returns the floating-point value adjacent to f in the direction of negative infinity. */
+  def nextDown(d: Float): Float = java.lang.Math.nextUp(d)
+
+  /** Returns d × 2scaleFactor rounded as if performed by a single correctly rounded floating-point
+    * multiply to a member of the `Double` value set. */
+  def scalb(d: Double, scaleFactor: Int): Double = java.lang.Math.scalb(d, scaleFactor)
+
+  /** Returns d × 2scaleFactor rounded as if performed by a single correctly rounded floating-point
+    * multiply to a member of the `Float` value set. */
+  def scalb(d: Float, scaleFactor: Int): Float = java.lang.Math.scalb(d, scaleFactor)
+
   // -----------------------------------------------------------------------
   // root functions
   // -----------------------------------------------------------------------
@@ -266,6 +315,16 @@ package object math {
     *  @group explog
     */
   def expm1(x: Double): Double = java.lang.Math.expm1(x)
+
+  /** Returns the unbiased exponent used in the representation of a `Double`.
+    *  @group explog
+    */
+  def getExponent(f: Float): Int = java.lang.Math.getExponent(f)
+
+  /** Returns the unbiased exponent used in the representation of a `Float`.
+    *  @group explog
+    */
+  def getExponent(f: Double): Int = java.lang.Math.getExponent(f)
 
   // -----------------------------------------------------------------------
   // logarithmic functions
@@ -324,4 +383,74 @@ package object math {
 
   /** @group rounding */
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
+
+  // -----------------------------------------------------------------------
+  // exact functions
+  // -----------------------------------------------------------------------
+
+  /** Returns the sum of its arguments, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def addExact(x: Int, y: Int): Int = java.lang.Math.addExact(x, y)
+
+  /** Returns the sum of its arguments, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def addExact(x: Long, y: Long): Long = java.lang.Math.addExact(x, y)
+
+  /** Returns the difference of the arguments, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def subtractExact(x: Int, y: Int): Int = java.lang.Math.subtractExact(x, y)
+
+  /** Returns the difference of the arguments, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def subtractExact(x: Long, y: Long): Long = java.lang.Math.subtractExact(x, y)
+
+  /** Returns the product of the arguments, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def multiplyExact(x: Int, y: Int): Int = java.lang.Math.multiplyExact(x, y)
+
+  /** Returns the product of the arguments, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def multiplyExact(x: Long, y: Long): Long = java.lang.Math.multiplyExact(x, y)
+
+  /** Returns the argument incremented by one, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def incrementExact(a: Int): Int = java.lang.Math.incrementExact(a)
+
+  /** Returns the argument incremented by one, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def incrementExact(a: Long) =  java.lang.Math.incrementExact(a)
+
+  /** Returns the argument decremented by one, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def decrementExact(a: Int) =  java.lang.Math.decrementExact(a)
+
+  /** Returns the argument decremented by one, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def decrementExact(a: Long) =  java.lang.Math.decrementExact(a)
+
+  /** Returns the negation of the argument, throwing an exception if the result overflows an `Int`.
+    * @group exact
+    */
+  def negateExact(a: Int) =  java.lang.Math.negateExact(a)
+
+  /** Returns the negation of the argument, throwing an exception if the result overflows a `Long`.
+    * @group exact
+    */
+  def negateExact(a: Long) =  java.lang.Math.negateExact(a)
+
+  /** Returns the value of the long argument; throwing an exception if the value overflows an `Int`.
+    * @group exact
+    */
+  def toIntExact(value: Long): Int = java.lang.Math.toIntExact(value)
+
 }
