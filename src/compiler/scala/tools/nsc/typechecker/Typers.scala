@@ -126,7 +126,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def pop(): Unit = ()
     def inMode(mode: Mode, tree: Tree): Tree = tree
   }
-  class CheckingCheckDead() extends CheckDead {
+  final class CheckingCheckDead() extends CheckDead {
     private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
     // The method being applied to `tree` when `apply` is called.
     private def expr = exprStack.top
@@ -308,7 +308,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     var context = context0
     def context1 = context
 
-    private var _checkDead: CheckDead = _
+    private[this] var _checkDead: CheckDead = _
     private def checkDead: CheckDead = {
       if (_checkDead == null) {
         _checkDead = if (settings.warnDeadCode.value && context != null && context.unit.exists) new CheckingCheckDead() else NoOpCheckDead
