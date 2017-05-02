@@ -13,4 +13,3 @@ public interface ConsoleResponse {
 
   String output();
 }
-

@@ -12,4 +12,3 @@ public enum ConsoleResult {
   Incomplete,
   Error
 }
-
