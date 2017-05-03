@@ -8,18 +8,17 @@ import scala.Predef.???
 /** Base trait for mutable sets */
 trait Set[A]
   extends collection.Set[A]
-    with SetLike[A, Set]
-    with Growable[A] {
+     with Growable[A] {
 
-  def addInPlace(elem: A): this.type
+  def add(elem: A): this.type
   /** Removes a single element from this $coll.
     *
     *  @param elem  the element to remove.
     *  @return the $coll itself
     */
-  def removeInPlace(elem: A): this.type
-  /** Alias for `removeInPlace` */
-  @`inline` final def -= (elem: A): this.type = removeInPlace(elem)
+  def subtract(elem: A): this.type
+  /** Alias for `remove` */
+  @`inline` final def -= (elem: A): this.type = subtract(elem)
 
   def contains(elem: A): Boolean
   def get(elem: A): Option[A]
@@ -72,10 +71,3 @@ trait Set[A]
 object Set {
   def apply[A](xs: A*): Set[A] = ???
 }
-
-trait SetLike[A, +C[X] <: Set[X]]
-  extends collection.SetLike[A, C]
-    with SetMonoTransforms[A, C[A]]
-
-trait SetMonoTransforms[A, +Repr]
-  extends collection.SetMonoTransforms[A, Repr]

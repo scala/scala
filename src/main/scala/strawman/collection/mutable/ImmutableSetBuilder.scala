@@ -1,5 +1,6 @@
 package strawman
-package collection.mutable
+package collection
+package mutable
 
 /** The canonical builder for immutable Sets.
   *
@@ -8,12 +9,8 @@ package collection.mutable
   *  @param empty   The empty element of the collection.
   *  @since 2.13
   */
-class ImmutableSetBuilder[
-  A,
-  C[X] <: collection.immutable.Set[X] with collection.immutable.SetMonoTransforms[X, C[X]]
-](empty: C[A])
-  extends ImmutableBuilder[A, C[A]](empty) {
+class ImmutableSetBuilder[A, CC[X] <: immutable.Set[X] with immutable.SetOps[X, CC[X]]](empty: CC[A])
+  extends ImmutableBuilder[A, CC[A]](empty) {
 
-  def addInPlace(x: A): this.type = { elems = elems + x; this }
-
+  def add(x: A): this.type = { elems = elems + x; this }
 }

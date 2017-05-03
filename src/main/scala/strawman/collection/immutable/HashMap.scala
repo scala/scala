@@ -28,13 +28,13 @@ import java.lang.{Integer, String, System}
 @SerialVersionUID(2L)
 sealed trait HashMap[K, +V]
   extends Map[K, V]
-    with MapLike[K, V, HashMap]
-    with Hashing[K]
-    with Serializable {
+     with MapLike[K, V, HashMap]
+     with Hashing[K]
+     with Serializable {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
+  override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
     coll match {
       case hm: HashMap[K, V] => hm
       case _ => HashMap.fromIterable(coll)

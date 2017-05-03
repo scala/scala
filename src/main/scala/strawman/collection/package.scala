@@ -49,7 +49,7 @@ import scala.reflect.ClassTag
  *
  *      For iterables:
  *
- *         iterator, fromIterable, fromIterableWithSameElemType, knownLength, className
+ *         iterator, fromIterable, fromSpecificIterable, knownLength, className
  *
  *      For sequences:
  *

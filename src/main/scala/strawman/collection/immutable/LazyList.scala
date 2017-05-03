@@ -2,6 +2,7 @@ package strawman.collection.immutable
 
 import scala.{None, Nothing, Option, Some, StringContext, Any}
 import scala.Predef.???
+import scala.annotation.tailrec
 import strawman.collection
 import strawman.collection.mutable.Builder
 import strawman.collection.{IterableFactory, Iterator, LinearSeq, SeqLike}
@@ -22,7 +23,9 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
   override def isEmpty = force.isEmpty
   override def nonEmpty = force.nonEmpty
   override def head = force.get._1
-  override def tail = force.get._2
+  override def tail: LazyList[A] = force.get._2
+
+  @tailrec final def length: Int = if (isEmpty) 0 else tail.length
 
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 

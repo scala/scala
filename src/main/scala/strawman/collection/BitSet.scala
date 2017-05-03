@@ -8,13 +8,37 @@ import scala.Predef.{assert, intWrapper}
 
 /** Base type of bitsets */
 trait BitSet
-  extends SortedSet[Int]
+ extends SortedSet[Int]
     with BitSetLike[BitSet]
 
 /** Base implementation type of bitsets */
 trait BitSetLike[+C <: BitSet with BitSetLike[C]]
   extends SortedSetLike[Int, SortedSet]
-    with BitSetMonoTransforms[C] { self =>
+     with BitSetOps[C]
+
+
+object BitSetLike {
+
+  /* Final vals can sometimes be inlined as constants (faster) */
+  private[collection] final val LogWL = 6
+  private[collection] final val WordLength = 64
+
+  private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
+    var len = elems.length
+    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
+    var newlen = len
+    if (idx >= newlen && w != 0L) newlen = idx + 1
+    val newelems = new Array[Long](newlen)
+    Array.copy(elems, 0, newelems, 0, len)
+    if (idx < newlen) newelems(idx) = w
+    else assert(w == 0L)
+    newelems
+  }
+
+}
+
+trait BitSetOps[+C <: BitSet with BitSetLike[C]]
+  extends SetOps[Int, C] with SortedOps[Int, C] { self =>
 
   protected def coll: C
 
@@ -91,14 +115,6 @@ trait BitSetLike[+C <: BitSet with BitSetLike[C]]
     a
   }
 
-}
-
-trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
-  extends SetMonoTransforms[Int, C]
-    with SortedMonoTransforms[Int, C] {
-
-  protected def coll: C
-
   def rangeImpl(from: Option[Int], until: Option[Int]): C = {
     val a = coll.toBitMask
     val len = a.length
@@ -149,26 +165,11 @@ trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
     * @return a new bitset resulting from applying the given function ''f'' to
     *         each element of this bitset and collecting the results
     */
-  def map(f: Int => Int): C = fromIterableWithSameElemType(View.Map(coll, f))
+  def map(f: Int => Int): C = fromSpecificIterable(View.Map(coll, f))
+
+  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(coll, f))
+
+  def ++(xs: IterableOnce[Int]): C = fromSpecificIterable(View.Concat(coll, xs))
 
 }
 
-object BitSetLike {
-
-  /* Final vals can sometimes be inlined as constants (faster) */
-  private[collection] final val LogWL = 6
-  private final val WordLength = 64
-
-  private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
-    var len = elems.length
-    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
-    var newlen = len
-    if (idx >= newlen && w != 0L) newlen = idx + 1
-    val newelems = new Array[Long](newlen)
-    Array.copy(elems, 0, newelems, 0, len)
-    if (idx < newlen) newelems(idx) = w
-    else assert(w == 0L)
-    newelems
-  }
-
-}

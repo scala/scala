@@ -16,10 +16,10 @@ trait Growable[-A] {
    *  @param elem  the element to $add.
    *  @return the $coll itself
    */
-  def addInPlace(elem: A): this.type
+  def add(elem: A): this.type
 
-  /** Alias for `addInPlace` */
-  @`inline` final def += (elem: A): this.type = addInPlace(elem)
+  /** Alias for `add` */
+  @`inline` final def += (elem: A): this.type = add(elem)
 
   /** ${Add}s two or more elements to this $coll.
    *

@@ -1,8 +1,9 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import collection.mutable.{Builder, ImmutableSetBuilder}
-import collection.{OrderedIterableFactory, OrderedPolyBuildable, Iterator}
+import collection.ordered
 import collection.immutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
@@ -27,8 +28,7 @@ import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
   */
 final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
-    with SortedSetLike[A, TreeSet]
-    with OrderedPolyBuildable[A, TreeSet] {
+     with SortedSetLike[A, TreeSet] {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")
 
@@ -64,7 +64,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
 
-  protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): TreeSet[A] =
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
     TreeSet.orderedFromIterable(coll)
 
   def orderedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
@@ -92,14 +92,14 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param elem    a new element to add.
     *  @return        a new $coll containing `elem` and all the elements of this $coll.
     */
-  def add(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+  def incl(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
 
   /** Creates a new `TreeSet` with the entry removed.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def remove(elem: A): TreeSet[A] =
+  def excl(elem: A): TreeSet[A] =
     if (!RB.contains(tree, elem)) this
     else newSet(RB.delete(tree, elem))
 
@@ -107,7 +107,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
 }
 
-object TreeSet extends OrderedIterableFactory[TreeSet] {
+object TreeSet extends OrderedSetFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 

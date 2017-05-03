@@ -11,8 +11,14 @@ import java.lang.String
 
 /** Base trait for generic collections */
 trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
+
   /** The collection itself */
   protected def coll: this.type = this
+}
+
+trait IterableLike[+A, +CC[X] <: Iterable[X]]
+  extends Any with IterableOps[A, CC[A]] with IterableMappings[A, CC] {
+  override protected[this] def fromSpecificIterable(coll: Iterable[A]): CC[A] = fromIterable(coll)
 }
 
 /** Base trait for Iterable operations
@@ -24,20 +30,12 @@ trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
   *  the child class and the variance of the `C` parameter passed to `IterableLike`
   *  are the same. We cannot express this since we lack variance polymorphism. That's
   *  why we have to resort at some places to write `C[A @uncheckedVariance]`.
-  *
   */
-trait IterableLike[+A, +C[X] <: Iterable[X]]
-  extends FromIterable[C]
-    with IterableOps[A]
-    with IterableMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
-    with IterablePolyTransforms[A, C]
-
-/** Operations over iterables. No operation defined here is generic in the
-  *  type of the underlying collection.
-  */
-trait IterableOps[+A] extends Any {
+trait IterableOps[+A, +C] extends Any {
   protected def coll: Iterable[A]
   private def iterator(): Iterator[A] = coll.iterator()
+
+  protected[this] def fromSpecificIterable(coll: Iterable[A]): C
 
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
@@ -96,12 +94,7 @@ trait IterableOps[+A] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to(bf: BuildFrom[Iterable[A], A]): bf.To = bf.fromIterable(coll)(coll)
-  // Note that `bf` is not implicit. We never want it to be inferred (because a collection could only rebuild itself
-  // that way) but we do rely on the implicit conversions from the various factory types to BuildFrom.
-
-  /** Optimized version of `to(BuildFrom)` */
-  def to(fi: BoundedIterableFactory[A]): fi.To[A @uncheckedVariance] = fi.fromIterable(coll)
+  def to[C](f: FromSpecificIterable[A, C]): C = f.fromSpecificIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -159,24 +152,13 @@ trait IterableOps[+A] extends Any {
     */
   def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
 
-}
-
-
-/** Type-preserving transforms over iterables.
-  *  Operations defined here return in their result iterables of the same type
-  *  as the one they are invoked on.
-  */
-trait IterableMonoTransforms[+A, +Repr] extends Any {
-  protected def coll: Iterable[A]
-  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): Repr
-
   /** Selects all elements of this $coll which satisfy a predicate.
     *
     *  @param pred  the predicate used to test elements.
     *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  def filter(pred: A => Boolean): Repr = fromIterableWithSameElemType(View.Filter(coll, pred))
+  def filter(pred: A => Boolean): C = fromSpecificIterable(View.Filter(coll, pred))
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
     *
@@ -184,8 +166,7 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
     *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  // TODO Generalize filter and filterNot to avoid the creation of the intermediate function
-  def filterNot(pred: A => Boolean): Repr = fromIterableWithSameElemType(View.Filter(coll, (a: A) => !pred(a)))
+  def filterNot(pred: A => Boolean): C = fromSpecificIterable(View.Filter(coll, (a: A) => !pred(a)))
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.
@@ -194,9 +175,9 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
     *  Strict collections have an overridden version of `partition` in `Buildable`,
     *  which requires only a single traversal.
     */
-  def partition(p: A => Boolean): (Repr, Repr) = {
+  def partition(p: A => Boolean): (C, C) = {
     val pn = View.Partition(coll, p)
-    (fromIterableWithSameElemType(pn.left), fromIterableWithSameElemType(pn.right))
+    (fromSpecificIterable(pn.left), fromSpecificIterable(pn.right))
   }
 
   /** Splits this $coll into two at a given position.
@@ -208,71 +189,32 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
     *  @return  a pair of ${coll}s consisting of the first `n`
     *           elements of this $coll, and the other elements.
     */
-  def splitAt(n: Int): (Repr, Repr) = (take(n), drop(n))
+  def splitAt(n: Int): (C, C) = (take(n), drop(n))
 
   /** A collection containing the first `n` elements of this collection. */
-  def take(n: Int): Repr = fromIterableWithSameElemType(View.Take(coll, n))
+  def take(n: Int): C = fromSpecificIterable(View.Take(coll, n))
 
   /** The rest of the collection without its `n` first elements. For
     *  linear, immutable collections this should avoid making a copy.
     */
-  def drop(n: Int): Repr = fromIterableWithSameElemType(View.Drop(coll, n))
+  def drop(n: Int): C = fromSpecificIterable(View.Drop(coll, n))
 
   /** The rest of the collection without its first element. */
-  def tail: Repr = {
+  def tail: C = {
     if (coll.isEmpty) throw new UnsupportedOperationException
     drop(1)
   }
 }
 
-/** Transforms over iterables that can return collections of different element types.
-  */
-trait IterablePolyTransforms[+A, +C[_]] extends Any {
+trait IterableMappings[A, +CC[X] <: Iterable[X]] extends Any {
   protected def coll: Iterable[A]
-  def fromIterable[B](coll: Iterable[B]): C[B]
+  protected def fromIterable[E](it: Iterable[E]): CC[E]
 
   /** Map */
-  def map[B](f: A => B): C[B] = fromIterable(View.Map(coll, f))
+  def map[B](f: A => B): CC[B] = fromIterable(View.Map(coll, f))
 
   /** Flatmap */
-  def flatMap[B](f: A => IterableOnce[B]): C[B] = fromIterable(View.FlatMap(coll, f))
-
-  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
-    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
-    *  the element types of the two operands.
-    *
-    *  @param xs   the traversable to append.
-    *  @tparam B   the element type of the returned collection.
-    *  @return     a new collection of type `C[B]` which contains all elements
-    *              of this $coll followed by all elements of `xs`.
-    */
-  def concat[B >: A](xs: IterableOnce[B]): C[B] = fromIterable(View.Concat(coll, xs))
-
-  /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](xs: IterableOnce[B]): C[B] = concat(xs)
-
-  /** Zip. Interesting because it requires to align to source collections. */
-  def zip[B](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
-  // sound bcs of VarianceNote
-}
-
-/** Transforms over iterables that can return collections of different element types for which an implicit
-  * evidence is required. Every ordered collection type `CC` extends an unordered collection type `C`
-  * (e.g. `SortedSet[X] extends Set[X]`) so it inherits methods from `IterablePolyTransforms` that do not require
-  * the implicit evidence. These methods can only build a default representation of `C` (e.g. a `HashSet` in the
-  * case of `Set`). The methods in this trait are the same as the ones in `IterablePolyTransforms` but they do
-  * require the implicit evidence, so they can build a new instance of `CC`.
-  */
-trait OrderedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with IterablePolyTransforms[A, C] {
-
-  protected def coll: Iterable[A]
-  protected def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
-
-  /** Map */
-  def map[B : Ordering](f: A => B): CC[B] = orderedFromIterable(View.Map(coll, f))
-
-  /** Flatmap */
-  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = orderedFromIterable(View.FlatMap(coll, f))
+  def flatMap[B](f: A => IterableOnce[B]): CC[B] = fromIterable(View.FlatMap(coll, f))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -283,38 +225,28 @@ trait OrderedIterablePolyTransforms[+A, +C[_], +CC[X] <: C[X]] extends Any with 
     *  @return     a new collection of type `CC[B]` which contains all elements
     *              of this $coll followed by all elements of `xs`.
     */
-  def concat[B >: A : Ordering](xs: IterableOnce[B]): CC[B] = orderedFromIterable(View.Concat(coll, xs))
+  def concat[B >: A](xs: IterableOnce[B]): CC[B] = fromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
-  @`inline` final def ++ [B >: A : Ordering](xs: IterableOnce[B]): CC[B] = concat(xs)
+  @`inline` final def ++ [B >: A](xs: IterableOnce[B]): CC[B] = concat(xs)
 
   /** Zip. Interesting because it requires to align to source collections. */
-  def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = orderedFromIterable(View.Zip(coll, xs))
+  def zip[B](xs: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
-
-  def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
-    if (pf.isDefinedAt(a)) View.Elems(pf(a))
-    else View.Empty
-  )
-
-  /** Widen this collection to the most specific unordered collection type. This is required in order to
-    * call methods from `IterablePolyTransforms` to build a new unordered collection when no implicit evidence
-    * is available. */
-  def unordered: C[A @uncheckedVariance]
 }
 
 /** Base trait for strict collections that can be built using a builder.
   * @tparam  A    the element type of the collection
   * @tparam Repr  the type of the underlying collection
   */
-trait MonoBuildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr]  {
+trait Buildable[+A, +C] extends Any with IterableOps[A, C]  {
 
   /** Creates a new builder. */
-  protected[this] def newBuilderWithSameElemType: Builder[A, Repr]
+  protected[this] def newBuilder: Builder[A, C]
 
   /** Optimized, push-based version of `partition`. */
-  override def partition(p: A => Boolean): (Repr, Repr) = {
-    val l, r = newBuilderWithSameElemType
+  override def partition(p: A => Boolean): (C, C) = {
+    val l, r = newBuilder
     coll.iterator().foreach(x => (if (p(x)) l else r) += x)
     (l.result, r.result)
   }
@@ -323,22 +255,4 @@ trait MonoBuildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr] 
   // iterators if it helps efficiency.
 }
 
-/** Base trait for strict collections that can be built for arbitrary element types using a builder.
-  * @tparam  A    the element type of the collection
-  * @tparam C     the type constructor of the underlying collection
-  */
-trait PolyBuildable[+A, +C[_]] extends Any with FromIterable[C] {
 
-  /** Creates a new builder. */
-  def newBuilder[E]: Builder[E, C[E]]
-}
-
-/** Base trait for strict collections that can be built using a builder for element types with an implicit evidence.
-  * @tparam  A    the element type of the collection
-  * @tparam CC    the type constructor of the underlying collection
-  */
-trait OrderedPolyBuildable[+A, +CC[_]] extends Any with OrderedFromIterable[CC] {
-
-  /** Creates a new builder. */
-  def newOrderedBuilder[E : Ordering]: Builder[E, CC[E]]
-}

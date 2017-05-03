@@ -1,20 +1,26 @@
 package strawman
-package collection.immutable
-
-import strawman.collection.{IterablePolyTransforms, Sorted, SortedLike, View}
+package collection
+package immutable
 
 import scala.Ordering
 
 trait SortedMap[K, +V]
   extends Map[K, V]
-    with Sorted[K]
-    with SortedMapLike[K, V, SortedMap]
+     with collection.SortedMap[K, V]
+     with SortedMapLike[K, V, SortedMap]
 
-trait SortedMapLike[K, +V, +C[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, C]]
-  extends SortedLike[K, C[K, V]]
-    with MapLike[K, V, Map] // Inherited Map operations can only return a `Map` because they don’t take an evidence `Ordering`
-    with MapMonoTransforms[K, V, C[K, V]] // Operations that return the same collection type can return a `SortedMap`, though
-    with SortedMapPolyTransforms[K, V, C] {
+trait SortedMapLike[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, CC]]
+  extends MapLike[K, V, Map]
+     with collection.SortedMapLike[K, V, CC] {
+
+  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+  def updated[V1 >: V](key: K, value: V1): CC[K, V1]
+}
+
+/*
+trait SortedMapLike[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, CC]]
+  extends MapLike[K, V, Map] // Inherited Map operations can only return a `Map` because they don’t take an evidence `Ordering`
+     with SortedMapMappings[K, V, CC]
 
   protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
     Map.fromIterable(it)
@@ -25,24 +31,4 @@ trait SortedMapLike[K, +V, +C[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y,
 
 }
 
-/** Polymorphic transformation methods for sorted Maps */
-trait SortedMapPolyTransforms[K, +V, +C[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, C]]
-  // We inherit polymorphic transformations returning an Iterable (e.g. to
-  // support the following use case `kvs.map((k, v) => v)`)
-  extends IterablePolyTransforms[(K, V), Iterable]
-    // Then we also inherit polymorphic transformations returning a Map, just
-    // to get inheritance linearization right and disambiguate between
-    // overloaded methods
-    with MapPolyTransforms[K, V, Map]
-    // Last, we still want operations that are polymorphic only in the Map values
-    // to return a sorted map
-    with MapValuePolyTransforms[K, V, C] {
-
-  protected def coll: C[K, V]
-
-  def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): C[K2, V2]
-
-  // And finally, we add new overloads taking an ordering
-  def map[K2, V2](f: (K, V) => (K2, V2))(implicit ordering: Ordering[K2]): C[K2, V2] =
-    orderedMapFromIterable(View.Map(coll, f.tupled))
-}
+*/

@@ -25,20 +25,19 @@ import java.lang.Integer
 @SerialVersionUID(2L)
 sealed trait HashSet[A]
   extends Set[A]
-    with SetLike[A, HashSet]
-    with Hashing[A]
-    with Serializable {
+     with SetLike[A, HashSet]
+     with Hashing[A]
+     with Serializable {
 
   import HashSet.nullToEmpty
 
   def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
-  def add(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
+  def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
-  def remove(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
 
   override def empty: HashSet[A] = HashSet.empty
 

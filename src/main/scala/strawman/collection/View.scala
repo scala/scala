@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Int, Boolean, Nothing, annotation}
+import scala.{Int, Boolean, Nothing, Equals, annotation}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: View */
@@ -13,9 +13,6 @@ trait View[+A] extends Iterable[A] with IterableLike[A, View] {
     case _ => View.fromIterator(c.iterator())
   }
   override def className = "View"
-
-  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): View[A] = fromIterable(coll)
-
 }
 
 /** This object reifies operations on views as case classes */
@@ -126,8 +123,14 @@ object View {
   }
 }
 
+/** A trait representing indexable collections with finite length */
+trait ArrayLike[+A] extends Any {
+  def length: Int
+  def apply(i: Int): A
+}
+
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with ArrayLike[A] { self =>
+trait IndexedView[+A] extends View[A] with Seq[A] { self =>
 
   def iterator(): Iterator[A] = new Iterator[A] {
     private var current = 0
@@ -142,7 +145,7 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] { self =>
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def drop(n: Int): IndexedView[A] = new IndexedView.Drop(this, n)
   override def map[B](f: A => B): IndexedView[B] = new IndexedView.Map(this, f)
-  def reverse: IndexedView[A] = new IndexedView.Reverse(this)
+  override def reverse: IndexedView[A] = new IndexedView.Reverse(this)
 }
 
 object IndexedView {
@@ -152,6 +155,7 @@ object IndexedView {
     override def iterator() = super.iterator() // needed to avoid "conflicting overrides" error
     def length = underlying.length min normN
     def apply(i: Int) = underlying.apply(i)
+    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   class Drop[A](underlying: IndexedView[A], n: Int)
@@ -159,6 +163,7 @@ object IndexedView {
     override def iterator() = super.iterator()
     def length = (underlying.length - normN) max 0
     def apply(i: Int) = underlying.apply(i + normN)
+    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   class Map[A, B](underlying: IndexedView[A], f: A => B)
@@ -166,6 +171,7 @@ object IndexedView {
     override def iterator() = super.iterator()
     def length = underlying.length
     def apply(n: Int) = f(underlying.apply(n))
+    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   case class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {

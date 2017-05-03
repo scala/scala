@@ -1,25 +1,26 @@
-package strawman.collection.immutable
+package strawman.collection
+package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.tailrec
 import scala.{Any, Nothing}
 import scala.Predef.???
 import strawman.collection
-import strawman.collection.{IterableFactory, IterableOnce, LinearSeq, SeqLike, MonoBuildable, PolyBuildable}
 import strawman.collection.mutable.{Builder, ListBuffer}
 
 
 /** Concrete collection type: List */
 sealed trait List[+A]
   extends Seq[A]
-     with SeqLike[A, List]
-     with LinearSeq[A]
-     with MonoBuildable[A, List[A]]
-     with PolyBuildable[A, List] {
+     with collection.LinearSeq[A]
+     with collection.LinearSeqLike[A, List]
+     with collection.Buildable[A, List[A]] {
 
   def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
 
-  protected[this] def newBuilderWithSameElemType = List.newBuilder
-  def newBuilder[E] = List.newBuilder
+  protected[this] def newBuilder = List.newBuilder[A]
+
+  @tailrec final def length: Int = if (isEmpty) 0 else tail.length
 
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)

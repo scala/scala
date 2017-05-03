@@ -8,49 +8,38 @@ import scala.`inline`
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
-  extends collection.Map[K, V]
-    with Iterable[(K, V)]
-    with MapLike[K, V, Map]
+  extends Iterable[(K, V)]
+     with collection.Map[K, V]
+     with MapLike[K, V, Map]
 
 /** Base trait of immutable Maps implementations */
-trait MapLike[K, +V, +C[X, +Y] <: Map[X, Y] with MapLike[X, Y, C]]
-  extends collection.MapLike[K, V, C]
-    with MapMonoTransforms[K, V, C[K, V]]
-    with MapPolyTransforms[K, V, C]
-    with MapValuePolyTransforms[K, V, C] {
-
-  def fromIterable[B](coll: collection.Iterable[B]): collection.immutable.Iterable[B] =
-    collection.immutable.Seq.fromIterable(coll)
-
-}
+trait MapLike[K, +V, +CC[X, +Y] <: Map[X, Y] with MapLike[X, Y, CC]]
+  extends collection.MapLike[K, V, CC]
+     with MapOps[K, V, CC[K, V]]
+     with MapMappings[K, V, CC]
 
 /** Immutable Map operations returning a self-like Map */
-trait MapMonoTransforms[K, +V, +Repr <: Map[K, V]]
-  extends collection.MapMonoTransforms[K, V, Repr] {
+trait MapOps[K, +V, +C] extends collection.MapOps[K, V, C] {
 
-  /**
-    * Removes a key from this map, returning a new map.
+  /** Removes a key from this map, returning a new map.
     *
     * @param key the key to be removed
     * @return a new map without a binding for ''key''
     */
-  def remove(key: K): Repr
+  def remove(key: K): C
+
   /** Alias for `remove` */
-  @`inline` final def - (key: K): Repr = remove(key)
+  @`inline` final def - (key: K): C = remove(key)
 
   /** The empty map of the same type as this map
     * @return   an empty map of type `Repr`.
     */
-  def empty: Repr
+  def empty: C
 }
 
-trait MapPolyTransforms[K, +V, +C[X, +Y] <: Map[X, Y] with MapLike[X, Y, C]]
-  extends collection.MapPolyTransforms[K, V, C]
+trait MapMappings[K, +V, +CC[X, +Y] <: Map[X, Y] with MapLike[X, Y, CC]] extends collection.MapMappings[K, V, CC] {
 
-trait MapValuePolyTransforms[K, +V, +C[X, +Y] <: Map[X, Y] with MapValuePolyTransforms[X, Y, C]]
-  extends collection.MapValuePolyTransforms[K, V, C] {
-
-  protected def coll: C[K, V]
+  protected def coll: CC[K, V]
 
   /**
     * Add a key/value pair to this map, returning a new map.
@@ -59,7 +48,7 @@ trait MapValuePolyTransforms[K, +V, +C[X, +Y] <: Map[X, Y] with MapValuePolyTran
     * @tparam V1 the type of the value in the key/value pair.
     * @return A new map with the new binding added to this map.
     */
-  final def + [V1 >: V](kv: (K, V1)): C[K, V1] = updated(kv._1, kv._2)
+  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key
@@ -70,10 +59,10 @@ trait MapValuePolyTransforms[K, +V, +C[X, +Y] <: Map[X, Y] with MapValuePolyTran
     *  @usecase  def updated(key: K, value: V): Map[K, V]
     *    @inheritdoc
     */
-  def updated[V1 >: V](key: K, value: V1): C[K, V1]
+  def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
-  override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): C[K, V1] = {
-    var result: C[K, V1] = coll
+  override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
+    var result: CC[K, V1] = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
     result
@@ -83,6 +72,6 @@ trait MapValuePolyTransforms[K, +V, +C[X, +Y] <: Map[X, Y] with MapValuePolyTran
 
 // TODO Special case small maps
 object Map extends MapFactory[Map] {
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = HashMap.newBuilder[K, V]
-  def empty[K, V]: Map[K, V] = HashMap.empty[K, V]
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = ListMap.newBuilder[K, V]
+  def empty[K, V]: Map[K, V] = ListMap.empty[K, V]
 }

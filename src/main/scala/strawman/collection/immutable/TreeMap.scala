@@ -1,5 +1,6 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import strawman.collection.OrderedMapFactory
 import strawman.collection.immutable.{RedBlackTree => RB}
@@ -35,10 +36,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
+  override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     coll match {
       case tm: TreeMap[K, V] => tm
-      case _ => TreeMap.orderedNewBuilder[K, V].++=(coll).result
+      case _ => TreeMap.fromIterable[K, V](coll)
     }
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
@@ -46,7 +47,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
   def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.orderedNewBuilder[K2, V2].++=(it).result
+    TreeMap.fromIterable[K2, V2](it)
+
+  def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
+    Map.fromIterable(it)
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
@@ -101,9 +105,5 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   *  @define coll immutable tree map
   */
 object TreeMap extends OrderedMapFactory[TreeMap] {
-
-  def orderedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
-    new ImmutableMapBuilder[K, V, TreeMap](empty[K, V])
-
   def empty[K: Ordering, V]: TreeMap[K, V] = new TreeMap()
 }
