@@ -51,7 +51,10 @@ import Compat._
  * The tree walking algorithm walks into TypeTree.original explicitly.
  *
  */
-class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat with ClassName with GlobalHelpers {
+class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
+    extends Compat
+    with ClassName
+    with GlobalHelpers {
 
   import global._
   import JavaUtils._
@@ -118,34 +121,32 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     debuglog {
       val msg = s"The ${unit.source} contains the following used names:\n"
       val builder = new StringBuilder(msg)
-      traverser.usedNamesFromClasses.foreach {
-        (name, usedNames) =>
-          builder
-            .append(name.toString.trim)
-            .append(": ")
-            .append(usedNames.toString())
-            .append("\n")
-          ()
+      traverser.usedNamesFromClasses.foreach { (name, usedNames) =>
+        builder
+          .append(name.toString.trim)
+          .append(": ")
+          .append(usedNames.toString())
+          .append("\n")
+        ()
       }
       builder.toString()
     }
 
     // Handle names circumscribed to classes
-    traverser.usedNamesFromClasses.foreach {
-      (rawClassName, usedNames) =>
-        val className = rawClassName.toString.trim
-        usedNames.defaultNames.foreach { rawUsedName =>
-          val useName = rawUsedName.decoded.trim
-          val existingScopes = usedNames.scopedNames.get(rawUsedName)
-          val useScopes = {
-            if (existingScopes == null) DefaultScopes
-            else {
-              existingScopes.add(UseScope.Default)
-              existingScopes
-            }
+    traverser.usedNamesFromClasses.foreach { (rawClassName, usedNames) =>
+      val className = rawClassName.toString.trim
+      usedNames.defaultNames.foreach { rawUsedName =>
+        val useName = rawUsedName.decoded.trim
+        val existingScopes = usedNames.scopedNames.get(rawUsedName)
+        val useScopes = {
+          if (existingScopes == null) DefaultScopes
+          else {
+            existingScopes.add(UseScope.Default)
+            existingScopes
           }
-          callback.usedName(className, useName, useScopes)
         }
+        callback.usedName(className, useName, useScopes)
+      }
     }
   }
 
@@ -168,15 +169,14 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       super.traverse(tree)
     }
 
-    val addSymbol: (JavaSet[Name], Symbol) => Unit = {
-      (names: JavaSet[Name], symbol: Symbol) =>
-        if (!ignoredSymbol(symbol)) {
-          val name = symbol.name
-          // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
-          if (!isEmptyName(name))
-            names.add(name)
-          ()
-        }
+    val addSymbol: (JavaSet[Name], Symbol) => Unit = { (names: JavaSet[Name], symbol: Symbol) =>
+      if (!ignoredSymbol(symbol)) {
+        val name = symbol.name
+        // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
+        if (!isEmptyName(name))
+          names.add(name)
+        ()
+      }
     }
 
     /** Returns mutable set with all names from given class used in current context */

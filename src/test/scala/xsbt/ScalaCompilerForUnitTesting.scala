@@ -29,7 +29,8 @@ class ScalaCompilerForUnitTesting {
    * Compiles given source code using Scala compiler and returns API representation
    * extracted by ExtractAPI class.
    */
-  def extractApisFromSrcs(reuseCompilerInstance: Boolean)(srcs: List[String]*): Seq[Set[ClassLike]] = {
+  def extractApisFromSrcs(reuseCompilerInstance: Boolean)(
+      srcs: List[String]*): Seq[Set[ClassLike]] = {
     val (tempSrcFiles, analysisCallback) = compileSrcs(srcs.toList, reuseCompilerInstance)
     tempSrcFiles.map(analysisCallback.apis)
   }
@@ -53,9 +54,9 @@ class ScalaCompilerForUnitTesting {
    * Run but only names used in the second src file are returned.
    */
   def extractUsedNamesFromSrc(
-    definitionSrc: String,
-    actualSrc: String,
-    assertDefaultScope: Boolean = true
+      definitionSrc: String,
+      actualSrc: String,
+      assertDefaultScope: Boolean = true
   ): Map[String, Set[String]] = {
     // we drop temp src file corresponding to the definition src file
     val (Seq(_, tempSrcFile), analysisCallback) = compileSrcs(definitionSrc, actualSrc)
@@ -77,10 +78,12 @@ class ScalaCompilerForUnitTesting {
    */
   def extractUsedNamesFromSrc(sources: String*): Map[String, Set[String]] = {
     val (srcFiles, analysisCallback) = compileSrcs(sources: _*)
-    srcFiles.map { srcFile =>
-      val classesInSrc = analysisCallback.classNames(srcFile).map(_._1)
-      classesInSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
-    }.reduce(_ ++ _)
+    srcFiles
+      .map { srcFile =>
+        val classesInSrc = analysisCallback.classNames(srcFile).map(_._1)
+        classesInSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
+      }
+      .reduce(_ ++ _)
   }
 
   /**
@@ -131,22 +134,25 @@ class ScalaCompilerForUnitTesting {
    * callback is returned as a result.
    */
   private[xsbt] def compileSrcs(
-    groupedSrcs: List[List[String]],
-    reuseCompilerInstance: Boolean
+      groupedSrcs: List[List[String]],
+      reuseCompilerInstance: Boolean
   ): (Seq[File], TestCallback) = {
     withTemporaryDirectory { temp =>
       val analysisCallback = new TestCallback
       val classesDir = new File(temp, "classes")
       classesDir.mkdir()
 
-      lazy val commonCompilerInstance = prepareCompiler(classesDir, analysisCallback, classesDir.toString)
+      lazy val commonCompilerInstance =
+        prepareCompiler(classesDir, analysisCallback, classesDir.toString)
 
       val files = for ((compilationUnit, unitId) <- groupedSrcs.zipWithIndex) yield {
         // use a separate instance of the compiler for each group of sources to
         // have an ability to test for bugs in instability between source and pickled
         // representation of types
-        val compiler = if (reuseCompilerInstance) commonCompilerInstance else
-          prepareCompiler(classesDir, analysisCallback, classesDir.toString)
+        val compiler =
+          if (reuseCompilerInstance) commonCompilerInstance
+          else
+            prepareCompiler(classesDir, analysisCallback, classesDir.toString)
         val run = new compiler.Run
         val srcFiles = compilationUnit.zipWithIndex map {
           case (src, i) =>
@@ -174,7 +180,9 @@ class ScalaCompilerForUnitTesting {
     srcFile
   }
 
-  private[xsbt] def prepareCompiler(outputDir: File, analysisCallback: AnalysisCallback, classpath: String = "."): CachedCompiler0#Compiler = {
+  private[xsbt] def prepareCompiler(outputDir: File,
+                                    analysisCallback: AnalysisCallback,
+                                    classpath: String = "."): CachedCompiler0#Compiler = {
     val args = Array.empty[String]
     object output extends SingleOutput {
       def outputDirectory: File = outputDir
@@ -203,4 +211,3 @@ class ScalaCompilerForUnitTesting {
   }
 
 }
-

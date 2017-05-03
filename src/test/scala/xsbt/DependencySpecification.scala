@@ -77,7 +77,8 @@ class DependencySpecification extends UnitSpec {
   }
 
   it should "extract class dependencies from a refinement" in {
-    val srcFoo = "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
+    val srcFoo =
+      "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
     val srcBar = "object Bar {\n  def bar: Outer.TypeInner = null\n}"
 
     val compilerForTesting = new ScalaCompilerForUnitTesting
@@ -135,7 +136,9 @@ class DependencySpecification extends UnitSpec {
     val srcH = "class H { import abc.A }"
 
     val compilerForTesting = new ScalaCompilerForUnitTesting
-    val deps = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG, srcH).memberRef
+    val deps = compilerForTesting
+      .extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG, srcH)
+      .memberRef
 
     assert(deps("A") === Set.empty)
     assert(deps("B") === Set("abc.A", "abc.A.Inner"))
@@ -163,8 +166,14 @@ class DependencySpecification extends UnitSpec {
     val srcH = "trait H extends G.T[Int] with (E[Int] @unchecked)"
 
     val compilerForTesting = new ScalaCompilerForUnitTesting
-    val classDependencies = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG,
-      srcH)
+    val classDependencies = compilerForTesting.extractDependenciesFromSrcs(srcA,
+                                                                           srcB,
+                                                                           srcC,
+                                                                           srcD,
+                                                                           srcE,
+                                                                           srcF,
+                                                                           srcG,
+                                                                           srcH)
     classDependencies
   }
 

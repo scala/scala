@@ -17,22 +17,22 @@ trait GlobalHelpers { self: Compat =>
   /** Return true if type shall be ignored, false otherwise. */
   @inline def ignoredType(tpe: Type) = {
     tpe == null ||
-      tpe == NoType ||
-      tpe.typeSymbol == EmptyPackageClass
+    tpe == NoType ||
+    tpe.typeSymbol == EmptyPackageClass
   }
 
   /** Return true if symbol shall be ignored, false otherwise. */
   @inline def ignoredSymbol(symbol: Symbol) = {
     symbol == null ||
-      symbol == NoSymbol ||
-      symbol == EmptyPackageClass
+    symbol == NoSymbol ||
+    symbol == EmptyPackageClass
   }
 
   /** Return true if name is empty, false otherwise. */
   def isEmptyName(name: Name): Boolean = {
     name match {
-      case null | nme.EMPTY | nme.EMPTY_PACKAGE_NAME |
-        tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
+      case null | nme.EMPTY | nme.EMPTY_PACKAGE_NAME | tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME =>
+        true
       case _ => false
     }
   }

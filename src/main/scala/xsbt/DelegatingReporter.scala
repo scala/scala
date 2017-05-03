@@ -15,8 +15,14 @@ private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
     new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
 
-  class PositionImpl(sourcePath0: Option[String], sourceFile0: Option[File],
-    line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) extends xsbti.Position {
+  class PositionImpl(sourcePath0: Option[String],
+                     sourceFile0: Option[File],
+                     line0: Option[Int],
+                     lineContent0: String,
+                     offset0: Option[Int],
+                     pointer0: Option[Int],
+                     pointerSpace0: Option[String])
+      extends xsbti.Position {
     val line = o2oi(line0)
     val lineContent = lineContent0
     val offset = o2oi(offset0)
@@ -48,7 +54,10 @@ private object DelegatingReporter {
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
-private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter {
+private final class DelegatingReporter(warnFatal: Boolean,
+                                       noWarn: Boolean,
+                                       private[this] var delegate: xsbti.Reporter)
+    extends scala.tools.nsc.reporters.Reporter {
   import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
   import DelegatingReporter._
   def dropDelegate(): Unit = { delegate = null }
@@ -72,31 +81,36 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       delegate.log(convert(pos), msg, convert(severity))
     }
   }
-  def convert(posIn: Position): xsbti.Position =
-    {
-      val posOpt =
-        Option(posIn) match {
-          case None | Some(NoPosition) => None
-          case Some(_: FakePos)        => None
-          case _                       => Option(posIn.finalPosition)
-        }
-      posOpt match {
-        case None      => new PositionImpl(None, None, None, "", None, None, None)
-        case Some(pos) => makePosition(pos)
+  def convert(posIn: Position): xsbti.Position = {
+    val posOpt =
+      Option(posIn) match {
+        case None | Some(NoPosition) => None
+        case Some(_: FakePos)        => None
+        case _                       => Option(posIn.finalPosition)
       }
+    posOpt match {
+      case None      => new PositionImpl(None, None, None, "", None, None, None)
+      case Some(pos) => makePosition(pos)
     }
-  private[this] def makePosition(pos: Position): xsbti.Position =
-    {
-      val src = pos.source
-      val sourcePath = src.file.path
-      val sourceFile = src.file.file
-      val line = pos.line
-      val lineContent = pos.lineContent.stripLineEnd
-      val offset = pos.point
-      val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
-      val pointerSpace = (lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }.mkString
-      new PositionImpl(Option(sourcePath), Option(sourceFile), Option(line), lineContent, Option(offset), Option(pointer), Option(pointerSpace))
-    }
+  }
+  private[this] def makePosition(pos: Position): xsbti.Position = {
+    val src = pos.source
+    val sourcePath = src.file.path
+    val sourceFile = src.file.file
+    val line = pos.line
+    val lineContent = pos.lineContent.stripLineEnd
+    val offset = pos.point
+    val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
+    val pointerSpace =
+      (lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }.mkString
+    new PositionImpl(Option(sourcePath),
+                     Option(sourceFile),
+                     Option(line),
+                     lineContent,
+                     Option(offset),
+                     Option(pointer),
+                     Option(pointerSpace))
+  }
 
   import xsbti.Severity.{ Info, Warn, Error }
   private[this] def convert(sev: Severity): xsbti.Severity =

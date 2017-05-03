@@ -37,8 +37,13 @@ class ClassNameSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
 
-    assert(binaryClassNames === Set("A" -> "A$", "A" -> "A", "A.C" -> "A$C$", "A.C.D" -> "A$C$D$",
-      "B" -> "B", "B.E" -> "B$E$"))
+    assert(
+      binaryClassNames === Set("A" -> "A$",
+                               "A" -> "A",
+                               "A.C" -> "A$C$",
+                               "A.C.D" -> "A$C$D$",
+                               "B" -> "B",
+                               "B.E" -> "B$E$"))
   }
 
   it should "create a binary name for a trait" in {

@@ -130,10 +130,25 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val expectedNames_lista = standardNames ++ Set("Test_lista", "x", "B", "lista", "List", "A")
     val expectedNames_at = standardNames ++ Set("Test_at", "x", "B", "at", "A", "T", "X0", "X1")
     val expectedNames_as = standardNames ++ Set("Test_as", "x", "B", "as", "S", "Y")
-    val expectedNames_foo = standardNames ++ Set("Test_foo", "x", "B", "foo", "M", "N",
-      "Predef", "???", "Nothing")
-    val expectedNames_bar = standardNames ++ Set("Test_bar", "x", "B", "bar", "Param", "P1", "P0",
-      "Predef", "???", "Nothing")
+    val expectedNames_foo = standardNames ++ Set("Test_foo",
+                                                 "x",
+                                                 "B",
+                                                 "foo",
+                                                 "M",
+                                                 "N",
+                                                 "Predef",
+                                                 "???",
+                                                 "Nothing")
+    val expectedNames_bar = standardNames ++ Set("Test_bar",
+                                                 "x",
+                                                 "B",
+                                                 "bar",
+                                                 "Param",
+                                                 "P1",
+                                                 "P0",
+                                                 "Predef",
+                                                 "???",
+                                                 "Nothing")
     assert(usedNames("Test_lista") === expectedNames_lista)
     assert(usedNames("Test_at") === expectedNames_at)
     assert(usedNames("Test_as") === expectedNames_as)
@@ -150,12 +165,22 @@ class ExtractUsedNamesSpecification extends UnitSpec {
       """.stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcFoo)
-    val expectedNames = standardNames ++ Seq("Double", "Foo", "T", "foo", "scala", "language", "existentials", "Nothing", "???", "Predef")
+    val expectedNames = standardNames ++ Seq("Double",
+                                             "Foo",
+                                             "T",
+                                             "foo",
+                                             "scala",
+                                             "language",
+                                             "existentials",
+                                             "Nothing",
+                                             "???",
+                                             "Predef")
     assert(usedNames("Foo") === expectedNames)
   }
 
   it should "extract used names from a refinement" in {
-    val srcFoo = "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
+    val srcFoo =
+      "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
     val srcBar = "object Bar {\n  def bar: Outer.TypeInner = null\n}"
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcFoo, srcBar)
@@ -209,7 +234,8 @@ class ExtractUsedNamesSpecification extends UnitSpec {
 
     def findPatMatUsages(in: String): Set[String] = {
       val compilerForTesting = new ScalaCompilerForUnitTesting
-      val (_, callback) = compilerForTesting.compileSrcs(List(List(sealedClass, in)), reuseCompilerInstance = false)
+      val (_, callback) =
+        compilerForTesting.compileSrcs(List(List(sealedClass, in)), reuseCompilerInstance = false)
       val clientNames = callback.usedNamesAndScopes.filterKeys(!_.startsWith("base."))
 
       val names: Set[String] = clientNames.flatMap {
@@ -233,9 +259,12 @@ class ExtractUsedNamesSpecification extends UnitSpec {
 
     findPatMatUsages(classWithPatMatOfType()) shouldEqual Set(sealedClassName)
     // Option is sealed
-    findPatMatUsages(classWithPatMatOfType(s"Option[$sealedClassName]")) shouldEqual Set(sealedClassName, "Option")
+    findPatMatUsages(classWithPatMatOfType(s"Option[$sealedClassName]")) shouldEqual Set(
+      sealedClassName,
+      "Option")
     // Seq and Set is not
-    findPatMatUsages(classWithPatMatOfType(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
+    findPatMatUsages(classWithPatMatOfType(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(
+      sealedClassName)
 
     def inNestedCase(tpe: String) =
       s"""package client
@@ -270,7 +299,8 @@ class ExtractUsedNamesSpecification extends UnitSpec {
   private val standardNames = Set(
     "scala",
     // The default parent of a class is "AnyRef" which is an alias for "Object"
-    "AnyRef", "Object",
+    "AnyRef",
+    "Object",
     // class receives a default constructor which is internally called "<init>"
     "<init>"
   )

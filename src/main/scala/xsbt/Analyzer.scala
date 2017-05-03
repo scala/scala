@@ -17,7 +17,8 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
   private class AnalyzerPhase(prev: Phase) extends GlobalPhase(prev) {
-    override def description = "Finds concrete instances of provided superclasses, and application entry points."
+    override def description =
+      "Finds concrete instances of provided superclasses, and application entry points."
     def name = Analyzer.name
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
@@ -38,7 +39,10 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
               if (!isLocalClass) {
                 val srcClassName = classNameAsString(sym)
                 val binaryClassName = flatclassName(sym, '.', separatorRequired)
-                callback.generatedNonLocalClass(sourceFile, classFile, binaryClassName, srcClassName)
+                callback.generatedNonLocalClass(sourceFile,
+                                                classFile,
+                                                binaryClassName,
+                                                srcClassName)
               } else {
                 callback.generatedLocalClass(sourceFile, classFile)
               }

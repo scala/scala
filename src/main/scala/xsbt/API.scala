@@ -22,14 +22,13 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
   class ApiPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description = "Extracts the public API from source files."
     def name = API.name
-    override def run(): Unit =
-      {
-        val start = System.currentTimeMillis
-        super.run()
-        callback.apiPhaseCompleted()
-        val stop = System.currentTimeMillis
-        debuglog("API phase took : " + ((stop - start) / 1000.0) + " s")
-      }
+    override def run(): Unit = {
+      val start = System.currentTimeMillis
+      super.run()
+      callback.apiPhaseCompleted()
+      val stop = System.currentTimeMillis
+      debuglog("API phase took : " + ((stop - start) / 1000.0) + " s")
+    }
 
     def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
 
@@ -52,7 +51,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
     }
   }
 
-  private final class TopLevelHandler(extractApi: ExtractAPI[global.type]) extends TopLevelTraverser {
+  private final class TopLevelHandler(extractApi: ExtractAPI[global.type])
+      extends TopLevelTraverser {
     def allNonLocalClasses: Set[ClassLike] = {
       extractApi.allExtractedNonLocalClasses
     }
@@ -73,11 +73,11 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
     }
     def isTopLevel(sym: Symbol): Boolean = {
       !ignoredSymbol(sym) &&
-        sym.isStatic &&
-        !sym.isImplClass &&
-        !sym.hasFlag(Flags.SYNTHETIC) &&
-        !sym.hasFlag(Flags.JAVA) &&
-        !sym.isNestedClass
+      sym.isStatic &&
+      !sym.isImplClass &&
+      !sym.hasFlag(Flags.SYNTHETIC) &&
+      !sym.hasFlag(Flags.JAVA) &&
+      !sym.isNestedClass
     }
   }
 

@@ -82,7 +82,8 @@ abstract class Compat {
 
     // Not present in 2.10
     @inline final def getterIn(base: Symbol): Symbol = sym.getter(base)
-    @inline final def setterIn(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
+    @inline final def setterIn(base: Symbol,
+                               hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
       sym.setter(base, hasExpandedName)
 
     // copied from 2.12.1 sources
@@ -96,11 +97,10 @@ abstract class Compat {
   }
 
   val DummyValue = 0
-  def hasMacro(s: Symbol): Boolean =
-    {
-      val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
-      MACRO != DummyValue && s.hasFlag(MACRO.toLong)
-    }
+  def hasMacro(s: Symbol): Boolean = {
+    val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
+    MACRO != DummyValue && s.hasFlag(MACRO.toLong)
+  }
   def moduleSuffix(s: Symbol): String = s.moduleSuffix
 
   // Not present in 2.10
@@ -109,7 +109,8 @@ abstract class Compat {
   // Not present in 2.10
   @inline final def enteringPhase[T](ph: sri.Phase)(op: => T): T = atPhase[T](ph)(op)
 
-  private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
+  private[this] def sourceCompatibilityOnly: Nothing =
+    throw new RuntimeException("For source compatibility only: should not get here.")
 
   private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
 

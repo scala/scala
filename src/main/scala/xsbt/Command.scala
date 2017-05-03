@@ -11,6 +11,7 @@ import scala.tools.nsc.{ CompilerCommand, Settings }
 import Compat._
 
 object Command {
+
   /**
    * Construct a CompilerCommand using reflection, to be compatible with Scalac before and after
    * <a href="https://lampsvn.epfl.ch/trac/scala/changeset/21274">r21274</a>
@@ -21,7 +22,11 @@ object Command {
       constr(classOf[List[_]], classOf[Settings]).newInstance(arguments, settings)
     } catch {
       case _: NoSuchMethodException =>
-        constr(classOf[List[_]], classOf[Settings], classOf[(_) => _], classOf[Boolean]).newInstance(arguments, settings, (s: String) => throw new RuntimeException(s), false.asInstanceOf[AnyRef])
+        constr(classOf[List[_]], classOf[Settings], classOf[(_) => _], classOf[Boolean])
+          .newInstance(arguments,
+                       settings,
+                       (s: String) => throw new RuntimeException(s),
+                       false.asInstanceOf[AnyRef])
     }
   }
 

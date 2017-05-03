@@ -38,14 +38,15 @@ trait ClassName extends Compat {
    * If `s` represents a package object `pkg3`, then the returned name will be `pkg1.pkg2.pkg3.package`.
    * If `s` represents a class `Foo` nested in package object `pkg3` then the returned name is `pkg1.pkg2.pk3.Foo`.
    */
-  protected def classNameAsSeenIn(in: Symbol, s: Symbol): String = enteringPhase(currentRun.picklerPhase.next) {
-    if (in.isRoot || in.isRootPackage || in == NoSymbol || in.isEffectiveRoot)
-      s.simpleName.toString
-    else if (in.isPackageObjectOrClass)
-      in.owner.fullName + "." + s.name
-    else
-      in.fullName + "." + s.name
-  }
+  protected def classNameAsSeenIn(in: Symbol, s: Symbol): String =
+    enteringPhase(currentRun.picklerPhase.next) {
+      if (in.isRoot || in.isRootPackage || in == NoSymbol || in.isEffectiveRoot)
+        s.simpleName.toString
+      else if (in.isPackageObjectOrClass)
+        in.owner.fullName + "." + s.name
+      else
+        in.fullName + "." + s.name
+    }
 
   private def pickledName(s: Symbol): Name =
     enteringPhase(currentRun.picklerPhase.next) { s.fullNameAsName('.') }

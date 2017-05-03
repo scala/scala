@@ -218,17 +218,17 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      *   3. Inheritance.
      */
     private def addClassDependency(
-      cache: JavaSet[ClassDependency],
-      process: ClassDependency => Unit,
-      fromClass: Symbol,
-      dep: Symbol
+        cache: JavaSet[ClassDependency],
+        process: ClassDependency => Unit,
+        fromClass: Symbol,
+        dep: Symbol
     ): Unit = {
       assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
       val dependency = ClassDependency(fromClass, depClass)
       if (!cache.contains(dependency) &&
-        fromClass.associatedFile != depClass.associatedFile &&
-        !depClass.isRefinementClass) {
+          fromClass.associatedFile != depClass.associatedFile &&
+          !depClass.isRefinementClass) {
         process(dependency)
         cache.add(dependency)
         ()
@@ -354,17 +354,21 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
       case Template(parents, self, body) =>
         // use typeSymbol to dealias type aliases -- we want to track the dependency on the real class in the alias's RHS
-        def flattenTypeToSymbols(tp: Type): List[Symbol] = if (tp eq null) Nil
-        else tp match {
-          // rt.typeSymbol is redundant if we list out all parents, TODO: what about rt.decls?
-          case rt: RefinedType => rt.parents.flatMap(flattenTypeToSymbols)
-          case _               => List(tp.typeSymbol)
-        }
+        def flattenTypeToSymbols(tp: Type): List[Symbol] =
+          if (tp eq null) Nil
+          else
+            tp match {
+              // rt.typeSymbol is redundant if we list out all parents, TODO: what about rt.decls?
+              case rt: RefinedType => rt.parents.flatMap(flattenTypeToSymbols)
+              case _               => List(tp.typeSymbol)
+            }
 
         val inheritanceTypes = parents.map(_.tpe).toSet
         val inheritanceSymbols = inheritanceTypes.flatMap(flattenTypeToSymbols)
 
-        debuglog("Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols.map(_.fullName))
+        debuglog(
+          "Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols
+            .map(_.fullName))
 
         inheritanceSymbols.foreach { symbol =>
           addInheritanceDependency(symbol)
