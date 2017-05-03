@@ -78,13 +78,11 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
 object HashSet extends IterableFactory[HashSet] {
 
-  def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = {
-    val result = new HashSet[B]
-    for (elem <- it) {
-      result += elem
+  def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] =
+    it match {
+      case hs: HashSet[B] => hs
+      case _ => empty[B] ++= it
     }
-    result
-  }
 
   def empty[A]: HashSet[A] = new HashSet[A]
 
