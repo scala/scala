@@ -248,8 +248,7 @@ object HashSet extends IterableFactory[HashSet] {
         val subNew = sub.updated0(key, hash, level + 5)
         if (sub eq subNew) this
         else {
-          val elemsNew = new Array[HashSet[A]](elems.length)
-          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
           elemsNew(offset) = subNew
           new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
         }
@@ -289,8 +288,7 @@ object HashSet extends IterableFactory[HashSet] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieSet[_]]) {
           subNew
         } else {
-          val elemsNew = new Array[HashSet[A]](elems.length)
-          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieSet(bitmap, elemsNew, sizeNew)

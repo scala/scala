@@ -94,11 +94,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def empty: BitSet = BitSet.empty
 
-  override def clone(): BitSet = {
-    val elems1 = new Array[Long](elems.length)
-    Array.copy(elems, 0, elems1, 0, elems.length)
-    new BitSet(elems1)
-  }
+  override def clone(): BitSet =
+    new BitSet(java.util.Arrays.copyOf(elems, elems.length))
 
 }
 
