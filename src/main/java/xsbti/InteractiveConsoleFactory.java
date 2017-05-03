@@ -7,8 +7,8 @@
 
 package xsbti;
 
-public interface ConsoleFactory {
-  ConsoleInterface createConsole(
+public interface InteractiveConsoleFactory {
+  InteractiveConsoleInterface createConsole(
       String[] args,
       String bootClasspathString,
       String classpathString,

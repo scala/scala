@@ -9,7 +9,7 @@ package xsbt
 
 import xsbti.Logger
 
-class ConsoleFactory extends xsbti.ConsoleFactory {
+class InteractiveConsoleFactory extends xsbti.InteractiveConsoleFactory {
   def createConsole(
       args: Array[String],
       bootClasspathString: String,
@@ -20,8 +20,8 @@ class ConsoleFactory extends xsbti.ConsoleFactory {
       bindNames: Array[String],
       bindValues: Array[AnyRef],
       log: Logger
-  ): xsbti.ConsoleInterface =
-    new ConsoleInterface(
+  ): xsbti.InteractiveConsoleInterface =
+    new InteractiveConsoleInterface(
       args,
       bootClasspathString,
       classpathString,

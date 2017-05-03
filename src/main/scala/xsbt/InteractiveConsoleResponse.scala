@@ -5,10 +5,9 @@
  * This software is released under the terms written in LICENSE.
  */
 
-package xsbti;
+package xsbt
 
-public enum ConsoleResult {
-  Success,
-  Incomplete,
-  Error
-}
+import xsbti.InteractiveConsoleResult
+
+case class InteractiveConsoleResponse(result: InteractiveConsoleResult, output: String)
+    extends xsbti.InteractiveConsoleResponse

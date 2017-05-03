@@ -2,12 +2,12 @@ package xsbt
 
 import sbt.internal.util.UnitSpec
 import sbt.util.Logger
-import xsbti.ConsoleResult
+import xsbti.InteractiveConsoleResult
 
 // This is a specification to check the REPL block parsing.
-class ConsoleInterfaceSpecification extends UnitSpec {
+class InteractiveConsoleInterfaceSpecification extends UnitSpec {
 
-  private val consoleFactory = new ConsoleFactory
+  private val consoleFactory = new InteractiveConsoleFactory
 
   def consoleWithArgs(args: String*) = consoleFactory.createConsole(
     args = args.toArray,
@@ -26,29 +26,29 @@ class ConsoleInterfaceSpecification extends UnitSpec {
   "Scala interpreter" should "evaluate arithmetic expression" in {
     val response = consoleWithoutArgs.interpret("1+1", false)
     response.output.trim shouldBe "res0: Int = 2"
-    response.result shouldBe ConsoleResult.Success
+    response.result shouldBe InteractiveConsoleResult.Success
   }
 
   it should "evaluate list constructor" in {
     val response = consoleWithoutArgs.interpret("List(1,2)", false)
     response.output.trim shouldBe "res1: List[Int] = List(1, 2)"
-    response.result shouldBe ConsoleResult.Success
+    response.result shouldBe InteractiveConsoleResult.Success
   }
 
   it should "evaluate import" in {
     val response = consoleWithoutArgs.interpret("import xsbt._", false)
     response.output.trim shouldBe "import xsbt._"
-    response.result shouldBe ConsoleResult.Success
+    response.result shouldBe InteractiveConsoleResult.Success
   }
 
   it should "mark partial expression as incomplete" in {
     val response = consoleWithoutArgs.interpret("val a =", false)
-    response.result shouldBe ConsoleResult.Incomplete
+    response.result shouldBe InteractiveConsoleResult.Incomplete
   }
 
   it should "not evaluate incorrect expression" in {
     val response = consoleWithoutArgs.interpret("1 ++ 1", false)
-    response.result shouldBe ConsoleResult.Error
+    response.result shouldBe InteractiveConsoleResult.Error
   }
 
   val postfixOpExpression = "import scala.concurrent.duration._\nval t = 1 second"
@@ -56,7 +56,7 @@ class ConsoleInterfaceSpecification extends UnitSpec {
   it should "evaluate postfix op with a warning" in {
     val response = consoleWithoutArgs.interpret(postfixOpExpression, false)
     response.output.trim should startWith("warning")
-    response.result shouldBe ConsoleResult.Success
+    response.result shouldBe InteractiveConsoleResult.Success
   }
 
   private val consoleWithPostfixOps = consoleWithArgs("-language:postfixOps")
@@ -64,7 +64,7 @@ class ConsoleInterfaceSpecification extends UnitSpec {
   it should "evaluate postfix op without warning when -language:postfixOps arg passed" in {
     val response = consoleWithPostfixOps.interpret(postfixOpExpression, false)
     response.output.trim should not startWith "warning"
-    response.result shouldBe ConsoleResult.Success
+    response.result shouldBe InteractiveConsoleResult.Success
   }
 
 }

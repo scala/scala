@@ -14,9 +14,9 @@ import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
 import xsbti.Logger
 
-import ConsoleHelper._
+import InteractiveConsoleHelper._
 
-class ConsoleInterface(
+class InteractiveConsoleInterface(
     args: Array[String],
     bootClasspathString: String,
     classpathString: String,
@@ -26,14 +26,14 @@ class ConsoleInterface(
     bindNames: Array[String],
     bindValues: Array[AnyRef],
     log: Logger
-) extends xsbti.ConsoleInterface {
+) extends xsbti.InteractiveConsoleInterface {
 
-  lazy val interpreterSettings: Settings = MakeSettings.sync(args.toList, onError)
+  lazy val interpreterSettings: Settings = InteractiveMakeSettings.sync(args.toList, onError)
 
   val useJavaCp = "-usejavacp" // we need rt.jar from JDK, so java classpath is required
 
   val compilerSettings: Settings =
-    MakeSettings.sync(args :+ useJavaCp, bootClasspathString, classpathString, onError)
+    InteractiveMakeSettings.sync(args :+ useJavaCp, bootClasspathString, classpathString, onError)
 
   val outWriter: StringWriter = new StringWriter
   val poutWriter: PrintWriter = new PrintWriter(outWriter)
@@ -42,10 +42,10 @@ class ConsoleInterface(
     def lastReq: Request = prevRequestList.last
   }
 
-  def interpret(line: String, synthetic: Boolean): ConsoleResponse = {
+  def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
     clearBuffer()
     val r = interpreter.interpret(line, synthetic)
-    ConsoleResponse(r, outWriter.toString)
+    InteractiveConsoleResponse(r, outWriter.toString)
   }
 
   def clearBuffer(): Unit = {
@@ -61,7 +61,7 @@ class ConsoleInterface(
   private def onError(str: String) = log error Message(str)
 }
 
-object MakeSettings {
+object InteractiveMakeSettings {
   def apply(args: List[String], onError: String => Unit): Settings = {
     val command = new GenericRunnerCommand(args, onError)
     if (command.ok) command.settings

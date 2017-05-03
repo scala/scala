@@ -7,7 +7,9 @@
 
 package xsbti;
 
-public interface ConsoleInterface {
-  void reset();
-  ConsoleResponse interpret(String line, boolean synthetic);
+/** Public interface for repl responses. */
+public interface InteractiveConsoleResponse {
+  InteractiveConsoleResult result();
+
+  String output();
 }
