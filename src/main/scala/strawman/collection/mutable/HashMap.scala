@@ -37,6 +37,8 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
 
   def iterator(): Iterator[(K, V)] = entriesIterator.map(e => (e.key, e.value))
 
+  def empty: HashMap[K, V] = HashMap.empty
+
   def get(key: K): Option[V] = {
     val e = findEntry(key)
     if (e eq null) None else Some(e.value)
@@ -51,12 +53,6 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
   def clear(): Unit = clearTable()
 
   def remove(key: K): this.type = { removeEntry(key); this }
-
-  def put(key: K, value: V): Option[V] = {
-    val e = findOrAddEntry(key, value)
-    if (e eq null) None
-    else { val v = e.value; e.value = value; Some(v) }
-  }
 
   protected def createNewEntry[V2](key: K, value: V2): Entry = {
     new Entry(key, value.asInstanceOf[V])
@@ -73,6 +69,12 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = foreachEntry(e => f((e.key, e.value)))
+
+  override def put(key: K, value: V): Option[V] = {
+    val e = findOrAddEntry(key, value)
+    if (e eq null) None
+    else { val v = e.value; e.value = value; Some(v) }
+  }
 
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     serializeTo(out, { entry =>

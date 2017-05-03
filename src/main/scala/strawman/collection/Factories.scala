@@ -49,17 +49,16 @@ trait SpecificIterableFactory[-A, +C] extends FromSpecificIterable[A, C] {
 }
 
 /** Factory methods for collections of kind `* −> * -> *` */
-trait MapFactory[+CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _]] {
+trait MapFactory[+CC[X, Y]] {
 
   def empty[K, V]: CC[K, V]
   def fromIterable[K, V](it: Iterable[(K, V)]): CC[K, V]
 
-  def apply[K, V](elems: (K, V)*): CC[K, V] =
-    empty[K, V] ++ elems.toStrawman
+  def apply[K, V](elems: (K, V)*): CC[K, V] = fromIterable(elems.toStrawman)
 }
 
 object MapFactory {
-  implicit def toSpecific[K, V, CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _]]
+  implicit def toSpecific[K, V, CC[X, Y]]
       (fi: MapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
     new FromSpecificIterable[(K, V), CC[K, V]] {
       def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = fi.fromIterable[K, V](it)
@@ -103,12 +102,12 @@ object OrderedSetFactory {
 }
 
 /** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
-trait OrderedMapFactory[+CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _]] {
+trait OrderedMapFactory[+CC[X, Y]] {
 
   def empty[K : Ordering, V]: CC[K, V]
 
   def fromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V]
 
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] =
-    empty[K, V] ++ elems.toStrawman
+    fromIterable(elems.toStrawman)
 }

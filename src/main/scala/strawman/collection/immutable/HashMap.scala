@@ -35,11 +35,7 @@ sealed trait HashMap[K, +V]
 
   protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
-    coll match {
-      case hm: HashMap[K, V] => hm
-      case _ => HashMap.fromIterable(coll)
-    }
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
     HashMap.fromIterable(it)
@@ -107,7 +103,7 @@ object HashMap extends MapFactory[HashMap] {
   def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] =
     it match {
       case hm: HashMap[K, V] => hm
-      case _ => newBuilder[K, V].++=(it).result
+      case _ => empty ++ it
     }
 
   private[collection] abstract class Merger[A, B] {

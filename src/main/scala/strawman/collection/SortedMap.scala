@@ -1,18 +1,16 @@
 package strawman
 package collection
 
-import strawman.collection.mutable.Builder
-
 import scala.Ordering
 
 /** Base type of sorted sets */
-trait SortedMap[K, +V] extends Map[K, V] with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
+trait SortedMap[K, +V]
+  extends Map[K, V]
+    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
 
-trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
+trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
   extends MapOps[K, V, Map, C]
      with SortedOps[K, C] {
-
-  protected def coll: CC[K, V]
 
   protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
 

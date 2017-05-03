@@ -69,6 +69,11 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     */
   def isDefinedAt(key: K): Boolean = contains(key)
 
+  /** The empty map of the same type as this map
+    * @return an empty map of type `Repr`.
+    */
+  def empty: C
+
   def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(coll, f))
 
   def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(coll, f))
@@ -79,3 +84,5 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   @`inline` final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
 
 }
+
+object Map extends MapFactory.Delegate[Map](immutable.Map)

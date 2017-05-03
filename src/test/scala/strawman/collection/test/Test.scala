@@ -327,7 +327,7 @@ class StrawmanTest {
     val x1 = xs.get("foo")
     val x2: Option[Int] = x1
     val xs1 = xs + ("foo", 1)
-    val xs2: immutable.SortedMap[String, Int] = xs1
+//    val xs2: immutable.SortedMap[String, Int] = xs1
     val xs3 = xs.map(kv => kv._1)
     // val xs4: immutable.Iterable[String] = xs3  // FIXME: does not work under dotty, we get a collection.Iterable
     val xs5 = xs.map ({ case (k, v) => (v, k) }: scala.PartialFunction[(String, Int), (Int, String)])

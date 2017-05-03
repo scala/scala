@@ -13,7 +13,8 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, 
   extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] {
 
-  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
-  def updated[V1 >: V](key: K, value: V1): CC[K, V1]
+    protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
+    Map.fromIterable(it)
+
 }
 
