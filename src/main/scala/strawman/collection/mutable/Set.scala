@@ -11,7 +11,8 @@ trait Set[A] extends Iterable[A]
                 with SetOps[A, Set, Set[A]]
 
 trait SetOps[A, +CC[X], +C <: Set[A]]
-  extends collection.SetOps[A, CC, C]
+  extends IterableOps[A, CC, C]
+    with collection.SetOps[A, CC, C]
     with Growable[A] {
 
   /** Removes a single element from this $coll.
