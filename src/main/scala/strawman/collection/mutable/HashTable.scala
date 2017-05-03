@@ -39,7 +39,7 @@ import java.lang.Integer
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-private[mutable] abstract class HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
+private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
   // Replacing Entry type parameter by abstract type member here allows to not expose to public
   // implementation-specific entry classes such as `DefaultEntry` or `LinkedEntry`.
   // However, I'm afraid it's too late now for such breaking change.
@@ -167,7 +167,7 @@ private[mutable] abstract class HashTable[A, Entry >: Null <: HashEntry[A, Entry
    *  Returns entry found in table or null.
    *  New entries are created by calling `createNewEntry` method.
    */
-  def findOrAddEntry[B](key: A, value: B): Entry = {
+  def findOrAddEntry(key: A, value: B): Entry = {
     val h = index(elemHashCode(key))
     val e = findEntry0(key, h)
     if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
@@ -177,7 +177,7 @@ private[mutable] abstract class HashTable[A, Entry >: Null <: HashEntry[A, Entry
    *  This method is guaranteed to be called only once and in case that the entry
    *  will be added. In other words, an implementation may be side-effecting.
    */
-  def createNewEntry[B](key: A, value: B): Entry
+  def createNewEntry(key: A, value: B): Entry
 
   /** Remove entry from table if present.
    */

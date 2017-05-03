@@ -25,9 +25,9 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with Serializable {
 
-  private[this] val table: HashTable[K, DefaultEntry[K, V]] =
-    new HashTable[K, DefaultEntry[K, V]] {
-      def createNewEntry[B](key: K, value: B): DefaultEntry[K, V] = new Entry(key, value.asInstanceOf[V])
+  private[this] val table: HashTable[K, V, DefaultEntry[K, V]] =
+    new HashTable[K, V, DefaultEntry[K, V]] {
+      def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
     }
 
   table.initWithContents(contents)
@@ -84,7 +84,7 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
-    table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject()))
+    table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 
 }
