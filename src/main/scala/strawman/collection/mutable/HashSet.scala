@@ -23,12 +23,13 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
     with Buildable[A, HashSet[A]]
-    with FlatHashTable[A]
     with Serializable {
+
+  private[this] val table = new FlatHashTable[A]
 
   def this() = this(null)
 
-  override def iterator(): Iterator[A] = super[FlatHashTable].iterator
+  override def iterator(): Iterator[A] = table.iterator
 
   protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
     HashSet.fromIterable(coll)
@@ -37,35 +38,40 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   protected[this] def newBuilder: Builder[A, HashSet[A]] = new GrowableBuilder[A, HashSet[A]](empty)
 
-  def result: HashSet[A] = this
-
   def add(elem: A): this.type = {
-    addElem(elem)
+    table.addElem(elem)
     this
   }
   def subtract(elem: A): this.type = {
-    removeElem(elem)
+    table.removeElem(elem)
     this
   }
 
-  def clear(): Unit = {
-    clearTable()
-  }
+  def clear(): Unit = table.clearTable()
 
-  def contains(elem: A): Boolean = containsElem(elem)
+  def contains(elem: A): Boolean = table.containsElem(elem)
 
   def empty: HashSet[A] = HashSet.empty
 
-  def get(elem: A): Option[A] = findEntry(elem)
+  def get(elem: A): Option[A] = table.findEntry(elem)
 
   override def foreach[U](f: A => U): Unit = {
     var i = 0
-    val len = table.length
+    val entries = table.table
+    val len = entries.length
     while (i < len) {
-      val curEntry = table(i)
-      if (curEntry ne null) f(entryToElem(curEntry))
+      val curEntry = entries(i)
+      if (curEntry ne null) f(table.entryToElem(curEntry))
       i += 1
     }
+  }
+
+  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
+    table.serializeTo(s)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
+    table.init(in, x => ())
   }
 
 }

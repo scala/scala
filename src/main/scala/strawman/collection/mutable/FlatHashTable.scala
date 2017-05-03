@@ -21,16 +21,16 @@ import scala.util.hashing.byteswap32
  *  @since 2.3
  *  @tparam A   the type of the elements contained in the $coll.
  */
-trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
+private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   import FlatHashTable._
 
-  private final def tableDebug = false
+  private def tableDebug = false
 
   @transient private[collection] var _loadFactor = defaultLoadFactor
 
   /** The actual hash table.
    */
-  @transient protected var table: Array[AnyRef] = new Array(initialCapacity)
+  @transient var table: Array[AnyRef] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
@@ -65,7 +65,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    *
    * The serialization format expected is the one produced by `serializeTo`.
    */
-  private[collection] def init(in: java.io.ObjectInputStream, f: A => Unit): Unit = {
+  def init(in: java.io.ObjectInputStream, f: A => Unit): Unit = {
     in.defaultReadObject
 
     _loadFactor = in.readInt()
@@ -97,7 +97,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    * size and collection elements. `foreach` determines the order in which the elements are saved
    * to the stream. To deserialize, `init` should be used.
    */
-  private[collection] def serializeTo(out: java.io.ObjectOutputStream) = {
+  def serializeTo(out: java.io.ObjectOutputStream) = {
     out.defaultWriteObject
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
@@ -107,7 +107,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
-  protected final def findEntry(elem: A): Option[A] =
+  def findEntry(elem: A): Option[A] =
     findElemImpl(elem) match {
       case null => None
       case entry => Some(entryToElem(entry))
@@ -115,7 +115,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
 
   /** Checks whether an element is contained in the hash table. */
-  protected final def containsElem(elem: A): Boolean = {
+  def containsElem(elem: A): Boolean = {
     null != findElemImpl(elem)
   }
 
@@ -133,7 +133,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   /** Add elem if not yet in table.
    *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
-  protected def addElem(elem: A) : Boolean = {
+  def addElem(elem: A) : Boolean = {
     addEntry(elemToEntry(elem))
   }
 
@@ -163,7 +163,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    * Removes an elem from the hash table returning true if the element was found (and thus removed)
    * or false if it didn't exist.
    */
-  protected def removeElem(elem: A) : Boolean = {
+  def removeElem(elem: A) : Boolean = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
@@ -199,7 +199,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     false
   }
 
-  protected def iterator: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new Iterator[A] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (null == table(i))) i += 1
@@ -311,7 +311,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   /* End of size map handling code */
 
-  protected final def index(hcode: Int) = {
+  protected def index(hcode: Int) = {
     // version 1 (no longer used - did not work with parallel hash tables)
     // improve(hcode) & (table.length - 1)
 
@@ -332,7 +332,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     // improved
   }
 
-  protected def clearTable(): Unit = {
+  def clearTable(): Unit = {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i -= 1 }
     tableSize = 0
@@ -419,7 +419,7 @@ private[collection] object FlatHashTable {
     /**
      * Does the inverse translation of elemToEntry
      */
-    protected final def entryToElem(entry : AnyRef) : A =
+    final def entryToElem(entry : AnyRef) : A =
       (if (entry.isInstanceOf[NullSentinel.type]) null else entry).asInstanceOf[A]
   }
 
