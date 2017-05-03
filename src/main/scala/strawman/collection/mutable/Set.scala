@@ -6,33 +6,31 @@ import strawman.collection.{IterableFactory, IterableOnce}
 import scala.{Boolean, Int, None, Option, Some, Unit, `inline`}
 
 /** Base trait for mutable sets */
-trait Set[A] extends Iterable[A]
-                with collection.Set[A]
-                with SetOps[A, Set, Set[A]]
+trait Set[A]
+  extends Iterable[A]
+    with collection.Set[A]
+    with SetOps[A, Set, Set[A]]
+    with Growable[A]
+    with Shrinkable[A]
 
 trait SetOps[A, +CC[X], +C <: Set[A]]
   extends IterableOps[A, CC, C]
-    with collection.SetOps[A, CC, C]
-    with Growable[A] {
+    with collection.SetOps[A, CC, C] {
 
-  /** Removes a single element from this $coll.
-    *
-    *  @param elem  the element to remove.
-    *  @return the $coll itself
+  /**
+    * @return The reference of the contained element that is equal to `elem`, if found, otherwise `None`
+    * @param elem The element to get.
     */
-  def subtract(elem: A): this.type
-  /** Alias for `subtract` */
-  @`inline` final def -= (elem: A): this.type = subtract(elem)
-
-  def contains(elem: A): Boolean
   def get(elem: A): Option[A]
 
   def insert(elem: A): Boolean =
-    !contains(elem) && { +=(elem); true }
+    !contains(elem) && {
+      coll += elem; true
+    }
 
   def remove(elem: A): Option[A] = {
     val res = get(elem)
-    -=(elem)
+    coll -= elem
     res
   }
 
@@ -46,8 +44,8 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
         toRemove -= elem
       }
     }
-    for (elem <- toRemove) +=(elem)
-    for (elem <- toAdd) -=(elem)
+    for (elem <- toRemove) coll -= elem
+    for (elem <- toAdd) coll += elem
   }
 
   def flatMapInPlace(f: A => IterableOnce[A]): Unit = {
@@ -59,8 +57,8 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
           toAdd += mapped
           toRemove -= elem
         }
-    for (elem <- toRemove) -=(elem)
-    for (elem <- toAdd) +=(elem)
+    for (elem <- toRemove) coll -= elem
+    for (elem <- toAdd) coll += elem
   }
 
   def filterInPlace(p: A => Boolean): Unit = {
@@ -68,7 +66,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     for (elem <- this)
       if (!p(elem)) toRemove += elem
     for (elem <- toRemove)
-      -=(elem)
+      coll -= elem
   }
 
   override def clone(): C = empty ++= coll
