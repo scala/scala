@@ -1,9 +1,9 @@
 package strawman
-
 package collection.immutable
 
-import strawman.collection.{Hashing, IterableFactory, Iterator}
-import strawman.collection.mutable.{Builder, ImmutableSetBuilder}
+import collection.{IterableFactory, Iterator}
+import collection.Hashing.computeHash
+import collection.mutable.{Builder, ImmutableSetBuilder}
 
 import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, sys}
 import scala.Predef.assert
@@ -26,7 +26,6 @@ import java.lang.Integer
 sealed trait HashSet[A]
   extends Set[A]
     with SetLike[A, HashSet]
-    with Hashing[A]
     with Serializable {
 
   import HashSet.nullToEmpty

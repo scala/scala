@@ -1,20 +1,20 @@
 package strawman
 package collection
 
-import scala.Int
+import scala.{Any, Int}
 
-trait Hashing[A] {
+protected[collection] object Hashing {
 
-  protected final def elemHashCode(key: A): Int = key.##
+  def elemHashCode(key: Any): Int = key.##
 
-  protected final def improve(hcode: Int): Int = {
+  def improve(hcode: Int): Int = {
     var h: Int = hcode + ~(hcode << 9)
     h = h ^ (h >>> 14)
     h = h + (h << 4)
     h ^ (h >>> 10)
   }
 
-  protected final def computeHash(key: A): Int =
+  def computeHash(key: Any): Int =
     improve(elemHashCode(key))
 
   /**
@@ -29,7 +29,7 @@ trait Hashing[A] {
     * @param keep a bitmask containing which bits to keep
     * @return the original bitmap with all bits where keep is not 1 set to 0
     */
-  protected def keepBits(bitmap: Int, keep: Int): Int = {
+  def keepBits(bitmap: Int, keep: Int): Int = {
     var result = 0
     var current = bitmap
     var kept = keep
