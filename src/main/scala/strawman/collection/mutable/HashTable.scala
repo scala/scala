@@ -39,7 +39,7 @@ import java.lang.Integer
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
+private[mutable] abstract class HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
   // Replacing Entry type parameter by abstract type member here allows to not expose to public
   // implementation-specific entry classes such as `DefaultEntry` or `LinkedEntry`.
   // However, I'm afraid it's too late now for such breaking change.
@@ -54,6 +54,8 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   /** The number of mappings contained in this hash table.
    */
   @transient protected var tableSize: Int = 0
+
+  final def size: Int = tableSize
 
   /** The next size value at which to resize (capacity * load factor).
    */
@@ -134,7 +136,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Find entry with given key in table, null if not found.
    */
-  protected final def findEntry(key: A): Entry =
+  final def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
   protected[this] final def findEntry0(key: A, h: Int): Entry = {
@@ -165,7 +167,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  Returns entry found in table or null.
    *  New entries are created by calling `createNewEntry` method.
    */
-  protected def findOrAddEntry[B](key: A, value: B): Entry = {
+  def findOrAddEntry[B](key: A, value: B): Entry = {
     val h = index(elemHashCode(key))
     val e = findEntry0(key, h)
     if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
@@ -175,11 +177,11 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  This method is guaranteed to be called only once and in case that the entry
    *  will be added. In other words, an implementation may be side-effecting.
    */
-  protected def createNewEntry[B](key: A, value: B): Entry
+  def createNewEntry[B](key: A, value: B): Entry
 
   /** Remove entry from table if present.
    */
-  protected final def removeEntry(key: A) : Entry = {
+  final def removeEntry(key: A) : Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
     if (e != null) {
@@ -209,7 +211,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** An iterator returning all entries.
    */
-  protected def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
+  def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -227,7 +229,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Avoid iterator for a 2x faster traversal. */
-  protected def foreachEntry[U](f: Entry => U): Unit = {
+  def foreachEntry[U](f: Entry => U): Unit = {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -246,7 +248,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Remove all entries from table
    */
-  protected def clearTable(): Unit = {
+  def clearTable(): Unit = {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0
@@ -367,7 +369,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     (improve(hcode, seedvalue) >>> exponent) & ones
   }
 
-  protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
+  def initWithContents(c: HashTable.Contents[A, Entry]) = {
     if (c != null) {
       _loadFactor = c.loadFactor
       table = c.table

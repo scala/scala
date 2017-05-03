@@ -23,10 +23,14 @@ import scala.{Boolean, Int, None, Option, SerialVersionUID, Serializable, Some, 
 final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with HashTable[K, DefaultEntry[K, V]]
     with Serializable {
 
-  initWithContents(contents)
+  private[this] val table: HashTable[K, DefaultEntry[K, V]] =
+    new HashTable[K, DefaultEntry[K, V]] {
+      def createNewEntry[B](key: K, value: B): DefaultEntry[K, V] = new Entry(key, value.asInstanceOf[V])
+    }
+
+  table.initWithContents(contents)
 
   type Entry = DefaultEntry[K, V]
 
@@ -35,56 +39,52 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.fromIterable(it)
 
-  def iterator(): Iterator[(K, V)] = entriesIterator.map(e => (e.key, e.value))
+  def iterator(): Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
 
   def empty: HashMap[K, V] = HashMap.empty
 
   def get(key: K): Option[V] = {
-    val e = findEntry(key)
+    val e = table.findEntry(key)
     if (e eq null) None else Some(e.value)
   }
 
   def add(kv: (K, V)): this.type = {
-    val e = findOrAddEntry(kv._1, kv._2)
+    val e = table.findOrAddEntry(kv._1, kv._2)
     if (e ne null) e.value = kv._2
     this
   }
 
-  def clear(): Unit = clearTable()
+  def clear(): Unit = table.clearTable()
 
-  def remove(key: K): this.type = { removeEntry(key); this }
+  def remove(key: K): this.type = { table.removeEntry(key); this }
 
-  protected def createNewEntry[V2](key: K, value: V2): Entry = {
-    new Entry(key, value.asInstanceOf[V])
-  }
+  override def size: Int = table.size
 
-  override def size: Int = tableSize
-
-  override def contains(key: K): Boolean = findEntry(key) != null
+  override def contains(key: K): Boolean = table.findEntry(key) != null
 
   override def apply(key: K): V = {
-    val e = findEntry(key)
+    val e = table.findEntry(key)
     if (e eq null) default(key)
     else e.value
   }
 
-  override def foreach[U](f: ((K, V)) => U): Unit = foreachEntry(e => f((e.key, e.value)))
+  override def foreach[U](f: ((K, V)) => U): Unit = table.foreachEntry(e => f((e.key, e.value)))
 
   override def put(key: K, value: V): Option[V] = {
-    val e = findOrAddEntry(key, value)
+    val e = table.findOrAddEntry(key, value)
     if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    serializeTo(out, { entry =>
+    table.serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
     })
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
-    init(in, createNewEntry(in.readObject().asInstanceOf[K], in.readObject()))
+    table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject()))
   }
 
 }
