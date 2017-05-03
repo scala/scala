@@ -557,22 +557,24 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         && (sym.enclosingPackageClass != currentClass.enclosingPackageClass)
         && (sym.enclosingPackageClass == sym.accessBoundary(sym.enclosingPackageClass))
       )
-      val host = hostForAccessorOf(sym, clazz)
-      def isSelfType = !(host.tpe <:< host.typeOfThis) && {
-        if (host.typeOfThis.typeSymbol.isJavaDefined)
+      isCandidate && {
+        val host = hostForAccessorOf(sym, clazz)
+        def isSelfType = !(host.tpe <:< host.typeOfThis) && {
+          if (host.typeOfThis.typeSymbol.isJavaDefined)
+            restrictionError(pos, unit,
+              "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
+            )
+          true
+        }
+        def isJavaProtected = host.isTrait && sym.isJavaDefined && {
           restrictionError(pos, unit,
-            "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
+            sm"""$clazz accesses protected $sym inside a concrete trait method.
+                |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
           )
-        true
+          true
+        }
+        !host.isPackageClass && !isSelfType && !isJavaProtected
       }
-      def isJavaProtected = host.isTrait && sym.isJavaDefined && {
-        restrictionError(pos, unit,
-          sm"""$clazz accesses protected $sym inside a concrete trait method.
-              |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
-        )
-        true
-      }
-      isCandidate && !host.isPackageClass && !isSelfType && !isJavaProtected
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either
