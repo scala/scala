@@ -63,7 +63,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def contains(elem: A): Boolean = RB.contains(tree, elem)
 
-  def get(elem: A): Option[A] = scala.Predef.???
+  def get(elem: A): Option[A] = RB.getKey(tree, elem)
 
   def unconstrained: collection.Set[A] = this
 

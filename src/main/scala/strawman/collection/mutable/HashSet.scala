@@ -56,7 +56,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   def empty: HashSet[A] = HashSet.empty
 
-  def get(elem: A): Option[A] = scala.Predef.???
+  def get(elem: A): Option[A] = findEntry(elem)
 
   override def foreach[U](f: A => U): Unit = {
     var i = 0

@@ -70,6 +70,12 @@ private[collection] object RedBlackTree {
     case node => Some(node.value)
   }
 
+  def getKey[A : Ordering](tree: Tree[A, _], key: A): Option[A] =
+    getNode(tree.root, key) match {
+      case null => None
+      case node => Some(node.key)
+    }
+
   @tailrec private[this] def getNode[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] =
     if (node eq null) null
     else {

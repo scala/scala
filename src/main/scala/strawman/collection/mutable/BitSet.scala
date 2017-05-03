@@ -4,7 +4,7 @@ package mutable
 
 import BitSetOps.{LogWL, MaxSize}
 
-import scala.{Array, Int, Long, math, Option, Ordering, SerialVersionUID, Serializable, Unit}
+import scala.{Array, Int, Long, math, None, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 import scala.Predef.{require}
 
 /**
@@ -88,7 +88,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     }
   }
 
-  def get(elem: Int): Option[Int] = scala.Predef.???
+  def get(elem: Int): Option[Int] = if (contains(elem)) Some(elem) else None
 
   def unconstrained: collection.Set[Int] = this
 
