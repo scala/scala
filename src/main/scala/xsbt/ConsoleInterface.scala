@@ -13,10 +13,25 @@ import scala.tools.nsc.interpreter.{ IMain, InteractiveReader, ILoop }
 import scala.tools.nsc.reporters.Reporter
 
 class ConsoleInterface {
-  def commandArguments(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Array[String] =
+  def commandArguments(
+      args: Array[String],
+      bootClasspathString: String,
+      classpathString: String,
+      log: Logger
+  ): Array[String] =
     MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
 
-  def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger): Unit = {
+  def run(
+      args: Array[String],
+      bootClasspathString: String,
+      classpathString: String,
+      initialCommands: String,
+      cleanupCommands: String,
+      loader: ClassLoader,
+      bindNames: Array[String],
+      bindValues: Array[Any],
+      log: Logger
+  ): Unit = {
     lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
     val compilerSettings = MakeSettings.sync(args, bootClasspathString, classpathString, log)
 
@@ -32,8 +47,10 @@ class ConsoleInterface {
         if (loader ne null) {
           in = InteractiveReader.apply()
           intp = new IMain(settings) {
-            override protected def parentClassLoader = if (loader eq null) super.parentClassLoader else loader
-            override protected def newCompiler(settings: Settings, reporter: Reporter) = super.newCompiler(compilerSettings, reporter)
+            override protected def parentClassLoader =
+              if (loader eq null) super.parentClassLoader else loader
+            override protected def newCompiler(settings: Settings, reporter: Reporter) =
+              super.newCompiler(compilerSettings, reporter)
           }
           intp.setContextClassLoader()
         } else
@@ -69,35 +86,37 @@ class ConsoleInterface {
   }
 }
 object MakeSettings {
-  def apply(args: List[String], log: Logger) =
-    {
-      val command = new GenericRunnerCommand(args, message => log.error(Message(message)))
-      if (command.ok)
-        command.settings
-      else
-        throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
+  def apply(args: List[String], log: Logger) = {
+    val command = new GenericRunnerCommand(args, message => log.error(Message(message)))
+    if (command.ok)
+      command.settings
+    else
+      throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
+  }
+
+  def sync(
+      args: Array[String],
+      bootClasspathString: String,
+      classpathString: String,
+      log: Logger
+  ): Settings = {
+    val compilerSettings = sync(args.toList, log)
+    if (!bootClasspathString.isEmpty)
+      compilerSettings.bootclasspath.value = bootClasspathString
+    compilerSettings.classpath.value = classpathString
+    compilerSettings
+  }
+
+  def sync(options: List[String], log: Logger) = {
+    val settings = apply(options, log)
+
+    // -Yrepl-sync is only in 2.9.1+
+    final class Compat {
+      def Yreplsync = settings.BooleanSetting("-Yrepl-sync", "For compatibility only.")
     }
+    implicit def compat(s: Settings): Compat = new Compat
 
-  def sync(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Settings =
-    {
-      val compilerSettings = sync(args.toList, log)
-      if (!bootClasspathString.isEmpty)
-        compilerSettings.bootclasspath.value = bootClasspathString
-      compilerSettings.classpath.value = classpathString
-      compilerSettings
-    }
-
-  def sync(options: List[String], log: Logger) =
-    {
-      val settings = apply(options, log)
-
-      // -Yrepl-sync is only in 2.9.1+
-      final class Compat {
-        def Yreplsync = settings.BooleanSetting("-Yrepl-sync", "For compatibility only.")
-      }
-      implicit def compat(s: Settings): Compat = new Compat
-
-      settings.Yreplsync.value = true
-      settings
-    }
+    settings.Yreplsync.value = true
+    settings
+  }
 }
