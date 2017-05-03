@@ -1,7 +1,8 @@
 package strawman
 package collection.immutable
 
-import collection.{Hashing, Iterator, MapFactory}
+import collection.{Iterator, MapFactory}
+import collection.Hashing.{computeHash, keepBits}
 import collection.mutable.{Builder, ImmutableMapBuilder}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
@@ -29,7 +30,6 @@ import java.lang.{Integer, String, System}
 sealed trait HashMap[K, +V]
   extends Map[K, V]
     with MapLike[K, V, HashMap]
-    with Hashing[K]
     with Serializable {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
