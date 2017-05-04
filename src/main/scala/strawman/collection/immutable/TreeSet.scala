@@ -3,7 +3,6 @@ package collection
 package immutable
 
 import collection.mutable.{Builder, ImmutableSetBuilder}
-import collection.ordered
 import collection.immutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
