@@ -7,15 +7,29 @@ import scala.{Boolean, Int, None, Option, Some, Unit, `inline`}
 
 /** Base trait for mutable sets */
 trait Set[A]
-  extends Iterable[A]
+  extends GrowableIterable[A]
     with collection.Set[A]
     with SetOps[A, Set, Set[A]]
-    with Growable[A]
     with Shrinkable[A]
 
 trait SetOps[A, +CC[X], +C <: Set[A]]
   extends IterableOps[A, CC, C]
     with collection.SetOps[A, CC, C] {
+
+  def mapInPlace(f: A => A): this.type = {
+    val toAdd = Set[A]()
+    val toRemove = Set[A]()
+    for (elem <- this) {
+      val mapped = f(elem)
+      if (!contains(mapped)) {
+        toAdd += mapped
+        toRemove -= elem
+      }
+    }
+    for (elem <- toRemove) coll -= elem
+    for (elem <- toAdd) coll += elem
+    this
+  }
 
   /**
     * @return The reference of the contained element that is equal to `elem`, if found, otherwise `None`
@@ -34,21 +48,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     res
   }
 
-  def mapInPlace(f: A => A): Unit = {
-    val toAdd = Set[A]()
-    val toRemove = Set[A]()
-    for (elem <- this) {
-      val mapped = f(elem)
-      if (!contains(mapped)) {
-        toAdd += mapped
-        toRemove -= elem
-      }
-    }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
-  }
-
-  def flatMapInPlace(f: A => IterableOnce[A]): Unit = {
+  def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()
     val toRemove = Set[A]()
     for (elem <- this)
@@ -59,14 +59,16 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
         }
     for (elem <- toRemove) coll -= elem
     for (elem <- toAdd) coll += elem
+    this
   }
 
-  def filterInPlace(p: A => Boolean): Unit = {
+  def filterInPlace(p: A => Boolean): this.type = {
     val toRemove = Set[A]()
     for (elem <- this)
       if (!p(elem)) toRemove += elem
     for (elem <- toRemove)
       coll -= elem
+    this
   }
 
   override def clone(): C = empty ++= coll
