@@ -2,14 +2,11 @@
 val dotty = settingKey[String]("dotty version")
 dotty in ThisBuild := dottyLatestNightlyBuild.get
 
-def targetingDotty: Def.Initialize[Boolean] = Def.setting(scalaVersion.value == dotty.value)
-
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
   version := "0.2.0-SNAPSHOT",
   resolvers += "scala-pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots",
-  scalaOrganization := { if (targetingDotty.value) "ch.epfl.lamp" else scalaOrganization.value },
-  scalaBinaryVersion := { if (targetingDotty.value) "2.11" else "2.12" },
+  scalaBinaryVersion := { if (isDotty.value) scalaBinaryVersion.value else "2.12" },
   scalaVersion := "2.12.2-ebe1180-SNAPSHOT", // from https://github.com/scala/scala/pull/5742
   crossScalaVersions := scalaVersion.value :: dotty.value :: Nil,
   scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-opt-warnings", "-Yno-imports", "-language:higherKinds", "-opt:l:classpath"),
@@ -24,13 +21,10 @@ val collections =
     .settings(
       name := "collection-strawman",
       libraryDependencies ++= Seq(
-        "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
+        ("org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0").withDottyCompat(),
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
-      scalacOptions ++= {
-        if (targetingDotty.value) Seq("-language:Scala2")
-        else Nil
-      },
+      scalacOptions ++= { if (isDotty.value) Seq("-language:Scala2") else Nil },
       pomExtra :=
         <developers>
           <developer><id>ichoran</id><name>Rex Kerr</name></developer>

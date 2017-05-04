@@ -4,7 +4,7 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.1")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.20")
 
-addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.1.0-RC2")
+addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.1.0-RC4")
 
 // for bencharts
 libraryDependencies ++= Seq(
