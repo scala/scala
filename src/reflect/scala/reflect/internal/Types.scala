@@ -620,6 +620,9 @@ trait Types
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+    def hasNonPrivateMember(name: Name): Boolean = {
+      new HasMember(this, name, BridgeAndPrivateFlags, 0L).apply()
+    }
 
     def packageObject: Symbol = member(nme.PACKAGE)
 
@@ -4217,10 +4220,11 @@ trait Types
       else if (member.isOverloaded) member.alternatives exists directlySpecializedBy
       else directlySpecializedBy(member)
     )
+    val isHasMember = sym.info == WildcardType // OPT avoid full findMember during search for extension methods, e.g pt = `?{ def extension: ? }`.
 
     (    (tp.typeSymbol isBottomSubClass sym.owner)
-      || specializedBy(tp nonPrivateMember sym.name)
-    )
+      || (if (isHasMember) tp.hasNonPrivateMember(sym.name) else specializedBy(tp nonPrivateMember sym.name))
+      )
   }
 
   /** Does member `symLo` of `tpLo` have a stronger type
