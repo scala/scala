@@ -61,12 +61,12 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
 
-  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
+  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
     TreeSet.orderedFromIterable(coll)
 
-  def orderedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
+  protected[this] def orderedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
     TreeSet.orderedFromIterable(coll)
 
   def unordered: Set[A] = this

@@ -18,13 +18,13 @@ class StringOps(val s: String)
   protected def coll = new StringView(s)
   def iterator() = coll.iterator()
 
-  protected def fromSpecificIterable(coll: Iterable[Char]): String = {
+  protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
     for (ch <- coll) sb += ch
     sb.result
   }
 
-  def fromIterable[B](coll: Iterable[B]): List[B] = List.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: Iterable[B]): List[B] = List.fromIterable(coll)
 
   protected[this] def newBuilder = new StringBuilder
 

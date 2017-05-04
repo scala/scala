@@ -26,9 +26,9 @@ sealed abstract class BitSet
 
   def empty: BitSet = BitSet.empty
 
-  protected def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
-  protected def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
-  protected def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.orderedFromIterable(it)
+  protected[this] def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
+  protected[this] def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.orderedFromIterable(it)
 
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)

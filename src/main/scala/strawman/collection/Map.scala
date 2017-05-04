@@ -17,7 +17,7 @@ trait MapLike[K, +V, +CC[X, Y] <: Map[X, Y]]
      with IterableMappings[(K, V), Iterable]
      with MapMappings[K, V, CC]
      with PartialFunction[K, V] {
-  override protected def fromIterable[B](xs: Iterable[B]) = immutable.List.fromIterable(xs)
+  override protected[this] def fromIterable[B](xs: Iterable[B]) = immutable.List.fromIterable(xs)
 }
 
 trait MapOps[K, +V, +C] extends IterableOps[(K, V), C] {

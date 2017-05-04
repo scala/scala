@@ -25,7 +25,7 @@ trait SortedSetLike[A, +CC[X] <: SortedSet[X] with SortedSetLike[X, CC]]
 trait SortedSetMappings[+A, +CC[X] <: SortedSet[X]] extends IterableMappings[A, Iterable] {
 
   protected def coll: Iterable[A]
-  protected def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
+  protected[this] def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
   /** Map */
   def map[B : Ordering](f: A => B): CC[B] = orderedFromIterable(View.Map(coll, f))

@@ -16,7 +16,7 @@ sealed trait List[+A]
      with collection.LinearSeqLike[A, List]
      with collection.Buildable[A, List[A]] {
 
-  protected def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
+  protected[this] def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
   protected[this] def newBuilder = List.newBuilder[A]

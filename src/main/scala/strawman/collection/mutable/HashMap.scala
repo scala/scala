@@ -23,7 +23,7 @@ final class HashMap[K, V] extends Map[K, V] with MapLike[K, V, HashMap] {
   def remove(elem: (K, V)): this.type = ???
   def put(key: K, value: V): Option[V] = ???
 
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = ???
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = ???
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = mapFromIterable(coll)
 }
 

@@ -46,10 +46,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
-  def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
+  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
     TreeMap.fromIterable[K2, V2](it)
 
-  def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
+  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
     Map.fromIterable(it)
 
   def get(key: K): Option[V] = RB.get(tree, key)

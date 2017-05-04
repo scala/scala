@@ -17,18 +17,3 @@ trait SortedMapLike[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 }
 
-/*
-trait SortedMapLike[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, CC]]
-  extends MapLike[K, V, Map] // Inherited Map operations can only return a `Map` because they don’t take an evidence `Ordering`
-     with SortedMapMappings[K, V, CC]
-
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
-    Map.fromIterable(it)
-
-  def firstKey: K = head._1
-
-  def lastKey: K = last._1
-
-}
-
-*/

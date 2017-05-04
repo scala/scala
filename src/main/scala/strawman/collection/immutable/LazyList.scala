@@ -29,7 +29,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 
-  protected def fromIterable[B](coll: collection.Iterable[B]): LazyList[B] = LazyList.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: collection.Iterable[B]): LazyList[B] = LazyList.fromIterable(coll)
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): LazyList[A] = fromIterable(coll)
 
   override def className = "LazyList"

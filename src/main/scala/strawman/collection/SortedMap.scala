@@ -32,7 +32,7 @@ trait SortedMapMappings[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[
 
   protected def coll: CC[K, V]
 
-  def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
+  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
 
   // And finally, we add new overloads taking an ordering
   def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit ordering: Ordering[K2]): CC[K2, V2] =

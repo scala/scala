@@ -207,7 +207,7 @@ trait IterableOps[+A, +C] extends Any {
 
 trait IterableMappings[A, +CC[X] <: Iterable[X]] extends Any {
   protected def coll: Iterable[A]
-  protected def fromIterable[E](it: Iterable[E]): CC[E]
+  protected[this] def fromIterable[E](it: Iterable[E]): CC[E]
 
   /** Map */
   def map[B](f: A => B): CC[B] = fromIterable(View.Map(coll, f))

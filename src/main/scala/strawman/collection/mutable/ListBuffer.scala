@@ -26,8 +26,8 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  protected def fromIterable[B](c: collection.Iterable[B]) = ListBuffer.fromIterable(c)
-  protected def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
+  protected[this] def fromIterable[B](c: collection.Iterable[B]) = ListBuffer.fromIterable(c)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
 
   def apply(i: Int) = first.apply(i)
 
