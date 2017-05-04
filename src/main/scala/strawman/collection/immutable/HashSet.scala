@@ -31,7 +31,8 @@ sealed trait HashSet[A]
 
   import HashSet.nullToEmpty
 
-  def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
+  protected def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
+  protected def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 

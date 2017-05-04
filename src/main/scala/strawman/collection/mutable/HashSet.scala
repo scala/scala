@@ -14,8 +14,10 @@ final class HashSet[A]
 
   def iterator(): Iterator[A] = ???
 
-  def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
+  protected def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
     HashSet.fromIterable(coll)
+
+  protected def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   protected[this] def newBuilder: Builder[A, HashSet[A]] = new HashSet[A]
 

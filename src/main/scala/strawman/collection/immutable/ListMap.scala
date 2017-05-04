@@ -72,12 +72,13 @@ sealed class ListMap[K, +V]
      with MapLike[K, V, ListMap]
      with Serializable {
 
-  /*protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] =
+  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] =
     coll match {
       case lm: ListMap[K, V] => lm
       case _ => ListMap.fromIterable(coll)
-    }*/
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
+    }
 
   def empty: ListMap[K, V] = ListMap.empty[K, V]
 

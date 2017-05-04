@@ -85,7 +85,8 @@ sealed class ListSet[A]
 
   def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
 
-  def fromIterable[B](coll: collection.Iterable[B]): ListSet[B] = ListSet.fromIterable(coll)
+  protected def fromIterable[B](coll: collection.Iterable[B]): ListSet[B] = ListSet.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListSet[A] = fromIterable(coll)
 
   /**
     * Represents an entry in the `ListSet`.

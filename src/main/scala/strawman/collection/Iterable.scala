@@ -18,7 +18,6 @@ trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
 
 trait IterableLike[+A, +CC[X] <: Iterable[X]]
   extends Any with IterableOps[A, CC[A]] with IterableMappings[A, CC] {
-  override protected[this] def fromSpecificIterable(coll: Iterable[A]): CC[A] = fromIterable(coll)
 }
 
 /** Base trait for Iterable operations

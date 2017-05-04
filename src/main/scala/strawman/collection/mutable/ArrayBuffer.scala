@@ -47,8 +47,10 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def iterator() = view.iterator()
 
-  def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
+  protected def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
+
+  protected def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
   protected[this] def newBuilder = new ArrayBuffer[A]
   def newBuilder[E] = new ArrayBuffer[E]

@@ -23,9 +23,8 @@ class ArrayOps[A](val xs: Array[A])
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
+  protected def fromIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
   protected def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
-
-  def fromIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
   protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
 
