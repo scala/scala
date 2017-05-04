@@ -553,11 +553,10 @@ but are required to be properly nested.  Therefore, a comment like
 `/* /* */` will be rejected as having an unterminated
 comment.
 
-## Multi-line and trailing commas
+## Trailing Commas in Multi-line Expressions
 
-If a comma is followed by a line end and then a right parenthesis, square
-bracket or curly brace (`)`, `]`, and `}`, respectively) then such a trailing
-comma is ignored. For example:
+If a comma is followed by a newline end and then a right parenthesis, square
+bracket or curly brace then such a trailing comma is ignored. For example:
 
 ```scala
 foo(
