@@ -1,14 +1,17 @@
-package strawman.collection.immutable
+package strawman
+package collection
+package immutable
 
 import scala.{None, Nothing, Option, Some, StringContext, Any}
 import scala.Predef.???
 import scala.annotation.tailrec
-import strawman.collection
-import strawman.collection.mutable.Builder
-import strawman.collection.{IterableFactory, Iterator, LinearSeq, SeqLike}
+import mutable.Builder
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
-  extends Seq[A] with SeqLike[A, LazyList] with LinearSeq[A] {
+  extends Seq[A]
+     with LinearSeq[A]
+     with SeqOps[A, LazyList, LazyList[A]] {
+
   private[this] var evaluated = false
   private[this] var result: LazyList.Evaluated[A] = _
 
@@ -64,5 +67,4 @@ object LazyList extends IterableFactory[LazyList] {
   def newBuilder[A]: Builder[A, LazyList[A]] = ???
 
   def empty[A <: Any]: LazyList[A] = new LazyList[A](None)
-
 }

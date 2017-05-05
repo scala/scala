@@ -1,44 +1,16 @@
 package strawman
 package collection
 
-import strawman.collection.BitSetLike.{LogWL, WordLength}
-
 import scala.{Array, Boolean, `inline`, Int, Long, Option, Ordering, Unit}
 import scala.Predef.{assert, intWrapper}
 
 /** Base type of bitsets */
-trait BitSet
- extends SortedSet[Int]
-    with BitSetLike[BitSet]
+trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
 
 /** Base implementation type of bitsets */
-trait BitSetLike[+C <: BitSet with BitSetLike[C]]
-  extends SortedSetLike[Int, SortedSet]
-     with BitSetOps[C]
-
-
-object BitSetLike {
-
-  /* Final vals can sometimes be inlined as constants (faster) */
-  private[collection] final val LogWL = 6
-  private[collection] final val WordLength = 64
-
-  private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
-    var len = elems.length
-    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
-    var newlen = len
-    if (idx >= newlen && w != 0L) newlen = idx + 1
-    val newelems = new Array[Long](newlen)
-    Array.copy(elems, 0, newelems, 0, len)
-    if (idx < newlen) newelems(idx) = w
-    else assert(w == 0L)
-    newelems
-  }
-
-}
-
-trait BitSetOps[+C <: BitSet with BitSetLike[C]]
-  extends SetOps[Int, C] with SortedOps[Int, C] { self =>
+trait BitSetOps[+C <: BitSet with BitSetOps[C]]
+  extends SortedSetOps[Int, SortedSet, C] {
+  import BitSetOps._
 
   protected def coll: C
 
@@ -65,7 +37,7 @@ trait BitSetOps[+C <: BitSet with BitSetLike[C]]
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
+      while (current != end && !contains(current)) current += 1
       current != end
     }
     def next(): Int =
@@ -170,6 +142,23 @@ trait BitSetOps[+C <: BitSet with BitSetLike[C]]
   def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(coll, f))
 
   def ++(xs: IterableOnce[Int]): C = fromSpecificIterable(View.Concat(coll, xs))
-
 }
 
+object BitSetOps {
+
+  /* Final vals can sometimes be inlined as constants (faster) */
+  private[collection] final val LogWL = 6
+  private[collection] final val WordLength = 64
+
+  private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
+    var len = elems.length
+    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
+    var newlen = len
+    if (idx >= newlen && w != 0L) newlen = idx + 1
+    val newelems = new Array[Long](newlen)
+    Array.copy(elems, 0, newelems, 0, len)
+    if (idx < newlen) newelems(idx) = w
+    else assert(w == 0L)
+    newelems
+  }
+}

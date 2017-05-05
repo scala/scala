@@ -2,7 +2,7 @@ package strawman
 package collection.immutable
 
 import collection.{Hashing, Iterator, MapFactory}
-import collection.mutable.{Builder, ImmutableMapBuilder}
+import collection.mutable.Builder
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
@@ -28,7 +28,7 @@ import java.lang.{Integer, String, System}
 @SerialVersionUID(2L)
 sealed trait HashMap[K, +V]
   extends Map[K, V]
-     with MapLike[K, V, HashMap]
+     with MapOps[K, V, HashMap, HashMap[K, V]]
      with Hashing[K]
      with Serializable {
 
@@ -40,7 +40,7 @@ sealed trait HashMap[K, +V]
       case _ => HashMap.fromIterable(coll)
     }
 
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
     HashMap.fromIterable(it)
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
@@ -100,9 +100,6 @@ sealed trait HashMap[K, +V]
 }
 
 object HashMap extends MapFactory[HashMap] {
-
-  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
-    new ImmutableMapBuilder[K, V, HashMap](empty[K, V])
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 

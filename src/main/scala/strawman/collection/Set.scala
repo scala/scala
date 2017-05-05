@@ -6,13 +6,13 @@ import scala.util.hashing.MurmurHash3
 
 /** Base trait for set collections.
   */
-trait Set[A] extends Iterable[A] with SetLike[A, Set]
+trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for set operations */
-trait SetLike[A, +CC[X] <: Set[X] with SetLike[X, CC]]
-  extends IterableMappings[A, CC] with SetOps[A, CC[A]]
-
-trait SetOps[A, +C <: Set[A] with IterableOps[A, C]] extends IterableOps[A, C] with (A => Boolean) with Equals {
+trait SetOps[A, +CC[X], +C <: Set[A]]
+  extends IterableOps[A, CC, C]
+     with (A => Boolean)
+     with Equals {
 
   protected def coll: C
 

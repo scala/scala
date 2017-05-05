@@ -8,7 +8,7 @@ import scala.Predef.???
 /** Mutable set backed by a hash trie */
 final class HashSet[A]
   extends Set[A]
-     with SetLike[A, HashSet]
+     with SetOps[A, HashSet, HashSet[A]]
      with Buildable[A, HashSet[A]]
      with Builder[A, HashSet[A]] {
 

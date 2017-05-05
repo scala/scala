@@ -1,18 +1,16 @@
-package strawman.collection
+package strawman
+package collection
 package mutable
 
 import java.lang.IndexOutOfBoundsException
 
 import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
-import strawman.collection
-import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike, Buildable}
-
 import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedOptimizedGrowableSeq[A]
-     with SeqLike[A, ArrayBuffer]
+     with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
      with Buildable[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]] {
 

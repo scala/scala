@@ -1,9 +1,9 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
-import strawman.collection.{BitSetLike, SpecificIterableFactory}
-import strawman.collection.BitSetLike.{LogWL, updateArray}
-import strawman.collection.mutable.Builder
+import BitSetOps.{LogWL, updateArray}
+import mutable.Builder
 
 import scala.{Array, Boolean, Int, Long, Ordering, SerialVersionUID, Serializable, Unit}
 import scala.Predef.require
@@ -18,10 +18,10 @@ import scala.Predef.require
   */
 @SerialVersionUID(1611436763290191562L)
 sealed abstract class BitSet
-  extends collection.BitSet
-     with SortedSet[Int]
-     with SetOps[Int, BitSet]
-     with BitSetLike[BitSet]
+  extends SortedSet[Int]
+     with collection.BitSet
+     with SetOps[Int, Set, BitSet]
+     with BitSetOps[BitSet]
      with Serializable {
 
   def empty: BitSet = BitSet.empty

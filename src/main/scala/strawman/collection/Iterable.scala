@@ -10,14 +10,10 @@ import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
 
 /** Base trait for generic collections */
-trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
+trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
 
   /** The collection itself */
   protected def coll: this.type = this
-}
-
-trait IterableLike[+A, +CC[X] <: Iterable[X]]
-  extends Any with IterableOps[A, CC[A]] with IterableMappings[A, CC] {
 }
 
 /** Base trait for Iterable operations
@@ -26,15 +22,17 @@ trait IterableLike[+A, +CC[X] <: Iterable[X]]
   *  ============
   *
   *  We require that for all child classes of Iterable the variance of
-  *  the child class and the variance of the `C` parameter passed to `IterableLike`
+  *  the child class and the variance of the `C` parameter passed to `IterableOps`
   *  are the same. We cannot express this since we lack variance polymorphism. That's
   *  why we have to resort at some places to write `C[A @uncheckedVariance]`.
   */
-trait IterableOps[+A, +C] extends Any {
-  protected def coll: Iterable[A]
-  private def iterator(): Iterator[A] = coll.iterator()
+trait IterableOps[+A, +CC[X], +C] extends Any {
 
+  protected def coll: Iterable[A]
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
+  protected[this] def fromIterable[E](it: Iterable[E]): CC[E]
+
+  private def iterator(): Iterator[A] = coll.iterator()
 
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
@@ -203,11 +201,6 @@ trait IterableOps[+A, +C] extends Any {
     if (coll.isEmpty) throw new UnsupportedOperationException
     drop(1)
   }
-}
-
-trait IterableMappings[A, +CC[X] <: Iterable[X]] extends Any {
-  protected def coll: Iterable[A]
-  protected[this] def fromIterable[E](it: Iterable[E]): CC[E]
 
   /** Map */
   def map[B](f: A => B): CC[B] = fromIterable(View.Map(coll, f))
@@ -238,7 +231,7 @@ trait IterableMappings[A, +CC[X] <: Iterable[X]] extends Any {
   * @tparam  A    the element type of the collection
   * @tparam Repr  the type of the underlying collection
   */
-trait Buildable[+A, +C] extends Any with IterableOps[A, C]  {
+trait Buildable[+A, +C] extends Any with IterableOps[A, _, C]  {
 
   /** Creates a new builder. */
   protected[this] def newBuilder: Builder[A, C]

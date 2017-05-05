@@ -5,27 +5,16 @@ import scala.Ordering
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
-trait SortedSet[A]
-  extends Set[A]
-     with Sorted[A]
-     with SortedSetLike[A, SortedSet] // Inherited SortedSet operations return a `SortedSet`
+trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]]
 
-trait SortedSetLike[A, +CC[X] <: SortedSet[X] with SortedSetLike[X, CC]]
- extends SortedOps[A, CC[A]]
-    with IterableMappings[A, Set]
-    with SortedSetMappings[A, CC]
-    with SetOps[A, CC[A]] {
+trait SortedSetOps[A, +CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], +C <: SortedSet[A]]
+  extends SetOps[A, Set, C]
+     with SortedOps[A, C] {
+
+  protected[this] def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
+
   def firstKey: A = head
   def lastKey: A = last
-}
-
-/** Transforms over iterables that can return collections of different element types for which an implicit
-  * evidence is required.
-  */
-trait SortedSetMappings[+A, +CC[X] <: SortedSet[X]] extends IterableMappings[A, Iterable] {
-
-  protected def coll: Iterable[A]
-  protected[this] def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
   /** Map */
   def map[B : Ordering](f: A => B): CC[B] = orderedFromIterable(View.Map(coll, f))
@@ -59,7 +48,6 @@ trait SortedSetMappings[+A, +CC[X] <: SortedSet[X]] extends IterableMappings[A, 
 
 object SortedSet extends OrderedSetFactory[SortedSet] {
   def empty[A : Ordering]: SortedSet[A] = immutable.SortedSet.empty
-  def orderedNewBuilder[A : Ordering]: Builder[A, SortedSet[A]] = immutable.SortedSet.orderedNewBuilder
   def orderedFromIterable[E : Ordering](it: Iterable[E]): SortedSet[E] = immutable.SortedSet.orderedFromIterable(it)
 }
 

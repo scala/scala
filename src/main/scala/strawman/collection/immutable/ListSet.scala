@@ -1,36 +1,10 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
-import strawman.collection.mutable.{Builder, ImmutableSetBuilder}
-import strawman.collection.IterableFactory
-
+import mutable.Builder
 import scala.annotation.tailrec
 import scala.{Any, Boolean, Int, NoSuchElementException, SerialVersionUID, Serializable}
-
-/**
-  * $factoryInfo
-  *
-  * Note that each element insertion takes O(n) time, which means that creating a list set with
-  * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
-  * elements.
-  *
-  * @since 1
-  * @define Coll ListSet
-  * @define coll list set
-  */
-object ListSet extends IterableFactory[ListSet] {
-
-  def newBuilder[A <: Any]: Builder[A, ListSet[A]] = new ImmutableSetBuilder[A, ListSet](empty[A])
-
-  def fromIterable[E](it: strawman.collection.Iterable[E]): ListSet[E] = newBuilder.++=(it).result
-
-  @SerialVersionUID(5010379588739277132L)
-  private object EmptyListSet extends ListSet[Any]
-  private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
-
-  def empty[A <: Any]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
-
-}
 
 /**
   * This class implements immutable sets using a list-based data structure. List set iterators and
@@ -57,7 +31,7 @@ object ListSet extends IterableFactory[ListSet] {
 @SerialVersionUID(-8417059026623606218L)
 sealed class ListSet[A]
   extends Set[A]
-     with SetLike[A, ListSet]
+     with SetOps[A, ListSet, ListSet[A]]
      with Serializable {
 
   override def size: Int = 0
@@ -124,3 +98,27 @@ sealed class ListSet[A]
     // override def init: ListSet[A] = next
   }
 }
+
+/**
+  * $factoryInfo
+  *
+  * Note that each element insertion takes O(n) time, which means that creating a list set with
+  * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
+  * elements.
+  *
+  * @since 1
+  * @define Coll ListSet
+  * @define coll list set
+  */
+object ListSet extends IterableFactory[ListSet] {
+
+  def fromIterable[E](it: strawman.collection.Iterable[E]): ListSet[E] = empty ++ it
+
+  @SerialVersionUID(5010379588739277132L)
+  private object EmptyListSet extends ListSet[Any]
+  private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
+
+  def empty[A <: Any]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
+
+}
+

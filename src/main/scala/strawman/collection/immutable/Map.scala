@@ -1,5 +1,6 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import strawman.collection.MapFactory
 import strawman.collection.mutable.Builder
@@ -10,16 +11,13 @@ import scala.`inline`
 trait Map[K, +V]
   extends Iterable[(K, V)]
      with collection.Map[K, V]
-     with MapLike[K, V, Map]
+     with MapOps[K, V, Map, Map[K, V]]
 
 /** Base trait of immutable Maps implementations */
-trait MapLike[K, +V, +CC[X, +Y] <: Map[X, Y] with MapLike[X, Y, CC]]
-  extends collection.MapLike[K, V, CC]
-     with MapOps[K, V, CC[K, V]]
-     with MapMappings[K, V, CC]
+trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[K, V]]
+  extends collection.MapOps[K, V, CC, C] {
 
-/** Immutable Map operations returning a self-like Map */
-trait MapOps[K, +V, +C] extends collection.MapOps[K, V, C] {
+  protected def coll: CC[K, V]
 
   /** Removes a key from this map, returning a new map.
     *
@@ -35,11 +33,6 @@ trait MapOps[K, +V, +C] extends collection.MapOps[K, V, C] {
     * @return   an empty map of type `Repr`.
     */
   def empty: C
-}
-
-trait MapMappings[K, +V, +CC[X, +Y] <: Map[X, Y] with MapLike[X, Y, CC]] extends collection.MapMappings[K, V, CC] {
-
-  protected def coll: CC[K, V]
 
   /**
     * Add a key/value pair to this map, returning a new map.
@@ -67,11 +60,9 @@ trait MapMappings[K, +V, +CC[X, +Y] <: Map[X, Y] with MapLike[X, Y, CC]] extends
     while (it.hasNext) result = result + it.next()
     result
   }
-
 }
 
 // TODO Special case small maps
 object Map extends MapFactory[Map] {
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = ListMap.newBuilder[K, V]
   def empty[K, V]: Map[K, V] = ListMap.empty[K, V]
 }

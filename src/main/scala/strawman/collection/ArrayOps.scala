@@ -1,15 +1,14 @@
-package strawman.collection
-
-import strawman.collection.immutable.List
+package strawman
+package collection
 
 import scala.{Array, Char, Int, AnyVal}
 import scala.Predef.???
-import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
+import mutable.ArrayBuffer
 
 import scala.reflect.ClassTag
 class ArrayOps[A](val xs: Array[A])
   extends AnyVal
-     with SeqOps[A, Array[A]]
+     with SeqOps[A, immutable.Seq, Array[A]]  // should be IndexedSeq once we have an instance type
      with Buildable[A, Array[A]]
      with ArrayLike[A] {
 
@@ -23,8 +22,9 @@ class ArrayOps[A](val xs: Array[A])
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
-  protected[this] def fromIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
+  protected[this] def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
   protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
+  protected[this] def fromIterable(coll: Iterable[A]): immutable.Seq[A] = immutable.Seq.fromIterable(coll)
 
   protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
 
@@ -32,10 +32,10 @@ class ArrayOps[A](val xs: Array[A])
 
   override def className = "Array"
 
-  def map[B: ClassTag](f: A => B): Array[B] = fromIterable(View.Map(coll, f))
-  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromIterable(View.FlatMap(coll, f))
-  def ++[B >: A : ClassTag](xs: IterableOnce[B]): Array[B] = fromIterable(View.Concat(coll, xs))
-  def zip[B: ClassTag](xs: IterableOnce[B]): Array[(A, B)] = fromIterable(View.Zip(coll, xs))
+  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(coll, f))
+  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(View.FlatMap(coll, f))
+  def ++[B >: A : ClassTag](xs: IterableOnce[B]): Array[B] = fromTaggedIterable(View.Concat(coll, xs))
+  def zip[B: ClassTag](xs: IterableOnce[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(coll, xs))
 }
 
 case class ArrayView[A](xs: Array[A]) extends IndexedView[A] {

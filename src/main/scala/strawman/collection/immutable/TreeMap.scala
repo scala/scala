@@ -4,7 +4,7 @@ package immutable
 
 import strawman.collection.OrderedMapFactory
 import strawman.collection.immutable.{RedBlackTree => RB}
-import strawman.collection.mutable.{Builder, ImmutableMapBuilder}
+import strawman.collection.mutable.Builder
 
 import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 
@@ -31,7 +31,7 @@ import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 @SerialVersionUID(1234)
 final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends SortedMap[K, V]
-    with SortedMapLike[K, V, TreeMap]
+    with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with Serializable {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)

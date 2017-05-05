@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import collection.Iterator
 

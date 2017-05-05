@@ -1,20 +1,20 @@
-package strawman.collection
+package strawman
+package collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.{Any, Nothing}
 import scala.Predef.???
-import strawman.collection
-import strawman.collection.mutable.{Builder, ListBuffer}
+import mutable.{Builder, ListBuffer}
 
 
 /** Concrete collection type: List */
 sealed trait List[+A]
   extends Seq[A]
-     with collection.LinearSeq[A]
-     with collection.LinearSeqLike[A, List]
-     with collection.Buildable[A, List[A]] {
+     with LinearSeq[A]
+     with SeqOps[A, List, List[A]]
+     with Buildable[A, List[A]] {
 
   protected[this] def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)

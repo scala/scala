@@ -7,22 +7,19 @@ import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Opt
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base Map type */
-trait Map[K, +V]
-  extends Iterable[(K, V)]
-     with MapLike[K, V, Map]
+trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]]
 
 /** Base Map implementation type */
-trait MapLike[K, +V, +CC[X, Y] <: Map[X, Y]]
-  extends MapOps[K, V, CC[K, V @uncheckedVariance]]
-     with IterableMappings[(K, V), Iterable]
-     with MapMappings[K, V, CC]
+trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
+  extends IterableOps[(K, V), Iterable, C]
      with PartialFunction[K, V] {
-  override protected[this] def fromIterable[B](xs: Iterable[B]) = immutable.List.fromIterable(xs)
-}
-
-trait MapOps[K, +V, +C] extends IterableOps[(K, V), C] {
 
   protected def coll: Map[K, V]
+
+  override protected[this] def fromIterable[B](xs: Iterable[B]): Iterable[B] = immutable.List.fromIterable(xs)
+
+  /** Similar to fromIterable, but returns a Map collection type */
+  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
 
   /** Optionally returns the value associated with a key.
     *
@@ -73,16 +70,6 @@ trait MapOps[K, +V, +C] extends IterableOps[(K, V), C] {
     *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
     */
   def isDefinedAt(key: K): Boolean = contains(key)
-
-}
-
-/** Operations that return a Map collection with different types of keys or values (e.g. `map`) */
-trait MapMappings[K, +V, +CC[X, Y] <: Map[X, Y]] {
-
-  protected def coll: Map[K, V]
-
-  /** Similar to fromIterable, but returns a Map collection type */
-  protected def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
 
   def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(coll, f))
 

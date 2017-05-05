@@ -13,7 +13,7 @@ import scala.Predef.{assert, intWrapper}
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
   extends Seq[A]
-     with SeqLike[A, ListBuffer]
+     with SeqOps[A, ListBuffer, ListBuffer[A]]
      with Buildable[A, ListBuffer[A]]
      with Builder[A, ListBuffer[A]] {
 

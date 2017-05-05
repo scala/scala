@@ -7,32 +7,22 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for sequence collections */
-trait Seq[+A] extends Iterable[A] with SeqLike[A, Seq]
+trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]]
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.
   *  Known subclasses: List, LazyList
   */
-trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq]
+trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
-trait IndexedSeq[+A] extends Seq[A] with IndexedSeqLike[A, IndexedSeq]
-
-trait SeqLike[+A, +CC[X] <: Seq[X]]
-  extends Any with IterableLike[A, CC] with SeqOps[A, CC[A]]
-
-trait LinearSeqLike[+A, +CC[X] <: LinearSeq[X]]
-  extends Any with IterableLike[A, CC] with LinearSeqOps[A, CC[A]]
-
-trait IndexedSeqLike[+A, +CC[X] <: IndexedSeq[X]]
-  extends Any with IterableLike[A, CC] with IndexedSeqOps[A, CC[A]]
+trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
 /** Base trait for Seq operations */
-trait SeqOps[+A, +C]
-  extends Any
-     with IterableOps[A, C]
-     with ArrayLike[A]
-     with Equals {
+trait SeqOps[+A, +CC[X] <: Seq[X], +C] extends Any
+  with IterableOps[A, CC, C]
+  with ArrayLike[A]
+  with Equals {
 
   protected def coll: Seq[A]
 
@@ -79,7 +69,7 @@ trait SeqOps[+A, +C]
 }
 
 /** Base trait for indexed Seq operations */
-trait IndexedSeqOps[+A, +C] extends Any with SeqOps[A, C] {
+trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] {
   override def view: IndexedView[A] = new IndexedView[A] {
     def length: Int = coll.length
     def apply(i: Int): A = coll(i)
@@ -88,7 +78,7 @@ trait IndexedSeqOps[+A, +C] extends Any with SeqOps[A, C] {
 }
 
 /** Base trait for linear Seq operations */
-trait LinearSeqOps[+A, +C <: LinearSeq[A]] extends Any with SeqOps[A, C] {
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
 
   /** To be overridden in implementations: */
   def isEmpty: Boolean

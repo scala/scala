@@ -1,5 +1,6 @@
 package strawman
-package collection.mutable
+package collection
+package mutable
 
 import scala.Unit
 

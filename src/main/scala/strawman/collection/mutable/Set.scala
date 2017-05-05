@@ -6,9 +6,11 @@ import scala.{`inline`, Int, Boolean, Unit, Option, Some, None}
 import scala.Predef.???
 
 /** Base trait for mutable sets */
-trait Set[A]
-  extends collection.Set[A]
-     with Growable[A] {
+trait Set[A] extends Iterable[A]
+                with collection.Set[A]
+                with SetOps[A, Set, Set[A]]
+
+trait SetOps[A, +CC[X], +C <: Set[A]] extends collection.SetOps[A, CC, C] with Growable[A] {
 
   def add(elem: A): this.type
   /** Removes a single element from this $coll.

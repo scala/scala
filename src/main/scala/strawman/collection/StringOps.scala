@@ -4,16 +4,15 @@ import strawman.collection.immutable.List
 
 import scala.{Array, Char, Int, AnyVal}
 import scala.Predef.String
-import strawman.collection.mutable.{/*ArrayBuffer,*/ StringBuilder}
+import strawman.collection.mutable.StringBuilder
 
 import scala.reflect.ClassTag
 
 class StringOps(val s: String)
   extends AnyVal
-    with IterableOps[Char, String]
-    with IterableMappings[Char, List]
-    with Buildable[Char, String]
-    with ArrayLike[Char] {
+     with SeqOps[Char, Seq, String]
+     with Buildable[Char, String]
+     with ArrayLike[Char] {
 
   protected def coll = new StringView(s)
   def iterator() = coll.iterator()

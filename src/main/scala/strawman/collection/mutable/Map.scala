@@ -1,14 +1,17 @@
-package strawman.collection.mutable
+package strawman
+package collection
+package mutable
 
 import scala.{`inline`, Option}
 
 /** Base type of mutable Maps */
-trait Map[K, V] extends strawman.collection.Map[K, V] with MapLike[K, V, Map]
+trait Map[K, V] extends Iterable[(K, V)]
+                   with collection.Map[K, V]
+                   with MapOps[K, V, Map, Map[K, V]]
 
 /** Base trait of mutable Maps implementations */
-trait MapLike[K, V, +CC[X, Y] <: Map[X, Y]]
-  extends strawman.collection.MapLike[K, V, CC]
-     with Growable[(K, V)] {
+trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
+  extends collection.MapOps[K, V, CC, C] with Growable[(K, V)] {
 
   /** Removes a single element from this $coll.
     *

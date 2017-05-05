@@ -7,11 +7,11 @@ import scala.Ordering
 trait SortedMap[K, +V]
   extends Map[K, V]
      with collection.SortedMap[K, V]
-     with SortedMapLike[K, V, SortedMap]
+     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
 
-trait SortedMapLike[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapLike[X, Y, CC]]
-  extends MapLike[K, V, Map]
-     with collection.SortedMapLike[K, V, CC] {
+trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
+  extends MapOps[K, V, Map, CC[K, V]]
+     with collection.SortedMapOps[K, V, CC, C] {
 
   override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]

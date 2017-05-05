@@ -1,5 +1,6 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import strawman.collection.mutable.Builder
 import strawman.collection.IterableFactory
@@ -7,16 +8,13 @@ import strawman.collection.IterableFactory
 import scala.{Any, `inline`}
 
 /** Base trait for immutable set collections */
-trait Set[A] extends Iterable[A] with collection.Set[A] with SetLike[A, Set]
+trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for immutable set operations */
-trait SetLike[A, +CC[X] <: Set[X] with SetLike[X, CC]]
-  extends collection.IterableMappings[A, CC] with SetOps[A, CC[A]]
+trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, _, C]]
+  extends collection.IterableOps[A, CC, C] {
 
-/** Transformation operations returning a Set containing the same kind of
-  * elements
-  */
-trait SetOps[A, +C <: Set[A] with SetOps[A, C]] extends collection.SetOps[A, C] {
+  protected def coll: C
 
   /** Creates a new set with an additional element, unless the element is
     *  already present.
@@ -41,7 +39,7 @@ trait SetOps[A, +C <: Set[A] with SetOps[A, C]] extends collection.SetOps[A, C] 
   /** Alias for `remove` */
   @`inline` final def - (elem: A): C = excl(elem)
 
-  override def union(that: collection.Set[A]): C = {
+  def union(that: collection.Set[A]): C = {
     var result: C = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
@@ -51,6 +49,5 @@ trait SetOps[A, +C <: Set[A] with SetOps[A, C]] extends collection.SetOps[A, C] 
 
 object Set extends IterableFactory[Set] {
   def empty[A <: Any]: Set[A] = ListSet.empty
-  def newBuilder[A <: Any]: Builder[A, Set[A]] = ListSet.newBuilder
   def fromIterable[E](it: strawman.collection.Iterable[E]): Set[E] = ListSet.fromIterable(it)
 }

@@ -1,9 +1,8 @@
 package strawman
+package collection
+package immutable
 
-package collection.immutable
-
-import strawman.collection.{Hashing, IterableFactory, Iterator}
-import strawman.collection.mutable.{Builder, ImmutableSetBuilder}
+import mutable.Builder
 
 import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, sys}
 import scala.Predef.assert
@@ -25,7 +24,7 @@ import java.lang.Integer
 @SerialVersionUID(2L)
 sealed trait HashSet[A]
   extends Set[A]
-     with SetLike[A, HashSet]
+     with SetOps[A, HashSet, HashSet[A]]
      with Hashing[A]
      with Serializable {
 
@@ -57,10 +56,8 @@ object HashSet extends IterableFactory[HashSet] {
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] =
     it match {
       case hs: HashSet[A] => hs
-      case _ => newBuilder[A].++=(it).result
+      case _ => empty ++ it
     }
-
-  def newBuilder[A]: Builder[A, HashSet[A]] = new ImmutableSetBuilder[A, HashSet](empty[A])
 
   def empty[A <: Any]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 

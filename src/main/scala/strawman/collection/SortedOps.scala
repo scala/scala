@@ -3,8 +3,6 @@ package strawman.collection
 import scala.{Ordering, Option, Some}
 
 /** Base trait for sorted collections */
-trait Sorted[A] extends SortedOps[A, Sorted[A]]
-
 trait SortedOps[A, +C] {
 
   def ordering: Ordering[A]

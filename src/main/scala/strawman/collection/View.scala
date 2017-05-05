@@ -4,7 +4,7 @@ import scala.{Int, Boolean, Nothing, Equals, annotation}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: View */
-trait View[+A] extends Iterable[A] with IterableLike[A, View] {
+trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def view = this
 
   /** Avoid copying if source collection is already a view. */

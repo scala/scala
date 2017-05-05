@@ -1,7 +1,6 @@
 package strawman
-package collection.mutable
-
-import strawman.collection.SpecificIterableFactory
+package collection
+package mutable
 
 import scala.{Array, Int, Long}
 import scala.Predef.???
@@ -9,7 +8,7 @@ import scala.Predef.???
 trait BitSet
   extends SortedSet[Int]
      with collection.BitSet
-     with collection.BitSetLike[BitSet] {
+     with collection.BitSetOps[BitSet] {
 
   private[collection] def elems: Array[Long]
 
