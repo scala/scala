@@ -24,8 +24,6 @@ trait SeqOps[+A, +CC[X] <: Seq[X], +C] extends Any
   with ArrayLike[A]
   with Equals {
 
-  protected def coll: Seq[A]
-
   def reverse: C = {
     var xs: List[A] = Nil
     val it = coll.iterator()
@@ -56,7 +54,7 @@ trait SeqOps[+A, +CC[X] <: Seq[X], +C] extends Any
   override def hashCode(): Int = stableIterableHash(coll)
 
   // Temporary: TODO move to MurmurHash3.scala
-  private def stableIterableHash(xs: Seq[_]): Int = {
+  private def stableIterableHash(xs: Iterable[_]): Int = {
     var n = 0
     var h = "Seq".##
     val it = xs.iterator()
@@ -79,6 +77,8 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
 
 /** Base trait for linear Seq operations */
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
+
+  protected def coll: Seq[A]
 
   /** To be overridden in implementations: */
   def isEmpty: Boolean

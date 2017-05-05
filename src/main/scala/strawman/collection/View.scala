@@ -133,7 +133,7 @@ trait ArrayLike[+A] extends Any {
 }
 
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with Seq[A] { self =>
+trait IndexedView[+A] extends View[A] with ArrayLike[A] { self =>
 
   def iterator(): Iterator[A] = new Iterator[A] {
     private var current = 0
@@ -148,7 +148,7 @@ trait IndexedView[+A] extends View[A] with Seq[A] { self =>
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def drop(n: Int): IndexedView[A] = new IndexedView.Drop(this, n)
   override def map[B](f: A => B): IndexedView[B] = new IndexedView.Map(this, f)
-  override def reverse: IndexedView[A] = new IndexedView.Reverse(this)
+  def reverse: IndexedView[A] = new IndexedView.Reverse(this)
 }
 
 object IndexedView {
@@ -158,7 +158,6 @@ object IndexedView {
     override def iterator() = super.iterator() // needed to avoid "conflicting overrides" error
     def length = underlying.length min normN
     def apply(i: Int) = underlying.apply(i)
-    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   class Drop[A](underlying: IndexedView[A], n: Int)
@@ -166,7 +165,6 @@ object IndexedView {
     override def iterator() = super.iterator()
     def length = (underlying.length - normN) max 0
     def apply(i: Int) = underlying.apply(i + normN)
-    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   class Map[A, B](underlying: IndexedView[A], f: A => B)
@@ -174,7 +172,6 @@ object IndexedView {
     override def iterator() = super.iterator()
     def length = underlying.length
     def apply(n: Int) = f(underlying.apply(n))
-    override def canEqual(other: Any) = super[IndexedView].canEqual(other)
   }
 
   case class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
