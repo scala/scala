@@ -555,8 +555,9 @@ comment.
 
 ## Trailing Commas in Multi-line Expressions
 
-If a comma is followed by a newline end and then a right parenthesis, square
-bracket or curly brace then such a trailing comma is ignored. For example:
+If a comma (`,`) is followed immediately, ignoring whitespace, by a newline and
+a closing parenthesis (`)`), bracket (`]`), or brace (`}`), then the comma is
+treated as a "trailing comma" and is ignored. For example:
 
 ```scala
 foo(
