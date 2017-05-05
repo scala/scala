@@ -531,21 +531,29 @@ trait Types
      *  !!! - and yet it is still inadequate, because aliases and singletons
      *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = (
-      if (this ne widen) widen.dealiasWiden
-      else if (this ne dealias) dealias.dealiasWiden
-      else this
-    )
+    def dealiasWiden: Type = {
+      val widened = widen
+      if (this ne widened) widened.dealiasWiden
+      else {
+        val dealiased = dealias
+        if (this ne dealiased) dealiased.dealiasWiden
+        else this
+      }
+    }
 
     /** All the types encountered in the course of dealiasing/widening,
      *  including each intermediate beta reduction step (whereas calling
      *  dealias applies as many as possible.)
      */
-    def dealiasWidenChain: List[Type] = this :: (
-      if (this ne widen) widen.dealiasWidenChain
-      else if (this ne betaReduce) betaReduce.dealiasWidenChain
-      else Nil
-    )
+    def dealiasWidenChain: List[Type] = this :: {
+      val widened = widen
+      if (this ne widened) widened.dealiasWidenChain
+      else {
+        val betaReduced = betaReduce
+        if (this ne betaReduced) betaReduced.dealiasWidenChain
+        else Nil
+      }
+    }
 
     /** Performs a single step of beta-reduction on types.
      *  Given:
