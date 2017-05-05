@@ -2,7 +2,7 @@ package strawman
 package collection
 package immutable
 
-import scala.{None, Nothing, Option, Some, StringContext, Any}
+import scala.{None, Nothing, Option, Some, StringContext, Any, Int}
 import scala.Predef.???
 import scala.annotation.tailrec
 import mutable.Builder

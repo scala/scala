@@ -1,7 +1,7 @@
 package strawman.collection
 
 import strawman.collection.mutable.Builder
-import scala.Ordering
+import scala.{Ordering, `inline`}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */

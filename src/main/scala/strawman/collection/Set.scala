@@ -71,13 +71,12 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
 }
 
 object Set extends IterableFactory[Set] {
-  def newBuilder[A]: mutable.Builder[A, Set[A]] = ??? // immutable.Set.newBuilder
-  def empty[A <: Any]: Set[A] = ??? // immutable.Set.empty
+  def empty[A <: Any]: Set[A] = immutable.Set.empty
 
   def fromIterable[E](it: Iterable[E]): Set[E] =
     it match {
       case s: Set[E] => s
-      case _         => newBuilder[E].++=(it).result
+      case _         => empty ++ it
     }
 
   // Temporary, TODO move to MurmurHash3

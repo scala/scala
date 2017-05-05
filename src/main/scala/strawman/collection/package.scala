@@ -1,6 +1,6 @@
 package strawman
 
-import scala.{AnyVal, Array, Char, Int, Unit}
+import scala.{Any, AnyVal, Array, Char, Int, Unit}
 import scala.Predef.String
 import scala.reflect.ClassTag
 

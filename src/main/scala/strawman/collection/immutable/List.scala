@@ -4,7 +4,7 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Nothing}
+import scala.{Any, Nothing, Int}
 import scala.Predef.???
 import mutable.{Builder, ListBuffer}
 
