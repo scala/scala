@@ -231,7 +231,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   * @tparam  A    the element type of the collection
   * @tparam Repr  the type of the underlying collection
   */
-trait Buildable[+A, +C] extends Any with IterableOps[A, _, C]  {
+trait Buildable[+A, +C] extends Any with IterableOps[A, AnyConstr, C]  {
 
   /** Creates a new builder. */
   protected[this] def newBuilder: Builder[A, C]

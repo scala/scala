@@ -114,6 +114,13 @@ package object collection extends LowPriority {
     def toClassic: scala.collection.Seq[A] =
       new scala.collection.mutable.ArrayBuffer ++= s.iterator().toClassic
   }
+
+  /** Needed to circumvent a difficulty between dotty and scalac concerning
+   *  the right top type for a type parameter of kind * -> *.
+   *  In Scalac, we can provide `Any`, as `Any` is kind-polymorphic. In dotty this is not allowed.
+   *  In dotty, we can provide `[X] => Any`. But Scalac does not know lambda syntax.
+   */
+  type AnyConstr[X] = Any
 }
 
 class LowPriority {

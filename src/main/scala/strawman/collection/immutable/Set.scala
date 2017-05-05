@@ -11,7 +11,7 @@ import scala.{Any, `inline`}
 trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for immutable set operations */
-trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, _, C]]
+trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   extends collection.IterableOps[A, CC, C] {
 
   protected def coll: C
