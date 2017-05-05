@@ -1424,9 +1424,9 @@ trait Implicits {
             val outSym = out.typeSymbol
 
             val fail =
-              if (out.annotations.isEmpty && (outSym == ObjectClass || (isScala211 && outSym == AnyValClass)))
+              if (out.annotations.isEmpty && (outSym == ObjectClass || (settings.isScala211 && outSym == AnyValClass)))
                 maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than $out")
-              else if (isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
+              else if (settings.isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
                 maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
               else false
 
@@ -1441,9 +1441,6 @@ trait Implicits {
 
       result
     }
-
-    // this setting is expensive to check, actually....
-    private[this] val isScala211 = settings.isScala211
 
     def allImplicits: List[SearchResult] = {
       def search(iss: Infoss, isLocalToCallsite: Boolean) = applicableInfos(iss, isLocalToCallsite).values
