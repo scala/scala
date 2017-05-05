@@ -23,7 +23,7 @@ class StringOps(val s: String)
     sb.result
   }
 
-  protected[this] def fromIterable[B](coll: Iterable[B]): List[B] = List.fromIterable(coll)
+  protected[this] def fromIterable[E](coll: Iterable[E]): List[E] = List.fromIterable(coll)
 
   protected[this] def newBuilder = new StringBuilder
 
