@@ -215,8 +215,13 @@ object Ordering extends LowPriorityOrderingImplicits {
     * This function is an analogue to Ordering.on where the Ordering[S]
     * parameter is passed implicitly.
     */
-  def by[T, S](f: T => S)(implicit ord: Ordering[S]): Ordering[T] =
-    fromLessThan((x, y) => ord.lt(f(x), f(y)))
+  def by[T, S](f: T => S)(implicit ord: Ordering[S]): Ordering[T] = new Ordering[T] {
+    override def compare(x: T, y: T): Int = {
+      val fx = f(x)
+      val fy = f(y)
+      if (ord.lt(fx, fy)) -1 else if (ord.lt(fy, fx)) 1 else 0
+    }
+  }
 
   trait UnitOrdering extends Ordering[Unit] {
     def compare(x: Unit, y: Unit) = 0
