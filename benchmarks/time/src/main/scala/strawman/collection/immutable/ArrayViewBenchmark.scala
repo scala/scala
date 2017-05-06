@@ -27,18 +27,18 @@ class ArrayViewBenchmark {
   var v: View[Long] = _
   var vLo: View[Long] = _
 
+  def fillArray(range: Int) = {
+    val array = new Array[Long](range)
+    var i = 0
+    while (i < range) {
+      array(i) = scala.util.Random.nextInt(size).toLong
+      i += 1
+    }
+    array
+  }
+
   @Setup(Level.Trial)
   def initData(): Unit = {
-
-    def fillArray(range: Int) = {
-      val array = new Array[Long](range)
-      var i = 0
-      while (i < range) {
-        array(i) = scala.util.Random.nextInt(size).toLong
-        i += 1
-      }
-      array
-    }
 
     v = ArrayView(fillArray(size))
     vLo = ArrayView(fillArray(vLoSize))
@@ -85,14 +85,14 @@ class ArrayViewBenchmark {
   @Benchmark
   def filters (bh: Blackhole) = {
     val ret : Long = v
-      .filter(x => (x & 0xD) != 0xCAFED00D)
-      .filter(x => (x & 0xE) == 0xD15EA5E)
-      .filter(x => (x & 0xA) != 0xDABBAD00)
-      .filter(x => (x & 0xD) == 0xDEADBAAD)
-      .filter(x => (x & 0xB) != 0xDEADDEAD)
-      .filter(x => (x & 0xE) == 0xDEADFA11)
-      .filter(x => (x & 0xE) != 0xFFBADD11)
-      .filter(x => (x & 0xF) == 0x4B1D)
+      .filter(x => (x & 0x15) != 0x11)
+      .filter(x => (x & 0x10) == 0x10)
+      .filter(x => (x & 0x30) != 0x10)
+      .filter(x => (x & 0x10) == 0x10)
+      .filter(x => (x & 0x15) != 0x10)
+      .filter(x => (x & 0x10) == 0x10)
+      .filter(x => (x & 0x30) != 0x10)
+      .filter(x => (x & 0x15) == 0x10)
       .foldLeft(0L)(_+_)
     bh.consume(ret)
   }
