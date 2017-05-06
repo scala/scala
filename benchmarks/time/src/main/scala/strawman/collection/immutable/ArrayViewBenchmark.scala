@@ -10,13 +10,13 @@ import scala.Predef.intWrapper
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Fork(1)
-@Warmup(iterations = 12)
-@Measurement(iterations = 12)
+@Fork(15)
+@Warmup(iterations = 30)
+@Measurement(iterations = 15)
 @State(Scope.Benchmark)
 class ArrayViewBenchmark {
 
-  @Param(scala.Array("282", "73121", "7312102"))
+  @Param(scala.Array("39", "282", "73121", "7312102"))
   var size: Int = _
 
   @Param(scala.Array("39"))
@@ -34,7 +34,7 @@ class ArrayViewBenchmark {
       val array = new Array[Long](range)
       var i = 0
       while (i < range) {
-        array(i) = i.toLong
+        array(i) = scala.util.Random.nextInt(size).toLong
         i += 1
       }
       array
@@ -46,8 +46,7 @@ class ArrayViewBenchmark {
 
   @Benchmark
   def sum (bh: Blackhole) = {
-    val ret : Long = v
-      .foldLeft(0L)(_+_)
+    val ret : Long = v.foldLeft(0L)(_+_)
     bh.consume(ret)
   }
 
@@ -69,44 +68,31 @@ class ArrayViewBenchmark {
   }
 
   @Benchmark
-  def mapsMegamorphic (bh: Blackhole) = {
-    val ret : Long = v
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .map(x => x + 1)
-      .foldLeft(0L)(_+_)
-    bh.consume(ret)
-  }
-
-  @Benchmark
-  def filtersMegamorphic (bh: Blackhole) = {
-    val ret : Long = v
-      .filter(x => x > 1)
-      .filter(x => x > 2)
-      .filter(x => x > 3)
-      .filter(x => x > 4)
-      .filter(x => x > 5)
-      .filter(x => x > 6)
-      .filter(x => x > 7)
-      .foldLeft(0L)(_+_)
-    bh.consume(ret)
-  }
-
-  @Benchmark
   def maps (bh: Blackhole) = {
-    val function = (x : Long) => { x + 1 }
     val ret : Long = v
-      .map(function)
-      .map(function)
-      .map(function)
-      .map(function)
-      .map(function)
-      .map(function)
-      .map(function)
+      .map(x => x + (x & 0xD) + 0xCAFED00D)
+      .map(x => x + (x & 0xE) + 0xD15EA5E)
+      .map(x => x + (x & 0xA) + 0xDABBAD00)
+      .map(x => x + (x & 0xD) + 0xDEADBAAD)
+      .map(x => x + (x & 0xB) + 0xDEADDEAD)
+      .map(x => x + (x & 0xE) + 0xDEADFA11)
+      .map(x => x + (x & 0xE) + 0xFFBADD11)
+      .map(x => x + (x & 0xF) + 0x4B1D)
+      .foldLeft(0L)(_+_)
+    bh.consume(ret)
+  }
+
+  @Benchmark
+  def filters (bh: Blackhole) = {
+    val ret : Long = v
+      .filter(x => (x & 0xD) != 0xCAFED00D)
+      .filter(x => (x & 0xE) == 0xD15EA5E)
+      .filter(x => (x & 0xA) != 0xDABBAD00)
+      .filter(x => (x & 0xD) == 0xDEADBAAD)
+      .filter(x => (x & 0xB) != 0xDEADDEAD)
+      .filter(x => (x & 0xE) == 0xDEADFA11)
+      .filter(x => (x & 0xE) != 0xFFBADD11)
+      .filter(x => (x & 0xF) == 0x4B1D)
       .foldLeft(0L)(_+_)
     bh.consume(ret)
   }
@@ -114,7 +100,7 @@ class ArrayViewBenchmark {
   @Benchmark
   def cart (bh: Blackhole) = {
     val ret : Long = v
-      .flatMap(d => vLo.view.map (dp => dp * d))
+      .flatMap(d => vLo.map (dp => dp * d))
       .foldLeft(0L)(_+_)
     bh.consume(ret)
   }

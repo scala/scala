@@ -10,13 +10,13 @@ import scala.Predef.intWrapper
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Fork(1)
-@Warmup(iterations = 12)
-@Measurement(iterations = 12)
+@Fork(15)
+@Warmup(iterations = 30)
+@Measurement(iterations = 15)
 @State(Scope.Benchmark)
 class ArrayBaselineBenchmark {
 
-  @Param(scala.Array("282", "73121", "7312102"))
+  @Param(scala.Array("39", "282", "73121", "7312102"))
   var size: Int = _
 
   @Param(scala.Array("39"))
@@ -34,7 +34,7 @@ class ArrayBaselineBenchmark {
       val array = new Array[Long](range)
       var i = 0
       while (i < range) {
-        array(i) = i.toLong
+        array(i) = scala.util.Random.nextInt(size).toLong
         i += 1
       }
       array
@@ -83,7 +83,14 @@ class ArrayBaselineBenchmark {
     var i=0
     var ret=0L
     while (i < v.length) {
-      if (v(i) > 1 && v(i) > 2 && v(i) > 3 && v(i) > 4 && v(i) > 5 && v(i) > 6 && v(i) > 7)
+      if ((v(i) & 0xD) != 0xCAFED00D &&
+          (v(i) & 0xE) == 0xD15EA5E &&
+          (v(i) & 0xA) != 0xDABBAD00 &&
+          (v(i) & 0xD) == 0xDEADBAAD &&
+          (v(i) & 0xB) != 0xDEADDEAD &&
+          (v(i) & 0xE) == 0xDEADFA11 &&
+          (v(i) & 0xE) != 0xFFBADD11 &&
+          (v(i) & 0xF) == 0x4B1D)
         ret += v(i)
       i += 1
     }
@@ -95,7 +102,15 @@ class ArrayBaselineBenchmark {
     var i=0
     var ret=0L
     while (i < v.length) {
-      ret += v(i) * 1*2*3*4*5*6*7
+      ret += v(i) +
+        (v(i) & 0xD) + 0xCAFED00D +
+        (v(i) & 0xE) + 0xD15EA5E +
+        (v(i) & 0xA) + 0xDABBAD00 +
+        (v(i) & 0xD) + 0xDEADBAAD +
+        (v(i) & 0xB) + 0xDEADDEAD +
+        (v(i) & 0xE) + 0xDEADFA11 +
+        (v(i) & 0xE) + 0xFFBADD11 +
+        (v(i) & 0xF) + 0x4B1D
       i += 1
     }
     bh.consume(ret)
@@ -132,7 +147,7 @@ class ArrayBaselineBenchmark {
         ret = ret + item1 * item2
         counter2 += 1
         n += 1
-        if (n == 20000000)
+        if (n == shortRangingFactor)
           flag = false
       }
       counter2 = 0
