@@ -3747,6 +3747,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Typed(t, _) =>
           tree2ConstArg(t, pt)
 
+        case tree if pt.typeSymbol.isSubClass(ArrayClass) && unit.isJava =>
+          /* If we get here, we have a Java array annotation argument which was passed
+           * as a single value, and needs to be wrapped. */
+          trees2ConstArg(tree :: Nil, pt.typeArgs.head)
+
         case tree =>
           tryConst(tree, pt)
       }
