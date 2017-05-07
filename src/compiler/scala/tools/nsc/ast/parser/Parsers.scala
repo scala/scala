@@ -95,6 +95,23 @@ trait ParsersCommon extends ScannersCommon { self =>
      */
     @inline final def makeParens(body: => List[Tree]): Parens =
       Parens(inParens(if (in.token == RPAREN) Nil else body))
+
+    /** {{{ part { `sep` part } }}}, or if sepFirst is true, {{{ { `sep` part } }}}. */
+    final def tokenSeparated[T](separator: Token, sepFirst: Boolean, part: => T): List[T] = {
+      val ts = new ListBuffer[T]
+      if (!sepFirst)
+        ts += part
+
+      while (in.token == separator) {
+        in.nextToken()
+        ts += part
+      }
+      ts.toList
+    }
+
+    /** {{{ tokenSeparated }}}, with the separator fixed to commas. */
+    @inline final def commaSeparated[T](part: => T): List[T] =
+      tokenSeparated(COMMA, sepFirst = false, part)
   }
 }
 
@@ -791,20 +808,6 @@ self =>
         errorTypeTree
       }
     }
-
-    /** {{{ part { `sep` part } }}},or if sepFirst is true, {{{ { `sep` part } }}}. */
-    final def tokenSeparated[T](separator: Token, sepFirst: Boolean, part: => T): List[T] = {
-      val ts = new ListBuffer[T]
-      if (!sepFirst)
-        ts += part
-
-      while (in.token == separator) {
-        in.nextToken()
-        ts += part
-      }
-      ts.toList
-    }
-    @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, sepFirst = false, part)
     @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, sepFirst = true, part)
     def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 

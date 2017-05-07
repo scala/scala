@@ -3807,6 +3807,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     def typedAnnotation(ann: Tree, mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
+      var unmappable: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
@@ -3840,7 +3841,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         if (const == null) {
-          reportAnnotationError(AnnotationNotAConstantError(ttree)); None
+          if (unit.isJava) unmappable = true
+          else reportAnnotationError(AnnotationNotAConstantError(ttree))
+          None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
         } else
@@ -3886,6 +3889,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case Typed(t, _) =>
           tree2ConstArg(t, pt)
+
+        case tree if unit.isJava && pt.typeSymbol == ArrayClass =>
+          /* If we get here, we have a Java array annotation argument which was passed
+           * as a single value, and needs to be wrapped. */
+          trees2ConstArg(tree :: Nil, pt.typeArgs.head)
 
         case tree =>
           tryConst(tree, pt)
@@ -3964,6 +3972,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             if (hasError) ErroneousAnnotation
+            else if (unmappable) UnmappableAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
         }

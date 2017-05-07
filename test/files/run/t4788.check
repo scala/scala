@@ -1,5 +1,9 @@
 Some(@Ljava/lang/Deprecated;())
 None
-Some(@LSAnnotation;())
-Some(@LCAnnotation;())
+None
+Some(@LCAnnotation;() // invisible)
 Some(@LRAnnotation;())
+Some(@LArgs$Ann;(value="a") // invisible)
+Some(@LArgs$Ann;(value="ab") // invisible)
+Some(@LArgs$Ann;(value="konst") // invisible)
+Some(@LArgs$Ann;(value="nokst") // invisible)
