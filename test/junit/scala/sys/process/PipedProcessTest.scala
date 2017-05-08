@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 
 // Each test normally ends in a moment, but for failure cases, waits two seconds.
-// SI-7350, SI-8768
+// scala/bug#7350, scala/bug#8768
 
 // one second wasn't always enough --
 // https://github.com/scala/scala-dev/issues/313

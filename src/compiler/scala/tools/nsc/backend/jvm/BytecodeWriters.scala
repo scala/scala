@@ -13,7 +13,9 @@ import java.util
 
 import scala.tools.nsc.io._
 import java.util.jar.Attributes.Name
+
 import scala.language.postfixOps
+import scala.reflect.io.PlainNioFile
 
 object OutputDirectories {
   def apply(file: AbstractFile): OutputDirectories = {
@@ -104,7 +106,6 @@ trait BytecodeWriters {
       val dirPath = pathAndName.substring(0, split)
       val filename = pathAndName.substring(split + 1) + suffix
       outDirs.directory(dirPath).file(filename)
-    }
   }
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {

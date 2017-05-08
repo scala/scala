@@ -103,13 +103,16 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // If the `sym` is a java module class, we use the java class instead. This ensures that the
     // ClassBType is created from the main class (instead of the module class).
     // The two symbols have the same name, so the resulting internalName is the same.
-    // Phase travel (exitingPickler) required for SI-6613 - linkedCoC is only reliable in early phases (nesting)
+    // Phase travel (exitingPickler) required for scala/bug#6613 - linkedCoC is only reliable in early phases (nesting)
     val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
 
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
-    assertClassNotArrayNotPrimitive(classSym)
-    assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
+    if (global.settings.debug) {
+      // OPT these assertions have too much performance overhead to run unconditionally
+      assertClassNotArrayNotPrimitive(classSym)
+      assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
+    }
 
     if (classSym == NothingClass) srNothingRef
     else if (classSym == NullClass) srNullRef
@@ -200,10 +203,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case tp =>
         warning(tp.typeSymbol.pos,
           s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
-            "If possible, please file a bug on issues.scala-lang.org.")
+            "If possible, please file a bug on https://github.com/scala/bug/issues.")
 
         tp match {
-          case ThisType(ArrayClass)    => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
+          case ThisType(ArrayClass)    => ObjectRef // was introduced in 9b17332f11 to fix scala/bug#999, but this code is not reached in its test, or any other test
           case ThisType(sym)           => classBTypeFromSymbol(sym)
           case SingleType(_, sym)      => primitiveOrClassToBType(sym)
           case ConstantType(_)         => typeToBType(t.underlying)
@@ -231,12 +234,12 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case _          => None
     }
 
-    // SI-9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
+    // scala/bug#9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
     def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
 
     val classParents = {
       val parents = classSym.info.parents
-      // SI-9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
+      // scala/bug#9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
       // parents of a java annotations. undo this for the backend (where we need classfile-level information).
       if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == ClassfileAnnotationClass || c.typeSymbol == AnnotationClass)
       else parents
@@ -306,7 +309,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         if (hasAbstractMethod) ACC_ABSTRACT else 0
       }
       GenBCode.mkFlags(
-        // SI-9393: the classfile / java source parser make java annotation symbols look like classes.
+        // scala/bug#9393: the classfile / java source parser make java annotation symbols look like classes.
         // here we recover the actual classfile flags.
         if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
         if (classSym.isPublic)                                     ACC_PUBLIC    else 0,
@@ -320,12 +323,12 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       )
     }
 
-    // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
+    // Check for hasAnnotationFlag for scala/bug#9393: the classfile / java source parsers add
     // scala.annotation.Annotation as superclass to java annotations. In reality, java
     // annotation classfiles have superclass Object (like any interface classfile).
     val superClassSym = if (classSym.hasJavaAnnotationFlag) ObjectClass else {
       val sc = classSym.superClass
-      // SI-9393: Java annotation classes don't have the ABSTRACT/INTERFACE flag, so they appear
+      // scala/bug#9393: Java annotation classes don't have the ABSTRACT/INTERFACE flag, so they appear
       // (wrongly) as superclasses. Fix this for BTypes: the java annotation will appear as interface
       // (handled by method implementedInterfaces), the superclass is set to Object.
       if (sc.hasJavaAnnotationFlag) ObjectClass
@@ -455,11 +458,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
     else if (innerClassSym.rawowner.isTerm) {
       // This case should never be reached: the lambdalift phase mutates the rawowner field of all
-      // classes to be the enclosing class. SI-9392 shows an errant macro that leaves a reference
+      // classes to be the enclosing class. scala/bug#9392 shows an errant macro that leaves a reference
       // to a local class symbol that no longer exists, which is not updated by lambdalift.
       devWarning(innerClassSym.pos,
         s"""The class symbol $innerClassSym with the term symbol ${innerClassSym.rawowner} as `rawowner` reached the backend.
-           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see SI-9392.""".stripMargin)
+           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see scala/bug#9392.""".stripMargin)
       None
     } else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
@@ -574,8 +577,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val methodInlineInfos = methods.flatMap({
       case methodSym =>
         if (completeSilentlyAndCheckErroneous(methodSym)) {
-          // Happens due to SI-9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
-          if (!classSym.isJavaDefined) devWarning("SI-9111 should only be possible for Java classes")
+          // Happens due to scala/bug#9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
+          if (!classSym.isJavaDefined) devWarning("scala/bug#9111 should only be possible for Java classes")
           warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
           Nil
         } else {
@@ -711,7 +714,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // ACC_FINAL in bytecode.
     //
     // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag). Nested
-    // objects don't get the flag to allow overriding (under -Yoverride-objects, SI-5676).
+    // objects don't get the flag to allow overriding (under -Yoverride-objects, scala/bug#5676).
     //
     // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
     // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3

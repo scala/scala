@@ -31,7 +31,7 @@ object Test extends App {
   // test binders in collapsed cases (no need to run, it's "enough" to know it doesn't crash the compiler)
   def guard(x: Any): Boolean = true
   def testBinders =
-    try { println("") } // work around SI-6015
+    try { println("") } // work around scala/bug#6015
     catch {
       case _ if guard(null) =>
       case x if guard(x) => throw x

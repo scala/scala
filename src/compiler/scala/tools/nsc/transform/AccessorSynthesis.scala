@@ -217,7 +217,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
     protected def needsInitFlag(sym: Symbol): Boolean =
     sym.isGetter &&
       !( sym.isInitializedToDefault
-        || isConstantType(sym.info.finalResultType) // SI-4742
+        || isConstantType(sym.info.finalResultType) // scala/bug#4742
         || sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
         || sym.accessed.hasFlag(PRESUPER)
         || sym.isOuterAccessor

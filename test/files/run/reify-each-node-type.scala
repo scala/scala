@@ -84,7 +84,7 @@ object s {
 
     // act(reify { List[OuterP[Int]#InnerP[Byte]]() })
     //
-    // SI-7243
+    // scala/bug#7243
     //
     // test/files/run/reify-each-node-type.scala:85: error: Cannot materialize r.List.apply[r.OuterP[Int]#InnerP[Byte]]() as { ... } because:
     // scala.reflect.macros.TypecheckException: value TypeTreeWithDeferredRefCheck is not a member of type parameter U

@@ -88,7 +88,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-baseVersion in Global := "2.12.2"
+baseVersion in Global := "2.12.3"
 baseVersionSuffix in Global := "SNAPSHOT"
 mimaReferenceVersion in Global := Some("2.12.0")
 
@@ -166,8 +166,8 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
         <url>https://github.com/scala/scala.git</url>
       </scm>
         <issueManagement>
-          <system>JIRA</system>
-          <url>https://issues.scala-lang.org/</url>
+          <system>GitHub</system>
+          <url>https://github.com/scala/bug/issues</url>
         </issueManagement>
         <developers>
           <developer>

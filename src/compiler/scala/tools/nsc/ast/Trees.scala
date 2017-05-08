@@ -189,8 +189,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   // upd. Unfortunately this didn't work out quite as we expected. The last two users of resetAllAttrs:
   // reification and typedLabelDef broke in very weird ways when we replaced resetAllAttrs with resetLocalAttrs
-  // (see SI-8316 change from resetAllAttrs to resetLocalAttrs in reifiers broke Slick and
-  // SI-8318 NPE in mixin in scala-continuations for more information).
+  // (see scala/bug#8316 change from resetAllAttrs to resetLocalAttrs in reifiers broke Slick and
+  // scala/bug#8318 NPE in mixin in scala-continuations for more information).
   // Given that we're supposed to release 2.11.0-RC1 in less than a week, I'm temporarily reinstating resetAllAttrs
   // until we have time to better understand what's going on. In order to dissuade people from using it,
   // it now comes with a new, ridiculous name.
@@ -293,8 +293,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 // However there are exceptions when we cannot erase symbols due to idiosyncrasies of the typer.
                 // vetoXXX local variables declared below describe the conditions under which we cannot erase symbols.
                 //
-                // The first reason to not erase symbols is the threat of non-idempotency (SI-5464).
-                // Here we take care of references to package classes (SI-5705).
+                // The first reason to not erase symbols is the threat of non-idempotency (scala/bug#5464).
+                // Here we take care of references to package classes (scala/bug#5705).
                 // There are other non-idempotencies, but they are not worked around yet.
                 //
                 // The second reason has to do with the fact that resetAttrs needs to be less destructive.

@@ -47,7 +47,7 @@ class CannotHaveAttrsTest {
       assertEquals(t.tpe, NoType)
     }
 
-  @Test @org.junit.Ignore // SI-8816
+  @Test @org.junit.Ignore // scala/bug#8816
   def nonDefaultPosAssignmentFails = {
     val pos = new OffsetPosition(null, 0)
     attrlessTrees.foreach { t =>
@@ -56,7 +56,7 @@ class CannotHaveAttrsTest {
     }
   }
 
-  @Test @org.junit.Ignore // SI-8816
+  @Test @org.junit.Ignore // scala/bug#8816
   def nonDefaultTpeAssignmentFails = {
     val tpe = typeOf[Int]
     attrlessTrees.foreach { t =>

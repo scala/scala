@@ -170,7 +170,7 @@ trait PatternTypers {
     private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
-      // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
+      // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see scala/bug#5189
       // Test case which presently requires the exclusion is run/gadts.scala.
       def eligible(tparam: Symbol) = (
            tparam.isTypeParameterOrSkolem
@@ -222,7 +222,7 @@ trait PatternTypers {
      * see test/files/../t5189*.scala
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
-      // TODO SI-7886 / SI-5900 This is well intentioned but doesn't quite hit the nail on the head.
+      // TODO scala/bug#7886 / scala/bug#5900 This is well intentioned but doesn't quite hit the nail on the head.
       //      For now, I've put it completely behind -Xstrict-inference.
       val untrustworthyPt = settings.strictInference && (
            ptIn =:= AnyTpe

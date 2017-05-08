@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions._
 import scala.collection.{concurrent, mutable}
 
-// SI-9113: tests to insure that wrappers return null instead of wrapping it as a collection
+// scala/bug#9113: tests to insure that wrappers return null instead of wrapping it as a collection
 
 @RunWith(classOf[JUnit4])
 class NullSafetyToScalaTest {

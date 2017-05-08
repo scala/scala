@@ -13,7 +13,7 @@ object vectorOrder {
   /*
    * Before applying patch:
    *
-   *      while compiling: SI-7638.scala
+   *      while compiling: scala/bug#7638.scala
    *         during phase: mixin
    *      library version: version 2.10.3-20130625-164027-d22e8d282c
    *     compiler version: version 2.10.3-20130627-153946-54cb6af7db
@@ -33,7 +33,7 @@ object vectorOrder {
    *   args = List(TypeRef(TypeSymbol(final abstract class Int extends )))
    * )
    *
-   * unhandled exception while transforming SI-7638.scala
+   * unhandled exception while transforming scala/bug#7638.scala
    * error: uncaught exception during compilation: java.lang.UnsupportedOperationException
    * error: java.lang.UnsupportedOperationException: tail of empty list
    * 	at scala.collection.immutable.Nil$.tail(List.scala:339)

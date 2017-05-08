@@ -108,7 +108,7 @@ abstract class ExplicitOuter extends InfoTransform
    *   }
    * }}}
    *
-   * See SI-7242.
+   * See scala/bug#7242.
    }}
    */
   private def skipMixinOuterAccessor(clazz: Symbol, mixin: Symbol) = {
@@ -347,7 +347,7 @@ abstract class ExplicitOuter extends InfoTransform
       assert(outerAcc != NoSymbol, "No outer accessor for inner mixin " + mixinClass + " in " + currentClass)
       assert(outerAcc.alternatives.size == 1, s"Multiple outer accessors match inner mixin $mixinClass in $currentClass : ${outerAcc.alternatives.map(_.defString)}")
       // I added the mixinPrefix.typeArgs.nonEmpty condition to address the
-      // crash in SI-4970.  I feel quite sure this can be improved.
+      // crash in scala/bug#4970.  I feel quite sure this can be improved.
       val path = (
         if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
         else if (mixinPrefix.typeArgs.nonEmpty) gen.mkAttributedThis(mixinPrefix.typeSymbol)
@@ -415,10 +415,10 @@ abstract class ExplicitOuter extends InfoTransform
           // make not private symbol accessed from inner classes, as well as
           // symbols accessed from @inline methods
           //
-          // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
+          // See scala/bug#6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
           // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
           def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
-          // SI-8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
+          // scala/bug#8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
           //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
           if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
             sym.makeNotPrivate(sym.owner)
@@ -451,7 +451,7 @@ abstract class ExplicitOuter extends InfoTransform
           val acc = outerAccessor(outerFor)
 
           if (acc == NoSymbol ||
-              // since we can't fix SI-4440 properly (we must drop the outer accessors of final classes when there's no immediate reference to them in sight)
+              // since we can't fix scala/bug#4440 properly (we must drop the outer accessors of final classes when there's no immediate reference to them in sight)
               // at least don't crash... this duplicates maybeOmittable from constructors
               (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
             if (!base.tpe.hasAnnotation(UncheckedClass))

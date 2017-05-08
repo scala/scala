@@ -16,7 +16,7 @@ trait Evals {
    *  Can be used to perform compile-time computations on macro arguments to the extent
    *  permitted by the shape of the arguments.
    *
-   *  Known issues: because of [[https://issues.scala-lang.org/browse/SI-5748 https://issues.scala-lang.org/browse/SI-5748]]
+   *  Known issues: because of [[https://github.com/scala/bug/issues/5748 https://github.com/scala/bug/issues/5748]]
    *  trees being evaluated first need to undergo `untypecheck`. Resetting symbols and types
    *  mutates the tree in place, therefore the conventional approach is to `duplicate` the tree first.
    *

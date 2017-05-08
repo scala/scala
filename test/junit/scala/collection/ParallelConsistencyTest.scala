@@ -24,19 +24,19 @@ class ParallelConsistencyTest {
     def splitter = notSeq
   }  
 
-   // Test Vector ++ with a small parallel collection concatenation (SI-9072).
+   // Test Vector ++ with a small parallel collection concatenation (scala/bug#9072).
   @Test
   def testPlusPlus(): Unit = {
     assert((Vector.empty ++ mustCallSeq) == theSeq, "Vector ++ unsafe with parallel vectors")
   }
   
-  // SI-9126, 1 of 2
+  // scala/bug#9126, 1 of 2
   @Test
   def testTranspose(): Unit = {
     assert(List(mustCallSeq).transpose.flatten == theSeq, "Transposing inner parallel collection unsafe")
   }
   
-  // SI-9126, 2 of 2
+  // scala/bug#9126, 2 of 2
   @Test
   def testList_flatMap(): Unit = {
     assert(List(1).flatMap(_ => mustCallSeq) == theSeq, "List#flatMap on inner parallel collection unsafe")

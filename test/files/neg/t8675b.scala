@@ -13,7 +13,7 @@ object Test {
   // in the backend.
   //
   // This error is itself a regression (or at least a change) in 2.11.0-M7,
-  // specifically in SI-7944. The type parameters to the implicit view
+  // specifically in scala/bug#7944. The type parameters to the implicit view
   // `EngineTools1` are undetermined, and are now treated as type variables
   // in the expected type of the closure argument to `withFilter`.
   for (path: List[Any] <- (null : Engine1).asRequirement.pathsIncludingSelf.toList) {

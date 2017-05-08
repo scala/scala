@@ -76,7 +76,8 @@ class FutureTests extends MinimalScalaTest {
       }
       Await.ready(waiting, 2000 millis)
 
-      ms.size mustBe (4)
+      if (ms.size != 4)
+        assert(ms.size != 4, "Expected 4 throwables, found: " + ms)
       //FIXME should check
     }
   }
@@ -123,7 +124,7 @@ class FutureTests extends MinimalScalaTest {
       assert(f.mapTo[String] eq f, "Future.mapTo must be the same instance as Future.mapTo")
       assert(f.zip(f) eq f, "Future.zip must be the same instance as Future.zip")
       assert(f.flatten eq f, "Future.flatten must be the same instance as Future.flatten")
-      assert(f.failed.value == Some(Success(e)), "Future.failed.failed must become successful") // SI-10034
+      assert(f.failed.value == Some(Success(e)), "Future.failed.failed must become successful") // scala/bug#10034
 
               ECNotUsed(ec => f.foreach(_ => fail("foreach should not have been called"))(ec))
               ECNotUsed(ec => f.onSuccess({ case _ => fail("onSuccess should not have been called") })(ec))

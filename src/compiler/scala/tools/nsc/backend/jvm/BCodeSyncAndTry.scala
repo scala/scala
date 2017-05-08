@@ -109,7 +109,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
     /*
      *  Detects whether no instructions have been emitted since label `lbl` and if so emits a NOP.
      *  Useful to avoid emitting an empty try-block being protected by exception handlers,
-     *  which results in "java.lang.ClassFormatError: Illegal exception table range". See SI-6102.
+     *  which results in "java.lang.ClassFormatError: Illegal exception table range". See scala/bug#6102.
      */
     def nopIfNeeded(lbl: asm.Label) {
       val noInstructionEmitted = isAtProgramPoint(lbl)
@@ -144,7 +144,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
      *             A try-clause may contain an empty block. On CLR, a finally-block has special semantics
      *             regarding Abort interruptions; but on the JVM it's safe to elide an exception-handler
      *             that protects an "empty" range ("empty" as in "containing NOPs only",
-     *             see `asm.optimiz.DanglingExcHandlers` and SI-6720).
+     *             see `asm.optimiz.DanglingExcHandlers` and scala/bug#6720).
      *
      *        This means a finally-block indicates instructions that can be reached:
      *          (b.1) Upon normal (non-early-returning) completion of the try-clause or a catch-clause
@@ -399,7 +399,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       var saved: immutable.Map[ /* LabelDef */ Symbol, asm.Label ] = null
       if (isDuplicate) {
         saved = jumpDest
-        for(ldef <- labelDefsAtOrUnder(finalizer)) {
+        for(ldef <- labelDefsAtOrUnder.getOrElse(finalizer, Nil)) {
           jumpDest -= ldef.symbol
         }
       }

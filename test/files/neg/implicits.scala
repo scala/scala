@@ -57,7 +57,7 @@ class Mxml {
 
 }
 
-// SI-5316
+// scala/bug#5316
 class Test3 {
   def foo(p: => Any)(implicit x: Nothing): Unit = ()
 

@@ -358,7 +358,7 @@ abstract class TailCalls extends Transform {
           )
 
         case Try(block, catches, finalizer @ EmptyTree) =>
-          // SI-1672 Catches are in tail position when there is no finalizer
+          // scala/bug#1672 Catches are in tail position when there is no finalizer
           treeCopy.Try(tree,
             noTailTransform(block),
             transformTrees(catches).asInstanceOf[List[CaseDef]],
@@ -406,7 +406,7 @@ abstract class TailCalls extends Transform {
       }
     }
 
-    // Workaround for SI-6900. Uncurry installs an InfoTransformer and a tree Transformer.
+    // Workaround for scala/bug#6900. Uncurry installs an InfoTransformer and a tree Transformer.
     // These leave us with conflicting view on method signatures; the parameter symbols in
     // the MethodType can be clones of the ones originally found on the parameter ValDef, and
     // consequently appearing in the typechecked RHS of the method.

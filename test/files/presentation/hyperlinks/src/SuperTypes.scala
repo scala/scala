@@ -1,4 +1,4 @@
-/** This tests that hyperlinking works for super types. See SI-7224 */
+/** This tests that hyperlinking works for super types. See scala/bug#7224 */
 class BadPos[A](a: A)
 
 class Base

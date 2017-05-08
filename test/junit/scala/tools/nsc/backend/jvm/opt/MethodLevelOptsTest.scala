@@ -126,10 +126,10 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  def t = {
         |    var a = "el"  // this store is live, used in the println.
         |    println(a)
-        |    a = "met"     // since it's an ASTORE to a live variable, cannot elim the store (SI-5313), but store null instead.
+        |    a = "met"     // since it's an ASTORE to a live variable, cannot elim the store (scala/bug#5313), but store null instead.
         |                  // so we get `LDC met; POP; ACONST_NULL; ASTORE 1`. the `LDC met; POP` is eliminated by push-pop.
         |    a = "zit"     // this store is live, so we get `LDC zit; ASOTRE 1; ALOAD 1; ARETURN`.
-        |                  // we cannot eliminated the store-load sequence, because the local is live (again SI-5313).
+        |                  // we cannot eliminated the store-load sequence, because the local is live (again scala/bug#5313).
         |    a
         |  }
         |}
@@ -152,7 +152,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |    val b = (a, y)                            // Tuple2
         |    val c = (new Object, "krik", new String)  // unused java/lang/Object, java/lang/String allocation and string constant is also eliminated
         |    val d = new java.lang.Integer(x)
-        |    val e = new String(new Array[Char](23))   // array allocation not eliminated, as it may throw (negative size, SI-8601)
+        |    val e = new String(new Array[Char](23))   // array allocation not eliminated, as it may throw (negative size, scala/bug#8601)
         |    val f = new scala.runtime.IntRef(11)
         |    x + y
         |  }
@@ -559,7 +559,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |    var kept1 = new Object
         |    val result = new java.lang.ref.WeakReference(kept1)
         |    kept1 = null // we can't eliminate this assignment because result can observe
-        |                 // when the object has no more references. See SI-5313
+        |                 // when the object has no more references. See scala/bug#5313
         |    kept1 = new Object // could eliminate this one with a more elaborate analysis (we know it contains null)
         |                       // however, such is not implemented: if a var is live, then stores are kept.
         |    result

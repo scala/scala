@@ -18,7 +18,7 @@ trait LongTraversableLike[+Repr <: LongTraversableLike[Repr]] extends GenTravers
                                                                       ^
 one error found
 
-Okay again after SI-1786 was reverted.
+Okay again after scala/bug#1786 was reverted.
 
 
 |-- object O BYVALmode-EXPRmode (site: package <empty>)

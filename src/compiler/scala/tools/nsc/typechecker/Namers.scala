@@ -23,9 +23,6 @@ trait Namers extends MethodSynthesis {
   import global._
   import definitions._
 
-  var _lockedCount = 0
-  def lockedCount = this._lockedCount
-
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
    *  Does the same for any trees containing EmptyTrees.
    */
@@ -446,7 +443,7 @@ trait Namers extends MethodSynthesis {
         // the same package object in sources, we have to clean the slate and remove package object
         // members from the package class.
         //
-        // TODO SI-4695 Pursue the approach in https://github.com/scala/scala/pull/2789 that avoids
+        // TODO scala/bug#4695 Pursue the approach in https://github.com/scala/scala/pull/2789 that avoids
         //      opening up the package object on the classpath at all if one exists in source.
         if (existingModule.isPackageObject) {
           val packageScope = existingModule.enclosingPackageClass.rawInfo.decls
@@ -565,7 +562,7 @@ trait Namers extends MethodSynthesis {
           //
           // Note: java imports have precedence over definitions in the same package
           //       so don't warn for them. There is a corresponding special treatment
-          //       in the shadowing rules in typedIdent to (SI-7232). In any case,
+          //       in the shadowing rules in typedIdent to (scala/bug#7232). In any case,
           //       we shouldn't be emitting warnings for .java source files.
           if (!context.unit.isJava)
             checkNotRedundant(tree.pos withPoint fromPos, from, to)
@@ -1155,7 +1152,7 @@ trait Namers extends MethodSynthesis {
           val cdef = cma.caseClass
           def hasCopy = (decls containsName nme.copy) || parents.exists(_ member nme.copy exists)
 
-          // SI-5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
+          // scala/bug#5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
           if (cdef.symbol == clazz && !hasCopy)
             addCopyMethod(cdef, templateNamer)
         }
@@ -1187,7 +1184,7 @@ trait Namers extends MethodSynthesis {
       if (clazz.isDerivedValueClass) {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
-        // Don't force the owner's info lest we create cycles as in SI-6357.
+        // Don't force the owner's info lest we create cycles as in scala/bug#6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
       pluginsTp
@@ -1359,7 +1356,7 @@ trait Namers extends MethodSynthesis {
             else applyFully(tp.resultType(paramss.head.map(_.tpe)), paramss.tail)
 
           if (inferResTp) {
-            // SI-7668 Substitute parameters from the parent method with those of the overriding method.
+            // scala/bug#7668 Substitute parameters from the parent method with those of the overriding method.
             val overriddenResTp = applyFully(overriddenTp, vparamSymss).substSym(overriddenTparams, tparamSkolems)
 
             // provisionally assign `meth` a method type with inherited result type
@@ -1507,7 +1504,7 @@ trait Namers extends MethodSynthesis {
                   // by martin: the null case can happen in IDE; this is really an ugly hack on top of an ugly hack but it seems to work
                   case Some(cda) =>
                     if (cda.companionModuleClassNamer == null) {
-                      devWarning(s"SI-6576 The companion module namer for $meth was unexpectedly null")
+                      devWarning(s"scala/bug#6576 The companion module namer for $meth was unexpectedly null")
                       return
                     }
                     val p = (cda.classWithDefault, cda.companionModuleClassNamer)
@@ -1694,7 +1691,7 @@ trait Namers extends MethodSynthesis {
       else {
         expr1 match {
           case This(_) =>
-            // SI-8207 okay, typedIdent expands Ident(self) to C.this which doesn't satisfy the next case
+            // scala/bug#8207 okay, typedIdent expands Ident(self) to C.this which doesn't satisfy the next case
             // TODO should we change `typedIdent` not to expand to the `Ident` to a `This`?
           case _ if treeInfo.isStableIdentifierPattern(expr1) =>
           case _ =>
@@ -1761,7 +1758,7 @@ trait Namers extends MethodSynthesis {
     def annotSig(annotations: List[Tree]): List[AnnotationInfo] =
       annotations filterNot (_ eq null) map { ann =>
         val ctx = typer.context
-        // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, SI-5892.
+        // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
         AnnotationInfo lazily {
           enteringTyper {
             newTyper(ctx.makeNonSilent(ann)) typedAnnotation ann
@@ -1942,9 +1939,9 @@ trait Namers extends MethodSynthesis {
     def completeImpl(sym: Symbol): Unit
 
     override def complete(sym: Symbol) = {
-      _lockedCount += 1
+      lockedCount += 1
       try completeImpl(sym)
-      finally _lockedCount -= 1
+      finally lockedCount -= 1
     }
   }
 
@@ -2038,7 +2035,7 @@ trait Namers extends MethodSynthesis {
    */
   def companionSymbolOf(original: Symbol, ctx: Context): Symbol = if (original == NoSymbol) NoSymbol else {
     val owner = original.owner
-    // SI-7264 Force the info of owners from previous compilation runs.
+    // scala/bug#7264 Force the info of owners from previous compilation runs.
     //         Doing this generally would trigger cycles; that's what we also
     //         use the lower-level scan through the current Context as a fall back.
     if (!currentRun.compiles(owner)) owner.initialize

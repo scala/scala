@@ -1,4 +1,4 @@
-// In run, rather than pos, to check for problems like SI-4283
+// In run, rather than pos, to check for problems like scala/bug#4283
 object O1 {
   private[O1] class Base {
     def foo: Int = 0

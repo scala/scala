@@ -525,7 +525,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          * (this multi-valued kind of equality is necessary for unreachability)
          * note that we use subtyping as a model for implication between instanceof tests
          * i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
-         * unfortunately this is not true in general (see e.g. SI-6022)
+         * unfortunately this is not true in general (see e.g. scala/bug#6022)
          */
         def implies(lower: Const, upper: Const): Boolean =
           // values and null
@@ -556,7 +556,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          * (3) We only reason about test tests as being excluded by null assignments, otherwise we
          *     only consider value assignments.
          *     TODO: refine this, a == 0 excludes a: String, or `a: Int` excludes `a: String`
-         *     (since no value can be of both types. See also SI-7211)
+         *     (since no value can be of both types. See also scala/bug#7211)
          *
          *  NOTE: V = 1 does not preclude V = Int, or V = Any, it could be said to preclude
          *        V = String, but we don't model that.
@@ -681,7 +681,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // hashconsing trees (modulo value-equality)
       private[TreesAndTypesDomain] def uniqueTpForTree(t: Tree): Type = {
         def freshExistentialSubtype(tp: Type): Type = {
-          // SI-8611 tp.narrow is tempting, but unsuitable. See `testRefinedTypeSI8611` for an explanation.
+          // scala/bug#8611 tp.narrow is tempting, but unsuitable. See `testRefinedTypeSI8611` for an explanation.
           NoSymbol.freshExistential("", 0).setInfo(TypeBounds.upper(tp)).tpe
         }
 

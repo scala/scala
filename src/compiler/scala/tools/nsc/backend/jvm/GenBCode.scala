@@ -442,6 +442,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
           catch {
             case e: IOException =>
               error(s"error writing $jclassName: ${e.getMessage}")
+            case e: java.nio.file.FileSystemException =>
+              if (settings.debug)
+                e.printStackTrace()
+              error(s"error writing $jclassName: ${e.getClass.getName} ${e.getMessage}")
           }
         }
       }

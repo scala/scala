@@ -10,7 +10,7 @@ object Test extends DirectTest {
   override def extraSettings: String = "-usejavacp -Xprint:parser -Yrangepos -Ystop-after:parser -d " + testOutput.path
 
   override def code = """
-    // SI-5527
+    // scala/bug#5527
     object UselessComments {
 
       var z = 0
@@ -85,7 +85,7 @@ object Test extends DirectTest {
         val i = 10 */** Important!
                      *  We have to multiply here!
                      *  @author community
-                     *  @see SI-1234
+                     *  @see scala/bug#1234
                      */
                 10
         assert(i == 100)

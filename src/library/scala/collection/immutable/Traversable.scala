@@ -26,7 +26,7 @@ import mutable.Builder
  *    in some multi-threaded scenarios. The state of a new collection instance may not have been "published"
  *    (in the sense of the Java Memory Model specification), so that an unsynchronized non-volatile read from
  *    another thread may observe the object in an invalid state (see
- *    [[https://issues.scala-lang.org/browse/SI-7838 SI-7838]] for details). Note that such a read is not
+ *    [[https://github.com/scala/bug/issues/7838 scala/bug#7838]] for details). Note that such a read is not
  *    guaranteed to ''ever'' see the written object at all, and should therefore not be used, regardless
  *    of this issue. The easiest workaround is to exchange values between threads through a volatile var.
  */

@@ -254,7 +254,7 @@ class SpecializedClassesAreTopLevel {
     class B[@specialized(Int) T]; new B[Int]
   }
 
-  // these crash the compiler, SI-7625
+  // these crash the compiler, scala/bug#7625
 
   // { class B[@specialized(Int) T]; new B[Int] }
 

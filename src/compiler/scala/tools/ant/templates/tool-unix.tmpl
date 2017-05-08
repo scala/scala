@@ -9,7 +9,7 @@
 ##############################################################################
 
 findScalaHome () {
-  # see SI-2092 and SI-5792
+  # see scala/bug#2092 and scala/bug#5792
   local source="${BASH_SOURCE[0]}"
   while [ -h "$source" ] ; do
     local linked="$(readlink "$source")"
@@ -92,7 +92,7 @@ TOOL_CLASSPATH="@classpath@"
 if [[ -z "$TOOL_CLASSPATH" ]]; then
     for ext in "$SCALA_HOME"/lib/* ; do
         file_extension="${ext##*.}"
-        # SI-8967 Only consider directories and files named '*.jar'
+        # scala/bug#8967 Only consider directories and files named '*.jar'
         if [[ -d "$ext" || $file_extension == "jar" ]]; then
           if [[ -z "$TOOL_CLASSPATH" ]]; then
               TOOL_CLASSPATH="$ext"
@@ -133,7 +133,7 @@ fi
 declare -a java_args
 declare -a scala_args
 
-# SI-8358, SI-8368 -- the default should really be false,
+# scala/bug#8358, scala/bug#8368 -- the default should really be false,
 # but I don't want to flip the default during 2.11's RC cycle
 OVERRIDE_USEJAVACP="-Dscala.usejavacp=true"
 

@@ -109,7 +109,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
   /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
-  // Fixes SI-8779
+  // Fixes scala/bug#8779
   def optimizerClassPath(base: ClassPath): ClassPath = base
 
   def classPath: ClassPath = platform.classPath

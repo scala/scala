@@ -12,7 +12,7 @@ object Test {
   def main(args: Array[String]) {
     if (scala.tools.partest.utils.Properties.isAvian) {
       println("!!!TEST SKIPPED!!!")
-      println("See SI-7600 for further information.")
+      println("See scala/bug#7600 for further information.")
     } else
       println("Length: " + walk(3, "---").length)
   }

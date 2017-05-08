@@ -1,7 +1,7 @@
 
 import scala.tools.partest.{ SessionTest, Welcoming }
 
-// SI-7740
+// scala/bug#7740
 object Test extends SessionTest with Welcoming {
   def session =
 """Welcome to Scala

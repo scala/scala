@@ -126,7 +126,7 @@ trait CompilerControl { self: Global =>
    *  @pre `source` needs to be loaded.
    *  @note Deprecated because of race conditions in the typechecker when the background compiler
    *        is interrupted while typing the same `source`.
-   *  @see  SI-6578
+   *  @see  scala/bug#6578
    */
   @deprecated("Use `askLoadedTyped` instead to avoid race conditions in the typechecker", "2.10.1")
   def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =

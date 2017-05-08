@@ -326,7 +326,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
+  // scala/bug#8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
   /** @group implicit-classes-any */
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
@@ -499,7 +499,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
   // The dollar prefix is to dodge accidental shadowing of this method
-  // by a user-defined method of the same name (SI-7788).
+  // by a user-defined method of the same name (scala/bug#7788).
   // The collections rely on this method.
   /** @group type-constraints */
   implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
@@ -569,7 +569,7 @@ private[scala] trait DeprecatedPredef {
 *  @author  Martin Odersky
 *  @since 2.8
 */
-// SI-7335 Parents of Predef are defined in the same compilation unit to avoid
+// scala/bug#7335 Parents of Predef are defined in the same compilation unit to avoid
 // cyclic reference errors compiling the standard library *without* a previously
 // compiled copy on the classpath.
 private[scala] abstract class LowPriorityImplicits {

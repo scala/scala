@@ -6,7 +6,7 @@ import org.junit.Test
 import scala.collection.mutable
 
 @RunWith(classOf[JUnit4])
-/* Test for SI-8014 and ++ in general  */
+/* Test for scala/bug#8014 and ++ in general  */
 class VectorTest {
   val noVec = Vector.empty[Int]
   val smallVec = Vector.range(0,3)
