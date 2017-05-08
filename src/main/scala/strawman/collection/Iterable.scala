@@ -32,32 +32,30 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
   protected[this] def fromIterable[E](it: Iterable[E]): CC[E]
 
-  private def iterator(): Iterator[A] = coll.iterator()
-
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */
-  def foreach[U](f: A => U): Unit = iterator().foreach(f)
+  def foreach[U](f: A => U): Unit = coll.iterator().foreach(f)
 
-  def forall(p: A => Boolean): Boolean = iterator().forall(p)
+  def forall(p: A => Boolean): Boolean = coll.iterator().forall(p)
 
   /** Fold left */
-  def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)
+  def foldLeft[B](z: B)(op: (B, A) => B): B = coll.iterator().foldLeft(z)(op)
 
   /** Fold right */
-  def foldRight[B](z: B)(op: (A, B) => B): B = iterator().foldRight(z)(op)
+  def foldRight[B](z: B)(op: (A, B) => B): B = coll.iterator().foldRight(z)(op)
 
   /** The index of the first element in this collection for which `p` holds. */
-  def indexWhere(p: A => Boolean): Int = iterator().indexWhere(p)
+  def indexWhere(p: A => Boolean): Int = coll.iterator().indexWhere(p)
 
   /** Is the collection empty? */
-  def isEmpty: Boolean = !iterator().hasNext
+  def isEmpty: Boolean = !coll.iterator().hasNext
 
   /** Is the collection not empty? */
-  def nonEmpty: Boolean = iterator().hasNext
+  def nonEmpty: Boolean = coll.iterator().hasNext
 
   /** The first element of the collection. */
-  def head: A = iterator().next()
+  def head: A = coll.iterator().next()
 
   /** Selects the last element.
     * $orderDependent
@@ -65,7 +63,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    val it = iterator()
+    val it = coll.iterator()
     var lst = it.next()
     while (it.hasNext) lst = it.next()
     lst
@@ -79,10 +77,10 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** The number of elements in this collection. Does not terminate for
     *  infinite collections.
     */
-  def size: Int = if (knownSize >= 0) knownSize else iterator().length
+  def size: Int = if (knownSize >= 0) knownSize else coll.iterator().length
 
   /** A view representing the elements of this collection. */
-  def view: View[A] = View.fromIterator(iterator())
+  def view: View[A] = View.fromIterator(coll.iterator())
 
   /** Given a collection factory `fi`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:
@@ -101,7 +99,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** Copy all elements of this collection to array `xs`, starting at `start`. */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
     var i = start
-    val it = iterator()
+    val it = coll.iterator()
     while (it.hasNext) {
       xs(i) = it.next()
       i += 1
@@ -229,7 +227,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
 /** Base trait for strict collections that can be built using a builder.
   * @tparam  A    the element type of the collection
-  * @tparam Repr  the type of the underlying collection
+  * @tparam C  the type of the underlying collection
   */
 trait Buildable[+A, +C] extends Any with IterableOps[A, AnyConstr, C]  {
 

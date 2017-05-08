@@ -36,7 +36,9 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     coll match {
       case tm: TreeMap[K, V] => tm
       case _ => TreeMap.fromIterable[K, V](coll)

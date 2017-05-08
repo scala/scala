@@ -23,6 +23,7 @@ final class HashMap[K, V] extends Map[K, V] with MapOps[K, V, HashMap, HashMap[K
   def remove(elem: (K, V)): this.type = ???
   def put(key: K, value: V): Option[V] = ???
 
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = ???
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = ???
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = mapFromIterable(coll)
 }

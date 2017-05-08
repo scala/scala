@@ -16,8 +16,6 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
   protected def coll: Map[K, V]
 
-  override protected[this] def fromIterable[B](xs: Iterable[B]): Iterable[B] = immutable.List.fromIterable(xs)
-
   /** Similar to fromIterable, but returns a Map collection type */
   protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
 

@@ -19,7 +19,7 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
 /** Base trait for Seq operations */
-trait SeqOps[+A, +CC[X] <: Seq[X], +C] extends Any
+trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
   with ArrayLike[A]
   with Equals {
@@ -87,7 +87,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
 
   /** `iterator` is implemented in terms of `head` and `tail` */
   def iterator() = new Iterator[A] {
-    private[this] var current: Seq[A] = coll
+    private[this] var current: Iterable[A] = coll
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
   }

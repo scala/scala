@@ -10,7 +10,7 @@ trait SortedMap[K, +V]
      with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
 
 trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
-  extends MapOps[K, V, Map, CC[K, V]]
+  extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] {
 
   override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)

@@ -15,7 +15,6 @@ class StringOps(val s: String)
      with ArrayLike[Char] {
 
   protected def coll = new StringView(s)
-  def iterator() = coll.iterator()
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
@@ -33,6 +32,8 @@ class StringOps(val s: String)
   override def knownSize = s.length
 
   override def className = "String"
+
+  def iterator(): Iterator[Char] = coll.iterator()
 
   /** Overloaded version of `map` that gives back a string, where the inherited
     *  version gives back a sequence.

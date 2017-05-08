@@ -8,6 +8,7 @@ import scala.Predef.???
 trait BitSet
   extends SortedSet[Int]
      with collection.BitSet
+     with SortedSetOps[Int, SortedSet, BitSet]
      with collection.BitSetOps[BitSet] {
 
   private[collection] def elems: Array[Long]

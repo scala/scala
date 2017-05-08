@@ -19,10 +19,10 @@ import scala.Predef.require
 @SerialVersionUID(1611436763290191562L)
 sealed abstract class BitSet
   extends SortedSet[Int]
-     with collection.BitSet
-     with SetOps[Int, Set, BitSet]
-     with BitSetOps[BitSet]
-     with Serializable {
+    with collection.BitSet
+    with SortedSetOps[Int, SortedSet, BitSet]
+    with collection.BitSetOps[BitSet]
+    with Serializable {
 
   def empty: BitSet = BitSet.empty
 
@@ -91,7 +91,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else new BitSetN(elems)
   }
 
-  def empty[A <: Int]: BitSet = new BitSet1(0L)
+  def empty: BitSet = new BitSet1(0L)
 
   @SerialVersionUID(2260107458435649300L)
   class BitSet1(val elems: Long) extends BitSet {

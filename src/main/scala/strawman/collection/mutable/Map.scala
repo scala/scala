@@ -11,7 +11,9 @@ trait Map[K, V] extends Iterable[(K, V)]
 
 /** Base trait of mutable Maps implementations */
 trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
-  extends collection.MapOps[K, V, CC, C] with Growable[(K, V)] {
+  extends IterableOps[(K, V), Iterable, C]
+    with collection.MapOps[K, V, CC, C]
+    with Growable[(K, V)] {
 
   /** Removes a single element from this $coll.
     *

@@ -13,7 +13,6 @@ class ArrayOps[A](val xs: Array[A])
      with ArrayLike[A] {
 
   protected def coll = new ArrayView(xs)
-  def iterator() = coll.iterator()
 
   def length = xs.length
   def apply(i: Int) = xs.apply(i)
@@ -24,7 +23,7 @@ class ArrayOps[A](val xs: Array[A])
 
   protected[this] def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
   protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
-  protected[this] def fromIterable[E](coll: Iterable[E]): immutable.Seq[E] = immutable.Seq.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: Iterable[B]): immutable.Seq[B] = immutable.Seq.fromIterable(coll)
 
   protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
 
@@ -32,6 +31,7 @@ class ArrayOps[A](val xs: Array[A])
 
   override def className = "Array"
 
+  def iterator(): Iterator[A] = coll.iterator()
   def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(coll, f))
   def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(View.FlatMap(coll, f))
   def ++[B >: A : ClassTag](xs: IterableOnce[B]): Array[B] = fromTaggedIterable(View.Concat(coll, xs))

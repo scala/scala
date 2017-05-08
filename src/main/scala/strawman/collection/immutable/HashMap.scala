@@ -34,7 +34,9 @@ sealed trait HashMap[K, +V]
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
-  override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
     coll match {
       case hm: HashMap[K, V] => hm
       case _ => HashMap.fromIterable(coll)

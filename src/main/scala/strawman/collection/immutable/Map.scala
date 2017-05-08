@@ -15,7 +15,8 @@ trait Map[K, +V]
 
 /** Base trait of immutable Maps implementations */
 trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[K, V]]
-  extends collection.MapOps[K, V, CC, C] {
+  extends IterableOps[(K, V), Iterable, C]
+    with collection.MapOps[K, V, CC, C] {
 
   protected def coll: CC[K, V]
 

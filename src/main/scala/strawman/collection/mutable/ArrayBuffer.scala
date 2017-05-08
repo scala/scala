@@ -51,7 +51,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
   protected[this] def newBuilder = new ArrayBuffer[A]
-  def newBuilder[E] = new ArrayBuffer[E]
 
   def clear() =
     end = 0

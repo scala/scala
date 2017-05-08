@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Int, Boolean, Nothing, Equals, annotation, Any}
+import scala.{Any, Boolean, Equals, Int, Nothing, annotation}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: View */
