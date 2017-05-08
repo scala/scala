@@ -1615,7 +1615,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             //assert(runId(infos.validFrom) == currentRunId, name)
 
             if (validTo < curPeriod) {
-              var itr = infoTransformers.nextFrom(phaseId(validTo))
+              var itr = nextFrom(phaseId(validTo))
               infoTransformers = itr; // caching optimization
               while (itr.pid != NoPhase.id && itr.pid < current.id) {
                 phase = phaseWithId(itr.pid)
