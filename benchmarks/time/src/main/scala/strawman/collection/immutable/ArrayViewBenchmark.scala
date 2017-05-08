@@ -73,11 +73,6 @@ class ArrayViewBenchmark {
       .map(x => x + (x & 0xD) + 0xCAFED00D)
       .map(x => x + (x & 0xE) + 0xD15EA5E)
       .map(x => x + (x & 0xA) + 0xDABBAD00)
-      .map(x => x + (x & 0xD) + 0xDEADBAAD)
-      .map(x => x + (x & 0xB) + 0xDEADDEAD)
-      .map(x => x + (x & 0xE) + 0xDEADFA11)
-      .map(x => x + (x & 0xE) + 0xFFBADD11)
-      .map(x => x + (x & 0xF) + 0x4B1D)
       .foldLeft(0L)(_+_)
     bh.consume(ret)
   }
@@ -85,14 +80,9 @@ class ArrayViewBenchmark {
   @Benchmark
   def filters (bh: Blackhole) = {
     val ret : Long = v
-      .filter(x => (x & 0x15) != 0x11)
-      .filter(x => (x & 0x10) == 0x10)
-      .filter(x => (x & 0x30) != 0x10)
-      .filter(x => (x & 0x10) == 0x10)
-      .filter(x => (x & 0x15) != 0x10)
-      .filter(x => (x & 0x10) == 0x10)
-      .filter(x => (x & 0x30) != 0x10)
-      .filter(x => (x & 0x15) == 0x10)
+      .filter(x => (x & 0x13) != 0x11)
+      .filter(x => (x & 0x12) == 0x12)
+      .filter(x => (x & 0x11) != 0x10)
       .foldLeft(0L)(_+_)
     bh.consume(ret)
   }

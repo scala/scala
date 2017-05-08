@@ -94,11 +94,6 @@ public class Java8Streams {
                 .map(x -> x + (x & 0xD) + 0xCAFED00D)
                 .map(x -> x + (x & 0xE) + 0xD15EA5E)
                 .map(x -> x + (x & 0xA) + 0xDABBAD00)
-                .map(x -> x + (x & 0xD) + 0xDEADBAAD)
-                .map(x -> x + (x & 0xB) + 0xDEADDEAD)
-                .map(x -> x + (x & 0xE) + 0xDEADFA11)
-                .map(x -> x + (x & 0xE) + 0xFFBADD11)
-                .map(x -> x + (x & 0xF) + 0x4B1D)
                 .reduce(0, (a, b) -> a + b);
         bh.consume(ret);
     }
@@ -106,14 +101,9 @@ public class Java8Streams {
     @Benchmark
     public void filters_primitive(Blackhole bh) {
         long ret = LongStream.of(v_P)
-                .filter(x -> (x & 0x15) != 0x11)
-                .filter(x -> (x & 0x10) == 0x10)
-                .filter(x -> (x & 0x30) != 0x10)
-                .filter(x -> (x & 0x10) == 0x10)
-                .filter(x -> (x & 0x15) != 0x10)
-                .filter(x -> (x & 0x10) == 0x10)
-                .filter(x -> (x & 0x30) != 0x10)
-                .filter(x -> (x & 0x15) == 0x10)
+                .filter(x -> (x & 0x13) != 0x11)
+                .filter(x -> (x & 0x12) == 0x12)
+                .filter(x -> (x & 0x11) != 0x10)
                 .reduce(0, (a, b) -> a + b);
         bh.consume(ret);
     }

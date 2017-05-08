@@ -79,25 +79,6 @@ class ArrayBaselineBenchmark {
   }
 
   @Benchmark
-  def filters(bh: Blackhole) = {
-    var i=0
-    var ret=0L
-    while (i < v.length) {
-      if ((v(i) & 0xD) != 0xCAFED00D &&
-          (v(i) & 0xE) == 0xD15EA5E &&
-          (v(i) & 0xA) != 0xDABBAD00 &&
-          (v(i) & 0xD) == 0xDEADBAAD &&
-          (v(i) & 0xB) != 0xDEADDEAD &&
-          (v(i) & 0xE) == 0xDEADFA11 &&
-          (v(i) & 0xE) != 0xFFBADD11 &&
-          (v(i) & 0xF) == 0x4B1D)
-        ret += v(i)
-      i += 1
-    }
-    bh.consume(ret)
-  }
-
-  @Benchmark
   def maps(bh: Blackhole)= {
     var i=0
     var ret=0L
@@ -105,12 +86,21 @@ class ArrayBaselineBenchmark {
       ret += v(i) +
         (v(i) & 0xD) + 0xCAFED00D +
         (v(i) & 0xE) + 0xD15EA5E +
-        (v(i) & 0xA) + 0xDABBAD00 +
-        (v(i) & 0xD) + 0xDEADBAAD +
-        (v(i) & 0xB) + 0xDEADDEAD +
-        (v(i) & 0xE) + 0xDEADFA11 +
-        (v(i) & 0xE) + 0xFFBADD11 +
-        (v(i) & 0xF) + 0x4B1D
+        (v(i) & 0xA) + 0xDABBAD00
+      i += 1
+    }
+    bh.consume(ret)
+  }
+
+  @Benchmark
+  def filters(bh: Blackhole) = {
+    var i=0
+    var ret=0L
+    while (i < v.length) {
+      if ((v(i) & 0x13) != 0x11 &&
+          (v(i) & 0x12) == 0x12 &&
+          (v(i) & 0x11) != 0x10)
+        ret += v(i)
       i += 1
     }
     bh.consume(ret)
