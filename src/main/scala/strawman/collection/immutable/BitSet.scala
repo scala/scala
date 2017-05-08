@@ -1,9 +1,9 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
-import strawman.collection.BoundedIterableFactory
-import strawman.collection.BitSetLike.{LogWL, updateArray}
-import strawman.collection.mutable.Builder
+import BitSetOps.{LogWL, updateArray}
+import mutable.Builder
 
 import scala.{Array, Boolean, Int, Long, Ordering, SerialVersionUID, Serializable, Unit}
 import scala.Predef.require
@@ -18,24 +18,22 @@ import scala.Predef.require
   */
 @SerialVersionUID(1611436763290191562L)
 sealed abstract class BitSet
-  extends collection.BitSet
-    with collection.BitSetLike[BitSet]
-    with SortedSet[Int]
-    with SetMonoTransforms[Int, BitSet] // Override mono transforms ops to return a BitSet rather than a SortedSet[Int]
+  extends SortedSet[Int]
+    with collection.BitSet
+    with SortedSetOps[Int, SortedSet, BitSet]
+    with collection.BitSetOps[BitSet]
     with Serializable {
 
   def empty: BitSet = BitSet.empty
 
-  // From IterableMonoTransforms
-  protected def fromIterableWithSameElemType(coll: collection.Iterable[Int]): BitSet = BitSet.fromIterable(coll)
-  // From ConstrainedIterablePolyTransforms
-  protected def constrainedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.constrainedFromIterable(it)
-  // From IterablePolyTransforms
-  def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
+  protected[this] def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.orderedFromIterable(it)
+
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
-  def add(elem: Int): BitSet = {
+  def incl(elem: Int): BitSet = {
     require(elem >= 0, "bitset element must be >= 0")
     if (contains(elem)) this
     else {
@@ -44,7 +42,7 @@ sealed abstract class BitSet
     }
   }
 
-  def remove(elem: Int): BitSet = {
+  def excl(elem: Int): BitSet = {
     require(elem >= 0, "bitset element must be >= 0")
     if (contains(elem)) {
       val idx = elem >> LogWL
@@ -52,28 +50,20 @@ sealed abstract class BitSet
     } else this
   }
 
-  def unconstrained: Set[Int] = this
+  def unordered: Set[Int] = this
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
     */
   protected def updateWord(idx: Int, w: Long): BitSet
 }
 
-object BitSet extends BoundedIterableFactory[Int] {
-  type To[_] = BitSet
+object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
-  def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet =
+  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet =
     it match {
       case bs: BitSet => bs
-      case _          => newBuilder[E].++=(it).result
+      case _          => empty.++(it)
     }
-
-  def newBuilder[E <: Int]: Builder[E, BitSet] = new Builder[Int, BitSet] {
-    private[this] val b = collection.mutable.BitSet.empty
-    def addInPlace(x: Int): this.type = { b += x; this }
-    def clear(): Unit = b.clear()
-    def result: BitSet = fromBitMaskNoCopy(b.elems)
-  }
 
   private def createSmall(a: Long, b: Long): BitSet = if (b == 0L) new BitSet1(a) else new BitSet2(a, b)
 
@@ -101,7 +91,7 @@ object BitSet extends BoundedIterableFactory[Int] {
     else new BitSetN(elems)
   }
 
-  def empty[A <: Int]: BitSet = new BitSet1(0L)
+  def empty: BitSet = new BitSet1(0L)
 
   @SerialVersionUID(2260107458435649300L)
   class BitSet1(val elems: Long) extends BitSet {

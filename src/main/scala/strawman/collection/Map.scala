@@ -3,20 +3,21 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, inline, None, NoSuchElementException, Nothing, Option, PartialFunction, Some}
+import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Option, Ordering, PartialFunction, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base Map type */
-trait Map[K, +V]
-  extends Iterable[(K, V)]
-    with MapLike[K, V, Map]
+trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]]
 
 /** Base Map implementation type */
-trait MapLike[K, +V, +C[X, Y] <: Map[X, Y]]
-  extends IterableLike[(K, V), Iterable]
-    with MapMonoTransforms[K, V, C[K, V @uncheckedVariance]]
-    with MapPolyTransforms[K, V, C]
-    with PartialFunction[K, V] {
+trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
+  extends IterableOps[(K, V), Iterable, C]
+     with PartialFunction[K, V] {
+
+  protected def coll: Map[K, V]
+
+  /** Similar to fromIterable, but returns a Map collection type */
+  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
 
   /** Optionally returns the value associated with a key.
     *
@@ -68,67 +69,13 @@ trait MapLike[K, +V, +C[X, Y] <: Map[X, Y]]
     */
   def isDefinedAt(key: K): Boolean = contains(key)
 
-}
+  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(coll, f))
 
-trait MapMonoTransforms[K, +V, +Repr]
-  extends IterableMonoTransforms[(K, V), Repr]
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(coll, f))
 
-/** Operations that return a Map collection with different types of keys or values (e.g. `map`) */
-trait MapPolyTransforms[K, +V, +C[X, Y]]
-  extends IterablePolyTransforms[(K, V), Iterable]
-    with MapValuePolyTransforms[K, V, C] {
-
-  /** Similar to fromIterable, but returns a Map collection type */
-  protected def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): C[K2, V2]
-
-  def map[K2, V2](f: (K, V) => (K2, V2)): C[K2, V2] = mapFromIterable(View.Map(coll, f.tupled))
-
-  def flatMap[K2, V2](f: (K, V) => IterableOnce[(K2, V2)]): C[K2, V2] = mapFromIterable(View.FlatMap(coll, f.tupled))
-
-  def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = mapFromIterable(View.Concat(coll, xs))
-
-}
-
-/** Operations that return a Map collection with different types values (e.g. `concat`) */
-trait MapValuePolyTransforms[K, +V, +C[X, Y]] {
-
-  /** Adds all key/value pairs in a traversable collection to this map, returning
-    * a new map.
-    *
-    *  @param    xs  the collection containing the added key/value pairs
-    *  @tparam   V2  the type of the added values
-    *  @return   a new map with the given bindings added to this map
-    */
-  def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2]
+  def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
-  @inline final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): C[K, V2] = concat(xs)
-
+  @`inline` final def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
 }
 
-/** Factory methods for collections of kind `* −> * -> *` */
-trait MapFactory[+C[_, _]] { self =>
-  def newBuilder[K, V]: Builder[(K, V), C[K, V]]
-
-  def fromIterable[K, V](it: Iterable[(K, V)]): C[K, V] =
-    newBuilder[K, V].++=(it).result
-
-  def empty[K, V]: C[K, V]
-
-  def apply[K, V](elems: (K, V)*): C[K, V] =
-    newBuilder[K, V].++=(elems.toStrawman).result
-}
-
-/** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
-trait ConstrainedMapFactory[+C[_, _], Ev[_]] { self =>
-
-  def constrainedNewBuilder[K : Ev, V]: Builder[(K, V), C[K, V]]
-
-  def constrainedFromIterable[K : Ev, V](it: Iterable[(K, V)]): C[K, V] =
-    constrainedNewBuilder[K, V].++=(it).result
-
-  def empty[K : Ev, V]: C[K, V]
-
-  def apply[K : Ev, V](elems: (K, V)*): C[K, V] =
-    constrainedNewBuilder[K, V].++=(elems.toStrawman).result
-}

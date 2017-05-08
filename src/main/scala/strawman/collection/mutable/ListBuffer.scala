@@ -1,9 +1,10 @@
-package strawman.collection.mutable
+package strawman.collection
+package mutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.{Any, Int, Unit, Boolean}
 import scala.Int._
 import strawman.collection
-import strawman.collection.{Iterator, IterableOnce, IterableFactory, SeqLike, MonoBuildable, PolyBuildable}
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.IndexOutOfBoundsException
@@ -12,10 +13,9 @@ import scala.Predef.{assert, intWrapper}
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
   extends Seq[A]
-    with SeqLike[A, ListBuffer]
-    with MonoBuildable[A, ListBuffer[A]]
-    with PolyBuildable[A, ListBuffer]
-    with Builder[A, ListBuffer[A]] {
+     with SeqOps[A, ListBuffer, ListBuffer[A]]
+     with Buildable[A, ListBuffer[A]]
+     with Builder[A, ListBuffer[A]] {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
@@ -26,15 +26,15 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  def fromIterable[B](coll: collection.Iterable[B]) = ListBuffer.fromIterable(coll)
+  protected[this] def fromIterable[B](c: collection.Iterable[B]) = ListBuffer.fromIterable(c)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
 
   def apply(i: Int) = first.apply(i)
 
   def length = len
   override def knownSize = len
 
-  protected[this] def newBuilderWithSameElemType = new ListBuffer[A]
-  def newBuilder[E] = new ListBuffer[E]
+  protected[this] def newBuilder = new ListBuffer[A]
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.fromIterable(result)
@@ -55,7 +55,7 @@ class ListBuffer[A]
     first = Nil
   }
 
-  def addInPlace(elem: A) = {
+  def add(elem: A) = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
     if (len == 0) first = last1 else last0.next = last1
@@ -202,9 +202,7 @@ class ListBuffer[A]
 object ListBuffer extends IterableFactory[ListBuffer] {
 
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
-
   def newBuilder[A]: Builder[A, ListBuffer[A]] = new ListBuffer[A]
-
   def empty[A <: Any]: ListBuffer[A] = new ListBuffer[A]
 
 }

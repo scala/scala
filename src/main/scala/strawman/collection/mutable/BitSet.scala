@@ -1,27 +1,21 @@
 package strawman
-package collection.mutable
-
-import strawman.collection.BoundedIterableFactory
+package collection
+package mutable
 
 import scala.{Array, Int, Long}
 import scala.Predef.???
 
 trait BitSet
-  extends collection.BitSet
-    with collection.BitSetLike[BitSet]
-    with SortedSet[Int] {
+  extends SortedSet[Int]
+     with collection.BitSet
+     with SortedSetOps[Int, SortedSet, BitSet]
+     with collection.BitSetOps[BitSet] {
 
   private[collection] def elems: Array[Long]
 
 }
 
-object BitSet extends BoundedIterableFactory[Int] {
-  type To[_] = BitSet
-
-  def fromIterable[E <: Int](it: strawman.collection.Iterable[E]): BitSet = ???
-
-  def newBuilder[E <: Int]: Builder[E, BitSet] = ???
-
-  def empty[A <: Int]: BitSet = ???
-
+object BitSet extends SpecificIterableFactory[Int, BitSet] {
+  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet = ???
+  def empty: BitSet = ???
 }

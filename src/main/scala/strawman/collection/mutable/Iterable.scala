@@ -2,4 +2,4 @@ package strawman.collection.mutable
 import strawman.collection
 
 trait Iterable[A] extends collection.Iterable[A]
-                     with collection.IterableLike[A, Iterable]
+                     with collection.IterableOps[A, Iterable, Iterable[A]]

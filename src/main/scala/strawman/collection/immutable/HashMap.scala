@@ -3,10 +3,9 @@ package collection.immutable
 
 import collection.{Iterator, MapFactory}
 import collection.Hashing.{computeHash, keepBits}
-import collection.mutable.{Builder, ImmutableMapBuilder}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
-import scala.{Any, AnyRef, Array, Boolean, inline, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
+import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
 import java.lang.{Integer, String, System}
 
 /** This class implements immutable maps using a hash trie.
@@ -29,18 +28,20 @@ import java.lang.{Integer, String, System}
 @SerialVersionUID(2L)
 sealed trait HashMap[K, +V]
   extends Map[K, V]
-    with MapLike[K, V, HashMap]
-    with Serializable {
+     with MapOps[K, V, HashMap, HashMap[K, V]]
+     with Serializable {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] =
     coll match {
       case hm: HashMap[K, V] => hm
       case _ => HashMap.fromIterable(coll)
     }
 
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
     HashMap.fromIterable(it)
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
@@ -101,9 +102,6 @@ sealed trait HashMap[K, +V]
 
 object HashMap extends MapFactory[HashMap] {
 
-  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
-    new ImmutableMapBuilder[K, V, HashMap](empty[K, V])
-
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 
   private[collection] abstract class Merger[A, B] {
@@ -155,13 +153,13 @@ object HashMap extends MapFactory[HashMap] {
     * @param size the maximum size of the collection to be generated
     * @return the maximum buffer size
     */
-  @inline private def bufferSize(size: Int): Int = math.min(size + 6, 32 * 7)
+  @`inline` private def bufferSize(size: Int): Int = math.min(size + 6, 32 * 7)
 
   /**
     * In many internal operations the empty map is represented as null for performance reasons. This method converts
     * null to the empty map for use in public methods
     */
-  @inline private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
+  @`inline` private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
 
   private object EmptyHashMap extends HashMap[Any, Nothing] {
 

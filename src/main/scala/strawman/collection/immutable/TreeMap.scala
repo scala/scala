@@ -1,9 +1,10 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
-import strawman.collection.ConstrainedMapFactory
+import strawman.collection.OrderedMapFactory
 import strawman.collection.immutable.{RedBlackTree => RB}
-import strawman.collection.mutable.{Builder, ImmutableMapBuilder}
+import strawman.collection.mutable.Builder
 
 import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 
@@ -30,23 +31,28 @@ import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 @SerialVersionUID(1234)
 final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends SortedMap[K, V]
-    with SortedMapLike[K, V, TreeMap]
+    with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with Serializable {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     coll match {
       case tm: TreeMap[K, V] => tm
-      case _ => TreeMap.constrainedNewBuilder[K, V].++=(coll).result
+      case _ => TreeMap.fromIterable[K, V](coll)
     }
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
-  def constrainedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.constrainedNewBuilder[K2, V2].++=(it).result
+  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
+    TreeMap.fromIterable[K2, V2](it)
+
+  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
+    Map.fromIterable(it)
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
@@ -100,11 +106,6 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   *  @define Coll immutable.TreeMap
   *  @define coll immutable tree map
   */
-object TreeMap extends ConstrainedMapFactory[TreeMap, Ordering] {
-
-  def constrainedNewBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
-    new ImmutableMapBuilder[K, V, TreeMap](empty[K, V])
-
+object TreeMap extends OrderedMapFactory[TreeMap] {
   def empty[K: Ordering, V]: TreeMap[K, V] = new TreeMap()
-
 }

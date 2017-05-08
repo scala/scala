@@ -1,10 +1,10 @@
 package strawman.collection
 
-import scala.{Int, Boolean, Nothing, annotation}
+import scala.{Any, Boolean, Equals, Int, Nothing, annotation}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: View */
-trait View[+A] extends Iterable[A] with IterableLike[A, View] {
+trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def view = this
 
   /** Avoid copying if source collection is already a view. */
@@ -12,10 +12,10 @@ trait View[+A] extends Iterable[A] with IterableLike[A, View] {
     case c: View[B] => c
     case _ => View.fromIterator(c.iterator())
   }
+  override protected[this] def fromSpecificIterable(coll: Iterable[A]): View[A] =
+    fromIterable(coll)
+
   override def className = "View"
-
-  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): View[A] = fromIterable(coll)
-
 }
 
 /** This object reifies operations on views as case classes */
@@ -124,6 +124,12 @@ object View {
       case _ => -1
     }
   }
+}
+
+/** A trait representing indexable collections with finite length */
+trait ArrayLike[+A] extends Any {
+  def length: Int
+  def apply(i: Int): A
 }
 
 /** View defined in terms of indexing a range */

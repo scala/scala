@@ -1,7 +1,7 @@
 package strawman.collection.mutable
 
 import strawman.collection.IterableOnce
-import scala.{inline, Unit}
+import scala.{`inline`, Unit}
 import scala.annotation.tailrec
 import strawman.collection.{toOldSeq, toNewSeq}
 
@@ -16,10 +16,10 @@ trait Growable[-A] {
    *  @param elem  the element to $add.
    *  @return the $coll itself
    */
-  def addInPlace(elem: A): this.type
+  def add(elem: A): this.type
 
-  /** Alias for `addInPlace` */
-  @inline final def += (elem: A): this.type = addInPlace(elem)
+  /** Alias for `add` */
+  @`inline` final def += (elem: A): this.type = add(elem)
 
   /** ${Add}s two or more elements to this $coll.
    *
@@ -28,7 +28,7 @@ trait Growable[-A] {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
-  @inline final def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
+  @`inline` final def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
 
   /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
@@ -52,7 +52,7 @@ trait Growable[-A] {
   }
 
   /** Alias for `addAllInPlace` */
-  @inline final def ++= (xs: IterableOnce[A]): this.type = addAllInPlace(xs)
+  @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAllInPlace(xs)
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.

@@ -1,6 +1,7 @@
 package strawman
 
-package collection.immutable
+package collection
+package immutable
 
 //import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
 import HashSet.{HashSet1, HashSetCollision1, HashTrieSet}
@@ -73,7 +74,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   }
 
   private[this] def iteratorWithSize(arr: Array[Iterable[T]]): (Iterator[T], Int) =
-    (newIterator(arr), (arr.map(_.size): strawman.collection.IterableOps[Int]).sum)
+    (newIterator(arr), (arr.map(_.size): strawman.collection.IterableOps[Int, Iterable, _]).sum)
 
   private[this] def arrayToIterators(arr: Array[Iterable[T]]): SplitIterators = {
     val (fst, snd) = arr.splitAt(arr.length / 2)

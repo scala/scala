@@ -2,7 +2,7 @@ package strawman.collection.mutable
 
 import scala.{Boolean, Any, Char, Unit}
 import java.lang.String
-import strawman.collection.{IterableMonoTransforms, IterableOnce}
+import strawman.collection.IterableOnce
 
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>
@@ -17,7 +17,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
   /** A builder resulting from this builder my mapping the result using `f`. */
   def mapResult[NewTo](f: To => NewTo) = new Builder[A, NewTo] {
-    def addInPlace(x: A): this.type = { self += x; this }
+    def add(x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
     override def addAllInPlace(xs: IterableOnce[A]): this.type = { self ++= xs; this }
     def result: NewTo = f(self.result)
@@ -27,7 +27,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 class StringBuilder extends Builder[Char, String] {
   private val sb = new java.lang.StringBuilder
 
-  def addInPlace(x: Char) = { sb.append(x); this }
+  def add(x: Char) = { sb.append(x); this }
 
   def clear() = sb.setLength(0)
 

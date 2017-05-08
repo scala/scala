@@ -1,20 +1,18 @@
-package strawman.collection.mutable
+package strawman
+package collection
+package mutable
 
 import java.lang.IndexOutOfBoundsException
 
 import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
-import strawman.collection
-import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike, MonoBuildable, PolyBuildable}
-
 import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedOptimizedGrowableSeq[A]
-    with SeqLike[A, ArrayBuffer]
-    with MonoBuildable[A, ArrayBuffer[A]]
-    with PolyBuildable[A, ArrayBuffer]
-    with Builder[A, ArrayBuffer[A]] {
+     with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+     with Buildable[A, ArrayBuffer[A]]
+     with Builder[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 
@@ -47,16 +45,17 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def iterator() = view.iterator()
 
-  def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
+  protected[this] def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
 
-  protected[this] def newBuilderWithSameElemType = new ArrayBuffer[A]
-  def newBuilder[E] = new ArrayBuffer[E]
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
+
+  protected[this] def newBuilder = new ArrayBuffer[A]
 
   def clear() =
     end = 0
 
-  def addInPlace(elem: A): this.type = {
+  def add(elem: A): this.type = {
     ensureSize(end + 1)
     this(end) = elem
     end += 1

@@ -1,9 +1,9 @@
 package strawman
-package collection.immutable
+package collection
+package immutable
 
-import collection.mutable.{Builder, ImmutableSetBuilder}
-import collection.{ConstrainedIterableFactory, ConstrainedPolyBuildable, Iterator}
-import collection.immutable.{RedBlackTree => RB}
+import mutable.Builder
+import immutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
 
@@ -27,8 +27,7 @@ import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
   */
 final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
-    with SortedSetLike[A, TreeSet]
-    with ConstrainedPolyBuildable[A, TreeSet, Ordering] {
+     with SortedSetOps[A, TreeSet, TreeSet[A]] {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")
 
@@ -62,15 +61,15 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
 
-  protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): TreeSet[A] =
-    TreeSet.constrainedFromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
+    TreeSet.orderedFromIterable(coll)
 
-  def constrainedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
-    TreeSet.constrainedFromIterable(coll)
+  protected[this] def orderedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
+    TreeSet.orderedFromIterable(coll)
 
-  def unconstrained: Set[A] = this
+  def unordered: Set[A] = this
 
   /** Checks if this set contains element `elem`.
     *
@@ -92,31 +91,26 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param elem    a new element to add.
     *  @return        a new $coll containing `elem` and all the elements of this $coll.
     */
-  def add(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+  def incl(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
 
   /** Creates a new `TreeSet` with the entry removed.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def remove(elem: A): TreeSet[A] =
+  def excl(elem: A): TreeSet[A] =
     if (!RB.contains(tree, elem)) this
     else newSet(RB.delete(tree, elem))
-
-  def newConstrainedBuilder[E: Ordering]: Builder[E, TreeSet[E]] = TreeSet.constrainedNewBuilder[E]
-
 }
 
-object TreeSet extends ConstrainedIterableFactory[TreeSet, Ordering] {
+object TreeSet extends OrderedSetFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
-  def constrainedNewBuilder[A : Ordering]: Builder[A, TreeSet[A]] = new ImmutableSetBuilder[A, TreeSet](empty[A])
-
-  def constrainedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
+  def orderedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => constrainedNewBuilder[E].++=(it).result
+      case _ => empty ++ it
     }
 
 }

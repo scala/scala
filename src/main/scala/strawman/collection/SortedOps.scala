@@ -3,10 +3,7 @@ package strawman.collection
 import scala.{Ordering, Option, Some}
 
 /** Base trait for sorted collections */
-trait Sorted[A] extends SortedLike[A, Sorted[A]]
-
-trait SortedLike[A, +Repr]
-  extends SortedMonoTransforms[A, Repr] {
+trait SortedOps[A, +C] {
 
   def ordering: Ordering[A]
 
@@ -28,10 +25,6 @@ trait SortedLike[A, +Repr]
     */
   def keysIteratorFrom(start: A): Iterator[A]
 
-}
-
-trait SortedMonoTransforms[A, +Repr] {
-
   /** Creates a ranged projection of this collection. Any mutations in the
     *  ranged projection will update this collection and vice versa.
     *
@@ -44,7 +37,7 @@ trait SortedMonoTransforms[A, +Repr] {
     *  @param until The upper-bound (exclusive) of the ranged projection.
     *               `None` if there is no upper bound.
     */
-  def rangeImpl(from: Option[A], until: Option[A]): Repr
+  def rangeImpl(from: Option[A], until: Option[A]): C
 
   /** Creates a ranged projection of this collection with both a lower-bound
     *  and an upper-bound.
@@ -52,7 +45,5 @@ trait SortedMonoTransforms[A, +Repr] {
     *  @param from The lower-bound (inclusive) of the ranged projection.
     *  @param until The upper-bound (exclusive) of the ranged projection.
     */
-  def range(from: A, until: A): Repr = rangeImpl(Some(from), Some(until))
-
-
+  def range(from: A, until: A): C = rangeImpl(Some(from), Some(until))
 }

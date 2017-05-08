@@ -7,7 +7,8 @@
 \*                                                                      */
 
 package strawman
-package collection.immutable
+package collection
+package immutable
 
 import collection.{Iterator, MapFactory}
 
@@ -15,32 +16,7 @@ import scala.annotation.tailrec
 import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, sys}
 import java.lang.Integer
 
-import strawman.collection.mutable.{Builder, ImmutableMapBuilder}
-
-/**
-  * $factoryInfo
-  *
-  * Note that each element insertion takes O(n) time, which means that creating a list map with
-  * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
-  * elements.
-  *
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list_maps "Scala's Collection Library overview"]]
-  * section on `List Maps` for more information.
-  * @since 1
-  * @define Coll ListMap
-  * @define coll list map
-  */
-object ListMap extends MapFactory[ListMap] {
-
-  def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
-
-  @SerialVersionUID(-8256686706655863282L)
-  private object EmptyListMap extends ListMap[Any, Nothing]
-
-  def newBuilder[K, V]: Builder[(K, V), ListMap[K, V]] =
-    new ImmutableMapBuilder[K, V, ListMap](empty[K, V])
-
-}
+import strawman.collection.mutable.Builder
 
 /**
   * This class implements immutable maps using a list-based data structure. List map iterators and
@@ -69,16 +45,18 @@ object ListMap extends MapFactory[ListMap] {
 @SerialVersionUID(301002838095710379L)
 sealed class ListMap[K, +V]
   extends Map[K, V]
-    with MapLike[K, V, ListMap]
-    with Serializable {
+     with MapOps[K, V, ListMap, ListMap[K, V]]
+     with Serializable {
 
-  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[(K, V)]): ListMap[K, V] =
+  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
+
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] =
     coll match {
       case lm: ListMap[K, V] => lm
       case _ => ListMap.fromIterable(coll)
     }
-
-  protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
 
   def empty: ListMap[K, V] = ListMap.empty[K, V]
 
@@ -153,7 +131,7 @@ sealed class ListMap[K, +V]
 
     @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V1], acc: List[ListMap[K, V1]]): ListMap[K, V1] =
       if (cur.isEmpty) acc.last
-      else if (k == cur.key) acc.foldLeft(cur.next) { case (t, h) => new t.Node(h.key, h.value) }
+      else if (k == cur.key) acc.foldLeft(cur.next) { (t, h) => new t.Node(h.key, h.value) }
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListMap[K, V1] = ListMap.this
@@ -162,3 +140,25 @@ sealed class ListMap[K, +V]
 //    override def init: ListMap[K, V1] = next
   }
 }
+
+/**
+  * $factoryInfo
+  *
+  * Note that each element insertion takes O(n) time, which means that creating a list map with
+  * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
+  * elements.
+  *
+  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list_maps "Scala's Collection Library overview"]]
+  * section on `List Maps` for more information.
+  * @since 1
+  * @define Coll ListMap
+  * @define coll list map
+  */
+object ListMap extends MapFactory[ListMap] {
+
+  def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
+
+  @SerialVersionUID(-8256686706655863282L)
+  private object EmptyListMap extends ListMap[Any, Nothing]
+}
+

@@ -5,26 +5,16 @@ import scala.{Any, Boolean, Equals, `inline`, Int}
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for set collections.
-  *
-  * A set is a collection that contains no duplicate elements.
-  *
-  * @author Martin Odersky
-  * @author Aleksandar Prokopec
-  * @since 2.9
   */
-trait Set[A]
-  extends Iterable[A]
-    with SetLike[A, Set]
+trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for set operations */
-trait SetLike[A, +C[X] <: Set[X]]
-  extends IterableLike[A, C]
-    with SetMonoTransforms[A, C[A]]
-    with SetPolyTransforms[A, C]
-    with (A => Boolean)
-    with Equals {
+trait SetOps[A, +CC[X], +C <: Set[A]]
+  extends IterableOps[A, CC, C]
+     with (A => Boolean)
+     with Equals {
 
-  protected def coll: C[A]
+  protected def coll: C
 
   def contains(elem: A): Boolean
 
@@ -52,49 +42,16 @@ trait SetLike[A, +C[X] <: Set[X]]
 
   override def hashCode(): Int = Set.setHash(coll)
 
-}
-
-/** Monomorphic transformation operations */
-trait SetMonoTransforms[A, +Repr]
-  extends IterableMonoTransforms[A, Repr] {
-
   /** Computes the intersection between this set and another set.
     *
     *  @param   that  the set to intersect with.
     *  @return  a new set consisting of all elements that are both in this
     *  set and in the given set `that`.
     */
-  def intersect(that: Set[A]): Repr = this.filter(that)
+  def intersect(that: Set[A]): C = this.filter(that)
 
   /** Alias for `intersect` */
-  @inline final def & (that: Set[A]): Repr = intersect(that)
-
-  /** The empty set of the same type as this set
-    * @return  an empty set of type `Repr`.
-    */
-  def empty: Repr
-
-}
-
-trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
-
-  /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
-    *
-    * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
-    *
-    * Example:
-    *  {{{
-    *    scala> val a = Set(1, 2) concat Set(2, 3)
-    *    a: scala.collection.immutable.Set[Int] = Set(1, 2, 3)
-    *  }}}
-    *
-    *  @param that     the collection containing the elements to add.
-    *  @return a new $coll with the given elements added, omitting duplicates.
-    */
-  def concat(that: Set[A]): C[A]
-
-  /** Alias for `concat` */
-  @inline final def ++ (that: Set[A]): C[A] = concat(that)
+  @inline final def & (that: Set[A]): C = intersect(that)
 
   /** Computes the union between of set and another set.
     *
@@ -102,21 +59,24 @@ trait SetPolyTransforms[A, +C[X]] extends IterablePolyTransforms[A, C] {
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  @inline final def union(that: Set[A]): C[A] = concat(that)
+  def union(that: Set[A]): C
 
   /** Alias for `union` */
-  @inline final def | (that: Set[A]): C[A] = concat(that)
+  @inline final def | (that: Set[A]): C = union(that)
 
+  /** The empty set of the same type as this set
+    * @return  an empty set of type `C`.
+    */
+  def empty: C
 }
 
 object Set extends IterableFactory[Set] {
-
-  def newBuilder[A]: mutable.Builder[A, Set[A]] = immutable.Set.newBuilder
   def empty[A <: Any]: Set[A] = immutable.Set.empty
+
   def fromIterable[E](it: Iterable[E]): Set[E] =
     it match {
       case s: Set[E] => s
-      case _         => newBuilder[E].++=(it).result
+      case _         => empty ++ it
     }
 
   // Temporary, TODO move to MurmurHash3

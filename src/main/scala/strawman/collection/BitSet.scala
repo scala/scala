@@ -1,20 +1,16 @@
 package strawman
 package collection
 
-import strawman.collection.BitSetLike.{LogWL, WordLength}
-
-import scala.{Array, Boolean, inline, Int, Long, Option, Ordering, Unit}
+import scala.{Array, Boolean, `inline`, Int, Long, Option, Ordering, Unit}
 import scala.Predef.{assert, intWrapper}
 
 /** Base type of bitsets */
-trait BitSet
-  extends SortedSet[Int]
-    with BitSetLike[BitSet]
+trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
 
 /** Base implementation type of bitsets */
-trait BitSetLike[+C <: BitSet with BitSetLike[C]]
-  extends SortedSetLike[Int, SortedSet]
-    with BitSetMonoTransforms[C] { self =>
+trait BitSetOps[+C <: BitSet with BitSetOps[C]]
+  extends SortedSetOps[Int, SortedSet, C] {
+  import BitSetOps._
 
   protected def coll: C
 
@@ -41,7 +37,7 @@ trait BitSetLike[+C <: BitSet with BitSetLike[C]]
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
+      while (current != end && !contains(current)) current += 1
       current != end
     }
     def next(): Int =
@@ -91,14 +87,6 @@ trait BitSetLike[+C <: BitSet with BitSetLike[C]]
     a
   }
 
-}
-
-trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
-  extends SetMonoTransforms[Int, C]
-    with SortedMonoTransforms[Int, C] {
-
-  protected def coll: C
-
   def rangeImpl(from: Option[Int], until: Option[Int]): C = {
     val a = coll.toBitMask
     val len = a.length
@@ -141,7 +129,7 @@ trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
     coll.fromBitMaskNoCopy(words)
   }
 
-  @inline final def ^ (other: BitSet): C = xor(other)
+  @`inline` final def ^ (other: BitSet): C = xor(other)
 
   /**
     * Builds a new bitset by applying a function to all elements of this bitset
@@ -149,15 +137,18 @@ trait BitSetMonoTransforms[+C <: BitSet with BitSetLike[C]]
     * @return a new bitset resulting from applying the given function ''f'' to
     *         each element of this bitset and collecting the results
     */
-  def map(f: Int => Int): C = fromIterableWithSameElemType(View.Map(coll, f))
+  def map(f: Int => Int): C = fromSpecificIterable(View.Map(coll, f))
 
+  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(coll, f))
+
+  def ++(xs: IterableOnce[Int]): C = fromSpecificIterable(View.Concat(coll, xs))
 }
 
-object BitSetLike {
+object BitSetOps {
 
   /* Final vals can sometimes be inlined as constants (faster) */
   private[collection] final val LogWL = 6
-  private final val WordLength = 64
+  private[collection] final val WordLength = 64
 
   private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
     var len = elems.length
@@ -170,5 +161,4 @@ object BitSetLike {
     else assert(w == 0L)
     newelems
   }
-
 }

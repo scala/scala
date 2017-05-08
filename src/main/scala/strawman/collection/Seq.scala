@@ -7,56 +7,29 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for sequence collections */
-trait Seq[+A] extends Iterable[A] with SeqLike[A, Seq] with ArrayLike[A]
+trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]]
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.
   *  Known subclasses: List, LazyList
   */
-trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq] { self =>
+trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 
-  /** To be overridden in implementations: */
-  def isEmpty: Boolean
-  def head: A
-  def tail: LinearSeq[A]
-
-  /** `iterator` is overridden in terms of `head` and `tail` */
-  def iterator() = new Iterator[A] {
-    private[this] var current: Seq[A] = self
-    def hasNext = !current.isEmpty
-    def next() = { val r = current.head; current = current.tail; r }
-  }
-
-  /** `length` is defined in terms of `iterator` */
-  def length: Int = iterator().length
-
-  /** `apply` is defined in terms of `drop`, which is in turn defined in
-    *  terms of `tail`.
-    */
-  override def apply(n: Int): A = {
-    if (n < 0) throw new IndexOutOfBoundsException(n.toString)
-    val skipped = drop(n)
-    if (skipped.isEmpty) throw new IndexOutOfBoundsException(n.toString)
-    skipped.head
-  }
-}
-
-trait IndexedSeq[+A] extends Seq[A] { self =>
-  override def view: IndexedView[A] = new IndexedView[A] {
-    def length: Int = self.length
-    def apply(i: Int): A = self(i)
-  }
-}
+/** Base trait for indexed sequences that have efficient `apply` and `length` */
+trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
 /** Base trait for Seq operations */
-trait SeqLike[+A, +C[X] <: Seq[X]]
-  extends IterableLike[A, C]
-    with SeqMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
-    with Equals {
+trait SeqOps[+A, +CC[X], +C] extends Any
+  with IterableOps[A, CC, C]
+  with ArrayLike[A]
+  with Equals {
 
-  protected def coll: C[A @uncheckedVariance]
-
-  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): C[A] = fromIterable(coll)
+  def reverse: C = {
+    var xs: List[A] = Nil
+    val it = coll.iterator()
+    while (it.hasNext) xs = it.next() :: xs
+    fromSpecificIterable(xs)
+  }
 
   /** Do the elements of this collection are the same (and in the same order)
     * as those of `that`?
@@ -78,15 +51,10 @@ trait SeqLike[+A, +C[X] <: Seq[X]]
       case _ => false
     }
 
-  override def hashCode(): Int =
-    Seq.stableIterableHash(coll)
+  override def hashCode(): Int = stableIterableHash(coll)
 
-}
-
-// Temporary: TODO move to MurmurHash3.scala
-object Seq {
-
-  final def stableIterableHash(xs: Seq[_]): Int = {
+  // Temporary: TODO move to MurmurHash3.scala
+  private def stableIterableHash(xs: Iterable[_]): Int = {
     var n = 0
     var h = "Seq".##
     val it = xs.iterator()
@@ -96,11 +64,33 @@ object Seq {
     }
     MurmurHash3.finalizeHash(h, n)
   }
+}
 
+/** Base trait for indexed Seq operations */
+trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] {
+  override def view: IndexedView[A] = new IndexedView[A] {
+    def length: Int = coll.length
+    def apply(i: Int): A = coll(i)
+  }
+  override def reverse: C = fromSpecificIterable(view.reverse)
 }
 
 /** Base trait for linear Seq operations */
-trait LinearSeqLike[+A, +C[X] <: LinearSeq[X]] extends SeqLike[A, C] {
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
+
+  protected def coll: Seq[A]
+
+  /** To be overridden in implementations: */
+  def isEmpty: Boolean
+  def head: A
+  def tail: LinearSeq[A]
+
+  /** `iterator` is implemented in terms of `head` and `tail` */
+  def iterator() = new Iterator[A] {
+    private[this] var current: Iterable[A] = coll
+    def hasNext = !current.isEmpty
+    def next() = { val r = current.head; current = current.tail; r }
+  }
 
   /** Optimized version of `drop` that avoids copying
     *  Note: `drop` is defined here, rather than in a trait like `LinearSeqMonoTransforms`,
@@ -108,33 +98,25 @@ trait LinearSeqLike[+A, +C[X] <: LinearSeq[X]] extends SeqLike[A, C] {
     *  whereas we need to assume here that `Repr` is the same as the underlying
     *  collection type.
     */
-  override def drop(n: Int): C[A @uncheckedVariance] = { // sound bcs of VarianceNote
-  def loop(n: Int, s: Iterable[A]): C[A] =
-    if (n <= 0) s.asInstanceOf[C[A]]
-    // implicit contract to guarantee success of asInstanceOf:
-    //   (1) coll is of type C[A]
-    //   (2) The tail of a LinearSeq is of the same type as the type of the sequence itself
-    // it's surprisingly tricky/ugly to turn this into actual types, so we
-    // leave this contract implicit.
-    else loop(n - 1, s.tail)
+  override def drop(n: Int): C = { // sound bcs of VarianceNote
+    def loop(n: Int, s: Iterable[A]): C =
+      if (n <= 0) s.asInstanceOf[C]
+      // implicit contract to guarantee success of asInstanceOf:
+      //   (1) coll is of type C[A]
+      //   (2) The tail of a LinearSeq is of the same type as the type of the sequence itself
+      // it's surprisingly tricky/ugly to turn this into actual types, so we
+      // leave this contract implicit.
+      else loop(n - 1, s.tail)
     loop(n, coll)
   }
-}
 
-/** Type-preserving transforms over sequences. */
-trait SeqMonoTransforms[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr] {
-  def reverse: Repr = coll.view match {
-    case v: IndexedView[A] => fromIterableWithSameElemType(v.reverse)
-    case _ =>
-      var xs: List[A] = Nil
-      val it = coll.iterator()
-      while (it.hasNext) xs = it.next() :: xs
-      fromIterableWithSameElemType(xs)
+  /** `apply` is defined in terms of `drop`, which is in turn defined in
+    *  terms of `tail`.
+    */
+  override def apply(n: Int): A = {
+    if (n < 0) throw new IndexOutOfBoundsException(n.toString)
+    val skipped = drop(n)
+    if (skipped.isEmpty) throw new IndexOutOfBoundsException(n.toString)
+    skipped.head
   }
-}
-
-/** A trait representing indexable collections with finite length */
-trait ArrayLike[+A] extends Any {
-  def length: Int
-  def apply(i: Int): A
 }
