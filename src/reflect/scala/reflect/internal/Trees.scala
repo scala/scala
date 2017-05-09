@@ -230,6 +230,8 @@ trait Trees extends api.Trees {
           else ""
         )
     }
+    def transform(transformer: Transformer): Tree = xtransform(transformer, this)
+    def traverse(traverser: Traverser): Unit = xtraverse(traverser, this)
   }
 
   trait TermTree extends Tree with TermTreeApi
@@ -282,12 +284,24 @@ trait Trees extends api.Trees {
       case ValDef(mods, _, _, _)    => if (mods hasFlag MUTABLE) "var" else "val"
       case _ => ""
     }
+
   }
 
   case class PackageDef(pid: RefTree, stats: List[Tree])
        extends MemberDef with PackageDefApi {
     def name = pid.name
     def mods = NoMods
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.PackageDef(
+        this, transformer.transform(pid).asInstanceOf[RefTree],
+        transformer.atOwner(mclass(this.symbol)) {
+          transformer.transformStats(stats, transformer.currentOwner)
+        }
+      )
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(pid)
+      traverser.traverseStats(stats, mclass(this.symbol))
+    }
   }
   object PackageDef extends PackageDefExtractor
 
@@ -296,7 +310,19 @@ trait Trees extends api.Trees {
   }
 
   case class ClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template)
-       extends ImplDef with ClassDefApi
+       extends ImplDef with ClassDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(this.symbol) {
+        transformer.treeCopy.ClassDef(this, transformer.transformModifiers(mods), name,
+          transformer.transformTypeDefs(tparams), transformer.transformTemplate(impl))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(symbol) {
+      traverser.traverseModifiers(mods)
+      traverser.traverseName(name)
+      traverser.traverseParams(tparams)
+      traverser.traverse(impl)
+    }
+  }
   object ClassDef extends ClassDefExtractor {
     /** @param sym       the class symbol
      *  @param impl      the implementation template
@@ -319,7 +345,18 @@ trait Trees extends api.Trees {
   }
 
   case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
-        extends ImplDef with ModuleDefApi
+        extends ImplDef with ModuleDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(mclass(this.symbol)) {
+        transformer.treeCopy.ModuleDef(this, transformer.transformModifiers(mods),
+          name, transformer.transformTemplate(impl))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(mclass(symbol)) {
+      traverser.traverseModifiers(mods)
+      traverser.traverseName(name)
+      traverser.traverse(impl)
+    }
+  }
   object ModuleDef extends ModuleDefExtractor {
     /**
      *  @param sym       the class symbol
@@ -345,14 +382,42 @@ trait Trees extends api.Trees {
     }
   }
 
-  case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi
+  case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(this.symbol) {
+        transformer.treeCopy.ValDef(this, transformer.transformModifiers(mods),
+          name, transformer.transform(tpt), transformer.transform(rhs))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(symbol) {
+      traverser.traverseModifiers(mods)
+      traverser.traverseName(name)
+      traverser.traverseTypeAscription(tpt)
+      traverser.traverse(rhs)
+    }
+  }
   object ValDef extends ValDefExtractor {
     def apply(sym: Symbol): ValDef            = newValDef(sym, EmptyTree)()
     def apply(sym: Symbol, rhs: Tree): ValDef = newValDef(sym, rhs)()
   }
 
   case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
-                    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef with DefDefApi
+                    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef with DefDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(this.symbol) {
+        transformer.treeCopy.DefDef(this, transformer.transformModifiers(mods), name,
+          transformer.transformTypeDefs(tparams), transformer.transformValDefss(vparamss),
+          transformer.transform(tpt), transformer.transform(rhs))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(symbol) {
+      traverser.traverseModifiers(mods)
+      traverser.traverseName(name)
+      traverser.traverseParams(tparams)
+      traverser.traverseParamss(vparamss)
+      traverser.traverseTypeAscription(tpt)
+      traverser.traverse(rhs)
+    }
+
+  }
   object DefDef extends DefDefExtractor {
     def apply(sym: Symbol, rhs: Tree): DefDef                                                = newDefDef(sym, rhs)()
     def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef                  = newDefDef(sym, rhs)(vparamss = vparamss)
@@ -362,7 +427,19 @@ trait Trees extends api.Trees {
   }
 
   case class TypeDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree)
-       extends MemberDef with TypeDefApi
+       extends MemberDef with TypeDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(this.symbol) {
+        transformer.treeCopy.TypeDef(this, transformer.transformModifiers(mods), name,
+          transformer.transformTypeDefs(tparams), transformer.transform(rhs))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(symbol) {
+      traverser.traverseModifiers(mods)
+      traverser.traverseName(name)
+      traverser.traverseParams(tparams)
+      traverser.traverse(rhs)
+    }
+  }
   object TypeDef extends TypeDefExtractor {
     /** A TypeDef node which defines abstract type or type parameter for given `sym` */
     def apply(sym: Symbol): TypeDef            = newTypeDef(sym, TypeBoundsTree(sym))()
@@ -370,7 +447,15 @@ trait Trees extends api.Trees {
   }
 
   case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
-       extends DefTree with TermTree with LabelDefApi
+       extends DefTree with TermTree with LabelDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.LabelDef(this, name, transformer.transformIdents(params), transformer.transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseName(name)
+      traverser.traverseParams(params)
+      traverser.traverse(rhs)
+    }
+  }
   object LabelDef extends LabelDefExtractor {
     def apply(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
       atPos(sym.pos) {
@@ -385,35 +470,90 @@ trait Trees extends api.Trees {
   }
 
   case class Import(expr: Tree, selectors: List[ImportSelector])
-       extends SymTree with ImportApi
+       extends SymTree with ImportApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Import(this, transformer.transform(expr), selectors)
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(expr)
+      selectors foreach traverser.traverseImportSelector
+    }
+  }
   object Import extends ImportExtractor
 
   case class Template(parents: List[Tree], self: ValDef, body: List[Tree])
-       extends SymTree with TemplateApi
+       extends SymTree with TemplateApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Template(this, transformer.transformTrees(parents), transformer.transformValDef(self), transformer.transformStats(body, this.symbol))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseParents(parents)
+      traverser.traverseSelfType(self)
+      traverser.traverseStats(body, this.symbol)
+    }
+  }
   object Template extends TemplateExtractor
 
   case class Block(stats: List[Tree], expr: Tree)
-       extends TermTree with BlockApi
+       extends TermTree with BlockApi {
+    override def transform(transformer: Transformer): Tree =
+      treeCopy.Block(this, transformer.transformStats(stats, transformer.currentOwner), transformer.transform(expr))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseTrees(stats)
+      traverser.traverse(expr)
+    }
+  }
   object Block extends BlockExtractor
 
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
-       extends Tree with CaseDefApi
+       extends Tree with CaseDefApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.CaseDef(this, transformer.transform(pat), transformer.transform(guard), transformer.transform(body))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traversePattern(pat)
+      traverser.traverseGuard(guard)
+      traverser.traverse(body)
+    }
+  }
   object CaseDef extends CaseDefExtractor
 
   case class Alternative(trees: List[Tree])
-       extends TermTree with AlternativeApi
+       extends TermTree with AlternativeApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Alternative(this, transformer.transformTrees(trees))
+    override def traverse(traverser: Traverser): Unit =
+      traverser.traverseTrees(trees)
+  }
   object Alternative extends AlternativeExtractor
 
   case class Star(elem: Tree)
-       extends TermTree with StarApi
+       extends TermTree with StarApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Star(this, transformer.transform(elem))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(elem)
+    }
+  }
   object Star extends StarExtractor
 
   case class Bind(name: Name, body: Tree)
-       extends DefTree with BindApi
+       extends DefTree with BindApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Bind(this, name, transformer.transform(body))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseName(name)
+      traverser.traverse(body)
+    }
+  }
   object Bind extends BindExtractor
 
   case class UnApply(fun: Tree, args: List[Tree])
-       extends TermTree with UnApplyApi
+       extends TermTree with UnApplyApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.UnApply(this, transformer.transform(fun), transformer.transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(fun)
+      traverser.traverseTrees(args)
+    }
+  }
   object UnApply extends UnApplyExtractor
 
   /** An array of expressions. This AST node needs to be translated in backend.
@@ -432,45 +572,122 @@ trait Trees extends api.Trees {
    *      Literal("%s%d"),
    *      ArrayValue(<Any>, List(Ident("foo"), Literal(42))))
    */
-  case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree
+  case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.ArrayValue(this, transformer.transform(elemtpt), transformer.transformTrees(elems))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(elemtpt)
+      traverser.traverseTrees(elems)
+    }
+  }
 
   case class Function(vparams: List[ValDef], body: Tree)
-       extends SymTree with TermTree with FunctionApi
+       extends SymTree with TermTree with FunctionApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.atOwner(this.symbol) {
+        transformer.treeCopy.Function(this, transformer.transformValDefs(vparams), transformer.transform(body))
+      }
+    override def traverse(traverser: Traverser): Unit = traverser.atOwner(this.symbol) {
+      traverser.traverseParams(vparams) ; traverser.traverse(body)
+    }
+  }
   object Function extends FunctionExtractor
 
   case class Assign(lhs: Tree, rhs: Tree)
-       extends TermTree with AssignApi
+       extends TermTree with AssignApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Assign(this, transformer.transform(lhs), transformer.transform(rhs))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(lhs)
+      traverser.traverse(rhs)
+    }
+  }
   object Assign extends AssignExtractor
 
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree with AssignOrNamedArgApi
+       extends TermTree with AssignOrNamedArgApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.AssignOrNamedArg(this, transformer.transform(lhs), transformer.transform(rhs))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(lhs)
+      traverser.traverse(rhs)
+    }
+  }
   object AssignOrNamedArg extends AssignOrNamedArgExtractor
 
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
-       extends TermTree with IfApi
+       extends TermTree with IfApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.If(this, transformer.transform(cond), transformer.transform(thenp), transformer.transform(elsep))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(cond)
+      traverser.traverse(thenp)
+      traverser.traverse(elsep)
+    }
+  }
   object If extends IfExtractor
 
   case class Match(selector: Tree, cases: List[CaseDef])
-       extends TermTree with MatchApi
+       extends TermTree with MatchApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Match(this, transformer.transform(selector), transformer.transformCaseDefs(cases))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(selector)
+      traverser.traverseCases(cases)
+    }
+  }
   object Match extends MatchExtractor
 
   case class Return(expr: Tree)
-       extends SymTree with TermTree with ReturnApi
+       extends SymTree with TermTree with ReturnApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Return(this, transformer.transform(expr))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(expr)
+    }
+  }
   object Return extends ReturnExtractor
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
-       extends TermTree with TryApi
+       extends TermTree with TryApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Try(this, transformer.transform(block), transformer.transformCaseDefs(catches), transformer.transform(finalizer))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(block)
+      traverser.traverseCases(catches)
+      traverser.traverse(finalizer)
+    }
+  }
   object Try extends TryExtractor
 
   case class Throw(expr: Tree)
-       extends TermTree with ThrowApi
+       extends TermTree with ThrowApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Throw(this, transformer.transform(expr))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(expr)
+    }
+  }
   object Throw extends ThrowExtractor
 
-  case class New(tpt: Tree) extends TermTree with NewApi
+  case class New(tpt: Tree) extends TermTree with NewApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.New(this, transformer.transform(tpt))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(tpt)
+    }
+  }
   object New extends NewExtractor
 
   case class Typed(expr: Tree, tpt: Tree)
-       extends TermTree with TypedApi
+       extends TermTree with TypedApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Typed(this, transformer.transform(expr), transformer.transform(tpt))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(expr)
+      traverser.traverseTypeAscription(tpt)
+    }
+  }
   object Typed extends TypedExtractor
 
   abstract class GenericApply extends TermTree with GenericApplyApi {
@@ -485,6 +702,12 @@ trait Trees extends api.Trees {
 
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.TypeApply(this, transformer.transform(fun), transformer.transformTrees(args))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(fun)
+      traverser.traverseTypeArgs(args)
+    }
   }
   object TypeApply extends TypeApplyExtractor
 
@@ -492,6 +715,12 @@ trait Trees extends api.Trees {
        extends GenericApply with ApplyApi {
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Apply(this, transformer.transform(fun), transformer.transformTrees(args))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(fun)
+      traverser.traverseTrees(args)
+    }
   }
   object Apply extends ApplyExtractor
 
@@ -515,16 +744,35 @@ trait Trees extends api.Trees {
     Apply(init, args.toList)
   }
 
-  case class ApplyDynamic(qual: Tree, args: List[Tree]) extends SymTree with TermTree
+  case class ApplyDynamic(qual: Tree, args: List[Tree]) extends SymTree with TermTree {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.ApplyDynamic(this, transformer.transform(qual), transformer.transformTrees(args))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(qual)
+      traverser.traverseTrees(args)
+    }
+  }
 
   case class Super(qual: Tree, mix: TypeName) extends TermTree with SuperApi {
     override def symbol: Symbol = qual.symbol
     override def symbol_=(sym: Symbol) { qual.symbol = sym }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Super(this, transformer.transform(qual), mix)
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(qual)
+      traverser.traverseName(mix)
+    }
   }
   object Super extends SuperExtractor
 
   case class This(qual: TypeName)
-        extends SymTree with TermTree with ThisApi
+        extends SymTree with TermTree with ThisApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.This(this, qual)
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseName(qual)
+    }
+  }
   object This extends ThisExtractor
 
   case class Select(qualifier: Tree, name: Name)
@@ -532,46 +780,95 @@ trait Trees extends api.Trees {
 
     // !!! assert disabled due to test case pos/annotDepMethType.scala triggering it.
     // assert(qualifier.isTerm, qualifier)
+
+    override def transform(transformer: Transformer): Tree = {
+      transformer.treeCopy.Select(this, transformer.transform(qualifier), name)
+    }
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(qualifier)
+      traverser.traverseName(name)
+    }
   }
   object Select extends SelectExtractor
 
   case class Ident(name: Name) extends RefTree with IdentApi {
     def qualifier: Tree = EmptyTree
     def isBackquoted = this.hasAttachment[BackquotedIdentifierAttachment.type]
+    override def transform(transformer: Transformer): Tree = {
+      transformer.treeCopy.Ident(this, name)
+    }
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseName(name)
+    }
   }
   object Ident extends IdentExtractor
 
   case class ReferenceToBoxed(ident: Ident) extends TermTree with ReferenceToBoxedApi {
     override def symbol: Symbol = ident.symbol
     override def symbol_=(sym: Symbol) { ident.symbol = sym }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.ReferenceToBoxed(this, transformer.transform(ident) match { case idt1: Ident => idt1 })
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(ident)
+    }
   }
   object ReferenceToBoxed extends ReferenceToBoxedExtractor
 
   case class Literal(value: Constant)
         extends TermTree with LiteralApi {
     assert(value ne null)
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Literal(this, value)
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseConstant(value)
+    }
   }
   object Literal extends LiteralExtractor
 
 //  @deprecated("will be removed and then be re-introduced with changed semantics, use Literal(Constant(x)) instead")
 //  def Literal(x: Any) = new Literal(Constant(x))
 
-  case class Annotated(annot: Tree, arg: Tree) extends Tree with AnnotatedApi
+  case class Annotated(annot: Tree, arg: Tree) extends Tree with AnnotatedApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.Annotated(this, transformer.transform(annot), transformer.transform(arg))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(annot)
+      traverser.traverse(arg)
+    }
+  }
   object Annotated extends AnnotatedExtractor
 
   case class SingletonTypeTree(ref: Tree)
-        extends TypTree with SingletonTypeTreeApi
+        extends TypTree with SingletonTypeTreeApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.SingletonTypeTree(this, transformer.transform(ref))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(ref)
+    }
+  }
   object SingletonTypeTree extends SingletonTypeTreeExtractor
 
   case class SelectFromTypeTree(qualifier: Tree, name: TypeName)
        extends RefTree with TypTree with SelectFromTypeTreeApi {
 
     assert(qualifier.isType, qualifier)
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.SelectFromTypeTree(this, transformer.transform(qualifier), name)
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(qualifier)
+      traverser.traverseName(name)
+    }
   }
   object SelectFromTypeTree extends SelectFromTypeTreeExtractor
 
   case class CompoundTypeTree(templ: Template)
-       extends TypTree with CompoundTypeTreeApi
+       extends TypTree with CompoundTypeTreeApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.CompoundTypeTree(this, transformer.transformTemplate(templ))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(templ)
+    }
+  }
   object CompoundTypeTree extends CompoundTypeTreeExtractor
 
   case class AppliedTypeTree(tpt: Tree, args: List[Tree])
@@ -581,15 +878,35 @@ trait Trees extends api.Trees {
 
     override def symbol: Symbol = tpt.symbol
     override def symbol_=(sym: Symbol) { tpt.symbol = sym }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.AppliedTypeTree(this, transformer.transform(tpt), transformer.transformTrees(args))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(tpt)
+      traverser.traverseTypeArgs(args)
+    }
   }
   object AppliedTypeTree extends AppliedTypeTreeExtractor
 
   case class TypeBoundsTree(lo: Tree, hi: Tree)
-       extends TypTree with TypeBoundsTreeApi
+       extends TypTree with TypeBoundsTreeApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.TypeBoundsTree(this, transformer.transform(lo), transformer.transform(hi))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(lo)
+      traverser.traverse(hi)
+    }
+  }
   object TypeBoundsTree extends TypeBoundsTreeExtractor
 
   case class ExistentialTypeTree(tpt: Tree, whereClauses: List[MemberDef])
-       extends TypTree with ExistentialTypeTreeApi
+       extends TypTree with ExistentialTypeTreeApi {
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.ExistentialTypeTree(this, transformer.transform(tpt), transformer.transformMemberDefs(whereClauses))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(tpt)
+      traverser.traverseTrees(whereClauses)
+    }
+  }
   object ExistentialTypeTree extends ExistentialTypeTreeExtractor
 
   case class TypeTree() extends TypTree with TypeTreeApi {
@@ -631,6 +948,11 @@ trait Trees extends api.Trees {
       }
       this
     }
+    override def transform(transformer: Transformer): Tree =
+      transformer.treeCopy.TypeTree(this)
+    override def traverse(traverser: Traverser): Unit =
+      ()
+
   }
   object TypeTree extends TypeTreeExtractor
 
@@ -1090,9 +1412,15 @@ trait Trees extends api.Trees {
           (new Throwable).printStackTrace
       }
     )
+    override def traverse(traverser: Traverser): Unit =
+      ()
   }
 
-  case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
+  case object EmptyTree extends TermTree with CannotHaveAttrs {
+    override def isEmpty = true
+    val asList = List(this)
+    override def transform(transformer: Transformer): Tree = this
+  }
   object noSelfType extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
   object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
 
@@ -1209,262 +1537,15 @@ trait Trees extends api.Trees {
 
   // --- generic traversers and transformers
 
+  @deprecated("2.12.3", "Use Tree#traverse instead")
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
-    import traverser._
-
-    def traverseMemberDef(md: MemberDef, owner: Symbol): Unit = atOwner(owner) {
-      traverseModifiers(md.mods)
-      traverseName(md.name)
-      md match {
-        case ClassDef(_, _, tparams, impl)             => traverseParams(tparams) ; traverse(impl)
-        case ModuleDef(_, _, impl)                     => traverse(impl)
-        case ValDef(_, _, tpt, rhs)                    => traverseTypeAscription(tpt) ; traverse(rhs)
-        case TypeDef(_, _, tparams, rhs)               => traverseParams(tparams) ; traverse(rhs)
-        case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-          traverseParams(tparams)
-          traverseParamss(vparamss)
-          traverseTypeAscription(tpt)
-          traverse(rhs)
-      }
-    }
-    def traverseComponents(): Unit = tree match {
-      case LabelDef(name, params, rhs) =>
-        traverseName(name)
-        traverseParams(params)
-        traverse(rhs)
-      case Import(expr, selectors) =>
-        traverse(expr)
-        selectors foreach traverseImportSelector
-      case Annotated(annot, arg) =>
-        traverse(annot)
-        traverse(arg)
-      case Template(parents, self, body) =>
-        traverseParents(parents)
-        traverseSelfType(self)
-        traverseStats(body, tree.symbol)
-      case Block(stats, expr) =>
-        traverseTrees(stats)
-        traverse(expr)
-      case CaseDef(pat, guard, body) =>
-        traversePattern(pat)
-        traverseGuard(guard)
-        traverse(body)
-      case Alternative(trees) =>
-        traverseTrees(trees)
-      case Star(elem) =>
-        traverse(elem)
-      case Bind(name, body) =>
-        traverseName(name)
-        traverse(body)
-      case UnApply(fun, args) =>
-        traverse(fun)
-        traverseTrees(args)
-      case ArrayValue(elemtpt, trees) =>
-        traverse(elemtpt)
-        traverseTrees(trees)
-      case Assign(lhs, rhs) =>
-        traverse(lhs)
-        traverse(rhs)
-      case AssignOrNamedArg(lhs, rhs) =>
-        traverse(lhs)
-        traverse(rhs)
-      case If(cond, thenp, elsep) =>
-        traverse(cond)
-        traverse(thenp)
-        traverse(elsep)
-      case Match(selector, cases) =>
-        traverse(selector)
-        traverseCases(cases)
-      case Return(expr) =>
-        traverse(expr)
-      case Try(block, catches, finalizer) =>
-        traverse(block)
-        traverseCases(catches)
-        traverse(finalizer)
-      case Throw(expr) =>
-        traverse(expr)
-      case New(tpt) =>
-        traverse(tpt)
-      case Typed(expr, tpt) =>
-        traverse(expr)
-        traverseTypeAscription(tpt)
-      case TypeApply(fun, args) =>
-        traverse(fun)
-        traverseTypeArgs(args)
-      case Apply(fun, args) =>
-        traverse(fun)
-        traverseTrees(args)
-      case ApplyDynamic(qual, args) =>
-        traverse(qual)
-        traverseTrees(args)
-      case Super(qual, mix) =>
-        traverse(qual)
-        traverseName(mix)
-      case This(qual) =>
-        traverseName(qual)
-      case Select(qualifier, selector) =>
-        traverse(qualifier)
-        traverseName(selector)
-      case Ident(name) =>
-        traverseName(name)
-      case ReferenceToBoxed(idt) =>
-        traverse(idt)
-      case Literal(const) =>
-        traverseConstant(const)
-      case TypeTree() =>
-        ;
-      case SingletonTypeTree(ref) =>
-        traverse(ref)
-      case SelectFromTypeTree(qualifier, selector) =>
-        traverse(qualifier)
-        traverseName(selector)
-      case CompoundTypeTree(templ) =>
-        traverse(templ)
-      case AppliedTypeTree(tpt, args) =>
-        traverse(tpt)
-        traverseTypeArgs(args)
-      case TypeBoundsTree(lo, hi) =>
-        traverse(lo)
-        traverse(hi)
-      case ExistentialTypeTree(tpt, whereClauses) =>
-        traverse(tpt)
-        traverseTrees(whereClauses)
-      case _ =>
-        xtraverse(traverser, tree)
-    }
-
-    if (tree.canHaveAttrs) {
-      tree match {
-        case PackageDef(pid, stats)  => traverse(pid) ; traverseStats(stats, mclass(tree.symbol))
-        case md: ModuleDef           => traverseMemberDef(md, mclass(tree.symbol))
-        case md: MemberDef           => traverseMemberDef(md, tree.symbol)
-        case Function(vparams, body) => atOwner(tree.symbol) { traverseParams(vparams) ; traverse(body) }
-        case _                       => traverseComponents()
-      }
-    }
+    tree.traverse(traverser)
   }
 
   //OPT ordered according to frequency to speed it up.
+  @deprecated("2.12.3", "Use Tree#transform instead")
   override protected def itransform(transformer: Transformer, tree: Tree): Tree = {
-    import transformer._
-    val treeCopy = transformer.treeCopy
-
-    // begin itransform
-    tree match {
-      case Ident(name) =>
-        treeCopy.Ident(tree, name)
-      case Select(qualifier, selector) =>
-        treeCopy.Select(tree, transform(qualifier), selector)
-      case Apply(fun, args) =>
-        treeCopy.Apply(tree, transform(fun), transformTrees(args))
-      case TypeTree() =>
-        treeCopy.TypeTree(tree)
-      case Literal(value) =>
-        treeCopy.Literal(tree, value)
-      case This(qual) =>
-        treeCopy.This(tree, qual)
-      case ValDef(mods, name, tpt, rhs) =>
-        atOwner(tree.symbol) {
-          treeCopy.ValDef(tree, transformModifiers(mods),
-                          name, transform(tpt), transform(rhs))
-        }
-      case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        atOwner(tree.symbol) {
-          treeCopy.DefDef(tree, transformModifiers(mods), name,
-                          transformTypeDefs(tparams), transformValDefss(vparamss),
-                          transform(tpt), transform(rhs))
-        }
-      case Block(stats, expr) =>
-        treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
-      case If(cond, thenp, elsep) =>
-        treeCopy.If(tree, transform(cond), transform(thenp), transform(elsep))
-      case CaseDef(pat, guard, body) =>
-        treeCopy.CaseDef(tree, transform(pat), transform(guard), transform(body))
-      case TypeApply(fun, args) =>
-        treeCopy.TypeApply(tree, transform(fun), transformTrees(args))
-      case AppliedTypeTree(tpt, args) =>
-        treeCopy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
-      case Bind(name, body) =>
-        treeCopy.Bind(tree, name, transform(body))
-      case Function(vparams, body) =>
-        atOwner(tree.symbol) {
-          treeCopy.Function(tree, transformValDefs(vparams), transform(body))
-        }
-      case Match(selector, cases) =>
-        treeCopy.Match(tree, transform(selector), transformCaseDefs(cases))
-      case New(tpt) =>
-        treeCopy.New(tree, transform(tpt))
-      case Assign(lhs, rhs) =>
-        treeCopy.Assign(tree, transform(lhs), transform(rhs))
-      case AssignOrNamedArg(lhs, rhs) =>
-        treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
-      case Try(block, catches, finalizer) =>
-        treeCopy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
-      case EmptyTree =>
-        tree
-      case Throw(expr) =>
-        treeCopy.Throw(tree, transform(expr))
-      case Super(qual, mix) =>
-        treeCopy.Super(tree, transform(qual), mix)
-      case TypeBoundsTree(lo, hi) =>
-        treeCopy.TypeBoundsTree(tree, transform(lo), transform(hi))
-      case Typed(expr, tpt) =>
-        treeCopy.Typed(tree, transform(expr), transform(tpt))
-      case Import(expr, selectors) =>
-        treeCopy.Import(tree, transform(expr), selectors)
-      case Template(parents, self, body) =>
-        treeCopy.Template(tree, transformTrees(parents), transformValDef(self), transformStats(body, tree.symbol))
-      case ClassDef(mods, name, tparams, impl) =>
-        atOwner(tree.symbol) {
-          treeCopy.ClassDef(tree, transformModifiers(mods), name,
-                            transformTypeDefs(tparams), transformTemplate(impl))
-        }
-      case ModuleDef(mods, name, impl) =>
-        atOwner(mclass(tree.symbol)) {
-          treeCopy.ModuleDef(tree, transformModifiers(mods),
-                             name, transformTemplate(impl))
-        }
-      case TypeDef(mods, name, tparams, rhs) =>
-        atOwner(tree.symbol) {
-          treeCopy.TypeDef(tree, transformModifiers(mods), name,
-                           transformTypeDefs(tparams), transform(rhs))
-        }
-      case LabelDef(name, params, rhs) =>
-        treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
-      case PackageDef(pid, stats) =>
-        treeCopy.PackageDef(
-          tree, transform(pid).asInstanceOf[RefTree],
-          atOwner(mclass(tree.symbol)) {
-            transformStats(stats, currentOwner)
-          }
-        )
-      case Annotated(annot, arg) =>
-        treeCopy.Annotated(tree, transform(annot), transform(arg))
-      case SingletonTypeTree(ref) =>
-        treeCopy.SingletonTypeTree(tree, transform(ref))
-      case SelectFromTypeTree(qualifier, selector) =>
-        treeCopy.SelectFromTypeTree(tree, transform(qualifier), selector)
-      case CompoundTypeTree(templ) =>
-        treeCopy.CompoundTypeTree(tree, transformTemplate(templ))
-      case ExistentialTypeTree(tpt, whereClauses) =>
-        treeCopy.ExistentialTypeTree(tree, transform(tpt), transformMemberDefs(whereClauses))
-      case Return(expr) =>
-        treeCopy.Return(tree, transform(expr))
-      case Alternative(trees) =>
-        treeCopy.Alternative(tree, transformTrees(trees))
-      case Star(elem) =>
-        treeCopy.Star(tree, transform(elem))
-      case UnApply(fun, args) =>
-        treeCopy.UnApply(tree, transform(fun), transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
-      case ArrayValue(elemtpt, trees) =>
-        treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
-      case ApplyDynamic(qual, args) =>
-        treeCopy.ApplyDynamic(tree, transform(qual), transformTrees(args))
-      case ReferenceToBoxed(idt) =>
-        treeCopy.ReferenceToBoxed(tree, transform(idt) match { case idt1: Ident => idt1 })
-      case _ =>
-        xtransform(transformer, tree)
-    }
+    tree.transform(transformer)
   }
 
   private def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)

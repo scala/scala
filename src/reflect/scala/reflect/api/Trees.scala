@@ -2517,12 +2517,14 @@ trait Trees { self: Universe =>
    *  because pattern matching on abstract types we have here degrades performance.
    *  @group Traversal
    */
+  @deprecated("2.12.3", "Use Tree#traverse instead")
   protected def itraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
   /** Provides an extension hook for the traversal strategy.
    *  Future-proofs against new node types.
    *  @group Traversal
    */
+  @deprecated("2.12.3", "Use Tree#traverse instead")
   protected def xtraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
   /** A class that implement a default tree transformation strategy: breadth-first component-wise cloning.
