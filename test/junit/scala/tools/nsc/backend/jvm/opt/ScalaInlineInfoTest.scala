@@ -145,26 +145,29 @@ class ScalaInlineInfoTest extends BytecodeTesting {
   @Test
   def inlineInfoSam(): Unit = {
     val code =
-      """trait C { // expected to be seen as sam: g(I)I
+      """@FunctionalInterface trait C { // expected to be seen as sam: g(I)I
         |  def f = 0
         |  def g(x: Int): Int
         |  val foo = "hi"
         |}
-        |abstract class D {
+        |@FunctionalInterface abstract class D { // not actually a functional interface, but scalac doesn't error
         |  val biz: Int
         |}
-        |trait T { // expected to be seen as sam: h(Ljava/lang/String;)I
+        |@FunctionalInterface trait T { // expected to be seen as sam: h(Ljava/lang/String;)I
         |  def h(a: String): Int
         |}
-        |trait E extends T { // expected to be seen as sam: h(Ljava/lang/String;)I
+        |@FunctionalInterface trait E extends T { // expected to be seen as sam: h(Ljava/lang/String;)I
         |  def hihi(x: Int) = x
         |}
-        |class F extends T {
+        |@FunctionalInterface class F extends T { // not actually a functional interface, but scalac doesn't error
         |  def h(a: String) = 0
         |}
-        |trait U {
+        |@FunctionalInterface trait U {
         |  def conc() = 10
         |  def nullary: Int
+        |}
+        |trait V { // not annotated @FunctionalInterface, therefore not treated as SAM by the optimizer
+        |  def h(a: String): Int
         |}
       """.stripMargin
     val cs = compileClasses(code)
@@ -176,7 +179,8 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("E",Some("h(Ljava/lang/String;)I")),
         ("F",None),
         ("T",Some("h(Ljava/lang/String;)I")),
-        ("U",None)))
+        ("U",None),
+        ("V", None)))
   }
 
   @Test

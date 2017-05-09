@@ -550,7 +550,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
     val sam = {
-      if (classSym.isEffectivelyFinal) None
+      val considerSam = !classSym.isEffectivelyFinal && {
+        isFunctionSymbol(classSym) || classSym.hasAnnotation(FunctionalInterfaceClass)
+      }
+      if (!considerSam) None
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
         // empty parameter list in uncurry and would therefore be picked as SAM.
