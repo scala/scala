@@ -167,7 +167,7 @@ be easily executed locally.
 
 You may use IntelliJ IDEA (see [src/intellij/README.md](src/intellij/README.md)),
 the Scala IDE for Eclipse (see [src/eclipse/README.md](src/eclipse/README.md)),
-or ENSIME (see [this page on the ENSIME site](http://ensime.github.io//contributing/scalac/)).
+or ENSIME (see [this page on the ENSIME site](http://ensime.org/editors/)).
 
 In order to use IntelliJ's incremental compiler:
   - run `dist/mkBin` in sbt to get a build and the runner scripts in `build/quick/bin`
