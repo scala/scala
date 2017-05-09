@@ -569,7 +569,15 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         return
       }
 
-      val isNative         = methSymbol.hasAnnotation(definitions.NativeAttr)
+      val isNative =
+        (methSymbol.hasAnnotation(definitions.NativeAttr)) && {
+          if (methSymbol.owner.isTrait) {
+            reporter.warning(methSymbol.pos, "Native methods are not supprted in traits, ignoring")
+            false
+          } else true
+        }
+
+
       val isAbstractMethod = rhs == EmptyTree
       val flags = GenBCode.mkFlags(
         javaFlags(methSymbol),

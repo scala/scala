@@ -1,0 +1,3 @@
+trait-native.scala:2: warning: Native methods are not supprted in traits, ignoring
+  @native def foo = ???
+              ^
