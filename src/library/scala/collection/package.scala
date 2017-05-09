@@ -81,6 +81,10 @@ package scala
  * The [[scala.collection.JavaConverters]] object provides a collection
  * of decorators that allow converting between Scala and Java collections using `asScala`
  * and `asJava` methods.
+ * 
+ * The [[scala.collection.JavaConversions]] object methods are deprecated.
+ * The transparent conversions it provides are considered fragile because
+ * they can result in unexpected behavior and performance.
  */
 package object collection {
   import scala.collection.generic.CanBuildFrom
