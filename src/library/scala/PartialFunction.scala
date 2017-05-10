@@ -245,7 +245,10 @@ object PartialFunction {
   /** Converts ordinary function to partial one
    *  @since   2.10
    */
-  def apply[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
+  def apply[A, B](f: A => B): PartialFunction[A, B] = f match {
+    case pf: PartialFunction[A, B] => pf
+    case _                         => { case x => f(x) }
+  }
 
   private[this] val constFalse: Any => Boolean = { _ => false}
 
