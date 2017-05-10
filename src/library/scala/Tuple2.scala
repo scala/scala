@@ -9,6 +9,7 @@
 
 package scala
 
+import scala.collection.{ TraversableLike, IterableLike }
 
 /** A tuple of 2 elements; the canonical representation of a [[scala.Product2]].
  *
@@ -20,7 +21,7 @@ final case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*
   extends Product2[T1, T2]
 {
   override def toString() = "(" + _1 + "," + _2 + ")"
-  
+
   /** Swaps the elements of this `Tuple`.
    * @return a new Tuple where the first element is the second element of this Tuple and the
    * second element is the first element of this Tuple.
@@ -30,8 +31,10 @@ final case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*
 }
 
 object Tuple2 {
-  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))
-    (implicit w1: T1 => TraversableOnce[_],
-              w2: T2 => TraversableOnce[_]
-    ): runtime.Tuple2Zipped.Ops[T1, T2] = new runtime.Tuple2Zipped.Ops(x)
+  implicit def tuple2ToInvertOps[T1, T2](x: (T1, T2)): runtime.Tuple2Zipped.InvertOps[T1, T2] = new runtime.Tuple2Zipped.InvertOps(x)
+
+  implicit def tuple2ToZippedOps[T1, T2, El1, Repr1, El2, Repr2](x: (T1, T2))
+    (implicit w1: T1 => TraversableLike[El1, Repr1],
+              w2: T2 => IterableLike[El2, Repr2]
+    ): runtime.Tuple2Zipped.ZippedOps[El1, Repr1, El2, Repr2] = new runtime.Tuple2Zipped.ZippedOps(w1(x._1), w2(x._2))
 }
