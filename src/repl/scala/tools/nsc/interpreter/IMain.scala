@@ -856,8 +856,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
         else {
-          val escapedLine = Constant(originalLine).escapedStringValue
-          List(s"""def $$line = $escapedLine """, """def $trees = _root_.scala.Nil""")
+          val escapedLine = Constant(originalLine).escapedStringValue.replaceAllLiterally("$", "\"+\"$\"+\"")
+          List(s"""def $$line = $escapedLine""", s"""def $$trees = _root_.scala.Nil""")
         }
       }
       def preamble = s"""
