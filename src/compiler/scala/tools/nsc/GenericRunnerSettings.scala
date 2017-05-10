@@ -16,7 +16,7 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
       "-howtorun",
       "how",
       "how to run the specified code",
-      List("object", "script", "jar", "guess"),
+      List("object", "script", "jar", "repl", "guess"),
       "guess")
 
   val loadfiles =

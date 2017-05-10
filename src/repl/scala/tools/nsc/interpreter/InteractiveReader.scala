@@ -46,6 +46,10 @@ object InteractiveReader {
     }
 
   def apply(): InteractiveReader = SimpleReader()
+
+  // a non-interactive InteractiveReader that returns the given text
+  def apply(text: String): InteractiveReader = SimpleReader(text)
+
   @deprecated("Use `apply` instead.", "2.9.0")
   def createDefault(): InteractiveReader = apply() // used by sbt
 }
