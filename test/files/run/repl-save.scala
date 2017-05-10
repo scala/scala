@@ -1,7 +1,7 @@
 import scala.tools.partest.SessionTest
 
 object Test extends SessionTest {
-  def session =
+  override def session =
 s"""|
     |scala> val i = 7
     |i: Int = 7
@@ -16,8 +16,9 @@ s"""|
     |
     |scala> :quit"""
   def saveto = testOutput / "session.repl"
+  override def stripMargins: Boolean = true
   override def show() = {
-    super.show()
+    checkSession()
     Console print saveto.toFile.slurp
   }
 }

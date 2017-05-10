@@ -54,19 +54,17 @@ trait Welcoming { this: ReplTest =>
 }
 
 /** Run a REPL test from a session transcript.
- *  The `session` should be a triple-quoted String starting
- *  with the `Type in expressions` message and ending
- *  after the final `prompt`, including the last space.
+ *  The `session` is read from the `.check` file.
  */
 abstract class SessionTest extends ReplTest  {
-  /** Session transcript, as a triple-quoted, multiline, marginalized string. */
-  def session: String
+  /** Session transcript. */
+  def session: String = testPath.changeExtension("check").toFile.slurp
 
   /** Expected output, as an iterator, optionally marginally stripped. */
   def expected = if (stripMargins) session.stripMargin.lines else session.lines
 
-  /** Override with false if we should not strip margins because of leading continuation lines. */
-  def stripMargins: Boolean = true
+  /** Override with true if session is a """string""" with margin indent. */
+  def stripMargins: Boolean = false
 
   /** Analogous to stripMargins, don't mangle continuation lines on echo. */
   override def inSession: Boolean = true
@@ -77,7 +75,7 @@ abstract class SessionTest extends ReplTest  {
    */
   import SessionTest._
   lazy val pasted = input(prompt)
-  override final def code = pasted findAllMatchIn (expected mkString ("", "\n", "\n")) map {
+  override final def code = pasted.findAllMatchIn(expected.mkString("", "\n", "\n")).map {
     case pasted(null, null, prompted) =>
       def continued(m: Match): Option[String] = m match {
         case margin(text) => Some(text)
@@ -86,17 +84,17 @@ abstract class SessionTest extends ReplTest  {
       margin.replaceSomeIn(prompted, continued)
     case pasted(cmd, pasted, null) =>
       cmd + pasted + "\u0004"
-  } mkString
+  }.mkString
 
   // Just the last line of the interactive prompt
   def prompt = "scala> "
 
-  /** Default test is to compare expected and actual output and emit the diff on a failed comparison. */
-  override def show() = {
+  /** When overriding show, facilitate the usual check, comparing session to eval result. */
+  def checkSession(): Unit = {
     val evaled = eval().toList
     val wanted = expected.toList
-    if (evaled.size != wanted.size) Console println s"Expected ${wanted.size} lines, got ${evaled.size}"
-    if (evaled != wanted) Console print nest.FileManager.compareContents(wanted, evaled, "expected", "actual")
+    if (evaled.size != wanted.size) Console.println(s"Expected ${wanted.size} lines, got ${evaled.size}")
+    if (evaled != wanted) Console.print(nest.FileManager.compareContents(wanted, evaled, "expected", "actual"))
   }
 }
 object SessionTest {
