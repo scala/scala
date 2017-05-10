@@ -865,7 +865,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble
-        |${indentCode(toCompute)}""".stripMargin
+        |%s""".stripMargin.format(indentCode(toCompute))
       def preambleLength = preamble.length - toCompute.length - 1
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
