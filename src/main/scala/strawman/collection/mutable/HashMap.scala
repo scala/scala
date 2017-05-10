@@ -4,6 +4,7 @@ package collection.mutable
 import strawman.collection.{Iterator, MapFactory}
 
 import scala.{Boolean, Int, None, Option, SerialVersionUID, Serializable, Some, Unit}
+import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
   *
@@ -110,7 +111,7 @@ final class DefaultEntry[A, B](val key: A, var value: B)
 
   override def toString = chainString
 
-  def chainString = {
+  def chainString: String = {
     "(kv: " + key + ", " + value + ")" + (if (next != null) " -> " + next.toString else "")
   }
 }
