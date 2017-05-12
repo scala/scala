@@ -531,21 +531,29 @@ trait Types
      *  !!! - and yet it is still inadequate, because aliases and singletons
      *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = (
-      if (this ne widen) widen.dealiasWiden
-      else if (this ne dealias) dealias.dealiasWiden
-      else this
-    )
+    def dealiasWiden: Type = {
+      val widened = widen
+      if (this ne widened) widened.dealiasWiden
+      else {
+        val dealiased = dealias
+        if (this ne dealiased) dealiased.dealiasWiden
+        else this
+      }
+    }
 
     /** All the types encountered in the course of dealiasing/widening,
      *  including each intermediate beta reduction step (whereas calling
      *  dealias applies as many as possible.)
      */
-    def dealiasWidenChain: List[Type] = this :: (
-      if (this ne widen) widen.dealiasWidenChain
-      else if (this ne betaReduce) betaReduce.dealiasWidenChain
-      else Nil
-    )
+    def dealiasWidenChain: List[Type] = this :: {
+      val widened = widen
+      if (this ne widened) widened.dealiasWidenChain
+      else {
+        val betaReduced = betaReduce
+        if (this ne betaReduced) betaReduced.dealiasWidenChain
+        else Nil
+      }
+    }
 
     /** Performs a single step of beta-reduction on types.
      *  Given:
@@ -701,16 +709,18 @@ trait Types
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym.tpeHK match {
-      case OverloadedType(_, alts) => OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym match {
+      case meth: MethodSymbol =>
+        meth.typeAsMemberOf(this)
+      case _ =>
+        computeMemberType(sym)
+    }
+
+    def computeMemberType(sym: Symbol): Type = sym.tpeHK match {
+      case OverloadedType(_, alts) =>
+        OverloadedType(this, alts)
       case tp =>
-        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
-        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
-        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
-        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
-        // from what it is now, and the cache won't know simply by looking at `pre`.
-        if (sym eq NoSymbol) NoType
-        else tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -902,20 +912,7 @@ trait Types
      *  @return    the index of given class symbol in the BaseTypeSeq of this type,
      *             or -1 if no base type with given class symbol exists.
      */
-    def baseTypeIndex(sym: Symbol): Int = {
-      val bts = baseTypeSeq
-      var lo = 0
-      var hi = bts.length - 1
-      while (lo <= hi) {
-        val mid = (lo + hi) / 2
-        val btssym = bts.typeSymbol(mid)
-        if (sym == btssym) return mid
-        else if (sym isLess btssym) hi = mid - 1
-        else if (btssym isLess sym) lo = mid + 1
-        else abort("sym is neither `sym == btssym`, `sym isLess btssym` nor `btssym isLess sym`")
-      }
-      -1
-    }
+    def baseTypeIndex(sym: Symbol): Int = baseTypeSeq.baseTypeIndex(sym)
 
     /** If this is a ExistentialType, PolyType or MethodType, a copy with cloned type / value parameters
      *  owned by `owner`. Identity for all other types.

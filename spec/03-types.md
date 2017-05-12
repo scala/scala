@@ -387,7 +387,7 @@ Function types are shorthands for class types that define `apply`
 functions.  Specifically, the $n$-ary function type
 $(T_1 , \ldots , T_n) \Rightarrow U$ is a shorthand for the class type
 `Function$_n$[T1 , … , $T_n$, U]`. Such class
-types are defined in the Scala library for $n$ between 0 and 9 as follows.
+types are defined in the Scala library for $n$ between 0 and 22 as follows.
 
 ```scala
 package scala

@@ -308,7 +308,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * @param left the expression to evaluate and return if this is empty
    * @see toLeft
    */
-  @inline final def toRight[X](left: => X) =
+  @inline final def toRight[X](left: => X): Either[X, A] =
     if (isEmpty) Left(left) else Right(this.get)
 
   /** Returns a [[scala.util.Right]] containing the given
@@ -319,7 +319,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * @param right the expression to evaluate and return if this is empty
    * @see toRight
    */
-  @inline final def toLeft[X](right: => X) =
+  @inline final def toLeft[X](right: => X): Either[A, X] =
     if (isEmpty) Right(right) else Left(this.get)
 }
 
