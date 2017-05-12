@@ -49,11 +49,16 @@ trait Printers extends api.Printers { self: SymbolTable =>
   /** Turns a path into a String, introducing backquotes
    *  as necessary.
    */
-  def backquotedPath(t: Tree): String = {
+  def backquotedPath(t: Tree): String = backquotedPathInternal(t, symName)
+  def decodedBackquotedPath(t: Tree): String = backquotedPathInternal(t, decodedSymName)
+  
+  private def backquotedPathInternal(t: Tree, stringify: (Tree, Name) => String): String = {
     t match {
-      case Select(qual, name) if name.isTermName  => s"${backquotedPath(qual)}.${symName(t, name)}"
-      case Select(qual, name) if name.isTypeName  => s"${backquotedPath(qual)}#${symName(t, name)}"
-      case Ident(name)                            => symName(t, name)
+      case Select(qual, name) if name.isTermName  => 
+        s"${backquotedPathInternal(qual, stringify)}.${stringify(t, name)}"
+      case Select(qual, name) if name.isTypeName  => 
+        s"${backquotedPathInternal(qual, stringify)}#${stringify(t, name)}"
+      case Ident(name)                            => stringify(t, name)
       case _                                      => t.toString
     }
   }
