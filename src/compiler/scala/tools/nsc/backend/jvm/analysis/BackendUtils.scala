@@ -316,7 +316,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
             while (desc.charAt(i) != ';') i += 1
-            internalNames append desc.substring(start, i)
+            internalNames += desc.substring(start, i)
           }
           // skips over '[', ')', primitives
           i += 1

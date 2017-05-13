@@ -133,7 +133,12 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
      */
     def fitsInOneString: Boolean = {
       // due to escaping, a zero byte in a classfile-annotation of string-type takes actually two characters.
-      val numZeros = (sevenBitsMayBeZero count { b => b == 0 })
+      var i = 0
+      var numZeros = 0
+      while (i < sevenBitsMayBeZero.length) {
+        if (sevenBitsMayBeZero(i) == 0) numZeros += 1
+        i += 1
+      }
 
       (sevenBitsMayBeZero.length + numZeros) <= 65535
     }

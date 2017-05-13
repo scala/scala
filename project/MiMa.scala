@@ -5,7 +5,7 @@ package scala.build
 // * ability to run MiMa twice, swapping `curr` and `prev`, to detect
 //   both forwards and backwards incompatibilities (possibly fixed as of
 //   https://github.com/typesafehub/migration-manager/commit/2844ffa48b6d2255aa64bd687703aec21dadd55e)
-// * ability to pass a filter file (https://github.com/typesafehub/migration-manager/issues/102)
+// * ability to pass a filter file (https://github.com/typesafehub/migration-manager/issues/170)
 // So we invoke the MiMa CLI directly.
 
 import sbt._

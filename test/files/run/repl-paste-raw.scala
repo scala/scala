@@ -2,7 +2,7 @@
 import scala.tools.partest.SessionTest
 
 object Test extends SessionTest {
-  def session =
+  override def session =
 s"""|
     |scala> :paste $pastie
     |Pasting file $pastie...
@@ -15,4 +15,8 @@ s"""|
     |
     |scala> :quit"""
   def pastie = testPath changeExtension "pastie"
+
+  override def stripMargins: Boolean = true
+
+  override def show() = checkSession()
 }

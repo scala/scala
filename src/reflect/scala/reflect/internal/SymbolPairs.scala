@@ -100,11 +100,11 @@ abstract class SymbolPairs {
      */
     protected def exclude(sym: Symbol): Boolean
 
-    /** Does `sym1` match `sym2` such that (sym1, sym2) should be
-     *  considered as a (lo, high) pair? Types always match. Term symbols
+    /** Does `this.low` match `high` such that (low, high) should be
+     *  considered as a pair? Types always match. Term symbols
      *  match if their member types relative to `self` match.
      */
-    protected def matches(lo: Symbol, high: Symbol): Boolean
+    protected def matches(high: Symbol): Boolean
 
     /** The parents and base classes of `base`.  Can be refined in subclasses.
      */
@@ -148,6 +148,16 @@ abstract class SymbolPairs {
     // The current low and high symbols; the high may be null.
     private[this] var lowSymbol: Symbol  = _
     private[this] var highSymbol: Symbol = _
+    def lowMemberType: Type = {
+      if (lowSymbol ne lowMemberTypeCacheSym) {
+        lowMemberTypeCache = self.memberType(lowSymbol)
+        lowMemberTypeCacheSym = lowSymbol
+      }
+      lowMemberTypeCache
+    }
+
+    private[this] var lowMemberTypeCache: Type = _
+    private[this] var lowMemberTypeCacheSym: Symbol = _
 
     // The current entry candidates for low and high symbol.
     private[this] var curEntry  = decls.elems
@@ -229,7 +239,7 @@ abstract class SymbolPairs {
         nextEntry = decls lookupNextEntry nextEntry
         if (nextEntry ne null) {
           val high    = nextEntry.sym
-          val isMatch = matches(lowSymbol, high) && { visited addEntry nextEntry ; true } // side-effect visited on all matches
+          val isMatch = matches(high) && { visited addEntry nextEntry ; true } // side-effect visited on all matches
 
           // skip nextEntry if a class in `parents` is a subclass of the
           // owners of both low and high.

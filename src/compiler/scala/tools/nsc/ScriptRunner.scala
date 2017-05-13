@@ -6,7 +6,7 @@
 package scala
 package tools.nsc
 
-import io.{ AbstractFile, Directory, File, Path }
+import io.{AbstractFile, Directory, File, Path}
 import java.io.IOException
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
@@ -75,10 +75,10 @@ class ScriptRunner extends HasCompileSocket {
     Global(settings, reporter)
 
   /** Compile a script and then run the specified closure with
-    * a classpath for the compiled script.
-    *
-    * @return true if compilation and the handler succeeds, false otherwise.
-    */
+   *  a classpath for the compiled script.
+   *
+   *  @return true if compilation and the handler succeeds, false otherwise.
+   */
   private def withCompiledScript(
     settings: GenericRunnerSettings,
     scriptFile: String)
