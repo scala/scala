@@ -25,8 +25,8 @@ import scala.tools.nsc.interpreter.shell.History
  *
  * Eagerly instantiates all relevant JLine classes, so that we can detect linkage errors on `new JLineReader` and retry.
  */
-class InteractiveReader(completer: () => Completion) extends shell.InteractiveReader {
-  val interactive = true
+class InteractiveReader extends shell.InteractiveReader {
+  def interactive = true
 
   val history: History = new JLineHistory.JLineFileHistory()
 
@@ -49,9 +49,8 @@ class InteractiveReader(completer: () => Completion) extends shell.InteractiveRe
   private[this] var _completion: Completion = shell.NoCompletion
   def completion: Completion = _completion
 
-  override def postInit() = {
-    _completion = completer()
-
+  override def initCompletion(completion: Completion) = {
+    _completion = completion
     consoleReader.initCompletion(completion)
   }
 

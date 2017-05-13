@@ -18,12 +18,10 @@ scala>   (  (2 + 2 )  )
 res5: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res6: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
@@ -38,18 +36,15 @@ res9: String = 4423
 scala> 
 
 scala> 55 ; ((2 + 2)) ; (1, 2, 3)
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res10: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; (x: Int) => x + 1 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res11: () => Int = <function0>
 
 scala> 
@@ -58,9 +53,8 @@ scala> () => 5
 res12: () => Int = <function0>
 
 scala> 55 ; () => 5
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res13: () => Int = <function0>
 
 scala> () => { class X ; new X }

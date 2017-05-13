@@ -9,7 +9,6 @@ import java.net.URL
 
 import PartialFunction.cond
 import scala.language.implicitConversions
-import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.internal.{FatalError, NoPhase}
@@ -21,7 +20,7 @@ import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{Reporter, StoreReporter}
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
-import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import scala.tools.util.PathResolver
 import scala.util.{Try => Trying}
@@ -111,10 +110,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     label = temp
     try body finally label = saved
   }
-
-  // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
-  lazy val formatting = Formatting.forPrompt(replProps.promptText)
-  import formatting.indentCode
 
   lazy val reporter: ReplReporter = new ReplReporter(this)
   import reporter.{ printMessage, printUntruncatedMessage }
@@ -539,8 +534,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         // Rewriting    "foo ; bar ; 123"
         // to           "foo ; bar ; val resXX = 123"
         requestFromLine(rewrittenLine, synthetic) match {
-          case Right(req) => return Right(req withOriginalLine line)
-          case x          => return x
+          case Right(null) => Left(IR.Error)       // disallowed statement type TODO???
+          case Right(req)  => return Right(req withOriginalLine line)
+          case x           => return x
         }
       case _ =>
     }
@@ -596,15 +592,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   // create a Request and compile it
-  private[interpreter] def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+  private[interpreter] def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] =
     if (global == null) Left(IR.Error)
-    else requestFromLine(line, synthetic) match {
-      case Right(null)                => Left(IR.Error)       // disallowed statement type
-      case Right(req) if !req.compile => Left(IR.Error)       // compile error
-      case ok @ Right(req)            => ok
-      case err @ Left(result)         => err
-    }
-  }
+    else requestFromLine(line, synthetic).filterOrElse(_.compile, IR.Error)
 
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
@@ -762,8 +752,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case Left(e)                       => Left(unwrap(e))
     }
 
-    def compile(source: String): Boolean = compileAndSaveRun(label, source)
-
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one.
       */
@@ -802,10 +790,22 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case Array(method) => method
       case xs            => throw new IllegalStateException(s"Internal error: eval object $evalClass, ${xs.mkString("\n", "\n", "")}")
     }
-    private def compileAndSaveRun(label: String, code: String) = {
-      showCodeIfDebugging(code)
-      val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
+
+    def mkUnit(code: String) =
+      new CompilationUnit(new BatchSourceFile(label, packaged(code)))
+
+    def compile(code: String): Boolean = compile(mkUnit(code))
+
+    def compile(unit: CompilationUnit): Boolean = {
+      val run = new Run()
+      assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
+
+      reporter.reset()
+      run.compileUnits(unit :: Nil)
+      val success = !reporter.hasErrors
+
       updateRecentWarnings(run)
+
       success
     }
   }
@@ -816,6 +816,15 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     def imports    = importedSymbols
     def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
     val lineRep = new ReadEvalPrint()
+
+    private val preambleEndMember = "$ipos"+{lineRep.lineId}
+    // don't look until we've (tried) attributing the trees in unit!
+    lazy val preambleEndPos: Position =
+      unit.body.find {
+        case td: TypeDef => td.name.toString == preambleEndMember
+        case _ => false
+      }.map(_.pos).getOrElse(NoPosition)
+
 
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
@@ -866,13 +875,17 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           List(s"""def $$line = $escapedLine""", s"""def $$trees = _root_.scala.Nil""")
         }
       }
+      // NOTE: it's important to terminate the preambleEndMember definition with a semi-colon
+      // to avoid collapsing it with subsequent `{` (making a refinement)
+      // We pick this jungle back apart in PresentationCompileResult.tree, so propagate any changes to there.
       def preamble = s"""
         |$headerPreamble
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble
-        |%s""".stripMargin.format(indentCode(toCompute))
-      def preambleLength = preamble.length - toCompute.length - 1
+        |private type $preambleEndMember = _root_.scala.Nothing;
+        |""".stripMargin + toCompute
+      def preambleLength = preamble.length - toCompute.length
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
 
@@ -944,14 +957,20 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
+    lazy val unit = {
+      val code = ObjectSourceCode(handlers)
+      showCodeIfDebugging(code)
+      lineRep.mkUnit(code)
+    }
+
     /** Compile the object file.  Returns whether the compilation succeeded.
      *  If all goes well, the "types" map is computed. */
-    lazy val compile: Boolean = {
+    def compile: Boolean = {
       // error counting is wrong, hence interpreter may overlook failure - so we reset
       reporter.reset()
 
       // compile the object containing the user's code
-      lineRep.compile(ObjectSourceCode(handlers)) && {
+      lineRep.compile(unit) && {
         // extract and remember types
         typeOf
         typesOfDefinedTerms
@@ -1197,6 +1216,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def lastRequest     = if (prevRequests.isEmpty) null else prevRequests.last
   def prevRequestList = prevRequests.toList
   def importHandlers  = allHandlers collect { case x: ImportHandler => x }
+
+  def currentRequest = executingRequest
 
   def withoutUnwrapping(op: => Unit): Unit = {
     val saved = isettings.unwrapStrings

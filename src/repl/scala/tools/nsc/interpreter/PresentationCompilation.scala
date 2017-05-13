@@ -97,7 +97,7 @@ trait PresentationCompilation {
       val offset = preambleLength
       val pos1 = unit.source.position(offset).withEnd(offset + buf.length)
       new Locator(pos1) locateIn unit.body match {
-        case Template(_, _, constructor :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
+        case Template(_, _, constructor :: preambleEndMember :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
         case t => t
       }
     }

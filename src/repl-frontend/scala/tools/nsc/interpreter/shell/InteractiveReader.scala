@@ -11,9 +11,7 @@ import InteractiveReader._
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
-  def postInit(): Unit = {}
-
-  val interactive: Boolean
+  def interactive: Boolean
 
   def reset(): Unit
   def history: History
@@ -34,6 +32,8 @@ trait InteractiveReader {
     // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
     if (scala.util.Properties.isMac) restartSysCalls(readOneLine(prompt), reset())
     else readOneLine(prompt)
+
+  def initCompletion(completion: Completion): Unit = {}
 }
 
 object InteractiveReader {
@@ -44,10 +44,6 @@ object InteractiveReader {
     }
 
   def apply(): InteractiveReader = SimpleReader()
-
-  // a non-interactive InteractiveReader that returns the given text
-  def apply(text: String): InteractiveReader = SimpleReader(text)
-
 }
 
 /** Collect one line of user input from the supplied reader.
@@ -55,7 +51,7 @@ object InteractiveReader {
  *
  *  The user can enter text or a `:paste` command.
  */
-class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
+class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
   import java.lang.System.{lineSeparator => EOL}
   import java.util.concurrent.SynchronousQueue
 
@@ -65,43 +61,37 @@ class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
 
   /** Read one line of input which can be retrieved with `line`. */
   def run(): Unit = {
-    var line = ""
+    var input = ""
     try
-      do {
-        line = reader.readLine(prompt)
-        if (line != null) {
-          line = process(line.trim)
+      while (input != null && input.isEmpty && running) {
+        input = in.readLine(prompt)
+        if (input != null) {
+          val trimmed = input.trim
+          if (trimmed.length >= 3 && ":paste".startsWith(trimmed))
+            input = readPastedLines
         }
-      } while (line != null && line.isEmpty && running)
+      }
     finally {
-      result.put(Option(line))
+      result.put(Option(input))
     }
   }
 
-  /** Check for `:paste` command. */
-  private def process(line: String): String = {
-    def isPrefix(s: String, p: String, n: Int) = (
-      //s != null && p.inits.takeWhile(_.length >= n).exists(s == _)
-      s != null && s.length >= n && s.length <= p.length && s == p.take(s.length)
-    )
-    if (isPrefix(line, ":paste", 3)) {
-      // while collecting lines, check running flag
-      var help = f"// Entering paste mode (ctrl-D to finish)%n%n"
-      def readWhile(cond: String => Boolean) = {
-        Iterator continually reader.readLine(help) takeWhile { x =>
-          help = ""
-          x != null && cond(x)
-        }
+  /** Process `:paste`d input. */
+  private def readPastedLines: String = {
+    // while collecting lines, check running flag
+    var help = f"// Entering paste mode (ctrl-D to finish)%n%n"
+    def readWhile(cond: String => Boolean) = {
+      Iterator continually in.readLine(help) takeWhile { x =>
+        help = ""
+        x != null && cond(x)
       }
-      val text = (readWhile(_ => running) mkString EOL).trim
-      val next =
-        if (text.isEmpty) "// Nothing pasted, nothing gained."
-        else "// Exiting paste mode, now interpreting."
-      Console println f"%n${next}%n"
-      text
-    } else {
-      line
     }
+    val text = (readWhile(_ => running) mkString EOL).trim
+    val next =
+      if (text.isEmpty) "// Nothing pasted, nothing gained."
+      else "// Exiting paste mode, now interpreting."
+    Console println f"%n${next}%n"
+    text
   }
 
   def start(): Unit = result.synchronized {
@@ -117,31 +107,7 @@ class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
     thread = null
   }
 
-  /** Block for the result line, or null on ctrl-D. */
-  def line: String = result.take getOrElse null
-}
-object SplashLoop {
-  def apply(reader: SplashReader, prompt: String): SplashLoop = new SplashLoop(reader, prompt)
+  /** Blocking. Returns Some(input) when received during splash loop, or None if interrupted (e.g., ctrl-D). */
+  def line: Option[String] = result.take
 }
 
-/** Reader during splash. Handles splash-completion with a stub, otherwise delegates. */
-class SplashReader(reader: InteractiveReader, postIniter: InteractiveReader => Unit) extends InteractiveReader {
-  /** Invoke the postInit action with the underlying reader. */
-  override def postInit(): Unit = postIniter(reader)
-
-  override val interactive: Boolean = reader.interactive
-
-  override def reset(): Unit = reader.reset()
-  override def history: History = reader.history
-  override val completion: Completion = NoCompletion
-  override def redrawLine(): Unit = reader.redrawLine()
-
-  override protected[interpreter] def readOneLine(prompt: String): String = ???   // unused
-  override protected[interpreter] def readOneKey(prompt: String): Int     = ???   // unused
-
-  override def readLine(prompt: String): String = reader.readLine(prompt)
-}
-object SplashReader {
-  def apply(reader: InteractiveReader)(postIniter: InteractiveReader => Unit) =
-    new SplashReader(reader, postIniter)
-}

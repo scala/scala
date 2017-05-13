@@ -26,6 +26,8 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
   // A convenience for testing
   def complete(before: String, after: String = ""): Candidates = complete(before + after, before.length)
   override def complete(buf: String, cursor: Int): Candidates = {
+    require(cursor >= 0 && cursor <= buf.length)
+
     val request = Request(buf, cursor)
     if (request == lastRequest)
       tabCount += 1

@@ -19,13 +19,12 @@ import scala.tools.asm.ClassReader
 import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, IMain, NamedParam, Phased}
 import scala.tools.nsc.interpreter.StdReplTags._
 import scala.tools.nsc.{GenericRunnerSettings, Properties, Settings}
-
 import scala.util.Properties.jdkHome
-import scala.util.{Failure, Try}
 import Completion._
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{stackTraceString, stringFromStream}
+import scala.tools.nsc.interpreter.jline
 
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
@@ -40,17 +39,16 @@ import scala.tools.nsc.util.{stackTraceString, stringFromStream}
  *  @author  Lex Spoon
  *  @version 1.2
  */
-class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extends LoopCommands {
-  def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
-  def this() = this(None, new JPrintWriter(Console.out, true))
+class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = new JPrintWriter(Console.out, true)) extends LoopCommands {
 
-  private var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
   var intp: IMain        = _
 
+  // will be set during startup (when settings are known)
+  private var in: InteractiveReader = _
+
   // TODO: rip out of package object into IMain?
   import scala.tools.nsc.interpreter.{replProps, replinfo, isReplInfo, isReplPower, repldbg, isReplDebug, words, string2codeQuoted, substituteAndLog}
-
 
   var partialInput: String                    = ""          // code accumulated in multi-line REPL input
 
@@ -91,6 +89,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
     val saved = in
     try body
     finally in = saved
+  }
+
+  def printShellInterrupt(): Unit = {
+    out print Properties.shellInterruptedString
   }
 
   /** Close the interpreter and set the var to null. */
@@ -855,61 +857,24 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
           else buffer
 
         // prepend `partialInput` for multi-line input.
-        pc.complete(partialInput + bufferWithVar, cursor + (partialInput.length + bufferWithVar.length - buffer.length))
+        val bufferWithMultiLine = partialInput + bufferWithVar
+        val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
+        pc.complete(bufferWithMultiLine, cursor1)
       }
     }
   }
-
-  /** Tries to create a jline.InteractiveReader, falling back to SimpleReader,
-   *  unless settings or properties are such that it should start with SimpleReader.
-   *  The constructor of the InteractiveReader must take a Completion strategy,
-   *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
-   */
-  def chooseReader(settings: Settings): InteractiveReader =
-    (if (settings.Xnojline || Properties.isEmacsShell) Failure(new NoSuchElementException("User requested simple reader."))
-    else Try {
-      val className =
-        System.getProperty("scala.repl.reader", "scala.tools.nsc.interpreter.jline.InteractiveReader")
-
-      if (settings.debug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
-
-      val readerConstructor =
-        Class.forName(className).getConstructor(classOf[() => Completion])
-
-      readerConstructor.newInstance(
-        if (settings.noCompletion) () => NoCompletion else () => new ReplCompletion(intp)
-      ).asInstanceOf[InteractiveReader]
-    }) getOrElse SimpleReader()
-
 
   /** Start an interpreter with the given settings.
    *  @return true if successful
    */
   def process(settings: Settings): Boolean = savingContextLoader {
-
+    // find value for -e argument, if set to non-empty string (collapse given empty string and no string at all)
     // yes this is sad
-    val runnerSettings = settings match {
-      case generic: GenericRunnerSettings => Some(generic)
-      case _                              => None
-    }
-
-    /** Reader to use before interpreter is online. */
-    def preLoop = {
-      def newReader = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
-      val sr = SplashReader(newReader) { r =>
-        in = r
-        in.postInit()
+    val batchText =
+      settings match {
+        case generic: GenericRunnerSettings if generic.execute.isSetByUser => generic.execute.value
+        case _ => ""
       }
-      in = sr
-      SplashLoop(sr, prompt)
-    }
-
-    // -e batch mode
-    def batchLoop(text: String) = {
-      val sr = SplashReader(InteractiveReader(text))(_ => ())
-      in = sr
-      SplashLoop(sr, prompt)
-    }
 
     /* Actions to cram in parallel while collecting first user input at prompt.
      * Run with output muted both from ILoop and from the intp reporter.
@@ -931,8 +896,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
         asyncMessage(intp.power.banner)
       }
       loadInitFiles()
-      // scala/bug#7418 Now, and only now, can we enable TAB completion.
-      in.postInit()
     }
     def loadInitFiles(): Unit = settings match {
       case settings: GenericRunnerSettings =>
@@ -967,16 +930,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
         }
       }
     }
-    def startup(): String = withSuppressedSettings {
-      // -e is non-interactive
-      val splash =
-        runnerSettings.filter(_.execute.isSetByUser).map(ss => batchLoop(ss.execute.value)).getOrElse {
-          // starting
-          printWelcome()
+    def startup(): Option[String] = withSuppressedSettings {
+      val batchMode = batchText.nonEmpty
+      if (!batchMode) printWelcome()
 
-          // let them start typing
-          preLoop
-        }
+      in =
+        if (batchMode) SimpleReader(batchText)
+        else if (defaultIn != null) SimpleReader(defaultIn, out, interactive = true)
+        else if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
+        else new jline.InteractiveReader()
+
+      // let them start typing, using the splash reader (which avoids tab completion)
+      val splash = new SplashLoop(in, prompt)
       splash.start()
 
       // while we go fire up the REPL
@@ -993,27 +958,32 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
           null
         } else {
           loopPostInit()
-          val line = splash.line           // what they typed in while they were waiting
-          if (line == null) {              // they ^D
-            try out.print(Properties.shellInterruptedString)
-            finally closeInterpreter()
-          }
-          line
+          splash.line // blocks
         }
-      } finally splash.stop()
+      } finally {
+        splash.stop()
+        // scala/bug#7418 Now, and only now, can we enable TAB completion.
+        if (!(settings.noCompletion || batchMode))
+          in.initCompletion(new ReplCompletion(intp))
+      }
     }
     this.settings = settings
-    startup() match {
-      case null    => false
-      case line    =>
-        try loop(line) match {
-          case LineResults.EOF if in.interactive => out.print(Properties.shellInterruptedString)
-          case _                                 =>
-        }
-        catch AbstractOrMissingHandler()
-        finally closeInterpreter()
-        true
-    }
+
+
+    try
+      startup() match {
+        case None =>
+          printShellInterrupt()
+          false
+        case Some(line) =>
+          try loop(line) match {
+            case LineResults.EOF if in.interactive => printShellInterrupt()
+            case _ =>
+          }
+          catch AbstractOrMissingHandler()
+          true
+      }
+    finally closeInterpreter()
   }
 
   //used by sbt
@@ -1062,6 +1032,7 @@ object ILoop {
             }
           }
         }
+
         val repl = new ILoop(input, output)
         if (settings.classpath.isDefault)
           settings.classpath.value = sys.props("java.class.path")

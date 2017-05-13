@@ -15,25 +15,22 @@ warning: there was one feature warning; for details, enable `:setting -feature' 
 convert: [F[X <: F[X]]](builder: F[_ <: F[_]])Int
 
 scala> convert(Some[Int](0))
-<console>:15: error: no type parameters for method convert: (builder: F[_ <: F[_]])Int exist so that it can be applied to arguments (Some[Int])
- --- because ---
-argument expression's type is not compatible with formal parameter type;
- found   : Some[Int]
- required: ?F[_$1] forSome { type _$1 <: ?F[_$2] forSome { type _$2 } }
-       convert(Some[Int](0))
        ^
-<console>:15: error: type mismatch;
- found   : Some[Int]
- required: F[_ <: F[_]]
-       convert(Some[Int](0))
+       error: no type parameters for method convert: (builder: F[_ <: F[_]])Int exist so that it can be applied to arguments (Some[Int])
+        --- because ---
+       argument expression's type is not compatible with formal parameter type;
+        found   : Some[Int]
+        required: ?F[_$1] forSome { type _$1 <: ?F[_$2] forSome { type _$2 } }
                         ^
+       error: type mismatch;
+        found   : Some[Int]
+        required: F[_ <: F[_]]
 
 scala> Range(1,2).toArray: Seq[_]
-<console>:14: error: polymorphic expression cannot be instantiated to expected type;
- found   : [B >: Int]Array[B]
- required: Seq[_]
-       Range(1,2).toArray: Seq[_]
                   ^
+       error: polymorphic expression cannot be instantiated to expected type;
+        found   : [B >: Int]Array[B]
+        required: Seq[_]
 
 scala> 0
 res2: Int = 0

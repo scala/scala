@@ -8,8 +8,7 @@ package interpreter
 
 import reporters._
 import IMain._
-
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{NoPosition, NoSourceFile, Position}
 
 /** Like ReplGlobal, a layer for ensuring extra functionality.
  */
@@ -50,7 +49,49 @@ class  ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.
     printMessage(pos, prefix + msg)
   }
 
-  override def printMessage(msg: String) {
+  private lazy val indentDepth = replProps.promptText.lines.toList.last.length
+  private lazy val indentation = " " * indentDepth
+  private def indented(str: String) = str.lines.mkString(indentation, "\n" + indentation, "")
+
+  // indent errors, error message uses the caret to point at the line already on the screen instead of repeating it
+  // TODO: can we splice the error into the code the user typed when multiple lines were entered?
+  // (should also comment out the error to keep multi-line copy/pastable)
+  // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
+  // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
+  override def printMessage(posIn: Position, msg: String): Unit = {
+    if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
+    else {
+      val currentRequest = intp.currentRequest
+      val consoleLinePrefix = "On line "
+      val locationPrefix =
+        posIn.source.file.name match { case  "<console>" => consoleLinePrefix case n => s"$n:" }
+
+      // If there's only one line of input, and it's already printed on the console (as indicated by the position's source file name),
+      // reuse that line in our error output, and suppress the line number (since we know it's `1`)
+      if (locationPrefix == consoleLinePrefix && currentRequest.originalLine.indexOf('\n') == -1) {
+        printMessage(indentation + posIn.lineCaret)
+        printMessage(indented(msg))
+      }
+      else {
+        val preambleLineDelta = currentRequest.preambleEndPos.line
+        val (msgFirstLine, msgRest) =
+          msg.indexOf('\n') match {
+            case -1 => (msg, "")
+            case n => (msg.substring(0, n), msg.substring((n + 1) min msg.length))
+          }
+
+        // add newline to get away from prompt when we're reporting on a script/paste
+        if (locationPrefix != consoleLinePrefix) printMessage("")
+
+        printMessage(indentation + posIn.lineContent)
+        printMessage(indentation + posIn.lineCaret)
+        printMessage(s"$locationPrefix${posIn.line - preambleLineDelta}: $msgFirstLine")
+        if (!msgRest.isEmpty) printMessage(indented(msgRest))
+      }
+    }
+  }
+
+  override def printMessage(msg: String): Unit = {
     // Avoiding deadlock if the compiler starts logging before
     // the lazy val is complete.
     if (intp.isInitializeComplete) {
@@ -63,10 +104,8 @@ class  ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.
     else Console.println("[init] " + msg)
   }
 
-  override def displayPrompt() {
-    if (intp.totalSilence) ()
-    else super.displayPrompt()
-  }
+  override def displayPrompt(): Unit =
+    if (!intp.totalSilence) super.displayPrompt()
 
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String) =
     s"; for details, enable `:setting $name' or `:replay $name'"
