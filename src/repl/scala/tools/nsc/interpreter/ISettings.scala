@@ -3,8 +3,7 @@
  * @author Alexander Spoon
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
 /** Settings for the interpreter
  *

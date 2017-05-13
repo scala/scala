@@ -3,11 +3,10 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc.interpreter.shell
 
 import scala.tools.nsc.util.stringFromWriter
 
-// TODO: move to repl-frontend into package scala.tools.nsc.interpreter.shell
 class Formatting(indent: Int) {
 
   private val indentation = " " * indent
@@ -19,10 +18,9 @@ class Formatting(indent: Int) {
 
     !noIndent
   }
-
   /** Indent some code by the width of the scala> prompt.
-    * This way, compiler error messages read better.
-    */
+   *  This way, compiler error messages read better.
+   */
   def indentCode(code: String) = stringFromWriter(str =>
     for (line <- code.lines) {
       if (indenting(code)) str print indentation
@@ -31,7 +29,6 @@ class Formatting(indent: Int) {
     }
   )
 }
-
 object Formatting {
   def forPrompt(prompt: String) = new Formatting(prompt.lines.toList.last.length)
 }

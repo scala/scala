@@ -3,12 +3,9 @@
  * @author Stepan Koltsov
  */
 
-package scala
-package tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
-import java.io.{BufferedReader, StringReader}
-import session.NoHistory
+import java.io.{BufferedReader, StringReader, PrintWriter => JPrintWriter}
 
 /** Reads using standard JDK API. */
 class SimpleReader(

@@ -3,8 +3,7 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
 import scala.language.implicitConversions
 

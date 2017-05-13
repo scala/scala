@@ -3,13 +3,13 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
-package session
+package scala.tools.nsc.interpreter.shell
 
-import scala.collection.mutable.{ Buffer, ListBuffer }
+import scala.collection.mutable.{Buffer, ListBuffer}
 
 class SimpleHistory extends History {
+  import scala.tools.nsc.interpreter.repldbg
+
   private var _index: Int = 0
   protected val buf: Buffer[String] = new ListBuffer[String]
   private def setTo(num: Int)          = { _index = num ; true }

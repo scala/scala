@@ -12,7 +12,7 @@ import jconsole.history.History.{Entry => JEntry}
 import jconsole.history.{History => JHistory}
 
 import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.session.{History, SimpleHistory}
+import scala.tools.nsc.interpreter.shell.{History, SimpleHistory}
 
 
 /** A straight scalafication of the jline interface which mixes

@@ -13,7 +13,7 @@ import scala.reflect.internal.util.Position
 
 /** Like ReplGlobal, a layer for ensuring extra functionality.
  */
-class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.in, new ReplStrippingWriter(intp)) {
+class  ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.in, new ReplStrippingWriter(intp)) {
   def printUntruncatedMessage(msg: String) = withoutTruncating(printMessage(msg))
 
   /** Whether very long lines can be truncated.  This exists so important

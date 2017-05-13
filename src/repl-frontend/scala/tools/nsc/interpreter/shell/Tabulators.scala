@@ -3,7 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc.interpreter.shell
 
 trait Tabulator {
   def isAcross: Boolean
@@ -19,7 +19,7 @@ trait Tabulator {
   )
   protected def columnize(ss: Seq[String]): Seq[Seq[String]] = ss map (s => Seq(s))
   protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
-    import scala.tools.nsc.interpreter.SimpleMath._
+    import SimpleMath._
     val longest     = (items map (_.length)).max
     val columnWidth = longest + marginSize
     val maxcols = (
@@ -48,7 +48,7 @@ trait Tabulator {
 /** Adjust the column width and number of columns to minimize the row count. */
 trait VariColumnTabulator extends Tabulator {
   override protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
-    import scala.tools.nsc.interpreter.SimpleMath._
+    import SimpleMath._
     val longest  = (items map (_.length)).max
     val shortest = (items map (_.length)).min
     val fattest  = longest + marginSize

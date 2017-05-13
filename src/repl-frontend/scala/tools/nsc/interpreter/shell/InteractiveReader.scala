@@ -3,13 +3,11 @@
  * @author Stepan Koltsov
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
 import java.io.IOException
-import session.History
+
 import InteractiveReader._
-import Properties.isMac
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
@@ -34,7 +32,7 @@ trait InteractiveReader {
 
   def readLine(prompt: String): String =
     // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
-    if (isMac) restartSysCalls(readOneLine(prompt), reset())
+    if (scala.util.Properties.isMac) restartSysCalls(readOneLine(prompt), reset())
     else readOneLine(prompt)
 }
 
@@ -50,8 +48,6 @@ object InteractiveReader {
   // a non-interactive InteractiveReader that returns the given text
   def apply(text: String): InteractiveReader = SimpleReader(text)
 
-  @deprecated("Use `apply` instead.", "2.9.0")
-  def createDefault(): InteractiveReader = apply() // used by sbt
 }
 
 /** Collect one line of user input from the supplied reader.
@@ -60,8 +56,8 @@ object InteractiveReader {
  *  The user can enter text or a `:paste` command.
  */
 class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
-  import java.util.concurrent.SynchronousQueue
   import java.lang.System.{lineSeparator => EOL}
+  import java.util.concurrent.SynchronousQueue
 
   private val result = new SynchronousQueue[Option[String]]
   @volatile private var running: Boolean = _

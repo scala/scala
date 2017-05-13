@@ -2,31 +2,31 @@
  * Copyright 2005-2016 LAMP/EPFL
  * @author Alexander Spoon
  */
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
-import scala.language.{implicitConversions, existentials}
+import java.io.{BufferedReader, PrintWriter => JPrintWriter}
+
+import scala.PartialFunction.{cond => when}
+import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
-import Predef.{println => _, _}
-import PartialFunction.{cond => when}
-import interpreter.session._
-import StdReplTags._
-import scala.tools.asm.ClassReader
-import scala.util.Properties.jdkHome
-import scala.tools.nsc.util.{ClassPath, stringFromStream}
+import scala.concurrent.{Await, Future}
+import scala.language.{existentials, implicitConversions}
 import scala.reflect.classTag
-import scala.reflect.internal.util.{BatchSourceFile, ScalaClassLoader, NoPosition}
-import ScalaClassLoader._
-import scala.reflect.io.{Directory, File, Path}
-import scala.tools.util._
-import io.AbstractFile
-import scala.concurrent.{ExecutionContext, Await, Future}
-import ExecutionContext.Implicits._
-import java.io.BufferedReader
+import scala.reflect.internal.util.ScalaClassLoader._
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition, ScalaClassLoader}
+import scala.reflect.io.{AbstractFile, Directory, File, Path}
+import scala.tools.asm.ClassReader
+import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, IMain, NamedParam, Phased}
+import scala.tools.nsc.interpreter.StdReplTags._
+import scala.tools.nsc.{GenericRunnerSettings, Properties, Settings}
 
-import scala.util.{Try, Success, Failure}
-
+import scala.util.Properties.jdkHome
+import scala.util.{Failure, Try}
 import Completion._
+import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
+import scala.tools.util.PathResolver
+import scala.tools.nsc.util.{stackTraceString, stringFromStream}
+
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -40,19 +40,19 @@ import Completion._
  *  @author  Lex Spoon
  *  @version 1.2
  */
-class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
-                extends AnyRef
-                   with LoopCommands
-{
+class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extends LoopCommands {
   def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
   def this() = this(None, new JPrintWriter(Console.out, true))
 
-  @deprecated("use `intp` instead.", "2.9.0") def interpreter = intp
-  @deprecated("use `intp` instead.", "2.9.0") def interpreter_= (i: Interpreter): Unit = intp = i
-
-  var in: InteractiveReader = _   // the input stream from which commands come
+  private var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
-  var intp: IMain = _
+  var intp: IMain        = _
+
+  // TODO: rip out of package object into IMain?
+  import scala.tools.nsc.interpreter.{replProps, replinfo, isReplInfo, isReplPower, repldbg, isReplDebug, words, string2codeQuoted, substituteAndLog}
+
+
+  var partialInput: String                    = ""          // code accumulated in multi-line REPL input
 
   private var globalFuture: Future[Boolean] = _
 
@@ -71,7 +71,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     intp.reporter printUntruncatedMessage msg
   }
 
-  lazy val power = new Power(intp, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
   def history = in.history
 
   /** A reverse list of commands to replay if the user requests a :replay */
@@ -166,7 +165,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Prompt to print when awaiting input */
   def prompt = replProps.prompt
 
-  import LoopCommand.{ cmd, nullary }
+  import LoopCommand.{cmd, nullary}
 
   /** Standard commands **/
   lazy val standardCommands = List(
@@ -330,7 +329,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
 
   private def phaseCommand(name: String): Result = {
-    val phased: Phased = power.phased
+    val phased: Phased = intp.power.phased
     import phased.NoPhaseName
 
     if (name == "clear") {
@@ -372,7 +371,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     case ex: Throwable =>
       val (err, explain) = (
         if (intp.isInitializeComplete)
-          (intp.global.throwableAsString(ex), "")
+          (stackTraceString(ex), "")
         else
           (ex.getMessage, "The compiler did not initialize.\n")
       )
@@ -511,7 +510,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                 case Some(edited) =>
                   echo(edited.lines map ("+" + _) mkString "\n")
                   val res = intp interpret edited
-                  if (res == IR.Incomplete) diagnose(edited)
+                  if (res == Incomplete) diagnose(edited)
                   else {
                     history.historicize(edited)
                     Result(lineToRecord = Some(edited), keepRunning = true)
@@ -651,10 +650,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def enablePowerMode(isDuringInit: Boolean) = {
     replProps.power setValue true
     unleashAndSetPhase()
-    asyncEcho(isDuringInit, power.banner)
+    asyncEcho(isDuringInit, intp.power.banner)
   }
   private def unleashAndSetPhase() = if (isReplPower) {
-    power.unleash()
+    intp.power.unleash()
     intp beSilentDuring phaseCommand("typer") // Set the phase to "typer"
   }
 
@@ -736,7 +735,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         text
     }
     def interpretCode() = {
-      if (intp.withLabel(label)(intp interpret code) == IR.Incomplete)
+      if (intp.withLabel(label)(intp interpret code) == Incomplete)
         paste.incomplete("The pasted code is incomplete!\n", label, code)
     }
     def compileCode() = paste.compilePaste(label = label, code = code)
@@ -774,7 +773,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private object invocation {
-    def unapply(line: String): Boolean = Completion.looksLikeInvocation(line)
+    // a leading dot plus something, but not ".." or "./", ignoring leading whitespace
+    private val dotlike = """\s*\.[^./].*""".r
+    def looksLikeInvocation(code: String) = code match {
+      case null      => false   // insurance
+      case dotlike() => true
+      case _         => false
+    }
+
+    def unapply(line: String): Boolean = looksLikeInvocation(line)
   }
 
   private val lineComment = """\s*//.*""".r   // all comment
@@ -807,14 +814,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                                                        }
       case invocation() if intp.mostRecentVar != "" => interpretStartingWith(intp.mostRecentVar + code)
       case _                                        => intp.interpret(code) match {
-        case IR.Error      => None
-        case IR.Success    => Some(code)
-        case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
+        case Error                                                 => None
+        case Success                                               => Some(code)
+        case Incomplete if in.interactive && code.endsWith("\n\n") =>
           echo("You typed two blank lines.  Starting a new command.")
           None
-        case IR.Incomplete =>
-          val saved = intp.partialInput
-          intp.partialInput = code + "\n"
+        case Incomplete                                            =>
+          val saved = partialInput
+          partialInput = code + "\n"
           try {
             in.readLine(paste.ContinuePrompt) match {
               case null =>
@@ -826,7 +833,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                 None
               case line => interpretStartingWith(s"$code\n$line")
             }
-          } finally intp.partialInput = saved
+          } finally partialInput = saved
       }
     }
   }
@@ -838,8 +845,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     def complete(buffer: String, cursor: Int): Completion.Candidates = {
       if (buffer.startsWith(":"))
         colonCompletion(buffer, cursor).complete(buffer, cursor)
-      else
-        pc.complete(buffer, cursor)
+      else {
+        // special case for:
+        //
+        // scala> 1
+        // scala> .toInt
+        val bufferWithVar =
+          if (invocation.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
+          else buffer
+
+        // prepend `partialInput` for multi-line input.
+        pc.complete(partialInput + bufferWithVar, cursor + (partialInput.length + bufferWithVar.length - buffer.length))
+      }
     }
   }
 
@@ -848,39 +865,22 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  The constructor of the InteractiveReader must take a Completion strategy,
    *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
    */
-  def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
-    else {
-      type Completer = () => Completion
-      type ReaderMaker = Completer => InteractiveReader
+  def chooseReader(settings: Settings): InteractiveReader =
+    (if (settings.Xnojline || Properties.isEmacsShell) Failure(new NoSuchElementException("User requested simple reader."))
+    else Try {
+      val className =
+        System.getProperty("scala.repl.reader", "scala.tools.nsc.interpreter.jline.InteractiveReader")
 
-      def instantiater(className: String): ReaderMaker = completer => {
-        if (settings.debug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
-        Class.forName(className).getConstructor(classOf[Completer]).
-          newInstance(completer).
-          asInstanceOf[InteractiveReader]
-      }
+      if (settings.debug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
 
-      def mkReader(maker: ReaderMaker) = maker { () =>
-        if (settings.noCompletion) NoCompletion else new ReplCompletion(intp)
-      }
+      val readerConstructor =
+        Class.forName(className).getConstructor(classOf[() => Completion])
 
-      def internalClass(kind: String) = s"scala.tools.nsc.interpreter.$kind.InteractiveReader"
-      val readerClasses = sys.props.get("scala.repl.reader").toStream ++ Stream(internalClass("jline"), internalClass("jline_embedded"))
-      val readers = readerClasses map (cls => Try { mkReader(instantiater(cls)) })
+      readerConstructor.newInstance(
+        if (settings.noCompletion) () => NoCompletion else () => new ReplCompletion(intp)
+      ).asInstanceOf[InteractiveReader]
+    }) getOrElse SimpleReader()
 
-      val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
-
-      if (settings.debug) {
-        val readerDiags = (readerClasses, readers).zipped map {
-          case (cls, Failure(e)) => s"  - $cls --> \n\t" + scala.tools.nsc.util.stackTraceString(e) + "\n"
-          case (cls, Success(_)) => s"  - $cls OK"
-        }
-        Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
-      }
-      reader
-    }
-  }
 
   /** Start an interpreter with the given settings.
    *  @return true if successful
@@ -928,7 +928,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       if (isReplPower) {
         replProps.power setValue true
         unleashAndSetPhase()
-        asyncMessage(power.banner)
+        asyncMessage(intp.power.banner)
       }
       loadInitFiles()
       // scala/bug#7418 Now, and only now, can we enable TAB completion.
@@ -1016,8 +1016,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
+  //used by sbt
+  @deprecated("use `intp` instead.", "2.9.0")
+  def interpreter = intp
+
+  //used by sbt
+  @deprecated("use `intp` instead.", "2.9.0")
+  def interpreter_= (i: scala.tools.nsc.Interpreter): Unit = intp = i
+
+  //used by sbt
   @deprecated("use `process` instead", "2.9.0")
-  def main(settings: Settings): Unit = process(settings) //used by sbt
+  def main(settings: Settings): Unit = process(settings)
 }
 
 object ILoop {
@@ -1027,7 +1036,7 @@ object ILoop {
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
   def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
-    import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+    import java.io.{BufferedReader, OutputStreamWriter, StringReader}
     import java.lang.System.{lineSeparator => EOL}
 
     stringFromStream { ostream =>
@@ -1066,7 +1075,7 @@ object ILoop {
    *  the given code to it as input.
    */
   def run(code: String, sets: Settings = new Settings): String = {
-    import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+    import java.io.{BufferedReader, OutputStreamWriter, StringReader}
 
     stringFromStream { ostream =>
       Console.withOut(ostream) {

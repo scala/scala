@@ -3,16 +3,16 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
-import scala.language.implicitConversions
+import java.net.URL
 
 import scala.collection.mutable
 import scala.io.Codec
-import java.net.URL
-import scala.reflect.runtime.{universe => ru}
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => ru}
+import scala.tools.nsc.io
 
 /** Collecting some power mode examples.
 
@@ -42,9 +42,8 @@ Lost after 18/flatten {
 /** A class for methods to be injected into the intp in power mode.
  */
 class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, replVals: ReplValsImpl) {
-  import intp.{ beQuietDuring, parse }
   import intp.global._
-  import definitions.{ compilerTypeFromTag, compilerSymbolFromTag}
+  import intp.{beQuietDuring, parse}
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -183,8 +182,8 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
       || s.isAnonOrRefinementClass
       || s.isAnonymousFunction
     )
-    def symbol            = compilerSymbolFromTag(tag)
-    def tpe               = compilerTypeFromTag(tag)
+    def symbol            = definitions.compilerSymbolFromTag(tag)
+    def tpe               = definitions.compilerTypeFromTag(tag)
     def members           = membersUnabridged filterNot excludeMember
     def membersUnabridged = tpe.members.toList
     def pkg               = symbol.enclosingPackage

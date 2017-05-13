@@ -15,16 +15,17 @@ import jline.console.completer.{CandidateListCompletionHandler, Completer, Compl
 import jconsole.history.{History => JHistory}
 
 import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.{Completion, NoCompletion}
-import scala.tools.nsc.interpreter.Completion.Candidates
-import scala.tools.nsc.interpreter.session.History
+import scala.tools.nsc.interpreter.shell
+import scala.tools.nsc.interpreter.shell.{Completion, NoCompletion}
+import scala.tools.nsc.interpreter.shell.Completion.Candidates
+import scala.tools.nsc.interpreter.shell.History
 
 /**
  * Reads from the console using JLine.
  *
  * Eagerly instantiates all relevant JLine classes, so that we can detect linkage errors on `new JLineReader` and retry.
  */
-class InteractiveReader(completer: () => Completion) extends interpreter.InteractiveReader {
+class InteractiveReader(completer: () => Completion) extends shell.InteractiveReader {
   val interactive = true
 
   val history: History = new JLineHistory.JLineFileHistory()
@@ -45,7 +46,7 @@ class InteractiveReader(completer: () => Completion) extends interpreter.Interac
     reader
   }
 
-  private[this] var _completion: Completion = interpreter.NoCompletion
+  private[this] var _completion: Completion = shell.NoCompletion
   def completion: Completion = _completion
 
   override def postInit() = {
@@ -61,7 +62,7 @@ class InteractiveReader(completer: () => Completion) extends interpreter.Interac
 }
 
 // implements a jline interface
-private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter.VariColumnTabulator {
+private class JLineConsoleReader extends jconsole.ConsoleReader with shell.VariColumnTabulator {
   val isAcross   = interpreter.`package`.isAcross
   val marginSize = 3
 

@@ -2,15 +2,18 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
-package scala.tools.nsc.interpreter
+package scala.tools.nsc.interpreter.shell
 
 import scala.reflect.internal.util.StringOps
-import scala.tools.nsc.interpreter.Completion.Candidates
 import scala.util.control.NonFatal
+import Completion.Candidates
+import scala.tools.nsc.interpreter.IMain
 
 class PresentationCompilerCompleter(intp: IMain) extends Completion {
-  import PresentationCompilerCompleter._
   import intp.{PresentationCompileResult => Result}
+  import scala.tools.nsc.interpreter.isReplDebug
+
+  import PresentationCompilerCompleter._
 
   private type Handler = Result => Candidates
 
@@ -37,14 +40,8 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
     val Cursor = IMain.DummyCursorFragment + " "
 
     def print(result: Result) = {
-      val offset = result.preambleLength
-      val pos1 = result.unit.source.position(offset).withEnd(offset + buf.length)
-      import result.compiler._
-      val tree = new Locator(pos1) locateIn result.unit.body match {
-        case Template(_, _, constructor :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
-        case t => t
-      }
-      val printed = showCode(tree) + " // : " + tree.tpe.safeToString
+      val tree = result.tree(buf)
+      val printed = result.compiler.showCode(tree) + " // : " + tree.tpe.safeToString
       Candidates(cursor, "" :: printed :: Nil)
     }
     def typeAt(result: Result, start: Int, end: Int) = {
@@ -52,8 +49,10 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
       Candidates(cursor, "" :: tpString :: Nil)
     }
     def candidates(result: Result): Candidates = {
-      import result.compiler._
-      import CompletionResult._
+      import result.compiler.{Member, Name, TypeMember, definitions, nme}
+      import result.compiler.CompletionResult
+      import CompletionResult.NoResults
+
       def defStringCandidates(matching: List[Member], name: Name): Candidates = {
         val defStrings = for {
           member <- matching

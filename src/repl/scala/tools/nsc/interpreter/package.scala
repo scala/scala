@@ -5,11 +5,14 @@
 
 package scala.tools.nsc
 
+import java.io.{ByteArrayOutputStream, OutputStream, PrintStream, PrintWriter, StringWriter, Writer}
+
 import scala.language.implicitConversions
-import scala.reflect.{ classTag, ClassTag }
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.{ClassTag, classTag}
+import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.api.{Mirror, TypeCreator, Universe => ApiUniverse}
+import scala.tools.nsc.util.stringFromWriter
 import scala.util.control.Exception.catching
 import scala.util.Try
 

@@ -3,13 +3,11 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
 import scala.util.control.ControlThrowable
-import util.Exceptional.unwrap
-import util.stackTraceString
-
+import scala.tools.nsc.util.Exceptional.unwrap
+import scala.tools.nsc.util.stackTraceString
 trait ReplConfig {
   lazy val replProps = new ReplProps
 

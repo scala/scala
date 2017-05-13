@@ -11,8 +11,9 @@ import scala.collection.mutable
 trait Imports {
   self: IMain =>
 
-  import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import global.{Type, Tree, Import, ImportSelector, Select, Ident, newTermName, Symbol, TermSymbol, NoType, Name, enteringPickler}
+  import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+  import global.definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
@@ -142,7 +143,6 @@ trait Imports {
 
     // add code for a new object to hold some imports
     def addWrapper() {
-      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
       code append (wrapper.prewrap format iw)
       trailingBraces append wrapper.postwrap
       accessPath append s".$iw"

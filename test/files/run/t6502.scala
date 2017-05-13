@@ -1,5 +1,6 @@
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.{ ILoop, replProps }
+import scala.tools.nsc.interpreter.shell.ILoop
+import scala.tools.nsc.interpreter.replProps
 import scala.tools.partest._
 
 object Test extends StoreReporterDirectTest {

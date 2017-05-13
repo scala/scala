@@ -2,28 +2,25 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
-package scala
-package tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
-import scala.language.reflectiveCalls
-
-import java.lang.{ Iterable => JIterable }
-import scala.reflect.internal.util.ScalaClassLoader
-import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, StringWriter, Writer }
-import java.util.{ Locale }
+import java.io._
+import java.lang.{Iterable => JIterable}
+import java.net.URL
+import java.util.Locale
 import java.util.concurrent.ConcurrentLinkedQueue
-import javax.tools.{ Diagnostic, DiagnosticListener,
-                     ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
-                     SimpleJavaFileObject, StandardLocation }
-import scala.reflect.io.File
-import scala.io.Source
-import scala.util.{ Try, Success, Failure }
-import scala.util.Properties.{ lineSeparator => EOL }
+import javax.tools._
+
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
-import java.net.URL
-import Javap.{ JpResult, JpError, Showable, helper, toolArgs, DefaultOptions }
+import scala.io.Source
+import scala.language.reflectiveCalls
+import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.io.File
+import scala.util.Properties.{lineSeparator => EOL}
+import scala.util.{Failure, Success, Try}
+import Javap._
+import scala.tools.nsc.interpreter.IMain
 
 /** Javap command implementation.
  */
@@ -243,11 +240,11 @@ class JavapClass(
     // manages named arrays of bytes, which might have failed to load
     class JavapFileManager(val managed: Seq[Input])(delegate: JavaFileManager = defaultFileManager)
       extends ForwardingJavaFileManager[JavaFileManager](delegate) {
+      import JavaFileManager.Location
       import JavaFileObject.Kind
       import Kind._
       import StandardLocation._
-      import JavaFileManager.Location
-      import java.net.{ URI, URISyntaxException }
+      import java.net.{URI, URISyntaxException}
 
       // name#fragment is OK, but otherwise fragile
       def uri(name: String): URI =

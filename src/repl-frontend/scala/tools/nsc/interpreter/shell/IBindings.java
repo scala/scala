@@ -3,7 +3,7 @@
  * @author Raphael Jolly
  */
 
-package scala.tools.nsc.interpreter;
+package scala.tools.nsc.interpreter.shell;
 
 import java.util.Map;
 import java.util.AbstractMap;

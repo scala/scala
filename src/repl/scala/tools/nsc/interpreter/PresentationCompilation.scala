@@ -21,16 +21,9 @@ trait PresentationCompilation {
     *
     * The caller is responsible for calling [[PresentationCompileResult#cleanup]] to dispose of the compiler instance.
     */
-  private[scala] def presentationCompile(line: String): Either[IR.Result, PresentationCompileResult] = {
+  private[scala] def presentationCompile(line1: String): Either[IR.Result, PresentationCompileResult] = {
     if (global == null) Left(IR.Error)
     else {
-      // special case for:
-      //
-      // scala> 1
-      // scala> .toInt
-      //
-      // and for multi-line input.
-      val line1 = partialInput + (if (Completion.looksLikeInvocation(line)) { self.mostRecentVar + line } else line)
       val compiler = newPresentationCompiler()
       val trees = compiler.newUnitParser(line1).parseStats()
       val importer = global.mkImporter(compiler)
@@ -41,7 +34,7 @@ trait PresentationCompilation {
       val richUnit = new RichCompilationUnit(unit.source)
       unitOfFile(richUnit.source.file) = richUnit
       enteringTyper(typeCheck(richUnit))
-      val result = PresentationCompileResult(compiler)(richUnit, request.ObjectSourceCode.preambleLength + line1.length - line.length)
+      val result = PresentationCompileResult(compiler)(richUnit, request.ObjectSourceCode.preambleLength)
       Right(result)
     }
   }
@@ -98,6 +91,17 @@ trait PresentationCompilation {
       val pos   = new RangePosition(unit.source, start, start, end)
       compiler.typedTreeAt(pos)
     }
+
+    def tree(buf: String) = {
+      import compiler.{Locator, Template, Block}
+      val offset = preambleLength
+      val pos1 = unit.source.position(offset).withEnd(offset + buf.length)
+      new Locator(pos1) locateIn unit.body match {
+        case Template(_, _, constructor :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
+        case t => t
+      }
+    }
+
   }
 
   object PresentationCompileResult {

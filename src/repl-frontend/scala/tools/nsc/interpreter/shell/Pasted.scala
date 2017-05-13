@@ -3,8 +3,9 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
+
+import scala.tools.nsc.interpreter.Results.{Result, Incomplete}
 
 /** If it looks like they're pasting in a scala interpreter
  *  transcript, remove all the formatting we inserted so we
@@ -16,7 +17,9 @@ package interpreter
  *  the same result.
  */
 abstract class Pasted(prompt: String) {
-  def interpret(line: String): IR.Result
+  import scala.tools.nsc.interpreter.replProps
+
+  def interpret(line: String): Result
   def echo(message: String): Unit
 
   val PromptString    = prompt.lines.toList.last
@@ -97,12 +100,12 @@ abstract class Pasted(prompt: String) {
     def interpreted(line: String) = {
       echo(line.trim)
       val res = interpret(line)
-      if (res != IR.Incomplete) echo("")
+      if (res != Incomplete) echo("")
       res
     }
     def incompletely(cmd: String) = {
       print(ActualPromptString)
-      interpreted(cmd) == IR.Incomplete
+      interpreted(cmd) == Incomplete
     }
     def run(): Option[String] = {
       echo(s"// Replaying ${cmds.size} commands from transcript.\n")

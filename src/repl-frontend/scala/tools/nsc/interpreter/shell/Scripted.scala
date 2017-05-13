@@ -1,19 +1,21 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2016 LAMP/EPFL
  */
-package scala
-package tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
 import scala.language.dynamics
-
 import scala.beans.BeanProperty
 import scala.collection.JavaConverters._
 import scala.reflect.classTag
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.util.stringFromReader
-import javax.script._, ScriptContext.{ ENGINE_SCOPE, GLOBAL_SCOPE }
-import java.io.{ Closeable, Reader }
+import javax.script._
+import ScriptContext.{ENGINE_SCOPE, GLOBAL_SCOPE}
+import java.io.{Closeable, OutputStream, Reader, PrintWriter => JPrintWriter}
+
+import scala.tools.nsc.Settings
+import scala.tools.nsc.interpreter.Results.Incomplete
+import scala.tools.nsc.interpreter.{IMain, ReplReporter}
 
 /* A REPL adaptor for the javax.script API. */
 class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: JPrintWriter)
@@ -23,6 +25,8 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
 
   // dynamic context bound under this name
   final val ctx = "$ctx"
+
+  import scala.tools.nsc.interpreter.isReplDebug
 
   // the underlying interpreter, tweaked to handle dynamic bindings
   val intp = new IMain(settings, out) {
@@ -148,16 +152,16 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     withCompileContext(context) {
       val cat = code + script
       intp.compile(cat, synthetic = false) match {
-        case Right(req)          =>
+        case Right(req)       =>
           code = ""
           new WrappedRequest(req)
-        case Left(IR.Incomplete) =>
+        case Left(Incomplete) =>
           code = cat + "\n"
           new CompiledScript {
             def eval(context: ScriptContext): Object = null
             def getEngine: ScriptEngine = Scripted.this
           }
-        case Left(_)             =>
+        case Left(_)          =>
           code = ""
           throw firstError map {
             case (pos, msg) => new ScriptException(msg, script, pos.line, pos.column)

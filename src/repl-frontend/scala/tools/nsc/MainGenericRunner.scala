@@ -3,20 +3,16 @@
  * @author  Lex Spoon
  */
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 
-import io.File
-import util.ClassPath
-import interpreter.ILoop
-import GenericRunnerCommand._
+import interpreter.shell.ILoop
 
 object JarRunner extends CommonRunner {
   def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
     val jar       = new io.Jar(jarPath)
     val mainClass = jar.mainClass getOrElse (throw new IllegalArgumentException(s"Cannot find main class for jar: $jarPath"))
-    val jarURLs   = ClassPath expandManifestPath jarPath
-    val urls      = if (jarURLs.isEmpty) File(jarPath).toURL +: settings.classpathURLs else jarURLs
+    val jarURLs   = util.ClassPath expandManifestPath jarPath
+    val urls      = if (jarURLs.isEmpty) io.File(jarPath).toURL +: settings.classpathURLs else jarURLs
 
     if (settings.Ylogcp) {
       Console.err.println("Running jar with these URLs as the classpath:")
@@ -56,11 +52,12 @@ class MainGenericRunner {
           for {
             dashi <- List(settings.loadfiles, settings.pastefiles) if dashi.isSetByUser
             path  <- dashi.value
-          } yield File(path).slurp()
+          } yield io.File(path).slurp()
 
         (files :+ dashe).mkString("\n\n")
       }
 
+      import GenericRunnerCommand.{AsObject, AsScript, AsJar, Error}
       def runTarget(): Either[Throwable, Boolean] = howToRun match {
         case AsObject =>
           ObjectRunner.runAndCatch(settings.classpathURLs, thingToRun, command.arguments)

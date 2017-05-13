@@ -3,9 +3,7 @@
  * @author  Paul Phillips
  */
 
-package scala
-package tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
 import scala.util.Properties.lineSeparator
 import scala.util.matching.Regex

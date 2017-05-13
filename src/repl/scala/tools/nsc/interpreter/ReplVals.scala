@@ -16,16 +16,13 @@ import scala.reflect.runtime.{universe => ru}
  */
 abstract class ReplVals { }
 
-class StdReplVals(final val r: ILoop) extends ReplVals {
-  final lazy val repl                     = r
-  final lazy val intp                     = r.intp
-  final lazy val power                    = r.power
-  final lazy val reader                   = r.in
+class StdReplVals(final val intp: IMain) extends ReplVals {
+  // TODO bring back repl, reader, completion and history?
+  // TODO should intp be lazy?
+  final lazy val power                    = intp.power
   final lazy val vals                     = this
   final lazy val global: intp.global.type = intp.global
   final lazy val isettings                = intp.isettings
-  final lazy val completion               = reader.completion
-  final lazy val history                  = reader.history
   final lazy val phased                   = power.phased
   final lazy val analyzer                 = global.analyzer
 

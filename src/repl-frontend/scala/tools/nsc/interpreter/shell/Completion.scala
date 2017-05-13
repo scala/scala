@@ -3,8 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
 import Completion._
 
@@ -23,12 +22,4 @@ object NoCompletion extends Completion {
 object Completion {
   case class Candidates(cursor: Int, candidates: List[String]) { }
   val NoCandidates = Candidates(-1, Nil)
-
-  // a leading dot plus something, but not ".." or "./", ignoring leading whitespace
-  private val dotlike = """\s*\.[^./].*""".r
-  def looksLikeInvocation(code: String) = code match {
-    case null      => false   // insurance
-    case dotlike() => true
-    case _         => false
-  }
 }

@@ -7,7 +7,7 @@ import scala.tools.testing.AssertUtil.assertThrows
 @RunWith(classOf[JUnit4])
 class ScriptedTest {
   import javax.script._
-  import scala.tools.nsc.interpreter.Scripted
+  import scala.tools.nsc.interpreter.shell.Scripted
 
   def scripted: ScriptEngine with Compilable = Scripted()
     // same as by service discovery

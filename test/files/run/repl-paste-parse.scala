@@ -2,7 +2,7 @@
 import java.io.{ BufferedReader, StringReader, StringWriter, PrintWriter }
 
 import scala.tools.partest.DirectTest
-import scala.tools.nsc.interpreter.ILoop
+import scala.tools.nsc.interpreter.shell.ILoop
 import scala.tools.nsc.GenericRunnerSettings
 
 object Test extends DirectTest {
