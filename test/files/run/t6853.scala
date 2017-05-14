@@ -10,7 +10,7 @@ object Test {
     assert(m == Map("foo1"->1,"foo0"->0))
     m-= "foo0"
     assert(m == Map("foo1"->1))
-    // Now checking if it scales as described in SI-6853
+    // Now checking if it scales as described in scala/bug#6853
     i = 0
     while(i < 80000) { m += ("foo" + i) -> i; i = i+1}
     assert(m.size == 80000)

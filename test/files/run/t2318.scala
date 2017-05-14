@@ -6,11 +6,15 @@ object Test {
   trait Bar { def bar: Unit }
 
   object Mgr extends SecurityManager {
+    def allowedProperty(name: String) =
+      name == "sun.net.inetaddr.ttl" ||
+        name == "scala.control.noTraceSuppression" // module initializer for object NoStackTrace
+
     override def checkPermission(perm: Permission) = perm match {
       case _: java.lang.RuntimePermission                                                   => ()
       case _: java.io.FilePermission                                                        => ()
       case x: java.security.SecurityPermission if x.getName contains ".networkaddress."     => () // generality ftw
-      case x: java.util.PropertyPermission if x.getName == "sun.net.inetaddr.ttl"           => ()
+      case x: java.util.PropertyPermission if allowedProperty(x.getName)                    => ()
       case _: java.lang.reflect.ReflectPermission                                           => () // needed for LambdaMetaFactory
       case _                                                                                => super.checkPermission(perm)
     }

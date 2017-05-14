@@ -187,7 +187,7 @@ trait Names extends api.Names {
     protected[this] def thisName: ThisNameType
 
     // Note that "Name with ThisNameType" should be redundant
-    // because ThisNameType <: Name, but due to SI-6161 the
+    // because ThisNameType <: Name, but due to scala/bug#6161 the
     // compile loses track of this fact.
 
     /** Index into name table */

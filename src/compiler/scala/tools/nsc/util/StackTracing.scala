@@ -18,7 +18,7 @@ private[util] trait StackTracing extends Any {
    */
   def stackTracePrefixString(e: Throwable)(p: StackTraceElement => Boolean): String = {
     import collection.mutable.{ ArrayBuffer, ListBuffer }
-    import compat.Platform.EOL
+    import java.lang.System.{lineSeparator => EOL}
 
     type TraceRelation = String
     val Self       = new TraceRelation("")

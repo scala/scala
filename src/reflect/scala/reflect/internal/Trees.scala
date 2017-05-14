@@ -622,7 +622,7 @@ trait Trees extends api.Trees {
       super.copyAttrs(tree)
       tree match {
         case other: TypeTree =>
-          // SI-6648 Critical for correct operation of `resetAttrs`.
+          // scala/bug#6648 Critical for correct operation of `resetAttrs`.
           wasEmpty = other.wasEmpty
           if (other.orig != null)
             orig = other.orig.duplicate
@@ -635,7 +635,7 @@ trait Trees extends api.Trees {
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   private def TypeTreeMemberType(sym: Symbol): TypeTree = {
-    // Needed for pos/t4970*.scala. See SI-7853
+    // Needed for pos/t4970*.scala. See scala/bug#7853
     val resType = (if (sym.isLocalToBlock) sym.tpe else (sym.owner.thisType memberType sym)).finalResultType
     atPos(sym.pos.focus)(TypeTree(resType))
   }
@@ -1075,7 +1075,7 @@ trait Trees extends api.Trees {
     override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
     override def tpe_=(t: Type) = setType(t)
 
-    // We silently ignore attempts to add attachments to `EmptyTree`. See SI-8947 for an
+    // We silently ignore attempts to add attachments to `EmptyTree`. See scala/bug#8947 for an
     // example of a bug in macro expansion that this solves.
     override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
     override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
@@ -1481,7 +1481,7 @@ trait Trees extends api.Trees {
       tree match {
         case _: Return =>
           if (tree.symbol == oldowner) {
-            // SI-5612
+            // scala/bug#5612
             if (newowner hasTransOwner oldowner)
               log("NOT changing owner of %s because %s is nested in %s".format(tree, newowner, oldowner))
             else {
@@ -1733,7 +1733,7 @@ trait Trees extends api.Trees {
         if (rhs eq null) rhs0 else rhs
       )
     case t =>
-      sys.error("Not a DefDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a DefDef: " + t + "/" + t.getClass)
   }
   def copyValDef(tree: Tree)(
     mods: Modifiers = null,
@@ -1749,7 +1749,7 @@ trait Trees extends api.Trees {
         if (rhs eq null) rhs0 else rhs
       )
     case t =>
-      sys.error("Not a ValDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ValDef: " + t + "/" + t.getClass)
   }
   def copyTypeDef(tree: Tree)(
     mods: Modifiers        = null,
@@ -1765,7 +1765,7 @@ trait Trees extends api.Trees {
         if (rhs eq null) rhs0 else rhs
       )
     case t =>
-      sys.error("Not a TypeDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a TypeDef: " + t + "/" + t.getClass)
   }
   def copyClassDef(tree: Tree)(
     mods: Modifiers        = null,
@@ -1781,7 +1781,7 @@ trait Trees extends api.Trees {
         if (impl eq null) impl0 else impl
       )
     case t =>
-      sys.error("Not a ClassDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ClassDef: " + t + "/" + t.getClass)
   }
 
   def copyModuleDef(tree: Tree)(
@@ -1796,56 +1796,56 @@ trait Trees extends api.Trees {
         if (impl eq null) impl0 else impl
       )
     case t =>
-      sys.error("Not a ModuleDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ModuleDef: " + t + "/" + t.getClass)
   }
 
   def deriveDefDef(ddef: Tree)(applyToRhs: Tree => Tree): DefDef = ddef match {
     case DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0) =>
       treeCopy.DefDef(ddef, mods0, name0, tparams0, vparamss0, tpt0, applyToRhs(rhs0))
     case t =>
-      sys.error("Not a DefDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a DefDef: " + t + "/" + t.getClass)
   }
   def deriveValDef(vdef: Tree)(applyToRhs: Tree => Tree): ValDef = vdef match {
     case ValDef(mods0, name0, tpt0, rhs0) =>
       treeCopy.ValDef(vdef, mods0, name0, tpt0, applyToRhs(rhs0))
     case t =>
-      sys.error("Not a ValDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ValDef: " + t + "/" + t.getClass)
   }
   def deriveTemplate(templ: Tree)(applyToBody: List[Tree] => List[Tree]): Template = templ match {
     case Template(parents0, self0, body0) =>
       treeCopy.Template(templ, parents0, self0, applyToBody(body0))
     case t =>
-      sys.error("Not a Template: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a Template: " + t + "/" + t.getClass)
   }
   def deriveClassDef(cdef: Tree)(applyToImpl: Template => Template): ClassDef = cdef match {
     case ClassDef(mods0, name0, tparams0, impl0) =>
       treeCopy.ClassDef(cdef, mods0, name0, tparams0, applyToImpl(impl0))
     case t =>
-      sys.error("Not a ClassDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ClassDef: " + t + "/" + t.getClass)
   }
   def deriveModuleDef(mdef: Tree)(applyToImpl: Template => Template): ModuleDef = mdef match {
     case ModuleDef(mods0, name0, impl0) =>
       treeCopy.ModuleDef(mdef, mods0, name0, applyToImpl(impl0))
     case t =>
-      sys.error("Not a ModuleDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a ModuleDef: " + t + "/" + t.getClass)
   }
   def deriveCaseDef(cdef: Tree)(applyToBody: Tree => Tree): CaseDef = cdef match {
     case CaseDef(pat0, guard0, body0) =>
       treeCopy.CaseDef(cdef, pat0, guard0, applyToBody(body0))
     case t =>
-      sys.error("Not a CaseDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a CaseDef: " + t + "/" + t.getClass)
   }
   def deriveLabelDef(ldef: Tree)(applyToRhs: Tree => Tree): LabelDef = ldef match {
     case LabelDef(name0, params0, rhs0) =>
       treeCopy.LabelDef(ldef, name0, params0, applyToRhs(rhs0))
     case t =>
-      sys.error("Not a LabelDef: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a LabelDef: " + t + "/" + t.getClass)
   }
   def deriveFunction(func: Tree)(applyToRhs: Tree => Tree): Function = func match {
     case Function(params0, rhs0) =>
       treeCopy.Function(func, params0, applyToRhs(rhs0))
     case t =>
-      sys.error("Not a Function: " + t + "/" + t.getClass)
+      throw new IllegalStateException("Not a Function: " + t + "/" + t.getClass)
   }
 
 // -------------- Classtags --------------------------------------------------------

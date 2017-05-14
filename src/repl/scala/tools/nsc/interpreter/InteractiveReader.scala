@@ -46,6 +46,10 @@ object InteractiveReader {
     }
 
   def apply(): InteractiveReader = SimpleReader()
+
+  // a non-interactive InteractiveReader that returns the given text
+  def apply(text: String): InteractiveReader = SimpleReader(text)
+
   @deprecated("Use `apply` instead.", "2.9.0")
   def createDefault(): InteractiveReader = apply() // used by sbt
 }
@@ -57,7 +61,7 @@ object InteractiveReader {
  */
 class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
   import java.util.concurrent.SynchronousQueue
-  import scala.compat.Platform.EOL
+  import java.lang.System.{lineSeparator => EOL}
 
   private val result = new SynchronousQueue[Option[String]]
   @volatile private var running: Boolean = _

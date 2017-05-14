@@ -15,3 +15,18 @@ object Sample {
   def f(x: X) = ???
   def g(y: Y) = ???
 }
+
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+ 
+object Macro {
+  def f: Int = macro fImpl
+  def fImpl(c: Context): c.Tree = {
+    import c.universe._
+ 
+    q"""
+     import scala.util.Random
+     42 // TODO randomize
+    """
+  }
+}

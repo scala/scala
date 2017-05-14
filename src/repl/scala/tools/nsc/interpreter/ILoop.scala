@@ -6,26 +6,26 @@ package scala
 package tools.nsc
 package interpreter
 
-import scala.language.{ implicitConversions, existentials }
+import scala.language.{implicitConversions, existentials}
 import scala.annotation.tailrec
-import Predef.{ println => _, _ }
+import Predef.{println => _, _}
 import PartialFunction.{cond => when}
 import interpreter.session._
 import StdReplTags._
 import scala.tools.asm.ClassReader
 import scala.util.Properties.jdkHome
-import scala.tools.nsc.util.{ ClassPath, stringFromStream }
+import scala.tools.nsc.util.{ClassPath, stringFromStream}
 import scala.reflect.classTag
-import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader, NoPosition }
+import scala.reflect.internal.util.{BatchSourceFile, ScalaClassLoader, NoPosition}
 import ScalaClassLoader._
 import scala.reflect.io.{Directory, File, Path}
 import scala.tools.util._
 import io.AbstractFile
-import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.{ExecutionContext, Await, Future}
 import ExecutionContext.Implicits._
 import java.io.BufferedReader
 
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Try, Success, Failure}
 
 import Completion._
 
@@ -907,14 +907,27 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  @return true if successful
    */
   def process(settings: Settings): Boolean = savingContextLoader {
-    def newReader = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
+
+    // yes this is sad
+    val runnerSettings = settings match {
+      case generic: GenericRunnerSettings => Some(generic)
+      case _                              => None
+    }
 
     /** Reader to use before interpreter is online. */
     def preLoop = {
+      def newReader = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
       val sr = SplashReader(newReader) { r =>
         in = r
         in.postInit()
       }
+      in = sr
+      SplashLoop(sr, prompt)
+    }
+
+    // -e batch mode
+    def batchLoop(text: String) = {
+      val sr = SplashReader(InteractiveReader(text))(_ => ())
       in = sr
       SplashLoop(sr, prompt)
     }
@@ -939,7 +952,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         asyncMessage(power.banner)
       }
       loadInitFiles()
-      // SI-7418 Now, and only now, can we enable TAB completion.
+      // scala/bug#7418 Now, and only now, can we enable TAB completion.
       in.postInit()
     }
     def loadInitFiles(): Unit = settings match {
@@ -958,27 +971,33 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     def withSuppressedSettings[A](body: => A): A = {
       val ss = this.settings
       import ss._
-      val noisy = List(Xprint, Ytyperdebug)
+      val noisy = List(Xprint, Ytyperdebug, browse)
       val noisesome = noisy.exists(!_.isDefault)
-      val current = (Xprint.value, Ytyperdebug.value)
+      val current = (Xprint.value, Ytyperdebug.value, browse.value)
       if (isReplDebug || !noisesome) body
       else {
         this.settings.Xprint.value = List.empty
+        this.settings.browse.value = List.empty
         this.settings.Ytyperdebug.value = false
         try body
         finally {
           Xprint.value       = current._1
           Ytyperdebug.value  = current._2
+          browse.value      = current._3
           intp.global.printTypings = current._2
         }
       }
     }
     def startup(): String = withSuppressedSettings {
-      // starting
-      printWelcome()
+      // -e is non-interactive
+      val splash =
+        runnerSettings.filter(_.execute.isSetByUser).map(ss => batchLoop(ss.execute.value)).getOrElse {
+          // starting
+          printWelcome()
 
-      // let them start typing
-      val splash = preLoop
+          // let them start typing
+          preLoop
+        }
       splash.start()
 
       // while we go fire up the REPL
@@ -986,6 +1005,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         // don't allow ancient sbt to hijack the reader
         savingReader {
           createInterpreter()
+          //for (rs <- runnerSettings if rs.execute.isSetByUser) intp.printResults = false
         }
         intp.initializeSynchronous()
         globalFuture = Future successful true
@@ -996,7 +1016,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           loopPostInit()
           val line = splash.line           // what they typed in while they were waiting
           if (line == null) {              // they ^D
-            try out print Properties.shellInterruptedString
+            try out.print(Properties.shellInterruptedString)
             finally closeInterpreter()
           }
           line
@@ -1008,8 +1028,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case null    => false
       case line    =>
         try loop(line) match {
-          case LineResults.EOF => out print Properties.shellInterruptedString
-          case _               =>
+          case LineResults.EOF if in.interactive => out.print(Properties.shellInterruptedString)
+          case _                                 =>
         }
         catch AbstractOrMissingHandler()
         finally closeInterpreter()

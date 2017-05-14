@@ -10,7 +10,7 @@ object Test extends App {
   // C(42).selectDynamic[String]("foo").get
   // causing a compile error.
 
-  // but, before fixing SI-6663, became
+  // but, before fixing scala/bug#6663, became
   // C(42).selectDynamic("foo").get, ignoring
   // the [String] type parameter
   var v = new C(42).foo[String].get :Int

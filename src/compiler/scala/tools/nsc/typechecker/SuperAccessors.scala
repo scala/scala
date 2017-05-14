@@ -43,7 +43,7 @@ import symtab.Flags._
  *
  *  (2) If a symbol accessed accessed from super is defined in a real class (not a trait),
  *  there are no abstract members which override this member in Java's rules
- *  (see SI-4989; such an access would lead to illegal bytecode)
+ *  (see scala/bug#4989; such an access would lead to illegal bytecode)
  *
  *  (3) Super calls do not go to some synthetic members of Any (see isDisallowed)
  *
@@ -79,7 +79,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private val accDefs = mutable.Map[Symbol, ListBuffer[Tree]]()
 
     private def storeAccessorDefinition(clazz: Symbol, tree: Tree) = {
-      val buf = accDefs.getOrElse(clazz, sys.error("no acc def buf for "+clazz))
+      val buf = accDefs.getOrElse(clazz, abort(s"no acc def buf for $clazz"))
       buf += typers(clazz) typed tree
     }
     private def ensureAccessor(sel: Select, mixName: TermName = nme.EMPTY) = {
@@ -95,7 +95,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           case t                          => t
         }
         acc setInfoAndEnter (tpe cloneInfo acc)
-        // Diagnostic for SI-7091
+        // Diagnostic for scala/bug#7091
         if (!accDefs.contains(clazz))
           reporter.error(sel.pos, s"Internal error: unable to store accessor definition in ${clazz}. clazz.hasPackageFlag=${clazz.hasPackageFlag}. Accessor required for ${sel} (${showRaw(sel)})")
         else storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
@@ -142,7 +142,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           reporter.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'")
       } else if (mix == tpnme.EMPTY && !sym.owner.isTrait){
-        // SI-4989 Check if an intermediate class between `clazz` and `sym.owner` redeclares the method as abstract.
+        // scala/bug#4989 Check if an intermediate class between `clazz` and `sym.owner` redeclares the method as abstract.
         val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
         intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
           absSym =>
@@ -177,7 +177,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       val needAccessor = name.isTermName && {
         mix.isEmpty && (clazz.isTrait || clazz != currentClass || !validCurrentOwner) ||
-        // SI-8803. If we access super[A] from an inner class (!= currentClass) or closure (validCurrentOwner),
+        // scala/bug#8803. If we access super[A] from an inner class (!= currentClass) or closure (validCurrentOwner),
         // where A is the superclass we need an accessor. If A is a parent trait we don't: in this case mixin
         // will re-route the super call directly to the impl class (it's statically known).
         !mix.isEmpty && (clazz != currentClass || !validCurrentOwner) && !mixIsTrait
@@ -279,7 +279,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               // warn if they are selecting a private[this] member which
               // also exists in a superclass, because they may be surprised
               // to find out that a constructor parameter will shadow a
-              // field. See SI-4762.
+              // field. See scala/bug#4762.
               if (settings.warnPrivateShadow) {
                 if (sym.isPrivateLocal && sym.paramss.isEmpty) {
                   qual.symbol.ancestors foreach { parent =>
@@ -303,7 +303,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
               // Direct calls to aliases of param accessors to the superclass in order to avoid
               // duplicating fields.
-              // ... but, only if accessible (SI-6793)
+              // ... but, only if accessible (scala/bug#6793)
               if (sym.isParamAccessor && sym.alias != NoSymbol && isAccessibleFromSuper(sym.alias)) {
                 val result = (localTyper.typedPos(tree.pos) {
                   Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
@@ -315,9 +315,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                  * A trait which extends a class and accesses a protected member
                  *  of that class cannot implement the necessary accessor method
                  *  because jvm access restrictions require the call site to be
-                 *  in an actual subclass, and an interface cannot extenda class.
+                 *  in an actual subclass, and an interface cannot extend a class.
                  *  So, non-trait classes inspect their ancestors for any such situations
-                 *  and generate the accessors.  See SI-2296.
+                 *  and generate the accessors.  See scala/bug#2296.
                  *
                  *  TODO: anything we can improve here now that a trait compiles 1:1 to an interface?
                  */
@@ -327,7 +327,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                      currentClass.isTrait
                   && sym.isProtected
                   && sym.enclClass != currentClass
-                  && !sym.owner.isPackageClass // SI-7091 no accessor needed package owned (ie, top level) symbols
+                  && !sym.owner.isPackageClass // scala/bug#7091 no accessor needed package owned (ie, top level) symbols
                   && !sym.owner.isTrait
                   && sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass
                   && qual.symbol.info.member(sym.name).exists
@@ -557,22 +557,24 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         && (sym.enclosingPackageClass != currentClass.enclosingPackageClass)
         && (sym.enclosingPackageClass == sym.accessBoundary(sym.enclosingPackageClass))
       )
-      val host = hostForAccessorOf(sym, clazz)
-      def isSelfType = !(host.tpe <:< host.typeOfThis) && {
-        if (host.typeOfThis.typeSymbol.isJavaDefined)
+      isCandidate && {
+        val host = hostForAccessorOf(sym, clazz)
+        def isSelfType = !(host.tpe <:< host.typeOfThis) && {
+          if (host.typeOfThis.typeSymbol.isJavaDefined)
+            restrictionError(pos, unit,
+              "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
+            )
+          true
+        }
+        def isJavaProtected = host.isTrait && sym.isJavaDefined && {
           restrictionError(pos, unit,
-            "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
+            sm"""$clazz accesses protected $sym inside a concrete trait method.
+                |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
           )
-        true
+          true
+        }
+        !host.isPackageClass && !isSelfType && !isJavaProtected
       }
-      def isJavaProtected = host.isTrait && sym.isJavaDefined && {
-        restrictionError(pos, unit,
-          sm"""$clazz accesses protected $sym inside a concrete trait method.
-              |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
-        )
-        true
-      }
-      isCandidate && !host.isPackageClass && !isSelfType && !isJavaProtected
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either

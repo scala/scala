@@ -249,7 +249,7 @@ trait Interface extends ast.TreeDSL {
         }
         if (containsSym) {
           if (to.forall(_.isInstanceOf[Ident]))
-            tree.duplicate.substituteSymbols(from, to.map(_.symbol)) // SI-7459 catches `case t => new t.Foo`
+            tree.duplicate.substituteSymbols(from, to.map(_.symbol)) // scala/bug#7459 catches `case t => new t.Foo`
           else
             substIdentsForTrees.transform(tree)
         }

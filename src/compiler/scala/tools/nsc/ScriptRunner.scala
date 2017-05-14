@@ -6,7 +6,7 @@
 package scala
 package tools.nsc
 
-import io.{ AbstractFile, Directory, File, Path }
+import io.{AbstractFile, Directory, File, Path}
 import java.io.IOException
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
@@ -60,7 +60,7 @@ class ScriptRunner extends HasCompileSocket {
    */
   private def compileWithDaemon(settings: GenericRunnerSettings, scriptFileIn: String) = {
     val scriptFile       = Path(scriptFileIn).toAbsolute.path
-    val compSettingNames = new Settings(sys.error).visibleSettings.toList map (_.name)
+    val compSettingNames = new Settings(msg => throw new RuntimeException(msg)).visibleSettings.toList map (_.name)
     val compSettings     = settings.visibleSettings.toList filter (compSettingNames contains _.name)
     val coreCompArgs     = compSettings flatMap (_.unparse)
     val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
@@ -75,10 +75,10 @@ class ScriptRunner extends HasCompileSocket {
     Global(settings, reporter)
 
   /** Compile a script and then run the specified closure with
-    * a classpath for the compiled script.
-    *
-    * @return true if compilation and the handler succeeds, false otherwise.
-    */
+   *  a classpath for the compiled script.
+   *
+   *  @return true if compilation and the handler succeeds, false otherwise.
+   */
   private def withCompiledScript(
     settings: GenericRunnerSettings,
     scriptFile: String)
@@ -93,7 +93,7 @@ class ScriptRunner extends HasCompileSocket {
       val compiledPath = Directory makeTemp "scalascript"
 
       // delete the directory after the user code has finished
-      sys.addShutdownHook(compiledPath.deleteRecursively())
+      Runtime.getRuntime.addShutdownHook(new Thread(() => compiledPath.deleteRecursively()))
 
       settings.outdir.value = compiledPath.path
 
@@ -117,7 +117,7 @@ class ScriptRunner extends HasCompileSocket {
       cp.findClass(mainClass).isDefined
     }
 
-    /* The script runner calls sys.exit to communicate a return value, but this must
+    /* The script runner calls System.exit to communicate a return value, but this must
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {

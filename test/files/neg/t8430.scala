@@ -18,7 +18,7 @@ object Test {
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  // After the first patch for SI-8430, we achieve stability: all of 
+  // After the first patch for scala/bug#8430, we achieve stability: all of
   // these get the same warning:
   //
   // ??, LetC, LetF, LetL(IntLit), LetP
@@ -28,5 +28,5 @@ object Test {
   // However, we our list of counter examples is itself non-exhaustive.
   // We need to rework counter example generation to fix that.
   //
-  // That work is the subject of SI-7746
+  // That work is the subject of scala/bug#7746
 }

@@ -30,5 +30,5 @@ object NoStackTrace {
 
   // two-stage init to make checkinit happy, since sys.SystemProperties.noTraceSuppression.value calls back into NoStackTrace.noSuppression
   final private var _noSuppression = false
-  _noSuppression = sys.SystemProperties.noTraceSuppression.value
+  _noSuppression = System.getProperty("scala.control.noTraceSuppression", "").equalsIgnoreCase("true")
 }

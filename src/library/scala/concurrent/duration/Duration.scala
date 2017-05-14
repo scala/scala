@@ -636,7 +636,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     else if (JDouble.isNaN(divisor)) Undefined
     else Zero
 
-  // if this is made a constant, then scalac will elide the conditional and always return +0.0, SI-6331
+  // if this is made a constant, then scalac will elide the conditional and always return +0.0, scala/bug#6331
   private[this] def minusZero = -0d
   def /(divisor: Duration): Double =
     if (divisor.isFinite()) toNanos.toDouble / divisor.toNanos

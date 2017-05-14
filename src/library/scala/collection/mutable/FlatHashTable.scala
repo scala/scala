@@ -329,7 +329,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     val ones = table.length - 1
     (improved >>> (32 - java.lang.Integer.bitCount(ones))) & ones
 
-    // version 3 (solves SI-5293 in most cases, but such a case would still arise for parallel hash tables)
+    // version 3 (solves scala/bug#5293 in most cases, but such a case would still arise for parallel hash tables)
     // val hc = improve(hcode)
     // val bbp = blockbitpos
     // val ones = table.length - 1
@@ -378,7 +378,7 @@ private[collection] object FlatHashTable {
    *  and ensure that iteration order vulnerabilities are not 'felt' in other
    *  hash tables.
    *
-   *  See SI-5293.
+   *  See scala/bug#5293.
    */
   final def seedGenerator = new ThreadLocal[scala.util.Random] {
     override def initialValue = new scala.util.Random

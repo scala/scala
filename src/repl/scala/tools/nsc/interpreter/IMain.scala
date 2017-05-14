@@ -22,6 +22,7 @@ import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import java.net.URL
 import scala.tools.util.PathResolver
+import scala.util.{Try => Trying}
 
 /** An interpreter for Scala code.
  *
@@ -314,7 +315,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
   /** For class based repl mode we use an .INSTANCE accessor. */
-  val readInstanceName = if(isClassBased) ".INSTANCE" else ""
+  val readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String = {
     val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
     p.replaceFirst(readName, readName + readInstanceName)
@@ -751,11 +752,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     lazy val evalClass = load(evalPath)
 
     def evalEither = callEither(resultName) match {
-      case Left(ex) => ex match {
-          case ex: NullPointerException => Right(null)
-          case ex => Left(unwrap(ex))
-      }
-      case Right(result) => Right(result)
+      case Right(result)                 => Right(result)
+      case Left(_: NullPointerException) => Right(null)
+      case Left(e)                       => Left(unwrap(e))
     }
 
     def compile(source: String): Boolean = compileAndSaveRun(label, source)
@@ -789,14 +788,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings.map{case (pos, (msg, since)) => (pos, msg)})
+      val warnings = loop(run.reporting.allConditionalWarnings.map{ case (pos, (msg, since@_)) => (pos, msg) })
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }
     private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {
       case Array()       => null
       case Array(method) => method
-      case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
+      case xs            => throw new IllegalStateException(s"Internal error: eval object $evalClass, ${xs.mkString("\n", "\n", "")}")
     }
     private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)
@@ -858,8 +857,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
         else {
-          val escapedLine = Constant(originalLine).escapedStringValue
-          List(s"""def $$line = $escapedLine """, """def $trees = _root_.scala.Nil""")
+          val escapedLine = Constant(originalLine).escapedStringValue.replaceAllLiterally("$", "\"+\"$\"+\"")
+          List(s"""def $$line = $escapedLine""", s"""def $$trees = _root_.scala.Nil""")
         }
       }
       def preamble = s"""
@@ -867,7 +866,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble
-        |${indentCode(toCompute)}""".stripMargin
+        |%s""".stripMargin.format(indentCode(toCompute))
       def preambleLength = preamble.length - toCompute.length - 1
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
@@ -968,7 +967,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       }
     }
 
-    lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
+    // the type symbol of the owner of the member that supplies the result value
+    lazy val resultSymbol = {
+      val sym = lineRep.resolvePathToSymbol(fullAccessPath)
+      // plow through the INSTANCE member when -Yrepl-class-based
+      if (sym.isTerm && sym.nameString == "INSTANCE") sym.typeSignature.typeSymbol else sym
+    }
 
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
@@ -1033,18 +1037,44 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def typeOfTerm(id: String): Type = symbolOfTerm(id).tpe
 
-  def valueOfTerm(id: String): Option[Any] = exitingTyper {
-    def value() = {
-      val sym0    = symbolOfTerm(id)
-      val sym     = (importToRuntime importSymbol sym0).asTerm
-      val module  = runtimeMirror.reflectModule(sym.owner.companionSymbol.asModule).instance
-      val module1 = runtimeMirror.reflect(module)
-      val invoker = module1.reflectField(sym)
+  // Given the fullName of the symbol, reflectively drill down the path
+  def valueOfTerm(id: String): Option[Any] = {
+    def value(fullName: String) = {
+      import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
+      val pkg :: rest = (fullName split '.').toList
+      val top = runtimeMirror.staticPackage(pkg)
+      @annotation.tailrec
+      def loop(inst: InstanceMirror, cur: Symbol, path: List[String]): Option[Any] = {
+        def mirrored =
+          if (inst != null) inst
+          else runtimeMirror.reflect((runtimeMirror reflectModule cur.asModule).instance)
 
-      invoker.get
+        path match {
+          case last :: Nil  =>
+            cur.typeSignature.decls.find(x => x.name.toString == last && x.isAccessor).map { m =>
+              mirrored.reflectMethod(m.asMethod).apply()
+            }
+          case next :: rest =>
+            val s = cur.typeSignature.member(TermName(next))
+            val i =
+              if (s.isModule) {
+                if (inst == null) null
+                else runtimeMirror.reflect((inst reflectModule s.asModule).instance)
+              }
+              else if (s.isAccessor) {
+                runtimeMirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
+              }
+              else {
+                assert(false, originalPath(s))
+                inst
+              }
+            loop(i, s, rest)
+          case Nil => None
+        }
+      }
+      loop(null, top, rest)
     }
-
-    try Some(value()) catch { case _: Exception => None }
+    Option(symbolOfTerm(id)).filter(_.exists).flatMap(s => Trying(value(originalPath(s))).toOption.flatten)
   }
 
   /** It's a bit of a shotgun approach, but for now we will gain in

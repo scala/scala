@@ -1,5 +1,5 @@
 class Unchecked[C] {
-  def nowarn[T] = (null: Any) match { case _: Some[T]      => } // warn (did not warn due to SI-8597)
+  def nowarn[T] = (null: Any) match { case _: Some[T]      => } // warn (did not warn due to scala/bug#8597)
 
   // These warned before.
   def warn1[T]  = (null: Any) match { case _: T            => } // warn
@@ -15,7 +15,7 @@ class Unchecked[C] {
   def okay2(x: A2[Int]) = x match { case _: B2[Int, _] => true } // nowarn
   def okay3(x: A2[Int]) = x match { case _: B2[Int, typeVar] => true } // nowarn
 
-  def warnArray[T] = (null: Any) match { case _: Array[T] => } // warn (did not warn due to SI-8597)
+  def warnArray[T] = (null: Any) match { case _: Array[T] => } // warn (did not warn due to scala/bug#8597)
   def nowarnArrayC   = (null: Any) match { case _: Array[C] => } // nowarn
 
   def nowarnArrayTypeVar[T] = (null: Any) match { case _: Array[t] => } // nowarn

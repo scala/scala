@@ -19,7 +19,7 @@ class B1(msg: String) extends A(msg)
 class B2(msg0: String) extends A(msg0)
 class B3(msg0: String) extends A("msg")
 
-/*** Early defs warnings disabled primarily due to SI-6595.
+/*** Early defs warnings disabled primarily due to scala/bug#6595.
  *   The test case is here to assure we aren't issuing false positives;
  *   the ones labelled "warn" don't warn.
  ***/
@@ -52,12 +52,30 @@ trait Accessors {
   }
 }
 
+class StableAccessors {
+  private var s1: Int = 0 // warn
+  private var s2: Int = 0 // warn, never set
+  private var s3: Int = 0 // warn, never got
+  private var s4: Int = 0 // no warn
+
+  def bippy(): Int = {
+    s3 = 5
+    s4 = 6
+    s2 + s4
+  }
+}
+
 trait DefaultArgs {
   // warn about default getters for x2 and x3
   private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
 
   def boppy() = bippy(5, 100, 200)
 }
+
+/* scala/bug#7707 Both usages warn default arg because using PrivateRyan.apply, not new.
+case class PrivateRyan private (ryan: Int = 42) { def f = PrivateRyan() }
+object PrivateRyan { def f = PrivateRyan() }
+*/
 
 class Outer {
   class Inner
@@ -102,5 +120,107 @@ object Types {
     type Something = Bippy // no warn
     type OtherThing = String // warn
     (new Bippy): Something
+  }
+}
+
+trait Underwarn {
+  def f(): Seq[Int]
+
+  def g() = {
+    val Seq(_, _) = f()  // no warn
+    true
+  }
+}
+
+class OtherNames {
+  private def x_=(i: Int): Unit = ???
+  private def x: Int = 42
+  private def y_=(i: Int): Unit = ???
+  private def y: Int = 42
+
+  def f = y
+}
+
+case class C(a: Int, b: String, c: Option[String])
+case class D(a: Int)
+
+trait Boundings {
+
+  def c = C(42, "hello", Some("world"))
+  def d = D(42)
+
+  def f() = {
+    val C(x, y, Some(z)) = c              // warn
+    17
+  }
+  def g() = {
+    val C(x @ _, y @ _, Some(z @ _)) = c  // no warn
+    17
+  }
+  def h() = {
+    val C(x @ _, y @ _, z @ Some(_)) = c  // warn for z?
+    17
+  }
+
+  def v() = {
+    val D(x) = d                          // warn
+    17
+  }
+  def w() = {
+    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+    17
+  }
+
+}
+
+trait Forever {
+  def f = {
+    val t = Option((17, 42))
+    for {
+      ns <- t
+      (i, j) = ns                        // no warn
+    } yield (i + j)
+  }
+  def g = {
+    val t = Option((17, 42))
+    for {
+      ns <- t
+      (i, j) = ns                        // warn, fixme
+    } yield 42                           // val emitted only if needed, hence nothing unused
+  }
+}
+
+trait Ignorance {
+  private val readResolve = 42      // ignore
+}
+
+trait CaseyKasem {
+  def f = 42 match {
+    case x if x < 25 => "no warn"
+    case y if toString.nonEmpty => "no warn" + y
+    case z => "warn"
+  }
+}
+trait CaseyAtTheBat {
+  def f = Option(42) match {
+    case Some(x) if x < 25 => "no warn"
+    case Some(y @ _) if toString.nonEmpty => "no warn"
+    case Some(z) => "warn"
+    case None => "no warn"
+  }
+}
+
+class `not even using companion privates`
+
+object `not even using companion privates` {
+  private implicit class `for your eyes only`(i: Int) {  // warn
+    def f = i
+  }
+}
+
+class `no warn in patmat anonfun isDefinedAt` {
+  def f(pf: PartialFunction[String, Int]) = pf("42")
+  def g = f {
+    case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
   }
 }

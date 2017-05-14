@@ -1,5 +1,5 @@
 /*
- * This tests that the predicate of dropWhile is only evaluated as often as needed, see https://issues.scala-lang.org/browse/SI-5387
+ * This tests that the predicate of dropWhile is only evaluated as often as needed, see https://github.com/scala/bug/issues/5387
  */
 import scala.collection.immutable.ListMap
 object Test extends App{

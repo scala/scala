@@ -10,7 +10,7 @@ class A[T](final val x: Thing { type A = T }) {
 class B extends A[Int](null) {
   def y1 = x1
   def y2 = x2
-  val y3 = x3 // before SI-8177, this lead to a signature that erased to java.lang.Object
+  val y3 = x3 // before scala/bug#8177, this lead to a signature that erased to java.lang.Object
 }
 
 

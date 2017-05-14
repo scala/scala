@@ -40,13 +40,13 @@ val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                  % "junit"           % "4.11"
-val junitInterfaceDep = "com.novocode"           % "junit-interface" % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.13.4"                          % "test"
-val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.5"
-val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
-val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
-val antDep            = "org.apache.ant"         % "ant"             % "1.9.4"
+val junitDep          = "junit"                  % "junit"                % "4.11"
+val junitInterfaceDep = "com.novocode"           % "junit-interface"      % "0.11"                            % "test"
+val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.13.0-M1" % "1.13.5"                          % "test"
+val jolDep            = "org.openjdk.jol"        % "jol-core"             % "0.5"
+val asmDep            = "org.scala-lang.modules" % "scala-asm"            % versionProps("scala-asm.version")
+val jlineDep          = "jline"                  % "jline"                % versionProps("jline.version")
+val antDep            = "org.apache.ant"         % "ant"                  % "1.9.4"
 
 /** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
   * can be used to compare the output of the sbt and Ant builds during the transition period. Any
@@ -166,8 +166,8 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
         <url>https://github.com/scala/scala.git</url>
       </scm>
         <issueManagement>
-          <system>JIRA</system>
-          <url>https://issues.scala-lang.org/</url>
+          <system>GitHub</system>
+          <url>https://github.com/scala/bug/issues</url>
         </issueManagement>
         <developers>
           <developer>

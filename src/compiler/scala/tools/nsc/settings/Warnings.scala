@@ -15,15 +15,40 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
-  // Non-lint warnings
+  // Non-lint warnings.
 
   val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
   val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
   val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
-  // SI-7712, SI-7707 warnUnused not quite ready for prime-time
-  val warnUnused           = BooleanSetting("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are unused.")
-  // currently considered too noisy for general use
-  val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
+
+  object UnusedWarnings extends MultiChoiceEnumeration {
+    val Imports   = Choice("imports",   "Warn if an import selector is not referenced.")
+    val PatVars   = Choice("patvars",   "Warn if a variable bound in a pattern is unused.")
+    val Privates  = Choice("privates",  "Warn if a private member is unused.")
+    val Locals    = Choice("locals",    "Warn if a local definition is unused.")
+    val Params    = Choice("params",    "Warn if a value parameter is unused.")
+    val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+  }
+
+  // The -Ywarn-unused warning group.
+  val warnUnused = MultiChoiceSetting(
+    name    = "-Ywarn-unused",
+    helpArg = "warning",
+    descr   = "Enable or disable specific `unused' warnings",
+    domain  = UnusedWarnings,
+    default = Some(List("_"))
+  )
+
+  def warnUnusedImport    = warnUnused contains UnusedWarnings.Imports
+  def warnUnusedPatVars   = warnUnused contains UnusedWarnings.PatVars
+  def warnUnusedPrivates  = warnUnused contains UnusedWarnings.Privates
+  def warnUnusedLocals    = warnUnused contains UnusedWarnings.Locals
+  def warnUnusedParams    = warnUnused contains UnusedWarnings.Params
+  def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
+
+  BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
+    warnUnused.add(s"${if (s) "" else "-"}imports")
+  } //withDeprecationMessage s"Enable -Ywarn-unused:imports"
 
   val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
@@ -60,6 +85,7 @@ trait Warnings {
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
+    val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -82,6 +108,7 @@ trait Warnings {
   def warnUnsoundMatch           = lint contains UnsoundMatch
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
+  def lintUnused                 = lint contains Unused
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")
@@ -101,7 +128,11 @@ trait Warnings {
     helpArg = "warning",
     descr   = "Enable or disable specific warnings",
     domain  = LintWarnings,
-    default = Some(List("_")))
+    default = Some(List("_"))
+  ).withPostSetHook { s =>
+    val unused = List("imports", "privates", "locals", "implicits")
+    if (s contains Unused) unused.foreach(warnUnused.add)
+  }
 
   allLintWarnings foreach {
     case w if w.yAliased =>

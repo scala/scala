@@ -8,14 +8,14 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class MapWrapperTest {
 
-  /* Test for SI-7883 */
+  /* Test for scala/bug#7883 */
   @Test
   def testContains() {
     import scala.collection.JavaConverters.mapAsJavaMapConverter
     import scala.language.reflectiveCalls  // for accessing containsCounter
 
     // A HashMap which throws an exception when the iterator() method is called.
-    // Before the fix for SI-7883, calling MapWrapper.containsKey() used to
+    // Before the fix for scala/bug#7883, calling MapWrapper.containsKey() used to
     // iterate through every element of the wrapped Map, and thus would crash
     // in this case.
     val scalaMap = new scala.collection.mutable.HashMap[String, String] {
@@ -47,13 +47,13 @@ class MapWrapperTest {
     assertEquals(4, scalaMap.containsCounter)
   }
 
-  // test for SI-8504
+  // test for scala/bug#8504
   @Test
   def testHashCode() {
     import scala.collection.JavaConverters._
     val javaMap = Map(1 -> null).asJava
 
-    // Before the fix for SI-8504, this throws a NPE
+    // Before the fix for scala/bug#8504, this throws a NPE
     javaMap.hashCode
   }
 }

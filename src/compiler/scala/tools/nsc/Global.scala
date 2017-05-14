@@ -86,6 +86,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def erasurePhase: Phase = if (currentRun.isDefined) currentRun.erasurePhase else NoPhase
 
+  /* Override `newStubSymbol` defined in `SymbolTable` to provide us access
+   * to the last tree to typer, whose position is the trigger of stub errors. */
+  override def newStubSymbol(owner: Symbol,
+                             name: Name,
+                             missingMessage: String): Symbol = {
+    val stubSymbol = super.newStubSymbol(owner, name, missingMessage)
+    val stubErrorPosition = {
+      val lastTreeToTyper = analyzer.lastTreeToTyper
+      if (lastTreeToTyper != EmptyTree) lastTreeToTyper.pos else stubSymbol.pos
+    }
+    stubSymbol.setPos(stubErrorPosition)
+  }
+
   // platform specific elements
 
   protected class GlobalPlatform extends {
@@ -96,7 +109,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
   /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
-  // Fixes SI-8779
+  // Fixes scala/bug#8779
   def optimizerClassPath(base: ClassPath): ClassPath = base
 
   def classPath: ClassPath = platform.classPath

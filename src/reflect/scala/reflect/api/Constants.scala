@@ -76,7 +76,7 @@ package api
  *                                           //   final val BAR: JavaSimpleEnumeration
  *                                           // }
  *
- *    // doesn't work because of https://issues.scala-lang.org/browse/SI-6459
+ *    // doesn't work because of https://github.com/scala/bug/issues/6459
  *    // val enumValue = mirror.reflectField(enumRef.asTerm).get
  *    val enumClass = cm.runtimeClass(enumRef.owner.asClass)
  *    val enumValue = enumClass.getDeclaredField(enumRef.name.toString).get(null)
@@ -153,7 +153,6 @@ trait Constants {
    *    def jarg(name: String) = jann(TermName(name)) match {
    *      // Constant is always wrapped into a Literal or LiteralArgument tree node
    *      case LiteralArgument(ct: Constant) => value
-   *      case _ => sys.error("Not a constant")
    *    }
    *
    *    val classRef = jarg("classRef").value.asInstanceOf[Type]
@@ -172,7 +171,7 @@ trait Constants {
    *                                           //   final val BAR: JavaSimpleEnumeration
    *                                           // }
    *
-   *    // doesn't work because of https://issues.scala-lang.org/browse/SI-6459
+   *    // doesn't work because of https://github.com/scala/bug/issues/6459
    *    // val enumValue = mirror.reflectField(enumRef.asTerm).get
    *    val enumClass = cm.runtimeClass(enumRef.owner.asClass)
    *    val enumValue = enumClass.getDeclaredField(enumRef.name.toString).get(null)

@@ -74,7 +74,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *  This solution is very simple, but unfortunately it's also lacking. If we use it, then
    *  signatures of macro defs become transitively dependent on scala-reflect.jar
    *  (because they refer to macro impls, and macro impls refer to *box.Context defined in scala-reflect.jar).
-   *  More details can be found in comments to https://issues.scala-lang.org/browse/SI-5940.
+   *  More details can be found in comments to https://github.com/scala/bug/issues/5940.
    *
    *  Therefore we have to avoid putting macro impls into binding pickles and come up with our own serialization format.
    *  Situation is further complicated by the fact that it's not enough to just pickle macro impl's class name and method name,
@@ -161,7 +161,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       import runDefinitions._
       val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = macroImplRef
 
-      // todo. refactor when fixing SI-5498
+      // todo. refactor when fixing scala/bug#5498
       def className: String = {
         def loop(sym: Symbol): String = sym match {
           case sym if sym.isTopLevel =>
@@ -442,7 +442,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
               val fingerprint = implParams(min(j, implParams.length - 1))
               val duplicatedArg = duplicateAndKeepPositions(arg)
               fingerprint match {
-                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: scala/bug#5752
                 case LiftedUntyped => duplicatedArg
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
@@ -651,8 +651,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
         typecheck("blackbox typecheck", expanded1, outerPt)
       } else {
-        // whitebox expansions need to be typechecked against WildcardType first in order to avoid SI-6992 and SI-8048
-        // then we typecheck against innerPt, not against outerPt in order to prevent SI-8209
+        // whitebox expansions need to be typechecked against WildcardType first in order to avoid scala/bug#6992 and scala/bug#8048
+        // then we typecheck against innerPt, not against outerPt in order to prevent scala/bug#8209
         val expanded1 = typecheck("whitebox typecheck #0", expanded0, WildcardType)
         val expanded2 = typecheck("whitebox typecheck #1", expanded1, innerPt)
         typecheck("whitebox typecheck #2", expanded2, outerPt)
@@ -674,7 +674,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       //
       // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
       // the undetermined type params. Therefore we need to do something ourselves or otherwise this
-      // expandee will forever remain not expanded (see SI-5692). A traditional way out of this conundrum
+      // expandee will forever remain not expanded (see scala/bug#5692). A traditional way out of this conundrum
       // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
       // but sometimes, if the inferencer lacks information, it will be forced to approximate.
       //
@@ -697,7 +697,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       //   foo(Foo(23, "foo", true))
       //
       // In the snippet above, even though we know that there's a fundep going from T to U
-      // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
+      // (in a sense that a datatype's uniform representation is unambiguously determined by the data type,
       // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
       // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
       //

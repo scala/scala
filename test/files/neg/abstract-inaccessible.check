@@ -8,7 +8,7 @@ Classes which cannot access Bippy may be unable to override overrideMe.
         ^
 abstract-inaccessible.scala:7: warning: method overrideMeAlso in trait YourTrait references private[foo] trait Bippy.
 Classes which cannot access Bippy may be unable to override overrideMeAlso.
-    def overrideMeAlso(x: Map[Int, Set[Bippy]]) = 5
+    def overrideMeAlso(x: Map[Int, Set[Bippy]]) = x.keys.head
         ^
 error: No warnings can be incurred under -Xfatal-warnings.
 three warnings found

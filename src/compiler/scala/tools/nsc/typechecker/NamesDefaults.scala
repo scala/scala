@@ -166,14 +166,14 @@ trait NamesDefaults { self: Analyzer =>
         val sym = blockTyper.context.owner.newValue(unit.freshTermName(nme.QUAL_PREFIX), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
-        // it stays in Vegas: SI-5720, SI-5727
+        // it stays in Vegas: scala/bug#5720, scala/bug#5727
         qual changeOwner (blockTyper.context.owner -> sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
         val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
-          // to still call 'typed' is to correctly infer singleton types, SI-5259.
+          // to still call 'typed' is to correctly infer singleton types, scala/bug#5259.
           val selectPos =
             if(qual.pos.isRange && baseFun1.pos.isRange) qual.pos.union(baseFun1.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end))
             else baseFun1.pos
@@ -271,7 +271,7 @@ trait NamesDefaults { self: Analyzer =>
      * For by-name parameters, create a value
      *  x$n: () => T = () => arg
      *
-     * For Ident(<unapply-selector>) arguments, no ValDef is created (SI-3353).
+     * For Ident(<unapply-selector>) arguments, no ValDef is created (scala/bug#3353).
      */
     def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[Option[ValDef]] = {
       val context = blockTyper.context
@@ -287,8 +287,8 @@ trait NamesDefaults { self: Analyzer =>
               case _                     => seqType(arg.tpe)
             }
             else {
-              // TODO In 83c9c764b, we tried to a stable type here to fix SI-7234. But the resulting TypeTree over a
-              //      singleton type without an original TypeTree fails to retypecheck after a resetAttrs (SI-7516),
+              // TODO In 83c9c764b, we tried to a stable type here to fix scala/bug#7234. But the resulting TypeTree over a
+              //      singleton type without an original TypeTree fails to retypecheck after a resetAttrs (scala/bug#7516),
               //      which is important for (at least) macros.
               arg.tpe
             }
@@ -336,7 +336,7 @@ trait NamesDefaults { self: Analyzer =>
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
           typedApp match {
             case Apply(expr, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
-              setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see SI-7238, SI-7509
+              setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see scala/bug#7238, scala/bug#7509
             case Apply(expr, typedArgs) =>
               // Extract the typed arguments, restore the call-site evaluation order (using
               // ValDef's in the block), change the arguments to these local values.
@@ -512,7 +512,7 @@ trait NamesDefaults { self: Analyzer =>
         val errsBefore = reporter.ERROR.count
         try typer.silent { tpr =>
           val res = tpr.typed(arg.duplicate, subst(paramtpe))
-          // better warning for SI-5044: if `silent` was not actually silent give a hint to the user
+          // better warning for scala/bug#5044: if `silent` was not actually silent give a hint to the user
           // [H]: the reason why `silent` is not silent is because the cyclic reference exception is
           // thrown in a context completely different from `context` here. The exception happens while
           // completing the type, and TypeCompleter is created/run with a non-silent Namer `context`

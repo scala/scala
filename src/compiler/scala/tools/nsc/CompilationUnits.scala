@@ -52,7 +52,7 @@ trait CompilationUnits { global: Global =>
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
     private[this] val _depends = mutable.HashSet[Symbol]()
-    // sbt compatibility (SI-6875)
+    // sbt compatibility (scala/bug#6875)
     //
     // imagine we have a file named A.scala, which defines a trait named Foo and a module named Main
     // Main contains a call to a macro, which calls compileLate to define a mock for Foo

@@ -80,7 +80,7 @@ trait InteractiveAnalyzer extends Analyzer {
         val existingDerivedSym = owningInfo.decl(sym.name.toTermName).filter(sym => sym.isSynthetic && sym.isMethod)
         existingDerivedSym.alternatives foreach (owningInfo.decls.unlink)
         val defTree = tree match {
-          case dd: DocDef => dd.definition // See SI-9011, Scala IDE's presentation compiler incorporates ScaladocGlobal with InteractiveGlobal, so we have to unwrap DocDefs.
+          case dd: DocDef => dd.definition // See scala/bug#9011, Scala IDE's presentation compiler incorporates ScaladocGlobal with InteractiveGlobal, so we have to unwrap DocDefs.
           case _ => tree
         }
         enterImplicitWrapper(defTree.asInstanceOf[ClassDef])
@@ -329,8 +329,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   override def signalDone(context: Context, old: Tree, result: Tree) {
     val canObserveTree = (
          interruptsEnabled
-      && analyzer.lockedCount == 0
-      && !context.bufferErrors // SI-7558 look away during exploratory typing in "silent mode"
+      && lockedCount == 0
+      && !context.bufferErrors // scala/bug#7558 look away during exploratory typing in "silent mode"
     )
     if (canObserveTree) {
       if (context.unit.exists &&
@@ -1018,7 +1018,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val enclosing = new Members[ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
-        // imported val and var are always marked as inaccessible, but they could be accessed through their getters. SI-7995
+        // imported val and var are always marked as inaccessible, but they could be accessed through their getters. scala/bug#7995
         val member = if (s.hasGetter)
           new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
         else

@@ -1,0 +1,9 @@
+t7860.scala:5: warning: private class for your eyes only in object Test is never used
+  private implicit class `for your eyes only`(i: Int) {       // warn
+                         ^
+t7860.scala:31: warning: private class C in object Test3 is never used
+  private implicit class C(val i: Int) extends AnyVal {       // warn
+                         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

@@ -1,0 +1,9 @@
+error: newSource1.scala:13: Symbol 'type stuberrors.A' is missing from the classpath.
+This symbol is required by 'class stuberrors.D'.
+Make sure that type A is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'D.class' was compiled against an incompatible version of stuberrors.
+      b.foo[D]
+            ^
+error: newSource1.scala:13: type arguments [stuberrors.D] do not conform to method foo's type parameter bounds [T <: stuberrors.A]
+      b.foo[D]
+           ^

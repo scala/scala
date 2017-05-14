@@ -10,7 +10,7 @@ import scala.reflect.internal.util.FreshNameCreator
 import scala.util.matching.Regex
 
 trait FreshNames { self: Names with StdNames =>
-  // SI-6879 Keeps track of counters that are supposed to be globally unique
+  // scala/bug#6879 Keeps track of counters that are supposed to be globally unique
   //         as opposed to traditional freshers that are unique to compilation units.
   val globalFreshNameCreator = new FreshNameCreator
 

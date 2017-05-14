@@ -15,7 +15,7 @@ class Foo {
 }
 
 
-/* Original SI-5853 test-case. */
+/* Original scala/bug#5853 test-case. */
 
 object Bippy {
   implicit final class C(val x: Int) extends AnyVal {

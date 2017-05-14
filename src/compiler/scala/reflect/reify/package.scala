@@ -28,7 +28,7 @@ package object reify {
 
     val enclosingErasure = {
       val rClassTree = reifyEnclosingRuntimeClass(global)(typer0)
-      // HACK around SI-6259
+      // HACK around scala/bug#6259
       // If we're in the constructor of an object or others don't have easy access to `this`, we have no good way to grab
       // the class of that object.  Instead, we construct an anonymous class and grab his class file, assuming
       // this is enough to get the correct class loadeer for the class we *want* a mirror for, the object itself.
@@ -51,7 +51,7 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
-    // SI-7375
+    // scala/bug#7375
     val tpe = tpe0.dealiasWiden
 
     if (tpe.isSpliceable) {

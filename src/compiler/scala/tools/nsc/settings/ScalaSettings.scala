@@ -27,7 +27,7 @@ trait ScalaSettings extends AbsScalaSettings
    *  defaults to the value of CLASSPATH env var if it is set, as in Java,
    *  or else to `"."` for the current user directory.
    */
-  protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
+  protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** Enabled under -Xexperimental. */
   protected def experimentalSettings = List[BooleanSetting](YpartialUnification)
@@ -131,7 +131,7 @@ trait ScalaSettings extends AbsScalaSettings
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see SI-8126.", initial = ScalaVersion("2.12"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.12"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")

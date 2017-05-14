@@ -12,7 +12,7 @@ class X1(val s: String) extends AnyVal {
   }
 
   def y(x: X1) = {
-    val i2 = new I2 { val q = x.s } // allowed as of SI-7571
+    val i2 = new I2 { val q = x.s } // allowed as of scala/bug#7571
     i2.z
 
     { case x => x } : PartialFunction[Int, Int] // allowed

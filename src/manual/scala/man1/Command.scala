@@ -53,7 +53,7 @@ trait Command {
 
   def bugs = Section("REPORTING BUGS",
 
-    "Report bugs to " & Mono("https://issues.scala-lang.org/") & ".")
+    "Report bugs to " & Mono("https://github.com/scala/bug/issues") & ".")
 
   def manpage: Document
 }

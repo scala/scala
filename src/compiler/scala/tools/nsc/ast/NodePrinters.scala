@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast
 
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 import symtab.Flags._
 import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
@@ -146,7 +146,7 @@ abstract class NodePrinters {
       str.toString
     }
     def printModifiers(tree: MemberDef) {
-      // SI-5885: by default this won't print annotations of not yet initialized symbols
+      // scala/bug#5885: by default this won't print annotations of not yet initialized symbols
       val annots0 = tree.symbol.annotations match {
         case Nil  => tree.mods.annotations
         case xs   => xs map annotationInfoToString

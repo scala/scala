@@ -234,7 +234,7 @@ self =>
       else currentRun.parsing.incompleteInputError(o2p(offset), msg)
     }
 
-    /** parse unit. If there are inbalanced braces,
+    /** parse unit. If there are unbalanced braces,
      *  try to correct them and reparse.
      */
     def smartParse(): Tree = withSmartParsing {
@@ -812,7 +812,7 @@ self =>
         false
       } else true
 
-    /** Strip the artifitial `Parens` node to create a tuple term Tree. */
+    /** Strip the artificial `Parens` node to create a tuple term Tree. */
     def stripParens(t: Tree) = t match {
       case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts, t.pos.point) }
       case _ => t
@@ -1138,7 +1138,7 @@ self =>
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
     def selector(t: Tree): Tree = {
-      val point = if(isIdent) in.offset else in.lastOffset //SI-8459
+      val point = if(isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
         Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
@@ -1947,19 +1947,22 @@ self =>
        *                |   Pattern3
        *  }}}
        */
-      def pattern2(): Tree = {
-        val p = pattern3()
-
-        if (in.token != AT) p
-        else p match {
-          case Ident(nme.WILDCARD) =>
-            in.nextToken()
-            pattern3()
-          case Ident(name) =>
-            in.nextToken()
-            atPos(p.pos.start) { Bind(name, pattern3()) }
-          case _ => p
-        }
+      def pattern2(): Tree = (pattern3(), in.token) match {
+        case (Ident(nme.WILDCARD), AT) =>
+          in.nextToken()
+          pattern3()
+        case (p @ Ident(name), AT) =>
+          in.nextToken()
+          val body = pattern3()
+          atPos(p.pos.start, p.pos.start, body.pos.end) {
+            val t = Bind(name, body)
+            body match {
+              case Ident(nme.WILDCARD) => t updateAttachment AtBoundIdentifierAttachment
+              case _ if !settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
+              case _ => t
+            }
+          }
+        case (p, _) => p
       }
 
       /** {{{
@@ -1970,7 +1973,7 @@ self =>
       def pattern3(): Tree = {
         val top = simplePattern(badPattern3)
         val base = opstack
-        // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
+        // See scala/bug#3189, scala/bug#4832 for motivation. Cf scala/bug#3480 for counter-motivation.
         def isCloseDelim = in.token match {
           case RBRACE => isXML
           case RPAREN => !isXML
@@ -2854,9 +2857,8 @@ self =>
           val (constrMods, vparamss) =
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
-          var mods1 = mods
-          val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          val result = gen.mkClassDef(mods1, name, tparams, template)
+          val template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
+          val result = gen.mkClassDef(mods, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)

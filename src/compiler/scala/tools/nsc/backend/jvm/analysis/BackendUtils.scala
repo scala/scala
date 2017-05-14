@@ -66,15 +66,27 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   class NonLubbingTypeFlowAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter))
 
-  /**
+  /*
    * Add:
+   *
    * private static Object $deserializeLambda$(SerializedLambda l) {
-   *   return indy[scala.runtime.LambdaDeserialize.bootstrap](l)
-   * }
+   *   try return indy[scala.runtime.LambdaDeserialize.bootstrap, targetMethodGroup$0](l)
+   *   catch {
+   *     case i: IllegalArgumentException =>
+   *       try return indy[scala.runtime.LambdaDeserialize.bootstrap, targetMethodGroup$1](l)
+   *       catch {
+   *         case i: IllegalArgumentException =>
+   *           ...
+   *             return indy[scala.runtime.LambdaDeserialize.bootstrap, targetMethodGroup${NUM_GROUPS-1}](l)
+   *       }
    *
    * We use invokedynamic here to enable caching within the deserializer without needing to
    * host a static field in the enclosing class. This allows us to add this method to interfaces
    * that define lambdas in default methods.
+   *
+   * SI-10232 we can't pass arbitrary number of method handles to the final varargs parameter of the bootstrap
+   * method due to a limitation in the JVM. Instead, we emit a separate invokedynamic bytecode for each group of target
+   * methods.
    */
   def addLambdaDeserialize(classNode: ClassNode, implMethods: Iterable[Handle]): Unit = {
     val cw = classNode
@@ -87,15 +99,34 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
     val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
+    val implMethodsArray = implMethods.toArray
 
-    {
-      val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
-      mv.visitCode()
+    val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
+    def emitLambdaDeserializeIndy(targetMethods: Seq[Handle]) {
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods.toArray: _*)
-      mv.visitInsn(ARETURN)
-      mv.visitEnd()
+      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, targetMethods: _*)
     }
+
+    val targetMethodGroupLimit = 255 - 1 - 3 // JVM limit. See See MAX_MH_ARITY in CallSite.java
+    val groups: Array[Array[Handle]] = implMethodsArray.grouped(targetMethodGroupLimit).toArray
+    val numGroups = groups.length
+
+    import scala.tools.asm.Label
+    val initialLabels = Array.fill(numGroups - 1)(new Label())
+    val terminalLabel = new Label
+    def nextLabel(i: Int) = if (i == numGroups - 2) terminalLabel else initialLabels(i + 1)
+
+    for ((label, i) <- initialLabels.iterator.zipWithIndex) {
+      mv.visitTryCatchBlock(label, nextLabel(i), nextLabel(i), jlIllegalArgExceptionRef.internalName)
+    }
+    for ((label, i) <- initialLabels.iterator.zipWithIndex) {
+      mv.visitLabel(label)
+      emitLambdaDeserializeIndy(groups(i))
+      mv.visitInsn(ARETURN)
+    }
+    mv.visitLabel(terminalLabel)
+    emitLambdaDeserializeIndy(groups(numGroups - 1))
+    mv.visitInsn(ARETURN)
   }
 
   /**
@@ -285,7 +316,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
             while (desc.charAt(i) != ';') i += 1
-            internalNames append desc.substring(start, i)
+            internalNames += desc.substring(start, i)
           }
           // skips over '[', ')', primitives
           i += 1

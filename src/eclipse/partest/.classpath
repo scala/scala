@@ -9,6 +9,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/partest/scala-partest_2.12.0-M5-1.1.0.jar"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/partest/scala-partest_2.12-1.1.1.jar"/>
 	<classpathentry kind="output" path="build-quick-partest-extras"/>
 </classpath>

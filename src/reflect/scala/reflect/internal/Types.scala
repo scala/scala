@@ -95,8 +95,8 @@ trait Types
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
    */
-  private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
-  private final val sharperSkolems = sys.props contains "scalac.experimental.sharper-skolems"
+  private final val propagateParameterBoundsToTypeVars = System.getProperty("scalac.debug.prop-constraints") != null
+  private final val sharperSkolems = System.getProperty("scalac.experimental.sharper-skolems") != null
 
   /** Caching the most recent map has a 75-90% hit rate. */
   private object substTypeMapCache {
@@ -529,23 +529,31 @@ trait Types
      *  This compensates for the fact that type aliases can hide beneath
      *  singleton types and singleton types can hide inside type aliases.
      *  !!! - and yet it is still inadequate, because aliases and singletons
-     *  might lurk in the upper bounds of an abstract type. See SI-7051.
+     *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = (
-      if (this ne widen) widen.dealiasWiden
-      else if (this ne dealias) dealias.dealiasWiden
-      else this
-    )
+    def dealiasWiden: Type = {
+      val widened = widen
+      if (this ne widened) widened.dealiasWiden
+      else {
+        val dealiased = dealias
+        if (this ne dealiased) dealiased.dealiasWiden
+        else this
+      }
+    }
 
     /** All the types encountered in the course of dealiasing/widening,
      *  including each intermediate beta reduction step (whereas calling
      *  dealias applies as many as possible.)
      */
-    def dealiasWidenChain: List[Type] = this :: (
-      if (this ne widen) widen.dealiasWidenChain
-      else if (this ne betaReduce) betaReduce.dealiasWidenChain
-      else Nil
-    )
+    def dealiasWidenChain: List[Type] = this :: {
+      val widened = widen
+      if (this ne widened) widened.dealiasWidenChain
+      else {
+        val betaReduced = betaReduce
+        if (this ne betaReduced) betaReduced.dealiasWidenChain
+        else Nil
+      }
+    }
 
     /** Performs a single step of beta-reduction on types.
      *  Given:
@@ -701,16 +709,18 @@ trait Types
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym.tpeHK match {
-      case OverloadedType(_, alts) => OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym match {
+      case meth: MethodSymbol =>
+        meth.typeAsMemberOf(this)
+      case _ =>
+        computeMemberType(sym)
+    }
+
+    def computeMemberType(sym: Symbol): Type = sym.tpeHK match {
+      case OverloadedType(_, alts) =>
+        OverloadedType(this, alts)
       case tp =>
-        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
-        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
-        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
-        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
-        // from what it is now, and the cache won't know simply by looking at `pre`.
-        if (sym eq NoSymbol) NoType
-        else tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -902,20 +912,7 @@ trait Types
      *  @return    the index of given class symbol in the BaseTypeSeq of this type,
      *             or -1 if no base type with given class symbol exists.
      */
-    def baseTypeIndex(sym: Symbol): Int = {
-      val bts = baseTypeSeq
-      var lo = 0
-      var hi = bts.length - 1
-      while (lo <= hi) {
-        val mid = (lo + hi) / 2
-        val btssym = bts.typeSymbol(mid)
-        if (sym == btssym) return mid
-        else if (sym isLess btssym) hi = mid - 1
-        else if (btssym isLess sym) lo = mid + 1
-        else abort("sym is neither `sym == btssym`, `sym isLess btssym` nor `btssym isLess sym`")
-      }
-      -1
-    }
+    def baseTypeIndex(sym: Symbol): Int = baseTypeSeq.baseTypeIndex(sym)
 
     /** If this is a ExistentialType, PolyType or MethodType, a copy with cloned type / value parameters
      *  owned by `owner`. Identity for all other types.
@@ -1179,7 +1176,7 @@ trait Types
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
     if (!sym.isClass && !sym.isFreeType) {
-      // SI-6640 allow StubSymbols to reveal what's missing from the classpath before we trip the assertion.
+      // scala/bug#6640 allow StubSymbols to reveal what's missing from the classpath before we trip the assertion.
       sym.failIfStub()
       abort(s"ThisType($sym) for sym which is not a class")
     }
@@ -1624,7 +1621,7 @@ trait Types
     private var normalized: Type = _
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
-      // SI-8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
+      // scala/bug#8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
       def flatten(tps: List[Type]): List[Type] = {
         def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
         tps map dealiasRefinement flatMap {
@@ -1975,7 +1972,7 @@ trait Types
 
     private def validateRelativeInfo(): Unit = relativeInfoCache match {
       // If a subtyping cycle is not detected here, we'll likely enter an infinite
-      // loop before a sensible error can be issued.  SI-5093 is one example.
+      // loop before a sensible error can be issued.  scala/bug#5093 is one example.
       case x: SubType if x.supertype eq this =>
         relativeInfoCache = null
         throw new RecoverableCyclicReference(sym)
@@ -2035,7 +2032,7 @@ trait Types
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     override def betaReduce = relativize(sym.info.resultType)
 
-    /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
+    /** scala/bug#3731, scala/bug#8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
      *  (where the symbol refers to a declaration "embedded" in the prefix).
      *
      *  @return newSym so that `newPre` binds `sym.name` to `newSym`,
@@ -2166,14 +2163,14 @@ trait Types
         // The type params and type args should always match in length,
         // though a mismatch can arise when a typevar is encountered for which
         // too little information is known to determine its kind, and
-        // it later turns out not to have kind *. See SI-4070.
+        // it later turns out not to have kind *. See scala/bug#4070.
         val formals = sym.typeParams
 
         // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
         // type, we can end up with new symbols for the type parameters (clones from TypeMap).
         // The subsequent substitution of type arguments would fail. This problem showed up during
-        // the fix for SI-8046, however the solution taken there wasn't quite right, and led to
-        // SI-8170.
+        // the fix for scala/bug#8046, however the solution taken there wasn't quite right, and led to
+        // scala/bug#8170.
         //
         // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
         // on the result type.
@@ -2295,7 +2292,7 @@ trait Types
 
     protected[Types] def baseTypeSeqImpl: BaseTypeSeq =
       if (sym.info.baseTypeSeq exists (_.typeSymbolDirect.isAbstractType))
-        // SI-8046 base type sequence might have more elements in a subclass, we can't map it element wise.
+        // scala/bug#8046 base type sequence might have more elements in a subclass, we can't map it element wise.
         relativize(sym.info).baseTypeSeq
       else
         // Optimization: no abstract types, we can compute the BTS of this TypeRef as an element-wise map
@@ -2602,7 +2599,7 @@ trait Types
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
 
-    // SI-9475: PolyTypes with dependent method types are still dependent
+    // scala/bug#9475: PolyTypes with dependent method types are still dependent
     override def isDependentMethodType = resultType.isDependentMethodType
 
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
@@ -2677,7 +2674,7 @@ trait Types
     // Is this existential of the form: T[Q1, ..., QN] forSome { type Q1 >: L1 <: U1, ..., QN >: LN <: UN}
     private def isStraightApplication = (quantified corresponds underlying.typeArgs){ (q, a) => q.tpe =:= a }
 
-    /** [SI-6169, SI-8197 -- companion to SI-1786]
+    /** [scala/bug#6169, scala/bug#8197 -- companion to scala/bug#1786]
      *
      * Approximation to improve the bounds of a Java-defined existential type,
      * based on the bounds of the type parameters of the quantified type
@@ -2688,9 +2685,9 @@ trait Types
      * Also tried doing this once during class file parsing or when creating the existential type,
      * but that causes cyclic errors because it happens too early.
      *
-     * NOTE: we're only modifying the skolems to avoid leaking the sharper bounds to `quantified` (SI-8283)
+     * NOTE: we're only modifying the skolems to avoid leaking the sharper bounds to `quantified` (scala/bug#8283)
      *
-     * TODO: figure out how to do this earlier without running into cycles, so this can subsume the fix for SI-1786
+     * TODO: figure out how to do this earlier without running into cycles, so this can subsume the fix for scala/bug#1786
      */
     override def skolemizeExistential(owner0: Symbol, origin: AnyRef) = {
       val owner = owner0 orElse quantifierOwner
@@ -2883,7 +2880,7 @@ trait Types
     private def deriveConstraint(tparam: Symbol): TypeConstraint = {
       /** Must force the type parameter's info at this point
        *  or things don't end well for higher-order type params.
-       *  See SI-5359.
+       *  See scala/bug#5359.
        */
       val bounds  = tparam.info.bounds
       /* We can seed the type constraint with the type parameter
@@ -2994,7 +2991,7 @@ trait Types
   ) extends Type {
 
     // We don't want case class equality/hashing as TypeVar-s are mutable,
-    // and TypeRefs based on them get wrongly `uniqued` otherwise. See SI-7226.
+    // and TypeRefs based on them get wrongly `uniqued` otherwise. See scala/bug#7226.
     override def hashCode(): Int = System.identityHashCode(this)
     override def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
 
@@ -3102,11 +3099,11 @@ trait Types
      *   after solving in, pos/t8237
      */
     protected final def sharesConstraints(other: Type): Boolean = other match {
-      case other: TypeVar => constr == other.constr // SI-8237 avoid cycles. Details in pos/t8237.scala
+      case other: TypeVar => constr == other.constr // scala/bug#8237 avoid cycles. Details in pos/t8237.scala
       case _ => false
     }
     private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse
-    // SI-7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
+    // scala/bug#7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
     private[Types] def linkSuspended(origin: TypeVar): Unit = _suspended = origin
 
     /** Called when a TypeVar is involved in a subtyping check.  Result is whether
@@ -3153,7 +3150,7 @@ trait Types
       def unifySimple = {
         val sym = tp.typeSymbol
         if (sym == NothingClass || sym == AnyClass) { // kind-polymorphic
-          // SI-7126 if we register some type alias `T=Any`, we can later end
+          // scala/bug#7126 if we register some type alias `T=Any`, we can later end
           // with malformed types like `T[T]` during type inference in
           // `handlePolymorphicCall`. No such problem if we register `Any`.
           addBound(sym.tpe)
@@ -3179,12 +3176,12 @@ trait Types
             val lhs = if (isLowerBound) tpTypeArgs else typeArgs
             val rhs = if (isLowerBound) typeArgs else tpTypeArgs
             // This is a higher-kinded type var with same arity as tp.
-            // If so (see SI-7517), side effect: adds the type constructor itself as a bound.
+            // If so (see scala/bug#7517), side effect: adds the type constructor itself as a bound.
             isSubArgs(lhs, rhs, params, AnyDepth) && {addBound(tp.typeConstructor); true}
           } else if (settings.YpartialUnification && arityDelta < 0 && typeArgs.nonEmpty) {
-            // Simple algorithm as suggested by Paul Chiusano in the comments on SI-2712
+            // Simple algorithm as suggested by Paul Chiusano in the comments on scala/bug#2712
             //
-            //   https://issues.scala-lang.org/browse/SI-2712?focusedCommentId=61270
+            //   https://github.com/scala/bug/issues/2712#issuecomment-292374655
             //
             // Treat the type constructor as curried and partially applied, we treat a prefix
             // as constants and solve for the suffix. For the example in the ticket, unifying
@@ -3454,7 +3451,7 @@ trait Types
   /** A temporary type representing the erasure of a user-defined value type.
    *  Created during phase erasure, eliminated again in posterasure.
    *
-   *  SI-6385 Erasure's creation of bridges considers method signatures `exitingErasure`,
+   *  scala/bug#6385 Erasure's creation of bridges considers method signatures `exitingErasure`,
    *          which contain `ErasedValueType`-s. In order to correctly consider the overriding
    *          and overridden signatures as equivalent in `run/t6385.scala`, it is critical that
    *          this type contains the erasure of the wrapped type, rather than the unerased type
@@ -3506,10 +3503,10 @@ trait Types
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
     else pre.nonPrivateMember(sym.name).suchThat { sym =>
-      // SI-7928 `isModuleNotMethod` is here to avoid crashing with spuriously "overloaded" module accessor and module symbols.
+      // scala/bug#7928 `isModuleNotMethod` is here to avoid crashing with spuriously "overloaded" module accessor and module symbols.
       //         These appear after the fields phase eliminates ModuleDefs that implement an interface.
       //         Here, we exclude the module symbol, which allows us to bind to the accessor.
-      // SI-8054 We must only do this after fields, otherwise we exclude the module symbol which does not yet have an accessor!
+      // scala/bug#8054 We must only do this after fields, otherwise we exclude the module symbol which does not yet have an accessor!
       val isModuleWithAccessor = phase.assignsFields && sym.isModuleNotMethod
       sym.isType || (!isModuleWithAccessor && sym.isStable && !sym.hasVolatileType)
     } orElse sym
@@ -3790,7 +3787,7 @@ trait Types
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
       // JZ: We used to register this as a perRunCache so it would be cleared eagerly at
-      // the end of the compilation run. But, that facility didn't actually clear this map (SI-8129)!
+      // the end of the compilation run. But, that facility didn't actually clear this map (scala/bug#8129)!
       // When i fixed that bug, run/tpeCache-tyconCache.scala started failing. Why was that?
       // I've removed the registration for now. I don't think it's particularly harmful anymore
       // as a) this is now a weak set, and b) it is discarded completely before the next run.
@@ -4176,7 +4173,7 @@ trait Types
     case ThisType(sym)                         => !sym.isPackageClass   // excludes packages
     case TypeRef(_, sym, _)                    => !sym.isPackageClass   // excludes packages
     case PolyType(_, _)                        => true                  // poly-methods excluded earlier
-    case tp                                    => sys.error("isValueElseNonValue called with third-way type " + tp)
+    case tp                                    => throw new IllegalArgumentException("isValueElseNonValue called with third-way type " + tp)
   }
 
   /** SLS 3.2, Value Types
@@ -4210,7 +4207,7 @@ trait Types
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Depth): Boolean = {
     def isSubArg(t1: Type, t2: Type, variance: Variance) = (
-         (variance.isCovariant || isSubType(t2, t1, depth))     // The order of these two checks can be material for performance (SI-8478)
+         (variance.isCovariant || isSubType(t2, t1, depth))     // The order of these two checks can be material for performance (scala/bug#8478)
       && (variance.isContravariant || isSubType(t1, t2, depth))
     )
 
@@ -4517,7 +4514,7 @@ trait Types
             case None =>
               // transpose freaked out because of irregular argss
               // catching just in case (shouldn't happen, but also doesn't cost us)
-              // [JZ] It happens: see SI-5683.
+              // [JZ] It happens: see scala/bug#5683.
               debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
               NoType
             case Some(argsst) =>

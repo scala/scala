@@ -6,7 +6,7 @@ import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
 class BitSetTest {
-  // Test for SI-8910
+  // Test for scala/bug#8910
   @Test def capacityExpansionTest(): Unit = {
     val bitSet = BitSet.empty
     val size   = bitSet.toBitMask.length

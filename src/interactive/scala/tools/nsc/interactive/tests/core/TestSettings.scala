@@ -7,7 +7,7 @@ private[tests] trait TestSettings {
   protected final val TIMEOUT = 30000 // timeout in milliseconds
 
   /** The root directory for this test suite, usually the test kind ("test/files/presentation"). */
-  protected val outDir = Path(Option(System.getProperty("partest.cwd")).getOrElse("."))
+  protected val outDir = Path(System.getProperty("partest.cwd", "."))
 
   /** The base directory for this test, usually a subdirectory of "test/files/presentation/" */
   protected val baseDir = Option(System.getProperty("partest.testname")).map(outDir / _).getOrElse(Path("."))

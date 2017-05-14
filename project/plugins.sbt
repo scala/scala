@@ -19,7 +19,7 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.13"
+libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.14"
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",

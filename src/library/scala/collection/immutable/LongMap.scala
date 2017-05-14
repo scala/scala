@@ -119,7 +119,7 @@ private[immutable] abstract class LongMapIterator[V, T](it: LongMap[V]) extends 
       case t@LongMap.Tip(_, _) => valueOf(t)
       // This should never happen. We don't allow LongMap.Nil in subtrees of the LongMap
       // and don't return an LongMapIterator for LongMap.Nil.
-      case LongMap.Nil => sys.error("Empty maps not allowed as subtrees")
+      case LongMap.Nil => throw new IllegalStateException("Empty maps not allowed as subtrees")
     }
 }
 
@@ -259,8 +259,8 @@ extends AbstractMap[Long, T]
 
   final override def apply(key: Long): T = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key)
-    case LongMap.Tip(key2, value) => if (key == key2) value else sys.error("Key not found")
-    case LongMap.Nil => sys.error("key not found")
+    case LongMap.Tip(key2, value) => if (key == key2) value else throw new IllegalArgumentException("Key not found")
+    case LongMap.Nil => throw new IllegalArgumentException("key not found")
   }
 
   def + [S >: T] (kv: (Long, S)): LongMap[S] = updated(kv._1, kv._2)
@@ -352,19 +352,19 @@ extends AbstractMap[Long, T]
   def unionWith[S >: T](that: LongMap[S], f: (Long, S, S) => S): LongMap[S] = (this, that) match{
     case (LongMap.Bin(p1, m1, l1, r1), that@(LongMap.Bin(p2, m2, l2, r2))) =>
       if (shorter(m1, m2)) {
-        if (!hasMatch(p2, p1, m1)) join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        if (!hasMatch(p2, p1, m1)) join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
         else if (zero(p2, m1)) LongMap.Bin(p1, m1, l1.unionWith(that, f), r1)
         else LongMap.Bin(p1, m1, l1, r1.unionWith(that, f))
       } else if (shorter(m2, m1)){
-        if (!hasMatch(p1, p2, m2)) join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        if (!hasMatch(p1, p2, m2)) join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
         else if (zero(p1, m2)) LongMap.Bin(p2, m2, this.unionWith(l2, f), r2)
         else LongMap.Bin(p2, m2, l2, this.unionWith(r2, f))
       }
       else {
         if (p1 == p2) LongMap.Bin(p1, m1, l1.unionWith(l2,f), r1.unionWith(r2, f))
-        else join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        else join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
       }
-    case (LongMap.Tip(key, value), x) => x.updateWith[S](key, value, (x, y) => f(key, y, x)) // TODO: remove [S] when SI-5548 is fixed
+    case (LongMap.Tip(key, value), x) => x.updateWith[S](key, value, (x, y) => f(key, y, x)) // TODO: remove [S] when scala/bug#5548 is fixed
     case (x, LongMap.Tip(key, value)) => x.updateWith[S](key, value, (x, y) => f(key, x, y))
     case (LongMap.Nil, x) => x
     case (x, LongMap.Nil) => x
@@ -422,14 +422,14 @@ extends AbstractMap[Long, T]
   final def firstKey: Long = this match {
     case LongMap.Bin(_, _, l, r) => l.firstKey
     case LongMap.Tip(k, v) => k
-    case LongMap.Nil => sys.error("Empty set")
+    case LongMap.Nil => throw new IllegalStateException("Empty set")
   }
 
   @tailrec
   final def lastKey: Long = this match {
     case LongMap.Bin(_, _, l, r) => r.lastKey
     case LongMap.Tip(k , v) => k
-    case LongMap.Nil => sys.error("Empty set")
+    case LongMap.Nil => throw new IllegalStateException("Empty set")
   }
 
 }

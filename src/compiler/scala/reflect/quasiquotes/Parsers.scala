@@ -85,7 +85,7 @@ trait Parsers { self: Quasiquotes =>
         // tq"$a => $b"
         override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = FunctionTypePlaceholder(argtpes, restpe)
 
-        // make q"val (x: T) = rhs" be equivalent to q"val x: T = rhs" for sake of bug compatibility (SI-8211)
+        // make q"val (x: T) = rhs" be equivalent to q"val x: T = rhs" for sake of bug compatibility (scala/bug#8211)
         override def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree) = pat match {
           case TuplePlaceholder(inParensPat :: Nil) => super.makePatDef(mods, inParensPat, rhs)
           case _ => super.makePatDef(mods, pat, rhs)

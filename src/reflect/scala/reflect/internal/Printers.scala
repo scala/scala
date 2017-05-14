@@ -11,7 +11,7 @@ package internal
 
 import java.io.{ OutputStream, PrintWriter, Writer }
 import Flags._
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 
 trait Printers extends api.Printers { self: SymbolTable =>
 
@@ -194,7 +194,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     def printAnnotations(tree: MemberDef) = {
-      // SI-5885: by default this won't print annotations of not yet initialized symbols
+      // scala/bug#5885: by default this won't print annotations of not yet initialized symbols
       val annots = tree.symbol.annotations match {
         case Nil  => tree.mods.annotations
         case anns => anns

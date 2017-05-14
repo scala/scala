@@ -24,7 +24,7 @@ trait Unapplies extends ast.TreeDSL {
   private def unapplyParamName = nme.x_0
   private def caseMods         = Modifiers(SYNTHETIC | CASE)
 
-  // In the typeCompleter (templateSig) of a case class (resp it's module),
+  // In the typeCompleter (templateSig) of a case class (resp its module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed. During naming (in
   // `enterClassDef`), the case class ClassDef is added as an attachment to the
@@ -47,7 +47,7 @@ trait Unapplies extends ast.TreeDSL {
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
 
   private def classType(cdef: ClassDef, tparams: List[TypeDef]): Tree = {
-    // SI-7033 Unattributed to avoid forcing `cdef.symbol.info`.
+    // scala/bug#7033 Unattributed to avoid forcing `cdef.symbol.info`.
     val tycon = Ident(cdef.symbol)
     if (tparams.isEmpty) tycon else AppliedTypeTree(tycon, tparams map toIdent)
   }
@@ -85,7 +85,7 @@ trait Unapplies extends ast.TreeDSL {
       localAccessor.fold(selectByName)(Ident(param) DOT _.symbol)
     }
 
-    // Working with trees, rather than symbols, to avoid cycles like SI-5082
+    // Working with trees, rather than symbols, to avoid cycles like scala/bug#5082
     constrParamss(caseclazz).take(1).flatten match {
       case Nil => TRUE
       case xs  => SOME(xs map caseFieldAccessorValue: _*)
@@ -150,7 +150,7 @@ trait Unapplies extends ast.TreeDSL {
       case _                                                          => nme.unapply
     }
     val cparams    = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val resultType = if (!settings.isScala212) TypeTree() else { // fix for SI-6541 under -Xsource:2.12
+    val resultType = if (!settings.isScala212) TypeTree() else { // fix for scala/bug#6541 under -Xsource:2.12
     def repeatedToSeq(tp: Tree) = tp match {
         case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
         case _                                                                => tp
@@ -173,7 +173,7 @@ trait Unapplies extends ast.TreeDSL {
 
   /**
    * Generates copy methods for case classes. Copy only has defaults on the first
-   * parameter list, as of SI-5009.
+   * parameter list, as of scala/bug#5009.
    *
    * The parameter types of the copy method need to be exactly the same as the parameter
    * types of the primary constructor. Just copying the TypeTree is not enough: a type `C`

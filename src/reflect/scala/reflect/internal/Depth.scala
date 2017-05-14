@@ -28,7 +28,7 @@ object Depth {
 
   final val Zero     = new Depth(0)
 
-  // SI-9018: A negative depth is used to signal that we have breached the recursion limit.
+  // scala/bug#9018: A negative depth is used to signal that we have breached the recursion limit.
   // The LUB/GLB implementation will then truncate to Any/Nothing.
   //
   // We only really need one of these, but we allow representation of Depth(-1) and Depth(-2)

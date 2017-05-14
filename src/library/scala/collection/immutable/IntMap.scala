@@ -127,7 +127,7 @@ private[immutable] abstract class IntMapIterator[V, T](it: IntMap[V]) extends Ab
       case t@IntMap.Tip(_, _) => valueOf(t)
       // This should never happen. We don't allow IntMap.Nil in subtrees of the IntMap
       // and don't return an IntMapIterator for IntMap.Nil.
-      case IntMap.Nil => sys.error("Empty maps not allowed as subtrees")
+      case IntMap.Nil => throw new IllegalStateException("Empty maps not allowed as subtrees")
     }
 }
 
@@ -267,8 +267,8 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
 
   final override def apply(key: Int): T = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key)
-    case IntMap.Tip(key2, value) => if (key == key2) value else sys.error("Key not found")
-    case IntMap.Nil => sys.error("key not found")
+    case IntMap.Tip(key2, value) => if (key == key2) value else throw new IllegalArgumentException("Key not found")
+    case IntMap.Nil => throw new IllegalArgumentException("key not found")
   }
 
   def + [S >: T] (kv: (Int, S)): IntMap[S] = updated(kv._1, kv._2)
@@ -361,17 +361,17 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   def unionWith[S >: T](that: IntMap[S], f: (Int, S, S) => S): IntMap[S] = (this, that) match{
     case (IntMap.Bin(p1, m1, l1, r1), that@(IntMap.Bin(p2, m2, l2, r2))) =>
       if (shorter(m1, m2)) {
-        if (!hasMatch(p2, p1, m1)) join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        if (!hasMatch(p2, p1, m1)) join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
         else if (zero(p2, m1)) IntMap.Bin(p1, m1, l1.unionWith(that, f), r1)
         else IntMap.Bin(p1, m1, l1, r1.unionWith(that, f))
       } else if (shorter(m2, m1)){
-        if (!hasMatch(p1, p2, m2)) join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        if (!hasMatch(p1, p2, m2)) join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
         else if (zero(p1, m2)) IntMap.Bin(p2, m2, this.unionWith(l2, f), r2)
         else IntMap.Bin(p2, m2, l2, this.unionWith(r2, f))
       }
       else {
         if (p1 == p2) IntMap.Bin(p1, m1, l1.unionWith(l2,f), r1.unionWith(r2, f))
-        else join[S](p1, this, p2, that) // TODO: remove [S] when SI-5548 is fixed
+        else join[S](p1, this, p2, that) // TODO: remove [S] when scala/bug#5548 is fixed
       }
     case (IntMap.Tip(key, value), x) => x.updateWith[S](key, value, (x, y) => f(key, y, x))
     case (x, IntMap.Tip(key, value)) => x.updateWith[S](key, value, (x, y) => f(key, x, y))
@@ -434,7 +434,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   final def firstKey: Int = this match {
     case Bin(_, _, l, r) => l.firstKey
     case Tip(k, v) => k
-    case IntMap.Nil => sys.error("Empty set")
+    case IntMap.Nil => throw new IllegalStateException("Empty set")
   }
 
   /**
@@ -444,6 +444,6 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   final def lastKey: Int = this match {
     case Bin(_, _, l, r) => r.lastKey
     case Tip(k, v) => k
-    case IntMap.Nil => sys.error("Empty set")
+    case IntMap.Nil => throw new IllegalStateException("Empty set")
   }
 }

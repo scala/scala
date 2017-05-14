@@ -298,19 +298,29 @@ abstract class BTypes {
    * referring to BTypes.
    */
   sealed trait BType {
-    final override def toString: String = this match {
-      case UNIT   => "V"
-      case BOOL   => "Z"
-      case CHAR   => "C"
-      case BYTE   => "B"
-      case SHORT  => "S"
-      case INT    => "I"
-      case FLOAT  => "F"
-      case LONG   => "J"
-      case DOUBLE => "D"
-      case ClassBType(internalName) => "L" + internalName + ";"
-      case ArrayBType(component)    => "[" + component
-      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
+    final override def toString: String = {
+      val builder = new java.lang.StringBuilder(64)
+      buildString(builder)
+      builder.toString
+    }
+
+    final def buildString(builder: java.lang.StringBuilder): Unit = this match {
+      case UNIT   => builder.append('V')
+      case BOOL   => builder.append('Z')
+      case CHAR   => builder.append('C')
+      case BYTE   => builder.append('B')
+      case SHORT  => builder.append('S')
+      case INT    => builder.append('I')
+      case FLOAT  => builder.append('F')
+      case LONG   => builder.append('J')
+      case DOUBLE => builder.append('D')
+      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
+      case ArrayBType(component)    => builder.append('['); component.buildString(builder)
+      case MethodBType(args, res)   =>
+        builder.append('(')
+        args.foreach(_.buildString(builder))
+        builder.append(')')
+        res.buildString(builder)
     }
 
     /**
@@ -835,7 +845,7 @@ abstract class BTypes {
    * The `info` field contains either the class information on an error message why the info could
    * not be computed. There are two reasons for an erroneous info:
    *   1. The ClassBType was built from a class symbol that stems from a java source file, and the
-   *      symbol's type could not be completed successfully (SI-9111)
+   *      symbol's type could not be completed successfully (scala/bug#9111)
    *   2. The ClassBType should be built from a classfile, but the class could not be found on the
    *      compilation classpath.
    *
@@ -947,7 +957,7 @@ abstract class BTypes {
 
     def inlineInfoAttribute: Either[NoClassBTypeInfo, InlineInfoAttribute] = info.map(i => {
       // InlineInfos are serialized for classes being compiled. For those the info was built by
-      // buildInlineInfoFromClassSymbol, which only adds a warning under SI-9111, which in turn
+      // buildInlineInfoFromClassSymbol, which only adds a warning under scala/bug#9111, which in turn
       // only happens for class symbols of java source files.
       // we could put this assertion into InlineInfoAttribute, but it is more safe to put it here
       // where it affect only GenBCode, and not add any assertion to GenASM in 2.11.6.
@@ -979,7 +989,7 @@ abstract class BTypes {
      * Background:
      *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-     *   https://issues.scala-lang.org/browse/SI-3872
+     *   https://github.com/scala/bug/issues/3872
      */
     def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
@@ -1004,7 +1014,7 @@ abstract class BTypes {
             // Both this and other are classes. The code takes (transitively) all superclasses and
             // finds the first common one.
             // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
-            //  - https://issues.scala-lang.org/browse/SI-3872
+            //  - https://github.com/scala/bug/issues/3872
             firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
         }
 

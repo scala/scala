@@ -1,16 +1,13 @@
-error: missing or invalid dependency detected while loading class file 'Imports.class'.
-Could not access term memberHandlers in class scala.tools.nsc.interpreter.IMain,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+t5148.scala:4: error: Symbol 'term scala.tools.nsc.interpreter.IMain.memberHandlers' is missing from the classpath.
+This symbol is required by 'method scala.tools.nsc.interpreter.Imports.allReqAndHandlers'.
+Make sure that term memberHandlers is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
 A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
-error: missing or invalid dependency detected while loading class file 'Imports.class'.
-Could not access type Wrapper in class scala.tools.nsc.interpreter.IMain.Request,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.Request.
-error: missing or invalid dependency detected while loading class file 'Imports.class'.
-Could not access type Request in class scala.tools.nsc.interpreter.IMain,
-because it (or its dependencies) are missing. Check your build definition for
-missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
-three errors found
+class IMain extends Imports
+            ^
+t5148.scala:4: error: Symbol 'type <none>.Request.Wrapper' is missing from the classpath.
+This symbol is required by 'value scala.tools.nsc.interpreter.Imports.wrapper'.
+Make sure that type Wrapper is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'Imports.class' was compiled against an incompatible version of <none>.Request.
+class IMain extends Imports
+      ^
+two errors found

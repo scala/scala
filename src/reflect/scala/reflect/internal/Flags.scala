@@ -311,8 +311,8 @@ class Flags extends ModifierFlags {
   /** These flags are pickled */
   final val PickledFlags  = (
       (InitialFlags & ~FlagsNotPickled)
-    | notPRIVATE // for value class constructors (SI-6601), and private members referenced
-                 // in @inline-marked methods publicized in SuperAccessors (see SI-6608, e6b4204604)
+    | notPRIVATE // for value class constructors (scala/bug#6601), and private members referenced
+                 // in @inline-marked methods publicized in SuperAccessors (see scala/bug#6608, e6b4204604)
   )
 
   /** If we have a top-level class or module

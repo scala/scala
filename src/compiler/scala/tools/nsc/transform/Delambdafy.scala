@@ -280,7 +280,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           Template(parents, self, body ++ boxingBridgeMethods)
         } finally boxingBridgeMethods.clear()
       case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>
-        // SI-9390 emit lifted methods that don't require a `this` reference as STATIC
+        // scala/bug#9390 emit lifted methods that don't require a `this` reference as STATIC
         // delambdafy targets are excluded as they are made static by `transformFunction`.
         if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol)) {
           dd.symbol.setFlag(STATIC)
@@ -347,7 +347,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     // recursively find methods that refer to 'this' directly or indirectly via references to other methods
     // for each method found add it to the referrers set
     private def refersToThis(symbol: Symbol): Boolean = {
-      var seen = mutable.Set[Symbol]()
+      val seen = mutable.Set[Symbol]()
       def loop(symbol: Symbol): Boolean = {
         if (seen(symbol)) false
         else {

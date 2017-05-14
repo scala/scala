@@ -21,7 +21,7 @@ trait TreeAndTypeAnalysis extends Debugging {
    * However, Stable Identifier and Literal patterns are matched using `==`,
    * which does not imply a type for the binder that binds the matched value.
    *
-   * See SI-1503, SI-5024: don't cast binders to types we're not sure they have
+   * See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
    *
    * TODO: update spec as follows (deviation between `**`):
    *
@@ -52,7 +52,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             reporter.warning(pat.pos,
               sm"""The value matched by $pat is bound to ${binder.name}, which may be used under the
                   |unsound assumption that it has type ${pat.tpe}, whereas we can only safely
-                  |count on it having type $pt, as the pattern is matched using `==` (see SI-1503).""")
+                  |count on it having type $pt, as the pattern is matched using `==` (see scala/bug#1503).""")
 
           pat.tpe
         }
@@ -67,14 +67,14 @@ trait TreeAndTypeAnalysis extends Debugging {
   // we use subtyping as a model for implication between instanceof tests
   // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
   // unfortunately this is not true in general:
-  // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefTpe)
+  // scala/bug#6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefTpe)
   def instanceOfTpImplies(tp: Type, tpImplied: Type) = {
     val tpValue = isPrimitiveValueType(tp)
 
     // pretend we're comparing to Any when we're actually comparing to AnyVal or AnyRef
     // (and the subtype is respectively a value type or not a value type)
     // this allows us to reuse subtyping as a model for implication between instanceOf tests
-    // the latter don't see a difference between AnyRef, Object or Any when comparing non-value types -- SI-6022
+    // the latter don't see a difference between AnyRef, Object or Any when comparing non-value types -- scala/bug#6022
     val tpImpliedNormalizedToAny =
       if (tpImplied =:= (if (tpValue) AnyValTpe else AnyRefTpe)) AnyTpe
       else tpImplied
@@ -191,7 +191,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
       // similar to typer.infer.approximateAbstracts
       object typeArgsToWildcardsExceptArray extends TypeMap {
-        // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
+        // scala/bug#6771 dealias would be enough today, but future proofing with the dealiasWiden.
         // See neg/t6771b.scala for elaboration
         def apply(tp: Type): Type = tp.dealias match {
           case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
@@ -335,7 +335,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         /** apply itself must render a faithful representation of the TreeMaker
          *
          * Concretely, True must only be used to represent a TreeMaker that is sure to match and that does not do any computation at all
-         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to True -- SI-6077)
+         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to True -- scala/bug#6077)
          *
          * handleUnknown may be customized by the caller to approximate further
          *
@@ -584,7 +584,7 @@ trait MatchAnalysis extends MatchApproximation {
 
     object CounterExample {
       def prune(examples: List[CounterExample]): List[CounterExample] = {
-        // SI-7669 Warning: we don't used examples.distinct here any more as
+        // scala/bug#7669 Warning: we don't used examples.distinct here any more as
         //         we can have A != B && A.coveredBy(B) && B.coveredBy(A)
         //         with Nil and List().
         val result = mutable.Buffer[CounterExample]()
@@ -817,7 +817,7 @@ trait MatchAnalysis extends MatchApproximation {
         private lazy val caseFieldAccs = cls.caseFieldAccessors
 
         def addField(symbol: Symbol, assign: VariableAssignment) {
-          // SI-7669 Only register this field if if this class contains it.
+          // scala/bug#7669 Only register this field if if this class contains it.
           val shouldConstrainField = !symbol.isCaseAccessor || caseFieldAccs.contains(symbol)
           if (shouldConstrainField) fields(symbol) = assign
         }

@@ -5,7 +5,7 @@
 package scala.reflect.reify
 package utils
 
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 
 trait NodePrinters {
   self: Utils =>

@@ -39,8 +39,8 @@ class Use extends ScalaMatchingTask {
   private var failOnError: Boolean = true
 
   override def execute() {
-    if (id.isEmpty) sys.error("Mandatory attribute 'id' is not set.")
-    if (sourceDir.isEmpty) sys.error("Mandatory attribute 'srcdir' is not set.")
+    if (id.isEmpty) throw new IllegalStateException("Mandatory attribute 'id' is not set.")
+    if (sourceDir.isEmpty) throw new IllegalStateException("Mandatory attribute 'srcdir' is not set.")
     val compiler = Compilers(id.get)
     if (!destinationDir.isEmpty) compiler.settings.d = destinationDir.get
     val mapper = new GlobPatternMapper()
@@ -58,7 +58,7 @@ class Use extends ScalaMatchingTask {
         log("Compiling " + includedFiles.length + " file" + (if (includedFiles.length > 1) "s" else "") + " to " + compiler.settings.d.getAbsolutePath)
         val (errors, warnings) = compiler.compile(includedFiles)
         if (errors > 0)
-          sys.error("Compilation failed with " + errors + " error" + (if (errors > 1) "s" else "") + ".")
+          throw new RuntimeException(s"Compilation failed with $errors error${(if (errors > 1) "s" else "")}.")
         else if (warnings > 0)
           log("Compilation succeeded with " + warnings + " warning" + (if (warnings > 1) "s" else "") + ".")
       }
@@ -67,7 +67,7 @@ class Use extends ScalaMatchingTask {
           ex.printStackTrace
           val errorMsg =
             "Compilation failed because of an internal compiler error (" + msg + "); see the error output for details."
-          if (failOnError) sys.error(errorMsg) else log(errorMsg)
+          if (failOnError) throw new RuntimeException(errorMsg) else log(errorMsg)
       }
   }
 

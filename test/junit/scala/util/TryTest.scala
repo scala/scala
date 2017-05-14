@@ -5,7 +5,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
-/* Test Try's withFilter method, which was added along with the -Xfuture fix for SI-6455  */
+/* Test Try's withFilter method, which was added along with the -Xfuture fix for scala/bug#6455  */
 @RunWith(classOf[JUnit4])
 class TryTest {
   @Test

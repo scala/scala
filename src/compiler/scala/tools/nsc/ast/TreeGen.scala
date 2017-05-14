@@ -71,8 +71,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
     mkMethodCall(ScalaRunTimeModule, meth, targs, args)
 
-  def mkSysErrorCall(message: String): Tree =
-    mkMethodCall(Sys_error, List(Literal(Constant(message))))
+  def mkThrowNewRuntimeException(message: String) =
+    Throw(RuntimeExceptionClass.tpe, Literal(Constant(message)))
 
   /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
    *
@@ -300,7 +300,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
                                       resTp: Type = functionResultType(fun.tpe),
                                       additionalFlags: FlagSet = NoFlags): DefDef = {
     val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-    // for sams, methParamProtos is the parameter symbols for the sam's method, so that we generate the correct override (based on parmeter types)
+    // for sams, methParamProtos is the parameter symbols for the sam's method, so that we generate the correct override (based on parameter types)
     val methParamSyms = methParamProtos.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
     methSym setInfo MethodType(methParamSyms, resTp)
 
@@ -371,4 +371,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
         Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
     }
   }
+
+  override def isPatVarWarnable = settings.warnUnusedPatVars
 }

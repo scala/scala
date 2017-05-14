@@ -8,7 +8,7 @@ import org.junit.Test
 @RunWith(classOf[JUnit4])
 class LinearSeqOptimizedTest {
 
-  @Test def `SI-9936 indexWhere`(): Unit = {
+  @Test def `t9936 indexWhere`(): Unit = {
     assertEquals(2, "abcde".indexOf('c', -1))
     assertEquals(2, "abcde".indexOf('c', -2))
     assertEquals(2, "abcde".toList.indexOf('c', -1))

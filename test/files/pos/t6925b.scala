@@ -1,5 +1,5 @@
-// code *generated* by test/scaladoc/run/SI-5933.scala
-// duplicated here because it's related to SI-6925
+// code *generated* by test/scaladoc/run/scala/bug#5933.scala
+// duplicated here because it's related to scala/bug#6925
 
 import language.higherKinds
 
