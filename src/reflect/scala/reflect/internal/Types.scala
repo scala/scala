@@ -786,7 +786,7 @@ trait Types
 
     /** Apply `f` to each part of this type; children get mapped before their parents */
     def map(f: Type => Type): Type = new TypeMap {
-      def apply(x: Type) = f(mapOver(x))
+      def apply(x: Type) = f(x.mapOver(this))
     } apply this
 
     /** Is there part of this type which satisfies predicate `p`? */
@@ -1520,13 +1520,13 @@ trait Types
           val varToParam = new TypeMap {
             def apply(tp: Type) = varToParamMap get tp match {
               case Some(sym) => sym.tpe_*
-              case _ => mapOver(tp)
+              case _ => tp.mapOver(this)
             }
           }
           val paramToVar = new TypeMap {
             def apply(tp: Type) = tp match {
               case TypeRef(_, tsym, _) if paramToVarMap.isDefinedAt(tsym) => paramToVarMap(tsym)
-              case _ => mapOver(tp)
+              case _ => tp.mapOver(this)
             }
           }
           val bts = copyRefinedType(tpe.asInstanceOf[RefinedType], tpe.parents map varToParam, varToParam mapOver tpe.decls).baseTypeSeq
@@ -1811,7 +1811,7 @@ trait Types
             }
           case _ =>
         }
-        mapOver(tp)
+        tp.mapOver(this)
       }
       def enter(tparam0: Symbol, parent: Type) {
         this.tparam = tparam0
