@@ -101,11 +101,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
-  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet =
-    it match {
-      case bs: BitSet => bs
-      case _ => empty ++= it
-    }
+  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet = Growable.fromIterable(empty, it)
 
   def empty: BitSet = new BitSet()
 

@@ -175,10 +175,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 object TreeMap extends OrderedMapFactory[TreeMap] {
 
   def orderedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    it match {
-      case tm: TreeMap[K, V] => tm
-      case _ => empty[K, V] ++= it
-    }
+    Growable.fromIterable(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
 

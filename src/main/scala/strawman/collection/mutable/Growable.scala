@@ -60,3 +60,16 @@ trait Growable[-A] {
    */
   def clear(): Unit
 }
+
+object Growable {
+
+  /**
+    * Fills a `Growable` instance with the elements of a given iterable
+    * @param empty Instance to fill
+    * @param it Elements to add
+    * @tparam A Element type
+    * @return The filled instance
+    */
+  def fromIterable[A](empty: Growable[A], it: collection.Iterable[A]): empty.type = empty ++= it
+
+}

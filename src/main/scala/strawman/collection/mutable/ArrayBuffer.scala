@@ -135,11 +135,9 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
     }
-    else new ArrayBuffer[B] ++= coll
+    else Growable.fromIterable[B](empty, coll)
 
-  def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
-
-  def empty[A <: Any]: ArrayBuffer[A] = new ArrayBuffer[A]()
+  def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 
 }
 

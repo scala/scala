@@ -179,10 +179,6 @@ object TreeSet extends OrderedIterableFactory[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()
 
-  def orderedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] =
-    it match {
-      case ts: TreeSet[E] => ts
-      case _ => empty[E] ++= it
-    }
+  def orderedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] = Growable.fromIterable(empty[E], it)
 
 }
