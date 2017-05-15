@@ -1744,18 +1744,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
     // don't forget to modify the code over there if you modify this method
-    def typeParams: List[Symbol] =
-      if (isMonomorphicType) Nil
-      else {
-        // analogously to the "info" getter, here we allow for two completions:
-        //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (validTo == NoPeriod)
+    def typeParams: List[Symbol] = {
+      def completeTypeParams = {
+        if (isMonomorphicType) Nil
+        else {
+          // analogously to the "info" getter, here we allow for two completions:
+          //   one: sourceCompleter to LazyType, two: LazyType to completed type
           enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-        if (validTo == NoPeriod)
-          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
+          if (validTo == NoPeriod)
+            enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
-        rawInfo.typeParams
+          rawInfo.typeParams
+        }
       }
+      if (validTo != NoPeriod) rawInfo.typeParams else completeTypeParams
+    }
 
     /** The value parameter sections of this symbol.
      */
