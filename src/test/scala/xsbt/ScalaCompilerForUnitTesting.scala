@@ -182,7 +182,7 @@ class ScalaCompilerForUnitTesting {
 
   private[xsbt] def prepareCompiler(outputDir: File,
                                     analysisCallback: AnalysisCallback,
-                                    classpath: String = "."): CachedCompiler0#Compiler = {
+                                    classpath: String = "."): ZincCompiler = {
     val args = Array.empty[String]
     object output extends SingleOutput {
       def outputDirectory: File = outputDir
