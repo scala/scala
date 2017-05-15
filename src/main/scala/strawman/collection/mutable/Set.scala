@@ -20,7 +20,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     *  @return the $coll itself
     */
   def subtract(elem: A): this.type
-  /** Alias for `remove` */
+  /** Alias for `subtract` */
   @`inline` final def -= (elem: A): this.type = subtract(elem)
 
   def contains(elem: A): Boolean

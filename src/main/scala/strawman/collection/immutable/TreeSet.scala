@@ -110,7 +110,7 @@ object TreeSet extends OrderedSetFactory[TreeSet] {
   def orderedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => empty ++ it
+      case _ => empty[E] ++ it
     }
 
 }

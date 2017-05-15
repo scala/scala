@@ -34,7 +34,7 @@ trait IterableFactory[+CC[_]] extends FromIterable[CC] {
 object IterableFactory {
 
   class Delegate[CC[_]](protected val delegate: IterableFactory[CC]) extends IterableFactory[CC] {
-    def empty[A <: Any]: CC[A] = delegate.empty
+    def empty[A]: CC[A] = delegate.empty
     def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
   }
 
