@@ -237,7 +237,7 @@ trait Interface extends ast.TreeDSL {
 
             val tree1 = tree match {
               case Ident(_) => subst(from, to)
-              case _        => super.transform(tree)
+              case _        => tree.transform(this)
             }
             tree1 match {
               case _: DefTree =>

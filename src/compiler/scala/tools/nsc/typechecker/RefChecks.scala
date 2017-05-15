@@ -1756,7 +1756,7 @@ abstract class RefChecks extends Transform {
           case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
             deriveValDef(result)(transform) // scala/bug#7716 Don't refcheck the tpt of the synthetic val that holds the selector.
           case _ =>
-            super.transform(result)
+            result.transform(this)
         }
         result match {
           case ClassDef(_, _, _, _)

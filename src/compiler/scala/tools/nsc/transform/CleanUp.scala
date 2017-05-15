@@ -374,7 +374,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         // collecting symbols for entry points here (as opposed to GenBCode where they are used)
         // has the advantage of saving an additional pass over all ClassDefs.
         entryPoints += tree.symbol
-        super.transform(tree)
+        tree.transform(this)
 
       /* Transforms dynamic calls (i.e. calls to methods that are undefined
        * in the erased type space) to -- dynamically -- unsafe calls using
@@ -454,12 +454,12 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case Apply(fn @ Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
         if treeInfo.isQualifierSafeToElide(qual) && fn.symbol == Symbol_apply && !currentClass.isTrait =>
 
-        super.transform(treeCopy.ApplyDynamic(tree, atPos(fn.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil))
+        treeCopy.ApplyDynamic(tree, atPos(fn.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil).transform(this)
 
       // Drop the TypeApply, which was used in Erasure to make `synchronized { ... } ` erase like `...`
       // (and to avoid boxing the argument to the polymorphic `synchronized` method).
       case app@Apply(TypeApply(fun, _), args) if fun.symbol == Object_synchronized =>
-        super.transform(treeCopy.Apply(app, fun, args))
+        treeCopy.Apply(app, fun, args).transform(this)
 
       // Replaces `Array(Predef.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
       // with just `ArrayValue(...).$asInstanceOf[...]`
@@ -467,10 +467,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
       if wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
-        super.transform(arg)
+        arg.transform(this)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
-        super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
+        treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
 
       case _ =>
         super.transform(tree)

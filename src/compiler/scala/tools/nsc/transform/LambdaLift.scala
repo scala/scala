@@ -186,7 +186,7 @@ abstract class LambdaLift extends InfoTransform {
     }
 
     /** The traverse function */
-    private val freeVarTraverser = new Traverser {
+    private val freeVarTraverser = new InternalTraverser {
       override def traverse(tree: Tree) {
 //       try { //debug
         val sym = tree.symbol
@@ -217,7 +217,7 @@ abstract class LambdaLift extends InfoTransform {
               markCalled(sym, logicallyEnclosingMember(currentOwner))
           case _ =>
         }
-        super.traverse(tree)
+        tree.traverse(this)
 //       } catch {//debug
 //         case ex: Throwable =>
 //           Console.println(s"$ex while traversing $tree")

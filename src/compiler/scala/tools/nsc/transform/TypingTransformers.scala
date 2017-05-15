@@ -37,11 +37,11 @@ trait TypingTransformers {
       tree match {
         case Template(_, _, _) =>
           // enter template into context chain
-          atOwner(currentOwner) { super.transform(tree) }
+          atOwner(currentOwner) { tree.transform(this) }
         case PackageDef(_, _) =>
-          atOwner(tree.symbol) { super.transform(tree) }
+          atOwner(tree.symbol) { tree.transform(this) }
         case _ =>
-          super.transform(tree)
+          tree.transform(this)
       }
     }
   }
