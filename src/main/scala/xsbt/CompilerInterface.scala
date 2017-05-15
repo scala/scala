@@ -32,18 +32,11 @@ final class CompilerInterface {
           cached: CachedCompiler): Unit =
     cached.run(sources, changes, callback, log, delegate, progress)
 }
-// for compatibility with Scala versions without Global.registerTopLevelSym (2.8.1 and earlier)
-sealed trait GlobalCompat { self: Global =>
-  def registerTopLevelSym(sym: Symbol): Unit
-  sealed trait RunCompat {
-    def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit = ()
-  }
-}
+
 sealed abstract class CallbackGlobal(settings: Settings,
                                      reporter: reporters.Reporter,
                                      output: Output)
-    extends Global(settings, reporter)
-    with GlobalCompat {
+    extends Global(settings, reporter) {
   def callback: AnalysisCallback
   def findClass(name: String): Option[(AbstractFile, Boolean)]
   lazy val outputDirs: Iterable[File] = {
@@ -137,48 +130,51 @@ private final class CachedCompiler0(args: Array[String],
       dreporter.dropDelegate()
     }
   }
+
+  final class ZincRun(compileProgress: CompileProgress) extends compiler.Run {
+    override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit): Unit =
+      compileProgress.startUnit(phase.name, unit.source.path)
+    override def progress(current: Int, total: Int): Unit =
+      if (!compileProgress.advance(current, total)) cancel else ()
+  }
+
+  private def prettyPrintCompilationArguments(args: Array[String]) =
+    args.mkString("[zinc] The Scala compiler is invoked with:\n\t", "\n\t", "")
+  private final val StopInfoError = "Compiler option supplied that disabled Zinc compilation."
   private[this] def run(sources: List[File],
                         changes: DependencyChanges,
                         callback: AnalysisCallback,
                         log: Logger,
-                        dreporter: DelegatingReporter,
+                        underlyingReporter: DelegatingReporter,
                         compileProgress: CompileProgress): Unit = {
+
     if (command.shouldStopWithInfo) {
-      dreporter.info(null, command.getInfoMessage(compiler), true)
-      throw new InterfaceCompileFailed(
-        args,
-        Array(),
-        "Compiler option supplied that disabled actual compilation.")
+      underlyingReporter.info(null, command.getInfoMessage(compiler), true)
+      throw new InterfaceCompileFailed(args, Array(), StopInfoError)
     }
-    if (noErrors(dreporter)) {
-      debug(log,
-            args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t",
-                          "\n\t",
-                          ""))
-      compiler.set(callback, dreporter)
-      val run = new compiler.Run with compiler.RunCompat {
-        override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit): Unit = {
-          compileProgress.startUnit(phase.name, unit.source.path)
-        }
-        override def progress(current: Int, total: Int): Unit = {
-          if (!compileProgress.advance(current, total))
-            cancel
-        }
-      }
+
+    if (noErrors(underlyingReporter)) {
+      debug(log, prettyPrintCompilationArguments(args))
+      compiler.set(callback, underlyingReporter)
+      val run = new ZincRun(compileProgress)
       val sortedSourceFiles = sources.map(_.getAbsolutePath).sortWith(_ < _)
-      run compile sortedSourceFiles
+      run.compile(sortedSourceFiles)
       processUnreportedWarnings(run)
-      dreporter.problems foreach { p =>
-        callback.problem(p.category, p.position, p.message, p.severity, true)
-      }
+      underlyingReporter.problems.foreach(p =>
+        callback.problem(p.category, p.position, p.message, p.severity, true))
     }
-    dreporter.printSummary()
-    if (!noErrors(dreporter)) handleErrors(dreporter, log)
+
+    underlyingReporter.printSummary()
+    if (!noErrors(underlyingReporter))
+      handleErrors(underlyingReporter, log)
+
     // the case where we cancelled compilation _after_ some compilation errors got reported
     // will be handled by line above so errors still will be reported properly just potentially not
     // all of them (because we cancelled the compilation)
-    if (dreporter.cancelled) handleCompilationCancellation(dreporter, log)
+    if (underlyingReporter.cancelled)
+      handleCompilationCancellation(underlyingReporter, log)
   }
+
   def handleErrors(dreporter: DelegatingReporter, log: Logger): Nothing = {
     debug(log, "Compilation failed (CompilerInterface)")
     throw new InterfaceCompileFailed(args, dreporter.problems, "Compilation failed")
