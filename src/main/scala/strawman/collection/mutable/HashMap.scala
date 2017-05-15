@@ -57,7 +57,7 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
 
   def clear(): Unit = table.clearTable()
 
-  def remove(key: K): this.type = { table.removeEntry(key); this }
+  def subtract(key: K): this.type = { table.removeEntry(key); this }
 
   override def size: Int = table.size
 

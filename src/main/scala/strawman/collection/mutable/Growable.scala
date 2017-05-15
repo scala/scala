@@ -1,4 +1,5 @@
-package strawman.collection.mutable
+package strawman
+package collection.mutable
 
 import strawman.collection.IterableOnce
 import scala.{`inline`, Unit}
@@ -28,7 +29,7 @@ trait Growable[-A] {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
-  @`inline` final def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
+  @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
 
   /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
@@ -36,14 +37,14 @@ trait Growable[-A] {
    *  @return  the $coll itself.
    */
   def addAll(xs: IterableOnce[A]): this.type = {
-    @tailrec def loop(xs: scala.collection.LinearSeq[A]): Unit = {
+    @tailrec def loop(xs: collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
         this += xs.head
         loop(xs.tail)
       }
     }
     xs match {
-      case xs: scala.collection.LinearSeq[_] => loop(xs.asInstanceOf[scala.collection.LinearSeq[A]])
+      case xs: collection.LinearSeq[A] => loop(xs)
       case xs => xs.iterator() foreach += // Deviation: IterableOnce does not define `foreach`.
     }
     // @ichoran writes: Right now, this actually isn't any faster than using an iterator
