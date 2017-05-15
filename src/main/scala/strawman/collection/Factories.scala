@@ -31,6 +31,15 @@ trait IterableFactory[+CC[_]] extends FromIterable[CC] {
   def fill[A](n: Int)(elem: => A): CC[A] = fromIterable(View.Fill(n)(elem))
 }
 
+object IterableFactory {
+
+  class Delegate[CC[_]](protected val delegate: IterableFactory[CC]) extends IterableFactory[CC] {
+    def empty[A]: CC[A] = delegate.empty
+    def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
+  }
+
+}
+
 trait SpecificIterableFactory[-A, +C] extends FromSpecificIterable[A, C] {
   def empty: C
 
@@ -77,6 +86,15 @@ trait OrderedSetFactory[+CC[_]] extends OrderedFromIterable[CC] {
   def apply[A : Ordering](xs: A*): CC[A] = orderedFromIterable(View.Elems(xs: _*))
 
   def fill[A : Ordering](n: Int)(elem: => A): CC[A] = orderedFromIterable(View.Fill(n)(elem))
+}
+
+object OrderedSetFactory {
+
+  class Delegate[CC[_]](protected val delegate: OrderedSetFactory[CC]) extends OrderedSetFactory[CC] {
+    def empty[A : Ordering]: CC[A] = delegate.empty
+    def orderedFromIterable[E : Ordering](it: Iterable[E]): CC[E] = delegate.orderedFromIterable(it)
+  }
+
 }
 
 /** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */

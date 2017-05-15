@@ -115,16 +115,22 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   def className = getClass.getName
 
   /** A string showing all elements of this collection, separated by string `sep`. */
-  def mkString(sep: String): String = {
+  def mkString(start: String, sep: String, end: String): String = {
     var first: Boolean = true
     val b = new StringBuilder()
+    b ++= start
     foreach { elem =>
       if (!first) b ++= sep
       first = false
       b ++= String.valueOf(elem)
     }
+    b ++= end
     b.result
   }
+
+  def mkString(sep: String): String = mkString("", sep, "")
+
+  def mkString: String = mkString("")
 
   override def toString = s"$className(${mkString(", ")})"
 
@@ -199,6 +205,23 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     if (coll.isEmpty) throw new UnsupportedOperationException
     drop(1)
   }
+
+  /** Selects an interval of elements.  The returned collection is made up
+    *  of all elements `x` which satisfy the invariant:
+    *  {{{
+    *    from <= indexOf(x) < until
+    *  }}}
+    *  $orderDependent
+    *
+    *  @param from   the lowest index to include from this $coll.
+    *  @param until  the lowest index to EXCLUDE from this $coll.
+    *  @return  a $coll containing the elements greater than or equal to
+    *           index `from` extending up to (but not including) index `until`
+    *           of this $coll.
+    */
+  def slice(from: Int, until: Int): C =
+    fromSpecificIterable(View.Take(View.Drop(coll, from), until - from))
+
 
   /** Map */
   def map[B](f: A => B): CC[B] = fromIterable(View.Map(coll, f))

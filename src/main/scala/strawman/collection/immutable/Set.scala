@@ -12,7 +12,7 @@ trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[
 
 /** Base trait for immutable set operations */
 trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
-  extends collection.IterableOps[A, CC, C] {
+  extends collection.SetOps[A, CC, C] {
 
   protected def coll: C
 
@@ -25,7 +25,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
     */
   def incl(elem: A): C
 
-  /** Alias for `add` */
+  /** Alias for `incl` */
   @`inline` final def + (elem: A): C = incl(elem)
 
   /** Creates a new set with a given element removed from this set.
@@ -36,18 +36,19 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
     */
   def excl(elem: A): C
 
-  /** Alias for `remove` */
+  /** Alias for `excl` */
   @`inline` final def - (elem: A): C = excl(elem)
 
-  def union(that: collection.Set[A]): C = {
+  override def concat(that: collection.IterableOnce[A]): C = {
     var result: C = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
     result
   }
+
 }
 
 object Set extends IterableFactory[Set] {
-  def empty[A <: Any]: Set[A] = ListSet.empty
+  def empty[A]: Set[A] = ListSet.empty
   def fromIterable[E](it: strawman.collection.Iterable[E]): Set[E] = ListSet.fromIterable(it)
 }

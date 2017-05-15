@@ -401,8 +401,7 @@ object HashMap extends MapFactory[HashMap] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieMap[_,_]]) {
           subNew
         } else {
-          val elemsNew = new Array[HashMap[K,V]](elems.length)
-          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieMap(bitmap, elemsNew, sizeNew)

@@ -35,7 +35,7 @@ trait Growable[-A] {
    *  @param xs   the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def addAllInPlace(xs: IterableOnce[A]): this.type = {
+  def addAll(xs: IterableOnce[A]): this.type = {
     @tailrec def loop(xs: scala.collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
         this += xs.head
@@ -52,7 +52,7 @@ trait Growable[-A] {
   }
 
   /** Alias for `addAllInPlace` */
-  @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAllInPlace(xs)
+  @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.

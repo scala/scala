@@ -19,7 +19,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   def mapResult[NewTo](f: To => NewTo) = new Builder[A, NewTo] {
     def add(x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
-    override def addAllInPlace(xs: IterableOnce[A]): this.type = { self ++= xs; this }
+    override def addAll(xs: IterableOnce[A]): this.type = { self ++= xs; this }
     def result: NewTo = f(self.result)
   }
 }

@@ -63,13 +63,13 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   }
 
   /** Overridden to use array copying for efficiency where possible. */
-  override def addAllInPlace(elems: IterableOnce[A]): this.type = {
+  override def addAll(elems: IterableOnce[A]): this.type = {
     elems match {
       case elems: ArrayBuffer[_] =>
         ensureSize(length + elems.length)
         Array.copy(elems.array, 0, array, length, elems.length)
         end = length + elems.length
-      case _ => super.addAllInPlace(elems)
+      case _ => super.addAll(elems)
     }
     this
   }

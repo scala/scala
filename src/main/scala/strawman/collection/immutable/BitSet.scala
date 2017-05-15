@@ -74,8 +74,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else if (len == 1) new BitSet1(elems(0))
     else if (len == 2) createSmall(elems(0), elems(1))
     else {
-      val a = new Array[Long](len)
-      Array.copy(elems, 0, a, 0, len)
+      val a = java.util.Arrays.copyOf(elems, len)
       new BitSetN(a)
     }
   }

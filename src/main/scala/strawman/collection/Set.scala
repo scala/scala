@@ -51,7 +51,25 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
   def intersect(that: Set[A]): C = this.filter(that)
 
   /** Alias for `intersect` */
-  @inline final def & (that: Set[A]): C = intersect(that)
+  @`inline` final def & (that: Set[A]): C = intersect(that)
+
+  /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
+    *
+    * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
+    *
+    * Example:
+    *  {{{
+    *    scala> val a = Set(1, 2) concat Set(2, 3)
+    *    a: scala.collection.immutable.Set[Int] = Set(1, 2, 3)
+    *  }}}
+    *
+    *  @param that     the collection containing the elements to add.
+    *  @return a new $coll with the given elements added, omitting duplicates.
+    */
+  def concat(that: collection.IterableOnce[A]): C = fromSpecificIterable(View.Concat(coll, that))
+
+  /** Alias for `concat` */
+  @`inline` final def ++ (that: collection.IterableOnce[A]): C = concat(that)
 
   /** Computes the union between of set and another set.
     *
@@ -59,10 +77,10 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  def union(that: Set[A]): C
+  @`inline` final def union(that: collection.IterableOnce[A]): C = concat(that)
 
   /** Alias for `union` */
-  @inline final def | (that: Set[A]): C = union(that)
+  @`inline` final def | (that: collection.IterableOnce[A]): C = concat(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.
