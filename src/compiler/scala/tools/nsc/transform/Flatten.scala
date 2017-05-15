@@ -118,10 +118,10 @@ abstract class Flatten extends InfoTransform {
       tree match {
         case PackageDef(_, _) =>
           liftedDefs(tree.symbol.moduleClass) = new ListBuffer
-          super.transform(tree)
+          tree.transform(this)
         case Template(_, _, _) if tree.symbol.isDefinedInPackage =>
           liftedDefs(tree.symbol.owner) = new ListBuffer
-          super.transform(tree)
+          tree.transform(this)
         case ClassDef(_, _, _, _) if tree.symbol.isNestedClass =>
           // scala/bug#5508 Ordering important. In `object O { trait A { trait B } }`, we want `B` to appear after `A` in
           //         the sequence of lifted trees in the enclosing package. Why does this matter? Currently, mixin
@@ -134,12 +134,12 @@ abstract class Flatten extends InfoTransform {
           //            - move the accessor creation to the Mixin info transformer
           val liftedBuffer = liftedDefs(tree.symbol.enclosingTopLevelClass.owner)
           val index = liftedBuffer.length
-          liftedBuffer.insert(index, super.transform(tree))
+          liftedBuffer.insert(index, tree.transform(this))
           if (tree.symbol.sourceModule.isStaticModule)
             removeSymbolInCurrentScope(tree.symbol.sourceModule)
           EmptyTree
         case _ =>
-          super.transform(tree)
+          tree.transform(this)
       }
     }
 

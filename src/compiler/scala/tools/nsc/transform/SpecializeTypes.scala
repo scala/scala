@@ -1463,7 +1463,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Collect method bodies that are concrete specialized methods.
      */
-    class CollectMethodBodies extends Traverser {
+    class CollectMethodBodies extends InternalTraverser {
       override def traverse(tree: Tree) = tree match {
         case DefDef(_, _, _, vparams :: Nil, _, rhs) =>
           if (concreteSpecMethods(tree.symbol) || tree.symbol.isConstructor) {
@@ -1479,7 +1479,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           // log("!!! adding body of a valdef " + tree.symbol + ": " + rhs)
           //super.traverse(tree)
         case _ =>
-          super.traverse(tree)
+          tree.traverse(this)
       }
     }
 

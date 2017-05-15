@@ -1425,6 +1425,13 @@ trait Trees extends api.Trees {
 
   @deprecated("use `noSelfType` instead", "2.11.0") lazy val emptyValDef = noSelfType
 
+  class InternalTransformer extends Transformer {
+    override def transform(tree: Tree): Tree = tree.transform(this)
+  }
+  class InternalTraverser extends Traverser {
+    override def traverse(tree: Tree): Unit = tree.traverse(this)
+  }
+
   def newValDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers = Modifiers(sym.flags),
     name: TermName  = sym.name.toTermName,
@@ -1544,14 +1551,14 @@ trait Trees extends api.Trees {
 
   // --- specific traversers and transformers
 
-  class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
+  class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends InternalTraverser {
     override def traverse(tree: Tree) {
       val t = if (pf isDefinedAt tree) pf(tree) else tree
       super.traverse(t)
     }
   }
 
-  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
+  class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends InternalTraverser {
     final def change(sym: Symbol) = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
@@ -1574,19 +1581,19 @@ trait Trees extends api.Trees {
           change(tree.symbol)
         case _ =>
       }
-      super.traverse(tree)
+      tree.traverse(this)
     }
   }
 
-  private class ShallowDuplicator(orig: Tree) extends Transformer {
+  private class ShallowDuplicator(orig: Tree) extends InternalTransformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(tree: Tree) =
-      if (tree eq orig) super.transform(tree)
+      if (tree eq orig) tree.transform(this)
       else tree
   }
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
-  class TreeReplacer(from: Tree, to: Tree, positionAware: Boolean) extends Transformer {
+  class TreeReplacer(from: Tree, to: Tree, positionAware: Boolean) extends InternalTransformer {
     override def transform(t: Tree): Tree = {
       if (t == from) to
       else if (!positionAware || (t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
@@ -1603,7 +1610,7 @@ trait Trees extends api.Trees {
   // occur multiple times in the `tree` passed to `transform`,
   // otherwise, the resulting Tree would be a graph, not a tree... this breaks all sorts of stuff,
   // notably concerning the mutable aspects of Trees (such as setting their .tpe)
-  class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
+  class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends InternalTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
@@ -1619,24 +1626,24 @@ trait Trees extends api.Trees {
 
   /** Substitute clazz.this with `to`. `to` must be an attributed tree.
    */
-  class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
+  class ThisSubstituter(clazz: Symbol, to: => Tree) extends InternalTransformer {
     val newtpe = to.tpe
     override def transform(tree: Tree) = {
       tree modifyType (_.substThis(clazz, newtpe))
       tree match {
         case This(_) if tree.symbol == clazz => to
-        case _ => super.transform(tree)
+        case _ => tree.transform(this)
       }
     }
   }
 
-  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {
+  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends InternalTraverser {
     override def traverse(tree: Tree) {
       tree modifyType typeMap
       if (tree.isDef)
         tree.symbol modifyInfo typeMap
 
-      super.traverse(tree)
+      tree.traverse(this)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
   }
@@ -1661,7 +1668,7 @@ trait Trees extends api.Trees {
    *  without copying, and trees that define symbols with an `info` that refer
    *  a symbol in `from` will have a new type assigned.
    */
-  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
+  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = new SubstSymMap(from, to)
     private var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
@@ -1697,7 +1704,7 @@ trait Trees extends api.Trees {
           case Select(qual, name0) if tree.symbol != NoSymbol =>
             treeCopy.Select(tree, transform(qual), tree.symbol.name)
           case _ =>
-            super.transform(tree)
+            tree.transform(this)
         }
       } else
         super.transform(tree)
@@ -1711,49 +1718,49 @@ trait Trees extends api.Trees {
   }
 
 
-  class ForeachTreeTraverser(f: Tree => Unit) extends Traverser {
+  class ForeachTreeTraverser(f: Tree => Unit) extends InternalTraverser {
     override def traverse(t: Tree) {
       f(t)
-      super.traverse(t)
+      t.traverse(this)
     }
   }
 
-  class FilterTreeTraverser(p: Tree => Boolean) extends Traverser {
+  class FilterTreeTraverser(p: Tree => Boolean) extends InternalTraverser {
     val hits = mutable.ListBuffer[Tree]()
     override def traverse(t: Tree) {
       if (p(t)) hits += t
-      super.traverse(t)
+      t.traverse(this)
     }
   }
 
-  class CollectTreeTraverser[T](pf: PartialFunction[Tree, T]) extends Traverser {
+  class CollectTreeTraverser[T](pf: PartialFunction[Tree, T]) extends InternalTraverser {
     val results = mutable.ListBuffer[T]()
     override def traverse(t: Tree) {
       if (pf.isDefinedAt(t)) results += pf(t)
-      super.traverse(t)
+      t.traverse(this)
     }
   }
 
-  class FindTreeTraverser(p: Tree => Boolean) extends Traverser {
+  class FindTreeTraverser(p: Tree => Boolean) extends InternalTraverser {
     var result: Option[Tree] = None
     override def traverse(t: Tree) {
       if (result.isEmpty) {
         if (p(t)) result = Some(t)
-        super.traverse(t)
+        t.traverse(this)
       }
     }
   }
 
   private lazy val duplicator = new Duplicator(focusPositions = true)
-  private class Duplicator(focusPositions: Boolean) extends Transformer {
+  private class Duplicator(focusPositions: Boolean) extends InternalTransformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(t: Tree) = {
-      val t1 = super.transform(t)
+      val t1 = t.transform(this)
       if ((t1 ne t) && t1.pos.isRange && focusPositions) t1 setPos t.pos.focus
       t1
     }
   }
-  trait TreeStackTraverser extends Traverser {
+  trait TreeStackTraverser extends InternalTraverser {
     import collection.mutable
     val path: mutable.Stack[Tree] = mutable.Stack()
     abstract override def traverse(t: Tree) = {
