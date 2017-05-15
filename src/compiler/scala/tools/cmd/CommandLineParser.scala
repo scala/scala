@@ -39,7 +39,7 @@ object CommandLineParser {
     private val regex = """(\S+)""".r
     def unapply(s: String): Option[(String, String)] = {
       regex.findPrefixOf(s) match {
-        case Some(prefix) => Some(prefix, s.substring(prefix.length, s.length))
+        case Some(prefix) => Some(prefix, s.substring(prefix.length))
         case None => None
       }
     }
@@ -61,7 +61,7 @@ object CommandLineParser {
     else argument(trimmed) match {
       case Right((arg, next)) =>
         val leadingWhitespaceLen = next.prefixLength(Character.isWhitespace)
-        val rest = next.substring(leadingWhitespaceLen, next.length)
+        val rest = next.substring(leadingWhitespaceLen)
         if (leadingWhitespaceLen == 0 && rest.nonEmpty)
           Left("Arguments should be separated by whitespace.") // TODO: can this happen?
         else
