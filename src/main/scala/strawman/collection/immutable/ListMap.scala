@@ -160,5 +160,12 @@ object ListMap extends MapFactory[ListMap] {
 
   @SerialVersionUID(-8256686706655863282L)
   private object EmptyListMap extends ListMap[Any, Nothing]
+
+  def fromIterable[K, V](it: collection.Iterable[(K, V)]): ListMap[K, V] =
+    it match {
+      case lm: ListMap[K, V] => lm
+      case _ => empty ++ it
+    }
+
 }
 

@@ -39,20 +39,14 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    coll match {
-      case tm: TreeMap[K, V] => tm
-      case _ => TreeMap.fromIterable[K, V](coll)
-    }
+    TreeMap.fromIterable(coll)
+
+  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
+    TreeMap.fromIterable(it)
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
-
-  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.fromIterable[K2, V2](it)
-
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
-    Map.fromIterable(it)
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
@@ -107,5 +101,13 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   *  @define coll immutable tree map
   */
 object TreeMap extends OrderedMapFactory[TreeMap] {
-  def empty[K: Ordering, V]: TreeMap[K, V] = new TreeMap()
+
+  def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
+
+  def fromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
+    it match {
+      case tm: TreeMap[K, V] => tm
+      case _ => empty[K, V] ++ it
+    }
+
 }

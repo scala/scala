@@ -4,6 +4,9 @@ package mutable
 
 import scala.Ordering
 
+/**
+  * Base type for mutable sorted set collections
+  */
 trait SortedSet[A]
   extends Set[A]
     with collection.SortedSet[A]

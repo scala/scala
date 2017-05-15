@@ -30,20 +30,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
   /** Alias for `remove` */
   @`inline` final def - (key: K): C = remove(key)
 
-  /** The empty map of the same type as this map
-    * @return   an empty map of type `Repr`.
-    */
-  def empty: C
-
-  /**
-    * Add a key/value pair to this map, returning a new map.
-    *
-    * @param kv the key/value pair.
-    * @tparam V1 the type of the value in the key/value pair.
-    * @return A new map with the new binding added to this map.
-    */
-  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
-
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key
     *  @param    value the value
@@ -55,6 +41,15 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
     */
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
+  /**
+    * Alias for `updated`
+    *
+    * @param kv the key/value pair.
+    * @tparam V1 the type of the value in the key/value pair.
+    * @return A new map with the new binding added to this map.
+    */
+  @`inline` final def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+
   override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
     var result: CC[K, V1] = coll
     val it = that.iterator()
@@ -64,6 +59,4 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
 }
 
 // TODO Special case small maps
-object Map extends MapFactory[Map] {
-  def empty[K, V]: Map[K, V] = ListMap.empty[K, V]
-}
+object Map extends MapFactory.Delegate[Map](HashMap)
