@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.OrderedSetFactory
+import collection.OrderedIterableFactory
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit}
@@ -175,7 +175,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   * @author Lucien Pereira
   *
   */
-object TreeSet extends OrderedSetFactory[TreeSet] {
+object TreeSet extends OrderedIterableFactory[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()
 

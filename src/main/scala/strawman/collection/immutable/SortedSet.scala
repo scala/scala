@@ -17,7 +17,4 @@ trait SortedSetOps[A,
   extends SetOps[A, Set, C]
      with collection.SortedSetOps[A, CC, C]
 
-object SortedSet extends OrderedSetFactory[SortedSet] {
-  def empty[A : Ordering]: SortedSet[A] = TreeSet.empty
-  def orderedFromIterable[E : Ordering](it: collection.Iterable[E]): SortedSet[E] = TreeSet.orderedFromIterable(it)
-}
+object SortedSet extends OrderedIterableFactory.Delegate[SortedSet](TreeSet)

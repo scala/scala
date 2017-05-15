@@ -103,7 +103,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     else newSet(RB.delete(tree, elem))
 }
 
-object TreeSet extends OrderedSetFactory[TreeSet] {
+object TreeSet extends OrderedIterableFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
