@@ -61,6 +61,19 @@ trait Collections {
     head
   }
 
+  final def sameElementsEquals(thiss: List[AnyRef], that: List[AnyRef]): Boolean = {
+    // Probably immutable, so check reference identity first (it's quick anyway)
+    (thiss eq that) || {
+      var these = thiss
+      var those = that
+      while (!these.isEmpty && !those.isEmpty && these.head.equals(those.head)) {
+        these = these.tail
+        those = those.tail
+      }
+      these.isEmpty && those.isEmpty
+    }
+  }
+
   final def collectFirst[A, B](as: List[A])(pf: PartialFunction[A, B]): Option[B] = {
     @tailrec
     def loop(rest: List[A]): Option[B] = rest match {
