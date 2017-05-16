@@ -192,6 +192,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
+  val extraPredef     = StringSetting     ("-Yextra-predef", "object", "Supply an extra 'predef' style import for all files", "none")
   val noAdaptedArgs   = BooleanSetting    ("-Yno-adapted-args", "Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.")
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")

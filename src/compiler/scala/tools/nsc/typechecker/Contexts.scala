@@ -17,7 +17,7 @@ import scala.tools.nsc.reporters.Reporter
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
+  import definitions.{ JavaLangPackage, OptionalExtraPredefPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
   import ContextMode._
 
   protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
@@ -38,10 +38,15 @@ trait Contexts { self: Analyzer =>
     override def toString = "NoContext"
   }
   private object RootImports {
+    // OptionalExtraPredefPackage, configured via -Yextra-predef, always gets
+    // added to scala compilations regardless of -Yno-preef and -Yno-imports
+    private val extraPredefOrNil = OptionalExtraPredefPackage.toList
+
     // Possible lists of root imports
+    val noImportsList    = extraPredefOrNil
     val javaList         = JavaLangPackage :: Nil
-    val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
-    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
+    val javaAndScalaList = JavaLangPackage :: ScalaPackage :: extraPredefOrNil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: extraPredefOrNil
   }
 
   def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
@@ -88,7 +93,7 @@ trait Contexts { self: Analyzer =>
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
     assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
-    if (settings.noimports) Nil
+    if (settings.noimports) RootImports.noImportsList
     else if (unit.isJava) RootImports.javaList
     else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) {
       // scala/bug#8258 Needed for the presentation compiler using -sourcepath, otherwise cycles can occur. See the commit

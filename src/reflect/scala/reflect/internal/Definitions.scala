@@ -344,7 +344,7 @@ trait Definitions extends api.StandardDefinitions {
     // scala/bug#5941: ScalaPackage and JavaLangPackage are never ever shared between mirrors
     // as a result, `Int` becomes `scala.Int` and `String` becomes `java.lang.String`
     // I could just change `isOmittablePrefix`, but there's more to it, so I'm leaving this as a todo for now
-    lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
+    lazy val UnqualifiedModules = List(Some(PredefModule), Some(ScalaPackage), Some(JavaLangPackage), OptionalExtraPredefPackage).flatten
     // Those modules and their module classes
     lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
 
@@ -354,6 +354,9 @@ trait Definitions extends api.StandardDefinitions {
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
+
+    lazy val OptionalExtraPredefPackage =
+      settings.extraPredef.valueSetByUser.map(value => getPackage(TermName(value)))
 
     /** Specialization.
      */

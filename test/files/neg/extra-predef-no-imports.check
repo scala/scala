@@ -1,0 +1,7 @@
+C_2.scala:3: error: not found: type Int
+  val b: Int = 5678
+         ^
+C_2.scala:4: error: not found: value println
+  println("fail")
+  ^
+two errors found
