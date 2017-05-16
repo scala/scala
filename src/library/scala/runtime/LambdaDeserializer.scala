@@ -19,13 +19,12 @@ object LambdaDeserializer {
    * concurrent deserialization of the same lambda expression may spin up more than one class.
    *
    * Assumptions:
-   *  - No additional marker interfaces are required beyond `{java.io,scala.}Serializable`. These are
+   *  - No additional marker interfaces are required beyond `java.io.Serializable`. These are
    *    not stored in `SerializedLambda`, so we can't reconstitute them.
    *  - No additional bridge methods are passed to `altMetafactory`. Again, these are not stored.
    *
    * @param lookup      The factory for method handles. Must have access to the implementation method, the
-   *                    functional interface class, and `java.io.Serializable` or `scala.Serializable` as
-   *                    required.
+   *                    functional interface class, and `java.io.Serializable`.
    * @param cache       A cache used to avoid spinning up a class for each deserialization of a given lambda. May be `null`
    * @param serialized  The lambda to deserialize. Note that this is typically created by the `readResolve`
    *                    member of the anonymous class created by `LambdaMetaFactory`.
@@ -78,8 +77,7 @@ object LambdaDeserializer {
       }
 
       val flags: Int = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
-      val isScalaFunction = functionalInterfaceClass.getName.startsWith("scala.Function")
-      val markerInterface: Class[_] = loader.loadClass(if (isScalaFunction) ScalaSerializable else JavaIOSerializable)
+      val markerInterface: Class[_] = loader.loadClass("java.io.Serializable")
 
       LambdaMetafactory.altMetafactory(
         lookup, getFunctionalInterfaceMethodName, invokedType,
@@ -109,14 +107,5 @@ object LambdaDeserializer {
 
     val captures = Array.tabulate(serialized.getCapturedArgCount)(n => serialized.getCapturedArg(n))
     factory.invokeWithArguments(captures: _*)
-  }
-
-  private val ScalaSerializable = "scala.Serializable"
-
-  private val JavaIOSerializable = {
-    // We could actually omit this marker interface as LambdaMetaFactory will add it if
-    // the FLAG_SERIALIZABLE is set and of the provided markers extend it. But the code
-    // is cleaner if we uniformly add a single marker, so I'm leaving it in place.
-    "java.io.Serializable"
   }
 }

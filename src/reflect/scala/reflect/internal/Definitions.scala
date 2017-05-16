@@ -370,10 +370,10 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TypeConstraintClass   = requiredClass[scala.annotation.TypeConstraint]
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, AnyTpe :: Nil, ABSTRACT | TRAIT | FINAL) markAllCompleted
-    lazy val SerializableClass     = requiredClass[scala.Serializable]
+    lazy val SerializableClass     = JavaSerializableClass
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
-    lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
+    lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable] modifyInfo fixupAsAnyTrait
     lazy val JavaNumberClass       = requiredClass[java.lang.Number]
     lazy val JavaEnumClass         = requiredClass[java.lang.Enum[_]]
     lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
@@ -1382,6 +1382,7 @@ trait Definitions extends api.StandardDefinitions {
     /** Lists core classes that do have underlying bytecode, but are adjusted on-the-fly in every reflection universe */
     lazy val hijackedCoreClasses = List(
       ComparableClass,
+      JavaCloneableClass,
       JavaSerializableClass
     )
     /** Lists symbols that are synthesized or hijacked by the compiler.

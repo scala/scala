@@ -1,5 +1,5 @@
 {
-  case class C extends Product with Serializable {
+  case class C extends Product with `package`.Serializable {
     <caseaccessor> <paramaccessor> val foo: Int = _;
     <caseaccessor> <paramaccessor> val bar: Int = _;
     def <init>(foo: Int, bar: Int) = {

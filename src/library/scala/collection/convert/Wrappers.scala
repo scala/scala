@@ -128,6 +128,7 @@ private[collection] trait Wrappers {
     }
   }
 
+  @SerialVersionUID(-4801553198679985982L)
   case class MutableSetWrapper[A](underlying: mutable.Set[A]) extends SetWrapper[A](underlying) {
     override def add(elem: A) = {
       val sz = underlying.size
@@ -227,6 +228,7 @@ private[collection] trait Wrappers {
     }
   }
 
+  @SerialVersionUID(8668425014051911127L)
   case class MutableMapWrapper[A, B](underlying: mutable.Map[A, B]) extends MapWrapper[A, B](underlying) {
     override def put(k: A, v: B) = underlying.put(k, v) match {
       case Some(v1) => v1
@@ -281,8 +283,8 @@ private[collection] trait Wrappers {
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
-    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized 
-    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility 
+    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized
+    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility
     * to wrap all non-atomic operations with `underlying.synchronized`.
     * This includes `get`, as `java.util.Map`'s API does not allow for an
     * atomic `get` when `null` values may be present.
