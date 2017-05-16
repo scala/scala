@@ -1,6 +1,8 @@
 package strawman
 package collection
 
+import strawman.collection.immutable.TreeMap
+
 import scala.Ordering
 
 /** Base type of sorted sets */
@@ -28,8 +30,4 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
     orderedMapFromIterable(View.Concat(coll, xs))
 }
 
-object SortedMap extends OrderedSetFactory[SortedSet] {
-  def empty[A : Ordering]: SortedSet[A] = immutable.SortedSet.empty
-  def orderedFromIterable[E : Ordering](it: Iterable[E]): SortedSet[E] = immutable.SortedSet.orderedFromIterable(it)
-}
-
+object SortedMap extends OrderedMapFactory.Delegate[SortedMap](TreeMap)

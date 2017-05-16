@@ -112,7 +112,11 @@ sealed class ListSet[A]
   */
 object ListSet extends IterableFactory[ListSet] {
 
-  def fromIterable[E](it: strawman.collection.Iterable[E]): ListSet[E] = empty ++ it
+  def fromIterable[E](it: strawman.collection.Iterable[E]): ListSet[E] =
+    it match {
+      case ls: ListSet[E] => ls
+      case _ => empty ++ it
+    }
 
   @SerialVersionUID(5010379588739277132L)
   private object EmptyListSet extends ListSet[Any]

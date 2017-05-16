@@ -94,11 +94,7 @@ object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = new HashMap[K, V]
 
-  def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] =
-    it match {
-      case hm: HashMap[K, V] => hm
-      case _ => empty ++= it
-    }
+  def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] = Growable.fromIterable(empty[K, V], it)
 
 }
 

@@ -201,8 +201,8 @@ class ListBuffer[A]
 
 object ListBuffer extends IterableFactory[ListBuffer] {
 
-  def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
-  def newBuilder[A]: Builder[A, ListBuffer[A]] = new ListBuffer[A]
-  def empty[A <: Any]: ListBuffer[A] = new ListBuffer[A]
+  def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = Growable.fromIterable(empty[A], coll)
+
+  def empty[A]: ListBuffer[A] = new ListBuffer[A]
 
 }

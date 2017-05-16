@@ -39,10 +39,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    TreeMap.fromIterable(coll)
+    TreeMap.orderedFromIterable(coll)
 
   protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.fromIterable(it)
+    TreeMap.orderedFromIterable(it)
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
@@ -104,7 +104,7 @@ object TreeMap extends OrderedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
 
-  def fromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
+  def orderedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
     it match {
       case tm: TreeMap[K, V] => tm
       case _ => empty[K, V] ++ it

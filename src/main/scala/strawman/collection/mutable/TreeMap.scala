@@ -34,9 +34,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     */
   def this()(implicit ord: Ordering[K]) = this(RB.Tree.empty)(ord)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] = TreeMap.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] = TreeMap.orderedFromIterable(coll)
 
-  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.fromIterable(it)
+  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.orderedFromIterable(it)
 
   def iterator(): Iterator[(K, V)] = RB.iterator(tree)
 
@@ -174,11 +174,8 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   */
 object TreeMap extends OrderedMapFactory[TreeMap] {
 
-  def fromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    it match {
-      case tm: TreeMap[K, V] => tm
-      case _ => empty[K, V] ++= it
-    }
+  def orderedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
+    Growable.fromIterable(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
 

@@ -88,14 +88,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
   def empty: C
 }
 
-object Set extends IterableFactory[Set] {
-  def empty[A <: Any]: Set[A] = immutable.Set.empty
-
-  def fromIterable[E](it: Iterable[E]): Set[E] =
-    it match {
-      case s: Set[E] => s
-      case _         => empty ++ it
-    }
+object Set extends IterableFactory.Delegate[Set](immutable.Set) {
 
   // Temporary, TODO move to MurmurHash3
   def setHash(xs: Set[_]): Int = unorderedHash(xs, "Set".##)
