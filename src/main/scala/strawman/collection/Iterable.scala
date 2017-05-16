@@ -29,8 +29,12 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 trait IterableOps[+A, +CC[X], +C] extends Any {
 
   protected def coll: Iterable[A]
+
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
-  protected[this] def fromIterable[E](it: Iterable[E]): CC[E]
+
+  def iterableFactory: IterableFactory[CC]
+
+  protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.fromIterable(it)
 
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.

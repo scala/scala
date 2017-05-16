@@ -61,7 +61,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  def iterableFactory = Set
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
     TreeSet.orderedFromIterable(coll)

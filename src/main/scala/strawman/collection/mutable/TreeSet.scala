@@ -43,7 +43,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.orderedFromIterable(coll)
 
-  def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  def iterableFactory = Set
 
   def keysIteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 

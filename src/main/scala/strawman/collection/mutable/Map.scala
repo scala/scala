@@ -20,7 +20,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
   protected def coll: Map[K, V]
 
-  def fromIterable[B](coll: collection.Iterable[B]): Iterable[B] = Iterable.fromIterable(coll)
+  def iterableFactory = Iterable
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a

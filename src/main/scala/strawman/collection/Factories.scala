@@ -18,7 +18,7 @@ trait IterableFactory[+CC[_]] {
 
   def fromIterable[E](it: Iterable[E]): CC[E]
 
-  def empty[A]: CC[A]
+  def empty[A]: CC[A] = fromIterable(View.Empty)
 
   def apply[A](xs: A*): CC[A] = fromIterable(View.Elems(xs: _*))
 
@@ -35,7 +35,7 @@ object IterableFactory {
     }
 
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
-    def empty[A]: CC[A] = delegate.empty
+    override def empty[A]: CC[A] = delegate.empty
     def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
   }
 

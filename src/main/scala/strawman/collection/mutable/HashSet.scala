@@ -31,8 +31,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   override def iterator(): Iterator[A] = table.iterator
 
-  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
-    HashSet.fromIterable(coll)
+  def iterableFactory = HashSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
@@ -80,6 +79,5 @@ object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = Growable.fromIterable(empty[B], it)
 
-  def empty[A]: HashSet[A] = new HashSet[A]
-
+  override def empty[A]: HashSet[A] = new HashSet[A]
 }
