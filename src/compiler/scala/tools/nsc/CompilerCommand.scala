@@ -102,6 +102,11 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     else if (genPhaseGraph.isSetByUser) {
       val components = global.phaseNames  // global.phaseDescriptors // one initializes
       s"Phase graph of ${components.size} components output to ${genPhaseGraph.value}*.dot."
+    } else if (printArgs.value) {
+      s"""
+         |${recreateArgs.mkString("\n")}
+         |${files.mkString("\n")}
+        """.stripMargin
     }
     else allSettings.filter(_.isHelping).map(_.help).mkString("\n\n")
   }
