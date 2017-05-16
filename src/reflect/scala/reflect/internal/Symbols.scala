@@ -2743,7 +2743,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def defStringSeenAs(info: Type) = defStringCompose(infoString(info))
 
     /** Concatenate strings separated by spaces */
-    private def compose(ss: String*) = ss filter (_ != "") mkString " "
+    private def compose(ss: String*) = ss.iterator filter (_ != "") mkString " "
 
     def isSingletonExistential =
       nme.isSingletonName(name) && (info.bounds.hi.typeSymbol isSubClass SingletonClass)

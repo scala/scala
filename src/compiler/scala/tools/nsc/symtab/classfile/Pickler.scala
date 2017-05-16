@@ -531,7 +531,7 @@ abstract class Pickler extends SubComponent {
       writeNat(MinorVersion)
       writeNat(ep)
 
-      entries take ep foreach writeEntry
+      entries.iterator.take(ep).foreach(writeEntry)
     }
 
     override def toString = "" + rootName + " in " + rootOwner
