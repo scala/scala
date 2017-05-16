@@ -25,12 +25,12 @@ object ScalaOptionParser {
     def ChoiceSetting(name: String, choices: List[String]): Parser[String] =
       concat(token(concat(name ~ ":")) ~ token(StringBasic.examples(choices: _*)).map(_.mkString))
     def MultiChoiceSetting(name: String, choices: List[String]): Parser[String] =
-      concat(token(concat(name ~ ":")) ~ rep1sep(token(StringBasic.examples(choices: _*)), token(",")).map(_.mkString))
+      concat(token(concat(name ~ ":")) ~ rep1sep(token(StringBasic.examples(choices: _*)), token(",")).map(_.mkString(",")))
     def PathSetting(name: String): Parser[String] = {
-      concat(concat(token(name) ~ Space.string) ~ rep1sep(JarOrDirectoryParser.filter(!_.contains(":"), x => x), token(java.io.File.pathSeparator)).map(_.mkString))
+      concat(concat(token(name) ~ Space.string) ~ rep1sep(JarOrDirectoryParser.filter(!_.contains(":"), x => x), token(java.io.File.pathSeparator)).map(_.mkString(java.io.File.pathSeparator)))
     }
     def FileSetting(name: String): Parser[String] = {
-      concat(concat(token(name) ~ Space.string) ~ rep1sep(JarOrDirectoryParser.filter(!_.contains(":"), x => x), token(java.io.File.pathSeparator)).map(_.mkString))
+      concat(concat(token(name) ~ Space.string) ~ rep1sep(JarOrDirectoryParser.filter(!_.contains(":"), x => x), token(java.io.File.pathSeparator)).map(_.mkString(java.io.File.pathSeparator)))
     }
     val Phase = token(NotSpace.examples(phases: _*))
     def PhaseSettingParser(name: String): Parser[String] = {
