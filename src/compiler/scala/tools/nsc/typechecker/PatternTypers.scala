@@ -38,13 +38,6 @@ trait PatternTypers {
   import global._
   import definitions._
 
-  private object FixedAndRepeatedTypes {
-    def unapply(types: List[Type]) = types match {
-      case init :+ last if isRepeatedParamType(last) => Some((init, dropRepeated(last)))
-      case _                                         => Some((types, NoType))
-    }
-  }
-
   trait PatternTyper {
     self: Typer =>
 
@@ -109,16 +102,25 @@ trait PatternTypers {
 
     def typedArgsForFormals(args: List[Tree], formals: List[Type], mode: Mode): List[Tree] = {
       def typedArgWithFormal(arg: Tree, pt: Type) = {
-        val newMode = if (isByNameParamType(pt)) mode.onlySticky else mode.onlySticky | BYVALmode
-        typedArg(arg, mode, newMode, dropByName(pt))
+        if (isByNameParamType(pt))
+          typedArg(arg, mode, mode.onlySticky, dropByName(pt))
+        else
+          typedArg(arg, mode, mode.onlySticky | BYVALmode, pt)
       }
-      val FixedAndRepeatedTypes(fixed, elem) = formals
-      val front = (args, fixed).zipped map typedArgWithFormal
-      def rest  = context withinStarPatterns (args drop front.length map (typedArgWithFormal(_, elem)))
+      if (formals.isEmpty) Nil
+      else {
+        val lastFormal = formals.last
+        val isRepeated = isRepeatedParamType(lastFormal)
+        if (isRepeated) {
+          val fixed = formals.init
+          val elem = dropRepeated(lastFormal)
+          val front = map2(args, fixed)(typedArgWithFormal)
+          val rest = context withinStarPatterns (args drop front.length map (typedArgWithFormal(_, elem)))
 
-      elem match {
-        case NoType => front
-        case _      => front ::: rest
+          front ::: rest
+        } else {
+          map2(args, formals)(typedArgWithFormal)
+        }
       }
     }
 
