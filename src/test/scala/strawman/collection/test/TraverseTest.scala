@@ -49,7 +49,7 @@ class TraverseTest {
     val o1 = optionSequence1(xs1)
     val o1t: Option[immutable.List[Int]] = o1
 
-    val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
+    val xs2: immutable.Set[Option[String]] = immutable.TreeSet(Some("foo"), Some("bar"), None)
     val o2 = optionSequence1(xs2)
     val o2t: Option[immutable.Set[String]] = o2
   }
