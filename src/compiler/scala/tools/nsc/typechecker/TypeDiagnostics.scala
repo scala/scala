@@ -676,40 +676,6 @@ trait TypeDiagnostics {
         }
       }
     }
-
-    object checkDead {
-      private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
-      // The method being applied to `tree` when `apply` is called.
-      private def expr = exprStack.top
-
-      private def exprOK =
-        (expr != Object_synchronized) &&
-        !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
-
-      private def treeOK(tree: Tree) = {
-        val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
-        tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
-      }
-
-      @inline def updateExpr[A](fn: Tree)(f: => A) = {
-        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
-          exprStack push fn.symbol
-          try f finally exprStack.pop()
-        } else f
-      }
-      def apply(tree: Tree): Tree = {
-        // Error suppression (in context.warning) would squash some of these warnings.
-        // It is presumed if you are using a -Y option you would really like to hear
-        // the warnings you've requested; thus, use reporter.warning.
-        if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
-          reporter.warning(tree.pos, "dead code following this construct")
-        tree
-      }
-
-      // The checkDead call from typedArg is more selective.
-      def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
-    }
-
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
     private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
 
