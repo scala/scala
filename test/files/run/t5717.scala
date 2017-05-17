@@ -24,5 +24,14 @@ object Test extends StoreReporterDirectTest {
       else "error writing a/B: java.nio.file.FileSystemException /a/B.class: Not a directory"
     val actual = i.msg.replace(testOutput.path, "")
     assert(actual == expected, actual)
+    //and the same in th case of a subdirectory
+    compileCode("package a.b { class B }")
+
+    // Don't crash when we find a directory 'a' where class 'a' should go.
+    // or maybe more realistically we dont crash if for some reason we cant write the file
+    val blocking = scala.reflect.io.File(testOutput) / "a.class" / "b" / "c"
+    blocking.mkdirs()
+    blocking.createFile()
+    compileCode("class a")
   }
 }

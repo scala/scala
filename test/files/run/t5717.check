@@ -1,0 +1,3 @@
+error: error writing a/B: t5717-run.obj/a
+error: error writing a/b/B: t5717-run.obj/a/b: Not a directory
+error: error writing a: t5717-run.obj/./a.class: Is a directory
