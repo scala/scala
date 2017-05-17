@@ -248,6 +248,8 @@ class StrawmanTest {
     val ys15: Seq[(Int, Boolean)] = xs15
     val xs16 = xs.reverse
     val ys16: Seq[Int] = xs16
+    val ys17 = LazyList.empty ++ LazyList.empty
+    val ys18: LazyList[Nothing] = ys17
     println("-------")
     println(x1)
     println(x2)
