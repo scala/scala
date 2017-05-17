@@ -185,8 +185,8 @@ class ScalaCompilerForUnitTesting {
                                     classpath: String = "."): ZincCompiler = {
     val args = Array.empty[String]
     object output extends SingleOutput {
-      def outputDirectory: File = outputDir
-      override def toString = s"SingleOutput($outputDirectory)"
+      def getOutputDirectory: File = outputDir
+      override def toString = s"SingleOutput($getOutputDirectory)"
     }
     val weakLog = new WeakLog(ConsoleLogger(), ConsoleReporter)
     val cachedCompiler = new CachedCompiler0(args, output, weakLog, false)

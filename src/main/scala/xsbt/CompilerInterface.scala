@@ -68,11 +68,11 @@ private final class CachedCompiler0(args: Array[String],
   val settings = new Settings(s => initialLog(s))
   output match {
     case multi: MultipleOutput =>
-      for (out <- multi.outputGroups)
+      for (out <- multi.getOutputGroups)
         settings.outputDirs
           .add(out.sourceDirectory.getAbsolutePath, out.outputDirectory.getAbsolutePath)
     case single: SingleOutput =>
-      settings.outputDirs.setSingleOutput(single.outputDirectory.getAbsolutePath)
+      settings.outputDirs.setSingleOutput(single.getOutputDirectory.getAbsolutePath)
   }
 
   val command = Command(args.toList, settings)
