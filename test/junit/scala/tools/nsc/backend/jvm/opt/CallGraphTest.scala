@@ -159,12 +159,16 @@ class CallGraphTest extends BytecodeTesting {
         |  def t2(i: Int, f: Int => Int, z: Int) = h(f) + i - z
         |  def t3(f: Int => Int) = h(x => f(x + 1))
         |}
-        |trait D {
-        |  def iAmASam(x: Int): Int
-        |  def selfSamCall = iAmASam(10)
+        |@FunctionalInterface trait D {
+        |  def iAmASamD(x: Int): Int
+        |  def selfSamCallD = iAmASamD(10)
+        |}
+        |trait E {
+        |  def iAmASamE(x: Int): Int
+        |  def selfSamCallE = iAmASamE(10)
         |}
         |""".stripMargin
-    val List(c, d) = compile(code)
+    val List(c, d, e) = compile(code)
 
     def callIn(m: String) = callGraph.callsites.find(_._1.name == m).get._2.values.head
     val t1h = callIn("t1")
@@ -176,8 +180,11 @@ class CallGraphTest extends BytecodeTesting {
     val t3h = callIn("t3")
     assertEquals(t3h.argInfos.toList, List((1, FunctionLiteral)))
 
-    val selfSamCall = callIn("selfSamCall")
-    assertEquals(selfSamCall.argInfos.toList, List((0,ForwardedParam(0))))
+    val selfSamCallD = callIn("selfSamCallD")
+    assertEquals(selfSamCallD.argInfos.toList, List((0,ForwardedParam(0))))
+
+    val selfSamCallE = callIn("selfSamCallE")
+    assertEquals(selfSamCallE.argInfos.toList, List())
   }
 
   @Test
