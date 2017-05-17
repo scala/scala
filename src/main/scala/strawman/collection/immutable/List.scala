@@ -64,5 +64,5 @@ object List extends IterableFactory[List] {
 
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
 
-  override def empty[A <: Any]: List[A] = Nil
+  def empty[A]: List[A] = Nil
 }

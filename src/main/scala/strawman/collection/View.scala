@@ -28,7 +28,7 @@ object View extends IterableFactory[View] {
     case _ => View.fromIterator(it.iterator())
   }
 
-  override def empty[A]: View[A] = Empty
+  def empty[A]: View[A] = Empty
   override def apply[A](xs: A*): View[A] = Elems(xs: _*)
 
   /** The empty view */

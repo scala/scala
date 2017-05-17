@@ -67,5 +67,5 @@ object LazyList extends IterableFactory[LazyList] {
 
   def newBuilder[A]: Builder[A, LazyList[A]] = ???
 
-  override def empty[A]: LazyList[A] = new LazyList[A](None)
+  def empty[A]: LazyList[A] = new LazyList[A](None)
 }

@@ -60,7 +60,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => empty ++ it
     }
 
-  override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
+  def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
   private object EmptyHashSet extends HashSet[Any] {
 

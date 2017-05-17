@@ -18,7 +18,7 @@ trait IterableFactory[+CC[_]] {
 
   def fromIterable[E](it: Iterable[E]): CC[E]
 
-  def empty[A]: CC[A] = fromIterable(View.Empty)
+  def empty[A]: CC[A]
 
   def apply[A](xs: A*): CC[A] = fromIterable(View.Elems(xs: _*))
 

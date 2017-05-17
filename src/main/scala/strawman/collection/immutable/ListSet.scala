@@ -122,7 +122,7 @@ object ListSet extends IterableFactory[ListSet] {
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 
-  override def empty[A]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
+  def empty[A]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
 
 }
 

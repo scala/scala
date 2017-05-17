@@ -79,5 +79,5 @@ object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = Growable.fromIterable(empty[B], it)
 
-  override def empty[A]: HashSet[A] = new HashSet[A]
+  def empty[A]: HashSet[A] = new HashSet[A]
 }
