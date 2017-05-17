@@ -1,5 +1,6 @@
 package xsbt
 
+import xsbti.compile.Output
 import scala.reflect.{ internal => sri }
 import scala.reflect.internal.{ util => sriu }
 import scala.tools.nsc.{ Global, Settings }
