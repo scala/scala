@@ -70,9 +70,10 @@ private final class CachedCompiler0(args: Array[String],
     case multi: MultipleOutput =>
       for (out <- multi.getOutputGroups)
         settings.outputDirs
-          .add(out.sourceDirectory.getAbsolutePath, out.outputDirectory.getAbsolutePath)
+          .add(out.getSourceDirectory.getAbsolutePath, out.getOutputDirectory.getAbsolutePath)
     case single: SingleOutput =>
-      settings.outputDirs.setSingleOutput(single.getOutputDirectory.getAbsolutePath)
+      val outputFilepath = single.getOutputDirectory.getAbsolutePath
+      settings.outputDirs.setSingleOutput(outputFilepath)
   }
 
   val command = Command(args.toList, settings)
