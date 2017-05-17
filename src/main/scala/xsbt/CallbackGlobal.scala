@@ -18,7 +18,8 @@ sealed abstract class CallbackGlobal(settings: Settings,
 
   lazy val outputDirs: Iterable[File] = {
     output match {
-      case single: SingleOutput  => List(single.outputDirectory)
+      case single: SingleOutput => List(single.outputDirectory)
+      // Use Stream instead of List because Analyzer maps intensively over the directories
       case multi: MultipleOutput => multi.outputGroups.toStream map (_.outputDirectory)
     }
   }
