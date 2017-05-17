@@ -5,7 +5,7 @@ import scala.{Ordering, Option, Some}
 /** Base trait for sorted collections */
 trait SortedOps[A, +C] {
 
-  def ordering: Ordering[A]
+  implicit def ordering: Ordering[A]
 
   /** Returns the first key of the collection. */
   def firstKey: A
