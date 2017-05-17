@@ -47,10 +47,13 @@ object InteractiveReader {
 }
 
 /** Collect one line of user input from the supplied reader.
- *  Runs on a new thread while the REPL is initializing on the main thread.
- *
- *  The user can enter text or a `:paste` command.
- */
+  * Runs on a new thread while the REPL is initializing on the main thread.
+  *
+  * The user can enter text or a `:paste` command.
+  *
+  * TODO: obsolete the whole splash loop by making interpreter always run in separate thread from the UI,
+  *       and communicating with it like we do in the presentation compiler
+  */
 class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
   import java.lang.System.{lineSeparator => EOL}
   import java.util.concurrent.SynchronousQueue
@@ -72,7 +75,8 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
         }
       }
     finally {
-      result.put(Option(input))
+      try result.put(Option(input))
+      catch { case ie: InterruptedException =>  } // we may have been interrupted because the interpreter reported an error
     }
   }
 
@@ -80,13 +84,13 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
   private def readPastedLines: String = {
     // while collecting lines, check running flag
     var help = f"// Entering paste mode (ctrl-D to finish)%n%n"
-    def readWhile(cond: String => Boolean) = {
+
+    val text =
       Iterator continually in.readLine(help) takeWhile { x =>
         help = ""
-        x != null && cond(x)
-      }
-    }
-    val text = (readWhile(_ => running) mkString EOL).trim
+        x != null && running
+      } mkString EOL trim
+
     val next =
       if (text.isEmpty) "// Nothing pasted, nothing gained."
       else "// Exiting paste mode, now interpreting."
@@ -111,3 +115,11 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
   def line: Option[String] = result.take
 }
 
+object SplashLoop {
+  def readLine(in: InteractiveReader, prompt: String)(body: => Unit): Option[String] = {
+    val splash = new SplashLoop(in, prompt)
+    try { splash.start; body ; splash.line }
+    catch { case ie: InterruptedException => Some(null) }
+    finally splash.stop()
+  }
+}

@@ -142,8 +142,9 @@ class CompletionTest {
   @Test
   def multiLineInvocation(): Unit = {
     val (iloop, completer) = setupWithLoop()
-    iloop.partialInput = "class C {\n"
-    checkExact(completer, "1 + 1.toCha")("toChar")
+    iloop.withPartialInput("class C {") {
+      checkExact(completer, "1 + 1.toCha")("toChar")
+    }
   }
 
   @Test

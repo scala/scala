@@ -5,11 +5,11 @@
 package scala.tools.nsc.interpreter.shell
 
 import java.io.{BufferedReader, PrintWriter => JPrintWriter}
+import java.util.concurrent.TimeUnit
 
 import scala.PartialFunction.{cond => when}
 import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
-import scala.concurrent.{Await, Future}
 import scala.language.{existentials, implicitConversions}
 import scala.reflect.classTag
 import scala.reflect.internal.util.ScalaClassLoader._
@@ -40,19 +40,39 @@ import scala.tools.nsc.interpreter.jline
  *  @version 1.2
  */
 class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = new JPrintWriter(Console.out, true)) extends LoopCommands {
-
+  // Set once by `process`
   var settings: Settings = _
+
+  // Set by createInterpreter, closeInterpreter (and CompletionTest)
   var intp: IMain        = _
 
-  // will be set during startup (when settings are known)
-  private var in: InteractiveReader = _
+  // Set by initializeInput, and interpretAllFrom (to read input from file).
+  // TODO: the new interface should make settings a ctor arg of ILoop,
+  // so that this can be a lazy val
+  private[this] var in: InteractiveReader = _
+  private def initializeInput(settings: Settings) = {
+    val _batchText = batchText(settings)
+    in =
+      if (_batchText.nonEmpty) SimpleReader(_batchText)
+      else if (defaultIn != null) SimpleReader(defaultIn, out, interactive = true)
+      else if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
+      else new jline.InteractiveReader()
+  }
+
+  // Set by interpretStartingWith
+  private[this] var partialInput: String                    = ""          // code accumulated in multi-line REPL input
+  protected[interpreter] def withPartialInput[T](code: String)(body: => T): T = {
+    val saved = partialInput
+    partialInput = code + "\n"
+    try body
+    finally partialInput = saved
+  }
+
+  private val interpreterInitialized = new java.util.concurrent.CountDownLatch(1)
+
 
   // TODO: rip out of package object into IMain?
   import scala.tools.nsc.interpreter.{replProps, replinfo, isReplInfo, isReplPower, repldbg, isReplDebug, words, string2codeQuoted, substituteAndLog}
-
-  var partialInput: String                    = ""          // code accumulated in multi-line REPL input
-
-  private var globalFuture: Future[Boolean] = _
 
   /** Print a welcome message! */
   def printWelcome(): Unit = {
@@ -85,17 +105,15 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
     try body
     finally replayCommandStack = saved
   }
-  def savingReader[T](body: => T): T = {
-    val saved = in
-    try body
-    finally in = saved
-  }
 
-  def printShellInterrupt(): Unit = {
+  private def printShellInterrupt(): Unit = {
     out print Properties.shellInterruptedString
   }
 
-  /** Close the interpreter and set the var to null. */
+  /** Close the interpreter and set the var to null.
+    *
+    * Used by sbt.
+    */
   def closeInterpreter() {
     if (intp ne null) {
       intp.close()
@@ -110,8 +128,11 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
     }
   }
 
-  /** Create a new interpreter. */
-  def createInterpreter() {
+  /** Create a new interpreter.
+    *
+    * Used by sbt.
+    */
+  def createInterpreter(): Unit = {
     intp = new ILoopInterpreter
   }
 
@@ -404,7 +425,8 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
   // return false if repl should exit
   def processLine(line: String): Boolean = {
     import scala.concurrent.duration._
-    Await.ready(globalFuture, 10.minutes) // Long timeout here to avoid test failures under heavy load.
+    // Long timeout here to avoid test failures under heavy load.
+    interpreterInitialized.await(10, TimeUnit.MINUTES)
 
     command(line) match {
       case Result(false, _)      => false
@@ -432,17 +454,20 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
   }
 
   /** interpret all lines from a specified file */
-  def interpretAllFrom(file: File, verbose: Boolean = false) {
-    savingReader {
+  def interpretAllFrom(file: File, verbose: Boolean = false): Unit = {
+    // Saving `in` is not factored out because we don't want to encourage doing this everywhere (the new design shouldn't rely on mutation)
+    val savedIn = in
+    try
       savingReplayStack {
-        file applyReader { reader =>
-          in = if (verbose) new SimpleReader(reader, out, interactive = true) with EchoReader
-               else SimpleReader(reader, out, interactive = false)
+        // `applyReader` will `close()` `fileReader` before returning,
+        // so, keep `in` pointing at `fileReader` until that's done.
+        file applyReader { fileReader =>
           echo(s"Loading $file...")
+          in = SimpleReader(fileReader, out, interactive = verbose, verbose = verbose)
           loop()
         }
       }
-    }
+    finally in = savedIn
   }
 
   /** create a new interpreter and replay the given commands */
@@ -822,9 +847,7 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
           echo("You typed two blank lines.  Starting a new command.")
           None
         case Incomplete                                            =>
-          val saved = partialInput
-          partialInput = code + "\n"
-          try {
+          withPartialInput(code) {
             in.readLine(paste.ContinuePrompt) match {
               case null =>
                 // we know compilation is going to fail since we're at EOF and the
@@ -835,7 +858,7 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
                 None
               case line => interpretStartingWith(s"$code\n$line")
             }
-          } finally partialInput = saved
+          }
       }
     }
   }
@@ -864,125 +887,121 @@ class ILoop(defaultIn: BufferedReader = null, protected val out: JPrintWriter = 
     }
   }
 
+  // find value for -e argument, if set to non-empty string (collapse given empty string and no string at all)
+  // yes this is sad
+  private def batchText(settings: Settings): String =
+    settings match {
+      case generic: GenericRunnerSettings if generic.execute.isSetByUser => generic.execute.value
+      case _ => ""
+    }
+
   /** Start an interpreter with the given settings.
    *  @return true if successful
    */
   def process(settings: Settings): Boolean = savingContextLoader {
-    // find value for -e argument, if set to non-empty string (collapse given empty string and no string at all)
-    // yes this is sad
-    val batchText =
-      settings match {
-        case generic: GenericRunnerSettings if generic.execute.isSetByUser => generic.execute.value
-        case _ => ""
-      }
+    this.settings = settings
+
+
+    val batchMode = batchText(settings).nonEmpty
+    if (!batchMode) printWelcome()
+
+    initializeInput(settings)
 
     /* Actions to cram in parallel while collecting first user input at prompt.
      * Run with output muted both from ILoop and from the intp reporter.
      */
-    def loopPostInit(): Unit = mumly {
-      // Bind intp somewhere out of the regular namespace where
-      // we can get at it in generated code.
-      intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
+    def interpretPreamble = {
+      mumly {
+        // Bind intp somewhere out of the regular namespace where
+        // we can get at it in generated code.
+        intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
 
-      // Auto-run code via some setting.
-      ( replProps.replAutorunCode.option
+        // Auto-run code via some setting.
+        (replProps.replAutorunCode.option
           flatMap (f => File(f).safeSlurp())
           foreach (intp quietRun _)
-      )
-      // power mode setup
-      if (isReplPower) {
-        replProps.power setValue true
-        unleashAndSetPhase()
-        asyncMessage(intp.power.banner)
-      }
-      loadInitFiles()
-    }
-    def loadInitFiles(): Unit = settings match {
-      case settings: GenericRunnerSettings =>
-        for (f <- settings.loadfiles.value) {
-          loadCommand(f)
-          addReplay(s":load $f")
+          )
+        // power mode setup
+        if (isReplPower) {
+          replProps.power setValue true
+          unleashAndSetPhase()
+          asyncMessage(intp.power.banner)
         }
-        for (f <- settings.pastefiles.value) {
-          pasteCommand(f)
-          addReplay(s":paste $f")
-        }
-      case _ =>
-    }
-    // wait until after startup to enable noisy settings
-    def withSuppressedSettings[A](body: => A): A = {
-      val ss = this.settings
-      import ss._
-      val noisy = List(Xprint, Ytyperdebug, browse)
-      val noisesome = noisy.exists(!_.isDefault)
-      val current = (Xprint.value, Ytyperdebug.value, browse.value)
-      if (isReplDebug || !noisesome) body
-      else {
-        this.settings.Xprint.value = List.empty
-        this.settings.browse.value = List.empty
-        this.settings.Ytyperdebug.value = false
-        try body
-        finally {
-          Xprint.value       = current._1
-          Ytyperdebug.value  = current._2
-          browse.value      = current._3
-          intp.global.printTypings = current._2
+        settings match {
+          case settings: GenericRunnerSettings =>
+            for (f <- settings.loadfiles.value) {
+              loadCommand(f)
+              addReplay(s":load $f")
+            }
+            for (f <- settings.pastefiles.value) {
+              pasteCommand(f)
+              addReplay(s":paste $f")
+            }
+          case _ =>
         }
       }
     }
-    def startup(): Option[String] = withSuppressedSettings {
-      val batchMode = batchText.nonEmpty
-      if (!batchMode) printWelcome()
 
-      in =
-        if (batchMode) SimpleReader(batchText)
-        else if (defaultIn != null) SimpleReader(defaultIn, out, interactive = true)
-        else if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
-        else new jline.InteractiveReader()
+    // let them start typing, using the splash reader (which avoids tab completion)
+    val firstLine =
+      SplashLoop.readLine(in, prompt) {
+        val ss = this.settings
+        import ss._
 
-      // let them start typing, using the splash reader (which avoids tab completion)
-      val splash = new SplashLoop(in, prompt)
-      splash.start()
+        // wait until after startup to enable noisy settings
+        val saved = {
+          val noisy = List(Xprint, Ytyperdebug, browse)
+          val noisesome = noisy.exists(!_.isDefault)
 
-      // while we go fire up the REPL
-      try {
-        // don't allow ancient sbt to hijack the reader
-        savingReader {
+          if (!isReplDebug && noisesome) Some(Xprint.value, Ytyperdebug.value, browse.value)
+          else None
+        }
+
+        if (saved.nonEmpty) {
+          this.settings.Xprint.value = List.empty
+          this.settings.browse.value = List.empty
+          this.settings.Ytyperdebug.value = false
+        }
+
+        try {
           createInterpreter()
-          //for (rs <- runnerSettings if rs.execute.isSetByUser) intp.printResults = false
-        }
-        intp.initializeSynchronous()
-        globalFuture = Future successful true
-        if (intp.reporter.hasErrors) {
-          echo("Interpreter encountered errors during initialization!")
-          null
-        } else {
-          loopPostInit()
-          splash.line // blocks
-        }
-      } finally {
-        splash.stop()
-        // scala/bug#7418 Now, and only now, can we enable TAB completion.
-        if (!(settings.noCompletion || batchMode))
-          in.initCompletion(new ReplCompletion(intp))
-      }
-    }
-    this.settings = settings
 
+          intp.initializeSynchronous()
+          interpreterInitialized.countDown()
 
-    try
-      startup() match {
-        case None =>
-          printShellInterrupt()
-          false
-        case Some(line) =>
-          try loop(line) match {
-            case LineResults.EOF if in.interactive => printShellInterrupt()
+          if (intp.reporter.hasErrors) {
+            echo("Interpreter encountered errors during initialization!")
+            throw new InterruptedException
+          }
+
+          // scala/bug#7418 Now that the interpreter is initialized, and `interpretPreamble` has populated the symbol table,
+          // enable TAB completion (we do this before blocking on input from the splash loop,
+          // so that it can offer tab completion as soon as we're ready).
+          if (!(settings.noCompletion || batchMode))
+            in.initCompletion(new ReplCompletion(intp))
+
+          interpretPreamble
+        }
+        finally {
+          saved match {
+            case Some((_Xprint, _Ytyperdebug, _browse)) =>
+              Xprint.value = _Xprint
+              Ytyperdebug.value = _Ytyperdebug
+              intp.global.printTypings = _Ytyperdebug
+              browse.value = _browse
             case _ =>
           }
-          catch AbstractOrMissingHandler()
-          true
+        }
+      } getOrElse readOneLine()
+
+    // start full loop (if initialization was successful)
+    try
+      loop(firstLine) match {
+        case LineResults.EOF if in.interactive => printShellInterrupt(); true
+        case LineResults.ERR => false
+        case _ => true
       }
+    catch AbstractOrMissingHandler()
     finally closeInterpreter()
   }
 

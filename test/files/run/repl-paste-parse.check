@@ -4,4 +4,5 @@ scala>
        val case = 9
            ^
 repl-paste-parse.script:1: error: illegal start of simple pattern
-:quit
+
+scala> :quit
