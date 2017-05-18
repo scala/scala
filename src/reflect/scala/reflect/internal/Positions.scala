@@ -274,7 +274,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     override protected def isEligible(t: Tree) = super.isEligible(t) && t.tpe != null
   }
 
-  trait PosAssigner extends Traverser {
+  trait PosAssigner extends InternalTraverser {
     var pos: Position
   }
   protected[this] lazy val posAssigner: PosAssigner = new DefaultPosAssigner
@@ -285,7 +285,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       if (!t.canHaveAttrs) ()
       else if (t.pos == NoPosition) {
         t.setPos(pos)
-        super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?
+        t.traverse(this)   // TODO: bug? shouldn't the traverse be outside of the if?
         // @PP: it's pruning whenever it encounters a node with a
         // position, which I interpret to mean that (in the author's
         // mind at least) either the children of a positioned node will

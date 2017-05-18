@@ -300,7 +300,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   // A traverser that finds symbols used but not defined in the given Tree
   // TODO freeVarTraverser in LambdaLift does a very similar task. With some
   // analysis this could probably be unified with it
-  class FreeVarTraverser extends Traverser {
+  class FreeVarTraverser extends InternalTraverser {
     val freeVars = mutable.LinkedHashSet[Symbol]()
     val declared = mutable.LinkedHashSet[Symbol]()
 
@@ -317,7 +317,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           if ((sym != NoSymbol) && sym.isLocalToBlock && sym.isTerm && !sym.isMethod && !declared.contains(sym)) freeVars += sym
         case _ =>
       }
-      super.traverse(tree)
+      tree.traverse(this)
     }
   }
 
@@ -330,7 +330,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   // finds all methods that reference 'this'
-  class ThisReferringMethodsTraverser extends Traverser {
+  class ThisReferringMethodsTraverser extends InternalTraverser {
     // the set of methods that refer to this
     private val thisReferringMethods = mutable.Set[Symbol]()
 
@@ -371,7 +371,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // we don't expect defs within defs. At this phase trees should be very flat
         if (currentMethod.exists) devWarning("Found a def within a def at a phase where defs are expected to be flattened out.")
         currentMethod = tree.symbol
-        super.traverse(tree)
+        tree.traverse(this)
         currentMethod = NoSymbol
       case fun@Function(_, _) =>
         // we don't drill into functions because at the beginning of this phase they will always refer to 'this'.
@@ -382,7 +382,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (currentMethod.exists) liftedMethodReferences(currentMethod) += sel.symbol
         super.traverseTrees(args)
       case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
-        super.traverse(fun)
+        fun.traverse(this)
         super.traverseTrees(rest)
       case This(_) =>
         if (currentMethod.exists && tree.symbol == currentMethod.enclClass) {
@@ -392,7 +392,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case _: ClassDef if !tree.symbol.isTopLevel =>
       case _: DefDef =>
       case _ =>
-        super.traverse(tree)
+        tree.traverse(this)
     }
   }
 }

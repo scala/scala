@@ -169,7 +169,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       val omittables = mutable.Set.empty[Symbol] ++ (decls filter (sym => omittableParamAcc(sym) || omittableOuterAcc(sym))) // the closure only captures isEffectivelyFinal
 
       // no point traversing further once omittables is empty, all candidates ruled out already.
-      object detectUsages extends Traverser {
+      object detectUsages extends InternalTraverser {
         lazy val bodyOfOuterAccessor = defs.collect{ case dd: DefDef if omittableOuterAcc(dd.symbol) => dd.symbol -> dd.rhs }.toMap
 
         override def traverse(tree: Tree): Unit =
@@ -179,8 +179,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
               case _: DefDef if (sym.owner eq clazz) && omittableOuterAcc(sym) => // don't mark as "needed" the field supporting this outer-accessor (not just yet)
               case _: Select if omittables(sym) => omittables -= sym // mark usage
                 bodyOfOuterAccessor get sym foreach traverse // recurse to mark as needed the field supporting the outer-accessor-method
-                super.traverse(tree)
-              case _ => super.traverse(tree)
+                tree.traverse(this)
+              case _ => tree.traverse(this)
             }
           }
       }

@@ -12,7 +12,11 @@ import scala.compat.Platform.EOL
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
-  case class Parens(args: List[Tree]) extends Tree
+  case class Parens(args: List[Tree]) extends Tree {
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverseTrees(args)
+    }
+  }
 
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: DocComment, definition: Tree)
@@ -22,22 +26,46 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     override def isDef = definition.isDef
     override def isTerm = definition.isTerm
     override def isType = definition.isType
+    override def transform(transformer: ApiTransformer): Tree =
+      transformer.treeCopy.DocDef(this, comment, transformer.transform(definition))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(definition)
+    }
   }
 
  /** Array selection `<qualifier> . <name>` only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends RefTree with TermTree
+       extends RefTree with TermTree {
+   override def transform(transformer: ApiTransformer): Tree =
+     transformer.treeCopy.SelectFromArray(
+       this, transformer.transform(qualifier), name, erasure)
+   override def traverse(traverser: Traverser): Unit = {
+     traverser.traverse(qualifier)
+   }
+ }
 
   /** Derived value class injection (equivalent to: `new C(arg)` after erasure); only used during erasure.
    *  The class `C` is stored as a tree attachment.
    */
   case class InjectDerivedValue(arg: Tree)
-       extends SymTree with TermTree
+       extends SymTree with TermTree {
+    override def transform(transformer: ApiTransformer): Tree =
+      transformer.treeCopy.InjectDerivedValue(this, transformer.transform(arg))
+    override def traverse(traverser: Traverser): Unit = {
+      traverser.traverse(arg)
+    }
+  }
 
   class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
 
   /** emitted by typer, eliminated by refchecks */
-  case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
+  case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree {
+    override def transform(transformer: ApiTransformer): Tree =
+      transformer.treeCopy.TypeTreeWithDeferredRefCheck(this)
+    override def traverse(traverser: Traverser): Unit = {
+      // (and rewrap the result? how to update the deferred check? would need to store wrapped tree instead of returning it from check)
+    }
+  }
 
   // --- factory methods ----------------------------------------------------------
 
@@ -75,20 +103,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   } with TreeInfo
 
   // --- additional cases in operations ----------------------------------
-
-  override protected def xtraverse(traverser: Traverser, tree: Tree): Unit = tree match {
-    case Parens(ts) =>
-      traverser.traverseTrees(ts)
-    case DocDef(comment, definition) =>
-      traverser.traverse(definition)
-    case SelectFromArray(qualifier, selector, erasure) =>
-      traverser.traverse(qualifier)
-    case InjectDerivedValue(arg) =>
-      traverser.traverse(arg)
-    case TypeTreeWithDeferredRefCheck() =>
-      // (and rewrap the result? how to update the deferred check? would need to store wrapped tree instead of returning it from check)
-    case _ => super.xtraverse(traverser, tree)
-  }
 
   trait TreeCopier extends super.InternalTreeCopierOps {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
@@ -135,7 +149,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
-  class Transformer extends super.Transformer {
+  type ApiTransformer = super.Transformer
+  class Transformer extends InternalTransformer {
     def transformUnit(unit: CompilationUnit) {
       try unit.body = transform(unit.body)
       catch {
@@ -149,19 +164,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // used when a phase is disabled
   object noopTransformer extends Transformer {
     override def transformUnit(unit: CompilationUnit): Unit = {}
-  }
-
-  override protected def xtransform(transformer: super.Transformer, tree: Tree): Tree = tree match {
-    case DocDef(comment, definition) =>
-      transformer.treeCopy.DocDef(tree, comment, transformer.transform(definition))
-    case SelectFromArray(qualifier, selector, erasure) =>
-      transformer.treeCopy.SelectFromArray(
-        tree, transformer.transform(qualifier), selector, erasure)
-    case InjectDerivedValue(arg) =>
-      transformer.treeCopy.InjectDerivedValue(
-        tree, transformer.transform(arg))
-    case TypeTreeWithDeferredRefCheck() =>
-      transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
   }
 
   object resetPos extends Traverser {
@@ -224,7 +226,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       }
     }
 
-    class MarkLocals extends self.Traverser {
+    class MarkLocals extends self.InternalTraverser {
       def markLocal(tree: Tree) {
         if (tree.symbol != null && tree.symbol != NoSymbol) {
           val sym = tree.symbol
@@ -249,7 +251,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
            tree
         }
 
-        super.traverse(tree)
+        tree.traverse(this)
       }
     }
 
@@ -257,8 +259,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       override def transform(tree: Tree): Tree = {
         if (leaveAlone != null && leaveAlone(tree))
           tree
-        else
-          super.transform {
+        else {
+          val tree1 = {
             tree match {
               case tree if !tree.canHaveAttrs =>
                 tree
@@ -310,6 +312,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 dupl.clearType()
             }
           }
+          tree1.transform(this)
+        }
       }
     }
 

@@ -10,7 +10,8 @@ trait PostErasure {
     def apply(tp: Type) = tp match {
       case ConstantType(Constant(tp: Type)) => ConstantType(Constant(apply(tp)))
       case ErasedValueType(_, underlying)   => underlying
-      case _                                => mapOver(tp)
+      case null                             => null
+      case _                                => tp.mapOver(this)
     }
   }
 

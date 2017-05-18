@@ -623,7 +623,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
     // TODO: assign more fine-grained positions
     // fixes symbol nesting, assigns positions
-    protected def fixerUpper(origOwner: Symbol, pos: Position) = new Traverser {
+    protected def fixerUpper(origOwner: Symbol, pos: Position) = new InternalTraverser {
       currentOwner = origOwner
 
       override def traverse(t: Tree) {
@@ -646,7 +646,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))
           case _ =>
         }
-        super.traverse(t)
+        t.traverse(this)
       }
 
       // override def apply

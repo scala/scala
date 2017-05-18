@@ -167,7 +167,7 @@ trait Erasure {
       case _: BoundedWildcardType => tp // skip
 
       case _ =>
-        mapOver(tp)
+        tp.mapOver(this)
     }
 
     def applyInArray(tp: Type): Type = tp match {

@@ -423,7 +423,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
         val singleUseFields: Map[Symbol, List[Symbol]] = {
           val usedIn = mutable.HashMap[Symbol, List[Symbol]]() withDefaultValue Nil
 
-          object SingleUseTraverser extends Traverser {
+          object SingleUseTraverser extends InternalTraverser {
             override def traverse(tree: Tree) {
               tree match {
                 // assignment targets don't count as a dereference -- only check the rhs
@@ -438,8 +438,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
                     // println("added use in: " + currentOwner + " -- " + tree)
                     usedIn(sym) ::= currentOwner
                   }
-                  super.traverse(tree)
-                case _ => super.traverse(tree)
+                  tree.traverse(this)
+                case _ => tree.traverse(this)
               }
             }
           }
@@ -588,7 +588,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
      */
     override def transform(tree: Tree): Tree = {
       val saved = localTyper
-      val tree1 = super.transform(preTransform(tree))
+      val tree1 = preTransform(tree).transform(this)
       // localTyper needed when not flattening inner classes. parts after an
       // inner class will otherwise be typechecked with a wrong scope
       try exitingMixin(postTransform(tree1))
