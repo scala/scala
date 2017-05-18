@@ -242,6 +242,17 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
+  def sizedFlatMap[B, That](f: (A, Option[Int]) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    def builder : mutable.Builder[B, That] = bf(repr)
+    val b = builder
+    val builderAsBufferLike = b match {
+      case bl: mutable.BufferLike[_, _] => Some(bl)
+      case _ => None
+    }
+    for (x <- this) b ++= f(x, builderAsBufferLike.map(_.length)).seq
+    b.result
+  }
+
   private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
     val b = newBuilder
     for (x <- this)
@@ -768,6 +779,17 @@ trait TraversableLike[+A, +Repr] extends Any
       val b = bf(repr)
       for (x <- self)
         if (p(x)) b ++= f(x).seq
+      b.result
+    }
+
+    def sizedFlatMap[B, That](f: (A, Option[Int]) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+      val b = bf(repr)
+      val builderAsBufferLike = b match {
+        case bl: mutable.BufferLike[_, _] => Some(bl)
+        case _ => None
+      }
+      for (x <- this)
+        if (p(x)) b ++= f(x, builderAsBufferLike.map(_.length)).seq
       b.result
     }
 
