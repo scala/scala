@@ -109,6 +109,60 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
+  abstract sealed class CheckDead {
+    def apply(tree: Tree): Tree
+    @inline final def updateExpr[A](fn: Tree)(f: => A): A = {
+      if (push(fn)) {
+        try f finally pop()
+      } else f
+    }
+    def push(fn: Tree): Boolean
+    def pop(): Unit
+    def inMode(mode: Mode, tree: Tree): Tree
+  }
+  object NoOpCheckDead extends CheckDead {
+    def apply(tree: Tree): Tree = tree
+    def push(fn: Tree): Boolean = false
+    def pop(): Unit = ()
+    def inMode(mode: Mode, tree: Tree): Tree = tree
+  }
+  final class CheckingCheckDead() extends CheckDead {
+    private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+    // The method being applied to `tree` when `apply` is called.
+    private def expr = exprStack.top
+
+    private def exprOK =
+      (expr != Object_synchronized) &&
+      !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
+
+    private def treeOK(tree: Tree) = {
+      val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+      tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+    }
+
+    def push(fn: Tree): Boolean = {
+      if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+        exprStack push fn.symbol
+        true
+      } else false
+    }
+    def pop(): Unit =
+      exprStack.pop()
+
+    def apply(tree: Tree): Tree = {
+      // Error suppression (in context.warning) would squash some of these warnings.
+      // It is presumed if you are using a -Y option you would really like to hear
+      // the warnings you've requested; thus, use reporter.warning.
+      if (treeOK(tree) && exprOK)
+        reporter.warning(tree.pos, "dead code following this construct")
+      tree
+    }
+
+    // The checkDead call from typedArg is more selective.
+    def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
+  }
+
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
     import typeDebug.ptTree
@@ -254,9 +308,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     var context = context0
     def context1 = context
 
-    // for use with silent type checking to when we can't have results with undetermined type params
-    // note that this captures the context var
-    val isMonoContext = (_: Any) => context.undetparams.isEmpty
+    private[this] var _checkDead: CheckDead = _
+    private def checkDead: CheckDead = {
+      if (_checkDead == null) {
+        _checkDead = if (settings.warnDeadCode.value && context != null && context.unit.exists) new CheckingCheckDead() else NoOpCheckDead
+      }
+      _checkDead
+    }
 
     def dropExistential(tp: Type): Type = tp match {
       case ExistentialType(tparams, tpe) =>
@@ -1859,7 +1917,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (noSerializable) Nil
           else {
             clazz.makeSerializable()
-            List(TypeTree(SerializableTpe) setPos clazz.pos.focus)
+            TypeTree(SerializableTpe).setPos(clazz.pos.focus) :: Nil
           }
         )
       })
@@ -2425,7 +2483,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           block match {
             case Block(List(classDef @ ClassDef(_, _, _, _)), Apply(Select(New(_), _), _)) =>
               val classDecls = classDef.symbol.info.decls
-              val visibleMembers = pt match {
+              lazy val visibleMembers = pt match {
                 case WildcardType                           => classDecls.toList
                 case BoundedWildcardType(TypeBounds(lo, _)) => lo.members
                 case _                                      => pt.members
@@ -2972,7 +3030,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // We're looking for a method (as indicated by FUNmode in the silent typed below),
               // so let's make sure our expected type is a MethodType
               val methArgs = NoSymbol.newSyntheticValueParams(argpts map { case NoType => WildcardType case tp => tp })
-              silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt))) filter (isMonoContext) map { methTyped =>
+
+              val result = silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt)))
+              // we can't have results with undetermined type params
+              val resultMono = result filter (_ => context.undetparams.isEmpty)
+              resultMono map { methTyped =>
                 // if context.undetparams is not empty, the method was polymorphic,
                 // so we need the missing arguments to infer its type. See #871
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
@@ -4875,17 +4937,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
-        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name) orElse {
+        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
+        if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
-          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-            if ((qual1 ne qual) && !qual1.isErrorTyped)
-              return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-          }
-          NoSymbol
+          val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+          if ((qual1 ne qual) && !qual1.isErrorTyped)
+            return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
+
         if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
           qual setType tree.symbol.owner.tpe
 
@@ -5050,7 +5111,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
+              val tree1 = if (qual == EmptyTree) tree else {
+                val pos = tree.pos
+                Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+              }
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
             // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.
