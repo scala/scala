@@ -1,21 +1,24 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL
+ * Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
  */
 package scala.tools.nsc.interpreter.shell
 
 import scala.language.dynamics
 import scala.beans.BeanProperty
-import scala.collection.JavaConverters._
-import scala.reflect.classTag
-import scala.reflect.internal.util.Position
-import scala.tools.nsc.util.stringFromReader
+
 import javax.script._
-import ScriptContext.{ENGINE_SCOPE, GLOBAL_SCOPE}
 import java.io.{Closeable, OutputStream, Reader, PrintWriter => JPrintWriter}
+import java.util.Arrays.asList
+
+import scala.collection.JavaConverters._
+import scala.util.Properties.versionString
 
 import scala.tools.nsc.Settings
+import scala.tools.nsc.util.stringFromReader
+import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter}
 import scala.tools.nsc.interpreter.Results.Incomplete
-import scala.tools.nsc.interpreter.{IMain, ReplReporter}
+import scala.tools.nsc.interpreter.IMain.{ defaultSettings, defaultOut }
+
 
 /* A REPL adaptor for the javax.script API. */
 class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: JPrintWriter)
@@ -26,58 +29,37 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   // dynamic context bound under this name
   final val ctx = "$ctx"
 
-  import scala.tools.nsc.interpreter.isReplDebug
-
   // the underlying interpreter, tweaked to handle dynamic bindings
-  val intp = new IMain(settings, out) {
-    import global.{ Name, TermName }
-
-    /* Modify the template to snag definitions from dynamic context.
-     * So object $iw { x + 42 } becomes object $iw { def x = $ctx.x ; x + 42 }
-     */
-    override protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean) = {
-
-      // cull references that can be satisfied from the current dynamic context
-      val contextual = wanted & contextNames
-
-      if (contextual.nonEmpty) {
-        val neededContext = (wanted &~ contextual) + TermName(ctx)
-        val ComputedImports(header, preamble, trailer, path) = super.importsCode(neededContext, wrapper, definesClass, generousImports)
-        val adjusted = contextual.map { n =>
-            val valname = n.decodedName
-            s"""def `$valname` = $ctx.`$valname`
-                def `${valname}_=`(x: _root_.java.lang.Object) = $ctx.`$valname` = x"""
-          }.mkString(preamble, "\n", "\n")
-        ComputedImports(header, adjusted, trailer, path)
-      }
-      else super.importsCode(wanted, wrapper, definesClass, generousImports)
-    }
-
-    // names available in current dynamic context
-    def contextNames: Set[Name] = {
-      val ctx = compileContext
-      val terms = for {
-        scope   <- ctx.getScopes.asScala
-        binding <- Option(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
-        key = binding._1
-      } yield (TermName(key): Name)
-      terms.to[Set]
-    }
-
-    // save first error for exception; console display only if debugging
-    override lazy val reporter: ReplReporter = new ReplReporter(this) {
-      override def display(pos: Position, msg: String, severity: Severity): Unit =
-        if (isReplDebug) super.display(pos, msg, severity)
-      override def error(pos: Position, msg: String): Unit = {
-        if (firstError.isEmpty) firstError = Some((pos, msg))
-        super.error(pos, msg)
-      }
-      override def reset() = { super.reset() ; firstError = None }
-    }
-  }
+  val intp = new ScriptedInterpreter(settings, out, importContextPreamble)
   intp.initializeSynchronous()
 
   var compileContext: ScriptContext = getContext
+
+
+  def importContextPreamble(wanted: Set[String]): ImportContextPreamble = {
+    // cull references that can be satisfied from the current dynamic context
+    val contextual = wanted & contextNames
+
+    if (contextual.isEmpty) ImportContextPreamble.empty
+    else {
+      val adjusted = contextual.map { valname =>
+        s"""def `$valname` = $ctx.`$valname`; """ +
+        s"""def `${valname}_=`(x: _root_.java.lang.Object) = $ctx.`$valname` = x;"""
+      }.mkString("", "\n", "\n")
+      ImportContextPreamble(contextual, Set(ctx), adjusted)
+    }
+  }
+
+  // names available in current dynamic context
+  def contextNames: Set[String] = {
+    val ctx = compileContext
+    val terms = for {
+      scope <- ctx.getScopes.asScala
+      binding <- Option(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
+      key = binding._1
+    } yield key
+    terms.to[Set]
+  }
 
   val scriptContextRep = new intp.ReadEvalPrint
 
@@ -142,8 +124,6 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   // not obvious that ScriptEngine should accumulate code text
   private var code = ""
 
-  private var firstError: Option[(Position, String)] = None
-
   /* All scripts are compiled. The supplied context defines what references
    * not in REPL history are allowed, though a different context may be
    * supplied for evaluation of a compiled script.
@@ -163,7 +143,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
           }
         case Left(_)          =>
           code = ""
-          throw firstError map {
+          throw intp.firstError map {
             case (pos, msg) => new ScriptException(msg, script, pos.line, pos.column)
           } getOrElse new ScriptException("compile-time error")
       }
@@ -266,9 +246,6 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
 }
 
 object Scripted {
-  import IMain.{ defaultSettings, defaultOut }
-  import java.util.Arrays.asList
-  import scala.util.Properties.versionString
 
   class Factory extends ScriptEngineFactory {
     @BeanProperty val engineName      = "Scala REPL"
