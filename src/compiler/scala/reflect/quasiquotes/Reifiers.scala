@@ -130,7 +130,7 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(Hole(tree, NoDot)) if isReifyingPatterns => tree
       case Placeholder(hole @ Hole(_, rank @ Dot())) => c.abort(hole.pos, s"Can't $action with $rank here")
       case TuplePlaceholder(args) => reifyTuple(args)
-      // Due to greediness of syntactic applied we need to pre-emptively peek inside.
+      // Due to greediness of syntactic applied we need to preemptively peek inside.
       // `rest` will always be non-empty due to the rule on top of this one.
       case SyntacticApplied(id @ Ident(nme.QUASIQUOTE_TUPLE), first :: rest) =>
         mirrorBuildCall(nme.SyntacticApplied, reifyTreePlaceholder(Apply(id, first)), reify(rest))
@@ -362,7 +362,7 @@ trait Reifiers { self: Quasiquotes =>
     }
 
     /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
-     *  in the correct position. Fallbacks to regular reification for zero rank
+     *  in the correct position. Falls back to regular reification for zero rank
      *  elements.
      */
     override def reifyList(xs: List[Any]): Tree = reifyHighRankList(xs)(fillListHole.orElse(fillListOfListsHole))(reify)
