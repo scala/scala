@@ -519,7 +519,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  often to the point of never.
      */
     def newStubSymbol(name: Name, missingMessage: String): Symbol = {
-      // Invoke the overriden `newStubSymbol` in Global that gives us access to typer
+      // Invoke the overridden `newStubSymbol` in Global that gives us access to typer
       Symbols.this.newStubSymbol(this, name, missingMessage)
     }
 
@@ -2962,7 +2962,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // in place until after the compiler has completed the typer phase.
       //
       // Out of caution, I've also disable caching if there are active type completers, which also
-      // mutate symbol infos during val and def return type inference based the overriden member.
+      // mutate symbol infos during val and def return type inference based the overridden member.
       if (!isCompilerUniverse || isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
 
       if (mtpeRunId == currentRunId && (mtpePre eq pre) && (mtpeInfo eq info))
