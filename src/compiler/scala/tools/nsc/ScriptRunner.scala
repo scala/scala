@@ -10,7 +10,7 @@ import io.{AbstractFile, Directory, File, Path}
 import java.io.IOException
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
-import util.Exceptional.unwrap
+import util.Exceptional.rootCause
 
 /** An object that runs Scala code in script files.
  *
@@ -198,7 +198,7 @@ class ScriptRunner extends HasCompileSocket {
     scriptArgs: List[String]): Either[Throwable, Boolean] =
   {
     try Right(runScript(settings, scriptFile, scriptArgs))
-    catch { case e: Throwable => Left(unwrap(e)) }
+    catch { case e: Throwable => Left(rootCause(e)) }
   }
 
   /** Run a command

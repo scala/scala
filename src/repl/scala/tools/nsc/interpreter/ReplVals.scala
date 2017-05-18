@@ -17,13 +17,14 @@ import scala.reflect.runtime.{universe => ru}
 abstract class ReplVals { }
 
 class StdReplVals(final val intp: IMain) extends ReplVals {
-  // TODO bring back repl, reader, completion and history?
-  // TODO should intp be lazy?
+  // TODO bring back access to shell features from the interpreter?
+  // The repl backend has now cut its ties to the shell, except for the ReplReporter interface
+  // Before, we gave the user access to: repl, reader, isettings (poor name), completion and history.
+  // We could bring back some of this functionality if desired by adding it to ReplReporter
+  final val vals                          = this
   final lazy val power                    = intp.power
-  final lazy val vals                     = this
-  final lazy val global: intp.global.type = intp.global
-  final lazy val isettings                = intp.isettings
   final lazy val phased                   = power.phased
+  final lazy val global: intp.global.type = intp.global
   final lazy val analyzer                 = global.analyzer
 
   object treedsl extends { val global: intp.global.type = intp.global } with ast.TreeDSL { }

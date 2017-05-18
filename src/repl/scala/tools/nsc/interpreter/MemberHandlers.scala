@@ -12,9 +12,14 @@ import scala.collection.mutable
 trait MemberHandlers {
   val intp: IMain
 
+  // show identity hashcode of objects in vals
+  final val showObjIds = false
+
   import intp.{ Request, global, naming }
   import global._
   import naming._
+
+  import ReplStrings.{string2codeQuoted, string2code, any2stringOf}
 
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
@@ -111,17 +116,6 @@ trait MemberHandlers {
 
   class GenericHandler(member: Tree) extends MemberHandler(member)
 
-  import scala.io.AnsiColor.{ BOLD, BLUE, GREEN, RESET }
-
-  def color(c: String, s: String) =
-    if (replProps.colorOk) string2code(BOLD) + string2code(c) + s + string2code(RESET)
-    else s
-
-  def colorName(s: String) =
-    color(BLUE, string2code(s))
-
-  def colorType(s: String) =
-    color(GREEN, string2code(s))
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
     val maxStringElements = 1000  // no need to mkString billions of elements
@@ -136,12 +130,8 @@ trait MemberHandlers {
           if (mods.isLazy) codegenln(false, "<lazy>")
           else any2stringOf(path, maxStringElements)
 
-        val vidString =
-          if (replProps.vids) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
-          else ""
-
-        val nameString = colorName(prettyName) + vidString
-        val typeString = colorType(req typeOf name)
+        val nameString = string2code(prettyName) + (if (showObjIds) s"""" + f"@$${System.identityHashCode($path)}%8x" + """" else "")
+        val typeString = string2code(req typeOf name)
         s""" + "$nameString: $typeString = " + $resultString"""
       }
     }
@@ -150,8 +140,8 @@ trait MemberHandlers {
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
     override def resultExtractionCode(req: Request) = {
-      val nameString = colorName(name)
-      val typeString = colorType(req typeOf name)
+      val nameString = string2code(name)
+      val typeString = string2code(req typeOf name)
       if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
     }
   }

@@ -1,4 +1,5 @@
-Type in expressions for evaluation. Or try :help.
+
+scala>
 
 scala>
        val case = 9

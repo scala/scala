@@ -8,7 +8,7 @@ import org.junit.Test
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.Completion.Candidates
-import scala.tools.nsc.interpreter.shell.{Completion, ILoop, PresentationCompilerCompleter}
+import scala.tools.nsc.interpreter.shell._
 
 class CompletionTest {
   val EmptyString = "" // def string results include the empty string so that JLine won't insert "def ..." at the cursor
@@ -18,9 +18,7 @@ class CompletionTest {
     settings.Xnojline.value = true
     settings.usejavacp.value = true
 
-    val writer = new StringWriter
-    val out = new PrintWriter(writer)
-    new IMain(settings, out)
+    new IMain(settings, new ReplReporterImpl(settings, new PrintWriter(new StringWriter)))
   }
 
   private def setup(sources: SourceFile*): Completion = {
@@ -31,8 +29,9 @@ class CompletionTest {
   }
 
   private def setupWithLoop(lines: String*): (ILoop, Completion) = {
-    val iloop = new ILoop
-    iloop.intp = newIMain()
+    val intp = newIMain()
+    val iloop = new ILoop(ShellConfig(intp.settings))
+    iloop.intp = intp
     lines foreach iloop.intp.interpret
     val completer = new iloop.ReplCompletion(iloop.intp)
     (iloop, completer)

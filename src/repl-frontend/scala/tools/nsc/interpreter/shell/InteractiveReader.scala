@@ -86,10 +86,12 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
     var help = f"// Entering paste mode (ctrl-D to finish)%n%n"
 
     val text =
-      Iterator continually in.readLine(help) takeWhile { x =>
-        help = ""
-        x != null && running
-      } mkString EOL trim
+      try
+        Iterator continually in.readLine(help) takeWhile { x =>
+          help = ""
+          x != null && running
+        } mkString EOL trim
+      catch { case ie: InterruptedException => "" } // TODO let the exception bubble up, or at least signal the interrupt happened?
 
     val next =
       if (text.isEmpty) "// Nothing pasted, nothing gained."

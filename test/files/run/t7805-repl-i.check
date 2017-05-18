@@ -1,4 +1,4 @@
-Welcome to Scala
+Welcome to Scala %1$#s (%3$s, Java %2$s).
 Type in expressions for evaluation. Or try :help.
 
 scala> Console println Try(8)

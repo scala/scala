@@ -5,23 +5,21 @@ package scala.tools.nsc.interpreter.shell
 
 import scala.language.dynamics
 import scala.beans.BeanProperty
-
 import javax.script._
-import java.io.{Closeable, OutputStream, Reader, PrintWriter => JPrintWriter}
+import java.io.{Closeable, OutputStream, PrintWriter, Reader}
 import java.util.Arrays.asList
 
 import scala.collection.JavaConverters._
+import scala.reflect.internal.util.Position
 import scala.util.Properties.versionString
-
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.stringFromReader
 import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter}
 import scala.tools.nsc.interpreter.Results.Incomplete
-import scala.tools.nsc.interpreter.IMain.{ defaultSettings, defaultOut }
 
 
 /* A REPL adaptor for the javax.script API. */
-class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: JPrintWriter)
+class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: PrintWriter)
   extends AbstractScriptEngine with Compilable {
 
   def createBindings: Bindings = new SimpleBindings
@@ -30,7 +28,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   final val ctx = "$ctx"
 
   // the underlying interpreter, tweaked to handle dynamic bindings
-  val intp = new ScriptedInterpreter(settings, out, importContextPreamble)
+  val intp = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
   intp.initializeSynchronous()
 
   var compileContext: ScriptContext = getContext
@@ -71,7 +69,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     case Right(other) => throw new ScriptException(s"Unexpected value for context: $other")
   }
 
-  if (intp.isInitializeComplete) {
+  if (intp.initializeComplete) {
     // compile the dynamic ScriptContext object holder
     val ctxRes = scriptContextRep compile s"""
       |import _root_.javax.script._
@@ -143,7 +141,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
           }
         case Left(_)          =>
           code = ""
-          throw intp.firstError map {
+          throw intp.reporter.asInstanceOf[SaveFirstErrorReporter].firstError map {
             case (pos, msg) => new ScriptException(msg, script, pos.line, pos.column)
           } getOrElse new ScriptException("compile-time error")
       }
@@ -284,7 +282,7 @@ object Scripted {
     }
   }
 
-  def apply(factory: ScriptEngineFactory = new Factory, settings: Settings = defaultSettings, out: JPrintWriter = defaultOut) = {
+  def apply(factory: ScriptEngineFactory = new Factory, settings: Settings = new Settings, out: PrintWriter = ReplReporterImpl.defaultOut) = {
     settings.Yreplclassbased.value = true
     settings.usejavacp.value       = true
     val s = new Scripted(factory, settings, out)
@@ -323,4 +321,19 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
     decoder.flush(charBuffer)
   }
   override def toString = charBuffer.toString
+}
+
+
+private class SaveFirstErrorReporter(settings: Settings, out: PrintWriter) extends ReplReporterImpl(settings, out) {
+  override def display(pos: Position, msg: String, severity: Severity): Unit = {}
+
+  private var _firstError: Option[(Position, String)] = None
+  def firstError = _firstError
+
+  override def error(pos: Position, msg: String): Unit = {
+    if (_firstError.isEmpty) _firstError = Some((pos, msg))
+    super.error(pos, msg)
+  }
+
+  override def reset() = { super.reset(); _firstError = None }
 }

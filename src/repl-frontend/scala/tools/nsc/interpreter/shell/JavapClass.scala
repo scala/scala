@@ -126,6 +126,7 @@ class JavapClass(
     load(q)
   }
 
+
   class JavapTool {
     type ByteAry = Array[Byte]
     type Input = Tuple2[String, Try[ByteAry]]
@@ -134,6 +135,7 @@ class JavapClass(
       def orFailed[B >: A](b: =>B) = if (failed) b else a
     }
     protected def noToolError = new JpError(s"No javap tool available: ${getClass.getName} failed to initialize.")
+
 
     // output filtering support
     val writer = new CharArrayWriter
@@ -287,8 +289,8 @@ class JavapClass(
       new Showable {
         val output = filterLines(target, s"${reporter.reportable()}${written}")
         def show() =
-          if (filter) intp.withoutTruncating(printWriter.write(output))
-          else intp.withoutUnwrapping(printWriter.write(output, 0, output.length))
+          if (filter) intp.reporter.withoutTruncating(printWriter.write(output))
+          else intp.reporter.withoutUnwrapping(printWriter.write(output, 0, output.length))
       }
 
     // eventually, use the tool interface
@@ -300,20 +302,24 @@ class JavapClass(
         .orFailed (throw new IllegalStateException)
     }
     // a result per input
-    private def applyOne(options: Seq[String], filter: Boolean, klass: String, inputs: Seq[Input]): Try[JpResult] =
-      Try {
-        task(options, Seq(klass), inputs).call()
-      } map {
-        case true => JpResult(showable(klass, filter))
-        case _    => JpResult(reporter.reportable())
-      } recoverWith {
-        case e: java.lang.reflect.InvocationTargetException => e.getCause match {
-          case t: IllegalArgumentException => Success(JpResult(t.getMessage)) // bad option
-          case x => Failure(x)
+    private def applyOne(options: Seq[String], filter: Boolean, klass: String, inputs: Seq[Input]): Try[JpResult] = {
+      val t =
+        Try {
+          task(options, Seq(klass), inputs).call()
+        } map {
+          case true => JpResult(showable(klass, filter))
+          case _ => JpResult(reporter.reportable())
+        } recoverWith {
+          case e: java.lang.reflect.InvocationTargetException => e.getCause match {
+            case t: IllegalArgumentException => Success(JpResult(t.getMessage)) // bad option
+            case x => Failure(x)
+          }
         }
-      } lastly {
-        reporter.clear()
-      }
+
+      val cleanup = { _: Any => reporter.clear(); t}
+      t transform (cleanup, cleanup)
+    }
+
     /** Run the tool. */
     def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult] = (inputs map {
       case (klass, Success(_))  => applyOne(options, filter, klass, inputs).get

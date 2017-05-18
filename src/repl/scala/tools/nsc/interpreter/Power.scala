@@ -5,6 +5,7 @@
 
 package scala.tools.nsc.interpreter
 
+import java.io.InputStream
 import java.net.URL
 
 import scala.collection.mutable
@@ -105,17 +106,12 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
       if (packageClass.isPackageClass)
         apply(packageClass)
       else {
-        repldbg("Not a package class! " + packageClass)
+//        repldbg("Not a package class! " + packageClass)
         Set()
       }
     }
   }
 
-  private def customBanner = replProps.powerBanner.option flatMap {
-    case f if f.getName == "classic" => Some(classic)
-    case f => io.File(f).safeSlurp()
-  }
-  private def customInit   = replProps.powerInitCode.option flatMap (f => io.File(f).safeSlurp())
 
   def classic = """
     |** Power User mode enabled - BEEP WHIR GYVE **
@@ -125,22 +121,20 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     |** Try  :help, :vals, power.<tab>           **
   """.stripMargin.trim
 
-  def banner = customBanner getOrElse """
+  def banner = """
     |Power mode enabled. :phase is at typer.
     |import scala.tools.nsc._, intp.global._, definitions._
     |Try :help or completions for vals._ and power._
   """.stripMargin.trim
 
-  private def initImports =
-  """scala.tools.nsc._
-    |scala.collection.JavaConverters._
-    |intp.global.{ error => _, _ }
-    |definitions.{ getClass => _, _ }
-    |power.rutil._
-    |replImplicits._
-    |treedsl.CODE._""".stripMargin.lines
-
-  def init = customInit getOrElse initImports.mkString("import ", ", ", "")
+  val initImports = List(
+    "import scala.tools.nsc._",
+    "import scala.collection.JavaConverters._",
+    "import intp.global.{ error => _, _ }",
+    "import definitions.{ getClass => _, _ }",
+    "import power.rutil._",
+    "import replImplicits._",
+    "import treedsl.CODE._")
 
   /** Quietly starts up power mode and runs whatever is in init.
    */
@@ -149,8 +143,6 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     intp.bind("$r", replVals)
     // Then we import everything from $r.
     intp interpret s"import ${ intp.originalPath("$r") }._"
-    // And whatever else there is to do.
-    init.lines foreach (intp interpret _)
   }
 
   trait LowPriorityInternalInfo {
@@ -251,7 +243,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     // make an url out of the string
     def u: URL = (
       if (s contains ":") new URL(s)
-      else if (new JFile(s) exists) new JFile(s).toURI.toURL
+      else if (new java.io.File(s) exists) new java.io.File(s).toURI.toURL
       else new URL("http://" + s)
     )
   }

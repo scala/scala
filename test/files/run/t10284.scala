@@ -5,9 +5,7 @@
 import scala.tools.partest.{ReplTest, Welcoming}
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
 
-// Welcoming just fakes ReplTest into not stripping leading lines of output
-// since REPL doesn't emit a header for -e
-object Test extends ReplTest with Welcoming {
+object Test extends ReplTest {
 
   def code = ""
   def script = testPath.changeExtension("script")

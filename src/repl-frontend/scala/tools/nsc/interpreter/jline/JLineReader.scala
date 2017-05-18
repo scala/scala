@@ -25,15 +25,15 @@ import scala.tools.nsc.interpreter.shell.History
  *
  * Eagerly instantiates all relevant JLine classes, so that we can detect linkage errors on `new JLineReader` and retry.
  */
-class InteractiveReader extends shell.InteractiveReader {
+class InteractiveReader(isAcross: Boolean, isPaged: Boolean) extends shell.InteractiveReader {
   def interactive = true
 
   val history: History = new JLineHistory.JLineFileHistory()
 
   private val consoleReader = {
-    val reader = new JLineConsoleReader()
+    val reader = new JLineConsoleReader(isAcross)
 
-    reader setPaginationEnabled interpreter.isPaged
+    reader setPaginationEnabled isPaged
 
     // turn off magic !
     reader setExpandEvents false
@@ -61,8 +61,7 @@ class InteractiveReader extends shell.InteractiveReader {
 }
 
 // implements a jline interface
-private class JLineConsoleReader extends jconsole.ConsoleReader with shell.VariColumnTabulator {
-  val isAcross   = interpreter.`package`.isAcross
+private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.ConsoleReader with shell.VariColumnTabulator {
   val marginSize = 3
 
   def width  = getTerminal.getWidth()
@@ -90,8 +89,9 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with shell.VariC
   }
 
   override def printColumns(items: JCollection[_ <: CharSequence]): Unit = {
-    import scala.tools.nsc.interpreter.javaCharSeqCollectionToScala
-    printColumns_(items: List[String])
+    import scala.collection.JavaConverters._
+
+    printColumns_(items.asScala.toList map (_.toString))
   }
 
   private def printColumns_(items: List[String]): Unit = if (items exists (_ != "")) {

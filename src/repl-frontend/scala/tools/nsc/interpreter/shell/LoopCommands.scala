@@ -6,9 +6,10 @@
 package scala.tools.nsc.interpreter.shell
 
 import java.io.{PrintWriter => JPrintWriter}
-import scala.language.implicitConversions
 
+import scala.language.implicitConversions
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.interpreter.ReplStrings.words
 
 class ProcessResult(val line: String) {
   import scala.sys.process._
@@ -133,7 +134,7 @@ trait LoopCommands { self: { def echo(msg: String): Unit } =>
   class VarArgsCmd(name: String, argWord: String, help: String, f: List[String] => Result)
             extends LoopCommand(name, help) {
     override def usage = argWord
-    def apply(line: String): Result = apply(scala.tools.nsc.interpreter.words(line))
+    def apply(line: String): Result = apply(words(line))
     def apply(args: List[String]) = f(args)
   }
 

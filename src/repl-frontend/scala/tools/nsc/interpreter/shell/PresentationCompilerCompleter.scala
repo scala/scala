@@ -11,7 +11,6 @@ import scala.tools.nsc.interpreter.IMain
 
 class PresentationCompilerCompleter(intp: IMain) extends Completion {
   import intp.{PresentationCompileResult => Result}
-  import scala.tools.nsc.interpreter.isReplDebug
 
   import PresentationCompilerCompleter._
 
@@ -43,11 +42,13 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
 
     def print(result: Result) = {
       val tree = result.tree(buf)
-      val printed = result.compiler.showCode(tree) + " // : " + tree.tpe.safeToString
+      val printed = result.treeString(tree) + " // : " + tree.tpe.safeToString
       Candidates(cursor, "" :: printed :: Nil)
     }
+
+
     def typeAt(result: Result, start: Int, end: Int) = {
-      val tpString = result.compiler.exitingTyper(result.typedTreeAt(buf, start, end).tpe.toString)
+      val tpString = result.typeString(result.typedTreeAt(buf, start, end))
       Candidates(cursor, "" :: tpString :: Nil)
     }
     def candidates(result: Result): Candidates = {
@@ -127,7 +128,7 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
       }
     } catch {
       case NonFatal(e) =>
-        if (isReplDebug) e.printStackTrace()
+        // e.printStackTrace()
         Completion.NoCandidates
     }
   }

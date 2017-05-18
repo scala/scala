@@ -1,15 +1,16 @@
 
-scala> $intp.isettings.unwrapStrings = false
-$intp.isettings.unwrapStrings: Boolean = false
-
 scala> class Bippy
 defined class Bippy
 
-scala> $intp.classLoader getResource "Bippy.class"
-res0: java.net.URL = memory:(memory)/$line4/$read$$iw$$iw$Bippy.class
+scala> $intp.reporter.withoutUnwrapping {
+     |   println($intp.classLoader getResource "Bippy.class")
+     | }
+memory:(memory)/$line3/$read$$iw$$iw$Bippy.class
 
-scala> ($intp.classLoader getResources "Bippy.class").nextElement
-res1: java.net.URL = memory:(memory)/$line4/$read$$iw$$iw$Bippy.class
+scala> $intp.reporter.withoutUnwrapping {
+     |   println(($intp.classLoader getResources "Bippy.class").nextElement)
+     | }
+memory:(memory)/$line3/$read$$iw$$iw$Bippy.class
 
 scala> ($intp.classLoader classBytes "Bippy").nonEmpty
 res2: Boolean = true

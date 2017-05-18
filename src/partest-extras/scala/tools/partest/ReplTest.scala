@@ -7,7 +7,7 @@ package scala.tools.partest
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.ILoop
-import scala.tools.nsc.interpreter.replProps
+import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
 /** A class for testing repl code.
@@ -27,24 +27,12 @@ abstract class ReplTest extends DirectTest {
   def inSession: Boolean = false
   /** True to preserve welcome header, eliding version number. */
   def welcoming: Boolean = false
-  lazy val header = replProps.welcome
   def eval() = {
     val s = settings
     log("eval(): settings = " + s)
-    val transcript = ILoop.runForTranscript(code, s, inSession = inSession)
+    val transcript = ILoop.runForTranscript(code, s, inSession = inSession, welcoming = welcoming)
     log(s"transcript[[$transcript]]")
-    val lines = transcript.lines
-    val clean =
-      if (welcoming) {
-        val welcome = "(Welcome to Scala).*".r
-        lines map {
-          case welcome(s) => s
-          case s          => s
-        }
-      } else {
-        lines.drop(header.lines.size)
-      }
-    clean.map(normalize)
+    transcript.lines.map(normalize)
   }
   def show() = eval() foreach println
 }
@@ -79,7 +67,7 @@ abstract class SessionTest extends ReplTest  {
   override final def code = pasted.findAllMatchIn(expected.mkString("", "\n", "\n")).map {
     case pasted(null, null, prompted) =>
       def continued(m: Match): Option[String] = m match {
-        case margin(text) => Some(text)
+        case margin(text) => Some(Regex.quoteReplacement(text))
         case _            => None
       }
       margin.replaceSomeIn(prompted, continued)

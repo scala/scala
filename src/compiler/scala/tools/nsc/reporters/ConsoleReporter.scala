@@ -14,7 +14,8 @@ import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trim
 
 /** This class implements a Reporter that displays messages on a text console.
  */
-class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter, echoWriter: PrintWriter) extends AbstractReporter {
+class ConsoleReporter(val settings: Settings, reader: BufferedReader, protected val writer: PrintWriter, protected val echoWriter: PrintWriter) extends AbstractReporter {
+  // TODO: make writer and echoWriter private once we remove the ReplReporterImpl.linkRSW hack
   def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
   def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) =
     this(settings, reader, writer, writer)

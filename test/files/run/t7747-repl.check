@@ -244,18 +244,18 @@ sealed class $read extends _root_.java.io.Serializable {
       super.<init>;
       ()
     };
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
+    import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line9.$read.INSTANCE.$iw.$iw.Bingo;
+    import $line9.$read.INSTANCE.$iw.$iw.Bingo;
     sealed class $iw extends _root_.java.io.Serializable {
       def <init>() = {
         super.<init>;
         ()
       };
-      private type $ipos47 = _root_.scala.Nothing;
+      private type $ipos10 = _root_.scala.Nothing;
       val res3 = List(BippyBups, PuppyPups, Bingo)
     };
     val $iw = new $iw.<init>
@@ -289,6 +289,6 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> intp.lastRequest
-res5: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
+res5: $r.intp.Request = Request(line=def $ires15 = treedsl.CODE, 1 trees)
 
 scala> :quit

@@ -5,6 +5,7 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.util._
 import scala.reflect.internal.util.AbstractFileClassLoader
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 object Test {
   def main(args: Array[String]) {
@@ -36,7 +37,7 @@ object Test {
         |extract(() => new AA(x + getX() + y + z + zz + O.apply + u.x))
       """.stripMargin
 
-    imain = IMain(settings)
+    imain = new IMain(settings, new ReplReporterImpl(settings))
     println("== evaluating lines")
     imain.directBind("extract", "(AnyRef => Unit)", extract)
     code.lines.foreach(imain.interpret)

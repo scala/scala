@@ -11,7 +11,6 @@ import _root_.jline.{console => jconsole}
 import jconsole.history.History.{Entry => JEntry}
 import jconsole.history.{History => JHistory}
 
-import scala.tools.nsc.interpreter
 import scala.tools.nsc.interpreter.shell.{History, SimpleHistory}
 
 
@@ -48,14 +47,12 @@ trait JLineHistory extends JHistory with History {
 
 object JLineHistory {
   class JLineFileHistory extends SimpleHistory with FileBackedHistory {
-    override def add(item: CharSequence): Unit = {
-      if (!isEmpty && last == item)
-        interpreter.repldbg("Ignoring duplicate entry '" + item + "'")
-      else {
+    override def add(item: CharSequence): Unit =
+      if (isEmpty || last != item) {
         super.add(item)
         addLineToFile(item)
-      }
-    }
+      } // else interpreter.repldbg("Ignoring duplicate entry '" + item + "'")
+
     override def toString = "History(size = " + size + ", index = " + index + ")"
 
     import scala.collection.JavaConverters._

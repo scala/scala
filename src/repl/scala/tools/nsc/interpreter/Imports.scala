@@ -165,8 +165,7 @@ trait Imports {
       val tempValLines = mutable.Set[Int]()
       for (ReqAndHandler(req, handler) <- reqsToUse) {
         val objName = req.lineRep.readPathInstance
-        if (isReplTrace)
-          code.append(ss"// $objName definedNames ${handler.definedNames}, curImps $currentImps\n")
+//        if (isReplTrace) code.append(ss"// $objName definedNames ${handler.definedNames}, curImps $currentImps\n")
         handler match {
           case h: ImportHandler if checkHeader(h) =>
             header.clear()

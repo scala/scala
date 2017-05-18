@@ -16,16 +16,15 @@ import scala.tools.nsc.interpreter.Results.{Result, Incomplete}
  *  a transcript should itself be pasteable and should achieve
  *  the same result.
  */
-abstract class Pasted(prompt: String) {
-  import scala.tools.nsc.interpreter.replProps
+abstract class Pasted(prompt: String, continuePrompt: String, continueText: String) {
 
   def interpret(line: String): Result
   def echo(message: String): Unit
 
   val PromptString    = prompt.lines.toList.last
   val AltPromptString = "scala> "
-  val ContinuePrompt  = replProps.continuePrompt
-  val ContinueString  = replProps.continueText     // "     | "
+  val ContinuePrompt  = continuePrompt
+  val ContinueString  = continueText     // "     | "
   val anyPrompt = {
     import scala.util.matching.Regex.quote
     s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r

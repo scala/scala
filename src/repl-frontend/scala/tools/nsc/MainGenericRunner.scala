@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import interpreter.shell.ILoop
+import interpreter.shell.{ILoop, ShellConfig}
 
 object JarRunner extends CommonRunner {
   def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
@@ -76,7 +76,8 @@ class MainGenericRunner {
             settings.deprecation.value = true
             settings.feature.value = true
           }
-          Right(new ILoop().process(settings))
+          val config = ShellConfig(settings)
+          Right(new ILoop(config).run(settings))
       }
 
       runTarget() match {

@@ -12,6 +12,8 @@ import scala.tools.nsc.{interactive, Settings}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
 
+import scala.tools.nsc.interpreter.Results.{Result, Error}
+
 trait PresentationCompilation {
   self: IMain =>
 
@@ -21,8 +23,8 @@ trait PresentationCompilation {
     *
     * The caller is responsible for calling [[PresentationCompileResult#cleanup]] to dispose of the compiler instance.
     */
-  private[scala] def presentationCompile(line1: String): Either[IR.Result, PresentationCompileResult] = {
-    if (global == null) Left(IR.Error)
+  private[scala] def presentationCompile(line1: String): Either[Result, PresentationCompileResult] = {
+    if (global == null) Left(Error)
     else {
       val compiler = newPresentationCompiler()
       val trees = compiler.newUnitParser(line1).parseStats()
@@ -72,7 +74,7 @@ trait PresentationCompilation {
   }
 
   abstract class PresentationCompileResult {
-    val compiler: scala.tools.nsc.interactive.Global
+    private[interpreter] val compiler: scala.tools.nsc.interactive.Global
     def unit: compiler.RichCompilationUnit
     /** The length of synthetic code the precedes the user written code */
     def preambleLength: Int
@@ -92,7 +94,7 @@ trait PresentationCompilation {
       compiler.typedTreeAt(pos)
     }
 
-    def tree(buf: String) = {
+    def tree(buf: String): compiler.Tree = {
       import compiler.{Locator, Template, Block}
       val offset = preambleLength
       val pos1 = unit.source.position(offset).withEnd(offset + buf.length)
@@ -101,6 +103,13 @@ trait PresentationCompilation {
         case t => t
       }
     }
+
+    def typeString(tree: compiler.Tree): String =
+      compiler.exitingTyper(tree.tpe.toString)
+
+    def treeString(tree: compiler.Tree): String =
+      compiler.showCode(tree)
+
 
   }
 

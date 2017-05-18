@@ -5,6 +5,8 @@
 
 package scala.tools.nsc.interpreter
 
+import Results.{Result, Success}
+
 trait ExprTyper {
   val repl: IMain
 
@@ -12,7 +14,7 @@ trait ExprTyper {
   import global.{ phase, Symbol, Type, exitingTyper, NoSymbol, NoType, NoPrefix }
   import naming.freshInternalVarName
 
-  private def doInterpret(code: String): IR.Result = {
+  private def doInterpret(code: String): Result = {
     // interpret/interpretSynthetic may change the phase, which would have unintended effects on types.
     val savedPhase = phase
     try interpretSynthetic(code) finally phase = savedPhase
@@ -27,7 +29,7 @@ trait ExprTyper {
       val line = "def " + name + " = " + code
 
       doInterpret(line) match {
-        case IR.Success =>
+        case Success =>
           val sym0 = symbolOfTerm(name)
           // drop NullaryMethodType
           sym0.cloneSymbol setInfo exitingTyper(sym0.tpe_*.finalResultType)
@@ -38,7 +40,7 @@ trait ExprTyper {
       val old = repl.definedSymbolList.toSet
 
       doInterpret(code) match {
-        case IR.Success =>
+        case Success =>
           repl.definedSymbolList filterNot old match {
             case Nil        => NoSymbol
             case sym :: Nil => sym
@@ -57,7 +59,7 @@ trait ExprTyper {
   private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String, silent: Boolean = true): Type = {
     if (typeOfExpressionDepth > 2) {
-      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
+//      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
       return NoType
     }
     typeOfExpressionDepth += 1
@@ -78,7 +80,7 @@ trait ExprTyper {
       val name = freshInternalVarName()
       val line = "def %s: %s = ???" format (name, typeString)
       doInterpret(line) match {
-        case IR.Success =>
+        case Success =>
           val sym0 = symbolOfTerm(name)
           Some(sym0.asMethod.returnType)
         case _          => None

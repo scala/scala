@@ -6,9 +6,11 @@
 package scala.tools.nsc
 package interpreter
 
+import java.io.PrintWriter
+
 import io.VirtualDirectory
 import settings.MutableSettings
-import scala.reflect.io.{ AbstractFile, PlainDirectory, Directory }
+import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
 import scala.collection.generic.Clearable
 
 /** Directory to save .class files to. */
@@ -35,7 +37,7 @@ class ReplOutput(val dirSetting: MutableSettings#StringSetting) {
   )
 
   // print the contents hierarchically
-  def show(out: JPrintWriter) = {
+  def show(out: PrintWriter) = {
     def pp(root: AbstractFile, indentLevel: Int) {
       val label = root.name
       val spaces = "    " * indentLevel

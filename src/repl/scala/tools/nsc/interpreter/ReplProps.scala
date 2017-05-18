@@ -3,25 +3,26 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
-import Properties.{ javaVersion, javaVmName, shellPromptString, shellWelcomeString,
-                    versionString, versionNumberString }
+import java.io.File
+import java.util.{Formattable, FormattableFlags, Formatter}
+
+import scala.tools.nsc.Properties
+import Properties._
 import scala.sys.{BooleanProp, Prop}
 import scala.sys.Prop._
-import java.util.{ Formattable, FormattableFlags, Formatter }
 
-class ReplProps {
+trait ReplProps {
   private def bool(name: String) = BooleanProp.keyExists(name)
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = Properties.coloredOutputEnabled
 
-  val info  = bool("scala.repl.info")
-  val debug = bool("scala.repl.debug")
-  val trace = bool("scala.repl.trace")
+  private val info  = bool("scala.repl.info")
+  private val debug = bool("scala.repl.debug")
+  private val trace = bool("scala.repl.trace")
   val power = bool("scala.repl.power")
 
   def enversion(s: String) = {
@@ -46,23 +47,11 @@ class ReplProps {
   // Handy system prop for shell prompt, or else pick it up from compiler.properties
   val promptString = Prop[String]("scala.repl.prompt").option getOrElse (if (info) "%nscala %#s> " else shellPromptString)
   val promptText   = enversion(promptString)
-  val prompt       = encolor(promptText)
+
 
   // Prompt for continued input, will be right-adjusted to width of the primary prompt
   val continueString = Prop[String]("scala.repl.continue").option getOrElse "| "
-  val continueText   = {
-    val text   = enversion(continueString)
-    val margin = promptText.lines.toList.last.length - text.length
-    if (margin > 0) " " * margin + text else text
-  }
-  val continuePrompt = encolor(continueText)
-
-  // Next time.
-  //def welcome = enversion(Prop[String]("scala.repl.welcome") or shellWelcomeString)
-  def welcome = enversion {
-    val p = Prop[String]("scala.repl.welcome")
-    if (p.isSet) p.get else shellWelcomeString
-  }
+  val welcomeString  = Prop[String]("scala.repl.welcome").option getOrElse shellWelcomeString
 
   val pasteDelimiter = Prop[String]("scala.repl.here")
 
@@ -73,10 +62,25 @@ class ReplProps {
    */
   val format = Prop[String]("scala.repl.format")
 
-  val replAutorunCode = Prop[JFile]("scala.repl.autoruncode")
-  val powerInitCode   = Prop[JFile]("scala.repl.power.initcode")
-  val powerBanner     = Prop[JFile]("scala.repl.power.banner")
+  val replAutorunCode = Prop[File]("scala.repl.autoruncode")
+  val powerInitCode   = Prop[File]("scala.repl.power.initcode")
+  val powerBanner     = Prop[File]("scala.repl.power.banner")
 
-  val vids = bool("scala.repl.vids")
   val maxPrintString = int("scala.repl.maxprintstring")
+
+  def isReplInfo: Boolean  = info || isReplDebug
+  def replinfo(msg: => String)   = if (isReplInfo)  echo(msg)
+  def isReplDebug: Boolean = debug || isReplTrace
+  def repldbg(msg: => String)    = if (isReplDebug) echo(msg)
+  def isReplTrace: Boolean = trace
+  def repltrace(msg: => String)  = if (isReplTrace) echo(msg)
+
+  def isReplPower: Boolean = power
+  def isPaged: Boolean     = format.isSet && csv(format.get, "paged")
+  def isAcross: Boolean    = format.isSet && csv(format.get, "across")
+
+  private def csv(p: String, v: String) = p split "," contains v
+  private def echo(msg: => String) =
+    try Console println msg
+    catch { case x: AssertionError => Console.println("Assertion error printing debugging output: " + x) }
 }
