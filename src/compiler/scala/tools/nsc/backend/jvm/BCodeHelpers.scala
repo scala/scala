@@ -12,6 +12,7 @@ import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
 import scala.reflect.internal.Flags
+import scala.tools.nsc.reporters.NoReporter
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -228,16 +229,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      val originalReporter = global.reporter
-      val storeReporter = new reporters.StoreReporter()
-      global.reporter = storeReporter
-      try {
-        sym.info
-      } finally {
-        global.reporter = originalReporter
-      }
+      withoutReporting(sym.info)
       sym.isErroneous
     }
+
+  @inline private def withoutReporting[T](fn : => T) = {
+    val currentReporter = reporter
+    reporter = NoReporter
+    try fn finally reporter = currentReporter
+  }
 
 
   /*
