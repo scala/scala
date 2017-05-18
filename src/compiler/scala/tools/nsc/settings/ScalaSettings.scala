@@ -83,11 +83,19 @@ trait ScalaSettings extends AbsScalaSettings
    * The previous "-source" option is intended to be used mainly
    * though this helper.
    */
-  def isScala211: Boolean = source.value >= ScalaVersion("2.11.0")
-  private[this] val version212 = ScalaVersion("2.12.0")
-  def isScala212: Boolean = source.value >= version212
-  private[this] val version213 = ScalaVersion("2.13.0")
-  def isScala213: Boolean = source.value >= version213
+  private[this] var _isScala211: Boolean = _
+  private[this] var _isScala212: Boolean = _
+  private[this] var _isScala213: Boolean = _
+  private[this] val defaultScalaVersion = ScalaVersion("2.12.0")
+  def isScala211: Boolean = _isScala211
+  def isScala212: Boolean = _isScala212
+  def isScala213: Boolean = _isScala213
+  private def initIsScala(value: ScalaVersion): Unit = {
+    _isScala211 = value >= ScalaVersion("2.11.0")
+    _isScala212 = value >= ScalaVersion("2.12.0")
+    _isScala213 = value >= ScalaVersion("2.13.0")
+  }
+  initIsScala(defaultScalaVersion)
 
   /**
    * -X "Advanced" settings
@@ -132,7 +140,7 @@ trait ScalaSettings extends AbsScalaSettings
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.12"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = defaultScalaVersion).withPostSetHook(setting => initIsScala(setting.value))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
