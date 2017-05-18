@@ -5,18 +5,50 @@
 
 package scala.tools.nsc.interpreter.jline
 
+import java.io.IOException
+import java.nio.charset.Charset
+import java.nio.file.{FileSystems, Files, Path}
+import java.util
+
 import _root_.jline.console.history.PersistentHistory
 
-import scala.tools.nsc.interpreter
-import scala.reflect.io.{ File, Path }
-import scala.tools.nsc.Properties.{ propOrNone, userHome }
+import scala.collection.JavaConverters._
+import scala.io.Codec
+
 
 /** TODO: file locking.
   */
 trait FileBackedHistory extends JLineHistory with PersistentHistory {
   def maxSize: Int
+  import java.nio.file.StandardOpenOption.{CREATE, APPEND, TRUNCATE_EXISTING}
 
-  protected lazy val historyFile: File = FileBackedHistory.defaultFile
+  val charSet: Charset = implicitly[Codec].charSet
+
+  private lazy val historyPath = {
+    val fs = FileSystems.getDefault
+
+    // This would really have been sufficient for our property getting infrastructure
+    def prop(p: String) = Option(System.getProperty(p))
+
+    (prop("scala.shell.histfile") orElse
+      prop("user.home").map(_ + s"${fs.getSeparator}${FileBackedHistory.defaultFileName}")
+      ).map(n => fs.getPath(n)).getOrElse(throw new IllegalStateException("Cannot determine path for history file."))
+  }
+
+  protected lazy val lines: List[String] = {
+    try Files.readAllLines(historyPath, charSet).asScala.toList
+    catch {
+      // It seems that control characters in the history file combined
+      // with the default codec can lead to nio spewing exceptions.  Rather
+      // than abandon hope we'll try to read it as ISO-8859-1
+      case _: IOException =>
+        try Files.readAllLines(historyPath, Codec.ISO8859.charSet).asScala.toList
+        catch {
+          case _: IOException => Nil
+        }
+    }
+  }
+
   private var isPersistent = true
 
   locally {
@@ -36,49 +68,32 @@ trait FileBackedHistory extends JLineHistory with PersistentHistory {
   }
 
   /** Overwrites the history file with the current memory. */
-  protected def sync(): Unit = {
-    val lines = asStrings map (_ + "\n")
-    historyFile.writeAll(lines: _*)
-  }
+  protected def sync(): Unit =
+    Files.write(historyPath, asStrings.asJava, charSet, TRUNCATE_EXISTING)
 
   /** Append one or more lines to the history file. */
-  protected def append(lines: String*): Unit = {
-    historyFile.appendAll(lines: _*)
-  }
+  protected def append(newLines: String*): Unit =
+    Files.write(historyPath, newLines.asJava, charSet, APPEND)
 
-  def load(): Unit = {
-    if (!historyFile.canRead)
-      historyFile.createFile()
-
-    val lines: IndexedSeq[String] = {
-      try historyFile.lines().toIndexedSeq
-      catch {
-        // It seems that control characters in the history file combined
-        // with the default codec can lead to nio spewing exceptions.  Rather
-        // than abandon hope we'll try to read it as ISO-8859-1
-        case _: Exception =>
-          try historyFile.lines("ISO-8859-1").toIndexedSeq
-          catch {
-            case _: Exception => Vector()
-          }
-      }
-    }
-
-    interpreter.repldbg("Loading " + lines.size + " into history.")
-
+  def load(): Unit = try {
     // avoid writing to the history file
     withoutSaving(lines takeRight maxSize foreach add)
+
     // truncate the history file if it's too big.
     if (lines.size > maxSize) {
-      interpreter.repldbg("File exceeds maximum size: truncating to " + maxSize + " entries.")
       sync()
     }
+
     moveToEnd()
+  } catch {
+    case _: IOException | _: IllegalStateException =>
+      Console.err.println("Could not load history.")
+      isPersistent = false
   }
 
   def flush(): Unit = ()
 
-  def purge(): Unit = historyFile.truncate()
+  def purge(): Unit = Files.write(historyPath, Array.emptyByteArray)
 }
 
 object FileBackedHistory {
@@ -86,8 +101,4 @@ object FileBackedHistory {
   //   val ContinuationNL: String = Array('\003', '\n').mkString
 
   final val defaultFileName = ".scala_history"
-
-  def defaultFile: File = File(
-    propOrNone("scala.shell.histfile") map (Path.apply) getOrElse (Path(userHome) / defaultFileName)
-  )
 }
