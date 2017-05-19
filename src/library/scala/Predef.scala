@@ -496,7 +496,27 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
-  sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
+  sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
+  
+    final def covariant[F[+_]] = {
+      singleton_<:<.asInstanceOf[F[From] <:< F[To]]
+    }
+  
+    final def asymmetry[From0 <: From, To0 >: To](f: To0 <:< From0) = {
+      singleton_=:=.asInstanceOf[From0 =:= To0]
+    }
+ 
+    final def contravariant[F[-_]]: F[To] <:< F[From] = {
+      type G[+X] = F[X] <:< F[From]
+      covariant[G](implicitly[F[From] <:< F[From]])
+    }
+
+    final def andThen[A](g: To <:< A): From <:< A = {
+      type F[+X] = From <:< X
+      g.covariant[F](this)
+    }
+    
+  }
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
   // The dollar prefix is to dodge accidental shadowing of this method
   // by a user-defined method of the same name (scala/bug#7788).
@@ -513,7 +533,28 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
-  sealed abstract class =:=[From, To] extends (From => To) with Serializable
+  sealed abstract class =:=[From, To] extends (From => To) with Serializable {
+
+    final def invariant[F[_]]: F[From] =:= F[To] = {
+      singleton_=:=.asInstanceOf[F[From] =:= F[To]]
+    }
+
+    final def symmetry: To =:= From = {
+      type F[X] = X =:= From
+      invariant[F](implicitly[From =:= From])
+    }
+
+    final def andThen[A](g: To =:= A): From =:= A = {
+      type F[X] = From =:= X
+      g.invariant[F](this)
+    }
+  
+    final def reflexive: From <:< To = {
+      type F[X] = From <:< X
+      invariant[F](implicitly[From <:< From])
+    }
+    
+  }
   private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
   /** @group type-constraints */
   object =:= {
