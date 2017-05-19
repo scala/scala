@@ -180,7 +180,17 @@ trait TypeComparers {
     !settings.isScala211 || methodHigherOrderTypeParamsSameVariance(low, high) || low.variance.isInvariant
 
   def isSameType2(tp1: Type, tp2: Type): Boolean = {
-    def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSameType(lhs, rhs)
+    def retry() = {
+      // OPT no need to compare eta-expansions of a pair of distinct class type refs, we'd get the same result (false).
+      // e.g. we know that TypeRef(..., Some, Nil) is not the same as TypeRef(..., Option, Nil) without needing to compare
+      // [+A]Option[A] and [+A]Some[A].
+      val skip = isNoArgStaticClassTypeRef(tp1) && isNoArgStaticClassTypeRef(tp2)
+      !skip && {
+        val lhs = normalizePlus(tp1)
+        val rhs = normalizePlus(tp2)
+        ((lhs ne tp1) || (rhs ne tp2)) && isSameType(lhs, rhs)
+      }
+    }
 
     /*  Here we highlight those unfortunate type-like constructs which
      *  are hidden bundles of mutable state, cruising the type system picking
@@ -233,7 +243,7 @@ trait TypeComparers {
       || sameSingletonType
       || mutateNonTypeConstructs(tp1, tp2)
       || mutateNonTypeConstructs(tp2, tp1)
-      || retry(normalizePlus(tp1), normalizePlus(tp2))
+      || retry()
     )
   }
 
@@ -347,6 +357,11 @@ trait TypeComparers {
     case (SingleType(ThisType(lpre), v1), SingleType(SuperType(ThisType(rpre), _), v2)) => (lpre eq rpre) && (v1.overrideChain contains v2)
     case _                                                                              => false
   }
+  private def isNoArgStaticClassTypeRef(tp: Type) = tp match {
+    // isStatic to allow prefixes with type vars to accumulate constraints in the slow path in isHKSubType
+    case TypeRef(_, sym, Nil) if sym.isClass && sym.isStatic => true
+    case _ => false
+  }
 
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
   def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
@@ -363,7 +378,11 @@ trait TypeComparers {
 
     (    (tp1.typeSymbol eq NothingClass)       // @M Nothing is subtype of every well-kinded type
       || (tp2.typeSymbol eq AnyClass)           // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
-      || isSub(tp1.normalize, tp2.normalize) && annotationsConform(tp1, tp2)  // @M! normalize reduces higher-kinded case to PolyType's
+      || (if (isNoArgStaticClassTypeRef(tp1) && isNoArgStaticClassTypeRef(tp2))
+            tp1.typeSymbolDirect.isNonBottomSubClass(tp2.typeSymbolDirect) // OPT faster than comparing eta-expanded types
+          else
+            isSub(tp1.normalize, tp2.normalize) && annotationsConform(tp1, tp2)  // @M! normalize reduces higher-kinded case to PolyType's
+         )
     )
   }
 

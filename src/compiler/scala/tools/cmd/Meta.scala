@@ -31,7 +31,7 @@ object Meta {
     /** I think we're as close as we can get to bundling completion with
      *  the program given the constraints imposed by bash.  This outputs
      *  the completion function to a tempfile and echoes ". /path/to/file"
-     *  to the console.  Place it inside backtickes like `partest --bash`
+     *  to the console.  Place it inside backticks like `partest --bash`
      *  and voila, you have absorbed command completion.
      */
     object Bash extends Opt {

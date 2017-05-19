@@ -870,7 +870,7 @@ abstract class Erasure extends InfoTransform
         || super.exclude(sym)
         || !sym.hasTypeAt(currentRun.refchecksPhase.id)
       )
-      override def matches(lo: Symbol, high: Symbol) = !high.isPrivate
+      override def matches(high: Symbol) = !high.isPrivate
     }
 
     /** Emit an error if there is a double definition. This can happen if:

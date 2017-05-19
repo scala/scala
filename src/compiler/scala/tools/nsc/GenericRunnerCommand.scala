@@ -28,7 +28,7 @@ extends CompilerCommand(args, settings) {
   // change CompilerCommand behavior
   override def shouldProcessArguments: Boolean = false
 
-  private lazy val (_ok, targetAndArguments) = settings.processArguments(args, processAll = false)
+  private val (_ok, targetAndArguments) = settings.processArguments(args, processAll = false)
   override def ok = _ok
   private def guessHowToRun(target: String): GenericRunnerCommand.HowToRun = {
     if (!ok) Error
@@ -48,9 +48,11 @@ extends CompilerCommand(args, settings) {
   /** Arguments to thingToRun. */
   def arguments = targetAndArguments drop 1
 
-  val howToRun = targetAndArguments match {
-    case Nil      => AsRepl
-    case hd :: _  => waysToRun find (_.name == settings.howtorun.value) getOrElse guessHowToRun(hd)
+  val howToRun = waysToRun.find(_.name == settings.howtorun.value) match {
+    case Some(how)                         => how
+    case _ if settings.execute.isSetByUser => AsScript
+    case _ if targetAndArguments.isEmpty   => AsRepl
+    case _                                 => guessHowToRun(thingToRun)
   }
 
   def shortUsageMsg =
@@ -96,7 +98,7 @@ used to prevent this.%n"""
 }
 
 object GenericRunnerCommand {
-  sealed abstract class HowToRun(val name: String) { }
+  sealed abstract class HowToRun(val name: String)
   case object AsJar extends HowToRun("jar")
   case object AsObject extends HowToRun("object")
   case object AsScript extends HowToRun("script")

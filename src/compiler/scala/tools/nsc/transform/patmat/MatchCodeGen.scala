@@ -225,7 +225,7 @@ trait MatchCodeGen extends Interface {
           val rest = (
             // only emit a local val for `nextBinder` if it's actually referenced in `next`
             if (next.exists(_.symbol eq nextBinder))
-              BLOCK(ValDef(nextBinder, res), next)
+              Block(ValDef(nextBinder, res) :: Nil, next)
             else next
           )
           ifThenElseZero(cond, rest)

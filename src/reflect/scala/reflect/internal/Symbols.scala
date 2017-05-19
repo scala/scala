@@ -34,6 +34,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def recursionTable = _recursionTable
   def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
+  private var _lockedCount = 0
+  def lockedCount = this._lockedCount
+  def lockedCount_=(i: Int) = _lockedCount = i
+
+
   @deprecated("Global existential IDs no longer used", "2.12.1")
   private var existentialIds = 0
   @deprecated("Global existential IDs no longer used", "2.12.1")
@@ -514,7 +519,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  often to the point of never.
      */
     def newStubSymbol(name: Name, missingMessage: String): Symbol = {
-      // Invoke the overriden `newStubSymbol` in Global that gives us access to typer
+      // Invoke the overridden `newStubSymbol` in Global that gives us access to typer
       Symbols.this.newStubSymbol(this, name, missingMessage)
     }
 
@@ -1739,18 +1744,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
     // don't forget to modify the code over there if you modify this method
-    def typeParams: List[Symbol] =
-      if (isMonomorphicType) Nil
-      else {
-        // analogously to the "info" getter, here we allow for two completions:
-        //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (validTo == NoPeriod)
+    def typeParams: List[Symbol] = {
+      def completeTypeParams = {
+        if (isMonomorphicType) Nil
+        else {
+          // analogously to the "info" getter, here we allow for two completions:
+          //   one: sourceCompleter to LazyType, two: LazyType to completed type
           enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-        if (validTo == NoPeriod)
-          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
+          if (validTo == NoPeriod)
+            enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
-        rawInfo.typeParams
+          rawInfo.typeParams
+        }
       }
+      if (validTo != NoPeriod) rawInfo.typeParams else completeTypeParams
+    }
 
     /** The value parameter sections of this symbol.
      */
@@ -2916,6 +2924,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi {
+    private[this] var mtpeRunId        = NoRunId
+    private[this] var mtpePre: Type    = _
+    private[this] var mtpeResult: Type = _
+    private[this] var mtpeInfo: Type   = _
+
     override def isLabel         = this hasFlag LABEL
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
@@ -2932,6 +2945,37 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // unfortunately having the CASEACCESSOR flag does not actually mean you
     // are a case accessor (you can also be a field.)
     override def isCaseAccessorMethod = isCaseAccessor
+
+    def typeAsMemberOf(pre: Type): Type = {
+      // We used to cache member types more pervasively, but we can't get away with that
+      // any more because of t8011.scala, which demonstrates a problem with the extension methods
+      // phase. As it moves a method body to an extension method in the companion, it substitutes
+      // the new type parameter symbols into the method body, which mutates the base type sequence of
+      // a local class symbol. We can no longer assume that`mtpePre eq pre` is a sufficient condition
+      // to use the cached result here.
+      //
+      // Elaborating: If we allow for the possibility of mutation of symbol infos, `sym.tpeHK.asSeenFrom(pre, sym.owner)`
+      // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
+      // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
+      // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
+      // from what it is now, and the cache won't know simply by looking at `pre`.
+      //
+      // Rather than throwing away the baby with the bathwater, lets at least try to keep the caching
+      // in place until after the compiler has completed the typer phase.
+      //
+      // Out of caution, I've also disable caching if there are active type completers, which also
+      // mutate symbol infos during val and def return type inference based the overridden member.
+      if (!isCompilerUniverse || isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
+
+      if (mtpeRunId == currentRunId && (mtpePre eq pre) && (mtpeInfo eq info))
+        return mtpeResult
+      val res = pre.computeMemberType(this)
+      mtpeRunId = currentRunId
+      mtpePre = pre
+      mtpeInfo = info
+      mtpeResult = res
+      res
+    }
 
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 

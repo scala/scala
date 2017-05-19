@@ -5764,15 +5764,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else AnyTpe
     }
 
-    def transformedOr(tree: Tree, op: => Tree): Tree = transformed remove tree match {
+    @inline final def transformedOr(tree: Tree, op: => Tree): Tree = lookupTransformed(tree) match {
       case Some(tree1) => tree1
       case _           => op
     }
 
-    def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = transformed remove tree match {
-      case Some(tree1) => tree1
-      case _           => typed(tree, mode, pt)
+    final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
+      lookupTransformed(tree) match {
+        case Some(tree1) => tree1
+        case _           => typed(tree, mode, pt)
+      }
     }
+    final def lookupTransformed(tree: Tree): Option[Tree] =
+      if (phase.erasedTypes) None // OPT save the hashmap lookup in erasure type and beyond
+      else transformed remove tree
   }
 }
 

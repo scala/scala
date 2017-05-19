@@ -147,6 +147,7 @@ trait Types
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
     override def typeParams = underlying.typeParams
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = underlying.boundSyms
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
@@ -468,8 +469,9 @@ trait Types
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
 
-    /** For a (potentially wrapped) poly or existential type, its bound symbols,
-     *  the empty list for all other types */
+    /** For a (potentially wrapped) poly, method or existential type, its directly bound symbols,
+     *  the empty set for all other types */
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     def boundSyms: immutable.Set[Symbol] = emptySymbolSet
 
     /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
@@ -531,21 +533,29 @@ trait Types
      *  !!! - and yet it is still inadequate, because aliases and singletons
      *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = (
-      if (this ne widen) widen.dealiasWiden
-      else if (this ne dealias) dealias.dealiasWiden
-      else this
-    )
+    def dealiasWiden: Type = {
+      val widened = widen
+      if (this ne widened) widened.dealiasWiden
+      else {
+        val dealiased = dealias
+        if (this ne dealiased) dealiased.dealiasWiden
+        else this
+      }
+    }
 
     /** All the types encountered in the course of dealiasing/widening,
      *  including each intermediate beta reduction step (whereas calling
      *  dealias applies as many as possible.)
      */
-    def dealiasWidenChain: List[Type] = this :: (
-      if (this ne widen) widen.dealiasWidenChain
-      else if (this ne betaReduce) betaReduce.dealiasWidenChain
-      else Nil
-    )
+    def dealiasWidenChain: List[Type] = this :: {
+      val widened = widen
+      if (this ne widened) widened.dealiasWidenChain
+      else {
+        val betaReduced = betaReduce
+        if (this ne betaReduced) betaReduced.dealiasWidenChain
+        else Nil
+      }
+    }
 
     /** Performs a single step of beta-reduction on types.
      *  Given:
@@ -620,6 +630,9 @@ trait Types
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+    def hasNonPrivateMember(name: Name): Boolean = {
+      new HasMember(this, name, BridgeAndPrivateFlags, 0L).apply()
+    }
 
     def packageObject: Symbol = member(nme.PACKAGE)
 
@@ -701,16 +714,18 @@ trait Types
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym.tpeHK match {
-      case OverloadedType(_, alts) => OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym match {
+      case meth: MethodSymbol =>
+        meth.typeAsMemberOf(this)
+      case _ =>
+        computeMemberType(sym)
+    }
+
+    def computeMemberType(sym: Symbol): Type = sym.tpeHK match {
+      case OverloadedType(_, alts) =>
+        OverloadedType(this, alts)
       case tp =>
-        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
-        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
-        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
-        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
-        // from what it is now, and the cache won't know simply by looking at `pre`.
-        if (sym eq NoSymbol) NoType
-        else tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -902,20 +917,7 @@ trait Types
      *  @return    the index of given class symbol in the BaseTypeSeq of this type,
      *             or -1 if no base type with given class symbol exists.
      */
-    def baseTypeIndex(sym: Symbol): Int = {
-      val bts = baseTypeSeq
-      var lo = 0
-      var hi = bts.length - 1
-      while (lo <= hi) {
-        val mid = (lo + hi) / 2
-        val btssym = bts.typeSymbol(mid)
-        if (sym == btssym) return mid
-        else if (sym isLess btssym) hi = mid - 1
-        else if (btssym isLess sym) lo = mid + 1
-        else abort("sym is neither `sym == btssym`, `sym isLess btssym` nor `btssym isLess sym`")
-      }
-      -1
-    }
+    def baseTypeIndex(sym: Symbol): Int = baseTypeSeq.baseTypeIndex(sym)
 
     /** If this is a ExistentialType, PolyType or MethodType, a copy with cloned type / value parameters
      *  owned by `owner`. Identity for all other types.
@@ -1085,8 +1087,7 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def boundSyms: Set[Symbol] = emptySymbolSet
- }
+  override def boundSyms: Set[Symbol] = emptySymbolSet}
 
   /** A base class for types that represent a single value
    *  (single-types and this-types).
@@ -1107,15 +1108,8 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms: Set[Symbol] = emptySymbolSet
-
-    /*
-        override def typeOfThis: Type = typeSymbol.typeOfThis
-        override def bounds: TypeBounds = TypeBounds(this, this)
-        override def prefix: Type = NoType
-        override def typeArgs: List[Type] = List()
-        override def typeParams: List[Symbol] = List()
-    */
   }
 
   /** An object representing an erroneous type */
@@ -2520,6 +2514,7 @@ trait Types
 
     override def paramTypes = mapList(params)(symTpe) // OPT use mapList rather than .map
 
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = resultType.boundSyms ++ params
 
     override def resultType(actuals: List[Type]) =
@@ -2577,6 +2572,7 @@ trait Types
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = resultType.boundSyms
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
@@ -2609,6 +2605,7 @@ trait Types
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = immutable.Set[Symbol](typeParams ++ resultType.boundSyms: _*)
     override def prefix: Type = resultType.prefix
     override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
@@ -2665,6 +2662,7 @@ trait Types
     override def isTrivial = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
+    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = quantified.toSet
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
@@ -4246,10 +4244,11 @@ trait Types
       else if (member.isOverloaded) member.alternatives exists directlySpecializedBy
       else directlySpecializedBy(member)
     )
+    val isHasMember = sym.info == WildcardType // OPT avoid full findMember during search for extension methods, e.g pt = `?{ def extension: ? }`.
 
     (    (tp.typeSymbol isBottomSubClass sym.owner)
-      || specializedBy(tp nonPrivateMember sym.name)
-    )
+      || (if (isHasMember) tp.hasNonPrivateMember(sym.name) else specializedBy(tp nonPrivateMember sym.name))
+      )
   }
 
   /** Does member `symLo` of `tpLo` have a stronger type

@@ -1,0 +1,2 @@
+def f(i: Int): Int = i * 2
+def f(s: String): String = s * 2

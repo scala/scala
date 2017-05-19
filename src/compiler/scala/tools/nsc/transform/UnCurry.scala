@@ -231,7 +231,7 @@ abstract class UnCurry extends InfoTransform
           liftedMethod.updateAttachment(DelambdafyTarget)
         }
 
-        val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod, super.transform(newFun)))
+        val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod :: Nil, super.transform(newFun)))
         if (mustExpand) {
           val Block(stats, expr : Function) = typedNewFun
           treeCopy.Block(typedNewFun, stats, gen.expandFunction(localTyper)(expr, inConstructorFlag))
