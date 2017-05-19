@@ -8,9 +8,7 @@ package scala.tools.nsc
 import scala.language.implicitConversions
 import scala.reflect.{ classTag, ClassTag }
 import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.{ClassTag, classTag}
 import scala.reflect.api.{Mirror, TypeCreator, Universe => ApiUniverse}
-import scala.util.control.Exception.catching
 import scala.util.Try
 
 /** The main REPL related classes and values are as follows.
@@ -131,47 +129,6 @@ package object interpreter extends ReplConfig with ReplStrings {
       else
         "No implicits have been imported other than those in Predef." 
 
-    }
-
-    def kindCommandInternal(expr: String, verbose: Boolean): Unit = {
-      val catcher = catching(classOf[MissingRequirementError],
-                             classOf[ScalaReflectionException])
-      def typeFromTypeString: Option[ClassSymbol] = catcher opt {
-        exprTyper.typeOfTypeString(expr).typeSymbol.asClass
-      }
-      def typeFromNameTreatedAsTerm: Option[ClassSymbol] = catcher opt {
-        val moduleClass = exprTyper.typeOfExpression(expr).typeSymbol
-        moduleClass.linkedClassOfClass.asClass
-      }
-      def typeFromFullName: Option[ClassSymbol] = catcher opt {
-        intp.global.rootMirror.staticClass(expr)
-      }
-      def typeOfTerm: Option[TypeSymbol] = replInfo(symbolOfLine(expr)).typeSymbol match {
-        case sym: TypeSymbol => Some(sym)
-        case _ => None
-      }
-      (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) foreach { sym =>
-        val (kind, tpe) = exitingTyper {
-          val tpe = sym.tpeHK
-          (intp.global.inferKind(NoPrefix)(tpe, sym.owner), tpe)
-        }
-        echoKind(tpe, kind, verbose)
-      }
-    }
-
-    def echoKind(tpe: Type, kind: Kind, verbose: Boolean) {
-      def typeString(tpe: Type): String = {
-        tpe match {
-          case TypeRef(_, sym, _) => typeString(sym.info)
-          case RefinedType(_, _)  => tpe.toString
-          case _                  => tpe.typeSymbol.fullName
-        }
-      }
-      printAfterTyper(typeString(tpe) + "'s kind is " + kind.scalaNotation)
-      if (verbose) {
-        echo(kind.starNotation)
-        echo(kind.description)
-      }
     }
 
     /** TODO -
