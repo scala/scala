@@ -73,18 +73,31 @@ trait ExprTyper {
     finally typeOfExpressionDepth -= 1
   }
 
-  // This only works for proper types.
+  // Try typeString[Nothing], typeString[Nothing, Nothing], etc.
   def typeOfTypeString(typeString: String): Type = {
+    val properTypeOpt = typeOfProperTypeString(typeString)
+    def typeFromTypeString(n: Int): Option[Type] = {
+      val ts = typeString + List.fill(n)("_root_.scala.Nothing").mkString("[", ", ", "]")
+      val tpeOpt = typeOfProperTypeString(ts)
+      tpeOpt map {
+        case TypeRef(pre, sym, args) => TypeRef(pre, sym, Nil)
+        case tpe                     => tpe
+      }
+    }
+    val typeOpt = (properTypeOpt /: (1 to 22)) { (acc, n: Int) => acc orElse typeFromTypeString(n) }
+    typeOpt getOrElse NoType
+  }
+
+  // This only works for proper types.
+  private[interpreter] def typeOfProperTypeString(typeString: String): Option[Type] = {
     def asProperType(): Option[Type] = {
       val name = freshInternalVarName()
-      val line = "def %s: %s = ???" format (name, typeString)
-      doInterpret(line) match {
-        case IR.Success =>
-          val sym0 = symbolOfTerm(name)
-          Some(sym0.asMethod.returnType)
+      val line = s"def $name: $typeString = ???"
+      compile(line, true) match {
+        case Right(req) => Some(req.compilerTypeOf(TermName(name)))
         case _          => None
       }
     }
-    beSilentDuring(asProperType()) getOrElse NoType
+    beSilentDuring(asProperType())
   }
 }

@@ -1,0 +1,66 @@
+
+scala> :kind Int
+Int's kind is A
+
+scala> :kind scala.Option
+Option's kind is F[+A]
+
+scala> :k (Int, Int) => Int
+(Int, Int) => Int's kind is A
+
+scala> :k -v Either
+Either's kind is F[+A1,+A2]
+* -(+)-> * -(+)-> *
+This is a type constructor: a 1st-order-kinded type.
+
+scala> :k -v scala.collection.generic.ImmutableSortedMapFactory
+scala.collection.generic.ImmutableSortedMapFactory's kind is X[CC[A,B] <: scala.collection.immutable.SortedMap[A,B] with scala.collection.SortedMapLike[A,B,CC[A,B]]]
+(* -> * -> *(scala.collection.immutable.SortedMap[A,B] with scala.collection.SortedMapLike[A,B,CC[A,B]])) -> *
+This is a type constructor that takes type constructor(s): a higher-kinded type.
+
+scala> :kind -v Predef.Pair
+Pair's kind is F[+A1,+A2]
+* -(+)-> * -(+)-> *
+This is a type constructor: a 1st-order-kinded type.
+
+scala> :kind -v Predef.Pair[Int, Int]
+Pair[Int,Int]'s kind is A
+*
+This is a proper type.
+
+scala> trait Functor[F[_]] {}
+defined trait Functor
+
+scala> :kind -v Functor
+Functor's kind is X[F[A]]
+(* -> *) -> *
+This is a type constructor that takes type constructor(s): a higher-kinded type.
+
+scala> object Bar { class Bop }
+defined object Bar
+
+scala> import Bar.Bop
+import Bar.Bop
+
+scala> :kind Bop
+Bar.Bop's kind is A
+
+scala> type IntTuple[+A] = (Int, A)
+defined type alias IntTuple
+
+scala> :kind IntTuple
+IntTuple's kind is F[+A]
+
+scala> :kind 5
+<console>:1: error: identifier expected but integer literal found.
+def $foo: 5 = ???
+          ^
+:kind requires a type.
+
+scala> :kind Nonexisting
+<console>:13: error: not found: type Nonexisting
+       def $foo: Nonexisting = ???
+                 ^
+:kind requires a type.
+
+scala> :quit

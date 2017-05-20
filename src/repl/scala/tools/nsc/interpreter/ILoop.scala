@@ -302,7 +302,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private def kindCommand(expr: String): Result = {
     expr.trim match {
-      case "" => ":kind [-v] <expression>"
+      case "" => ":kind [-v] <type>"
       case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
     }
   }
