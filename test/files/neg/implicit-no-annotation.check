@@ -1,0 +1,12 @@
+implicit-no-annotation.scala:2: warning: implicit definition int has no type annotation
+  implicit def int = 42
+               ^
+implicit-no-annotation.scala:3: warning: implicit value string has no type annotation
+  implicit val string = "hello"
+               ^
+implicit-no-annotation.scala:12: warning: implicit definition localString has no type annotation
+    implicit def localString = "hello"
+                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
