@@ -141,6 +141,24 @@ package object interpreter extends ReplConfig with ReplStrings {
         case NoType =>
           exprTyper.typeOfExpression(s"def $$foo: $typeString = ???", false)
           echo(":kind requires a type.")
+        // This is a special handling for type lambdas
+        case TypeRef(pre, sym, args) if args contains WildcardType =>
+          catcher opt {
+            val kind = exitingTyper {
+              val sym = tpe.typeSymbol.asClass
+              val owner = sym.owner
+              val kind0 = intp.global.inferKind(NoPrefix)(TypeRef(pre, sym, Nil), owner)
+              kind0 match {
+                case TypeConKind(bounds, kargs) if args.size == kargs.size =>
+                  TypeConKind(bounds, (args.toList zip kargs.toList) flatMap {
+                    case (WildcardType, karg) => List(karg)
+                    case _                    => Nil
+                  })
+                case k => k
+              }
+            }
+            echoKind(tpe, kind, verbose)
+          }
         case _ =>
           catcher opt {
             val kind = exitingTyper {

@@ -18,6 +18,10 @@ import Bar.Bop
 :kind Bop
 type IntTuple[+A] = (Int, A)
 :kind IntTuple
+:kind ({type l[A] = Either[Int, A]})#l
+trait Nat[-F1[_], +F2[_]] {}
+type ~>[-F1[_], +F2[_]] = Nat[F1, F2]
+:kind ({type l[F[-_]] = F ~> List})#l
 :kind 5
 :kind Nonexisting
   """.trim

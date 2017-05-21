@@ -12,6 +12,7 @@ trait ExprTyper {
   import repl._
   import global.{ reporter => _, Import => _, _ }
   import naming.freshInternalVarName
+  import global.definitions.{ MaxFunctionArity, NothingTpe }
 
   private def doInterpret(code: String): IR.Result = {
     // interpret/interpretSynthetic may change the phase, which would have unintended effects on types.
@@ -80,11 +81,18 @@ trait ExprTyper {
       val ts = typeString + List.fill(n)("_root_.scala.Nothing").mkString("[", ", ", "]")
       val tpeOpt = typeOfProperTypeString(ts)
       tpeOpt map {
+        // Type lambda is detected. Substitute Nothing with WildcardType.
+        case TypeRef(pre, sym, args) if args.size != n =>
+          TypeRef(pre, sym, args map {
+            case NothingTpe => WildcardType
+            case t          => t
+          })
         case TypeRef(pre, sym, args) => TypeRef(pre, sym, Nil)
         case tpe                     => tpe
       }
     }
-    val typeOpt = (properTypeOpt /: (1 to 22)) { (acc, n: Int) => acc orElse typeFromTypeString(n) }
+    val typeOpt = (properTypeOpt /: (1 to MaxFunctionArity)) {
+      (acc, n: Int) => acc orElse typeFromTypeString(n) }
     typeOpt getOrElse NoType
   }
 
@@ -93,8 +101,12 @@ trait ExprTyper {
     def asProperType(): Option[Type] = {
       val name = freshInternalVarName()
       val line = s"def $name: $typeString = ???"
-      compile(line, true) match {
-        case Right(req) => Some(req.compilerTypeOf(TermName(name)))
+      doInterpret(line) match {
+        case IR.Success =>
+          val tpe0 = exitingTyper {
+            symbolOfTerm(name).asMethod.returnType
+          }
+          Some(tpe0)
         case _          => None
       }
     }
