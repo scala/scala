@@ -3,7 +3,7 @@ package collection.test
 
 import java.lang.String
 import scala.{Either, Int, Left, Nothing, Unit, Array, Option, StringContext, Boolean, Any, Char}
-import scala.Predef.{assert, println, charWrapper}
+import scala.Predef.{assert, println, charWrapper, identity}
 
 import collection._
 import collection.immutable.{List, Nil, LazyList}
@@ -216,6 +216,57 @@ class StrawmanTest {
     println(xs16.view)
   }
 
+  def immutableArrayOps(xs: immutable.ImmutableArray[Int]): Unit = {
+    val x1 = xs.foldLeft("")(_ + _)
+    val y1: String = x1
+    val x2 = xs.foldRight("")(_ + _)
+    val y2: String = x2
+    val x3 = xs.indexWhere(_ % 2 == 0)
+    val y3: Int = x3
+    val x4 = xs.head
+    val y4: Int = x4
+    val x5 = xs.to(List)
+    val y5: List[Int] = x5
+    val (xs6, xs7) = xs.partition(_ % 2 == 0)
+    val ys6: immutable.ImmutableArray[Int] = xs6
+    val ys7: immutable.ImmutableArray[Int] = xs7
+    val xs8 = xs.drop(2)
+    val ys8: immutable.ImmutableArray[Int] = xs8
+    val xs9 = xs.map(_ >= 0)
+    val ys9: immutable.ImmutableArray[Boolean] = xs9
+    val xs10 = xs.flatMap(x => x :: -x :: Nil)
+    val ys10: immutable.ImmutableArray[Int] = xs10
+    val xs11 = xs ++ xs
+    val ys11: immutable.ImmutableArray[Int] = xs11
+    val xs12 = xs ++ Nil
+    val ys12: immutable.ImmutableArray[Int] = xs12
+    val xs13 = Nil ++ xs
+    val ys13: List[Int] = xs13
+    val xs14 = xs ++ ("a" :: Nil)
+    val ys14: immutable.ImmutableArray[Any] = xs14
+    val xs15 = xs.zip(xs9)
+    val ys15: immutable.ImmutableArray[(Int, Boolean)] = xs15
+    val xs16 = xs.reverse
+    val ys16: immutable.ImmutableArray[Int] = xs16
+    println("-------")
+    println(x1)
+    println(x2)
+    println(x3)
+    println(x4)
+    println(x5)
+    println(xs6)
+    println(xs7)
+    println(xs8)
+    println(xs9)
+    println(xs10)
+    println(xs11)
+    println(xs12)
+    println(xs13)
+    println(xs14)
+    println(xs15)
+    println(xs16)
+  }
+
   def lazyListOps(xs: Seq[Int]): Unit = {
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
@@ -375,6 +426,7 @@ class StrawmanTest {
     viewOps(intsView)
     stringOps("abc")
     arrayOps(Array(1, 2, 3))
+    immutableArrayOps(immutable.ImmutableArray.tabulate(3)(identity))
     lazyListOps(LazyList(1, 2, 3))
     equality()
   }
