@@ -14,7 +14,8 @@ abstract class Driver {
   protected var settings: Settings = _
 
   protected def scalacError(msg: String): Unit = {
-    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
+    val indent = "\u0020" * 2
+    reporter.error(FakePos("scalac"), f"${msg}%n${indent}`scalac -help` gives more information")
   }
 
   protected def processSettingsHook(): Boolean = {
