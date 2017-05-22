@@ -156,7 +156,7 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   override def apply(n: Int): A   = atLocation(n)(_.elem)
   def update(n: Int, x: A): Unit  = atLocation(n)(_.elem = x)
 
-  def get(n: Int): Option[A] = {
+  override def get(n: Int): Option[A] = {
     val loc = drop(n)
     if (loc.nonEmpty) Some(loc.elem)
     else None
