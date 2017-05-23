@@ -2972,7 +2972,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // We're looking for a method (as indicated by FUNmode in the silent typed below),
               // so let's make sure our expected type is a MethodType
               val methArgs = NoSymbol.newSyntheticValueParams(argpts map { case NoType => WildcardType case tp => tp })
-              silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt))) filter (isMonoContext) map { methTyped =>
+              silent(_.typed(duplicateAndKeepPositions(meth), mode.forFunMode, MethodType(methArgs, respt))) filter (isMonoContext) map { methTyped =>
                 // if context.undetparams is not empty, the method was polymorphic,
                 // so we need the missing arguments to infer its type. See #871
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
