@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.testing.BytecodeTesting
 
@@ -78,6 +79,18 @@ class BTypesTest extends BytecodeTesting {
     for (t <- List(o, s, oArr, method, INT, UNIT, DOUBLE)) {
       assertEquals(o.descriptor, o.toASMType.getDescriptor)
     }
+  }
+
+  @Test
+  def lazyForceTest(): Unit = {
+    val res = new mutable.StringBuilder()
+    val l = Lazy({res append "1"; "hi"})
+    l.onForce(v => res append s"-2:$v")
+    l.onForce(v => res append s"-3:$v:${l.force}") // `force` within `onForce` returns the value
+    assertEquals("<?>", l.toString)
+    assertEquals("hi", l.force)
+    assertEquals("hi", l.toString)
+    assertEquals("1-2:hi-3:hi:hi", res.toString)
   }
 
   // TODO @lry do more tests
