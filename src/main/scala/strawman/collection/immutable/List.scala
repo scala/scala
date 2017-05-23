@@ -4,8 +4,7 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Nothing, Int}
-import scala.Predef.???
+import scala.{Any, Boolean, NoSuchElementException, Nothing, UnsupportedOperationException, Int}
 import mutable.{Builder, ListBuffer}
 
 
@@ -42,17 +41,17 @@ sealed trait List[+A]
 
 case class :: [+A](x: A, private[collection] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
-  override def isEmpty = false
-  override def nonEmpty = true
-  override def head = x
-  override def tail = next
+  override def isEmpty: Boolean = false
+  override def nonEmpty: Boolean = true
+  override def head: A = x
+  override def tail: List[A] = next
 }
 
 case object Nil extends List[Nothing] {
-  override def isEmpty = true
-  override def nonEmpty = false
-  override def head = ???
-  override def tail = ???
+  override def isEmpty: Boolean = true
+  override def nonEmpty: Boolean = false
+  override def head: Nothing = throw new NoSuchElementException("head of empty list")
+  override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
 }
 
 object List extends IterableFactory[List] {
