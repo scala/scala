@@ -243,7 +243,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return the string representation of this queue.
    */
-  override def toString() = toList.mkString("PriorityQueue(", ", ", ")")
+  override def toString() = s"PriorityQueue(head=${this.headOption})"
 
   /** Converts this $coll to a list.
    *

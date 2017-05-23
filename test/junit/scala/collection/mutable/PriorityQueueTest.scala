@@ -20,6 +20,23 @@ class PriorityQueueTest {
   }
 
   @Test
+  def stringRepresentationShowHeadIfExists(): Unit = {
+    val pq = new mutable.PriorityQueue[Int]()
+    pq += 2
+    pq += 10
+    pq += 3
+
+    assert(pq.toString == "PriorityQueue(head=Some(10))", pq.toString)
+  }
+
+  @Test
+  def stringRepresentationShowNoneIfExists(): Unit = {
+    val pq = new mutable.PriorityQueue[Int]()
+
+    assert(pq.toString == "PriorityQueue(head=None)", pq.toString)
+  }
+
+  @Test
   def maintainsStateWhenDeserialized() {
     val outputStream = new ByteArrayOutputStream()
     new ObjectOutputStream(outputStream).writeObject(priorityQueue)
