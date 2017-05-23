@@ -139,8 +139,7 @@ package object interpreter extends ReplConfig with ReplStrings {
       val tpe: Type = exprTyper.typeOfTypeString(typeString)
       tpe match {
         case NoType =>
-          exprTyper.typeOfExpression(s"def $$foo: $typeString = ???", false)
-          echo(":kind requires a type.")
+          echo(s"<console>: error: type $typeString was not found")
         // This is a special handling for type lambdas
         case TypeRef(pre, sym, args) if args contains WildcardType =>
           catcher opt {

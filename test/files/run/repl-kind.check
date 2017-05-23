@@ -64,15 +64,9 @@ scala> :kind ({type l[F[-_]] = F ~> List})#l
 Nat[?,[+A]List[A]]'s kind is X[-F[A]]
 
 scala> :kind 5
-<console>:1: error: identifier expected but integer literal found.
-def $foo: 5 = ???
-          ^
-:kind requires a type.
+<console>: error: type 5 was not found
 
 scala> :kind Nonexisting
-<console>:13: error: not found: type Nonexisting
-       def $foo: Nonexisting = ???
-                 ^
-:kind requires a type.
+<console>: error: type Nonexisting was not found
 
 scala> :quit
