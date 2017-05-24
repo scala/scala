@@ -91,7 +91,7 @@ private[collection] trait Wrappers {
       val ins = underlying.subList(0, i)
       elems.seq.foreach(ins.add(_))
     }
-    def remove(i: Int) = underlying.remove(i)
+    override def remove(i: Int) = underlying.remove(i)
     def clear() = underlying.clear()
     def result = this
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
