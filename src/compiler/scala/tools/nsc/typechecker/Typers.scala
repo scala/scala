@@ -1859,7 +1859,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (noSerializable) Nil
           else {
             clazz.makeSerializable()
-            List(TypeTree(SerializableTpe) setPos clazz.pos.focus)
+            TypeTree(SerializableTpe).setPos(clazz.pos.focus) :: Nil
           }
         )
       })

@@ -101,11 +101,16 @@ private[internal] trait TypeMaps {
       case tr @ TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
         val args1 = (
-          if (trackVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
-            mapOverArgs(args, sym.typeParams)
-          else
+          if (trackVariance && args.nonEmpty && !variance.isInvariant) {
+            val tparams = sym.typeParams
+            if (tparams.isEmpty)
+              args mapConserve this
+            else
+              mapOverArgs(args, tparams)
+          } else {
             args mapConserve this
-          )
+          }
+        )
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
       case ThisType(_) => tp
