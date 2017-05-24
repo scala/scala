@@ -2064,7 +2064,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val primaryNames = constrParamAccessors map (_.name.dropLocal)
       caseFieldAccessorsUnsorted.sortBy { acc =>
         primaryNames indexWhere { orig =>
-          (acc.name == orig) || (acc.name startsWith (orig append "$"))
+          nme.unfreshenedName(acc.name) == orig
         }
       }
     }
