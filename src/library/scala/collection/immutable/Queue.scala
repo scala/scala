@@ -130,6 +130,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
    *
    *  @param  iter        an iterable object
    */
+  @deprecated("use ++ instead; this method will be removed", since = "2.12.2")
   def enqueue[B >: A](iter: Iterable[B]) =
     new Queue(iter.toList reverse_::: in, out)
 
