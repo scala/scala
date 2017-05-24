@@ -28,7 +28,7 @@ class OpenHashMapTest {
     val fieldMirror = mirror.reflect(m).reflectField(termSym)
 		*/
     // Use Java reflection instead for now.
-    val field = m.getClass.getDeclaredField("scala$collection$mutable$OpenHashMap$$deleted")
+    val field = m.getClass.getDeclaredField("deleted")
     field.setAccessible(true)
 
     m.put(0, 0)

@@ -17,16 +17,23 @@ package mutable
  *  @since 2.7
  */
 object OpenHashMap {
-
   def apply[K, V](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
   def empty[K, V] = new OpenHashMap[K, V]
 
   final private class OpenEntry[Key, Value](val key: Key,
                                             val hash: Int,
-                                            var value: Option[Value])
-                extends HashEntry[Key, OpenEntry[Key, Value]]
+                                            var value: Value)
 
   private[mutable] def nextPositivePowerOfTwo(i : Int) = 1 << (32 - Integer.numberOfLeadingZeros(i - 1))
+
+  // Hash table slot states
+
+  /** The hash table slot is empty. */
+  private val Empty: Byte = 0
+  /** The hash table slot was deleted. */
+  private val Deleted: Byte = 1
+  /** The hash table slot is occupied. */
+  private val Occupied: Byte = 2
 }
 
 /** A mutable hash map based on an open hashing scheme. The precise scheme is
@@ -52,7 +59,7 @@ extends AbstractMap[Key, Value]
    with Map[Key, Value]
    with MapLike[Key, Value, OpenHashMap[Key, Value]] {
 
-  import OpenHashMap.OpenEntry
+  import OpenHashMap._
   private type Entry = OpenEntry[Key, Value]
 
   /** A default constructor creates a hashmap with initial size `8`.
@@ -63,10 +70,25 @@ extends AbstractMap[Key, Value]
 
   private[this] val actualInitialSize = OpenHashMap.nextPositivePowerOfTwo(initialSize)
 
-  private var mask = actualInitialSize - 1
-  private var table : Array[Entry] = new Array[Entry](actualInitialSize)
-  private var _size = 0
-  private var deleted = 0
+  private[this] var mask = actualInitialSize - 1
+
+  /** The state of each of the slots in the hash table.
+    * One of `Empty`, `Deleted` or `Occupied`.
+    */
+  private[this] var slotStates = new Array[Byte](actualInitialSize)
+
+  /** The hash table.
+    * 
+    * The table's entries are initialized to `null`, an alternative indication of an empty slot.
+    * A slot is either deleted or occupied if the entry is non-`null`.
+    */
+  private[this] var table = new Array[Entry](actualInitialSize)
+
+  /** The default value of a `Value`. */
+  private[this] val defaultValue = null.asInstanceOf[Value]
+
+  private[this] var _size = 0
+  private[this] var deleted = 0
 
   // Used for tracking inserts so that iterators can determine in concurrent modification has occurred.
   private[this] var modCount = 0
@@ -87,11 +109,24 @@ extends AbstractMap[Key, Value]
   private[this] def growTable() = {
     val oldSize = mask + 1
     val newSize = 4 * oldSize
-    val oldTable = table
-    table = new Array[Entry](newSize)
     mask = newSize - 1
-    oldTable.foreach( entry =>
-      if (entry != null && entry.value != None) addEntry(entry))
+
+    val oldSlotStates = slotStates
+    slotStates = new Array(newSize)
+    val oldTable = table
+    table = new Array(newSize)
+
+    var i = 0
+    while (i < oldSlotStates.length) {
+      if (oldSlotStates(i) == Occupied) {
+        val entry = oldTable(i)
+        val index = findIndex(entry.key, entry.hash)
+        table(index) = entry
+        slotStates(index) = Occupied
+      }
+      i += 1
+    }
+
     deleted = 0
   }
 
@@ -119,9 +154,6 @@ extends AbstractMap[Key, Value]
     index
   }
 
-  private[this] def addEntry(entry: Entry) =
-    if (entry != null) table(findIndex(entry.key, entry.hash)) = entry
-
   override def update(key: Key, value: Value) {
     put(key, hashOf(key), value)
   }
@@ -138,32 +170,38 @@ extends AbstractMap[Key, Value]
   private def put(key: Key, hash: Int, value: Value): Option[Value] = {
     if (2 * (size + deleted) > mask) growTable()
     val index = findIndex(key, hash)
-    val entry = table(index)
-    if (entry == null) {
-      table(index) = new OpenEntry(key, hash, Some(value))
+    val state = slotStates(index)
+    slotStates(index) = Occupied
+    if (state == Empty) {
+      table(index) = new OpenEntry(key, hash, value)
       modCount += 1
       size += 1
       None
     } else {
-      val res = entry.value
-      if (entry.value == None) {
+      val entry = table(index)
+      if (state == Deleted) {
         size += 1
         deleted -= 1
         modCount += 1
+        entry.value = value
+        None
+      } else {
+        val res = entry.value
+        entry.value = value
+        Some(res)
       }
-      entry.value = Some(value)
-      res
     }
   }
 
   override def remove(key : Key): Option[Value] = {
     val index = findIndex(key)
-    if (table(index) != null && table(index).value != None){
+    if (slotStates(index) == Occupied) {
       val res = table(index).value
-      table(index).value = None
+      table(index).value = defaultValue
+      slotStates(index) = Deleted
       size -= 1
       deleted += 1
-      res
+      Some(res)
     } else None
   }
 
@@ -175,7 +213,7 @@ extends AbstractMap[Key, Value]
     while(entry != null){
       if (entry.hash == hash &&
           entry.key == key){
-        return entry.value
+        return if (slotStates(index) == Occupied) Some(entry.value) else None
       }
 
       j += 1
@@ -196,7 +234,7 @@ extends AbstractMap[Key, Value]
 
     private[this] def advance() {
       if (initialModCount != modCount) sys.error("Concurrent modification")
-      while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1
+      while (index <= mask && slotStates(index) != Occupied)  index += 1
     }
 
     def hasNext = {advance(); index <= mask }
@@ -205,13 +243,13 @@ extends AbstractMap[Key, Value]
       advance()
       val result = table(index)
       index += 1
-      (result.key, result.value.get)
+      (result.key, result.value)
     }
   }
 
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
+    foreachOccupiedEntry(entry => it.put(entry.key, entry.hash, entry.value))
     it
   }
 
@@ -227,23 +265,41 @@ extends AbstractMap[Key, Value]
    */
   override def foreach[U](f : ((Key, Value)) => U) {
     val startModCount = modCount
-    foreachUndeletedEntry(entry => {
+    foreachOccupiedEntry(entry => {
       if (modCount != startModCount) sys.error("Concurrent Modification")
-      f((entry.key, entry.value.get))}
+      f((entry.key, entry.value))}
     )
   }
 
-  private[this] def foreachUndeletedEntry(f : Entry => Unit){
-    table.foreach(entry => if (entry != null && entry.value != None) f(entry))
+  /** Call the given function on every occupied hash table entry. */
+  private[this] def foreachOccupiedEntry(f: Entry => Unit) {
+    var i = 0
+    while (i < slotStates.length) {
+      if (slotStates(i) == Occupied)  f(table(i))
+      i += 1
+    }
   }
 
   override def transform(f : (Key, Value) => Value) = {
-    foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)))
+    foreachOccupiedEntry(entry => entry.value = f(entry.key, entry.value))
     this
   }
 
   override def retain(f : (Key, Value) => Boolean) = {
-    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) {entry.value = None; size -= 1; deleted += 1} )
+    var i = 0
+    while (i < slotStates.length) {
+      if (slotStates(i) == Occupied) {
+        val entry = table(i)
+        if (!f(entry.key, entry.value)) {
+          entry.value = defaultValue
+          slotStates(i) = Deleted
+          size -= 1
+          deleted += 1
+        }
+      }
+      i += 1
+    }
+
     this
   }
 
