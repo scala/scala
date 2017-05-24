@@ -298,7 +298,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *    @inheritdoc
    *
    *    Note that :-ending operators are right associative (see example).
-   *    A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+   *    A mnemonic for `+:` vs. `:+` is: the colon goes on the collection side.
    *
    *    Also, the original $coll is not modified, so you will want to capture the result.
    *
@@ -321,7 +321,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
 
   /** A copy of this $coll with an element appended.
    *
-   *  A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+   *  A mnemonic for `+:` vs. `:+` is: the colon goes on the collection side.
    *
    *  @param  elem   the appended element
    *  @tparam B      the element type of the returned $coll.

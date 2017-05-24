@@ -153,7 +153,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
-   *  Mnemonic: the COLon is on the side of the new COLlection type.
+   *  Mnemonic: the colon is on the side of the new collection type.
    *
    *  @param that   the traversable to append.
    *  @tparam B     the element type of the returned collection.
@@ -193,7 +193,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
-   *  Mnemonic: the COLon is on the side of the new COLlection type.
+   *  Mnemonic: the colon is on the side of the new collection type.
    *
    *  Example:
    *  {{{
