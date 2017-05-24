@@ -11,19 +11,19 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  protected[this] def orderedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
+  protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
   def firstKey: A = head
   def lastKey: A = last
 
   /** Map */
-  def map[B : Ordering](f: A => B): CC[B] = orderedFromIterable(View.Map(coll, f))
+  def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(View.Map(coll, f))
 
   /** Flatmap */
-  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = orderedFromIterable(View.FlatMap(coll, f))
+  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(View.FlatMap(coll, f))
 
   /** Zip. Interesting because it requires to align to source collections. */
-  def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = orderedFromIterable(View.Zip(coll, xs))
+  def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = sortedFromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 
   def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
@@ -32,4 +32,4 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   )
 }
 
-object SortedSet extends OrderedIterableFactory.Delegate[SortedSet](immutable.SortedSet)
+object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)

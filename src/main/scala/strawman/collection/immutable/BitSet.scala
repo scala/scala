@@ -29,7 +29,7 @@ sealed abstract class BitSet
   def iterableFactory = Set
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
-  protected[this] def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.orderedFromIterable(it)
+  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.sortedFromIterable(it)
 
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)

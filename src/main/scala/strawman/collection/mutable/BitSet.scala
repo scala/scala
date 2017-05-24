@@ -36,8 +36,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def iterableFactory = Set
 
-  protected[this] def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): collection.mutable.SortedSet[B] =
-    collection.mutable.SortedSet.orderedFromIterable(it)
+  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): collection.mutable.SortedSet[B] =
+    collection.mutable.SortedSet.sortedFromIterable(it)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet =
     BitSet.fromSpecificIterable(coll)

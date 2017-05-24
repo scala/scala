@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.{Iterator, OrderedMapFactory}
+import collection.{Iterator, SortedMapFactory}
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
@@ -34,9 +34,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     */
   def this()(implicit ord: Ordering[K]) = this(RB.Tree.empty)(ord)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] = TreeMap.orderedFromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] = TreeMap.sortedFromIterable(coll)
 
-  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.orderedFromIterable(it)
+  protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.sortedFromIterable(it)
 
   def iterator(): Iterator[(K, V)] = RB.iterator(tree)
 
@@ -172,9 +172,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   * @define Coll mutable.TreeMap
   * @define coll mutable tree map
   */
-object TreeMap extends OrderedMapFactory[TreeMap] {
+object TreeMap extends SortedMapFactory[TreeMap] {
 
-  def orderedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
+  def sortedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
     Growable.fromIterable(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
