@@ -135,7 +135,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
       else Iterator.empty.next()
   }
 
-  override def foreach[U](f: ((A, B)) => U) {
+  override def foreach[U](f: ((A, B)) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f((cur.key, cur.value))
@@ -143,7 +143,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
-  protected override def foreachEntry[U](f: Entry => U) {
+  protected override def foreachEntry[U](f: Entry => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f(cur)
@@ -159,20 +159,20 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     e
   }
 
-  override def clear() {
+  override def clear(): Unit = {
     clearTable()
     firstEntry = null
     lastEntry = null
   }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
     })
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     firstEntry = null
     lastEntry = null
     init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))

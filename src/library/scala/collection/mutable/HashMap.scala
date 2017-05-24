@@ -171,14 +171,14 @@ extends AbstractMap[A, B]
     new Entry(key, value.asInstanceOf[B])
   }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
     })
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))
   }
 

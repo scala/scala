@@ -226,7 +226,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Avoid iterator for a 2x faster traversal. */
-  protected def foreachEntry[U](f: Entry => U) {
+  protected def foreachEntry[U](f: Entry => U): Unit = {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -245,14 +245,14 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Remove all entries from table
    */
-  protected def clearTable() {
+  protected def clearTable(): Unit = {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0
     nnSizeMapReset(0)
   }
 
-  private def resize(newSize: Int) {
+  private def resize(newSize: Int): Unit = {
     val oldTable = table
     table = new Array(newSize)
     nnSizeMapReset(table.length)
@@ -320,7 +320,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   // discards the previous sizemap and populates the new one
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def sizeMapInitAndRebuild() {
+  protected def sizeMapInitAndRebuild(): Unit = {
     sizeMapInit(table.length)
 
     // go through the buckets, count elements
@@ -346,7 +346,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     }
   }
 
-  private[collection] def printSizeMap() {
+  private[collection] def printSizeMap(): Unit = {
     println(sizemap.toList)
   }
 

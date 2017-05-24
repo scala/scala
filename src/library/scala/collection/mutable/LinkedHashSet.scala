@@ -87,7 +87,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
       else Iterator.empty.next()
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f(cur.key)
@@ -95,7 +95,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
     }
   }
 
-  protected override def foreachEntry[U](f: Entry => U) {
+  protected override def foreachEntry[U](f: Entry => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f(cur)
@@ -111,17 +111,17 @@ class LinkedHashSet[A] extends AbstractSet[A]
     e
   }
 
-  override def clear() {
+  override def clear(): Unit = {
     clearTable()
     firstEntry = null
     lastEntry = null
   }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     serializeTo(out, { e => out.writeObject(e.key) })
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     firstEntry = null
     lastEntry = null
     init(in, createNewEntry(in.readObject().asInstanceOf[A], null))

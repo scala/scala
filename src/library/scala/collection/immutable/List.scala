@@ -383,7 +383,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   // Overridden with an implementation identical to the inherited one (at this time)
   // solely so it can be finalized and thus inlinable.
-  @inline final override def foreach[U](f: A => U) {
+  @inline final override def foreach[U](f: A => U): Unit = {
     var these = this
     while (!these.isEmpty) {
       f(these.head)
@@ -469,7 +469,7 @@ object List extends SeqFactory[List] {
   @SerialVersionUID(1L)
   private class SerializationProxy[A](@transient private var orig: List[A]) extends Serializable {
 
-    private def writeObject(out: ObjectOutputStream) {
+    private def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
       var xs: List[A] = orig
       while (!xs.isEmpty) {
@@ -481,7 +481,7 @@ object List extends SeqFactory[List] {
 
     // Java serialization calls this before readResolve during deserialization.
     // Read the whole list and store it in `orig`.
-    private def readObject(in: ObjectInputStream) {
+    private def readObject(in: ObjectInputStream): Unit = {
       in.defaultReadObject()
       val builder = List.newBuilder[A]
       while (true) in.readObject match {

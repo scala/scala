@@ -172,7 +172,7 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
     }
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var these = this
     while (these.nonEmpty) {
       f(these.elem)

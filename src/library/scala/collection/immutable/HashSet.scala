@@ -465,7 +465,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def iterator: Iterator[A] = ks.iterator
     override def foreach[U](f: A => U): Unit = ks.foreach(f)
 
-    private def writeObject(out: java.io.ObjectOutputStream) {
+    private def writeObject(out: java.io.ObjectOutputStream): Unit = {
       // this cannot work - reading things in might produce different
       // hash codes and remove the collision. however this is never called
       // because no references to this class are ever handed out to client code
@@ -474,7 +474,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       //out.writeObject(kvs)
     }
 
-    private def readObject(in: java.io.ObjectInputStream) {
+    private def readObject(in: java.io.ObjectInputStream): Unit = {
       sys.error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
       //kvs = in.readObject().asInstanceOf[ListSet[A]]
       //hash = computeHash(kvs.)
@@ -1028,7 +1028,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     (i < j) ^ (i < 0) ^ (j < 0)
 
   @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) extends Serializable {
-    private def writeObject(out: java.io.ObjectOutputStream) {
+    private def writeObject(out: java.io.ObjectOutputStream): Unit = {
       val s = orig.size
       out.writeInt(s)
       for (e <- orig) {
@@ -1036,7 +1036,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    private def readObject(in: java.io.ObjectInputStream) {
+    private def readObject(in: java.io.ObjectInputStream): Unit = {
       orig = empty
       val s = in.readInt()
       for (i <- 0 until s) {

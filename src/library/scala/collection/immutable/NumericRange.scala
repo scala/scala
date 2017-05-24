@@ -64,7 +64,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
    */
   def copy(start: T, end: T, step: T): NumericRange[T]
 
-  override def foreach[U](f: T => U) {
+  override def foreach[U](f: T => U): Unit = {
     var count = 0
     var current = start
     while (count < length) {
@@ -162,7 +162,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
         else NumericRange(start, end, step)
 
       private lazy val underlyingRange: NumericRange[T] = self
-      override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
+      override def foreach[U](f: A => U): Unit = { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
       override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)

@@ -68,7 +68,7 @@ final class ListBuffer[A]
 
   protected def underlying: List[A] = start
 
-  private def writeObject(out: ObjectOutputStream) {
+  private def writeObject(out: ObjectOutputStream): Unit = {
     // write start
     var xs: List[A] = start
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
@@ -83,7 +83,7 @@ final class ListBuffer[A]
     out.writeInt(len)
   }
 
-  private def readObject(in: ObjectInputStream) {
+  private def readObject(in: ObjectInputStream): Unit = {
     // read start, set last0 appropriately
     var elem: A = in.readObject.asInstanceOf[A]
     if (elem == ListSerializeEnd) {

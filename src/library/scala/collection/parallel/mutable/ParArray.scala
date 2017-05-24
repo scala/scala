@@ -666,11 +666,11 @@ self =>
 
   /* serialization */
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     out.defaultWriteObject
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     in.defaultReadObject
 
     // get raw array from arrayseq
