@@ -1,0 +1,41 @@
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+trait Show[-A] extends Any { def show(x: A): String }
+object Show {
+  implicit def shouty[Any]: Show[Any] =
+    new Show[Any] { def show(x: Any) = if (x == null) "" else x.toString + "!" }
+}
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined trait Show
+defined object Show
+
+scala> 
+
+scala> implicitly[Show[Int]] show 23
+res0: String = 23!
+
+scala> 
+
+scala> import scala.tools.nsc.interpreter.ReplPrinter
+import scala.tools.nsc.interpreter.ReplPrinter
+
+scala> implicit def showReplPrinter[A](implicit z: Show[A]): ReplPrinter[A] = new ReplPrinter[A] {
+  def print(x: A, maxElements: Int): String = {
+    val s = z show x
+    val nl = if (s contains "\n") "\n" else ""
+    nl + s + "\n"
+  }
+}
+showReplPrinter: [A](implicit z: Show[A])scala.tools.nsc.interpreter.ReplPrinter[A]
+
+scala> 
+
+scala> 23
+res1: Int = 23!
+
+scala> :quit
