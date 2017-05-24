@@ -13,6 +13,8 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
 
   protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
+  def iterableFactory: IterableFactory[Set]
+
   def firstKey: A = head
   def lastKey: A = last
 

@@ -1,7 +1,9 @@
 package strawman
 package collection
 
-import scala.{Any, Int, Ordering, Nothing}
+import strawman.collection.mutable.Builder
+
+import scala.{Any, Int, Nothing, Ordering}
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -24,6 +26,10 @@ trait IterableFactory[+CC[_]] {
 
   def fill[A](n: Int)(elem: => A): CC[A] = fromIterable(View.Fill(n)(elem))
 
+}
+
+trait IterableFactoryWithBuilder[+CC[_]] extends IterableFactory[CC] {
+  def newBuilder[A](): Builder[A, CC[A]]
 }
 
 object IterableFactory {
