@@ -41,7 +41,7 @@ object IterableFactory {
     }
 
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
-    override def empty[A]: CC[A] = delegate.empty
+    def empty[A]: CC[A] = delegate.empty
     def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
   }
 
