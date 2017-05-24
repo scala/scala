@@ -1460,6 +1460,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         advancePhase()
       }
 
+      if (settings.YwarnOnUnusedJars.value) {
+        settings.outputDirs.outputs.foreach { case (_, abstractFile) =>
+          abstractFile.file match {
+            case dir: File if dir.isDirectory =>
+              Option(dir.getParentFile).foreach { parent =>
+                val jars = classpathUsage.diff(settings.classpath.value)
+                classpathUsage.store(parent, dir.getName, jars)
+                val count = jars.diff.size
+                if (count != 0) {
+                  warning(s"$count unused jars were detected, see '$parent' for the log files with the details.")
+                }
+              }
+            case _ =>
+          }
+        }
+      }
+
       reporting.summarizeErrors()
 
       if (traceSymbolActivity)

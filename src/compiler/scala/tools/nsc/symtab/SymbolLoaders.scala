@@ -313,6 +313,7 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
+      if (settings.YwarnOnUnusedJars.value) classpathUsage.register(classfile)
       classfileParser.parse(classfile, clazz, module)
       if (root.associatedFile eq NoAbstractFile) {
         root match {

@@ -29,6 +29,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.internal
     this.treeInfo
     this.rootMirror
+    this.classpathUsage
     this.traceSymbols
     this.perRunCaches
     this.compat
