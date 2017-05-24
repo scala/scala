@@ -115,7 +115,8 @@ trait Erasure {
 
     def apply(tp: Type): Type = tp match {
       case ConstantType(_) =>
-        tp
+         // q"classOf[String]".tpe.deconst gives Class[String], we have to recurse to get to `Class[_]`
+        apply(tp.deconst)
       case st: ThisType if st.sym.isPackageClass =>
         tp
       case st: SubType =>
