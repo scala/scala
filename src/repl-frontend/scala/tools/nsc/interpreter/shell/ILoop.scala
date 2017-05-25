@@ -234,7 +234,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     historyCommand,
     cmd("h?", "<string>", "search the history", searchHistory),
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
-    cmd("implicits", "[-v]", "show the implicits in scope", intp.implicitsCommand),
+    cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
     cmd("line", "<id>|<line>", "place line(s) at the end of history", lineCommand),
     cmd("load", "<path>", "interpret lines in a file", loadCommand, fileCompletion),
@@ -353,156 +353,24 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     }
 
 
-  /** This class serves to trick the compiler into treating a var
-    *  (intp, in ILoop) as a stable identifier.
-    *
-    *  TODO: move operations that manipulate trees/symbols into the repl, while UI stuff remains here
-    */
-  implicit class IMainOps(val intp: IMain) {
-    import intp._
-    import global.{ reporter => _, _ }
-    import definitions._
 
-    protected def echo(msg: String) = {
-      Console.out println msg
-      Console.out.flush()
-    }
-
-    def implicitsCommand(line: String): String = {
-      def p(x: Any) = intp.reporter.printMessage("" + x)
-
-      // If an argument is given, only show a source with that
-      // in its name somewhere.
-      val args     = line split "\\s+"
-      val filtered = intp.implicitSymbolsBySource filter {
-        case (source, syms) =>
-          (args contains "-v") || {
-            if (line == "") (source.fullName.toString != "scala.Predef")
-            else (args exists (source.name.toString contains _))
-          }
-      }
-
-      filtered foreach {
-        case (source, syms) =>
-          p("/* " + syms.size + " implicit members imported from " + source.fullName + " */")
-
-          // This groups the members by where the symbol is defined
-          val byOwner = syms groupBy (_.owner)
-          val sortedOwners = byOwner.toList sortBy { case (owner, _) => exitingTyper(source.info.baseClasses indexOf owner) }
-
-          sortedOwners foreach {
-            case (owner, members) =>
-              // Within each owner, we cluster results based on the final result type
-              // if there are more than a couple, and sort each cluster based on name.
-              // This is really just trying to make the 100 or so implicits imported
-              // by default into something readable.
-              val memberGroups: List[List[Symbol]] = {
-                val groups = members groupBy (_.tpe.finalResultType) toList
-                val (big, small) = groups partition (_._2.size > 3)
-                val xss = (
-                  (big sortBy (_._1.toString) map (_._2)) :+
-                    (small flatMap (_._2))
-                  )
-
-                xss map (xs => xs sortBy (_.name.toString))
-              }
-
-              val ownerMessage = if (owner == source) " defined in " else " inherited from "
-              p("  /* " + members.size + ownerMessage + owner.fullName + " */")
-
-              memberGroups foreach { group =>
-                group foreach (s => p("  " + intp.symbolDefString(s)))
-                p("")
-              }
-          }
-          p("")
-      }
-
-      if (filtered.nonEmpty)
-        "" // side-effects above
-      else if (global.settings.nopredef || global.settings.noimports)
-        "No implicits have been imported."
-      else
-        "No implicits have been imported other than those in Predef."
-
-    }
-
-    def kindCommandInternal(expr: String, verbose: Boolean): Unit = {
-      import scala.util.control.Exception.catching
-      val catcher = catching(classOf[MissingRequirementError],
-        classOf[ScalaReflectionException])
-      def typeFromTypeString: Option[ClassSymbol] = catcher opt {
-        exprTyper.typeOfTypeString(expr).typeSymbol.asClass
-      }
-      def typeFromNameTreatedAsTerm: Option[ClassSymbol] = catcher opt {
-        val moduleClass = exprTyper.typeOfExpression(expr).typeSymbol
-        moduleClass.linkedClassOfClass.asClass
-      }
-      def typeFromFullName: Option[ClassSymbol] = catcher opt {
-        intp.global.rootMirror.staticClass(expr)
-      }
-      def typeOfTerm: Option[TypeSymbol] = replInfo(symbolOfLine(expr)).typeSymbol match {
-        case sym: TypeSymbol => Some(sym)
-        case _ => None
-      }
-      (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) foreach { sym =>
-        val (kind, tpe) = exitingTyper {
-          val tpe = sym.tpeHK
-          (intp.global.inferKind(NoPrefix)(tpe, sym.owner), tpe)
-        }
-        echoKind(tpe, kind, verbose)
-      }
-    }
-
-    def echoKind(tpe: Type, kind: Kind, verbose: Boolean) {
-      def typeString(tpe: Type): String = {
-        tpe match {
-          case TypeRef(_, sym, _) => typeString(sym.info)
-          case RefinedType(_, _)  => tpe.toString
-          case _                  => tpe.typeSymbol.fullName
-        }
-      }
-      printAfterTyper(typeString(tpe) + "'s kind is " + kind.scalaNotation)
-      if (verbose) {
-        echo(kind.starNotation)
-        echo(kind.description)
-      }
-    }
-
-    /** TODO -
-      *  -n normalize
-      *  -l label with case class parameter names
-      *  -c complete - leave nothing out
-      */
-    def typeCommandInternal(expr: String, verbose: Boolean): Unit =
-      symbolOfLine(expr) andAlso (echoTypeSignature(_, verbose))
-
-    def printAfterTyper(msg: => String): Unit =
-      reporter.withoutTruncating { reporter.printMessage(exitingTyper(msg)) }
-
-    private def replInfo(sym: Symbol) =
-      if (sym.isAccessor) dropNullaryMethod(sym.info) else sym.info
-
-    def echoTypeStructure(sym: Symbol) =
-      printAfterTyper("" + deconstruct.show(replInfo(sym)))
-
-    def echoTypeSignature(sym: Symbol, verbose: Boolean) = {
-      if (verbose) echo("// Type signature")
-      printAfterTyper("" + replInfo(sym))
-
-      if (verbose) {
-        echo("\n// Internal Type structure")
-        echoTypeStructure(sym)
-      }
-    }
+  private def implicitsCommand(line: String): Result = {
+    val (implicits, res) = intp.implicitsCommandInternal(line)
+    implicits foreach echoCommandMessage
+    res
   }
-
 
   // Still todo: modules.
   private def typeCommand(line0: String): Result = {
     line0.trim match {
       case "" => ":type [-v] <expression>"
-      case s  => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
+      case s  =>
+        val verbose = s startsWith "-v "
+        val (sig, verboseSig) = intp.typeCommandInternal(s stripPrefix "-v " trim, verbose)
+        if (verbose) echoCommandMessage("// Type signature")
+        echoCommandMessage(sig)
+        if (!verboseSig.isEmpty) echoCommandMessage("\n// Internal Type structure\n"+ verboseSig)
+        ()
     }
   }
 
@@ -519,8 +387,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     else
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
-
-
 
   private def javapCommand(line: String): Result = {
     if (javap == null)
@@ -752,9 +618,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     // except that "-" means last value
     def isLast = (what == "-")
     if (isLast || !isNum) {
-      val name = if (isLast) intp.mostRecentVar else what
-      val sym = intp.symbolOfIdent(name)
-      intp.prevRequestList collectFirst { case r if r.defines contains sym => r } match {
+      intp.requestDefining(if (isLast) intp.mostRecentVar else what) match {
         case Some(req) => edit(req.line)
         case None      => echo(s"No symbol in scope: $what")
       }
@@ -909,7 +773,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   def command(line: String): Result = {
     if (line startsWith ":") colonCommand(line)
     else {
-      if (intp.global == null) Result(keepRunning = false, None)  // Notice failure to create compiler
+      if (!intp.initializeCompiler()) Result(keepRunning = false, None)  // Notice failure to create compiler
       else Result(keepRunning = true, interpretStartingWith(line))
     }
   }
@@ -1144,7 +1008,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
       SplashLoop.readLine(in, prompt) {
         if (intp eq null) createInterpreter(interpreterSettings)
         intp.reporter.withoutPrintingResults {
-          intp.global // initialize compiler
+          intp.initializeCompiler()
           interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
           if (intp.reporter.hasErrors) {

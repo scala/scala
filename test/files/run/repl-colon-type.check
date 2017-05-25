@@ -3,6 +3,7 @@ scala> :type List[1, 2, 3]
             ^
        error: identifier expected but integer literal found.
 
+
 scala> :type List(1, 2, 3)
 List[Int]
 
@@ -38,6 +39,7 @@ scala> :type protected lazy val f = 5
         Access to protected lazy value f not permitted because
         enclosing object $eval in package $line13 is not a subclass of
         object $iw where target is defined
+
 
 scala> :type def f = 5
 => Int

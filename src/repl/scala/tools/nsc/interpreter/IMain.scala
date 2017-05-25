@@ -11,7 +11,7 @@ import java.net.URL
 import PartialFunction.cond
 import scala.language.implicitConversions
 import scala.collection.mutable
-import scala.reflect.internal.{FatalError, NoPhase}
+import scala.reflect.internal.{FatalError, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, SourceFile}
@@ -27,6 +27,53 @@ import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.NonFatal
+
+/* Rough list of dependencies from ILoop to IMain:
+
+ReadEvalPrint
+Request
+addUrlsToClassPath
+bind
+classLoader
+classPathString
+clearExecutionWrapper
+close
+compile
+compileSources
+compileString
+definedTypes
+importHandlers
+initializeComplete
+interpret
+languageWildcardHandlers
+lastWarnings
+mostRecentVar
+namedDefinedTerms
+originalPath
+parse.packaged
+power.banner
+power.classic
+power.initImports
+power.phased
+power.unleash
+quietBind
+quietRun
+recordRequest
+reporter
+requestDefining
+requestFromLine
+reset
+setContextClassLoader
+setExecutionWrapper
+symbolDefString
+translateEnclosingClass
+translatePath
+updateSettings
+userSetSettings
+visibleSettings
+withLabel
+*/
+
 
 /** An interpreter for Scala code.
  *
@@ -62,6 +109,7 @@ import scala.util.control.NonFatal
  */
 class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoader], compilerSettings: Settings, val reporter: ReplReporter)
             extends Imports with PresentationCompilation {
+
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
   import reporter.{debug => repldbg}
@@ -123,6 +171,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def initializeComplete = _initializeComplete
   private[this] var _initializeComplete = false
+
+  // initializes the compiler, returning false if something went wrong
+  def initializeCompiler(): Boolean = global != null
 
   lazy val global: Global = {
     // Can't use our own reporter until global is initialized
@@ -450,6 +501,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       pos = math.min(pos, safePos(t, Int.MaxValue))
     }
     pos
+  }
+
+  def requestDefining(name: String): Option[Request] = {
+    val sym = symbolOfIdent(name)
+    prevRequestList collectFirst { case r if r.defines contains sym => r }
   }
 
   private[interpreter] def requestFromLine(line: String, synthetic: Boolean = false): Either[Result, Request] = {
@@ -1170,6 +1226,122 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def typeOfExpression(expr: String, silent: Boolean = true): Type =
     exprTyper.typeOfExpression(expr, silent)
+
+  private def getterToResultTp(sym: Symbol) = if (sym.isGetter) sym.info.resultType else sym.info
+
+  def implicitsCommandInternal(line: String): (List[String], String) = {
+    val implicits = collection.mutable.ListBuffer.empty[String]
+
+    // If an argument is given, only show a source with that
+    // in its name somewhere.
+    val args     = line split "\\s+"
+    val filtered = intp.implicitSymbolsBySource filter {
+      case (source, syms) =>
+        (args contains "-v") || {
+          if (line == "") (source.fullName.toString != "scala.Predef")
+          else (args exists (source.name.toString contains _))
+        }
+    }
+
+    filtered foreach {
+      case (source, syms) =>
+        implicits += "/* " + syms.size + " implicit members imported from " + source.fullName + " */"
+
+        // This groups the members by where the symbol is defined
+        val byOwner = syms groupBy (_.owner)
+        val sortedOwners = byOwner.toList sortBy { case (owner, _) => exitingTyper(source.info.baseClasses indexOf owner) }
+
+        sortedOwners foreach {
+          case (owner, members) =>
+            // Within each owner, we cluster results based on the final result type
+            // if there are more than a couple, and sort each cluster based on name.
+            // This is really just trying to make the 100 or so implicits imported
+            // by default into something readable.
+            val memberGroups: List[List[Symbol]] = {
+              val groups = members groupBy (_.tpe.finalResultType) toList
+              val (big, small) = groups partition (_._2.size > 3)
+              val xss = (
+                (big sortBy (_._1.toString) map (_._2)) :+
+                  (small flatMap (_._2))
+                )
+
+              xss map (xs => xs sortBy (_.name.toString))
+            }
+
+            val ownerMessage = if (owner == source) " defined in " else " inherited from "
+            implicits += "  /* " + members.size + ownerMessage + owner.fullName + " */"
+
+            memberGroups foreach { group =>
+              group foreach (s => implicits += "  " + intp.symbolDefString(s))
+              implicits += ""
+            }
+        }
+        implicits += ""
+    }
+
+    (implicits.toList,
+      if (filtered.nonEmpty)
+        "" // collected in implicits
+      else if (global.settings.nopredef || global.settings.noimports)
+        "No implicits have been imported."
+      else
+        "No implicits have been imported other than those in Predef."
+    )
+  }
+
+  def kindCommandInternal(expr: String, verbose: Boolean): String = {
+    import scala.util.control.Exception.catching
+    val catcher = catching(classOf[MissingRequirementError],
+      classOf[ScalaReflectionException])
+    def typeFromTypeString: Option[ClassSymbol] = catcher opt {
+      exprTyper.typeOfTypeString(expr).typeSymbol.asClass
+    }
+    def typeFromNameTreatedAsTerm: Option[ClassSymbol] = catcher opt {
+      val moduleClass = exprTyper.typeOfExpression(expr).typeSymbol
+      moduleClass.linkedClassOfClass.asClass
+    }
+    def typeFromFullName: Option[ClassSymbol] = catcher opt {
+      rootMirror.staticClass(expr)
+    }
+    def typeOfTerm: Option[TypeSymbol] = getterToResultTp(symbolOfLine(expr)).typeSymbol match {
+      case sym: TypeSymbol => Some(sym)
+      case _ => None
+    }
+    (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) map { sym =>
+      val (kind, tpe) = exitingTyper {
+        val tpe = sym.tpeHK
+        (inferKind(NoPrefix)(tpe, sym.owner), tpe)
+      }
+
+      def typeString(tpe: Type): String = {
+        tpe match {
+          case TypeRef(_, sym, _) => typeString(sym.info)
+          case RefinedType(_, _)  => tpe.toString
+          case _                  => tpe.typeSymbol.fullName
+        }
+      }
+      val msg = exitingTyper(typeString(tpe)) + "'s kind is " + kind.scalaNotation
+
+      if (verbose) msg +"\n"+ kind.starNotation +"\n"+ kind.description
+      else msg
+    } getOrElse("")
+  }
+
+  /** TODO -
+    *  -n normalize
+    *  -l label with case class parameter names
+    *  -c complete - leave nothing out
+    */
+  def typeCommandInternal(expr: String, verbose: Boolean): (String, String) = {
+    symbolOfLine(expr) match {
+      case NoSymbol => ("", "")
+      case sym => exitingTyper {
+        (getterToResultTp(sym).toString, if (verbose) deconstruct.show(getterToResultTp(sym)).toString else "")
+      }
+    }
+
+  }
+
 
   protected def onlyTerms(xs: List[Name]): List[TermName] = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]): List[TypeName] = xs collect { case x: TypeName => x }

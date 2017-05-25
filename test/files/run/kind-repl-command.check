@@ -22,4 +22,5 @@ scala> :k Nonexisting
        ^
        error: not found: value Nonexisting
 
+
 scala> :quit
