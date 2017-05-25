@@ -6,14 +6,10 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
 import typechecker.Analyzer
 
-/** A layer on top of Global so I can guarantee some extra
- *  functionality for the repl.  It doesn't do much yet.
- */
 trait ReplGlobal extends Global {
   // This exists mostly because using the reporter too early leads to deadlock.
   private def echo(msg: String) { Console println msg }
@@ -44,4 +40,6 @@ trait ReplGlobal extends Global {
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }
+
+  override def toString = "<global>"
 }

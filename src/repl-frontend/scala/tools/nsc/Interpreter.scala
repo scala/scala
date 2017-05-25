@@ -18,7 +18,7 @@ class Interpreter(ignored: Settings) {
 
 // to expose a subset of IMain's interface
 class Repl private[nsc] (private[nsc] val intp: IMain) extends AnyVal {
-  final def beQuietDuring(body: => Unit): Unit = intp.beQuietDuring(body)
+  final def beQuietDuring(body: => Unit): Unit = intp.reporter.withoutPrintingResults(body)
   final def bindValue(id: String, value: Any) = bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
   final def bind(id: String, tp: String, value: Any) = intp.bind(id, tp, value)
   final def interpret(input: String): Unit = intp.interpret(input)

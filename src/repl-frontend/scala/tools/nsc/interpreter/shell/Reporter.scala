@@ -2,63 +2,66 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
 
-import scala.reflect.internal.util.{NoSourceFile, Position}
+import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter}
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.AbstractReporter
 
-
-class ReplStrippingWriter(out: PrintWriter) extends PrintWriter(out) {
-  // ugh
-  var reporter: ReplReporter = _
-
-  def this(replReporter: ReplReporter) = {
-    this(replReporter.out)
-    reporter = replReporter
-  }
-
-  override def write(str: String): Unit =
-    if (reporter ne null) super.write(reporter.unmangleInterpreterOutput(str))
-    else super.write(str)
-}
 
 object ReplReporterImpl {
-  def wrapOut(out: PrintWriter) = out match {
-    case rsw: ReplStrippingWriter => rsw
-    case _ => new ReplStrippingWriter(out)
-  }
-  def linkRSW(out: PrintWriter, reporter: ReplReporterImpl) =   out match {
-    case rsw: ReplStrippingWriter => rsw.reporter = reporter
-  }
-
-  val defaultOut = new ReplStrippingWriter(new NewLinePrintWriter(new ConsoleWriter, true))
+  val defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
 }
-class ReplReporterImpl(val config: ShellConfig, settings: Settings = new Settings, val out: PrintWriter = ReplReporterImpl.defaultOut) extends ConsoleReporter(settings, Console.in, ReplReporterImpl.wrapOut(out)) with ReplReporter  {
-  def this(settings: Settings, out: PrintWriter) = this(ShellConfig(settings), settings, out)
+
+// settings are for AbstractReporter (noWarnings, isVerbose, isDebug)
+class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Settings, writer: PrintWriter = ReplReporterImpl.defaultOut) extends AbstractReporter with ReplReporter  {
+  def this(settings: Settings, writer: PrintWriter) = this(ShellConfig(settings), settings, writer)
   def this(settings: Settings) = this(ShellConfig(settings), settings)
 
-  // TODO remove gross hack -- I don't think the printwriter should be in the business of rewriting output
-  // (the unwrapping bit should be moot when we switch to the new repl encoding)
-  ReplReporterImpl.linkRSW(writer, this)
-  ReplReporterImpl.linkRSW(echoWriter, this)
+  val out: PrintWriter = new ReplStrippingWriter(writer)
+  private class ReplStrippingWriter(out: PrintWriter) extends PrintWriter(out) {
+    override def write(str: String): Unit =
+      super.write(unmangleInterpreterOutput(str))
+  }
+
+  override def flush() = out.flush()
+
+  // removes trailing space (for clean partest check files?)
+  private def printlnAndFlush(msg: String): Unit = {
+    out.println(StringOps.trimAllTrailingSpace(msg))
+    flush()
+  }
 
   def colorOk: Boolean = config.colorOk
   def indentDepth: Int = config.promptText.lines.toList.last.length
   def isDebug: Boolean = config.isReplDebug
-  def isTrace: Boolean  = config.isReplTrace
+  def isTrace: Boolean = config.isReplTrace
 
-  // whether to print result lines
   var printResults: Boolean = true
-  def beQuietDuring[T](body: => T): T = {
+  override def togglePrintResults: Unit = printResults = !printResults
+  def withoutPrintingResults[T](body: => T): T = {
     val saved = printResults
     printResults = false
     try body
     finally printResults = saved
   }
 
+  override def printResult(result: Either[String, String]): Unit =
+    result match {
+      case Right(success) =>
+        if (!success.isEmpty && printResults)
+          printMessage(success stripSuffix "\n") // TODO: can we avoid having to strip the trailing "\n"?
+        else if (isDebug) // show quiet-mode activity
+          printMessage(success.trim.lines map ("[quiet] " + _) mkString "\n")
+
+      case Left(error) =>
+        // don't truncate stack traces
+        withoutTruncating { printMessage(error) }
+    }
+
+
   // whether to print anything
   var totalSilence: Boolean = false
-  def beSilentDuring[T](operation: => T): T = {
+  def suppressOutput[T](operation: => T): T = {
     val saved = totalSilence
     totalSilence = true
     try operation
@@ -103,11 +106,6 @@ class ReplReporterImpl(val config: ShellConfig, settings: Settings = new Setting
 
   def unmangleInterpreterOutput(str: String): String = truncate(unwrap(str))
 
-  // compiler is initialized
-  private[this] var _initializeComplete = false
-  def compilerInitialized(): Unit = _initializeComplete = true
-  def initializeComplete: Boolean = _initializeComplete
-
   var currentRequest: scala.tools.nsc.interpreter.IMain#Request = _
   def lastInputSingleLine: Boolean = currentRequest.originalLine.indexOf('\n') == -1
   def preambleLineDelta: Int = currentRequest.preambleEndPos.line
@@ -119,13 +117,24 @@ class ReplReporterImpl(val config: ShellConfig, settings: Settings = new Setting
 
   import scala.io.AnsiColor.{ RED, YELLOW, RESET }
 
+  private def label(severity: Severity): String = severity match {
+    case ERROR   => "error"
+    case WARNING => "warning"
+    case INFO    => ""
+  }
+
+  protected def clabel(severity: Severity): String = label(severity) match {
+    case "" => ""
+    case s  => s"$s: "
+  }
+
   def severityColor(severity: Severity): String = severity match {
     case ERROR   => RED
     case WARNING => YELLOW
     case INFO    => RESET
   }
 
-  override def print(pos: Position, msg: String, severity: Severity): Unit = {
+  def print(pos: Position, msg: String, severity: Severity): Unit = {
     val prefix =
       if (colorOk) severityColor(severity) + clabel(severity) + RESET
       else clabel(severity)
@@ -141,7 +150,7 @@ class ReplReporterImpl(val config: ShellConfig, settings: Settings = new Setting
   // (should also comment out the error to keep multi-line copy/pastable)
   // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
   // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
-  override def printMessage(posIn: Position, msg: String): Unit = {
+  def printMessage(posIn: Position, msg: String): Unit = {
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
     else {
       val consoleLinePrefix = "On line "
@@ -176,23 +185,41 @@ class ReplReporterImpl(val config: ShellConfig, settings: Settings = new Setting
     }
   }
 
-  override def printMessage(msg: String): Unit = {
-    // TODO: deadlock avoidance should not longer be needed (reporter is now eager inside imain)
-    // Avoiding deadlock if the compiler starts logging before the lazy val is complete.
-    if (initializeComplete) {
-      if (totalSilence) {
-        if (isTrace)
-          super.printMessage("[silent] " + msg)
-      }
-      else super.printMessage(msg)
-    }
-    else Console.println("[init] " + msg)
-  }
+  def printMessage(msg: String): Unit =
+    if (!totalSilence) printlnAndFlush(msg)
+    else if (isTrace) printlnAndFlush("[silent] " + msg)
 
   override def displayPrompt(): Unit =
-    if (!totalSilence) super.displayPrompt()
+    if (!totalSilence) {
+      out.println()
+      out.print("a)bort, s)tack, r)esume: ")
+      out.flush()
+      Console.in.read match { // TODO: use repl reader?
+        case 'a' | 'A' =>
+          new Throwable().printStackTrace(out)
+          System.exit(1)
+        case 's' | 'S' =>
+          new Throwable().printStackTrace(out)
+          out.println()
+          out.flush()
+        case _ =>
+      }
+    }
 
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String): String =
     s"; for details, enable `:setting $name' or `:replay $name'"
+
+  def display(pos: Position, msg: String, severity: Severity): Unit = {
+    val ok = severity match {
+      case ERROR   => ERROR.count   <= settings.maxerrs.value
+      case WARNING => WARNING.count <= settings.maxwarns.value
+      case _     => true
+    }
+    if (ok) print(pos, msg, severity)
+  }
+
+  override def finish() =
+    for (k <- List(WARNING, ERROR) if k.count > 0)
+      printMessage(s"${StringOps.countElementsAsString(k.count, label(k))} found")
 
 }

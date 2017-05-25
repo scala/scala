@@ -18,7 +18,7 @@ import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, So
 import scala.tools.nsc.{ConsoleWriter, Global, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.reporters.{Reporter, StoreReporter}
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.util.PathResolver
@@ -64,10 +64,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
             extends Imports with PresentationCompilation {
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
+  import reporter.{debug => repldbg}
+
   private var bindExceptions                  = true        // whether to bind the lastException variable
   private var _executionWrapper               = ""          // code to be wrapped around all lines
   private var label                           = "<console>" // compilation unit name for reporting
-
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -76,24 +77,17 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
    *  use a lazy val to ensure that any attempt to use the compiler object waits
    *  on the future.
    */
-  private var _classLoader: AbstractFileClassLoader = null                              // active classloader
-  private val _compiler: ReplGlobal                 = newCompiler(compilerSettings, reporter)   // our private compiler
-  import reporter.{ printMessage, printUntruncatedMessage, trace => repltrace, debug => repldbg, isDebug => isReplDebug, printResults, withoutUnwrapping}
-
-  def beQuietDuring[T](body: => T): T = reporter.beQuietDuring(body)
-  def beSilentDuring[T](body: => T): T = reporter.beSilentDuring(body)
-  def initializeComplete: Boolean = reporter.initializeComplete
-
-  private var _runtimeClassLoader: URLClassLoader = null              // wrapper exposing addURL
+  private var _classLoader: AbstractFileClassLoader = null  // active classloader
+  private var _runtimeClassLoader: URLClassLoader = null    // wrapper exposing addURL
 
   def compilerClasspath: Seq[java.net.URL] = (
-    if (initializeComplete) global.classPath.asURLs
+    if (_initializeComplete) global.classPath.asURLs
     else new PathResolver(settings).resultAsURLs  // the compiler's classpath
   )
 
 
   // Run the code body with the given boolean settings flipped to true.
-  def withoutWarnings[T](body: => T): T = beQuietDuring {
+  def withoutWarnings[T](body: => T): T = reporter.withoutPrintingResults {
     val saved = settings.nowarn.value
     if (!saved)
       settings.nowarn.value = true
@@ -126,38 +120,35 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   lazy val isClassBased: Boolean = settings.Yreplclassbased.value
 
-  // This exists mostly because using the reporter too early leads to deadlock.
-  private def echo(msg: String) { Console println msg }
-  private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
-  private def _initialize() = {
+
+  def initializeComplete = _initializeComplete
+  private[this] var _initializeComplete = false
+
+  lazy val global: Global = {
+    // Can't use our own reporter until global is initialized
+    val startupReporter = new StoreReporter
+
+    compilerSettings.outputDirs setSingleOutput replOutput.dir
+    compilerSettings.exposeEmptyPackage.value = true
+
+    val compiler = new Global(compilerSettings, startupReporter) with ReplGlobal
+
     try {
       // if this crashes, REPL will hang its head in shame
-      val run = new _compiler.Run()
+      val run = new compiler.Run()
       assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
-      run compileSources _initSources
-      reporter.compilerInitialized()
-      true
+      run compileSources List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+
+      // there shouldn't be any errors yet; just in case, print them if we're debugging
+      if (reporter.isDebug)
+        startupReporter.infos foreach { Console.err.println }
+
+      compiler.reporter = reporter
+      _initializeComplete = true
+      compiler
     }
     catch AbstractOrMissingHandler()
   }
-  private val logScope = scala.sys.props contains "scala.repl.scope"
-  private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
-
-  def initializeSynchronous(): Unit = {
-    if (!initializeComplete) {
-      _initialize()
-      assert(global != null, global)
-    }
-  }
-
-
-  lazy val global: Global = {
-    if (!initializeComplete) _initialize()
-    _compiler
-  }
-
-  // TODO: clarify difference with repl.compilerInitialized
-  def compilerInitialized = global != null
 
   import global._
   import definitions.{ ObjectClass, termMember, dropNullaryMethod}
@@ -208,16 +199,16 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   import memberHandlers._
 
 
-  def quietRun[T](code: String) = beQuietDuring(interpret(code))
+  def quietRun[T](code: String) = reporter.withoutPrintingResults(interpret(code))
 
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
   private def withLastExceptionLock[T](body: => T, alt: => T): T = {
     assert(bindExceptions, "withLastExceptionLock called incorrectly.")
     bindExceptions = false
 
-    try beQuietDuring(body) catch { case NonFatal(t) =>
+    try reporter.withoutPrintingResults(body) catch { case NonFatal(t) =>
       repldbg("withLastExceptionLock: " + rootCause(t))
-      repltrace(stackTraceString(rootCause(t)))
+      reporter.trace(stackTraceString(rootCause(t)))
       alt
     } finally bindExceptions = true
   }
@@ -227,12 +218,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def clearExecutionWrapper() = _executionWrapper = ""
 
 
-  /** Instantiate a compiler.  Overridable. */
-  protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
-    settings.outputDirs setSingleOutput replOutput.dir
-    settings.exposeEmptyPackage.value = true
-    new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
-  }
 
   /**
    * Adds all specified jars to the compile and runtime classpaths.
@@ -346,7 +331,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
    */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
-      case null if initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
+      case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
       case file => file
     }
   }
@@ -372,6 +357,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
     None
   }
+
+  private val logScope = scala.sys.props contains "scala.repl.scope"
+  private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
   private def updateReplScope(sym: Symbol, isDefined: Boolean) {
     def log(what: String) {
@@ -419,7 +407,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   private[nsc] def replwarn(msg: => String) {
     if (!settings.nowarnings)
-      printMessage(msg)
+      reporter.printMessage(msg)
   }
 
   def compileSourcesKeepingRun(sources: SourceFile*) = {
@@ -472,7 +460,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case parse.Error(_)          => return Left(Error)
       case parse.Success(trees) => trees
     }
-    repltrace(
+    reporter.trace(
       trees map (t => {
         // [Eugene to Paul] previously it just said `t map ...`
         // because there was an implicit conversion from Tree to a list of Trees
@@ -562,34 +550,20 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def interpretSynthetic(line: String): Result = interpret(line, synthetic = true)
   def interpret(line: String, synthetic: Boolean): Result = {
     def loadAndRunReq(req: Request) = classLoader.asContext {
-      val (result, succeeded) = req.loadAndRun
+      val res = req.loadAndRun // TODO: move classLoader.asContext into loadAndRun ?
 
-      /** To our displeasure, ConsoleReporter offers only printMessage,
-       *  which tacks a newline on the end.  Since that breaks all the
-       *  output checking, we have to take one off to balance.
-       */
-      if (succeeded) {
-        if (printResults && result != "")
-          printMessage(result stripSuffix "\n")
-        else if (isReplDebug) // show quiet-mode activity
-          printMessage(result.trim.lines map ("[quiet] " + _) mkString "\n")
+      reporter.printResult(res)
 
+      if (res.isLeft) Error
+      else {
         // Book-keeping.  Have to record synthetic requests too,
         // as they may have been issued for information, e.g. :type
         recordRequest(req)
         Success
       }
-      else {
-        // don't truncate stack traces
-        printUntruncatedMessage(result)
-        Error
-      }
     }
 
-    compile(line, synthetic) match {
-      case Left(result) => result
-      case Right(req)   => loadAndRunReq(req)
-    }
+    compile(line, synthetic).fold(identity, loadAndRunReq)
   }
 
   // create a Request and compile it
@@ -649,7 +623,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     quietRun("val %s = %s".format(tempName, name))
     quietRun("val %s = %s.asInstanceOf[%s]".format(name, tempName, newType))
   }
-  def quietBind(p: NamedParam): Result                               = beQuietDuring(bind(p))
+  def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
   def bind(p: NamedParam): Result                                    = bind(p.name, p.tpe, p.value)
   def bind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = bind((name, value))
 
@@ -979,7 +953,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         }
 
         // compile the result-extraction object
-        val handls = if (printResults) handlers else Nil
+        // TODO: can we remove dependency on reporter's printResults state?
+        val handls = if (reporter.printResults) handlers else Nil
         withoutWarnings(lineRep compile ResultObjectSourceCode(handls))
       }
     }
@@ -1012,9 +987,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     lazy val typesOfDefinedTerms = mapFrom[Name, Name, Type](termNames)(x => applyToResultMember(x, _.tpe))
 
     /** load and run the code using reflection */
-    def loadAndRun: (String, Boolean) = {
-      try   { ("" + (lineRep call sessionNames.print), true) }
-      catch { case ex: Throwable => (lineRep.bindError(ex), false) }
+    def loadAndRun: Either[String, String] = {
+      try   { Right("" + (lineRep call sessionNames.print)) }
+      catch { case ex: Throwable => Left(lineRep.bindError(ex)) }
     }
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
@@ -1186,7 +1161,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
           tree match { case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME case _ => false }
         }
       }
-      beSilentDuring(parses)
+      reporter.suppressOutput(parses)
     }
   }
 
@@ -1239,11 +1214,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
      *  with "// show" and see what's going on.
      */
     def isShow = code.lines exists (_.trim endsWith "// show")
-    if (isReplDebug || isShow) {
-      beSilentDuring(parse(code)) match {
+    if (reporter.isDebug || isShow) {
+      reporter.suppressOutput(parse(code)) match {
         case parse.Success(ts) =>
           ts foreach { t =>
-            withoutUnwrapping(echo(asCompactString(t)))
+            reporter.withoutUnwrapping(reporter.withoutTruncating(reporter.echo(asCompactString(t))))
           }
         case _ =>
       }

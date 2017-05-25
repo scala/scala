@@ -29,7 +29,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
 
   // the underlying interpreter, tweaked to handle dynamic bindings
   val intp = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
-  intp.initializeSynchronous()
+  intp.global // initialize compiler
 
   var compileContext: ScriptContext = getContext
 
@@ -95,7 +95,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
      |}
      |""".stripMargin
     if (!dynRes) throw new ScriptException("Failed to compile dynamicBindings")
-    intp beQuietDuring {
+    intp.reporter.withoutPrintingResults {
       intp interpret s"val $ctx: _root_.scala.tools.nsc.interpreter.dynamicBindings.type = _root_.scala.tools.nsc.interpreter.dynamicBindings"
       intp bind ("$engine" -> (this: ScriptEngine with Compilable))
     }
@@ -336,4 +336,6 @@ private class SaveFirstErrorReporter(settings: Settings, out: PrintWriter) exten
   }
 
   override def reset() = { super.reset(); _firstError = None }
+
+  override def printResult(result: Either[String, String]): Unit = {}
 }

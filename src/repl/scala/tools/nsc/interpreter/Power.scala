@@ -44,7 +44,7 @@ Lost after 18/flatten {
  */
 class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, replVals: ReplValsImpl) {
   import intp.global._
-  import intp.{beQuietDuring, parse}
+  import intp.parse
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -138,7 +138,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   /** Quietly starts up power mode and runs whatever is in init.
    */
-  def unleash(): Unit = beQuietDuring {
+  def unleash(): Unit = intp.reporter.withoutPrintingResults {
     // First we create the ReplVals instance and bind it to $r
     intp.bind("$r", replVals)
     // Then we import everything from $r.

@@ -135,13 +135,13 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     out print ShellConfig.InterruptedString
   }
 
-  protected def asyncMessage(msg: String) {
+  protected def asyncMessage(msg: String): Unit = {
     if (isReplInfo || isReplPower)
       echoAndRefresh(msg)
   }
 
-  override def echoCommandMessage(msg: String) {
-    intp.reporter printUntruncatedMessage msg
+  override def echoCommandMessage(msg: String): Unit = {
+    intp.reporter.withoutTruncating { intp.reporter.printMessage(msg) }
   }
 
 
@@ -340,10 +340,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     }
   }
 
-  protected def newJavap() = {
-    val writer = new ReplStrippingWriter(intp.reporter)
-    JavapClass(addToolsJarToLoader(), writer, intp)
-  }
+  protected def newJavap() = JavapClass(addToolsJarToLoader(), intp.reporter.out, intp)
+
   private lazy val javap =
     try newJavap()
     catch {
@@ -357,6 +355,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
 
   /** This class serves to trick the compiler into treating a var
     *  (intp, in ILoop) as a stable identifier.
+    *
+    *  TODO: move operations that manipulate trees/symbols into the repl, while UI stuff remains here
     */
   implicit class IMainOps(val intp: IMain) {
     import intp._
@@ -477,8 +477,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     def typeCommandInternal(expr: String, verbose: Boolean): Unit =
       symbolOfLine(expr) andAlso (echoTypeSignature(_, verbose))
 
-    def printAfterTyper(msg: => String) =
-      reporter printUntruncatedMessage exitingTyper(msg)
+    def printAfterTyper(msg: => String): Unit =
+      reporter.withoutTruncating { reporter.printMessage(exitingTyper(msg)) }
 
     private def replInfo(sym: Symbol) =
       if (sym.isAccessor) dropNullaryMethod(sym.info) else sym.info
@@ -879,18 +879,19 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
       case f => Files.readAllLines(f.toPath).asScala.mkString("\n")
     } getOrElse intp.power.banner
 
-  private def unleashAndSetPhase() = if (isReplPower) {
-    intp.power.unleash()
+  private def unleashAndSetPhase() =
+    if (isReplPower) {
+      intp.power.unleash()
 
-    intp beSilentDuring {
-      (powerInitCode.option
-      map (f => Files.readAllLines(f.toPath).asScala.toList)
-      getOrElse intp.power.initImports
-      foreach intp.interpret)
+      intp.reporter.suppressOutput {
+        (powerInitCode.option
+          map (f => Files.readAllLines(f.toPath).asScala.toList)
+          getOrElse intp.power.initImports
+          foreach intp.interpret)
 
-      phaseCommand("typer") // Set the phase to "typer"
+        phaseCommand("typer") // Set the phase to "typer"
+      }
     }
-  }
 
   def asyncEcho(async: Boolean, msg: => String) {
     if (async) asyncMessage(msg)
@@ -898,7 +899,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   }
 
   def verbosity() = {
-    intp.reporter.printResults = !intp.reporter.printResults
+    intp.reporter.togglePrintResults()
     replinfo(s"Result printing is ${ if (intp.reporter.printResults) "on" else "off" }.")
   }
 
@@ -907,8 +908,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
    */
   def command(line: String): Result = {
     if (line startsWith ":") colonCommand(line)
-    else if (!intp.compilerInitialized) Result(keepRunning = false, None)  // Notice failure to create compiler
-    else Result(keepRunning = true, interpretStartingWith(line))
+    else {
+      if (intp.global == null) Result(keepRunning = false, None)  // Notice failure to create compiler
+      else Result(keepRunning = true, interpretStartingWith(line))
+    }
   }
 
   private def readWhile(cond: String => Boolean) = {
@@ -1140,8 +1143,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     val firstLine =
       SplashLoop.readLine(in, prompt) {
         if (intp eq null) createInterpreter(interpreterSettings)
-        intp.beQuietDuring {
-          intp.initializeSynchronous()
+        intp.reporter.withoutPrintingResults {
+          intp.global // initialize compiler
           interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
           if (intp.reporter.hasErrors) {
@@ -1149,13 +1152,14 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
             throw new InterruptedException
           }
 
+          echoOff { interpretPreamble }
+
           // scala/bug#7418 Now that the interpreter is initialized, and `interpretPreamble` has populated the symbol table,
           // enable TAB completion (we do this before blocking on input from the splash loop,
           // so that it can offer tab completion as soon as we're ready).
           if (doCompletion)
             in.initCompletion(new ReplCompletion(intp))
 
-          echoOff { interpretPreamble }
         }
       } getOrElse readOneLine()
 
