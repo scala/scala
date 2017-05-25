@@ -53,8 +53,9 @@ trait Unapplies extends ast.TreeDSL {
   }
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
-    val ClassDef(_, _, _, Template(_, _, body)) = resetAttrs(cdef.duplicate)
-    val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor body
+    val prunedClassDef = deriveClassDef(cdef)(tmpl => deriveTemplate(tmpl)(stats => treeInfo.firstConstructor(stats).duplicate :: Nil))
+    val ClassDef(_, _, _, Template(_, _, firstConstructor :: Nil)) = resetAttrs(prunedClassDef)
+    val DefDef(_, _, _, vparamss, _, _) = firstConstructor
     vparamss
   }
 

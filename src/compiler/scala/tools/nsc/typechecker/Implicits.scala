@@ -357,6 +357,10 @@ trait Implicits {
     /** The type parameters to instantiate */
     val undetParams = if (isView) Nil else context.outer.undetparams
     val wildPt = approximate(pt)
+    private val ptFunctionArity: Int = {
+      val dealiased = pt.dealiasWiden
+      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1 else -1
+    }
 
     private val stableRunDefsForImport = currentRun.runDefinitions
     import stableRunDefsForImport._
@@ -543,9 +547,7 @@ trait Implicits {
               if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
-                val len = args.length - 1
-                hasLength(params, len) &&
-                sym == FunctionClass(len) && {
+                ptFunctionArity > 0 && hasLength(params, ptFunctionArity) && {
                   var ps = params
                   var as = args
                   if (fast) {
@@ -588,9 +590,12 @@ trait Implicits {
       // We can only rule out a subtype relationship if the left hand
       // side is a class, else we may not know enough.
       case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
+        def typeRefHasMember(tp: TypeRef, name: Name) = {
+          tp.baseClasses.exists(_.info.decls.lookupEntry(name) != null)
+        }
         tp2.dealiasWiden match {
           case TypeRef(_, sym2, _)         => ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
-          case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
+          case RefinedType(parents, decls) => decls.nonEmpty && !typeRefHasMember(tr1, decls.head.name) // opt avoid full call to .member
           case _                           => false
         }
       case _ => false
