@@ -20,14 +20,14 @@ import scala.reflect.io.File
 import scala.util.Properties.{lineSeparator => EOL}
 import scala.util.{Failure, Success, Try}
 import Javap._
-import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.Repl
 
 /** Javap command implementation.
  */
 class JavapClass(
   val loader: ScalaClassLoader,
   val printWriter: PrintWriter,
-  intp: IMain
+  intp: Repl
 ) extends Javap {
   import JavapClass._
 
@@ -348,7 +348,7 @@ object JavapClass {
   def apply(
     loader: ScalaClassLoader = ScalaClassLoader.appLoader,
     printWriter: PrintWriter = new PrintWriter(System.out, true),
-    intp: IMain
+    intp: Repl
   ) = new JavapClass(loader, printWriter, intp)
 
   /** Match foo#bar, both groups are optional (may be null). */

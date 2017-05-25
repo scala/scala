@@ -4,21 +4,15 @@
  */
 package scala.tools.nsc.interpreter.shell
 
-import scala.reflect.internal.util.StringOps
 import scala.util.control.NonFatal
 import Completion.Candidates
-import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.Repl
 
-class PresentationCompilerCompleter(intp: IMain) extends Completion {
-  import intp.{PresentationCompileResult => Result}
-
+class PresentationCompilerCompleter(intp: Repl) extends Completion {
   import PresentationCompilerCompleter._
-
-  private type Handler = Result => Candidates
 
   private var lastRequest = NoRequest
   private var tabCount = 0
-  private var lastCommonPrefixCompletion: Option[String] = None
 
   def resetVerbosity(): Unit = { tabCount = 0 ; lastRequest = NoRequest }
 
@@ -38,91 +32,14 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
     // secret handshakes
     val slashPrint  = """.*// *print *""".r
     val slashTypeAt = """.*// *typeAt *(\d+) *(\d+) *""".r
-    val Cursor = IMain.DummyCursorFragment + " "
-
-    def print(result: Result) = {
-      val tree = result.tree(buf)
-      val printed = result.treeString(tree) + " // : " + tree.tpe.safeToString
-      Candidates(cursor, "" :: printed :: Nil)
-    }
-
-
-    def typeAt(result: Result, start: Int, end: Int) = {
-      val tpString = result.typeString(result.typedTreeAt(buf, start, end))
-      Candidates(cursor, "" :: tpString :: Nil)
-    }
-    def candidates(result: Result): Candidates = {
-      import result.compiler.{Member, Name, TypeMember, definitions, nme}
-      import result.compiler.CompletionResult
-      import CompletionResult.NoResults
-
-      def defStringCandidates(matching: List[Member], name: Name): Candidates = {
-        val defStrings = for {
-          member <- matching
-          if member.symNameDropLocal == name
-          sym <- member.sym.alternatives
-          sugared = sym.sugaredSymbolOrSelf
-        } yield {
-            val tp = member.prefix memberType sym
-            sugared.defStringSeenAs(tp)
-          }
-        Candidates(cursor, "" :: defStrings.distinct)
-      }
-      val found = result.completionsAt(cursor) match {
-        case NoResults => Completion.NoCandidates
-        case r =>
-          def shouldHide(m: Member): Boolean = {
-            val isUniversal = definitions.isUniversalMember(m.sym)
-            def viaUniversalExtensionMethod = m match {
-              case t: TypeMember if t.implicitlyAdded && t.viaView.info.params.head.info.bounds.isEmptyBounds => true
-              case _ => false
-            }
-            (
-                 isUniversal && nme.isReplWrapperName(m.prefix.typeSymbol.name)
-              || isUniversal && tabCount == 0 && r.name.isEmpty
-              || viaUniversalExtensionMethod && tabCount == 0 && r.name.isEmpty
-            )
-          }
-
-          val matching = r.matchingResults().filterNot(shouldHide)
-          val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
-          val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
-          if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
-          else if (matching.isEmpty) {
-            // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
-            val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
-            val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted
-            def allowCompletion = (
-                 (memberCompletions.size == 1)
-              || CompletionResult.camelMatch(r.name)(r.name.newName(StringOps.longestCommonPrefix(memberCompletions)))
-            )
-            if (memberCompletions.isEmpty) Completion.NoCandidates
-            else if (allowCompletion) Candidates(cursor - r.positionDelta, memberCompletions)
-            else Candidates(cursor, "" :: memberCompletions)
-          } else if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
-            Completion.NoCandidates // don't offer completion if the only option has been fully typed already
-          else {
-            // regular completion
-            val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct.sorted
-            Candidates(cursor - r.positionDelta, memberCompletions)
-          }
-      }
-      lastCommonPrefixCompletion =
-        if (found != Completion.NoCandidates && buf.length >= found.cursor)
-          Some(buf.substring(0, found.cursor) + StringOps.longestCommonPrefix(found.candidates))
-        else
-          None
-      found
-    }
-    val buf1 = buf.patch(cursor, Cursor, 0)
     try {
-      intp.presentationCompile(buf1) match {
+      intp.presentationCompile(cursor, buf) match {
         case Left(_) => Completion.NoCandidates
         case Right(result) => try {
           buf match {
-            case slashPrint() if cursor == buf.length => print(result)
-            case slashTypeAt(start, end) if cursor == buf.length => typeAt(result, start.toInt, end.toInt)
-            case _ => candidates(result)
+            case slashPrint() if cursor == buf.length => Candidates(cursor, "" :: result.print :: Nil)
+            case slashTypeAt(start, end) if cursor == buf.length => Candidates(cursor, "" :: result.typeAt(start.toInt, end.toInt)  :: Nil)
+            case _ => val (c, r) = result.candidates(tabCount); Candidates(c, r)
           }
         } finally result.cleanup()
       }

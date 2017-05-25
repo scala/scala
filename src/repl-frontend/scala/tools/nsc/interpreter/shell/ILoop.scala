@@ -1,7 +1,5 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL
- * @author Alexander Spoon
- */
+// Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
+
 package scala.tools.nsc.interpreter.shell
 
 import java.io.{BufferedReader, PrintWriter}
@@ -19,55 +17,17 @@ import scala.reflect.internal.util.{BatchSourceFile, NoPosition, ScalaClassLoade
 import scala.reflect.io.{AbstractFile, Directory, File, Path}
 import scala.tools.asm.ClassReader
 import scala.tools.util.PathResolver
-import scala.tools.nsc.{GenericRunnerSettings, Settings, io}
+import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{stackTraceString, stringFromStream}
-import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, IMain, NamedParam, Phased, ReplProps, jline}
+import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, Repl, IMain, Phased, jline}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.nsc.interpreter.StdReplTags._
 import scala.tools.nsc.interpreter.shell.Completion._
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.ControlThrowable
 import scala.collection.JavaConverters._
-import scala.reflect.internal.MissingRequirementError
 
 
-trait ShellConfig extends ReplProps {
-  def filesToPaste: List[String]
-  def filesToLoad: List[String]
-  def batchText: String
-  def batchMode: Boolean
-  def doCompletion: Boolean
-  def haveInteractiveConsole: Boolean
-}
-
-object ShellConfig {
-  import scala.tools.nsc.Properties
-
-  val EDITOR = Properties.envOrNone("EDITOR")
-  val isEmacsShell = Properties.isEmacsShell
-  val InterruptedString = Properties.shellInterruptedString
-
-  def apply(settings: Settings) = settings match {
-    case settings: GenericRunnerSettings => new ShellConfig {
-      val filesToPaste: List[String] = settings.pastefiles.value
-      val filesToLoad: List[String] = settings.loadfiles.value
-      val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
-      val batchMode: Boolean = batchText.nonEmpty
-      val doCompletion: Boolean = !(settings.noCompletion || batchMode)
-      val haveInteractiveConsole: Boolean = !(settings.Xnojline || Properties.isEmacsShell)
-    }
-    case _ => new ShellConfig {
-      val filesToPaste: List[String] = Nil
-      val filesToLoad: List[String] = Nil
-      val batchText: String = ""
-      val batchMode: Boolean = false
-      val doCompletion: Boolean = !settings.noCompletion
-      val haveInteractiveConsole: Boolean = !(settings.Xnojline || isEmacsShell)
-    }
-  }
-
-
-}
 
 /** The Scala interactive shell. This part provides the user interface,
   * with evaluation and auto-complete handled by IMain.
@@ -85,7 +45,11 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   // If set before calling run(), the provided interpreter will be used
   // (until a destructive reset command is issued -- TODO: delegate resetting to the repl)
   // Set by createInterpreter, closeInterpreter (and CompletionTest)
-  var intp: IMain = _
+  var intp: Repl = _
+
+  def Repl(config: ShellConfig, interpreterSettings: Settings, out: PrintWriter) =
+    new IMain(interpreterSettings, None, interpreterSettings, new ReplReporterImpl(config, interpreterSettings, out))
+
 
   // Set by run and interpretAllFrom (to read input from file).
   private var in: InteractiveReader = _
@@ -192,7 +156,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     * Used by sbt.
     */
   def createInterpreter(interpreterSettings: Settings): Unit = {
-    intp = new IMain(interpreterSettings, None, interpreterSettings, new ReplReporterImpl(config, interpreterSettings, out))
+    intp = Repl(config, interpreterSettings, out)
   }
 
   /** Show the history */
@@ -299,29 +263,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   }
 
 
-  private def importsCommand(line: String): Result = {
-    val tokens    = words(line)
-    val handlers  = intp.languageWildcardHandlers ++ intp.importHandlers
+  private def importsCommand(line: String): Result =
+    intp.importsCommandInternal(words(line)) mkString ("\n")
 
-    handlers.filterNot(_.importedSymbols.isEmpty).zipWithIndex foreach {
-      case (handler, idx) =>
-        val (types, terms) = handler.importedSymbols partition (_.name.isTypeName)
-        val imps           = handler.implicitSymbols
-        val found          = tokens filter (handler importsSymbolNamed _)
-        val typeMsg        = if (types.isEmpty) "" else types.size + " types"
-        val termMsg        = if (terms.isEmpty) "" else terms.size + " terms"
-        val implicitMsg    = if (imps.isEmpty) "" else imps.size + " are implicit"
-        val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
-        val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
-
-        intp.reporter.printMessage("%2d) %-30s %s%s".format(
-          idx + 1,
-          handler.importString,
-          statsMsg,
-          foundMsg
-        ))
-    }
-  }
 
   private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
 
@@ -475,7 +419,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
 
   // return false if repl should exit
   def processLine(line: String): Boolean = {
-    import scala.concurrent.duration._
     // Long timeout here to avoid test failures under heavy load.
     interpreterInitialized.await(10, TimeUnit.MINUTES)
 
@@ -861,7 +804,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     val leadingElement = raw"(?s)\s*(package\s|/)".r
     def isPackaged(code: String): Boolean = {
       leadingElement.findPrefixMatchOf(code)
-        .map(m => if (m.group(1) == "/") intp.parse.packaged(code) else true)
+        .map(m => if (m.group(1) == "/") intp.packaged(code) else true)
         .getOrElse(false)
     }
 
@@ -945,7 +888,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   }
 
   // delegate to command completion or presentation compiler
-  class ReplCompletion(intp: IMain) extends Completion {
+  class ReplCompletion(intp: Repl) extends Completion {
     val pc = new PresentationCompilerCompleter(intp)
     def resetVerbosity(): Unit = pc.resetVerbosity()
     def complete(buffer: String, cursor: Int): Completion.Candidates = {
@@ -974,7 +917,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   private def interpretPreamble = {
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
-    intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
+    intp.quietBind(intp.namedParam[Repl]("$intp", intp)(tagOfRepl, classTag[Repl]))
 
     // Auto-run code via some setting.
     (config.replAutorunCode.option
@@ -1040,7 +983,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
 }
 
 object ILoop {
-  implicit def loopToInterpreter(repl: ILoop): IMain = repl.intp
+  implicit def loopToInterpreter(repl: ILoop): Repl = repl.intp
 
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look

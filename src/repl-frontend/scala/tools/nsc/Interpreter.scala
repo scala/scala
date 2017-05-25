@@ -1,8 +1,12 @@
 package scala.tools.nsc
 
-import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.{IMain, Repl, ReplCore}
 import scala.tools.nsc.interpreter.shell.{ILoop, ReplReporterImpl, ShellConfig}
 import scala.tools.nsc.reporters.Reporter
+
+// Pretty gross contortion to satisfy the de facto interface expected by sbt.
+// The idea is to have sbt stage a dummy interpreter, to extract the configuration
+// it's trying to create, only to then actually create our interpreter when needed.
 
 @deprecated("Use a class in the scala.tools.nsc.interpreter package.", "2.9.0")
 class Interpreter(ignored: Settings) {
@@ -14,15 +18,6 @@ class Interpreter(ignored: Settings) {
   // ignore the method name -- only used to find out what old sbt versions want our compiler settings to be
   @deprecated("Only used for passing in settings.", "2.13.0-M2")
   protected def newCompiler(settings: Settings, reporter: Reporter) = settings
-}
-
-// to expose a subset of IMain's interface
-class Repl private[nsc] (private[nsc] val intp: IMain) extends AnyVal {
-  final def beQuietDuring(body: => Unit): Unit = intp.reporter.withoutPrintingResults(body)
-  final def bindValue(id: String, value: Any) = bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
-  final def bind(id: String, tp: String, value: Any) = intp.bind(id, tp, value)
-  final def interpret(input: String): Unit = intp.interpret(input)
-  final def setContextClassLoader(): Unit = intp.setContextClassLoader()
 }
 
 @deprecated("Use a class in the scala.tools.nsc.interpreter package.", "2.9.0")
@@ -44,13 +39,13 @@ class InterpreterLoop {
     parentClassLoader = Option(config._2)
   }
 
-  @volatile private var intp: IMain = _
+  @volatile private var intp: Repl = _
 
-  def interpreter: Repl = {
+  def interpreter: ReplCore = {
     if (intp eq null) {
       intp = new IMain(interpreterSettings, parentClassLoader, compilerSettings, new ReplReporterImpl(interpreterSettings))
     }
-    new Repl(intp) // should just erase to returning intp
+    intp
   }
 
   @deprecated("Only used for passing in settings.", "2.13.0-M2")
@@ -72,7 +67,7 @@ class InterpreterLoop {
     createInterpreter()
 
     val shell = new ILoop(ShellConfig(interpreterSettings))
-    shell.intp = interpreter.intp
+    shell.intp = interpreter.asInstanceOf[Repl] // we've restricted the type of `interpreter` above to denote the subset used by sbt
     shell.run(interpreterSettings)
   }
 

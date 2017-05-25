@@ -7,6 +7,7 @@ import scala.reflect.runtime.{ universe => ru }
 trait StdReplTags extends StdTags {
   lazy val tagOfStdReplVals = tagOfStaticClass[StdReplVals]
   lazy val tagOfIMain = tagOfStaticClass[IMain]
+  lazy val tagOfRepl = tagOfStaticClass[Repl]
 }
 
 object StdReplTags extends StdTags with StdReplTags {

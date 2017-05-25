@@ -11,11 +11,10 @@ import scala.tools.nsc.util.ClassPath
 import typechecker.Analyzer
 
 trait ReplGlobal extends Global {
-  // This exists mostly because using the reporter too early leads to deadlock.
-  private def echo(msg: String) { Console println msg }
 
   override def abort(msg: String): Nothing = {
-    echo("ReplGlobal.abort: " + msg)
+    // Using the reporter too early leads to deadlock. TODO: is this still true?
+    Console.println("ReplGlobal.abort: " + msg)
     super.abort(msg)
   }
 

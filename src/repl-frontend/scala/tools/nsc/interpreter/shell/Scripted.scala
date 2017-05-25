@@ -14,9 +14,8 @@ import scala.reflect.internal.util.Position
 import scala.util.Properties.versionString
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.stringFromReader
-import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter}
+import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter, ScriptedRepl}
 import scala.tools.nsc.interpreter.Results.Incomplete
-
 
 /* A REPL adaptor for the javax.script API. */
 class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: PrintWriter)
@@ -28,8 +27,8 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   final val ctx = "$ctx"
 
   // the underlying interpreter, tweaked to handle dynamic bindings
-  val intp = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
-  intp.global // initialize compiler
+  val intp: ScriptedRepl = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
+  intp.initializeCompiler()
 
   var compileContext: ScriptContext = getContext
 
@@ -59,21 +58,21 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     terms.to[Set]
   }
 
-  val scriptContextRep = new intp.ReadEvalPrint
 
-  def dynamicContext_=(ctx: ScriptContext): Unit = scriptContextRep.callEither("set", ctx)
+  def dynamicContext_=(ctx: ScriptContext): Unit = intp.call("set", ctx)
 
-  def dynamicContext: ScriptContext = scriptContextRep.callEither("value") match {
+  def dynamicContext: ScriptContext = intp.call("value") match {
     case Right(ctx: ScriptContext) => ctx
     case Left(e) => throw e
     case Right(other) => throw new ScriptException(s"Unexpected value for context: $other")
   }
 
+  // TODO: this wrapping probably belongs in ScriptedInterpreter
   if (intp.initializeComplete) {
     // compile the dynamic ScriptContext object holder
-    val ctxRes = scriptContextRep compile s"""
+    val ctxRes = intp compile s"""
       |import _root_.javax.script._
-      |object ${scriptContextRep.evalName} {
+      |object ${intp.evalName} {
       |  var value: ScriptContext = _
       |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[ScriptContext]
       |}
@@ -87,7 +86,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
      |import _root_.scala.language.dynamics
      |import _root_.javax.script._, ScriptContext.ENGINE_SCOPE
      |object dynamicBindings extends _root_.scala.Dynamic {
-     |  def context: ScriptContext = ${ scriptContextRep.evalPath }.value
+     |  def context: ScriptContext = ${ intp.evalPath }.value
      |  // $ctx.x retrieves the attribute x
      |  def selectDynamic(field: _root_.java.lang.String): _root_.java.lang.Object = context.getAttribute(field)
      |  // $ctx.x = v
@@ -169,7 +168,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     var first = true
 
     private def evalEither(r: intp.Request, ctx: ScriptContext) = {
-      if (ctx.getWriter == null && ctx.getErrorWriter == null && ctx.getReader == null) r.lineRep.evalEither
+      if (ctx.getWriter == null && ctx.getErrorWriter == null && ctx.getReader == null) r.eval
       else {
         val closeables = Array.ofDim[Closeable](2)
         val w = if (ctx.getWriter == null) Console.out else {
@@ -187,7 +186,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
           Console.withOut(w) {
             Console.withErr(e) {
               Console.withIn(in) {
-                r.lineRep.evalEither
+                r.eval
               }
             }
           }
@@ -203,41 +202,23 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
      * must be wrapped in instances of ScriptException.
      */
     @throws[ScriptException]
-    override def eval(context: ScriptContext) = withScriptContext(context) {
-      if (first) {
-        val result = evalEither(req, context) match {
-          case Left(e: RuntimeException) => throw e
-          case Left(e: Exception)        => throw new ScriptException(e)
-          case Left(e)                   => throw e
-          case Right(result)             => result.asInstanceOf[Object]
-        }
-        intp recordRequest req
-        first = false
-        result
-      } else {
-        val defines = req.defines
-        if (defines.isEmpty) {
-          Scripted.this.eval(s"new ${req.lineRep.readPath}")
-          intp recordRequest duplicate(req)
-          null
-        } else {
-          val instance = s"val $$INSTANCE = new ${req.lineRep.readPath};"
-          val newline  = (defines map (s => s"val ${s.name} = $$INSTANCE${req.accessPath}.${s.name}")).mkString(instance, ";", ";")
-          val newreq   = intp.requestFromLine(newline).right.get
-          val ok = newreq.compile
-
-          val result = evalEither(newreq, context) match {
-            case Left(e: RuntimeException) => throw e
-            case Left(e: Exception)        => throw new ScriptException(e)
-            case Left(e)                   => throw e
-            case Right(result)             => intp recordRequest newreq ; result.asInstanceOf[Object]
-          }
-          result
-        }
+    override def eval(context: ScriptContext) =
+      withScriptContext(context) {
+        if (!first)
+          intp.addBackReferences(req) fold (
+            { line => Scripted.this.eval(line); null }, // we're evaluating after recording the request instead of other way around, but that should be ok, right?
+            evalAndRecord(context, _))
+        else try evalAndRecord(context, req) finally first = false
       }
-    }
 
-    def duplicate(req: intp.Request) = new intp.Request(req.line, req.trees)
+    private def evalAndRecord(context: ScriptContext, req: intp.Request) =
+      evalEither(req, context) match {
+        case Left(e: RuntimeException) => throw e
+        case Left(e: Exception) => throw new ScriptException(e)
+        case Left(e) => throw e
+        case Right(result) => intp recordRequest req; result.asInstanceOf[Object]
+      }
+
 
     def getEngine: ScriptEngine = Scripted.this
   }

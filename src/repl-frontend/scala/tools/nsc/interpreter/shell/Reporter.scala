@@ -4,7 +4,7 @@ import java.io.PrintWriter
 
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
-import scala.tools.nsc.interpreter.{Naming, ReplReporter}
+import scala.tools.nsc.interpreter.{Naming, Repl, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.AbstractReporter
 
 
@@ -106,7 +106,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   def unmangleInterpreterOutput(str: String): String = truncate(unwrap(str))
 
-  var currentRequest: scala.tools.nsc.interpreter.IMain#Request = _
+  var currentRequest: ReplRequest = _
   def lastInputSingleLine: Boolean = currentRequest.originalLine.indexOf('\n') == -1
   def preambleLineDelta: Int = currentRequest.preambleEndPos.line
 

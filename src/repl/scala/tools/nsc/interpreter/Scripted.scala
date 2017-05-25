@@ -3,9 +3,6 @@
  */
 package scala.tools.nsc.interpreter
 
-import java.io.PrintWriter
-
-import scala.reflect.internal.util.Position
 import scala.tools.nsc.Settings
 
 object ImportContextPreamble {
@@ -15,7 +12,8 @@ case class ImportContextPreamble(exclude: Set[String], include: Set[String], pre
 
 // TODO: `importContextPreamble` breaks the separation between the repl's core and the frontend
 // because it's a callback in the wrong direction (the frontend is only supposed to call us, we shouldn't know about the frontend)
-class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, importContextPreamble: Set[String] => ImportContextPreamble) extends IMain(initialSettings, None, initialSettings, reporter) {
+class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, importContextPreamble: Set[String] => ImportContextPreamble)
+  extends IMain(initialSettings, None, initialSettings, reporter) with ScriptedRepl {
 
   import global.{Name, TermName}
 
@@ -37,4 +35,25 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
     else super.importsCode(wanted, wrapper, definesClass, generousImports)
   }
 
+
+  def addBackReferences(req: Request): Either[String, Request] = {
+    val defines = req.definesTermNames
+    if (defines.isEmpty) {
+      recordRequest(new Request(req.line, req.trees))
+      Left(s"new ${req.lineRep.readPath}")
+    } else {
+      val newReq = requestFromLine(
+        (s"val $$INSTANCE = new ${req.lineRep.readPath}" :: (defines map (d =>
+            s"val `$d` = $$INSTANCE${req.accessPath}.`$d`"))).mkString(";")
+      ).right.get
+      newReq.compile
+      Right(newReq)
+    }
+  }
+
+  private object scriptContextRep extends ReadEvalPrint
+  def call(name: String, args: Any*): Either[Throwable, AnyRef] = scriptContextRep.callEither(name, args: _*)
+  def compile(code: String): Boolean = scriptContextRep.compile(code)
+  def evalName: String = scriptContextRep.evalName
+  def evalPath: String = scriptContextRep.evalPath
 }

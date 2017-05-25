@@ -1,7 +1,4 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL
- * @author  Martin Odersky
- */
+// Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
 
 package scala.tools.nsc.interpreter
 
@@ -28,87 +25,41 @@ import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.NonFatal
 
-/* Rough list of dependencies from ILoop to IMain:
-
-ReadEvalPrint
-Request
-addUrlsToClassPath
-bind
-classLoader
-classPathString
-clearExecutionWrapper
-close
-compile
-compileSources
-compileString
-definedTypes
-importHandlers
-initializeComplete
-interpret
-languageWildcardHandlers
-lastWarnings
-mostRecentVar
-namedDefinedTerms
-originalPath
-parse.packaged
-power.banner
-power.classic
-power.initImports
-power.phased
-power.unleash
-quietBind
-quietRun
-recordRequest
-reporter
-requestDefining
-requestFromLine
-reset
-setContextClassLoader
-setExecutionWrapper
-symbolDefString
-translateEnclosingClass
-translatePath
-updateSettings
-userSetSettings
-visibleSettings
-withLabel
-*/
-
 
 /** An interpreter for Scala code.
- *
- *  The main public entry points are compile(), interpret(), and bind().
- *  The compile() method loads a complete Scala file.  The interpret() method
- *  executes one line of Scala code at the request of the user.  The bind()
- *  method binds an object to a variable that can then be used by later
- *  interpreted code.
- *
- *  The overall approach is based on compiling the requested code and then
- *  using a Java classloader and Java reflection to run the code
- *  and access its results.
- *
- *  In more detail, a single compiler instance is used
- *  to accumulate all successfully compiled or interpreted Scala code.  To
- *  "interpret" a line of code, the compiler generates a fresh object that
- *  includes the line of code and which has public member(s) to export
- *  all variables defined by that code.  To extract the result of an
- *  interpreted line to show the user, a second "result object" is created
- *  which imports the variables exported by the above object and then
- *  exports members called "$eval" and "$print". To accommodate user expressions
- *  that read from variables or methods defined in previous statements, "import"
- *  statements are used.
- *
- *  This interpreter shares the strengths and weaknesses of using the
- *  full compiler-to-Java.  The main strength is that interpreted code
- *  behaves exactly as does compiled code, including running at full speed.
- *  The main weakness is that redefining classes and methods is not handled
- *  properly, because rebinding at the Java level is technically difficult.
- *
- *  @author Moez A. Abdel-Gawad
- *  @author Lex Spoon
- */
+  *
+  *  The main public entry points are compile(), interpret(), and bind().
+  *  The compile() method loads a complete Scala file.  The interpret() method
+  *  executes one line of Scala code at the request of the user.  The bind()
+  *  method binds an object to a variable that can then be used by later
+  *  interpreted code.
+  *
+  *  The overall approach is based on compiling the requested code and then
+  *  using a Java classloader and Java reflection to run the code
+  *  and access its results.
+  *
+  *  In more detail, a single compiler instance is used
+  *  to accumulate all successfully compiled or interpreted Scala code.  To
+  *  "interpret" a line of code, the compiler generates a fresh object that
+  *  includes the line of code and which has public member(s) to export
+  *  all variables defined by that code.  To extract the result of an
+  *  interpreted line to show the user, a second "result object" is created
+  *  which imports the variables exported by the above object and then
+  *  exports members called "$eval" and "$print". To accommodate user expressions
+  *  that read from variables or methods defined in previous statements, "import"
+  *  statements are used.
+  *
+  *  This interpreter shares the strengths and weaknesses of using the
+  *  full compiler-to-Java.  The main strength is that interpreted code
+  *  behaves exactly as does compiled code, including running at full speed.
+  *  The main weakness is that redefining classes and methods is not handled
+  *  properly, because rebinding at the Java level is technically difficult.
+  *
+  *  @author Moez A. Abdel-Gawad
+  *  @author Lex Spoon
+  */
 class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoader], compilerSettings: Settings, val reporter: ReplReporter)
-            extends Imports with PresentationCompilation {
+  extends Repl with Imports with PresentationCompilation {
 
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
@@ -119,19 +70,19 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   private var label                           = "<console>" // compilation unit name for reporting
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
-   *  It's critical that nothing call into it until it's been initialized or we will
-   *  run into unrecoverable issues, but the perceived repl startup time goes
-   *  through the roof if we wait for it.  So we initialize it with a future and
-   *  use a lazy val to ensure that any attempt to use the compiler object waits
-   *  on the future.
-   */
+    *  It's critical that nothing call into it until it's been initialized or we will
+    *  run into unrecoverable issues, but the perceived repl startup time goes
+    *  through the roof if we wait for it.  So we initialize it with a future and
+    *  use a lazy val to ensure that any attempt to use the compiler object waits
+    *  on the future.
+    */
   private var _classLoader: AbstractFileClassLoader = null  // active classloader
   private var _runtimeClassLoader: URLClassLoader = null    // wrapper exposing addURL
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (_initializeComplete) global.classPath.asURLs
     else new PathResolver(settings).resultAsURLs  // the compiler's classpath
-  )
+    )
 
 
   // Run the code body with the given boolean settings flipped to true.
@@ -144,15 +95,15 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     finally if (!saved) settings.nowarn.value = false
   }
   // Apply a temporary label for compilation (for example, script name)
-  def withLabel[A](temp: String)(body: => A): A = {
+  override def withLabel[A](temp: String)(body: => A): A = {
     val saved = label
     label = temp
     try body finally label = saved
   }
 
-  def visibleSettings = settings.visibleSettings
-  def userSetSettings = settings.userSetSettings
-  def updateSettings(arguments: List[String]) = {
+  override def visibleSettings: SettingSet = settings.visibleSettings
+  override def userSetSettings: SettingSet = settings.userSetSettings
+  override def updateSettings(arguments: List[String]): Boolean = {
     val (ok, rest) = settings.processArguments(arguments, processAll = false)
     ok && rest.isEmpty
   }
@@ -160,7 +111,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   object replOutput extends ReplOutput(settings.Yreploutdir) { }
 
   // Used in a test case.
-  def showDirectory = {
+  def showDirectory: String = {
     val writer = new StringWriter()
     replOutput.show(new PrintWriter(writer))
     writer.toString
@@ -169,11 +120,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   lazy val isClassBased: Boolean = settings.Yreplclassbased.value
 
 
-  def initializeComplete = _initializeComplete
+  override def initializeComplete = _initializeComplete
   private[this] var _initializeComplete = false
 
   // initializes the compiler, returning false if something went wrong
-  def initializeCompiler(): Boolean = global != null
+  override def initializeCompiler(): Boolean = global != null
 
   lazy val global: Global = {
     // Can't use our own reporter until global is initialized
@@ -204,20 +155,20 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   import global._
   import definitions.{ ObjectClass, termMember, dropNullaryMethod}
 
-  def classPathString = global.classPath.asClassPathString
+  override def classPathString = global.classPath.asClassPathString
 
   lazy val runtimeMirror = ru.runtimeMirror(classLoader)
 
   private def noFatal(body: => Symbol): Symbol = try body catch { case _: FatalError => NoSymbol }
 
   def getClassIfDefined(path: String)  = (
-           noFatal(runtimeMirror staticClass path)
-    orElse noFatal(rootMirror staticClass path)
-  )
+    noFatal(runtimeMirror staticClass path)
+      orElse noFatal(rootMirror staticClass path)
+    )
   def getModuleIfDefined(path: String) = (
-           noFatal(runtimeMirror staticModule path)
-    orElse noFatal(rootMirror staticModule path)
-  )
+    noFatal(runtimeMirror staticModule path)
+      orElse noFatal(rootMirror staticModule path)
+    )
 
   implicit class ReplTypeOps(tp: Type) {
     def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
@@ -250,7 +201,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   import memberHandlers._
 
 
-  def quietRun[T](code: String) = reporter.withoutPrintingResults(interpret(code))
+  override def quietRun[T](code: String): Result = reporter.withoutPrintingResults(interpret(code))
 
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
   private def withLastExceptionLock[T](body: => T, alt: => T): T = {
@@ -266,17 +217,17 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def executionWrapper = _executionWrapper
   def setExecutionWrapper(code: String) = _executionWrapper = code
-  def clearExecutionWrapper() = _executionWrapper = ""
+  override def clearExecutionWrapper() = _executionWrapper = ""
 
 
 
   /**
-   * Adds all specified jars to the compile and runtime classpaths.
-   *
-   * @note  Currently only supports jars, not directories.
-   * @param urls The list of items to add to the compile and runtime classpaths.
-   */
-  def addUrlsToClassPath(urls: URL*): Unit = {
+    * Adds all specified jars to the compile and runtime classpaths.
+    *
+    * @note  Currently only supports jars, not directories.
+    * @param urls The list of items to add to the compile and runtime classpaths.
+    */
+  override def addUrlsToClassPath(urls: URL*): Unit = {
     new Run //  force some initialization
     urls.foreach(_runtimeClassLoader.addURL) // Add jars to runtime classloader
     global.extendCompilerClassPath(urls: _*) // Add jars to compile-time classpath
@@ -315,7 +266,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     if (_classLoader == null)
       _classLoader = makeClassLoader()
   }
-  def classLoader: AbstractFileClassLoader = {
+  override def classLoader: AbstractFileClassLoader = {
     ensureClassLoader()
     _classLoader
   }
@@ -326,7 +277,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case s if nme.keywords(newTermName(s)) => s"`$s`"
       case s                                 => s
     } mkString "."
-  )
+    )
   def readRootPath(readPath: String) = getModuleIfDefined(readPath)
 
   abstract class PhaseDependentOps {
@@ -343,7 +294,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     def shift[T](op: => T): T = exitingFlatten(op)
   }
 
-  def originalPath(name: String): String = originalPath(TermName(name))
+  override def originalPath(name: String): String = originalPath(TermName(name))
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
   /** For class based repl mode we use an .INSTANCE accessor. */
@@ -354,15 +305,15 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
 
-  def translatePath(path: String): Option[String] = {
+  override def translatePath(path: String): Option[String] = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
     sym.toOption map flatPath
   }
 
   /** If path represents a class resource in the default package,
-   *  see if the corresponding symbol has a class file that is a REPL artifact
-   *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
-   */
+    *  see if the corresponding symbol has a class file that is a REPL artifact
+    *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
+    */
   def translateSimpleResource(path: String): Option[String] = {
     if (!(path contains '/') && (path endsWith ".class")) {
       val name = path stripSuffix ".class"
@@ -373,13 +324,13 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       None
     }
   }
-  def translateEnclosingClass(n: String) = symbolOfTerm(n).enclClass.toOption map flatPath
+  override def translateEnclosingClass(n: String): Option[String] = symbolOfTerm(n).enclClass.toOption map flatPath
 
   /** If unable to find a resource foo.class, try taking foo as a symbol in scope
-   *  and use its java class name as a resource to load.
-   *
-   *  $intp.classLoader classBytes "Bippy" or $intp.classLoader getResource "Bippy.class" just work.
-   */
+    *  and use its java class name as a resource to load.
+    *
+    *  $intp.classLoader classBytes "Bippy" or $intp.classLoader getResource "Bippy.class" just work.
+    */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
       case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
@@ -393,7 +344,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     })
 
   // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = classLoader.setAsContext()
+  override def setContextClassLoader() = classLoader.setAsContext()
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted
@@ -432,7 +383,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     replScope enter sym
   }
 
-  def recordRequest(req: Request) {
+  def recordRequest(req: Request): Unit = {
     if (req == null)
       return
 
@@ -470,19 +421,19 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** Compile an nsc SourceFile.  Returns true if there are
-   *  no compilation errors, or false otherwise.
-   */
-  def compileSources(sources: SourceFile*): Boolean =
+    *  no compilation errors, or false otherwise.
+    */
+  override def compileSources(sources: SourceFile*): Boolean =
     compileSourcesKeepingRun(sources: _*)._1
 
   /** Compile a string.  Returns true if there are no
-   *  compilation errors, or false otherwise.
-   */
-  def compileString(code: String): Boolean =
+    *  compilation errors, or false otherwise.
+    */
+  override def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
 
   /** Build a request from the user. `trees` is `line` after being parsed.
-   */
+    */
   private[interpreter] def buildRequest(line: String, trees: List[Tree]): Request = {
     executingRequest = new Request(line, trees)
     reporter.currentRequest = executingRequest
@@ -503,7 +454,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     pos
   }
 
-  def requestDefining(name: String): Option[Request] = {
+  override def requestDefining(name: String): Option[Request] = {
     val sym = symbolOfIdent(name)
     prevRequestList collectFirst { case r if r.defines contains sym => r }
   }
@@ -526,7 +477,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         val subs = t collect { case sub => sub }
         subs map (t0 =>
           "  " + safePos(t0, -1) + ": " + t0.shortClass + "\n"
-        ) mkString ""
+          ) mkString ""
       }) mkString "\n"
     )
     // If the last tree is a bare expression, pinpoint where it begins using the
@@ -570,12 +521,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
               " content" -> content,
               "     was" -> l2,
               "combined" -> combined) map {
-                case (label, s) => label + ": '" + s + "'"
-              } mkString "\n"
+              case (label, s) => label + ": '" + s + "'"
+            } mkString "\n"
             )
             combined
           }
-        )
+          )
         // Rewriting    "foo ; bar ; 123"
         // to           "foo ; bar ; val resXX = 123"
         requestFromLine(rewrittenLine, synthetic) match {
@@ -595,16 +546,16 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /**
-   *  Interpret one line of input. All feedback, including parse errors
-   *  and evaluation results, are printed via the supplied compiler's
-   *  reporter. Values defined are available for future interpreted strings.
-   *
-   *  The return value is whether the line was interpreter successfully,
-   *  e.g. that there were no parse errors.
-   */
-  def interpret(line: String): Result = interpret(line, synthetic = false)
+    *  Interpret one line of input. All feedback, including parse errors
+    *  and evaluation results, are printed via the supplied compiler's
+    *  reporter. Values defined are available for future interpreted strings.
+    *
+    *  The return value is whether the line was interpreter successfully,
+    *  e.g. that there were no parse errors.
+    */
+  override def interpret(line: String): Result = interpret(line, synthetic = false)
   def interpretSynthetic(line: String): Result = interpret(line, synthetic = true)
-  def interpret(line: String, synthetic: Boolean): Result = {
+  override def interpret(line: String, synthetic: Boolean): Result = {
     def loadAndRunReq(req: Request) = classLoader.asContext {
       val res = req.loadAndRun // TODO: move classLoader.asContext into loadAndRun ?
 
@@ -623,31 +574,31 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   // create a Request and compile it
-  private[interpreter] def compile(line: String, synthetic: Boolean): Either[Result, Request] =
+  def compile(line: String, synthetic: Boolean): Either[Result, Request] =
     if (global == null) Left(Error)
     else requestFromLine(line, synthetic).filterOrElse(_.compile, Error)
 
   /** Bind a specified name to a specified value.  The name may
-   *  later be used by expressions passed to interpret.
-   *
-   *  A fresh `ReadEvalPrint`, which defines a `line` package, is used to compile
-   *  a custom `eval` object that wraps the bound value.
-   *
-   *  If the bound value is successfully installed, then bind the name
-   *  by interpreting `val name = $line42.$eval.value`.
-   *
-   *  @param name      the variable name to bind
-   *  @param boundType the type of the variable, as a string
-   *  @param value     the object value to bind to it
-   *  @return          an indication of whether the binding succeeded
-   */
-  def bind(name: String, boundType: String, value: Any, modifiers: List[String] = Nil): Result = {
+    *  later be used by expressions passed to interpret.
+    *
+    *  A fresh `ReadEvalPrint`, which defines a `line` package, is used to compile
+    *  a custom `eval` object that wraps the bound value.
+    *
+    *  If the bound value is successfully installed, then bind the name
+    *  by interpreting `val name = $line42.$eval.value`.
+    *
+    *  @param name      the variable name to bind
+    *  @param boundType the type of the variable, as a string
+    *  @param value     the object value to bind to it
+    *  @return          an indication of whether the binding succeeded
+    */
+  override def bind(name: String, boundType: String, value: Any, modifiers: List[String] = Nil): Result = {
     val bindRep = new ReadEvalPrint()
     bindRep.compile(s"""
-        |object ${bindRep.evalName} {
-        |  var value: $boundType = _
-        |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[$boundType]
-        |}
+                       |object ${bindRep.evalName} {
+                       |  var value: $boundType = _
+                       |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[$boundType]
+                       |}
       """.stripMargin
     )
     bindRep.callEither("set", value) match {
@@ -671,6 +622,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def directBind(p: NamedParam): Result                                    = directBind(p.name, p.tpe, p.value)
   def directBind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = directBind((name, value))
 
+  def namedParam[T: ru.TypeTag : ClassTag](name: String, value: T): NamedParam = NamedParam[T](name, value)
+
   def rebind(p: NamedParam): Result = {
     val name     = p.name
     val newType  = p.tpe
@@ -679,12 +632,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     quietRun("val %s = %s".format(tempName, name))
     quietRun("val %s = %s.asInstanceOf[%s]".format(name, tempName, newType))
   }
-  def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
-  def bind(p: NamedParam): Result                                    = bind(p.name, p.tpe, p.value)
+  override def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
+  override def bind(p: NamedParam): Result                                    = bind(p.name, p.tpe, p.value)
   def bind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = bind((name, value))
 
   /** Reset this interpreter, forgetting all user-specified requests. */
-  def reset() {
+  override def reset() {
     clearExecutionWrapper()
     resetClassLoader()
     resetAllCreators()
@@ -694,22 +647,22 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** This instance is no longer needed, so release any resources
-   *  it is using.  The reporter's output gets flushed.
-   */
-  def close() {
+    *  it is using.  The reporter's output gets flushed.
+    */
+  override def close() {
     reporter.flush()
   }
 
-  lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
+  override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
 
   /** Here is where we:
-   *
-   *  1) Read some source code, and put it in the "read" object.
-   *  2) Evaluate the read object, and put the result in the "eval" object.
-   *  3) Create a String for human consumption, and put it in the "print" object.
-   *
-   *  Read! Eval! Print! Some of that not yet centralized here.
-   */
+    *
+    *  1) Read some source code, and put it in the "read" object.
+    *  2) Evaluate the read object, and put the result in the "eval" object.
+    *  3) Create a String for human consumption, and put it in the "print" object.
+    *
+    *  Read! Eval! Print! Some of that not yet centralized here.
+    */
   class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
@@ -777,7 +730,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     lazy val evalClass = load(evalPath)
 
-    def evalEither = callEither(resultName) match {
+    def evalEither: Either[Throwable, AnyRef] = callEither(resultName) match {
       case Right(result)                 => Right(result)
       case Left(_: NullPointerException) => Right(null)
       case Left(e)                       => Left(rootCause(e))
@@ -795,8 +748,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       }
     }
     /** We get a bunch of repeated warnings for reasons I haven't
-     *  entirely figured out yet.  For now, squash.
-     */
+      *  entirely figured out yet.  For now, squash.
+      */
     private def updateRecentWarnings(run: Run) {
       def loop(xs: List[(Position, String)]): List[(Position, String)] = xs match {
         case Nil                  => Nil
@@ -842,11 +795,14 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** One line of code submitted by the user for interpretation */
-  class Request(val line: String, val trees: List[Tree], generousImports: Boolean = false) {
+  class Request(val line: String, val trees: List[Tree], generousImports: Boolean = false) extends ReplRequest {
     def defines    = defHandlers flatMap (_.definedSymbols)
+    def definesTermNames: List[String] = defines collect { case s: TermSymbol => s.decodedName.toString }
     def imports    = importedSymbols
     def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
     val lineRep = new ReadEvalPrint()
+
+    def eval: Either[Throwable, AnyRef] = lineRep.evalEither
 
     private val preambleEndMember = "$ipos"+{lineRep.lineId}
     // don't look until we've (tried) attributing the trees in unit!
@@ -859,7 +815,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
-    def originalLine = if (_originalLine == null) line else _originalLine
+    def originalLine: String = if (_originalLine == null) line else _originalLine
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
@@ -898,16 +854,16 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     /** generate the source code for the object that computes this request */
     abstract class Wrapper extends IMain.CodeAssembler[MemberHandler] {
-//      def path = originalPath("$intp")
+      //      def path = originalPath("$intp")
       // NOTE: it's important to terminate the preambleEndMember definition with a semi-colon
       // to avoid collapsing it with subsequent `{` (making a refinement)
       // We pick this jungle back apart in PresentationCompileResult.tree, so propagate any changes to there.
       def preamble = s"""
-        |$headerPreamble
-        |${preambleHeader format lineRep.readName}
-        |$importsPreamble
-        |private type $preambleEndMember = _root_.scala.Nothing;
-        |""".stripMargin + toCompute
+                        |$headerPreamble
+                        |${preambleHeader format lineRep.readName}
+                        |$importsPreamble
+                        |private type $preambleEndMember = _root_.scala.Nothing;
+                        |""".stripMargin + toCompute
       def preambleLength = preamble.length - toCompute.length
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
@@ -953,8 +909,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
-       *  is a value which can be referred to as-is.
-       */
+        *  is a value which can be referred to as-is.
+        */
       val evalResult = Request.this.value match {
         case NoSymbol => ""
         case sym      => "lazy val %s = %s".format(lineRep.resultName, originalPath(sym))
@@ -962,21 +918,21 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
-      |object %s {
-      |  %s
-      |  lazy val %s: _root_.java.lang.String = %s {
-      |    %s
-      |    (""
-      """.stripMargin.format(
+                       |object %s {
+                       |  %s
+                       |  lazy val %s: _root_.java.lang.String = %s {
+                       |    %s
+                       |    (""
+                     """.stripMargin.format(
         lineRep.evalName, evalResult, lineRep.printName,
         executionWrapper, fullAccessPath
       )
 
       val postamble = """
-      |    )
-      |  }
-      |}
-      """.stripMargin
+                        |    )
+                        |  }
+                        |}
+                      """.stripMargin
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
@@ -987,7 +943,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
-     *  If all goes well, the "types" map is computed. */
+      *  If all goes well, the "types" map is computed. */
     def compile: Boolean = {
       // error counting is wrong, hence interpreter may overlook failure - so we reset
       reporter.reset()
@@ -1037,8 +993,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     lazy val definedSymbols = (
       termNames.map(x => x -> applyToResultMember(x, x => x)) ++
-      typeNames.map(x => x -> compilerTypeOf(x).typeSymbolDirect)
-    ).toMap[Name, Symbol] withDefaultValue NoSymbol
+        typeNames.map(x => x -> compilerTypeOf(x).typeSymbolDirect)
+      ).toMap[Name, Symbol] withDefaultValue NoSymbol
 
     lazy val typesOfDefinedTerms = mapFrom[Name, Name, Type](termNames)(x => applyToResultMember(x, _.tpe))
 
@@ -1054,10 +1010,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def finalize = close
 
   /** Returns the name of the most recent interpreter result.
-   *  Mostly this exists so you can conveniently invoke methods on
-   *  the previous result.
-   */
-  def mostRecentVar: String =
+    *  Mostly this exists so you can conveniently invoke methods on
+    *  the previous result.
+    */
+  override def mostRecentVar: String =
     if (mostRecentlyHandledTree.isEmpty) ""
     else "" + (mostRecentlyHandledTree.get match {
       case x: ValOrDefDef           => x.name
@@ -1067,7 +1023,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     })
 
   private var mostRecentWarnings: List[(global.Position, String)] = Nil
-  def lastWarnings = mostRecentWarnings
+  override def lastWarnings: List[(global.Position, String)] = mostRecentWarnings
 
   private lazy val importToGlobal  = global mkImporter ru
   private lazy val importToRuntime = ru.internal createImporter global
@@ -1126,11 +1082,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** It's a bit of a shotgun approach, but for now we will gain in
-   *  robustness. Try a symbol-producing operation at phase typer, and
-   *  if that is NoSymbol, try again at phase flatten. I'll be able to
-   *  lose this and run only from exitingTyper as soon as I figure out
-   *  exactly where a flat name is sneaking in when calculating imports.
-   */
+    *  robustness. Try a symbol-producing operation at phase typer, and
+    *  if that is NoSymbol, try again at phase flatten. I'll be able to
+    *  lose this and run only from exitingTyper as soon as I figure out
+    *  exactly where a flat name is sneaking in when calculating imports.
+    */
   def tryTwice(op: => Symbol): Symbol = exitingTyper(op) orElse exitingFlatten(op)
 
   def symbolOfIdent(id: String): Symbol  = symbolOfType(id) orElse symbolOfTerm(id)
@@ -1221,6 +1177,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
   }
 
+  def packaged(line: String): Boolean = parse.packaged(line)
+
   def symbolOfLine(code: String): Symbol =
     exprTyper.symbolOfLine(code)
 
@@ -1229,7 +1187,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   private def getterToResultTp(sym: Symbol) = if (sym.isGetter) sym.info.resultType else sym.info
 
-  def implicitsCommandInternal(line: String): (List[String], String) = {
+  override def implicitsCommandInternal(line: String): (List[String], String) = {
     val implicits = collection.mutable.ListBuffer.empty[String]
 
     // If an argument is given, only show a source with that
@@ -1289,7 +1247,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     )
   }
 
-  def kindCommandInternal(expr: String, verbose: Boolean): String = {
+  override def kindCommandInternal(expr: String, verbose: Boolean): String = {
     import scala.util.control.Exception.catching
     val catcher = catching(classOf[MissingRequirementError],
       classOf[ScalaReflectionException])
@@ -1332,7 +1290,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     *  -l label with case class parameter names
     *  -c complete - leave nothing out
     */
-  def typeCommandInternal(expr: String, verbose: Boolean): (String, String) = {
+  override def typeCommandInternal(expr: String, verbose: Boolean): (String, String) = {
     symbolOfLine(expr) match {
       case NoSymbol => ("", "")
       case sym => exitingTyper {
@@ -1342,16 +1300,33 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   }
 
+  def importsCommandInternal(tokens: List[String]): List[String] = {
+    val handlers  = languageWildcardHandlers ++ importHandlers
+
+    handlers.filterNot(_.importedSymbols.isEmpty).zipWithIndex map {
+      case (handler, idx) =>
+        val (types, terms) = handler.importedSymbols partition (_.name.isTypeName)
+        val imps           = handler.implicitSymbols
+        val found          = tokens filter (handler importsSymbolNamed _)
+        val typeMsg        = if (types.isEmpty) "" else types.size + " types"
+        val termMsg        = if (terms.isEmpty) "" else terms.size + " terms"
+        val implicitMsg    = if (imps.isEmpty) "" else imps.size + " are implicit"
+        val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
+        val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
+
+        f"${idx + 1}%2d) ${handler.importString}%-30s $statsMsg$foundMsg"
+    }
+  }
 
   protected def onlyTerms(xs: List[Name]): List[TermName] = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]): List[TypeName] = xs collect { case x: TypeName => x }
 
-  def definedTerms      = onlyTerms(allDefinedNames) filterNot isInternalTermName
-  def definedTypes      = onlyTypes(allDefinedNames)
+  def definedTerms = onlyTerms(allDefinedNames) filterNot isInternalTermName
+  def definedTypes: List[String]      = onlyTypes(allDefinedNames) map (_.toString)
   def definedSymbolList = prevRequestList flatMap (_.defines) filterNot (s => isInternalTermName(s.name))
 
   // Terms with user-given names (i.e. not res0 and not synthetic)
-  def namedDefinedTerms = definedTerms filterNot (x => isUserVarName("" + x) || directlyBoundNames(x))
+  override def namedDefinedTerms: List[String] = definedTerms filterNot (x => isUserVarName("" + x) || directlyBoundNames(x)) map (_.toString)
 
   private var _replScope: Scope = _
   private def resetReplScope() {
@@ -1373,7 +1348,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def prevRequestList = prevRequests.toList
   def importHandlers  = allHandlers collect { case x: ImportHandler => x }
 
-  def symbolDefString(sym: Symbol) = {
+  def symbolDefString(sym: Symbol): String = {
     TypeStrings.quieter(
       exitingTyper(sym.defString),
       sym.owner.name + ".this.",
@@ -1383,8 +1358,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def showCodeIfDebugging(code: String) {
     /** Secret bookcase entrance for repl debuggers: end the line
-     *  with "// show" and see what's going on.
-     */
+      *  with "// show" and see what's going on.
+      */
     def isShow = code.lines exists (_.trim endsWith "// show")
     if (reporter.isDebug || isShow) {
       reporter.suppressOutput(parse(code)) match {
@@ -1407,7 +1382,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 /** Utility methods for the Interpreter. */
 object IMain {
   /** Dummy identifier fragment inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
-  val DummyCursorFragment = "_CURSOR_"
+  final val DummyCursorFragment = "_CURSOR_"
 
   // The two name forms this is catching are the two sides of this assignment:
   //

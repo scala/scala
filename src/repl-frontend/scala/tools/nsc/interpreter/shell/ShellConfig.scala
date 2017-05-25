@@ -1,19 +1,54 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+ * Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc
  */
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc.interpreter.shell
 
 import java.io.File
 import java.util.{Formattable, FormattableFlags, Formatter}
 
-import scala.tools.nsc.Properties
-import Properties._
 import scala.sys.{BooleanProp, Prop}
 import scala.sys.Prop._
 
-trait ReplProps {
+import scala.tools.nsc.{Properties, GenericRunnerSettings, Settings}
+import scala.tools.nsc.Properties._
+
+
+object ShellConfig {
+  import scala.tools.nsc.Properties
+
+  val EDITOR = Properties.envOrNone("EDITOR")
+  val isEmacsShell = Properties.isEmacsShell
+  val InterruptedString = Properties.shellInterruptedString
+
+  def apply(settings: Settings) = settings match {
+    case settings: GenericRunnerSettings => new ShellConfig {
+      val filesToPaste: List[String] = settings.pastefiles.value
+      val filesToLoad: List[String] = settings.loadfiles.value
+      val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
+      val batchMode: Boolean = batchText.nonEmpty
+      val doCompletion: Boolean = !(settings.noCompletion || batchMode)
+      val haveInteractiveConsole: Boolean = !(settings.Xnojline || Properties.isEmacsShell)
+    }
+    case _ => new ShellConfig {
+      val filesToPaste: List[String] = Nil
+      val filesToLoad: List[String] = Nil
+      val batchText: String = ""
+      val batchMode: Boolean = false
+      val doCompletion: Boolean = !settings.noCompletion
+      val haveInteractiveConsole: Boolean = !(settings.Xnojline || isEmacsShell)
+    }
+  }
+}
+
+trait ShellConfig {
+  def filesToPaste: List[String]
+  def filesToLoad: List[String]
+  def batchText: String
+  def batchMode: Boolean
+  def doCompletion: Boolean
+  def haveInteractiveConsole: Boolean
+
   private def bool(name: String) = BooleanProp.keyExists(name)
   private def int(name: String)  = Prop[Int](name)
 
@@ -40,7 +75,7 @@ trait ReplProps {
     s.format(v, javaVersion, javaVmName)
   }
   def encolor(s: String)   = {
-    import scala.io.AnsiColor.{ MAGENTA, RESET }
+    import scala.io.AnsiColor.{MAGENTA, RESET}
     if (colorOk) s"$MAGENTA$s$RESET" else s
   }
 
