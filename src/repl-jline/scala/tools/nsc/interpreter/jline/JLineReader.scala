@@ -1,6 +1,7 @@
 /** NSC -- new Scala compiler
   *
   * Copyright 2005-2015 LAMP/EPFL
+  *
   * @author Stepan Koltsov
   * @author Adriaan Moors
   */
@@ -55,14 +56,41 @@ class InteractiveReader(completer: () => Completion) extends interpreter.Interac
   }
 
   def reset()                     = consoleReader.getTerminal().reset()
-  def redrawLine()                = consoleReader.redrawLineAndFlush()
-  def readOneLine(prompt: String) = consoleReader.readLine(prompt)
-  def readOneKey(prompt: String)  = consoleReader.readOneKey(prompt)
+  def redrawLine()                = withReader(_.redrawLineAndFlush())
+  def readOneLine(prompt: String) = withReader(_.readLine(prompt))
+  def readOneKey(prompt: String)  = withReader(_.readOneKey(prompt))
+  private def withReader[T](f: JLineConsoleReader => T): T = {
+    // SI-8308 Get JLine working after suspend/resume
+    //
+    // Borrowed this logic from SBT.
+    // My testing on MacOS X suggests that only the call to `resume` in the
+    // signal handler for SIGCONT is needed to make things work. The line is redrawn
+    // and tab completion works immediately.
+    //
+    // However, the `init` / `restore` pair will get JLine back up and running on
+    // systems that don't support signal handlers (sun.misc.SignalHandler isn't portable)
+    // so it seems to serve as a useful backstop. I'm not sure whether or not it serves
+    // some other purpose.
+    consoleReader.getTerminal.init()
+    try {
+      Signalling().withSigContHandler(() => resume()){
+        f(consoleReader)
+      }
+    } finally {
+      consoleReader.getTerminal.restore()
+    }
+  }
+
+  private def resume() {
+    jline.TerminalFactory.reset()
+    redrawLine()
+    consoleReader.getTerminal.init()
+  }
 }
 
 // implements a jline interface
 private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter.VariColumnTabulator {
-  val isAcross   = interpreter.`package`.isAcross
+  val isAcross   = interpreter.isAcross
   val marginSize = 3
 
   def width  = getTerminal.getWidth()
@@ -150,5 +178,51 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
     }
 
     setAutoprintThreshold(400) // max completion candidates without warning
+  }
+}
+
+trait Signalling {
+  def withSigContHandler[T](handler: () => Unit)(action: => T): T
+}
+object Signalling {
+  def apply(): Signalling = instance
+
+  private lazy val instance: Signalling =
+    if (DisableSigCont) NoSignalling
+    else try { new SunMiscSignalViaReflection } catch { case _: Throwable => NoSignalling}
+
+  // Disable unconditionally on J9 as it prints a stacktrace to console (e.g. https://github.com/sbt/sbt/issues/1027)
+  private val DisableSigCont = sys.props.contains("scala.repl.disable.cont") || (sys.props("java.vm.name") == "IBM J9 VM")
+  private object NoSignalling extends Signalling {
+    override def withSigContHandler[T](handler: () => Unit)(action: => T): T = action
+  }
+  private class SunMiscSignalViaReflection extends Signalling {
+    import java.lang.reflect.InvocationTargetException
+    import java.lang.reflect.{Method, Proxy, InvocationHandler, Constructor}
+
+    def withSigContHandler[T](handler: () => Unit)(action: => T): T = {
+      val newHandler = newSignalHandler(handler)
+      val oldHandler = Signal_handle(sigCont, newHandler)
+      try action finally Signal_handle(sigCont, oldHandler)
+    }
+
+    @inline private def unwrapITE[T](f: => T): T =
+      try { f } catch { case ite: InvocationTargetException => throw ite.getTargetException }
+    val sun_misc_Signal: Class[_] = Class.forName("sun.misc.Signal")
+    val sun_misc_SignalHandler: Class[_] = Class.forName("sun.misc.SignalHandler")
+    val sun_misc_Signal_handle: Method = sun_misc_Signal.getDeclaredMethod("handle", sun_misc_Signal, sun_misc_SignalHandler)
+    val sun_misc_Signal_init: Constructor[_] = sun_misc_Signal.getConstructor(classOf[String])
+    val sigCont = newSignal("CONT") // create the signal here (within a try/catch) to avoid crashing on windows.
+
+    def newSignal(s: String): AnyRef = unwrapITE(sun_misc_Signal_init.newInstance(s).asInstanceOf[AnyRef])
+    def newSignalHandler(s: () => Unit): AnyRef = {
+      val ih = new InvocationHandler {
+        override def invoke(proxy: scala.Any, method: Method, args: Array[AnyRef]): AnyRef = {s(); null}
+      }
+      Proxy.newProxyInstance(getClass.getClassLoader, Array(sun_misc_SignalHandler), ih)
+    }
+    def Signal_handle(signal: AnyRef, handler: AnyRef): AnyRef = unwrapITE {
+      sun_misc_Signal_handle.invoke(null, signal, handler)
+    }
   }
 }
