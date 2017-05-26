@@ -753,7 +753,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMember = enterMember(cloneInSpecializedClass(m, _ | DEFERRED))
           // debuglog("deferred " + specMember.fullName + " remains abstract")
 
-          info(specMember) = new Abstract(specMember)
+          info(specMember) = Abstract(specMember)
           // was: new Forward(specMember) {
           //   override def target = m.owner.info.member(specializedName(m, env))
           // }

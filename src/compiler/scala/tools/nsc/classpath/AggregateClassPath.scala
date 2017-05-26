@@ -78,7 +78,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
         cp.list(inPackage)
       } catch {
         case ex: java.io.IOException =>
-          val e = new FatalError(ex.getMessage)
+          val e = FatalError(ex.getMessage)
           e.initCause(ex)
           throw e
       }
