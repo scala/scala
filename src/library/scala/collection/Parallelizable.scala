@@ -11,6 +11,9 @@ package collection
 
 import parallel.Combiner
 
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.collection.parallel.{TaskSupport, ForkJoinTaskSupport, setTaskSupport}
+
 /** This trait describes collections which can be turned into parallel collections
  *  by invoking the method `par`. Parallelizable collections may be parameterized with
  *  a target type different than their own.
@@ -41,6 +44,24 @@ trait Parallelizable[+A, +ParRepr <: Parallel] extends Any {
     val cb = parCombiner
     for (x <- seq) cb += x
     cb.result()
+  }
+
+  /** Returns a parallel implementation of this collection using the given thread pool.
+   *
+   * @param threadPool the thread pool to use for supporting parallelism
+   * @return a parallel implementation of this collection using `threadPool` for parallelism
+   */
+  final def par(threadPool: ForkJoinPool): ParRepr = par(new ForkJoinTaskSupport(threadPool))
+
+  /** Returns a parallel implementation of this collection using the given task support.
+   *
+   * @param taskSupport the task support to use for supporting parallelism
+   * @return a parallel implementation of this collection using `taskSupport` for parallelism
+   */
+  def par(taskSupport: TaskSupport): ParRepr = {
+    val pseq = par
+    setTaskSupport(pseq, taskSupport)
+    pseq
   }
 
   /** The default `par` implementation uses the combiner provided by this method
