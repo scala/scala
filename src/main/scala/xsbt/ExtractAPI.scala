@@ -10,7 +10,7 @@ package xsbt
 import java.io.File
 import java.util.{ Arrays, Comparator }
 import scala.tools.nsc.symtab.Flags
-import scala.collection.mutable.{ HashMap, HashSet }
+import scala.collection.mutable.{ HashMap, HashSet, ListBuffer }
 import xsbti.api._
 
 import scala.tools.nsc.Global
@@ -71,6 +71,7 @@ class ExtractAPI[GlobalType <: Global](
   private[this] val emptyStringArray = new Array[String](0)
 
   private[this] val allNonLocalClassesInSrc = new HashSet[xsbti.api.ClassLike]
+  private[this] val _mainClasses = new HashSet[String]
 
   /**
    * Implements a work-around for https://github.com/sbt/sbt/issues/823
@@ -600,6 +601,11 @@ class ExtractAPI[GlobalType <: Global](
     allNonLocalClassesInSrc.toSet
   }
 
+  def mainClasses: Set[String] = {
+    forceStructures()
+    _mainClasses.toSet
+  }
+
   private def classLike(in: Symbol, c: Symbol): ClassLikeDef =
     classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
   private def mkClassLike(in: Symbol, c: Symbol): ClassLikeDef = {
@@ -640,6 +646,10 @@ class ExtractAPI[GlobalType <: Global](
     val classWithMembers = constructClass(structure)
 
     allNonLocalClassesInSrc += classWithMembers
+
+    if (sym.isStatic && defType == DefinitionType.Module && definitions.hasJavaMainMethod(sym)) {
+      _mainClasses += name
+    }
 
     val classDef = new xsbti.api.ClassLikeDef(
       name,

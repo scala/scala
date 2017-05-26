@@ -46,8 +46,10 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
       extractUsedNames.extractAndReport(unit)
 
       val classApis = traverser.allNonLocalClasses
+      val mainClasses = traverser.mainClasses
 
       classApis.foreach(callback.api(sourceFile, _))
+      mainClasses.foreach(callback.mainClass(sourceFile, _))
     }
   }
 
@@ -56,6 +58,9 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
     def allNonLocalClasses: Set[ClassLike] = {
       extractApi.allExtractedNonLocalClasses
     }
+
+    def mainClasses: Set[String] = extractApi.mainClasses
+
     def `class`(c: Symbol): Unit = {
       extractApi.extractAllClassesOf(c.owner, c)
     }
