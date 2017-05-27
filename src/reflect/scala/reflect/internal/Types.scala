@@ -4110,6 +4110,18 @@ trait Types
     case _               => false
   }
 
+  def isSingleConstantType(tp: Type): Boolean = tp match {
+    case ConstantType(_) => true
+    case _ if isSingleType(tp) => isSingleConstantType(tp.underlying)
+    case _ => false
+  }
+
+  def asConstantType(tp: Type): Option[ConstantType] = tp match {
+    case tp: ConstantType => Some(tp)
+    case _ if isSingleType(tp) => asConstantType(tp.underlying)
+    case _ => None
+  }
+
   def isExistentialType(tp: Type): Boolean = tp match {
     case _: ExistentialType           => true
     case tp: Type if tp.dealias ne tp => isExistentialType(tp.dealias)

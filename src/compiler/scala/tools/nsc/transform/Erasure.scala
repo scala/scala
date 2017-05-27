@@ -1183,7 +1183,9 @@ abstract class Erasure extends InfoTransform
           copyDefDef(tree)(tparams = Nil)
         case TypeDef(_, _, _, _) =>
           EmptyTree
-
+        case Ident(_) if isSingleConstantType(tree.tpe) =>
+          val Some(ConstantType(ct)) = asConstantType(tree.tpe)
+          treeCopy.Literal(tree, Constant(ct.value))
         case _ =>
           tree
       }
