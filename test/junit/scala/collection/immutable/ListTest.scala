@@ -46,4 +46,13 @@ class ListTest {
     // real assertion
     Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
   }
+
+  @Test
+  def test_efficientTails_SI9892: Unit = {
+    val tails = List(1,2,3,4,5).tails.toList
+    Assert.assertTrue(tails(0).tail eq tails(1))
+    Assert.assertTrue(tails(0).tail.tail eq tails(2))
+    Assert.assertTrue(tails(1).tail eq tails(2))
+    Assert.assertTrue(tails(2).tail.tail.tail eq tails(5))
+  }
 }

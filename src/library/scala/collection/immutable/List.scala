@@ -254,6 +254,19 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else this drop lo take (until - lo)
   }
 
+  override def tails: Iterator[List[A]] = {
+    new AbstractIterator[List[A]] {
+      var list: List[A] = List.this
+      def hasNext: Boolean = list != null
+      def next(): List[A] = {
+        val nextList = list
+        if (list.isEmpty) list = null
+        else              list = list.tail
+        nextList
+      }
+    }
+  }
+
   override def takeRight(n: Int): List[A] = {
     @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
