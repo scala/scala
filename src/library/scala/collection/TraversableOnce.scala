@@ -148,8 +148,9 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     None
   }
 
+  @deprecated("Use foldLeft instead", "2.12")
   def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
-
+  @deprecated("Use foldRight instead", "2.12")
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {

@@ -6,7 +6,7 @@ object Test extends App {
 
   val printTime = false
 
-  def sum[A](xs: Iterable[Int]) = (0 /: xs)((x, y) => x + y)
+  def sum[A](xs: Iterable[Int]) = xs.foldLeft(0)((x, y) => x + y)
 
   def time(op: => Unit) {
     val start = currentTime
