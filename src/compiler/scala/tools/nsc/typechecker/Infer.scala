@@ -178,6 +178,17 @@ trait Infer extends Checkable {
     def context: Context
     import InferErrorGen._
 
+    // flag used to turn off tupling when alternatives of an overload include a Java-defined method
+    private[this] var tupleForApplicability = true
+    def withoutTuplingForApplicability[A](body: => A): A =
+      if (settings.YnoTupledAmbiguity) {
+        val saved = tupleForApplicability
+        tupleForApplicability = false
+        try body finally tupleForApplicability = saved
+      } else {
+        body
+      }
+
     /* -- Error Messages --------------------------------------------------- */
     def setError[T <: Tree](tree: T): T = {
       // SI-7388, one can incur a cycle calling sym.toString
@@ -755,7 +766,7 @@ trait Infer extends Checkable {
       compareLengths(argtpes0, formals) match {
         case 0 if containsNamedType(argtpes0) => reorderedTypesCompatible      // right number of args, wrong order
         case 0                                => typesCompatible(argtpes0)     // fast track if no named arguments are used
-        case x if x > 0                       => tryWithArgs(argsTupled)       // too many args, try tupling
+        case x if x > 0                       => tupleForApplicability && tryWithArgs(argsTupled) // too many args, try tupling
         case _                                => tryWithArgs(argsPlusDefaults) // too few args, try adding defaults or tupling
       }
     }
@@ -1394,13 +1405,25 @@ trait Infer extends Checkable {
           case tp               => tp
         }
 
+        // if at least one retry is required, and the overload includes a Java-defined alternative
+        // proceed without tupling for applicability (if flag is enabled)
+        private[this] var retries = 0
+        private def atRetryDepth[A](cond: Boolean)(body: => A): A = {
+          val res =
+            if (cond && retries > 0) withoutTuplingForApplicability(body)
+            else body
+          retries += 1
+          res
+        }
+
         private def followType(sym: Symbol) = followApply(pre memberType sym)
         // separate method to help the inliner
         private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
         private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
         private def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
           val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
-          val ranked      = bestAlternatives(applicable)(rankAlternatives)
+          val infected    = applicable exists (_.isJavaDefined)
+          val ranked      = atRetryDepth(infected) { bestAlternatives(applicable)(rankAlternatives) }
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
             case best :: Nil            => tree setSymbol best setType (pre memberType best)           // success

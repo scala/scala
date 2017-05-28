@@ -224,6 +224,8 @@ trait ScalaSettings extends AbsScalaSettings
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
   val YnoLoadImplClass = BooleanSetting   ("-Yno-load-impl-class", "Do not load $class.class files.")
 
+  val YnoTupledAmbiguity = BooleanSetting ("-Yno-tupled-ambiguity", "Tupling will not make a Java API ambiguous.")
+
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   // the current standard is "inline" but we are moving towards "method"
   val Ydelambdafy        = ChoiceSetting     ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "inline")
