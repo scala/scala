@@ -19,15 +19,15 @@ abstract class CNodeBase<K, V> extends MainNode<K, V> {
     public volatile int csize = -1;
 
     public boolean CAS_SIZE(int oldval, int nval) {
-	return updater.compareAndSet(this, oldval, nval);
+        return updater.compareAndSet(this, oldval, nval);
     }
 
     public void WRITE_SIZE(int nval) {
-	updater.set(this, nval);
+        updater.set(this, nval);
     }
 
     public int READ_SIZE() {
-	return updater.get(this);
+        return updater.get(this);
     }
 
 }

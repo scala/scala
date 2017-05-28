@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.beans
 
 /** Provides some simple runtime processing necessary to create
@@ -32,15 +31,9 @@ abstract class ScalaBeanInfo(clazz: java.lang.Class[_],
   override def getPropertyDescriptors() = pd
   override def getMethodDescriptors() = md
 
-  // override def getAdditionalBeanInfo() = Array(Introspector getBeanInfo clazz.getSuperclass)
-
   private def init() {
-    var i = 0
-    while (i < props.length) {
+    for (i <- 0 until props.length by 3) {
       pd(i/3) = new PropertyDescriptor(props(i), clazz, props(i+1), props(i+2))
-      i = i + 3
     }
   }
-
 }
-
