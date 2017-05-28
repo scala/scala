@@ -12,7 +12,13 @@ import scala.util.{Try,Success,Failure}
 class PromiseTests extends MinimalScalaTest {
   import ExecutionContext.Implicits._
 
-  val defaultTimeout = Inf
+  // There's a tradeoff between setting the timeout high to avoid false
+  // positives, or setting it low to improve test execution time in cases where
+  // a timeout occurs. The tests in PromiseTests only wait on computations that
+  // are trivially short, so it should be safe to pick a short timeout. If this
+  // assumption is wrong, it will result in false positive test failures due to
+  // timeouts, which should be easy to diagnose from the log output.
+  val defaultTimeout = 0.25 seconds
 
   /* promise specification */
 
@@ -121,23 +127,42 @@ class PromiseTests extends MinimalScalaTest {
 
   "An interrupted Promise" should {
     val message = "Boxed InterruptedException"
-    val future = Promise[String]().complete(Failure(new InterruptedException(message))).future
+    val future = Future { throw new InterruptedException(message) }
+    futureWithException[ExecutionException](_(future, message))
+  }
+
+  "A stopped Promise" should {
+    val message = "Boxed Error"
+    val future = Future { throw new ThreadDeath }
+    futureWithException[ExecutionException](_(future, message))
+  }
+
+  "A fatally wounded Promise" should {
+    val message = "Boxed Error"
+    val future = Future { throw new UnknownError }
+    futureWithException[ExecutionException](_(future, message))
+  }
+
+  "An unsuccessfully linked Promise" should {
+    val message = "Boxed Error"
+    val future = Future { throw new LinkageError }
     futureWithException[ExecutionException](_(future, message))
   }
 
   "A NonLocalReturnControl failed Promise" should {
     val result = "test value"
-    val future = Promise[String]().complete(Failure(new NonLocalReturnControl[String]("test", result))).future
+    val future = Future { throw new NonLocalReturnControl[String]("test", result) }
     futureWithResult(_(future, result))
   }
 
   def futureWithResult(f: ((Future[Any], Any) => Unit) => Unit) {
 
+    // Wait for future to be ready before checking if it's completed
+    "return when ready with 'Await.ready'" in { f((future, result) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)) }
+
     "be completed" in { f((future, _) => future.isCompleted mustBe (true)) }
 
     "contain a value" in { f((future, result) => future.value mustBe (Some(Success(result)))) }
-
-    "return when ready with 'Await.ready'" in { f((future, result) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)) }
 
     "return result with 'Await.result'" in { f((future, result) => Await.result(future, defaultTimeout) mustBe (result)) }
 
@@ -212,6 +237,13 @@ class PromiseTests extends MinimalScalaTest {
 
   def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) => Unit) => Unit) {
 
+    // Wait for future to be ready before checking if it's completed
+    "throw not throw exception with 'Await.ready'" in {
+      f {
+        (future, message) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)
+      }
+    }
+
     "be completed" in {
       f((future, _) => future.isCompleted mustBe (true))
     }
@@ -220,12 +252,6 @@ class PromiseTests extends MinimalScalaTest {
       f((future, message) => {
         future.value.get.failed.get.getMessage mustBe (message)
       })
-    }
-
-    "throw not throw exception with 'Await.ready'" in {
-      f {
-        (future, message) => Await.ready(future, defaultTimeout).isCompleted mustBe (true)
-      }
     }
 
     "throw exception with 'Await.result'" in {

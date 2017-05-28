@@ -93,8 +93,14 @@ class FutureTests extends MinimalScalaTest {
       val logThrowable: Throwable => Unit = p.trySuccess(_)
       val ec: ExecutionContext = ExecutionContext.fromExecutor(null, logThrowable)
 
-      val t = new InterruptedException()
-      val f = Future(throw t)(ec)
+      // Future now handles all exceptions, so this test must directly use a
+      // Runnable.
+      val t = new Exception()
+      ec.prepare.execute(new Runnable {
+        override def run() = {
+          throw t
+        }
+      })
       Await.result(p.future, 2.seconds) mustBe t
     }
   }

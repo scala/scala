@@ -21,7 +21,13 @@ private[concurrent] object Future {
 
     override def run() = {
       promise complete {
-        try Success(body) catch { case NonFatal(e) => Failure(e) }
+        try Success(body) catch {
+          // Catch all throwables here, so they can be communicated back to the
+          // calling thread. Throwables that aren't handled here are invisible
+          // to the caller, so it doesn't make sense to let any leak, even if
+          // they're fatal.
+          case t: Throwable => Failure(t)
+        }
       }
     }
   }
