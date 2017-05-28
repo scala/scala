@@ -1,0 +1,4 @@
+scam_2.scala:3: error: too many arguments for method k: (x$1: Any)String
+  def f = new Jamb_1().k(42, true, false)
+                        ^
+one error found

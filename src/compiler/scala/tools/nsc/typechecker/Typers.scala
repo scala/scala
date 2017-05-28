@@ -3326,7 +3326,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * default arguments)
            */
           def tryTupleApply: Tree = {
-            if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
+            if (!settings.YnoJavaTupling && eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
