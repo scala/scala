@@ -97,7 +97,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   // New methods in List
 
-  /** Adds an element at the beginning of this list.
+  /** A copy of this list with an element prepended.
    *  @param x the element to prepend.
    *  @return  a list which contains `x` as first element and
    *           which continues with this list.
@@ -111,7 +111,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   def ::[B >: A] (x: B): List[B] =
     new scala.collection.immutable.::(x, this)
 
-  /** Adds the elements of a given list in front of this list.
+  /** A copy of this list with a list of elements prepended.
    *  @param prefix  The list elements to prepend.
    *  @return a list resulting from the concatenation of the given
    *    list `prefix` and this list.
@@ -127,7 +127,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else if (prefix.isEmpty) this
     else (new ListBuffer[B] ++= prefix).prependToList(this)
 
-  /** Adds the elements of a given list in reverse order in front of this list.
+  /** A copy of this list with a reversed list of elements prepended.
    *  `xs reverse_::: ys` is equivalent to
    *  `xs.reverse ::: ys` but is more efficient.
    *
