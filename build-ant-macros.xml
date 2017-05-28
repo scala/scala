@@ -650,7 +650,7 @@
           <property name="repo" value="${local.repository}"/>
         </else></if>
         <artifact:mvn failonerror="true">
-          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.5:sign-and-deploy-file" />
           <arg value="-Durl=${repo}" />
           <arg value="-DrepositoryId=${repository.credentials.id}" />
           <arg value="-DpomFile=${path}-pom-filtered.xml" />
@@ -686,7 +686,7 @@
           <property name="repo" value="${local.repository}"/>
         </else></if>
         <artifact:mvn failonerror="true">
-          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.5:sign-and-deploy-file" />
           <arg value="-Durl=${repo}" />
           <arg value="-DrepositoryId=${repository.credentials.id}" />
           <arg value="-DpomFile=${path}-pom-filtered.xml" />
@@ -720,7 +720,7 @@
           <property name="repo" value="${local.repository}"/>
         </else></if>
         <artifact:mvn failonerror="true">
-          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.5:sign-and-deploy-file" />
           <arg value="-Durl=${repo}" />
           <arg value="-DrepositoryId=${repository.credentials.id}" />
           <arg value="-DpomFile=${path}-pom-filtered.xml" />
