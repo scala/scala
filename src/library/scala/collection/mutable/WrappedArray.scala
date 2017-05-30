@@ -118,7 +118,7 @@ object WrappedArray {
         ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]
   }
 
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
+  def newBuilder[T](implicit t: ClassTag[T]): Builder[T, WrappedArray[T]] = new WrappedArrayBuilder[T](t)
 
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] with Serializable {
     lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
