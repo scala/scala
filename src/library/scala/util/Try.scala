@@ -266,3 +266,7 @@ final case class Success[+T](value: T) extends Try[T] {
   override def fold[U](fa: Throwable => U, fb: T => U): U =
     try { fb(value) } catch { case NonFatal(e) => fa(e) }
 }
+
+object Success {
+  val empty: Success = Success(())
+}
