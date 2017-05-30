@@ -1323,6 +1323,7 @@ object IMain {
     def getScriptEngine: ScriptEngine = {
       val settings = new Settings()
       settings.usemanifestcp.value = true
+      settings.embeddedDefaults(Thread.currentThread().getContextClassLoader)
       new IMain(this, settings)
     }
   }

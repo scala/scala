@@ -9,7 +9,7 @@ package util
 
 import io.{ AbstractFile, Directory, File, Jar }
 import java.net.MalformedURLException
-import java.net.URL
+import java.net.{URL, URLClassLoader}
 import java.util.regex.PatternSyntaxException
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.splitWhere
@@ -112,7 +112,26 @@ object ClassPath {
         new SourcePath[T](dir, this)
   }
 
-  def manifests: List[java.net.URL] = {
+  def urls: List[URL] = {
+    def getClassPath(cl: ClassLoader, acc: List[List[URL]] = List.empty): List[List[URL]] = {
+      val cp = cl match {
+        case urlClassLoader: URLClassLoader => urlClassLoader.getURLs.filter(_.getProtocol == "file").toList
+        case _ => Nil
+      }
+      if (cl == null) acc.reverse else getClassPath(cl.getParent, cp :: acc)
+    }
+
+    val classPath = getClassPath(Thread.currentThread().getContextClassLoader)
+    val currentClassPath = classPath.head
+
+    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0).getPath.endsWith(".jar")) {
+      expandManifestPath(currentClassPath(0).getPath)
+    } else {
+      Nil
+    }) ::: classPath.tail.flatten
+  }
+
+  def manifests: List[URL] = {
     import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
     Thread.currentThread().getContextClassLoader()
       .getResources("META-INF/MANIFEST.MF")

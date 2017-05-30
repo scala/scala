@@ -42,6 +42,10 @@ trait ClassPathFactory[T] {
 
   def classesInPath(path: String) = classesInPathImpl(path, expand = false)
 
+  def classesInURLs(useURLClassPath: Boolean) =
+    if (useURLClassPath) ClassPath.urls.map(url => newClassPath(AbstractFile.getDirectory(url.getPath)))
+    else Nil
+
   def classesInManifest(useManifestClassPath: Boolean) =
     if (useManifestClassPath) ClassPath.manifests.map(url => newClassPath(AbstractFile getResources url))
     else Nil
