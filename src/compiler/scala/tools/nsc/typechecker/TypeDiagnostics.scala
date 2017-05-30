@@ -638,23 +638,23 @@ trait TypeDiagnostics {
               else if (sym.isModule) s"object ${sym.name.decoded}"
               else "term"
             )
-            reporter.warning(pos, s"$why $what in ${sym.owner} is never used")
+            context.warning(pos, s"$why $what in ${sym.owner} is never used")
           }
           for (v <- p.unsetVars) {
-            reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set: consider using immutable val")
+            context.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set: consider using immutable val")
           }
           for (t <- p.unusedTypes) {
             val sym = t.symbol
             val wrn = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
             if (wrn) {
               val why = if (sym.isPrivate) "private" else "local"
-              reporter.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
+              context.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
             }
           }
         }
         if (settings.warnUnusedPatVars) {
           for (v <- p.unusedPatVars)
-            reporter.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
+            context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
         }
         if (settings.warnUnusedParams || settings.warnUnusedImplicits) {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
@@ -672,7 +672,7 @@ trait TypeDiagnostics {
             && !isConvention(s)
           )
           for (s <- p.unusedParams if warnable(s))
-            reporter.warning(s.pos, s"parameter $s in ${s.owner} is never used")
+            context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
         }
       }
     }
@@ -698,11 +698,8 @@ trait TypeDiagnostics {
         } else f
       }
       def apply(tree: Tree): Tree = {
-        // Error suppression (in context.warning) would squash some of these warnings.
-        // It is presumed if you are using a -Y option you would really like to hear
-        // the warnings you've requested; thus, use reporter.warning.
         if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
-          reporter.warning(tree.pos, "dead code following this construct")
+          context.warning(tree.pos, "dead code following this construct")
         tree
       }
 

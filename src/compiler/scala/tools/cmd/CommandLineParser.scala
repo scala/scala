@@ -35,7 +35,15 @@ object CommandLineParser {
   }
   private object DoubleQuoted extends QuotedExtractor('"')
   private object SingleQuoted extends QuotedExtractor('\'')
-  private val Word = """(\S+)(.*)""".r
+  object Word {
+    private val regex = """(\S+)""".r
+    def unapply(s: String): Option[(String, String)] = {
+      regex.findPrefixOf(s) match {
+        case Some(prefix) => Some(prefix, s.substring(prefix.length))
+        case None => None
+      }
+    }
+  }
 
   // parse `in` for an argument, return it and the remainder of the input (or an error message)
   // (argument may be in single/double quotes, taking escaping into account, quotes are stripped)
@@ -52,10 +60,12 @@ object CommandLineParser {
     if (trimmed.isEmpty) Right((accum.reverse, ""))
     else argument(trimmed) match {
       case Right((arg, next)) =>
-        (next span Character.isWhitespace) match {
-          case("", rest) if rest.nonEmpty => Left("Arguments should be separated by whitespace.") // TODO: can this happen?
-          case(ws, rest)                  => commandLine(rest, arg :: accum)
-        }
+        val leadingWhitespaceLen = next.prefixLength(Character.isWhitespace)
+        val rest = next.substring(leadingWhitespaceLen)
+        if (leadingWhitespaceLen == 0 && rest.nonEmpty)
+          Left("Arguments should be separated by whitespace.") // TODO: can this happen?
+        else
+          commandLine(rest, arg :: accum)
       case Left(msg) => Left(msg)
     }
   }

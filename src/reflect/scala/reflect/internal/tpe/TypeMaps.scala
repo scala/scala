@@ -101,11 +101,16 @@ private[internal] trait TypeMaps {
       case tr @ TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
         val args1 = (
-          if (trackVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
-            mapOverArgs(args, sym.typeParams)
-          else
+          if (trackVariance && args.nonEmpty && !variance.isInvariant) {
+            val tparams = sym.typeParams
+            if (tparams.isEmpty)
+              args mapConserve this
+            else
+              mapOverArgs(args, tparams)
+          } else {
             args mapConserve this
-          )
+          }
+        )
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
       case ThisType(_) => tp
@@ -698,18 +703,32 @@ private[internal] trait TypeMaps {
     // OPT this check was 2-3% of some profiles, demoted to -Xdev
     if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
+    private[this] var fromHasTermSymbol = false
+    private[this] var fromMin = Int.MaxValue
+    private[this] var fromMax = Int.MinValue
+    private[this] var fromSize = 0
+    from.foreach {
+      sym =>
+        fromMin = math.min(fromMin, sym.id)
+        fromMax = math.max(fromMax, sym.id)
+        fromSize += 1
+        if (sym.isTerm) fromHasTermSymbol = true
+    }
+
     /** Are `sym` and `sym1` the same? Can be tuned by subclasses. */
     protected def matches(sym: Symbol, sym1: Symbol): Boolean = sym eq sym1
 
     /** Map target to type, can be tuned by subclasses */
     protected def toType(fromtp: Type, tp: T): Type
 
+    // We don't need to recurse into the `restpe` below because we will encounter
+    // them in the next level of recursion, when the result of this method is passed to `mapOver`.
     protected def renameBoundSyms(tp: Type): Type = tp match {
-      case MethodType(ps, restp) =>
-        createFromClonedSymbols(ps, restp)((ps1, tp1) => copyMethodType(tp, ps1, renameBoundSyms(tp1)))
-      case PolyType(bs, restp) =>
-        createFromClonedSymbols(bs, restp)((ps1, tp1) => PolyType(ps1, renameBoundSyms(tp1)))
-      case ExistentialType(bs, restp) =>
+      case MethodType(ps, restp) if fromHasTermSymbol && fromContains(ps) =>
+        createFromClonedSymbols(ps, restp)((ps1, tp1) => copyMethodType(tp, ps1, tp1))
+      case PolyType(bs, restp) if fromContains(bs) =>
+        createFromClonedSymbols(bs, restp)((ps1, tp1) => PolyType(ps1, tp1))
+      case ExistentialType(bs, restp) if fromContains(bs) =>
         createFromClonedSymbols(bs, restp)(newExistentialType)
       case _ =>
         tp
@@ -722,10 +741,27 @@ private[internal] trait TypeMaps {
       else subst(tp, sym, from.tail, to.tail)
       )
 
+    private def fromContains(syms: List[Symbol]): Boolean = {
+      def fromContains(sym: Symbol): Boolean = {
+        // OPT Try cheap checks based on the range of symbol ids in from first.
+        //     Equivalent to `from.contains(sym)`
+        val symId = sym.id
+        val fromMightContainSym = symId >= fromMin && symId <= fromMax
+        fromMightContainSym && (
+          symId == fromMin || symId == fromMax || (fromSize > 2 && from.contains(sym))
+        )
+      }
+      var syms1 = syms
+      while (syms1 ne Nil) {
+        val sym = syms1.head
+        if (fromContains(sym)) return true
+        syms1 = syms1.tail
+      }
+      false
+    }
+
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
-      val boundSyms             = tp0.boundSyms
-      val tp1                   = if (boundSyms.nonEmpty && (boundSyms exists from.contains)) renameBoundSyms(tp0) else tp0
-      val tp                    = mapOver(tp1)
+      val tp                    = mapOver(renameBoundSyms(tp0))
       def substFor(sym: Symbol) = subst(tp, sym, from, to)
 
       tp match {

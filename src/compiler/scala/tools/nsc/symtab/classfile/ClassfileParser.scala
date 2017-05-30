@@ -1089,7 +1089,8 @@ abstract class ClassfileParser {
         cls setInfo completer
         mod setInfo completer
         mod.moduleClass setInfo loaders.moduleClassLoader
-        List(cls, mod.moduleClass) foreach (_.associatedFile = file)
+        cls.associatedFile = file
+        mod.moduleClass.associatedFile = file
         (cls, mod)
       }
 

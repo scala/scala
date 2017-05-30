@@ -79,7 +79,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def tpeTK(tree: Tree): BType = typeToBType(tree.tpe)
 
     def log(msg: => AnyRef) {
-      global synchronized { global.log(msg) }
+      frontendLock synchronized { global.log(msg) }
     }
 
     /* ---------------- helper utils for generating classes and fields ---------------- */

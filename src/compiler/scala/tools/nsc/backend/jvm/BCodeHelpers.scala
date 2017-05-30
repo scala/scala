@@ -12,6 +12,7 @@ import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
 import scala.reflect.internal.Flags
+import scala.tools.nsc.reporters.NoReporter
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -228,16 +229,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      val originalReporter = global.reporter
-      val storeReporter = new reporters.StoreReporter()
-      global.reporter = storeReporter
-      try {
-        sym.info
-      } finally {
-        global.reporter = originalReporter
-      }
+      withoutReporting(sym.info)
       sym.isErroneous
     }
+
+  @inline private def withoutReporting[T](fn : => T) = {
+    val currentReporter = reporter
+    reporter = NoReporter
+    try fn finally reporter = currentReporter
+  }
 
 
   /*
@@ -276,12 +276,14 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   final class CClassWriter(flags: Int) extends asm.ClassWriter(flags) {
 
     /**
-     * This method is thread-safe: it depends only on the BTypes component, which does not depend
-     * on global. TODO @lry move to a different place where no global is in scope, on bTypes.
+     * This method is used by asm when computing stack map frames. It is thread-safe: it depends
+     * only on the BTypes component, which does not depend on global.
+     * TODO @lry move to a different place where no global is in scope, on bTypes.
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
-      val a = classBTypeFromInternalName(inameA)
-      val b = classBTypeFromInternalName(inameB)
+      // All types that appear in a class node need to have their ClassBType cached, see [[cachedClassBType]].
+      val a = cachedClassBType(inameA).get
+      val b = cachedClassBType(inameB).get
       val lub = a.jvmWiseLUB(b).get
       val lubName = lub.internalName
       assert(lubName != "scala/Any")
