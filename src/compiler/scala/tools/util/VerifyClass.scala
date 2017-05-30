@@ -13,7 +13,7 @@ object VerifyClass {
       Class.forName(name, true, cl)
       (name, None)
     } catch {
-      case x: Throwable => // TODO: only catch VerifyError (and related) + ExceptionInInitializationError (for static objects that bomb on classload)
+      case x: Throwable => // TODO: only catch VerifyError (and related) + ExceptionInInitializerError (for static objects that bomb on classload)
         (name, Some(x.toString))
     }
   }

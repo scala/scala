@@ -93,7 +93,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
     // Make sure to reference the ClassBTypes of all types that are used in the code generated
     // here (e.g. java/util/Map) are initialized. Initializing a ClassBType adds it to the
-    // `classBTypeFromInternalName` map. When writing the classfile, the asm ClassWriter computes
+    // `cachedClassBType` maps. When writing the classfile, the asm ClassWriter computes
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
@@ -355,7 +355,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
 
     visitInternalName(classNode.name)
-    innerClasses ++= classBTypeFromParsedClassfile(classNode.name).info.get.nestedClasses
+    innerClasses ++= classBTypeFromParsedClassfile(classNode.name).info.get.nestedClasses.force
 
     visitInternalName(classNode.superName)
     classNode.interfaces.asScala foreach visitInternalName

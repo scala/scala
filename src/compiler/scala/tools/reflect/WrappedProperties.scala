@@ -10,7 +10,7 @@ import scala.util.PropertiesTrait
 import java.security.AccessControlException
 
 /** For placing a wrapper function around property functions.
- *  Motivated by places like google app engine throwing exceptions
+ *  Motivated by places like Google App Engine throwing exceptions
  *  on property lookups.
  */
 trait WrappedProperties extends PropertiesTrait {

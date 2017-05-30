@@ -124,9 +124,9 @@ trait TypeComparers {
   // combination of { tp1, tp2 } { is, is not } an AnnotatedType - this because the
   // logic of "annotationsConform" is arbitrary and unknown.
   private def isSameType1(tp1: Type, tp2: Type): Boolean = typeRelationPreCheck(tp1, tp2) match {
-    case state if state.isKnown                                  => state.booleanValue
-    case _ if typeHasAnnotations(tp1) || typeHasAnnotations(tp2) => sameAnnotatedTypes(tp1, tp2)
-    case _                                                       => isSameType2(tp1, tp2)
+    case state if state.isKnown                                                  => state.booleanValue
+    case _ if tp1.isInstanceOf[AnnotatedType] || tp2.isInstanceOf[AnnotatedType] => sameAnnotatedTypes(tp1, tp2)
+    case _                                                                       => isSameType2(tp1, tp2)
   }
 
   private def isSameHKTypes(tp1: Type, tp2: Type) = (
@@ -325,9 +325,9 @@ trait TypeComparers {
   }
 
   private def isSubType1(tp1: Type, tp2: Type, depth: Depth): Boolean = typeRelationPreCheck(tp1, tp2) match {
-    case state if state.isKnown                                  => state.booleanValue
-    case _ if typeHasAnnotations(tp1) || typeHasAnnotations(tp2) => annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
-    case _                                                       => isSubType2(tp1, tp2, depth)
+    case state if state.isKnown                                                  => state.booleanValue
+    case _ if tp1.isInstanceOf[AnnotatedType] || tp2.isInstanceOf[AnnotatedType] => annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
+    case _                                                                       => isSubType2(tp1, tp2, depth)
   }
 
   private def isPolySubType(tp1: PolyType, tp2: PolyType): Boolean = {

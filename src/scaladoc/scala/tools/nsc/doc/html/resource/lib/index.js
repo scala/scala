@@ -113,20 +113,26 @@ function handleKeyNavigation() {
         scroller.container = $container;
 
         scroller.scrollDown = function($elem) {
-            var yPos = $elem.offset().top; // offset relative to viewport
-            if ($container.height() < yPos || (yPos - $("#search").height()) < 0) {
-                $container.animate({
-                    scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
-                }, 200);
+            var offset = $elem.offset(); // offset relative to viewport
+            if (offset !== undefined) {
+                var yPos = offset.top;
+                if ($container.height() < yPos || (yPos - $("#search").height()) < 0) {
+                    $container.animate({
+                        scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
+                    }, 200);
+                }
             }
         };
 
         scroller.scrollUp = function ($elem) {
-            var yPos = $elem.offset().top; // offset relative to viewport
-            if (yPos < $("#search").height()) {
-                $container.animate({
-                    scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
-                }, 200);
+            var offset = $elem.offset(); // offset relative to viewport
+            if (offset !== undefined) {
+                var yPos = offset.top;
+                if (yPos < $("#search").height()) {
+                    $container.animate({
+                        scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
+                    }, 200);
+                }
             }
         };
 

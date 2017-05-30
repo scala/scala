@@ -519,7 +519,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  often to the point of never.
      */
     def newStubSymbol(name: Name, missingMessage: String): Symbol = {
-      // Invoke the overriden `newStubSymbol` in Global that gives us access to typer
+      // Invoke the overridden `newStubSymbol` in Global that gives us access to typer
       Symbols.this.newStubSymbol(this, name, missingMessage)
     }
 
@@ -686,7 +686,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isClass && isFinal && loop(typeParams)
     }
 
-    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && safeOwner.isClass
+    final def isOverridableMember  = !(isClass || isEffectivelyFinal || isTypeParameter) && safeOwner.isClass
 
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
@@ -1744,18 +1744,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
     // don't forget to modify the code over there if you modify this method
-    def typeParams: List[Symbol] =
-      if (isMonomorphicType) Nil
-      else {
-        // analogously to the "info" getter, here we allow for two completions:
-        //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (validTo == NoPeriod)
+    def typeParams: List[Symbol] = {
+      def completeTypeParams = {
+        if (isMonomorphicType) Nil
+        else {
+          // analogously to the "info" getter, here we allow for two completions:
+          //   one: sourceCompleter to LazyType, two: LazyType to completed type
           enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-        if (validTo == NoPeriod)
-          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
+          if (validTo == NoPeriod)
+            enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
-        rawInfo.typeParams
+          rawInfo.typeParams
+        }
       }
+      if (validTo != NoPeriod) rawInfo.typeParams else completeTypeParams
+    }
 
     /** The value parameter sections of this symbol.
      */
@@ -2320,8 +2323,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private def matchingSymbolInternal(site: Type, candidate: Symbol): Symbol = {
       def qualifies(sym: Symbol) = !sym.isTerm || ((site memberType this) matches (site memberType sym))
-      //OPT cut down on #closures by special casing non-overloaded case
-      if (candidate.isOverloaded) candidate filter qualifies
+      //OPT Fast past for NoSymbol. Cut down on #closures by special casing non-overloaded case
+      if (candidate == NoSymbol) NoSymbol
+      else if (candidate.isOverloaded) candidate filter qualifies
       else if (qualifies(candidate)) candidate
       else NoSymbol
     }
@@ -2371,15 +2375,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Returns all symbols overridden by this symbol. */
     final def allOverriddenSymbols: List[Symbol] = {
-      def loop(xs: List[Symbol]): List[Symbol] = xs match {
-        case Nil     => Nil
+      @tailrec
+      def loop(xs: List[Symbol], result: List[Symbol]): List[Symbol] = xs match {
+        case Nil     => result
         case x :: xs =>
           overriddenSymbol(x) match {
-            case NoSymbol => loop(xs)
-            case sym      => sym :: loop(xs)
+            case NoSymbol => loop(xs, result)
+            case sym      => loop(xs, sym :: result)
           }
       }
-      if (isOverridingSymbol) loop(owner.ancestors) else Nil
+      if (isOverridingSymbol) loop(owner.ancestors, Nil) else Nil
     }
 
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
@@ -2959,7 +2964,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // in place until after the compiler has completed the typer phase.
       //
       // Out of caution, I've also disable caching if there are active type completers, which also
-      // mutate symbol infos during val and def return type inference based the overriden member.
+      // mutate symbol infos during val and def return type inference based the overridden member.
       if (!isCompilerUniverse || isPastTyper || lockedCount > 0) return pre.computeMemberType(this)
 
       if (mtpeRunId == currentRunId && (mtpePre eq pre) && (mtpeInfo eq info))
