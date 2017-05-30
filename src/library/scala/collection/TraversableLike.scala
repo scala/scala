@@ -606,12 +606,25 @@ trait TraversableLike[+A, +Repr] extends Any
    *           simple name of the collection class $coll.
    */
   def stringPrefix : String = {
-    var string = repr.getClass.getName
-    val idx1 = string.lastIndexOf('.' : Int)
-    if (idx1 != -1) string = string.substring(idx1 + 1)
-    val idx2 = string.indexOf('$')
-    if (idx2 != -1) string = string.substring(0, idx2)
-    string
+    val string = repr.getClass.getName
+    val idx1 = 1 + string.lastIndexOf('.' : Int)
+    val idx2 = string.indexOf('$', math.max(0, idx1))
+    if (idx2 == -1) {
+      // No $, just take the last name
+      if (idx1 > 0) string.substring(idx1) else string
+    }
+    else {
+      // We found a $.  Maybe we can find something that looks like a class name?
+      // None of the $-stuff the compiler inserts seems to be upper case in the first character.
+      var end = string.length
+      while (end > idx2+1) {
+        val idx = string.lastIndexOf('$', end-1)
+        // If we found something good, snip it out and return
+        if (idx >= idx2 && idx+1 < end && java.lang.Character.isUpperCase(string.charAt(idx+1))) return string.substring(idx+1, end)
+        end = idx
+      }
+      if (idx2 > idx1) string.substring(idx1, idx2) else string.substring(idx1)
+    }
   }
 
   /** Creates a non-strict view of this $coll.
