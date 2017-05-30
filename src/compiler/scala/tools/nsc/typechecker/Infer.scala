@@ -573,6 +573,13 @@ trait Infer extends Checkable {
           }
         )
       }
+      if (settings.warnInferAny) {
+        foreachWithIndex(targs){ (targ, idx) =>
+          val tparam = tparams(idx)
+          if (!tparam.isMonomorphicType && !targ.isHigherKinded)
+            reporter.warning(argumentPosition(idx), s"type inference relied on kind-polymorphic nature of inferred type `$targ` to conform to type parameter ${tparam.defString}")
+        }
+      }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
 
