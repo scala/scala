@@ -12,7 +12,7 @@ package mutable
 /** Class used internally.
  *  @since 2.8
  */
-trait HashEntry [A, E] {
+trait HashEntry [A, E <: HashEntry[A, E]] {
   val key: A
   var next: E = _
 }
