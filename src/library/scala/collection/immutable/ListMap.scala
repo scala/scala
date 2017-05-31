@@ -99,6 +99,8 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
     reverseList.iterator
   }
 
+  override def mapValues[W](f: (B) => W): ListMap[A, W] = this.map(x => (x._1, f(x._2)))
+
   protected def key: A = throw new NoSuchElementException("key of empty map")
   protected def value: B = throw new NoSuchElementException("value of empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("next of empty map")
