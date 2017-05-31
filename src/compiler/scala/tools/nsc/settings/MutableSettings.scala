@@ -426,6 +426,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     def parseArgument(x: String): Option[Int] = {
       parser(x) orElse {
+// MARK
         try   { Some(x.toInt) }
         catch { case _: NumberFormatException => None }
       }
