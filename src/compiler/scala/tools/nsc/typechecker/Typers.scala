@@ -5761,12 +5761,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else AnyTpe
     }
 
-    @inline final def transformedOr(tree: Tree, op: => Tree): Tree = lookupTransformed(tree) match {
+    @inline final def transformedOr(tree: Tree, op: => Tree): Tree = lookupTransformed( tree) match {
       case Some(tree1) => tree1
       case _           => op
     }
 
-    final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
+    @inline final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
         case _           => typed(tree, mode, pt)
