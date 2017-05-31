@@ -206,6 +206,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     drop(1)
   }
 
+  /** The initial part of the collection without its last element. */
+  def init: C = {
+    if (coll.isEmpty) throw new UnsupportedOperationException
+    take(size - 1)
+  }
+
   /** Selects an interval of elements.  The returned collection is made up
     *  of all elements `x` which satisfy the invariant:
     *  {{{

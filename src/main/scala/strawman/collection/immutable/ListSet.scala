@@ -94,8 +94,7 @@ sealed class ListSet[A]
 
     override def last: A = elem
 
-    // TODO Override init for performance
-    // override def init: ListSet[A] = next
+    override def init: ListSet[A] = next
   }
 }
 
