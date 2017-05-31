@@ -138,6 +138,16 @@ trait TypersTracking {
         runWith(tree) { pushFn ; showPop(body) }
     )
 
+    def beforeNextTyped(tree: Tree, mode: Mode, pt: Type, context: Context): Boolean = if (noPrintTyping(tree)) false else {
+      push(tree)
+      showPush(tree, mode, pt, context)
+      true
+    }
+    def afterNextTyped(tree: Tree, typedTree: Tree): Unit = {
+      showPop(typedTree)
+      pop(tree)
+    }
+
     @inline final def printTyping(tree: Tree, s: => String) = {
       if (printTypings && !noPrintTyping(tree))
         show(indented(s))
