@@ -40,5 +40,20 @@ class NumericTest {
     val num = scala.math.Numeric.BigDecimalAsIfIntegral
     assertTrue(num.quot(BigDecimal(2.5), BigDecimal(0.5)) equals BigDecimal(5.0))
     assertTrue(num.quot(BigDecimal(5.0), BigDecimal(2.0)) equals BigDecimal(2.0))
-  }}
+  }
+
+  /* Test for SI-9705 */
+  @Test
+  def testComparison {
+    import scala.math.Numeric.Implicits._
+    assertTrue(BigDecimal(2.0) < BigDecimal(3.0))
+    assertFalse(BigDecimal(3.0) < BigDecimal(2.0))
+    assertTrue(BigDecimal(2.5) <= BigDecimal(2.5))
+    assertFalse(BigDecimal(3.0) <= BigDecimal(2.0))
+    assertTrue(BigDecimal(3.0) > BigDecimal(2.0))
+    assertFalse(BigDecimal(2.0) > BigDecimal(3.0))
+    assertTrue(BigDecimal(3.0) >= BigDecimal(3.0))
+    assertFalse(BigDecimal(3.0) >= BigDecimal(3.1))
+  }
+}
 
