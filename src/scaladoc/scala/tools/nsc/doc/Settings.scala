@@ -17,6 +17,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   // TODO 2.13 Remove
   private def removalIn213 = "This flag is scheduled for removal in 2.13. If you have a case where you need this flag then please report a bug."
 
+  override val d = OutputSetting(outputDirs, ".", "Destination for generated scaladoc files.")
+
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
   val docformat = ChoiceSetting (
@@ -345,4 +347,5 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       true
     }
   }
+
 }

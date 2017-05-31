@@ -10,10 +10,12 @@ object Test {
     val permutations = permutations0 flatMap ("-cp CPTOKEN" :: _ permutations)
 
     for ((p, i) <- permutations.distinct.sortBy(_ mkString "").zipWithIndex) {
+
       val args           = p flatMap (_ split "\\s+") map (x => if (x == "CPTOKEN") cp else x)
       val s              = new settings.MutableSettings(println)
       val (ok, residual) = s.processArguments(args, processAll = true)
 
+      s.toString()
       val expected = args filter (_ == "foo.scala")
       assert(residual == expected, residual)
       assert(ok, args)

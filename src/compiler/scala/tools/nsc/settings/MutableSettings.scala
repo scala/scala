@@ -213,9 +213,15 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
   // a wrapper for all Setting creators to keep our list up to date
-  private def add[T <: Setting](s: T): T = {
-    allSettings += s
-    s
+  private[nsc] def add[T <: Setting](setting: T): T = {
+
+    allSettings.find(_.name == setting.name) match {
+      case Some(s) => allSettings -= s
+      case None =>
+    }
+
+    allSettings += setting
+    setting
   }
 
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
@@ -233,7 +239,7 @@ class MutableSettings(val errorFn: String => Unit)
   def MultiStringSetting(name: String, arg: String, descr: String, helpText: Option[String]) = add(new MultiStringSetting(name, arg, descr, helpText))
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
-  def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
+  def OutputSetting(outputDirs: OutputDirs, default: String, descr: String) = add(new OutputSetting(outputDirs, default, descr))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String]) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
@@ -384,6 +390,13 @@ class MutableSettings(val errorFn: String => Unit)
     private var _deprecationMessage: Option[String] = None
     override def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
+
+    override def hashCode = name.hashCode
+
+    override def equals(other: Any) = other match {
+      case s: Setting => name == s.name
+      case _ => false
+    }
   }
 
   /** A setting represented by an integer. */
@@ -581,8 +594,9 @@ class MutableSettings(val errorFn: String => Unit)
   /** Set the output directory. */
   class OutputSetting private[nsc](
     private[nsc] val outputDirs: OutputDirs,
-    default: String)
-    extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None) {
+    default: String,
+    description: String)
+    extends StringSetting("-d", "directory|jar", description, default, None) {
       value = default
       override def value_=(str: String) {
         super.value_=(str)

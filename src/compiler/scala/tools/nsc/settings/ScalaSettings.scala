@@ -55,7 +55,7 @@ trait ScalaSettings extends AbsScalaSettings
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
-  val d             = OutputSetting     (outputDirs, ".")
+  val d             = OutputSetting     (outputDirs, ".", "Destination for generated classfiles.")
   val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
 
   // Would be nice to build this dynamically from scala.languageFeature.
