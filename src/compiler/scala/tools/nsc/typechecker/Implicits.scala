@@ -216,13 +216,21 @@ trait Implicits {
     }
 
     def isCyclicOrErroneous: Boolean = {
-      if (!isCyclicOrErroneousCache.isKnown) isCyclicOrErroneousCache = computeIsCyclicOrErroneous
-      isCyclicOrErroneousCache.booleanValue
+      if (!isCyclicOrErroneousCache.isKnown)
+        try global.withPropagateCyclicReferences {
+          val cyclicOrErroneous = sym.hasFlag(LOCKED) || containsError(tpe)
+          isCyclicOrErroneousCache = cyclicOrErroneous
+          cyclicOrErroneous
+        } catch {
+          case _: CyclicReference =>
+            /* if the symbol was not locked but we got a cyclic reference error,
+             * it was likely from a different symbol and does not disqualify this one
+             * That said, it's still not good this time around */
+            true
+        }
+      else
+        isCyclicOrErroneousCache.booleanValue
     }
-
-    private[this] final def computeIsCyclicOrErroneous =
-      try sym.hasFlag(LOCKED) || containsError(tpe)
-      catch { case _: CyclicReference => true }
 
     var useCountArg: Int = 0
     var useCountView: Int = 0
