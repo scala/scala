@@ -553,9 +553,9 @@ trait TypeDiagnostics {
           && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
         )
         def isSyntheticWarnable(sym: Symbol) = (
-          sym.isDefaultGetter 
+          sym.isDefaultGetter
         )
-        
+
         def isUnusedTerm(m: Symbol): Boolean = (
              m.isTerm
           && (!m.isSynthetic || isSyntheticWarnable(m))
@@ -584,13 +584,14 @@ trait TypeDiagnostics {
 
         def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
         def unusedTerms = {
+          def accessSameField(getter: Symbol, setter: Symbol): Boolean =
+            getter.accessed == setter.accessed
           val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
 
-          // filter out setters if already warning for getter, indicated by position.
-          // also documentary names in patterns.
+          // filter out setters if already warning for getter
           all.filterNot(v =>
-              v.symbol.isSetter && all.exists(g => g.symbol.isGetter && g.symbol.pos.point == v.symbol.pos.point)
-           || atBounds.exists(x => v.symbol.pos.point == x.pos.point)
+              v.symbol.isSetter && all.exists(g => g.symbol.isGetter && accessSameField(g.symbol, v.symbol))
+           || atBounds.exists(x => x.isGetter && accessSameField(v.symbol,  x))
           ).sortBy(treepos)
         }
         // local vars which are never set, except those already returned in unused
