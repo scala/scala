@@ -355,6 +355,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new MixinTransformer(unit)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new MixinPhase(prev)
+  private class MixinPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class MixinTransformer(unit : CompilationUnit) extends Transformer with AccessorTreeSynthesis {
     /** The typer */

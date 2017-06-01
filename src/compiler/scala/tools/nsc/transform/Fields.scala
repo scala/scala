@@ -79,6 +79,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   val phaseName: String = "fields"
 
   protected def newTransformer(unit: CompilationUnit): Transformer = new FieldsTransformer(unit)
+
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new FieldsPhase(prev)
+  private class FieldsPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   override def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isJavaDefined || sym.isPackageClass || !sym.isClass) tp
     else synthFieldsAndAccessors(tp)

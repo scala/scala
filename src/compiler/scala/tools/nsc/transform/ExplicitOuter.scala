@@ -483,6 +483,7 @@ abstract class ExplicitOuter extends InfoTransform
     new Phase(prev)
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
     override val checkable = false
   }
 }

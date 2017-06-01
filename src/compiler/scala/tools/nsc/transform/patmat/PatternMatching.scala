@@ -53,6 +53,10 @@ trait PatternMatching extends Transform
   val phaseName: String = "patmat"
 
   def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new PatternMatchingPhase(prev)
+  private class PatternMatchingPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {

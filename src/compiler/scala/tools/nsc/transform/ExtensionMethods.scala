@@ -27,6 +27,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   def newTransformer(unit: CompilationUnit): Transformer =
     new Extender(unit)
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new ExtensionMethodsPhase(prev)
+  private class ExtensionMethodsPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   /** Generate stream of possible names for the extension version of given instance method `imeth`.
    *  If the method is not overloaded, this stream consists of just "extension$imeth".
    *  If the method is overloaded, the stream has as first element "extensionX$imeth", where X is the

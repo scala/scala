@@ -10,6 +10,7 @@ import symtab._
 import Flags._
 import scala.collection._
 import scala.language.postfixOps
+import scala.tools.nsc
 
 abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   import global._
@@ -26,6 +27,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new CleanUpTransformer(unit)
+
+  override def newPhase(prev: nsc.Phase): StdPhase = new CleanupPhase(prev)
+  private class CleanupPhase(prev: nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class CleanUpTransformer(unit: CompilationUnit) extends StaticsTransformer {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]

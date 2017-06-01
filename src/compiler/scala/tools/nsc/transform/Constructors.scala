@@ -23,6 +23,11 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ConstructorTransformer(unit)
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new ConstructorsPhase(prev)
+  private class ConstructorsPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = perRunCaches.newMap[Symbol, List[Tree]]()
   private val ctorParams: mutable.Map[Symbol, List[Symbol]] = perRunCaches.newMap[Symbol, List[Symbol]]()
 

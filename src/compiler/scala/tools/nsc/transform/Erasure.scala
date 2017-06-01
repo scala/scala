@@ -31,6 +31,11 @@ abstract class Erasure extends InfoTransform
   def newTransformer(unit: CompilationUnit): Transformer =
     new ErasureTransformer(unit)
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new ErasurePhase(prev)
+  private class ErasurePhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   override def keepsTypeParams = false
 
 // -------- erasure on types --------------------------------------------------------
