@@ -282,21 +282,26 @@ abstract class Erasure extends InfoTransform
             }
           def classSig = {
             val preRebound = pre.baseType(sym.owner) // #2585
-            dotCleanup(
-              (
-                if (needsJavaSig(preRebound, Nil)) {
-                  val s = jsig(preRebound, existentiallyBound)
-                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
-                  else fullNameInSig(sym)
-                }
-                else fullNameInSig(sym)
-              ) + (
-                if (args.isEmpty) "" else
-                "<"+(args map argSig).mkString+">"
-              ) + (
-                ";"
-              )
-            )
+            val sigCls = {
+              if (needsJavaSig(preRebound, Nil)) {
+                val s = jsig(preRebound, existentiallyBound)
+                if (s.charAt(0) == 'L') {
+                  val withoutSemi = s.substring(0, s.length - 1)
+                  // If the prefix is a module, drop the '$'. Classes (or modules) nested in modules
+                  // are separated by a single '$' in the filename: `object o { object i }` is o$i$.
+                  val withoutOwningModuleDollar =
+                    if (preRebound.typeSymbol.isModuleClass) withoutSemi.stripSuffix(nme.MODULE_SUFFIX_STRING)
+                    else withoutSemi
+                  withoutOwningModuleDollar + "." + sym.javaSimpleName
+                } else fullNameInSig(sym)
+              }
+              else fullNameInSig(sym)
+            }
+            val sigArgs = {
+              if (args.isEmpty) ""
+              else "<"+(args map argSig).mkString+">"
+            }
+            dotCleanup(sigCls + sigArgs + ";")
           }
 
           // If args isEmpty, Array is being used as a type constructor
