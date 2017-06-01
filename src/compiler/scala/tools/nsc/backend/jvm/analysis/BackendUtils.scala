@@ -13,6 +13,7 @@ import scala.tools.asm.tree.analysis._
 import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
@@ -286,121 +287,22 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
   }
 
+  private class Collector extends NestedClassesCollector[ClassBType] {
+    def declaredNestedClasses(internalName: InternalName): List[ClassBType] =
+      classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
+
+    def getClassIfNested(internalName: InternalName): Option[ClassBType] = {
+      val c = classBTypeFromParsedClassfile(internalName)
+      if (c.isNestedClass.get) Some(c) else None
+    }
+  }
   /**
    * Visit the class node and collect all referenced nested classes.
    */
   def collectNestedClasses(classNode: ClassNode): List[ClassBType] = {
-    val innerClasses = mutable.Set.empty[ClassBType]
-
-    def visitInternalName(internalName: InternalName): Unit = if (internalName != null) {
-      val t = classBTypeFromParsedClassfile(internalName)
-      if (t.isNestedClass.get) innerClasses += t
-    }
-
-    // either an internal/Name or [[Linternal/Name; -- there are certain references in classfiles
-    // that are either an internal name (without the surrounding `L;`) or an array descriptor
-    // `[Linternal/Name;`.
-    def visitInternalNameOrArrayReference(ref: String): Unit = if (ref != null) {
-      val bracket = ref.lastIndexOf('[')
-      if (bracket == -1) visitInternalName(ref)
-      else if (ref.charAt(bracket + 1) == 'L') visitInternalName(ref.substring(bracket + 2, ref.length - 1))
-    }
-
-    // we are only interested in the class references in the descriptor, so we can skip over
-    // primitives and the brackets of array descriptors
-    def visitDescriptor(desc: String): Unit = (desc.charAt(0): @switch) match {
-      case '(' =>
-        val internalNames = mutable.ListBuffer.empty[String]
-        var i = 1
-        while (i < desc.length) {
-          if (desc.charAt(i) == 'L') {
-            val start = i + 1 // skip the L
-            while (desc.charAt(i) != ';') i += 1
-            internalNames += desc.substring(start, i)
-          }
-          // skips over '[', ')', primitives
-          i += 1
-        }
-        internalNames foreach visitInternalName
-
-      case 'L' =>
-        visitInternalName(desc.substring(1, desc.length - 1))
-
-      case '[' =>
-        visitInternalNameOrArrayReference(desc)
-
-      case _ => // skip over primitive types
-    }
-
-    def visitConstant(const: AnyRef): Unit = const match {
-      case t: Type => visitDescriptor(t.getDescriptor)
-      case _ =>
-    }
-
-    // in principle we could references to annotation types, as they only end up as strings in the
-    // constant pool, not as class references. however, the java compiler still includes nested
-    // annotation classes in the innerClass table, so we do the same. explained in detail in the
-    // large comment in class BTypes.
-    def visitAnnotation(annot: AnnotationNode): Unit = {
-      visitDescriptor(annot.desc)
-      if (annot.values != null) annot.values.asScala foreach visitConstant
-    }
-
-    def visitAnnotations(annots: java.util.List[_ <: AnnotationNode]) = if (annots != null) annots.asScala foreach visitAnnotation
-    def visitAnnotationss(annotss: Array[java.util.List[AnnotationNode]]) = if (annotss != null) annotss foreach visitAnnotations
-
-    def visitHandle(handle: Handle): Unit = {
-      visitInternalNameOrArrayReference(handle.getOwner)
-      visitDescriptor(handle.getDesc)
-    }
-
-    visitInternalName(classNode.name)
-    innerClasses ++= classBTypeFromParsedClassfile(classNode.name).info.get.nestedClasses.force
-
-    visitInternalName(classNode.superName)
-    classNode.interfaces.asScala foreach visitInternalName
-    visitInternalName(classNode.outerClass)
-
-    visitAnnotations(classNode.visibleAnnotations)
-    visitAnnotations(classNode.visibleTypeAnnotations)
-    visitAnnotations(classNode.invisibleAnnotations)
-    visitAnnotations(classNode.invisibleTypeAnnotations)
-
-    for (f <- classNode.fields.asScala) {
-      visitDescriptor(f.desc)
-      visitAnnotations(f.visibleAnnotations)
-      visitAnnotations(f.visibleTypeAnnotations)
-      visitAnnotations(f.invisibleAnnotations)
-      visitAnnotations(f.invisibleTypeAnnotations)
-    }
-
-    for (m <- classNode.methods.asScala) {
-      visitDescriptor(m.desc)
-
-      visitAnnotations(m.visibleAnnotations)
-      visitAnnotations(m.visibleTypeAnnotations)
-      visitAnnotations(m.invisibleAnnotations)
-      visitAnnotations(m.invisibleTypeAnnotations)
-      visitAnnotationss(m.visibleParameterAnnotations)
-      visitAnnotationss(m.invisibleParameterAnnotations)
-      visitAnnotations(m.visibleLocalVariableAnnotations)
-      visitAnnotations(m.invisibleLocalVariableAnnotations)
-
-      m.exceptions.asScala foreach visitInternalName
-      for (tcb <- m.tryCatchBlocks.asScala) visitInternalName(tcb.`type`)
-
-      val iter = m.instructions.iterator()
-      while (iter.hasNext) iter.next() match {
-        case ti: TypeInsnNode           => visitInternalNameOrArrayReference(ti.desc)
-        case fi: FieldInsnNode          => visitInternalNameOrArrayReference(fi.owner); visitDescriptor(fi.desc)
-        case mi: MethodInsnNode         => visitInternalNameOrArrayReference(mi.owner); visitDescriptor(mi.desc)
-        case id: InvokeDynamicInsnNode  => visitDescriptor(id.desc); visitHandle(id.bsm); id.bsmArgs foreach visitConstant
-        case ci: LdcInsnNode            => visitConstant(ci.cst)
-        case ma: MultiANewArrayInsnNode => visitDescriptor(ma.desc)
-        case _ =>
-      }
-    }
-    innerClasses.toList
+    val c = new Collector
+    c.visit(classNode)
+    c.innerClasses.toList
   }
 
   /**
@@ -540,6 +442,127 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       method.maxStack = maxStack
 
       maxLocalsMaxStackComputed += method
+    }
+  }
+}
+
+object BackendUtils {
+  abstract class NestedClassesCollector[T] {
+    val innerClasses = mutable.Set.empty[T]
+
+    def declaredNestedClasses(internalName: InternalName): List[T]
+
+    def getClassIfNested(internalName: InternalName): Option[T]
+
+    def visit(classNode: ClassNode): Unit = {
+      visitInternalName(classNode.name)
+      innerClasses ++= declaredNestedClasses(classNode.name)
+
+      visitInternalName(classNode.superName)
+      classNode.interfaces.asScala foreach visitInternalName
+      visitInternalName(classNode.outerClass)
+
+      visitAnnotations(classNode.visibleAnnotations)
+      visitAnnotations(classNode.visibleTypeAnnotations)
+      visitAnnotations(classNode.invisibleAnnotations)
+      visitAnnotations(classNode.invisibleTypeAnnotations)
+
+      for (f <- classNode.fields.asScala) {
+        visitDescriptor(f.desc)
+        visitAnnotations(f.visibleAnnotations)
+        visitAnnotations(f.visibleTypeAnnotations)
+        visitAnnotations(f.invisibleAnnotations)
+        visitAnnotations(f.invisibleTypeAnnotations)
+      }
+
+      for (m <- classNode.methods.asScala) {
+        visitDescriptor(m.desc)
+
+        visitAnnotations(m.visibleAnnotations)
+        visitAnnotations(m.visibleTypeAnnotations)
+        visitAnnotations(m.invisibleAnnotations)
+        visitAnnotations(m.invisibleTypeAnnotations)
+        visitAnnotationss(m.visibleParameterAnnotations)
+        visitAnnotationss(m.invisibleParameterAnnotations)
+        visitAnnotations(m.visibleLocalVariableAnnotations)
+        visitAnnotations(m.invisibleLocalVariableAnnotations)
+
+        m.exceptions.asScala foreach visitInternalName
+        for (tcb <- m.tryCatchBlocks.asScala) visitInternalName(tcb.`type`)
+
+        val iter = m.instructions.iterator()
+        while (iter.hasNext) iter.next() match {
+          case ti: TypeInsnNode           => visitInternalNameOrArrayReference(ti.desc)
+          case fi: FieldInsnNode          => visitInternalNameOrArrayReference(fi.owner); visitDescriptor(fi.desc)
+          case mi: MethodInsnNode         => visitInternalNameOrArrayReference(mi.owner); visitDescriptor(mi.desc)
+          case id: InvokeDynamicInsnNode  => visitDescriptor(id.desc); visitHandle(id.bsm); id.bsmArgs foreach visitConstant
+          case ci: LdcInsnNode            => visitConstant(ci.cst)
+          case ma: MultiANewArrayInsnNode => visitDescriptor(ma.desc)
+          case _ =>
+        }
+      }
+    }
+
+    def visitInternalName(internalName: InternalName): Unit = if (internalName != null) {
+      for (c <- getClassIfNested(internalName))
+        innerClasses += c
+    }
+
+    // either an internal/Name or [[Linternal/Name; -- there are certain references in classfiles
+    // that are either an internal name (without the surrounding `L;`) or an array descriptor
+    // `[Linternal/Name;`.
+    def visitInternalNameOrArrayReference(ref: String): Unit = if (ref != null) {
+      val bracket = ref.lastIndexOf('[')
+      if (bracket == -1) visitInternalName(ref)
+      else if (ref.charAt(bracket + 1) == 'L') visitInternalName(ref.substring(bracket + 2, ref.length - 1))
+    }
+
+    // we are only interested in the class references in the descriptor, so we can skip over
+    // primitives and the brackets of array descriptors
+    def visitDescriptor(desc: String): Unit = (desc.charAt(0): @switch) match {
+      case '(' =>
+        val internalNames = mutable.ListBuffer.empty[String]
+        var i = 1
+        while (i < desc.length) {
+          if (desc.charAt(i) == 'L') {
+            val start = i + 1 // skip the L
+            while (desc.charAt(i) != ';') i += 1
+            internalNames += desc.substring(start, i)
+          }
+          // skips over '[', ')', primitives
+          i += 1
+        }
+        internalNames foreach visitInternalName
+
+      case 'L' =>
+        visitInternalName(desc.substring(1, desc.length - 1))
+
+      case '[' =>
+        visitInternalNameOrArrayReference(desc)
+
+      case _ => // skip over primitive types
+    }
+
+    def visitConstant(const: AnyRef): Unit = const match {
+      case t: Type => visitDescriptor(t.getDescriptor)
+      case _ =>
+    }
+
+    // in principle we could references to annotation types, as they only end up as strings in the
+    // constant pool, not as class references. however, the java compiler still includes nested
+    // annotation classes in the innerClass table, so we do the same. explained in detail in the
+    // large comment in class BTypes.
+    def visitAnnotation(annot: AnnotationNode): Unit = {
+      visitDescriptor(annot.desc)
+      if (annot.values != null) annot.values.asScala foreach visitConstant
+    }
+
+    def visitAnnotations(annots: java.util.List[_ <: AnnotationNode]) = if (annots != null) annots.asScala foreach visitAnnotation
+    def visitAnnotationss(annotss: Array[java.util.List[AnnotationNode]]) = if (annotss != null) annotss foreach visitAnnotations
+
+    def visitHandle(handle: Handle): Unit = {
+      visitInternalNameOrArrayReference(handle.getOwner)
+      visitDescriptor(handle.getDesc)
     }
   }
 }
