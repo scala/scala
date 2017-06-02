@@ -312,7 +312,10 @@ final class ListBuffer[A]
    */
   override def toList: List[A] = {
     exported = !isEmpty
-    start
+    start match {
+      case cons: ::[A] => cons.freeze
+      case _ => start
+    }
   }
 
 // New methods in ListBuffer

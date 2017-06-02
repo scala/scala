@@ -444,9 +444,10 @@ case object Nil extends List[Nothing] {
  *  @since   2.8
  */
 @SerialVersionUID(509929039250432923L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
-final case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
+sealed case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
   override def tail : List[B] = tl
-  override def isEmpty: Boolean = false
+  final override def isEmpty: Boolean = false
+  private[collection] final def freeze: ::[B] = new SafeCons(head, tl)
 }
 
 /** $factoryInfo
