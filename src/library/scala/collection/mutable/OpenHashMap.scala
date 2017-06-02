@@ -10,6 +10,8 @@ package scala
 package collection
 package mutable
 
+import scala.reflect.ClassTag
+
 /**
  *  @define Coll `OpenHashMap`
  *  @define coll open hash map
@@ -18,8 +20,8 @@ package mutable
  */
 object OpenHashMap {
 
-  def apply[K, V](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
-  def empty[K, V] = new OpenHashMap[K, V]
+  def apply[K : ClassTag, V : ClassTag](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
+  def empty[K : ClassTag, V : ClassTag] = new OpenHashMap[K, V]
 
   /** A hash table entry.
     * 
@@ -51,7 +53,7 @@ object OpenHashMap {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class OpenHashMap[Key, Value](initialSize : Int)
+class OpenHashMap[Key : ClassTag, Value : ClassTag](initialSize : Int)
 extends AbstractMap[Key, Value]
    with Map[Key, Value]
    with MapLike[Key, Value, OpenHashMap[Key, Value]] {
