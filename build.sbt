@@ -1,6 +1,6 @@
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
-dotty in ThisBuild := dottyLatestNightlyBuild.get
+dotty in ThisBuild := "0.2.0-RC1"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
@@ -55,6 +55,8 @@ val timeBenchmark =
     .enablePlugins(JmhPlugin)
     .settings(commonSettings: _*)
     .settings(
+      // FIXME: does not compile with dotty
+      crossScalaVersions := List(scalaVersion.value),
       charts := Def.inputTaskDyn {
         val benchmarks = Def.spaceDelimited().parsed
         val targetDir = crossTarget.value
@@ -73,7 +75,7 @@ val memoryBenchmark =
     .dependsOn(collections)
     .settings(commonSettings: _*)
     .settings(
-      libraryDependencies += "org.spire-math" %% "jawn-ast" % "0.10.4",
+      libraryDependencies += ("org.spire-math" %% "jawn-ast" % "0.10.4").withDottyCompat(),
       charts := Def.inputTaskDyn {
         val targetDir = crossTarget.value
         val report = targetDir / "report.json"
