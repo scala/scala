@@ -8,6 +8,8 @@
 
 package scala
 
+import scala.collection.GenIterable
+
 object Option {
 
   import scala.language.implicitConversions
@@ -321,6 +323,40 @@ sealed abstract class Option[+A] extends Product with Serializable {
    */
   @inline final def toLeft[X](right: => X): Either[A, X] =
     if (isEmpty) Right(right) else Left(this.get)
+
+
+  /** Returns an `Option[Tuple2[A,B]]` formed from this `option` and another iterable collection
+    *  by combining value of this `option` and first element of incoming iterable.
+    *  If iterable has more than one value, its remaining elements are ignored.
+    *  If `option` is `None`, returns `None`.
+    *
+    *  @param   that  The iterable providing the second half of the pair
+    *  @tparam  A1    The type of the first half of the returned pair (this is always a supertype
+    *                 of the collection's element type `A`).
+    *  @tparam  B     the type of the second half of the returned pair
+    *  @return        A new `option` contains a tuple consisting of
+    *                 value of this `option` and first element of `that`.
+    *
+    */
+  final def zip[A1 >: A, B](that: GenIterable[B]): Option[Tuple2[A,B]] =
+    if (isEmpty || that.isEmpty) None else Some((this.get, that.head))
+
+  /** Returns an `Option[Tuple2[A,B]]` formed from this `option` and another `option` by combining the values.
+    *  If any of the `options` is `None`, returns `None`.
+    *
+    *  @param   that  The option providing the second half of the pair
+    *  @tparam  A1    The type of the first half of the returned pair (this is always a supertype
+    *                 of the collection's element type `A`).
+    *  @tparam  B     the type of the second half of the returned pair
+    *  @return        A new `option` contains a tuple consisting of
+    *                 value of this `option` and `that` `option`.
+    *
+    */
+  final def zip[A1 >: A, B](that: Option[B]): Option[Tuple2[A,B]] =
+    for {
+      a <- this
+      b <- that
+    } yield (a,b)
 }
 
 /** Class `Some[A]` represents existing values of type
