@@ -1420,11 +1420,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       reporter.reset()
       warnDeprecatedAndConflictingSettings(unitbuf.head)
       globalPhase = fromPhase
+      val profiler = profile.Profiler(settings)
 
       while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
+        val profileBefore=profiler.before(phase)
         globalPhase.run()
+        profiler.after(phase, profileBefore)
 
         // progress update
         informTime(globalPhase.description, startTime)
@@ -1459,6 +1462,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
         advancePhase()
       }
+      profiler.finished()
 
       reporting.summarizeErrors()
 
