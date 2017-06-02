@@ -134,6 +134,8 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
     }
     else new ArrayBuffer[B] ++= coll
 
+  override def newBuilder[A](): Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
+
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 

@@ -28,6 +28,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with StrictOptimizedIterableOps[(K, V), TreeMap[K, V]]
     with Serializable {
 
+  def mapFactory = Map
+  def sortedMapFactory = TreeMap
+
   /**
     * Creates an empty `TreeMap`.
     * @param ord the implicit ordering used to compare objects of type `K`.

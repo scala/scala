@@ -57,14 +57,14 @@ case object Nil extends List[Nothing] {
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
 }
 
-object List extends IterableFactoryWithBuilder[List] {
+object List extends IterableFactory[List] {
 
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll
     case _ => ListBuffer.fromIterable(coll).toList
   }
 
-  def newBuilder[A](): Builder[A, List[A]] = new GrowableBuilder(ListBuffer.empty[A]).mapResult(_.toList)
+  override def newBuilder[A](): Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
 
   def empty[A]: List[A] = Nil
 }

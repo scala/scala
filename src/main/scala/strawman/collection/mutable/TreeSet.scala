@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.{SortedIterableFactory, SortedIterableFactoryWithBuilder, StrictOptimizedIterableOps}
+import collection.{SortedIterableFactory, StrictOptimizedIterableOps}
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
@@ -47,6 +47,8 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = new GrowableBuilder(TreeSet.empty[A])
 
   def iterableFactory = Set
+
+  def sortedIterableFactory = TreeSet
 
   def keysIteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 

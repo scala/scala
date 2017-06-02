@@ -28,6 +28,7 @@ sealed abstract class BitSet
   def empty: BitSet = BitSet.empty
 
   def iterableFactory = Set
+  def sortedIterableFactory = SortedSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
   protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.sortedFromIterable(it)

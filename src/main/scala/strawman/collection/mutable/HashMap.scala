@@ -27,6 +27,8 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
     with StrictOptimizedIterableOps[(K, V), HashMap[K, V]]
     with Serializable {
 
+  def mapFactory = HashMap
+
   private[this] val table: HashTable[K, V, DefaultEntry[K, V]] =
     new HashTable[K, V, DefaultEntry[K, V]] {
       def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)

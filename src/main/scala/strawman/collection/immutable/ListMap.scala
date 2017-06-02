@@ -50,6 +50,7 @@ sealed class ListMap[K, +V]
     with Serializable {
 
   def iterableFactory = List
+  def mapFactory = ListMap
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
 

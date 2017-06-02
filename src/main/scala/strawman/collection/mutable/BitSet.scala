@@ -37,6 +37,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def iterableFactory = Set
 
+  def sortedIterableFactory = SortedSet
+
   protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): collection.mutable.SortedSet[B] =
     collection.mutable.SortedSet.sortedFromIterable(it)
 

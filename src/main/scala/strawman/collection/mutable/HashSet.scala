@@ -81,4 +81,6 @@ object HashSet extends IterableFactory[HashSet] {
 
   def empty[A]: HashSet[A] = new HashSet[A]
 
+  override def newBuilder[A](): Builder[A, HashSet[A]] = new GrowableBuilder[A, HashSet[A]](empty)
+
 }
