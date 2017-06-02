@@ -72,7 +72,9 @@ abstract class Erasure extends InfoTransform
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
   def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
-    NeedsSigCollector.collect(tp) || throwsArgs.exists(NeedsSigCollector.collect)
+    // scala/bug#10351: don't emit a signature if tp erases to a primitive
+    def needs(tp: Type) = NeedsSigCollector.collect(tp) && !erasure(tp.typeSymbol)(tp).typeSymbol.isPrimitiveValueClass
+    needs(tp) || throwsArgs.exists(needs)
   }
 
   // only refer to type params that will actually make it into the sig, this excludes:
