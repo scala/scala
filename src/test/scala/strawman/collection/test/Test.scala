@@ -44,6 +44,8 @@ class StrawmanTest {
     val ys15: Seq[(Int, Boolean)] = xs15
     val xs16 = xs.reverse
     val ys16: Seq[Int] = xs16
+    val xs17 = xs.init
+    val ys17: Seq[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -61,6 +63,7 @@ class StrawmanTest {
     println(xs14)
     println(xs15)
     println(xs16)
+    println(xs17)
   }
 
   def viewOps(xs: View[Int]): Unit = {
@@ -93,6 +96,8 @@ class StrawmanTest {
     val ys14: View[Any] = xs14
     val xs15 = xs.zip(xs9)
     val ys15: View[(Int, Boolean)] = xs15
+    val xs17 = xs.init
+    val ys17: View[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -109,6 +114,7 @@ class StrawmanTest {
     println(xs13.to(List))
     println(xs14.to(List))
     println(xs15.to(List))
+    println(xs17.to(List))
   }
 
   def stringOps(xs: String): Unit = {
@@ -145,6 +151,8 @@ class StrawmanTest {
     val ys14: Seq[Any] = xs14
     val xs15 = xs.zip(xs9)
     val ys15: Seq[(Char, Int)] = xs15
+    val xs17 = xs.init
+    val ys17: String = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -163,6 +171,7 @@ class StrawmanTest {
     println(xs13)
     println(xs14)
     println(xs15)
+    println(xs17)
   }
 
   def arrayOps(xs: Array[Int]): Unit = {
@@ -197,6 +206,8 @@ class StrawmanTest {
     val ys15: Array[(Int, Boolean)] = xs15
     val xs16 = xs.reverse
     val ys16: Array[Int] = xs16
+    val xs17 = xs.init
+    val ys17: Array[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -214,6 +225,7 @@ class StrawmanTest {
     println(xs14.view)
     println(xs15.view)
     println(xs16.view)
+    println(xs17.view)
   }
 
   def lazyListOps(xs: Seq[Int]): Unit = {
@@ -250,6 +262,8 @@ class StrawmanTest {
     val ys16: Seq[Int] = xs16
     val ys17 = LazyList.empty ++ LazyList.empty
     val ys18: LazyList[Nothing] = ys17
+    val xs19 = xs.init
+    val ys19: Seq[Int] = xs19
     println("-------")
     println(x1)
     println(x2)
@@ -289,6 +303,8 @@ class StrawmanTest {
     }
     println(xs17)
     println(xs17.to(List))
+    println(xs19)
+    println(xs19.to(List))
   }
 
   def equality(): Unit = {
