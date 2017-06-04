@@ -1,7 +1,9 @@
 package strawman
 package collection
 
-import scala.{Any, Int, Ordering, Nothing}
+import strawman.collection.mutable.Builder
+
+import scala.{Any, Int, Nothing, Ordering}
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -24,6 +26,10 @@ trait IterableFactory[+CC[_]] {
 
   def fill[A](n: Int)(elem: => A): CC[A] = fromIterable(View.Fill(n)(elem))
 
+}
+
+trait IterableFactoryWithBuilder[+CC[_]] extends IterableFactory[CC] {
+  def newBuilder[A](): Builder[A, CC[A]]
 }
 
 object IterableFactory {
@@ -74,54 +80,54 @@ object MapFactory {
 }
 
 /** Base trait for companion objects of collections that require an implicit evidence */
-trait OrderedIterableFactory[+CC[_]] {
+trait SortedIterableFactory[+CC[_]] {
 
-  def orderedFromIterable[E : Ordering](it: Iterable[E]): CC[E]
+  def sortedFromIterable[E : Ordering](it: Iterable[E]): CC[E]
 
   def empty[A : Ordering]: CC[A]
 
-  def apply[A : Ordering](xs: A*): CC[A] = orderedFromIterable(View.Elems(xs: _*))
+  def apply[A : Ordering](xs: A*): CC[A] = sortedFromIterable(View.Elems(xs: _*))
 
-  def fill[A : Ordering](n: Int)(elem: => A): CC[A] = orderedFromIterable(View.Fill(n)(elem))
+  def fill[A : Ordering](n: Int)(elem: => A): CC[A] = sortedFromIterable(View.Fill(n)(elem))
 }
 
-object OrderedIterableFactory {
+object SortedIterableFactory {
   import scala.language.implicitConversions
 
-  implicit def toSpecific[A: Ordering, CC[_]](factory: OrderedIterableFactory[CC]): FromSpecificIterable[A, CC[A]] =
+  implicit def toSpecific[A: Ordering, CC[_]](factory: SortedIterableFactory[CC]): FromSpecificIterable[A, CC[A]] =
     new FromSpecificIterable[A, CC[A]] {
-      def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.orderedFromIterable[A](it)
+      def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.sortedFromIterable[A](it)
     }
 
-  class Delegate[CC[_]](delegate: OrderedIterableFactory[CC]) extends OrderedIterableFactory[CC] {
+  class Delegate[CC[_]](delegate: SortedIterableFactory[CC]) extends SortedIterableFactory[CC] {
     def empty[A : Ordering]: CC[A] = delegate.empty
-    def orderedFromIterable[E : Ordering](it: Iterable[E]): CC[E] = delegate.orderedFromIterable(it)
+    def sortedFromIterable[E : Ordering](it: Iterable[E]): CC[E] = delegate.sortedFromIterable(it)
   }
 
 }
 
 /** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
-trait OrderedMapFactory[+CC[X, Y]] {
+trait SortedMapFactory[+CC[X, Y]] {
 
   def empty[K : Ordering, V]: CC[K, V]
 
-  def orderedFromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V]
+  def sortedFromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V]
 
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] =
-    orderedFromIterable(elems.toStrawman)
+    sortedFromIterable(elems.toStrawman)
 }
 
-object OrderedMapFactory {
+object SortedMapFactory {
   import scala.language.implicitConversions
 
-  implicit def toSpecific[K : Ordering, V, CC[_, _]](factory: OrderedMapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
+  implicit def toSpecific[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
     new FromSpecificIterable[(K, V), CC[K, V]] {
-      def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = factory.orderedFromIterable(it)
+      def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = factory.sortedFromIterable(it)
     }
 
-  class Delegate[CC[_, _]](delegate: OrderedMapFactory[CC]) extends OrderedMapFactory[CC] {
+  class Delegate[CC[_, _]](delegate: SortedMapFactory[CC]) extends SortedMapFactory[CC] {
     def empty[K: Ordering, V]: CC[K, V] = delegate.empty[K, V]
-    def orderedFromIterable[K: Ordering, V](it: Iterable[(K, V)]): CC[K, V] = delegate.orderedFromIterable(it)
+    def sortedFromIterable[K: Ordering, V](it: Iterable[(K, V)]): CC[K, V] = delegate.sortedFromIterable(it)
   }
 
 }

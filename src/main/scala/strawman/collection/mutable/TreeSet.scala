@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.OrderedIterableFactory
+import collection.SortedIterableFactory
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit}
@@ -39,11 +39,11 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def iterator(): collection.Iterator[A] = RB.keysIterator(tree)
 
-  protected[this] def orderedFromIterable[B : Ordering](it: collection.Iterable[B]): TreeSet[B] = TreeSet.orderedFromIterable(it)
+  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): TreeSet[B] = TreeSet.sortedFromIterable(it)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.orderedFromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.sortedFromIterable(coll)
 
-  def fromIterable[B](coll: collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  def iterableFactory = Set
 
   def keysIteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 
@@ -175,10 +175,10 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   * @author Lucien Pereira
   *
   */
-object TreeSet extends OrderedIterableFactory[TreeSet] {
+object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()
 
-  def orderedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] = Growable.fromIterable(empty[E], it)
+  def sortedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] = Growable.fromIterable(empty[E], it)
 
 }

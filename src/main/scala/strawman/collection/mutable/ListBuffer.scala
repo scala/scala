@@ -26,7 +26,8 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  protected[this] def fromIterable[B](c: collection.Iterable[B]) = ListBuffer.fromIterable(c)
+  def iterableFactory = ListBuffer
+
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
 
   def apply(i: Int) = first.apply(i)
@@ -199,10 +200,11 @@ class ListBuffer[A]
   override def className = "ListBuffer"
 }
 
-object ListBuffer extends IterableFactory[ListBuffer] {
+object ListBuffer extends IterableFactoryWithBuilder[ListBuffer] {
 
-  def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = Growable.fromIterable(empty[A], coll)
+  def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
+  def newBuilder[A](): Builder[A, ListBuffer[A]] = new ListBuffer[A]
+  
   def empty[A]: ListBuffer[A] = new ListBuffer[A]
-
 }

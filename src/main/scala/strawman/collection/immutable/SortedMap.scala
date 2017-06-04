@@ -13,12 +13,21 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, 
   extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] {
 
+    protected[this] def coll: CC[K, V]
+
     protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
       Map.fromIterable(it)
 
     // We override these methods to fix their return type (which would be `Map` otherwise)
     def updated[V1 >: V](key: K, value: V1): CC[K, V1]
     override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+
+    override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = {
+        var result: CC[K, V2] = coll
+        val it = xs.iterator()
+        while (it.hasNext) result = result + it.next()
+        result
+    }
 
 }
 

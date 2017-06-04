@@ -32,7 +32,8 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 
-  protected[this] def fromIterable[B](coll: collection.Iterable[B]): LazyList[B] = LazyList.fromIterable(coll)
+  def iterableFactory = LazyList
+
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): LazyList[A] = fromIterable(coll)
 
   override def className = "LazyList"
@@ -63,8 +64,6 @@ object LazyList extends IterableFactory[LazyList] {
 
   def fromIterator[A](it: Iterator[A]): LazyList[A] =
     new LazyList(if (it.hasNext) Some(it.next(), fromIterator(it)) else None)
-
-  def newBuilder[A]: Builder[A, LazyList[A]] = ???
 
   def empty[A]: LazyList[A] = new LazyList[A](None)
 }

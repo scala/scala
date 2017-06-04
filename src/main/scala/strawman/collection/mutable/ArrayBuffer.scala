@@ -45,8 +45,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def iterator() = view.iterator()
 
-  protected[this] def fromIterable[B](it: collection.Iterable[B]): ArrayBuffer[B] =
-    ArrayBuffer.fromIterable(it)
+  def iterableFactory = ArrayBuffer
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
@@ -125,7 +124,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactory[ArrayBuffer] {
+object ArrayBuffer extends IterableFactoryWithBuilder[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =
@@ -135,10 +134,11 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
     }
-    else Growable.fromIterable[B](empty, coll)
+    else new ArrayBuffer[B] ++= coll
+
+  def newBuilder[A](): Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
-
 }
 
 class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {

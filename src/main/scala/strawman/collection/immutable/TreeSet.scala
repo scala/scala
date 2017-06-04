@@ -61,13 +61,13 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = Set.fromIterable(coll)
+  def iterableFactory = Set
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
-    TreeSet.orderedFromIterable(coll)
+    TreeSet.sortedFromIterable(coll)
 
-  protected[this] def orderedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
-    TreeSet.orderedFromIterable(coll)
+  protected[this] def sortedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
+    TreeSet.sortedFromIterable(coll)
 
   def unordered: Set[A] = this
 
@@ -103,11 +103,11 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     else newSet(RB.delete(tree, elem))
 }
 
-object TreeSet extends OrderedIterableFactory[TreeSet] {
+object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
-  def orderedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
+  def sortedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
       case _ => empty[E] ++ it

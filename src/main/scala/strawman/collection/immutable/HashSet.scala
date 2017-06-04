@@ -30,7 +30,8 @@ sealed trait HashSet[A]
 
   import HashSet.nullToEmpty
 
-  protected[this] def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
+  def iterableFactory = HashSet
+
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
@@ -59,7 +60,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => empty ++ it
     }
 
-  def empty[A <: Any]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
+  def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
   private object EmptyHashSet extends HashSet[Any] {
 

@@ -59,7 +59,7 @@ sealed class ListSet[A]
 
   def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
 
-  protected[this] def fromIterable[B](coll: collection.Iterable[B]): ListSet[B] = ListSet.fromIterable(coll)
+  def iterableFactory = ListSet
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListSet[A] = fromIterable(coll)
 
   /**
@@ -122,7 +122,7 @@ object ListSet extends IterableFactory[ListSet] {
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 
-  def empty[A <: Any]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
+  def empty[A]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
 
 }
 
