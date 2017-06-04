@@ -280,6 +280,12 @@ class StrawmanTest {
     val ys7: immutable.ImmutableArray[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: immutable.ImmutableArray[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: immutable.ImmutableArray[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: immutable.ImmutableArray[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: immutable.ImmutableArray[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: immutable.ImmutableArray[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -305,6 +311,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs10)
     println(xs11)
