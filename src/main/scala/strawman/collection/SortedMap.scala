@@ -14,17 +14,17 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
   extends MapOps[K, V, Map, C]
      with SortedOps[K, C] {
 
-  protected[this] def orderedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
+  protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
 
   def firstKey: K = head._1
   def lastKey: K = last._1
 
   // And finally, we add new overloads taking an ordering
   def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit ordering: Ordering[K2]): CC[K2, V2] =
-    orderedMapFromIterable(View.Map[(K, V), (K2, V2)](coll, f))
+    sortedMapFromIterable(View.Map[(K, V), (K2, V2)](coll, f))
 
   def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] =
-    orderedMapFromIterable(View.FlatMap(coll, f))
+    sortedMapFromIterable(View.FlatMap(coll, f))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -36,16 +36,16 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
     *  @return     a new collection of type `CC[K2, V2]` which contains all elements
     *              of this $coll followed by all elements of `xs`.
     */
-  def concat[K2 >: K, V2 >: V](xs: IterableOnce[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = orderedMapFromIterable(View.Concat(coll, xs))
+  def concat[K2 >: K, V2 >: V](xs: IterableOnce[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = sortedMapFromIterable(View.Concat(coll, xs))
 
   /** Alias for `concat` */
   @`inline` final def ++ [K2 >: K, V2 >: V](xs: IterableOnce[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = concat(xs)
 
   // We override these methods to fix their return type (which would be `Map` otherwise)
-  override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = orderedMapFromIterable(View.Concat(coll, xs))
+  override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = sortedMapFromIterable(View.Concat(coll, xs))
   override def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
   // TODO Also override mapValues
 
 }
 
-object SortedMap extends OrderedMapFactory.Delegate[SortedMap](TreeMap)
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap)

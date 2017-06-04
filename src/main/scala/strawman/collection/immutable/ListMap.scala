@@ -48,7 +48,7 @@ sealed class ListMap[K, +V]
      with MapOps[K, V, ListMap, ListMap[K, V]]
      with Serializable {
 
-  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+  def iterableFactory = List
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
 

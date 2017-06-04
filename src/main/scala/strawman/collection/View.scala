@@ -7,11 +7,8 @@ import scala.Predef.intWrapper
 trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def view = this
 
-  /** Avoid copying if source collection is already a view. */
-  override def fromIterable[B](c: Iterable[B]): View[B] = c match {
-    case c: View[B] => c
-    case _ => View.fromIterator(c.iterator())
-  }
+  def iterableFactory = View
+
   override protected[this] def fromSpecificIterable(coll: Iterable[A]): View[A] =
     fromIterable(coll)
 
@@ -19,10 +16,20 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 }
 
 /** This object reifies operations on views as case classes */
-object View {
+object View extends IterableFactory[View] {
+
   def fromIterator[A](it: => Iterator[A]): View[A] = new View[A] {
     def iterator() = it
   }
+
+  /** Avoid copying if source collection is already a view. */
+  def fromIterable[E](it: Iterable[E]): View[E] = it match {
+    case it: View[E] => it
+    case _ => View.fromIterator(it.iterator())
+  }
+
+  def empty[A]: View[A] = Empty
+  override def apply[A](xs: A*): View[A] = Elems(xs: _*)
 
   /** The empty view */
   case object Empty extends View[Nothing] {

@@ -67,10 +67,10 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 }
 
 /** Base trait for indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] {
+trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
   override def view: IndexedView[A] = new IndexedView[A] {
-    def length: Int = coll.length
-    def apply(i: Int): A = coll(i)
+    def length: Int = self.length
+    def apply(i: Int): A = self(i)
   }
   override def reverse: C = fromSpecificIterable(view.reverse)
 }

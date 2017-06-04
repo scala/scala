@@ -33,7 +33,7 @@ sealed trait HashMap[K, +V]
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
-  protected[this] def fromIterable[E](it: collection.Iterable[E]): Iterable[E] = List.fromIterable(it)
+  def iterableFactory = List
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
 

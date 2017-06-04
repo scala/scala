@@ -15,7 +15,8 @@ sealed trait List[+A]
      with SeqOps[A, List, List[A]]
      with Buildable[A, List[A]] {
 
-  protected[this] def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
+  def iterableFactory = List
+
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
   protected[this] def newBuilder = List.newBuilder[A]
@@ -54,15 +55,14 @@ case object Nil extends List[Nothing] {
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
 }
 
-object List extends IterableFactory[List] {
+object List extends IterableFactoryWithBuilder[List] {
 
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll
     case _ => ListBuffer.fromIterable(coll).toList
   }
 
-  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
+  def newBuilder[A](): Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
 
-  def empty[A <: Any]: List[A] = Nil
-
+  def empty[A]: List[A] = Nil
 }

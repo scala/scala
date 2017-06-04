@@ -22,7 +22,7 @@ class StringOps(val s: String)
     sb.result
   }
 
-  protected[this] def fromIterable[E](coll: Iterable[E]): List[E] = List.fromIterable(coll)
+  def iterableFactory = List
 
   protected[this] def newBuilder = new StringBuilder
 

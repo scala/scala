@@ -21,9 +21,10 @@ class ArrayOps[A](val xs: Array[A])
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
+  def iterableFactory = immutable.Seq
+
   protected[this] def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
   protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
-  protected[this] def fromIterable[B](coll: Iterable[B]): immutable.Seq[B] = immutable.Seq.fromIterable(coll)
 
   protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
 

@@ -31,12 +31,11 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   override def iterator(): Iterator[A] = table.iterator
 
-  protected[this] def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] =
-    HashSet.fromIterable(coll)
+  def iterableFactory = HashSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
-  protected[this] def newBuilder: Builder[A, HashSet[A]] = new GrowableBuilder[A, HashSet[A]](empty)
+  protected[this] def newBuilder: Builder[A, HashSet[A]] = HashSet.newBuilder[A]()
 
   def add(elem: A): this.type = {
     table.addElem(elem)
@@ -76,10 +75,12 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
 }
 
-object HashSet extends IterableFactory[HashSet] {
+object HashSet extends IterableFactoryWithBuilder[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = Growable.fromIterable(empty[B], it)
 
   def empty[A]: HashSet[A] = new HashSet[A]
+
+  def newBuilder[A](): Builder[A, HashSet[A]] = new GrowableBuilder[A, HashSet[A]](empty)
 
 }

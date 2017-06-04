@@ -45,7 +45,9 @@ object MemoryFootprint extends App {
       "scala.TreeSet" -> benchmark(n => scala.collection.immutable.TreeSet((1 to n).map(_.toString): _*)),
       "TreeSet"       -> benchmark(n => strawman.collection.immutable.TreeSet((1 to n).map(_.toString): _*)),
       "ArrayBuffer"   -> benchmark(ArrayBuffer.fill(_)(obj)),
-      "ListBuffer"    -> benchmark(ListBuffer.fill(_)(obj))
+      "ListBuffer"    -> benchmark(ListBuffer.fill(_)(obj)),
+      "immutable.Array" -> benchmark(strawman.collection.immutable.ImmutableArray.fill(_)(obj)),
+      "immutable.Array (primitive)" -> benchmark(strawman.collection.immutable.ImmutableArray.fill(_)(123))
     )
 
   // We use a format similar to the one used by JMH so that
