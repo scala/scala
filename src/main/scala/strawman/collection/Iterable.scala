@@ -221,7 +221,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** The initial part of the collection without its last element. */
   def init: C = {
     if (coll.isEmpty) throw new UnsupportedOperationException
-    take(size - 1)
+    dropRight(1)
   }
 
   /** Selects an interval of elements.  The returned collection is made up
