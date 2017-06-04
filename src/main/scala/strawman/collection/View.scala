@@ -82,9 +82,25 @@ object View {
       if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
   }
 
+  /** A view that drops trailing elements of the underlying collection. */
+  case class DropRight[A](underlying: Iterable[A], n: Int) extends View[A] {
+    def iterator() = underlying.iterator().dropRight(n)
+    protected val normN = n max 0
+    override def knownSize =
+      if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
+  }
+
   /** A view that takes leading elements of the underlying collection. */
   case class Take[A](underlying: Iterable[A], n: Int) extends View[A] {
     def iterator() = underlying.iterator().take(n)
+    protected val normN = n max 0
+    override def knownSize =
+      if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
+  }
+
+  /** A view that takes trailing elements of the underlying collection. */
+  case class TakeRight[A](underlying: Iterable[A], n: Int) extends View[A] {
+    def iterator() = underlying.iterator().takeRight(n)
     protected val normN = n max 0
     override def knownSize =
       if (underlying.knownSize >= 0) underlying.knownSize min normN else -1

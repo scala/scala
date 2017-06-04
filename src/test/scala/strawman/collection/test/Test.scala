@@ -28,6 +28,12 @@ class StrawmanTest {
     val ys7: Seq[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Seq[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Seq[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Seq[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Seq[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: Seq[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -55,6 +61,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs10)
     println(xs11)
@@ -82,6 +91,12 @@ class StrawmanTest {
     val ys7: View[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: View[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: View[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: View[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: View[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: View[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -107,6 +122,9 @@ class StrawmanTest {
     println(xs6.to(List))
     println(xs7.to(List))
     println(xs8.to(List))
+    println(xs8_2.to(List))
+    println(xs8_3.to(List))
+    println(xs8_4.to(List))
     println(xs9.to(List))
     println(xs10.to(List))
     println(xs11.to(List))
@@ -133,6 +151,12 @@ class StrawmanTest {
     val ys7: String = xs7
     val xs8 = xs.drop(2)
     val ys8: String = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: String = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: String = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: String = xs8_4
     val xs9 = xs.map(_ + 1)
     val ys9: Seq[Int] = xs9
     val xs9a = xs.map(_.toUpper)
@@ -162,6 +186,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs9a)
     println(xs10)
@@ -190,6 +217,12 @@ class StrawmanTest {
     val ys7: Array[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Array[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Array[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Array[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Array[Int] = xs8_4
     val xs9 = arrayToArrayOps(xs).map(_ >= 0)
     val ys9: Array[Boolean] = xs9
     val xs10 = xs.flatMap(x => List(x, -x))
@@ -217,6 +250,9 @@ class StrawmanTest {
     println(xs6.view)
     println(xs7.view)
     println(xs8.view)
+    println(xs8_2.view)
+    println(xs8_3.view)
+    println(xs8_4.view)
     println(xs9.view)
     println(xs10.view)
     println(xs11.view)
@@ -244,6 +280,12 @@ class StrawmanTest {
     val ys7: Seq[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Seq[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Seq[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Seq[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Seq[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: Seq[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -276,6 +318,12 @@ class StrawmanTest {
     println(xs7.to(List))
     println(xs8)
     println(xs8.to(List))
+    println(xs8_2)
+    println(xs8_2.to(List))
+    println(xs8_3)
+    println(xs8_3.to(List))
+    println(xs8_4)
+    println(xs8_4.to(List))
     println(xs9)
     println(xs9.to(List))
     println(xs10)

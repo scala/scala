@@ -195,10 +195,18 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** A collection containing the first `n` elements of this collection. */
   def take(n: Int): C = fromSpecificIterable(View.Take(coll, n))
 
+  /** A collection containing the last `n` elements of this collection. */
+  def takeRight(n: Int): C = fromSpecificIterable(View.TakeRight(coll, n))
+
   /** The rest of the collection without its `n` first elements. For
     *  linear, immutable collections this should avoid making a copy.
     */
   def drop(n: Int): C = fromSpecificIterable(View.Drop(coll, n))
+
+  /** The rest of the collection without its `n` last elements. For
+    *  linear, immutable collections this should avoid making a copy.
+    */
+  def dropRight(n: Int): C = fromSpecificIterable(View.DropRight(coll, n))
 
   /** The rest of the collection without its first element. */
   def tail: C = {

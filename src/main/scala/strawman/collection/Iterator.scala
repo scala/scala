@@ -1,6 +1,7 @@
 package strawman.collection
 
-import scala.{Boolean, Int, Unit, Nothing, NoSuchElementException}
+import scala.{Array, Any, Boolean, Int, NoSuchElementException, Nothing, Unit}
+import scala.Predef.{println}
 
 /** A core Iterator class
   *
@@ -118,6 +119,27 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       else Iterator.empty.next()
   }
 
+  def takeRight(n: Int): Iterator[A] = {
+    val buffer = new Array[Any](n)
+    var i = 0
+    var m = 0
+    while (n > 0 && self.hasNext) {
+      buffer.update(i, self.next())
+      i = (i + 1) % n
+      if (m < n) m += 1
+    }
+    val l = m
+    new Iterator[A]() {
+      override def hasNext: Boolean = m > 0
+      override def next(): A = {
+        val value = buffer(i % l).asInstanceOf[A]
+        i = (i + 1) % l
+        m -= 1
+        value
+      }
+    }
+  }
+
   def drop(n: Int): Iterator[A] = {
     var i = 0
     while (i < n && hasNext) {
@@ -125,6 +147,25 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       i += 1
     }
     this
+  }
+
+  def dropRight(n: Int): Iterator[A] = {
+    val buffer = new Array[Any](n)
+    var i = 0
+    while (i < n && self.hasNext) {
+      buffer.update(i, self.next())
+      i += 1
+    }
+    val m = i
+    new Iterator[A]() {
+      override def hasNext: Boolean = m > 0 && self.hasNext
+      override def next(): A = {
+        val value = buffer(i % m).asInstanceOf[A]
+        i = (i + 1) % m
+        buffer.update(i, self.next())
+        value
+      }
+    }
   }
 
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new Iterator[(A, B)] {
