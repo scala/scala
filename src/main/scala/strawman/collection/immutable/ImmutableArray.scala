@@ -14,9 +14,9 @@ import scala.Predef.{???, intWrapper}
   */
 class ImmutableArray[+A] private (private val elements: scala.Array[Any]) extends IndexedSeq[A] with SeqOps[A, ImmutableArray, ImmutableArray[A]] {
 
-  protected[this] def fromIterable[E](it: strawman.collection.Iterable[E]): ImmutableArray[E] = ImmutableArray.fromIterable(it)
+  def iterableFactory: IterableFactory[ImmutableArray] = ImmutableArray
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = ImmutableArray.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
 
   def length: Int = elements.length
 
@@ -77,6 +77,7 @@ class ImmutableArray[+A] private (private val elements: scala.Array[Any]) extend
     } else ???
 
   override def reverse: ImmutableArray[A] = ImmutableArray.tabulate(length)(i => apply(length - 1 - i))
+
 }
 
 object ImmutableArray extends IterableFactory[ImmutableArray] {
