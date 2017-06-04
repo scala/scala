@@ -36,6 +36,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `ArrayOps`
 - [x] `StringOps`
 - [x] `ArrayBuffer`
+- [x] `ImmutableArray` (new)
 - [x] `ListBuffer`
 - [ ] `UnrolledBuffer`
 - [ ] `LinkedList`
