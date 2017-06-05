@@ -1136,7 +1136,7 @@ abstract class RefChecks extends Transform {
     // scala/bug#6276 warn for trivial recursion, such as `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
     // TODO: Move to abide rule. Also, this does not check that the def is final or not overridden, for example
     def checkInfiniteLoop(sym: Symbol, rhs: Tree): Unit =
-      if (!sym.isValueParameter && sym.paramss.isEmpty) {
+      if (!sym.isValueParameter && !sym.isVariable && sym.paramss.isEmpty) {
         rhs match {
           case t@(Ident(_) | Select(This(_), _)) if t hasSymbolWhich (_.accessedOrSelf == sym) =>
             reporter.warning(rhs.pos, s"${sym.fullLocationString} does nothing other than call itself recursively")
