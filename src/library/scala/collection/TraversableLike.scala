@@ -128,14 +128,8 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return    `true` if the $coll contain no elements, `false` otherwise.
    */
   def isEmpty: Boolean = {
-    var result = true
-    breakable {
-      for (x <- this) {
-        result = false
-        break
-      }
-    }
-    result
+    for (x <- this) return false
+    true
   }
 
   def hasDefiniteSize = true
