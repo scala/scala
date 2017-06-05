@@ -143,6 +143,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
+  scalacOptions in Compile += "-Xmixin-force-forwarders:true",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
