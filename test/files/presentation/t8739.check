@@ -1,0 +1,292 @@
+reload: Completions.scala
+
+askTypeCompletion at Completions.scala(8,25)
+================================================================================
+[response] askTypeCompletion at (8,25)
+retrieved 302 members
+[inaccessible] override protected[this] def newBuilder: StringBuilder
+[inaccessible] override protected[this] def parCombiner: scala.collection.parallel.Combiner[Char,scala.collection.parallel.ParSeq[Char]]
+[inaccessible] override protected[this] def thisCollection: scala.collection.immutable.WrappedString
+[inaccessible] override protected[this] def toCollection(repr: String): scala.collection.immutable.WrappedString
+[inaccessible] override protected[this] def toCollection(repr: scala.collection.immutable.WrappedString): scala.collection.immutable.WrappedString
+[inaccessible] private[package lang] def getChars(x$1: Array[Char],x$2: Int): Unit
+[inaccessible] private[package scala] def sliceWithKnownBound(from: Int,until: Int): String
+[inaccessible] private[package scala] def sliceWithKnownDelta(from: Int,until: Int,delta: Int): String
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+[inaccessible] protected[this] def reversed: List[Char]
+def *(n: Int): String
+def +(other: String): String
+def ++:[B >: Char, That](that: Traversable[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def ++:[B >: Char, That](that: Traversable[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def ++:[B >: Char, That](that: scala.collection.TraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def ++:[B >: Char, That](that: scala.collection.TraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def ++[B >: Char, That](that: scala.collection.GenTraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def ++[B >: Char, That](that: scala.collection.GenTraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def +:[B >: Char, That](elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def +:[B >: Char, That](elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def ->[B](y: B): (String, B)
+def /:[B](z: B)(op: (B, Char) => B): B
+def :+[B >: Char, That](elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def :+[B >: Char, That](elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def :\[B](z: B)(op: (Char, B) => B): B
+def <(that: String): Boolean
+def <=(that: String): Boolean
+def >(that: String): Boolean
+def >=(that: String): Boolean
+def addString(b: StringBuilder): StringBuilder
+def addString(b: StringBuilder,sep: String): StringBuilder
+def addString(b: StringBuilder,start: String,sep: String,end: String): StringBuilder
+def aggregate[B](z: => B)(seqop: (B, Char) => B,combop: (B, B) => B): B
+def applyOrElse[A1 <: Int, B1 >: Char](x: A1,default: A1 => B1): B1
+def capitalize: String
+def charAt(x$1: Int): Char
+def codePointAt(x$1: Int): Int
+def codePointBefore(x$1: Int): Int
+def codePointCount(x$1: Int,x$2: Int): Int
+def collectFirst[B](pf: PartialFunction[Char,B]): Option[B]
+def collect[B, That](pf: PartialFunction[Char,B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def collect[B, That](pf: PartialFunction[Char,B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def combinations(n: Int): Iterator[String]
+def compareTo(x$1: String): Int
+def compareToIgnoreCase(x$1: String): Int
+def compose[A](g: A => Int): A => Char
+def concat(x$1: String): String
+def contains(x$1: CharSequence): Boolean
+def containsSlice[B](that: scala.collection.GenSeq[B]): Boolean
+def contains[A1 >: Char](elem: A1): Boolean
+def contentEquals(x$1: CharSequence): Boolean
+def contentEquals(x$1: StringBuffer): Boolean
+def copyToArray[B >: Char](xs: Array[B]): Unit
+def copyToArray[B >: Char](xs: Array[B],start: Int): Unit
+def copyToBuffer[B >: Char](dest: scala.collection.mutable.Buffer[B]): Unit
+def corresponds[B](that: scala.collection.GenSeq[B])(p: (Char, B) => Boolean): Boolean
+def count(p: Char => Boolean): Int
+def diff[B >: Char](that: scala.collection.GenSeq[B]): String
+def distinct: String
+def endsWith(x$1: String): Boolean
+def ensuring(cond: Boolean): String
+def ensuring(cond: Boolean,msg: => Any): String
+def ensuring(cond: String => Boolean): String
+def ensuring(cond: String => Boolean,msg: => Any): String
+def equals(x$1: Any): Boolean
+def equalsIgnoreCase(x$1: String): Boolean
+def filter(p: Char => Boolean): String
+def filterNot(p: Char => Boolean): String
+def flatMap[B, That](f: Char => scala.collection.GenTraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def flatMap[B, That](f: Char => scala.collection.GenTraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def flatten[B](implicit asTraversable: Char => scala.collection.GenTraversableOnce[B]): scala.collection.immutable.IndexedSeq[B]
+def fold[A1 >: Char](z: A1)(op: (A1, A1) => A1): A1
+def format(args: Any*): String
+def formatLocal(l: java.util.Locale,args: Any*): String
+def formatted(fmtstr: String): String
+def genericBuilder[B]: scala.collection.mutable.Builder[B,scala.collection.immutable.IndexedSeq[B]]
+def getBytes(): Array[Byte]
+def getBytes(x$1: Int,x$2: Int,x$3: Array[Byte],x$4: Int): Unit
+def getBytes(x$1: String): Array[Byte]
+def getBytes(x$1: java.nio.charset.Charset): Array[Byte]
+def getChars(x$1: Int,x$2: Int,x$3: Array[Char],x$4: Int): Unit
+def groupBy[K](f: Char => K): scala.collection.immutable.Map[K,String]
+def grouped(size: Int): Iterator[String]
+def hasDefiniteSize: Boolean
+def hashCode(): Int
+def headOption: Option[Char]
+def indexOf(x$1: Int): Int
+def indexOf(x$1: Int,x$2: Int): Int
+def indexOf(x$1: String): Int
+def indexOf(x$1: String,x$2: Int): Int
+def indexOfSlice[B >: Char](that: scala.collection.GenSeq[B]): Int
+def indexOfSlice[B >: Char](that: scala.collection.GenSeq[B],from: Int): Int
+def indexOf[B >: Char](elem: B): Int
+def indexOf[B >: Char](elem: B,from: Int): Int
+def indexWhere(p: Char => Boolean): Int
+def indices: scala.collection.immutable.Range
+def inits: Iterator[String]
+def intern(): String
+def intersect[B >: Char](that: scala.collection.GenSeq[B]): String
+def isDefinedAt(idx: Int): Boolean
+def isEmpty(): Boolean
+def lastIndexOf(x$1: Int): Int
+def lastIndexOf(x$1: Int,x$2: Int): Int
+def lastIndexOf(x$1: String): Int
+def lastIndexOf(x$1: String,x$2: Int): Int
+def lastIndexOfSlice[B >: Char](that: scala.collection.GenSeq[B]): Int
+def lastIndexOfSlice[B >: Char](that: scala.collection.GenSeq[B],end: Int): Int
+def lastIndexOf[B >: Char](elem: B): Int
+def lastIndexOf[B >: Char](elem: B,end: Int): Int
+def lastIndexWhere(p: Char => Boolean): Int
+def lastOption: Option[Char]
+def length(): Int
+def lift: Int => Option[Char]
+def lines: Iterator[String]
+def linesIterator: Iterator[String]
+def linesWithSeparators: Iterator[String]
+def map[B, That](f: Char => B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def map[B, That](f: Char => B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def matches(x$1: String): Boolean
+def maxBy[B](f: Char => B)(implicit cmp: Ordering[B]): Char
+def max[B >: Char](implicit cmp: Ordering[B]): Char
+def minBy[B](f: Char => B)(implicit cmp: Ordering[B]): Char
+def min[B >: Char](implicit cmp: Ordering[B]): Char
+def mkString(sep: String): String
+def mkString(start: String,sep: String,end: String): String
+def nonEmpty: Boolean
+def offsetByCodePoints(x$1: Int,x$2: Int): Int
+def orElse[A1 <: Int, B1 >: Char](that: PartialFunction[A1,B1]): PartialFunction[A1,B1]
+def padTo[B >: Char, That](len: Int,elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def padTo[B >: Char, That](len: Int,elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def par: scala.collection.parallel.ParSeq[Char]
+def partition(p: Char => Boolean): (String, String)
+def patch[B >: Char, That](from: Int,patch: scala.collection.GenSeq[B],replaced: Int)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def patch[B >: Char, That](from: Int,patch: scala.collection.GenSeq[B],replaced: Int)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def permutations: Iterator[String]
+def prefixLength(p: Char => Boolean): Int
+def product[B >: Char](implicit num: Numeric[B]): B
+def r(groupNames: String*): scala.util.matching.Regex
+def r: scala.util.matching.Regex
+def reduceLeftOption[B >: Char](op: (B, Char) => B): Option[B]
+def reduceOption[A1 >: Char](op: (A1, A1) => A1): Option[A1]
+def reduceRightOption[B >: Char](op: (Char, B) => B): Option[B]
+def reduce[A1 >: Char](op: (A1, A1) => A1): A1
+def regionMatches(x$1: Boolean,x$2: Int,x$3: String,x$4: Int,x$5: Int): Boolean
+def regionMatches(x$1: Int,x$2: String,x$3: Int,x$4: Int): Boolean
+def replace(x$1: Char,x$2: Char): String
+def replace(x$1: CharSequence,x$2: CharSequence): String
+def replaceAll(x$1: String,x$2: String): String
+def replaceAllLiterally(literal: String,replacement: String): String
+def replaceFirst(x$1: String,x$2: String): String
+def repr: scala.collection.immutable.WrappedString
+def reverseMap[B, That](f: Char => B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def reverseMap[B, That](f: Char => B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def runWith[U](action: Char => U): Int => Boolean
+def scanLeft[B, That](z: B)(op: (B, Char) => B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def scanLeft[B, That](z: B)(op: (B, Char) => B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def scanRight[B, That](z: B)(op: (Char, B) => B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def scanRight[B, That](z: B)(op: (Char, B) => B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def scan[B >: Char, That](z: B)(op: (B, B) => B)(implicit cbf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def scan[B >: Char, That](z: B)(op: (B, B) => B)(implicit cbf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def seq: scala.collection.immutable.WrappedString
+def sliding(size: Int): Iterator[String]
+def sliding(size: Int,step: Int): Iterator[String]
+def sortBy[B](f: Char => B)(implicit ord: scala.math.Ordering[B]): String
+def sortWith(lt: (Char, Char) => Boolean): String
+def sorted[B >: Char](implicit ord: scala.math.Ordering[B]): String
+def split(separator: Char): Array[String]
+def split(separators: Array[Char]): Array[String]
+def split(x$1: String): Array[String]
+def split(x$1: String,x$2: Int): Array[String]
+def startsWith(x$1: String): Boolean
+def startsWith(x$1: String,x$2: Int): Boolean
+def startsWith[B](that: scala.collection.GenSeq[B]): Boolean
+def stringPrefix: String
+def stripLineEnd: String
+def stripMargin(marginChar: Char): String
+def stripMargin: String
+def stripPrefix(prefix: String): String
+def stripSuffix(suffix: String): String
+def subSequence(x$1: Int,x$2: Int): CharSequence
+def substring(x$1: Int): String
+def substring(x$1: Int,x$2: Int): String
+def sum[B >: Char](implicit num: Numeric[B]): B
+def tails: Iterator[String]
+def toBoolean: Boolean
+def toByte: Byte
+def toCharArray(): Array[Char]
+def toDouble: Double
+def toFloat: Float
+def toIndexedSeq: scala.collection.immutable.IndexedSeq[Char]
+def toInt: Int
+def toList: List[Char]
+def toLong: Long
+def toLowerCase(): String
+def toLowerCase(x$1: java.util.Locale): String
+def toMap[T, U](implicit ev: <:<[Char,(T, U)]): scala.collection.immutable.Map[T,U]
+def toSet[B >: Char]: scala.collection.immutable.Set[B]
+def toShort: Short
+def toString(): String
+def toTraversable: Traversable[Char]
+def toUpperCase(): String
+def toUpperCase(x$1: java.util.Locale): String
+def toVector: Vector[Char]
+def transpose[B](implicit asTraversable: Char => scala.collection.GenTraversableOnce[B]): scala.collection.immutable.IndexedSeq[scala.collection.immutable.IndexedSeq[B]]
+def trim(): String
+def unzip3[A1, A2, A3](implicit asTriple: Char => (A1, A2, A3)): (scala.collection.immutable.IndexedSeq[A1], scala.collection.immutable.IndexedSeq[A2], scala.collection.immutable.IndexedSeq[A3])
+def unzip[A1, A2](implicit asPair: Char => (A1, A2)): (scala.collection.immutable.IndexedSeq[A1], scala.collection.immutable.IndexedSeq[A2])
+def updated[B >: Char, That](index: Int,elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+def updated[B >: Char, That](index: Int,elem: B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+def withFilter(p: Char => Boolean): scala.collection.generic.FilterMonadic[Char,String]
+def zipAll[B, A1 >: Char, That](that: scala.collection.GenIterable[B],thisElem: A1,thatElem: B)(implicit bf: scala.collection.generic.CanBuildFrom[String,(A1, B),That]): That
+def zipAll[B, A1 >: Char, That](that: scala.collection.GenIterable[B],thisElem: A1,thatElem: B)(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,(A1, B),That]): That
+def →[B](y: B): (String, B)
+final def !=(x$1: Any): Boolean
+final def ##(): Int
+final def +(x$1: Any): String
+final def ==(x$1: Any): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def isTraversableAgain: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+override def andThen[C](k: Char => C): PartialFunction[Int,C]
+override def apply(index: Int): Char
+override def canEqual(that: Any): Boolean
+override def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.IndexedSeq]
+override def compare(other: String): Int
+override def copyToArray[B >: Char](xs: Array[B],start: Int,len: Int): Unit
+override def drop(n: Int): String
+override def dropRight(n: Int): String
+override def dropWhile(p: Char => Boolean): String
+override def endsWith[B](that: scala.collection.GenSeq[B]): Boolean
+override def exists(p: Char => Boolean): Boolean
+override def find(p: Char => Boolean): Option[Char]
+override def foldLeft[B](z: B)(op: (B, Char) => B): B
+override def foldRight[B](z: B)(op: (Char, B) => B): B
+override def forall(p: Char => Boolean): Boolean
+override def foreach[U](f: Char => U): Unit
+override def head: Char
+override def indexWhere(p: Char => Boolean,from: Int): Int
+override def init: String
+override def iterator: Iterator[Char]
+override def last: Char
+override def lastIndexWhere(p: Char => Boolean,end: Int): Int
+override def lengthCompare(len: Int): Int
+override def mkString: String
+override def reduceLeft[B >: Char](op: (B, Char) => B): B
+override def reduceRight[B >: Char](op: (Char, B) => B): B
+override def reverse: String
+override def reverseIterator: Iterator[Char]
+override def sameElements[B >: Char](that: scala.collection.GenIterable[B]): Boolean
+override def segmentLength(p: Char => Boolean,from: Int): Int
+override def size: Int
+override def slice(from: Int,until: Int): String
+override def span(p: Char => Boolean): (String, String)
+override def splitAt(n: Int): (String, String)
+override def startsWith[B](that: scala.collection.GenSeq[B],offset: Int): Boolean
+override def tail: String
+override def take(n: Int): String
+override def takeRight(n: Int): String
+override def takeWhile(p: Char => Boolean): String
+override def toArray[B >: Char](implicit evidence$1: scala.reflect.ClassTag[B]): Array[B]
+override def toBuffer[A1 >: Char]: scala.collection.mutable.Buffer[A1]
+override def toIterable: Iterable[Char]
+override def toIterator: Iterator[Char]
+override def toSeq: Seq[Char]
+override def toStream: scala.collection.immutable.Stream[Char]
+override def to[Col[_]](implicit cbf: scala.collection.generic.CanBuildFrom[Nothing,Char,Col[Char]]): Col[Char]
+override def union[B >: Char, That](that: scala.collection.GenSeq[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,B,That]): That
+override def union[B >: Char, That](that: scala.collection.GenSeq[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,B,That]): That
+override def view(from: Int,until: Int): scala.collection.SeqView[Char,String]
+override def view: scala.collection.SeqView[Char,String]
+override def zipWithIndex[A1 >: Char, That](implicit bf: scala.collection.generic.CanBuildFrom[String,(A1, Int),That]): That
+override def zipWithIndex[A1 >: Char, That](implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,(A1, Int),That]): That
+override def zip[A1 >: Char, B, That](that: scala.collection.GenIterable[B])(implicit bf: scala.collection.generic.CanBuildFrom[String,(A1, B),That]): That
+override def zip[A1 >: Char, B, That](that: scala.collection.GenIterable[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.WrappedString,(A1, B),That]): That
+private[this] val repr: String
+private[this] val self: String
+================================================================================

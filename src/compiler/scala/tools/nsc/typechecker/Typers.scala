@@ -3208,10 +3208,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
-      // TODO_NMT: check the assumption that args nonEmpty
-      def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
-      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
-
       def preSelectOverloaded(fun: Tree): Tree = {
         if (fun.hasSymbolField && fun.symbol.isOverloaded) {
           // remove alternatives with wrong number of parameters without looking at types.
@@ -3254,6 +3250,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       val fun = preSelectOverloaded(fun0)
+
+      // TODO_NMT: check the assumption that args nonEmpty
+      def duplErrTree = {
+        val args1 = fun.tpe match {
+          case MethodType(params, _) =>
+            val silent = context.makeSilent(reportAmbiguousErrors = false)
+            newTyper(silent).typedArgsForFormals(args, params.map(_.tpe), mode)
+          case _ => args
+        }
+        setError(treeCopy.Apply(tree, fun0, args1))
+      }
+      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
       fun.tpe match {
         case OverloadedType(pre, alts) =>
