@@ -2,9 +2,9 @@
  * Copyright 2005-2013 LAMP/EPFL
  */
 
-package scala.tools.nsc.util
+package scala.reflect.internal.util
 
-private[util] trait StackTracing extends Any {
+private[scala] trait StackTracing extends Any {
 
   /** Format a stack trace, returning the prefix consisting of frames that satisfy
    *  a given predicate.

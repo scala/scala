@@ -109,64 +109,82 @@ stringinterpolation_macro-neg.scala:43: error: '(' not allowed for a, A
 stringinterpolation_macro-neg.scala:44: error: Only '-' allowed for date/time conversions
   f"$t%#+ 0,(tT"
        ^
-stringinterpolation_macro-neg.scala:47: error: precision not allowed
+stringinterpolation_macro-neg.scala:45: error: Duplicate flag ','
+  f"$d%,,d"
+        ^
+stringinterpolation_macro-neg.scala:46: error: Can't combine '0' padding with '-' left adjustment
+  f"$d%-0d"
+        ^
+stringinterpolation_macro-neg.scala:47: error: Can't combine '0' padding with '-' left adjustment
+  f"$f%-0f"
+        ^
+stringinterpolation_macro-neg.scala:50: error: precision not allowed
   f"$c%.2c"
        ^
-stringinterpolation_macro-neg.scala:48: error: precision not allowed
+stringinterpolation_macro-neg.scala:51: error: precision not allowed
   f"$d%.2d"
        ^
-stringinterpolation_macro-neg.scala:49: error: precision not allowed
+stringinterpolation_macro-neg.scala:52: error: precision not allowed
   f"%.2%"
      ^
-stringinterpolation_macro-neg.scala:50: error: precision not allowed
+stringinterpolation_macro-neg.scala:53: error: precision not allowed
   f"%.2n"
      ^
-stringinterpolation_macro-neg.scala:51: error: precision not allowed
+stringinterpolation_macro-neg.scala:54: error: precision not allowed
   f"$f%.2a"
        ^
-stringinterpolation_macro-neg.scala:52: error: precision not allowed
+stringinterpolation_macro-neg.scala:55: error: precision not allowed
   f"$t%.2tT"
        ^
-stringinterpolation_macro-neg.scala:55: error: No last arg
+stringinterpolation_macro-neg.scala:58: error: Field width is required with '-' left adjustment
+  f"$s%-s"
+       ^
+stringinterpolation_macro-neg.scala:59: error: Field width is required with '0' padding or '-' left adjustment
+  f"$d%-d"
+       ^
+stringinterpolation_macro-neg.scala:60: error: Field width is required with '0' padding or '-' left adjustment
+  f"$f%-f"
+       ^
+stringinterpolation_macro-neg.scala:63: error: No previous arg
   f"%<s"
      ^
-stringinterpolation_macro-neg.scala:56: error: No last arg
+stringinterpolation_macro-neg.scala:64: error: No previous arg
   f"%<c"
      ^
-stringinterpolation_macro-neg.scala:57: error: No last arg
+stringinterpolation_macro-neg.scala:65: error: No previous arg
   f"%<tT"
      ^
-stringinterpolation_macro-neg.scala:58: error: Argument index out of range
+stringinterpolation_macro-neg.scala:66: error: Argument index out of range
   f"${8}%d ${9}%d%3$$d"
                   ^
-stringinterpolation_macro-neg.scala:59: error: Argument index out of range
+stringinterpolation_macro-neg.scala:67: error: Argument index out of range
   f"${8}%d ${9}%d%0$$d"
                   ^
-stringinterpolation_macro-neg.scala:62: warning: Index is not this arg
+stringinterpolation_macro-neg.scala:70: warning: Index is not this arg
   f"${8}%d ${9}%1$$d"
                 ^
-stringinterpolation_macro-neg.scala:63: warning: Argument index ignored if '<' flag is present
-  f"$s%s $s%s %1$$<s"
-               ^
-stringinterpolation_macro-neg.scala:64: warning: Index is not this arg
+stringinterpolation_macro-neg.scala:71: warning: Index is not this arg
   f"$s%s $s%1$$s"
             ^
-stringinterpolation_macro-neg.scala:67: error: type mismatch;
+stringinterpolation_macro-neg.scala:72: warning: Argument index ignored if '<' flag is present
+  f"$s%s $s%s %1$$<s"
+               ^
+stringinterpolation_macro-neg.scala:75: error: type mismatch;
  found   : String
  required: java.util.Formattable
   f"$s%#s"
      ^
-stringinterpolation_macro-neg.scala:70: error: 'G' doesn't seem to be a date or time conversion
+stringinterpolation_macro-neg.scala:81: error: 'G' doesn't seem to be a date or time conversion
   f"$t%tG"
         ^
-stringinterpolation_macro-neg.scala:71: error: Date/time conversion must have two characters
+stringinterpolation_macro-neg.scala:82: error: Date/time conversion must have two characters
   f"$t%t"
        ^
-stringinterpolation_macro-neg.scala:72: error: Missing conversion operator in '%10.5'; use %% for literal %, %n for newline
+stringinterpolation_macro-neg.scala:83: error: Missing conversion operator in '%10.5'; use %% for literal %, %n for newline
   f"$s%10.5"
       ^
-stringinterpolation_macro-neg.scala:75: error: conversions must follow a splice; use %% for literal %, %n for newline
+stringinterpolation_macro-neg.scala:86: error: conversions must follow a splice; use %% for literal %, %n for newline
   f"${d}random-leading-junk%d"
                            ^
 three warnings found
-45 errors found
+51 errors found
