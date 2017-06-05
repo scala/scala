@@ -28,7 +28,12 @@ extends CompilerCommand(args, settings) {
   // change CompilerCommand behavior
   override def shouldProcessArguments: Boolean = false
 
-  private lazy val (_ok, targetAndArguments) = settings.processArguments(args, processAll = false)
+  private lazy val (_ok, targetAndArguments) = {
+    val (ok1, args1) = settings.processArguments(args, processAll = false)
+    if (ok1) {
+      new CompilerCommand(args, settings).processArguments
+    } else (ok1, args1)
+  }
   override def ok = _ok
   private def guessHowToRun(target: String): GenericRunnerCommand.HowToRun = {
     if (!ok) Error
