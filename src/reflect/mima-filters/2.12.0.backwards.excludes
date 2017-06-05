@@ -1,0 +1,6 @@
+ProblemFilters.exclude[Problem]("scala.reflect.internal.*")
+
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.unpickleClass")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.SymbolLoaders#TopClassCompleter.this")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.lateMap")

@@ -1,0 +1,9 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.debug")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorBuilder.debug")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorPointer.debug")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.debug")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.OpenHashMap.nextPositivePowerOfTwo")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashTable.powerOfTwo")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessImpl#CompoundProcess.getExitValue")
