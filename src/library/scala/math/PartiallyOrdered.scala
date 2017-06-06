@@ -25,24 +25,24 @@ trait PartiallyOrdered[+A] {
    *  - `x == 0`   iff   `'''this''' == that`
    *  - `x > 0`    iff   `'''this''' &gt; that`
    */
-  def tryCompareTo [B >: A <% PartiallyOrdered[B]](that: B): Option[Int]
+  def tryCompareTo [B >: A](that: B)(implicit @deprecatedName('evidence$1, "2.12.3") ev: B => PartiallyOrdered[B]): Option[Int]
 
-  def <  [B >: A <% PartiallyOrdered[B]](that: B): Boolean =
+  def <  [B >: A](that: B)(implicit @deprecatedName('evidence$1, "2.12.3") ev: B => PartiallyOrdered[B]): Boolean =
     (this tryCompareTo that) match {
       case Some(x) if x < 0 => true
       case _ => false
     }
-  def >  [B >: A <% PartiallyOrdered[B]](that: B): Boolean =
+  def >  [B >: A](that: B)(implicit @deprecatedName('evidence$1, "2.12.3") ev: B => PartiallyOrdered[B]): Boolean =
     (this tryCompareTo that) match {
       case Some(x) if x > 0 => true
       case _ => false
     }
-  def <= [B >: A <% PartiallyOrdered[B]](that: B): Boolean =
+  def <= [B >: A](that: B)(implicit @deprecatedName('evidence$1, "2.12.3") ev: B => PartiallyOrdered[B]): Boolean =
     (this tryCompareTo that) match {
       case Some(x) if x <= 0 => true
       case _ => false
     }
-  def >= [B >: A <% PartiallyOrdered[B]](that: B): Boolean =
+  def >= [B >: A](that: B)(implicit @deprecatedName('evidence$1, "2.12.3") ev: B => PartiallyOrdered[B]): Boolean =
     (this tryCompareTo that) match {
       case Some(x) if x >= 0 => true
       case _ => false
