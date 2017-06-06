@@ -27,6 +27,10 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHOT"
 ~~~
 
+## Contributing
+
+See the [CONTRIBUTING](CONTRIBUTING.md) file.
+
 ## Implemented collection types
 
 - [x] `List`
