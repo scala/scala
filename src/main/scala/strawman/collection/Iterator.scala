@@ -119,26 +119,31 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       else Iterator.empty.next()
   }
 
+  /*
+   * Implemented by means of a buffer to keep track of the last n elements during iteration.
+   */
   def takeRight(n: Int): Iterator[A] = {
     if (n == 0) Iterator.empty
     else {
       val buffer = ArrayBuffer[A]()
-      var i = 0
-      var m = 0
+      var count = 0
+      var index = 0
+      // First iterate over all elements while keeping track of the last n
       while (self.hasNext) {
-        if (i >= buffer.length) buffer += self.next()
-        else buffer(i) = self.next()
-        i = if ((i + 1) >= n) 0 else i + 1
-        if (m < n) m += 1
+        if (index >= buffer.length) buffer += self.next()
+        else buffer(index) = self.next()
+        index = if ((index + 1) >= n) 0 else index + 1
+        if (count < n) count += 1
       }
-      i = if (i >= buffer.length) 0 else i
-      val l = m
+      // Adjust the starting index if needed
+      index = if (index >= buffer.length) 0 else index
+      // Return an iterator for the elements in the buffer starting from index
       new Iterator[A]() {
-        override def hasNext: Boolean = m > 0
+        override def hasNext: Boolean = count > 0
         override def next(): A = {
-          val value = buffer(i)
-          i = if (i + 1 >= buffer.length) 0 else i + 1
-          m -= 1
+          val value = buffer(index)
+          index = if (index + 1 >= buffer.length) 0 else index + 1
+          count -= 1
           value
         }
       }
@@ -154,22 +159,28 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     this
   }
 
+  /*
+   * Implemented by means of a buffer to keep the last n elements from being returned during iteration.
+   */
   def dropRight(n: Int): Iterator[A] = {
     if (n == 0) self
     else {
       val buffer = ArrayBuffer[A]()
-      var i = 0
-      while (i < n && self.hasNext) {
+      var index = 0
+      // First fill the buffer with the first n elements (or fewer if the n is greater than the iterator length)
+      while (index < n && self.hasNext) {
         buffer += self.next()
-        i += 1
+        index += 1
       }
-      i = 0
+      index = 0
+      // Return an iterator that returns already buffered elements as it buffers new ones (using a buffer of most n elements)
       new Iterator[A]() {
+        // End when the iterator is exhausted (without having returned the elements currently in the buffer since those are the ones to drop)
         override def hasNext: Boolean = self.hasNext
         override def next(): A = {
-          val value = buffer(i)
-          buffer(i) = self.next()
-          i = if (i + 1 >= buffer.length) 0 else i + 1
+          val value = buffer(index)
+          buffer(index) = self.next()
+          index = if (index + 1 >= buffer.length) 0 else index + 1
           value
         }
       }
