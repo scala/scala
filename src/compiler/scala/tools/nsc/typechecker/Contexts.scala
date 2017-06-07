@@ -237,6 +237,9 @@ trait Contexts { self: Analyzer =>
 
     /** Types for which implicit arguments are currently searched */
     var openImplicits: List[OpenImplicit] = List()
+    final def isSearchingForImplicitParam: Boolean = {
+      openImplicits.nonEmpty && openImplicits.exists(x => !x.isView)
+    }
 
     /* For a named application block (`Tree`) the corresponding `NamedApplyInfo`. */
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
