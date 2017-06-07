@@ -45,7 +45,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [ ] `UnrolledBuffer`
 - [ ] `LinkedList`
 - [ ] `DoubleLinkedList`
-- [ ] `Range` / `NumericRange`
+- [x] `Range` / `NumericRange`
 - [ ] `Vector`
 - [x] `HashMap`
 - [x] `TreeMap`
