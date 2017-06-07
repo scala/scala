@@ -188,6 +188,8 @@ object HashMap extends MapFactory[HashMap] {
 
     override def tail: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
 
+    override def last: (Any, Nothing) = throw new NoSuchElementException("Empty Map")
+
     override def init: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
 
   }

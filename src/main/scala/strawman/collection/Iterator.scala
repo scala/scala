@@ -1,7 +1,7 @@
 package strawman.collection
 
 import scala.{Array, Any, Boolean, Int, NoSuchElementException, Nothing, Unit}
-import scala.Predef.{println}
+import strawman.collection.mutable.ArrayBuffer
 
 /** A core Iterator class
   *
@@ -120,22 +120,27 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   }
 
   def takeRight(n: Int): Iterator[A] = {
-    val buffer = new Array[Any](n)
-    var i = 0
-    var m = 0
-    while (n > 0 && self.hasNext) {
-      buffer.update(i, self.next())
-      i = (i + 1) % n
-      if (m < n) m += 1
-    }
-    val l = m
-    new Iterator[A]() {
-      override def hasNext: Boolean = m > 0
-      override def next(): A = {
-        val value = buffer(i % l).asInstanceOf[A]
-        i = (i + 1) % l
-        m -= 1
-        value
+    if (n == 0) Iterator.empty
+    else {
+      val buffer = ArrayBuffer[A]()
+      var i = 0
+      var m = 0
+      while (self.hasNext) {
+        if (i >= buffer.length) buffer += self.next()
+        else buffer(i) = self.next()
+        i = if ((i + 1) >= n) 0 else i + 1
+        if (m < n) m += 1
+      }
+      i = if (i >= buffer.length) 0 else i
+      val l = m
+      new Iterator[A]() {
+        override def hasNext: Boolean = m > 0
+        override def next(): A = {
+          val value = buffer(i)
+          i = if (i + 1 >= buffer.length) 0 else i + 1
+          m -= 1
+          value
+        }
       }
     }
   }
@@ -150,20 +155,23 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   }
 
   def dropRight(n: Int): Iterator[A] = {
-    val buffer = new Array[Any](n)
-    var i = 0
-    while (i < n && self.hasNext) {
-      buffer.update(i, self.next())
-      i += 1
-    }
-    val m = i
-    new Iterator[A]() {
-      override def hasNext: Boolean = m > 0 && self.hasNext
-      override def next(): A = {
-        val value = buffer(i % m).asInstanceOf[A]
-        i = (i + 1) % m
-        buffer.update(i, self.next())
-        value
+    if (n == 0) self
+    else {
+      val buffer = ArrayBuffer[A]()
+      var i = 0
+      while (i < n && self.hasNext) {
+        buffer += self.next()
+        i += 1
+      }
+      i = 0
+      new Iterator[A]() {
+        override def hasNext: Boolean = self.hasNext
+        override def next(): A = {
+          val value = buffer(i)
+          buffer(i) = self.next()
+          i = if (i + 1 >= buffer.length) 0 else i + 1
+          value
+        }
       }
     }
   }

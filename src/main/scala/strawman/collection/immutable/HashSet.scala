@@ -103,6 +103,8 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def tail: HashSet[A] = HashSet.empty[A]
 
+    override def last: A = key
+
     override def init: HashSet[A] = HashSet.empty[A]
 
     override def size: Int = 1
