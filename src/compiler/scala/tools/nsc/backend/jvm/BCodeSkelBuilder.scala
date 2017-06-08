@@ -132,9 +132,14 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val flags = javaFlags(claszSymbol)
 
       val thisSignature = getGenericSignature(claszSymbol, claszSymbol.owner)
+      val interfaceNamesArray = if (interfaceNames.isEmpty) EMPTY_STRING_ARRAY else {
+        val result = new Array[String](interfaceNames.length)
+        interfaceNames.copyToArray(result)
+        result
+      }
       cnode.visit(classfileVersion, flags,
                   thisBType.internalName, thisSignature,
-                  superClass, interfaceNames.toArray)
+                  superClass, interfaceNamesArray)
 
       if (emitSource) {
         cnode.visitSource(cunit.source.toString, null /* SourceDebugExtension */)

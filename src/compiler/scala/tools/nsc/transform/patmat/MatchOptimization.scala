@@ -534,8 +534,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
           val scrutToInt: Tree =
             if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
             else (REF(scrutSym) DOT (nme.toInt))
-          Some(BLOCK(
-            ValDef(scrutSym, scrut),
+          Some(Block(
+            ValDef(scrutSym, scrut) :: Nil,
             Match(scrutToInt, caseDefsWithDefault) // a switch
           ))
         }

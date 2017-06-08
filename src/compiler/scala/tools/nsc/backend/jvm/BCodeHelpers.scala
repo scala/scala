@@ -503,7 +503,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       currentRun.symData get sym match {
         case Some(pickle) if !nme.isModuleName(newTermName(jclassName)) =>
           val scalaAnnot = {
-            val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
+            val sigBytes = ScalaSigBytes(java.util.Arrays.copyOf(pickle.bytes, pickle.writeIndex))
             AnnotationInfo(sigBytes.sigAnnot, Nil, (nme.bytes, sigBytes) :: Nil)
           }
           pickledBytes += pickle.writeIndex

@@ -1349,9 +1349,20 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor,
           /* itf = */ isInterface)
-      val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
-      val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
-      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
+      val numCapturedParams = lambdaTarget.paramss.head.length - arity
+      val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(numCapturedParams)
+
+      val invokedTypeArgs: Array[asm.Type] = if (isStaticMethod) {
+        val result = new Array[asm.Type](numCapturedParams)
+        capturedParams.iterator.map(sym => typeToBType(sym.info).toASMType).copyToArray(result)
+        result
+      } else {
+        val result = new Array[asm.Type](numCapturedParams + 1)
+        result(0) = typeToBType(lambdaTarget.owner.info).toASMType
+        capturedParams.iterator.map(sym => typeToBType(sym.info).toASMType).copyToArray(result, 1)
+        result
+      }
+      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), invokedTypeArgs: _*)
       val constrainedType = new MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
