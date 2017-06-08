@@ -107,7 +107,7 @@ class ListBuffer[A]
     val follow = getNext(prev)
     while (it.hasNext) {
       len += 1
-      val next = (it.next :: follow).asInstanceOf[::[A]]
+      val next = (it.next() :: follow).asInstanceOf[::[A]]
       setNext(prev, next)
       prev = next
     }

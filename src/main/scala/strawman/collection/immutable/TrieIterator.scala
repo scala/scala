@@ -133,7 +133,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
       next0(getElems(m), 0)
     }
     else {
-      subIter = m.iterator
+      subIter = m.iterator()
       next()
     }
     // The much slower version:
