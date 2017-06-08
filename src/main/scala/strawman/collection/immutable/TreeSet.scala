@@ -34,6 +34,16 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
+  def iterableFactory = Set
+
+  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
+    TreeSet.sortedFromIterable(coll)
+
+  protected[this] def sortedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
+    TreeSet.sortedFromIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder()
+
   private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)
 
   override def size: Int = RB.count(tree)
@@ -61,16 +71,6 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
   def iterator(): Iterator[A] = RB.keysIterator(tree)
 
   def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
-
-  def iterableFactory = Set
-
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
-    TreeSet.sortedFromIterable(coll)
-
-  protected[this] def sortedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
-    TreeSet.sortedFromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder()
 
   def unordered: Set[A] = this
 

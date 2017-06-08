@@ -27,6 +27,22 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     */
   def get(key: K): Option[V]
 
+  /**  Returns the value associated with a key, or a default value if the key is not contained in the map.
+   *   @param   key      the key.
+   *   @param   default  a computation that yields a default value in case no binding for `key` is
+   *                     found in the map.
+   *   @tparam  V1       the result type of the default computation.
+   *   @return  the value associated with `key` if it exists,
+   *            otherwise the result of the `default` computation.
+   *
+   *   @usecase def getOrElse(key: K, default: => V): V
+   *     @inheritdoc
+   */
+  def getOrElse[V1 >: V](key: K, default: => V1): V1 = get(key) match {
+    case Some(v) => v
+    case None => default
+  }
+
   /** Retrieves the value which is associated with the given key. This
     *  method invokes the `default` method of the map if there is no mapping
     *  from the given key to a value. Unless overridden, the `default` method throws a

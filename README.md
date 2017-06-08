@@ -71,6 +71,8 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `foldLeft`
 - [x] `foldRight`
 - [x] `get`
+- [x] `getOrElse`
+- [x] `getOrElseUpdate`
 - [x] `head`
 - [x] `indexWhere`
 - [x] `isDefinedAt`
@@ -88,7 +90,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `drop`
 - [x] `empty`
 - [x] `filter` / `filterNot`
-- [ ] `groupBy`
+- [x] `groupBy`
 - [x] `intersect`
 - [x] `partition`
 - [x] `range`

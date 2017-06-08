@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import collection.{Iterator, MapFactory, MapFactoryWithBuilder, StrictOptimizedIterableOps}
+import collection.{Iterator, MapFactoryWithBuilder, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}

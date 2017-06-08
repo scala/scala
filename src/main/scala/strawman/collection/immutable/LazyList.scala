@@ -68,5 +68,6 @@ object LazyList extends IterableFactory[LazyList] {
   def fromIterator[A](it: Iterator[A]): LazyList[A] =
     new LazyList(if (it.hasNext) Some(it.next(), fromIterator(it)) else None)
 
-  def empty[A]: LazyList[A] = new LazyList[A](None)
+  def empty[A]: LazyList[A] = Empty
+
 }
