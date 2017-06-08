@@ -1925,6 +1925,11 @@ trait Namers extends MethodSynthesis {
   // do not use to wrap existing completers (see CompleterWrapper for that)
   abstract class TypeCompleterBase[T <: Tree](val tree: T) extends LockingTypeCompleter with FlagAgnosticCompleter
 
+  @deprecated("Use global.lockedCount", "2.12.3")
+  protected def _lockedCount = lockedCount
+  @deprecated("Use global.lockedCount", "2.12.3")
+  protected def _lockedCount_=(value: Int) = lockedCount = value
+
   trait LockingTypeCompleter extends TypeCompleter {
     def completeImpl(sym: Symbol): Unit
 
