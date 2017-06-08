@@ -82,6 +82,7 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 ### Transformations to collections having the same element type
 
 - [x] `drop`
+- [x] `dropRight`
 - [x] `empty`
 - [x] `filter` / `filterNot`
 - [ ] `groupBy`
@@ -92,7 +93,9 @@ libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHO
 - [x] `slice`
 - [x] `splitAt`
 - [x] `tail`
+- [x] `init`
 - [x] `take`
+- [x] `takeRight`
 - [x] `updated`
 
 ### Transformations to collections that can have a different element type
