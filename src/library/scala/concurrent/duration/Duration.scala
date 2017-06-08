@@ -125,7 +125,7 @@ object Duration {
     else if (nanos > Long.MaxValue || nanos < Long.MinValue)
       throw new IllegalArgumentException("trying to construct too large duration with " + nanos + "ns")
     else
-      fromNanos((nanos + 0.5).toLong)
+      fromNanos(nanos.round)
   }
 
   private[this] final val  µs_per_ns = 1000L
