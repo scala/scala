@@ -198,7 +198,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("settings", "<options>", "update compiler options, if possible; see reset", changeSettings, settingsCompletion),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
-    cmd("kind", "[-v] <expr>", "display the kind of expression's type", kindCommand),
     nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
   )
 
@@ -297,13 +296,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     line0.trim match {
       case "" => ":type [-v] <expression>"
       case s  => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
-    }
-  }
-
-  private def kindCommand(expr: String): Result = {
-    expr.trim match {
-      case "" => ":kind [-v] <expression>"
-      case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
     }
   }
 

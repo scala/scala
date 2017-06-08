@@ -1326,14 +1326,6 @@ trait Types
       (if (emptyLowerBound) "" else " >: " + typeString(lo)) +
       (if (emptyUpperBound) "" else " <: " + typeString(hi))
     }
-    /** Bounds notation used in http://adriaanm.github.com/files/higher.pdf.
-      * For example *(scala.collection.generic.Sorted[K,This]).
-      */
-    private[internal] def starNotation(typeString: Type => String): String = {
-      if (emptyLowerBound && emptyUpperBound) ""
-      else if (emptyLowerBound) "(" + typeString(hi) + ")"
-      else "(%s, %s)" format (typeString(lo), typeString(hi))
-    }
     override def kind = "TypeBoundsType"
   }
 
