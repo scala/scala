@@ -19,7 +19,7 @@ sealed trait List[+A]
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
-  protected[this] def newBuilder = List.newBuilder[A]
+  protected[this] def newBuilder = List.newBuilder[A]()
 
   @tailrec final def length: Int = if (isEmpty) 0 else tail.length
 
