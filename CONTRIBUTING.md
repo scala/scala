@@ -1,9 +1,22 @@
 # Contributing
 
-## Build
+## Getting started
 
-- Compile the collections and run the
-  tests:
+You need the following:
+
+- Git
+- JDK 8
+- SBT
+
+### Workflow
+
+- Make sure you have signed the [Scala CLA](http://www.lightbend.com/contribute/cla/scala).
+- You should perform your work in its own Git branch.
+- Then open a pull request on GitHub, with `master` as base branch.
+
+### Build
+
+- Compile the collections and run the tests:
   
   ~~~
   >; compile; test
@@ -33,3 +46,11 @@
     ~~~
     > timeBenchmark/charts Array
     ~~~
+
+## Roadmap
+
+1. Release a v0.2.0 targeting Scala 2.13 and Dotty. The goal of this
+   release is to implement most of the current collections and operations.
+2. Consider the inclusion of new collection types and new operations
+   (e.g. joins)
+3. External modules for parallel collections and Java interoperability
