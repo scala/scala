@@ -54,7 +54,7 @@ class ConsoleInterface {
           super.createInterpreter()
 
         for ((id, value) <- bindNames zip bindValues)
-          intp.beQuietDuring(intp.bind(id, value))
+          intp.beQuietDuring(intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value))
 
         if (!initialCommands.isEmpty)
           intp.interpret(initialCommands)
