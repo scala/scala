@@ -60,7 +60,7 @@ package object collection extends LowPriority {
         output += '\n'
       }
 
-      output.result
+      output.result()
     }
 
     def arrayString[T](array: Array[T], from: Int, until: Int): String = {

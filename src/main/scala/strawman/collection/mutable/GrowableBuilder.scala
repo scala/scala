@@ -17,6 +17,6 @@ import scala.Unit
   */
 class GrowableBuilder[Elem, To <: Growable[Elem]](elems: To) extends Builder[Elem, To] {
   def clear(): Unit = elems.clear()
-  def result: To = elems
+  def result(): To = elems
   def add(elem: Elem): this.type = { elems += elem; this }
 }

@@ -129,7 +129,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
       b ++= String.valueOf(elem)
     }
     b ++= end
-    b.result
+    b.result()
   }
 
   def mkString(sep: String): String = mkString("", sep, "")
@@ -265,7 +265,7 @@ trait Buildable[+A, +C] extends Any with IterableOps[A, AnyConstr, C]  {
   override def partition(p: A => Boolean): (C, C) = {
     val l, r = newBuilder
     coll.iterator().foreach(x => (if (p(x)) l else r) += x)
-    (l.result, r.result)
+    (l.result(), r.result())
   }
 
   // one might also override other transforms here to avoid generating
