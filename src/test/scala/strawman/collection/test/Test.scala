@@ -6,7 +6,7 @@ import scala.{Either, Int, Left, Nothing, Unit, Array, Option, StringContext, Bo
 import scala.Predef.{assert, println, charWrapper, identity}
 
 import collection._
-import collection.immutable.{List, Nil, LazyList}
+import collection.immutable.{List, Nil, LazyList, Range}
 import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
 
@@ -346,10 +346,13 @@ class StrawmanTest {
     val list: Iterable[Int] = List(1, 2, 3)
     val lazyList: Iterable[Int] = LazyList(1, 2, 3)
     val buffer = ArrayBuffer(1, 2, 3)
+    val range = Range.inclusive(1, 3)
     assert(list == lazyList)
     assert(list.## == lazyList.##)
     assert(list == (buffer: Iterable[Int]))
     assert(list.## == buffer.##)
+    assert(list == (range: Iterable[Int]))
+    assert(list.## == range.##)
     buffer += 4
     assert(list != (buffer: Iterable[Int]))
     assert(list.## != buffer.##)
