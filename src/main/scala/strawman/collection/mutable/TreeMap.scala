@@ -131,11 +131,11 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
     override def get(key: K) = if (isInsideViewBounds(key)) RB.get(tree, key) else None
 
-    override def iterator = RB.iterator(tree, from, until)
+    override def iterator() = RB.iterator(tree, from, until)
     override def keysIteratorFrom(start: K) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
 
-    override def size = iterator.length
-    override def isEmpty = !iterator.hasNext
+    override def size = iterator().length
+    override def isEmpty = !iterator().hasNext
     override def contains(key: K) = isInsideViewBounds(key) && RB.contains(tree, key)
 
     override def head = headOption.get
@@ -159,7 +159,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     // Using the iterator should be efficient enough; if performance is deemed a problem later, specialized
     // `foreach(f, from, until)` and `transform(f, from, until)` methods can be created in `RedBlackTree`. See
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
-    override def foreach[U](f: ((K, V)) => U): Unit = iterator.foreach(f)
+    override def foreach[U](f: ((K, V)) => U): Unit = iterator().foreach(f)
 
     override def clone() = super.clone().rangeImpl(from, until)
   }

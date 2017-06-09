@@ -472,7 +472,7 @@ private[collection] object RedBlackTree {
 
     override def hasNext: Boolean = lookahead ne null
 
-    override def next: R = lookahead match {
+    override def next(): R = lookahead match {
       case null =>
         throw new NoSuchElementException("next on empty iterator")
       case tree =>

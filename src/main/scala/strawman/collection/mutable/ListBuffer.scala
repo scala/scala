@@ -38,7 +38,7 @@ class ListBuffer[A]
   protected[this] def newBuilder = new ListBuffer[A]
 
   private def copyElems(): Unit = {
-    val buf = ListBuffer.fromIterable(result)
+    val buf = ListBuffer.fromIterable(result())
     first = buf.first
     last0 = buf.last0
     aliased = false
@@ -195,7 +195,7 @@ class ListBuffer[A]
     this
   }
 
-  def result = this
+  def result() = this
 
   override def className = "ListBuffer"
 }
@@ -205,6 +205,6 @@ object ListBuffer extends IterableFactoryWithBuilder[ListBuffer] {
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
   def newBuilder[A](): Builder[A, ListBuffer[A]] = new ListBuffer[A]
-  
+
   def empty[A]: ListBuffer[A] = new ListBuffer[A]
 }
