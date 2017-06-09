@@ -130,12 +130,12 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
     override def contains(key: A) = isInsideViewBounds(key) && RB.contains(tree, key)
 
-    override def iterator = RB.keysIterator(tree, from, until)
+    override def iterator() = RB.keysIterator(tree, from, until)
     override def keysIteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
 //    override def iteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
 
-    override def size = iterator.length
-    override def isEmpty = !iterator.hasNext
+    override def size = iterator().length
+    override def isEmpty = !iterator().hasNext
 
     override def head = headOption.get
     /*override*/ def headOption = {
@@ -158,7 +158,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     // Using the iterator should be efficient enough; if performance is deemed a problem later, a specialized
     // `foreachKey(f, from, until)` method can be created in `RedBlackTree`. See
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
-    override def foreach[U](f: A => U): Unit = iterator.foreach(f)
+    override def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
     override def clone() = super.clone().rangeImpl(from, until)
 

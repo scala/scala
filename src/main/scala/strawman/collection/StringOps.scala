@@ -19,7 +19,7 @@ class StringOps(val s: String)
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
     for (ch <- coll) sb += ch
-    sb.result
+    sb.result()
   }
 
   def iterableFactory = List
@@ -41,7 +41,7 @@ class StringOps(val s: String)
   def map(f: Char => Char): String = {
     val sb = new StringBuilder
     for (ch <- s) sb += f(ch)
-    sb.result
+    sb.result()
   }
 
   /** Overloaded version of `flatMap` that gives back a string, where the inherited
@@ -50,7 +50,7 @@ class StringOps(val s: String)
   def flatMap(f: Char => String): String = {
     val sb = new StringBuilder
     for (ch <- s) sb ++= f(ch)
-    sb.result
+    sb.result()
   }
 
   /** Overloaded version of `++` that gives back a string, where the inherited
@@ -59,7 +59,7 @@ class StringOps(val s: String)
   def ++(xs: IterableOnce[Char]): String = {
     val sb = new StringBuilder() ++= s
     for (ch <- xs.iterator()) sb += ch
-    sb.result
+    sb.result()
   }
 
   /** Another overloaded version of `++`. */

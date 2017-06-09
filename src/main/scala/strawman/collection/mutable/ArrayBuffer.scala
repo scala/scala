@@ -73,7 +73,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     this
   }
 
-  def result = this
+  def result() = this
 
   def insert(idx: Int, elem: A): Unit = {
     checkWithinBounds(idx, idx)
