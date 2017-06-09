@@ -126,7 +126,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A spare instance of TreeBuilder left for backwards compatibility. */
   lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new TreeBuilder {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
+
     def unit = currentUnit
     def source = currentUnit.source
   }

@@ -225,7 +225,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       printAnnotations(tree)
       printModifiers(tree, mods)
       print("def " + resultName)
-      printTypeParams(tparams);
+      printTypeParams(tparams)
       vparamss foreach {printValueParams(_)}
       printTypeSignature
       printRhs
@@ -284,7 +284,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     protected def printFunction(tree: Function)(printValueParams: => Unit) = {
       val Function(vparams, body) = tree
-      print("(");
+      print("(")
       printValueParams
       print(" => ", body, ")")
       if (printIds && tree.symbol != null)
@@ -689,15 +689,15 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
           if (primaryCtorParam && !(hideCtorMods || hideCaseCtorMods)) {
             printModifiers(mods, primaryCtorParam)
-            print(if (mods.isMutable) "var " else "val ");
+            print(if (mods.isMutable) "var " else "val ")
           }
-          print(printedName(name), blankForName(name));
-          printOpt(": ", tp);
+          print(printedName(name), blankForName(name))
+          printOpt(": ", tp)
           printOpt(" = ", rhs)
         case TypeDef(_, name, tparams, rhs) =>
           printPosition(tree)
           print(printedName(name))
-          printTypeParams(tparams);
+          printTypeParams(tparams)
           print(rhs)
         case _ =>
           super.printParam(tree)
@@ -731,7 +731,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     override def printTree(tree: Tree): Unit = {
       parentsStack.push(tree)
       try {
-        processTreePrinting(tree);
+        processTreePrinting(tree)
         printTypesInfo(tree)
       } finally parentsStack.pop()
     }
@@ -836,7 +836,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             printColumn(bodyList, "", ";", "")
             print(" while (", cond, ") ")
           } else {
-            print(printedName(name)); printLabelParams(params);
+            print(printedName(name)); printLabelParams(params)
             printBlock(rhs)
           }
 
@@ -902,8 +902,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
           val showBody = !(modBody.isEmpty && (self == noSelfType || self.isEmpty))
           if (showBody) {
             if (self.name != nme.WILDCARD) {
-              print(" { ", self.name);
-              printOpt(": ", self.tpt);
+              print(" { ", self.name)
+              printOpt(": ", self.tpt)
               print(" =>")
             } else if (self.tpt.nonEmpty) {
               print(" { _ : ", self.tpt, " =>")
@@ -1095,7 +1095,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case ExistentialTypeTree(tpt, whereClauses) =>
-          print("(", tpt);
+          print("(", tpt)
           printColumn(whereClauses, " forSome { ", ";", "})")
 
         case EmptyTree =>
