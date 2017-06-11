@@ -5,8 +5,7 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Unit}
-import scala.Predef.intWrapper
+import scala.{Any, AnyRef, Int, Unit}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -14,35 +13,23 @@ import scala.Predef.intWrapper
 @Warmup(iterations = 12)
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
-class ImmutableArrayBenchmark {
+class RangeBenchmark {
 
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: ImmutableArray[Long] = _
-  var xss: scala.Array[ImmutableArray[Long]] = _
+  var xs: Range = _
+  var xss: scala.Array[Range] = _
   var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    def freshCollection() = ImmutableArray((1 to size).map(_.toLong): _*)
+    def freshCollection() = Range.inclusive(1, size)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
-  }
-
-  @Benchmark
-  //  @OperationsPerInvocation(size)
-  def cons(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
-    var i = 0L
-    while (i < size) {
-      ys = ys :+ i
-      i = i + 1
-    }
-    bh.consume(ys)
   }
 
   @Benchmark
@@ -53,16 +40,6 @@ class ImmutableArrayBenchmark {
 
   @Benchmark
   def foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
-
-  @Benchmark
-  //  @OperationsPerInvocation(size)
-  def foreach_while(bh: Blackhole): Unit = {
-    var i = 0
-    while (i < xs.size) {
-      bh.consume(xs(i))
-      i = i + 1
-    }
-  }
 
   @Benchmark
   @OperationsPerInvocation(1000)
