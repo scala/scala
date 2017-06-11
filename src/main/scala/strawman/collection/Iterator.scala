@@ -1,6 +1,7 @@
 package strawman.collection
 
-import scala.{Array, Any, Boolean, Int, NoSuchElementException, Nothing, Unit}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import scala.{Any, Array, Boolean, Int, NoSuchElementException, Nothing, Unit}
 import strawman.collection.mutable.ArrayBuffer
 
 /** A core Iterator class
@@ -125,21 +126,28 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def takeRight(n: Int): Iterator[A] = {
     if (n == 0) Iterator.empty
     else {
-      val buffer = ArrayBuffer[A]()
-      var count = 0
-      var index = 0
-      // First iterate over all elements while keeping track of the last n
-      while (self.hasNext) {
-        if (index >= buffer.length) buffer += self.next()
-        else buffer(index) = self.next()
-        index = if ((index + 1) >= n) 0 else index + 1
-        if (count < n) count += 1
-      }
-      // Adjust the starting index if needed
-      index = if (index >= buffer.length) 0 else index
-      // Return an iterator for the elements in the buffer starting from index
+      // Return an iterator that iterates over the elements via a buffer
       new Iterator[A]() {
-        override def hasNext: Boolean = count > 0
+        private[this] var index = 0
+        private[this] var count = 0
+        // Use a lazy val for the buffer to make sure initialization is done only if needed and at most once
+        private[this] lazy val buffer = {
+          // Iterate over all elements while keeping track of the last n
+          var buf = ArrayBuffer[A]()
+          while (self.hasNext) {
+            if (index >= buf.length) buf += self.next()
+            else buf(index) = self.next()
+            index = if ((index + 1) >= n) 0 else index + 1
+            if (count < n) count += 1
+          }
+          // Adjust the starting index if needed
+          index = if (index >= buf.length) 0 else index
+          buf
+        }
+        override def hasNext: Boolean = {
+          // Force initialization of buffer and return whether there are any elements left in the buffer
+          buffer != null && count > 0
+        }
         override def next(): A = {
           val value = buffer(index)
           index = if (index + 1 >= buffer.length) 0 else index + 1
@@ -165,18 +173,24 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def dropRight(n: Int): Iterator[A] = {
     if (n == 0) self
     else {
-      val buffer = ArrayBuffer[A]()
-      var index = 0
-      // First fill the buffer with the first n elements (or fewer if the n is greater than the iterator length)
-      while (index < n && self.hasNext) {
-        buffer += self.next()
-        index += 1
-      }
-      index = 0
       // Return an iterator that returns already buffered elements as it buffers new ones (using a buffer of most n elements)
       new Iterator[A]() {
-        // End when the iterator is exhausted (without having returned the elements currently in the buffer since those are the ones to drop)
-        override def hasNext: Boolean = self.hasNext
+        private[this] var index = 0
+        private[this] lazy val buffer = {
+          // Fill the buffer with the first n elements (or fewer if the n is greater than the iterator length)
+          val buf = ArrayBuffer[A]()
+          while (index < n && self.hasNext) {
+            buf += self.next()
+            index += 1
+          }
+          index = 0
+          buf
+        }
+
+        override def hasNext: Boolean = {
+          // Force initialization of buffer and don't stop unitl the iterator is exhausted (without having returned the elements currently in the buffer since those are the ones to drop)
+          buffer != null && self.hasNext
+        }
         override def next(): A = {
           val value = buffer(index)
           buffer(index) = self.next()
