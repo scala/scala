@@ -45,13 +45,11 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
    *  Note: the execution of `length` may take time proportional to the length of the sequence.
    */
   def length: Int = {
-    var these = self
-    var len = 0
-    while (!these.isEmpty) {
-      len += 1
-      these = these.tail
+    def loop(len:Int): Int = {
+      if (self.isEmpty) len
+      else loop(len + 1, self.tail)
     }
-    len
+    loop(0,self)
   }
 
   /** Selects an element by its index in the $coll.
