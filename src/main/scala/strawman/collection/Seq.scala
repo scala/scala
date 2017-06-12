@@ -24,12 +24,31 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with ArrayLike[A]
   with Equals {
 
+  /** Evidence that type `C` is (or can be converted to) an `IterableOnce[A]` */
+  protected[this] def toCollection: C => IterableOnce[A]
+
+  /** Returns new $coll with elements in reversed order.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return A new $coll with all elements of this $coll in reversed order.
+   */
   def reverse: C = {
     var xs: List[A] = Nil
     val it = coll.iterator()
     while (it.hasNext) xs = it.next() :: xs
     fromSpecificIterable(xs)
   }
+
+  /** An iterator yielding elements in reversed order.
+   *
+   *   $willNotTerminateInf
+   *
+   * Note: `xs.reverseIterator` is the same as `xs.reverse.iterator` but might be more efficient.
+   *
+   *  @return  an iterator yielding the elements of this $coll in reversed order
+   */
+  def reverseIterator: Iterator[A] = toCollection(reverse).iterator()
 
   /** Do the elements of this collection are the same (and in the same order)
     * as those of `that`?
@@ -68,6 +87,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
 /** Base trait for indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
+
   override def view: IndexedView[A] = new IndexedView[A] {
     def length: Int = self.length
     def apply(i: Int): A = self(i)
@@ -81,6 +101,9 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
   override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
 
   override def reverse: C = fromSpecificIterable(view.reverse)
+
+  override def reverseIterator: Iterator[A] = view.reverse.iterator()
+
 }
 
 /** Base trait for linear Seq operations */

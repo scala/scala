@@ -3,7 +3,7 @@ package collection
 package immutable
 
 import scala.{None, Nothing, Option, Some, StringContext, Any, Int}
-import scala.Predef.???
+import scala.Predef.{???, identity}
 import scala.annotation.tailrec
 import mutable.Builder
 
@@ -38,6 +38,8 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
     IndexedSeq.newBuilder().mapResult(_.to(LazyList))
+
+  protected[this] def toCollection: LazyList[A] => IterableOnce[A] = identity
 
   override def className = "LazyList"
 

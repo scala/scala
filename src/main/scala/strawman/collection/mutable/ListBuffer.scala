@@ -8,7 +8,7 @@ import strawman.collection
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.IndexOutOfBoundsException
-import scala.Predef.{assert, intWrapper}
+import scala.Predef.{assert, identity, intWrapper}
 
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
@@ -28,6 +28,8 @@ class ListBuffer[A]
   def iterableFactory = ListBuffer
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
+
+  protected[this] def toCollection: ListBuffer[A] => IterableOnce[A] = identity
 
   def apply(i: Int) = first.apply(i)
 

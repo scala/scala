@@ -1,10 +1,10 @@
 package strawman
 package collection.immutable
 
-import collection.{IterableFactory, IterableOps, Iterator, StrictOptimizedIterableOps}
+import collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
 import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Numeric, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized}
-import scala.Predef.augmentString
+import scala.Predef.{augmentString, identity}
 import java.lang.String
 
 import strawman.collection.mutable.Builder
@@ -58,6 +58,8 @@ final class Range(
     fromIterable(coll)
 
   protected[this] def newSpecificBuilder(): Builder[Int, IndexedSeq[Int]] = IndexedSeq.newBuilder()
+
+  protected[this] def toCollection: IndexedSeq[Int] => IterableOnce[Int] = identity
 
   def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 

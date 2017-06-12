@@ -10,11 +10,14 @@ import scala.reflect.ClassTag
 
 class StringOps(val s: String)
   extends AnyVal
-     with SeqOps[Char, Seq, String]
-     with StrictOptimizedIterableOps[Char, String]
-     with ArrayLike[Char] {
+    with IterableOnce[Char]
+    with SeqOps[Char, Seq, String]
+    with StrictOptimizedIterableOps[Char, String]
+    with ArrayLike[Char] {
 
   protected[this] def coll = new StringView(s)
+
+  protected[this] def toCollection: String => IterableOnce[Char] = strawman.collection.stringToStringOps
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
