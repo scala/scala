@@ -18,6 +18,8 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
+object IndexedSeq extends IterableFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
+
 /** Base trait for Seq operations */
 trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
@@ -50,7 +52,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator()
 
-  /** Do the elements of this collection are the same (and in the same order)
+  /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =

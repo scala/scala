@@ -106,6 +106,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 ### Transformations to collections that can have a different element type
 
+- [x] `updated`
 - [x] `++` / `concat` / `union`
 - [x] `flatMap`
 - [x] `map`

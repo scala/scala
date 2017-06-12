@@ -145,6 +145,8 @@ final class Range(
     else start + (step * idx)
   }
 
+  def updated[B >: Int](index: Int, elem: B): IndexedSeq[B] = collection.generic.Updated.toImmutableArray(index, elem, coll)
+
   /*@`inline`*/ override def foreach[@specialized(Unit) U](f: Int => U): Unit = {
     // Implementation chosen on the basis of favorable microbenchmarks
     // Note--initialization catches step == 0 so we don't need to here
