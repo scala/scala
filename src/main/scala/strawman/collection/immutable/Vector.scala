@@ -194,25 +194,28 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
   // concat (suboptimal but avoids worst performance gotchas)
-//  override def concat[B >: A](that: IterableOnce[B]): Vector[B] = {
-//    import Vector.{Log2ConcatFaster, TinyAppendFaster}
-//    if (that.isEmpty) this
-//    else {
-//      that.size match {
-//        // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
-//        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
-//          var v: Vector[B] = this
-//          for (x <- that) v = v :+ x
-//          v
-//        case n if this.size < (n >>> Log2ConcatFaster) && that.isInstanceOf[Vector[_]] =>
-//          var v = that.asInstanceOf[Vector[B]]
-//          val ri = this.reverseIterator
-//          while (ri.hasNext) v = ri.next +: v
-//          v
-//        case _ => super.concat(that)
-//      }
-//    }
-//  }
+  override def concat[B >: A](that: IterableOnce[B]): Vector[B] =
+    that match {
+      case it: Iterable[B] =>
+        import Vector.{Log2ConcatFaster, TinyAppendFaster}
+        if (it.isEmpty) this
+        else {
+          it.size match {
+            // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+            case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+              var v: Vector[B] = this
+              for (x <- it) v = v :+ x
+              v
+            case n if this.size < (n >>> Log2ConcatFaster) && it.isInstanceOf[Vector[_]] =>
+              var v = it.asInstanceOf[Vector[B]]
+              val ri = this.reverseIterator
+              while (ri.hasNext) v = ri.next +: v
+              v
+            case _ => super.concat(that)
+          }
+        }
+      case _ => super.concat(that)
+    }
 
   // semi-private api
 
