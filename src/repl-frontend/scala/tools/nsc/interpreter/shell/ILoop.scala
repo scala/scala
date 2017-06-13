@@ -968,7 +968,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
             in.initCompletion(new ReplCompletion(intp))
 
         }
-      } getOrElse readOneLine()
+      } orNull // null is used by readLine to signal EOF (`loop` will exit)
 
     // start full loop (if initialization was successful)
     try
