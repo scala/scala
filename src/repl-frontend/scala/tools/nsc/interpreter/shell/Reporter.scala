@@ -108,7 +108,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   var currentRequest: ReplRequest = _
   def lastInputSingleLine: Boolean = currentRequest.originalLine.indexOf('\n') == -1
-  def preambleLineDelta: Int = currentRequest.preambleEndPos.line
+  def preambleLastLine: Int = currentRequest.preambleEndPos.line
 
   def printUntruncatedMessage(msg: String): Unit = withoutTruncating(printMessage(msg))
 
@@ -163,7 +163,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
       // where the error refers to a line that's not on the screen
       if (locationPrefix == consoleLinePrefix &&
         lastInputSingleLine &&
-        posIn.line > preambleLineDelta) { // line won't be printed if it was part of the preamble
+        posIn.line > preambleLastLine) { // line won't be printed if it was part of the preamble
         printMessage(indentation + posIn.lineCaret)
         printMessage(indented(msg))
       }
@@ -179,7 +179,8 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
         printMessage(indentation + posIn.lineContent)
         printMessage(indentation + posIn.lineCaret)
-        printMessage(s"$locationPrefix${posIn.line - preambleLineDelta}: $msgFirstLine")
+        val correctedLine = if (posIn.line > preambleLastLine) (posIn.line - preambleLastLine).toString else s"${posIn.line} (in preamble)"
+        printMessage(s"$locationPrefix$correctedLine: $msgFirstLine")
         if (!msgRest.isEmpty) printMessage(indented(msgRest))
       }
     }

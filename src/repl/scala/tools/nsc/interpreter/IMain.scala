@@ -201,7 +201,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   import memberHandlers._
 
 
-  override def quietRun[T](code: String): Result = reporter.withoutPrintingResults(interpret(code))
+  override def quietRun(code: String): Result = reporter.withoutPrintingResults(interpret(code))
 
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
   private def withLastExceptionLock[T](body: => T, alt: => T): T = {

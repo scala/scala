@@ -394,7 +394,8 @@ lazy val compiler = configureAsSubproject(project)
     description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
     // These are only needed for the POM:
-    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
+    // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
+    libraryDependencies ++= Seq(scalaXmlDep, jlineDep),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -640,7 +641,7 @@ lazy val test = project
     fork in IntegrationTest := true,
     javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
-    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"), // -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005
+    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     testOptions in IntegrationTest += Tests.Setup { () =>
       val cp = (dependencyClasspath in Test).value

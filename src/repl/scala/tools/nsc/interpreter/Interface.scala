@@ -55,9 +55,13 @@ trait ReplCore {
 /**
   * Interface to the repl for use by the frontend (shell, the UI).
   *
-  * The interface should not depend on symbols and types,
-  * just simple trees and positions, so that we could run the shell
-  * in a separate process from the compiler, for example.
+  * The interface should not depend on symbols and types (the compiler's internal state).
+  * At most, expose untyped trees and positions in addition to standard Java types.
+  * This decoupling would allow running the shell in a separate thread, or even
+  * in a separate process from the compiler. It should also be possible to write
+  * a new REPL frontend using this interface, and be compatible across minor compiler releases.
+  *
+  * (The first iteration of this interface is restricted to Strings, but we could loosen that.)
   *
   */
 trait Repl extends ReplCore {
@@ -85,7 +89,7 @@ trait Repl extends ReplCore {
 
   def classPathString: String
 
-  def quietRun[T](code: String): Result
+  def quietRun(code: String): Result
 
   def setExecutionWrapper(code: String): Unit
   def clearExecutionWrapper(): Unit
