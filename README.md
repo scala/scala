@@ -74,7 +74,7 @@ You need the following tools:
 Mac OS X and Linux work. Windows may work if you use Cygwin. Community help with keeping
 the build working on Windows is appreciated.
 
-## Other tools
+## Tools we use
 
 We are grateful for the following OSS licenses:
   - [JProfiler Java profiler](https://www.ej-technologies.com/products/jprofiler/overview.html)
