@@ -1,6 +1,5 @@
 
 import scala.tools.nsc._
-import interpreter.shell.ILoop
 import scala.tools.partest.ReplTest
 
 

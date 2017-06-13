@@ -2,7 +2,7 @@
 // run repl -i script -e expression
 // The Runner normally requires -howtorun:repl to pass -e to REPL.
 
-import scala.tools.partest.{ReplTest, Welcoming}
+import scala.tools.partest.ReplTest
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
 
 object Test extends ReplTest {

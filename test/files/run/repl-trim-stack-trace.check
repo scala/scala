@@ -1,5 +1,3 @@
-Welcome to Scala %1$#s (%3$s, Java %2$s).
-Type in expressions for evaluation. Or try :help.
 
 scala> def f = throw new Exception("Uh-oh")
 f: Nothing

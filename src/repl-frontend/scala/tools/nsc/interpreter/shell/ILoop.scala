@@ -988,7 +988,7 @@ object ILoop {
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
-  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false, welcoming: Boolean = false): String = {
+  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
     import java.io.{BufferedReader, OutputStreamWriter, StringReader}
     import java.lang.System.{lineSeparator => EOL}
 
@@ -1018,9 +1018,8 @@ object ILoop {
 
         val config = ShellConfig(settings)
         val repl = new ILoop(config, input, output) {
-          // remove versioning info (for reproducible test results),
-          // or suppress altogether if we're not welcoming
-          override def welcome = if (welcoming) config.welcomeString else ""
+          // remove welcome message as it has versioning info (for reproducible test results),
+          override def welcome = ""
         }
         if (settings.classpath.isDefault)
           settings.classpath.value = sys.props("java.class.path")
@@ -1033,7 +1032,7 @@ object ILoop {
   /** Creates an interpreter loop with default settings and feeds
    *  the given code to it as input.
    */
-  def run(code: String, sets: Settings = new Settings, welcoming: Boolean = false): String = {
+  def run(code: String, sets: Settings = new Settings): String = {
     import java.io.{BufferedReader, OutputStreamWriter, StringReader}
 
     stringFromStream { ostream =>
@@ -1042,9 +1041,8 @@ object ILoop {
         val output   = new PrintWriter(new OutputStreamWriter(ostream), true)
         val config   = ShellConfig(sets)
         val repl     = new ILoop(config, input, output) {
-          // remove versioning info (for reproducible test results),
-          // or suppress altogether if we're not welcoming
-          override def welcome = if (welcoming) config.welcomeString else ""
+          // remove welcome message as it has versioning info (for reproducible test results),
+          override def welcome = ""
         }
 
         if (sets.classpath.isDefault)

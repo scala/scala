@@ -25,22 +25,16 @@ abstract class ReplTest extends DirectTest {
   def normalize(s: String) = s
   /** True for SessionTest to preserve session text. */
   def inSession: Boolean = false
-  /** True to preserve welcome header, eliding version number. */
-  def welcoming: Boolean = false
   def eval() = {
     val s = settings
     log("eval(): settings = " + s)
-    val transcript = ILoop.runForTranscript(code, s, inSession = inSession, welcoming = welcoming)
+    val transcript = ILoop.runForTranscript(code, s, inSession = inSession)
     log(s"transcript[[$transcript]]")
     transcript.lines.map(normalize)
   }
   def show() = eval() foreach println
 }
 
-/** Retain and normalize the welcome message. */
-trait Welcoming { this: ReplTest =>
-  override def welcoming = true
-}
 
 /** Run a REPL test from a session transcript.
  *  The `session` is read from the `.check` file.

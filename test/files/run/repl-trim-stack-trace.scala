@@ -1,8 +1,7 @@
-
-import scala.tools.partest.{SessionTest, Welcoming}
+import scala.tools.partest.SessionTest
 
 // scala/bug#7740
-object Test extends SessionTest with Welcoming {
+object Test extends SessionTest  {
   // normalize the "elided" lines because the frame count depends on test context
   lazy val elided = """(\s+\.{3} )\d+( elided)""".r
   override def normalize(line: String) = line match {
