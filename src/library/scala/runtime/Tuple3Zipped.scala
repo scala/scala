@@ -31,7 +31,7 @@ object ZippedTraversable3 {
   }
 }
 
-final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (TraversableLike[El1, Repr1], IterableLike[El2, Repr2], IterableLike[El3, Repr3]))
+final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](private val colls: (TraversableLike[El1, Repr1], IterableLike[El2, Repr2], IterableLike[El3, Repr3]))
         extends AnyVal with ZippedTraversable3[El1, El2, El3] {
 
   private def coll1 = colls._1
