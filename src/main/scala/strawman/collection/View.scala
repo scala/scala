@@ -1,5 +1,7 @@
 package strawman.collection
 
+import strawman.collection.mutable.Builder
+
 import scala.{Any, Boolean, Equals, Int, Nothing, annotation}
 import scala.Predef.intWrapper
 
@@ -9,8 +11,10 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
   def iterableFactory = View
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[A]): View[A] =
-    fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: Iterable[A]): View[A] = fromIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[A, View[A]] =
+    immutable.IndexedSeq.newBuilder().mapResult(_.view)
 
   override def className = "View"
 }

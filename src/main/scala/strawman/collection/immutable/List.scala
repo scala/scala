@@ -13,13 +13,13 @@ sealed trait List[+A]
   extends Seq[A]
      with LinearSeq[A]
      with SeqOps[A, List, List[A]]
-     with Buildable[A, List[A]] {
+     with StrictOptimizedIterableOps[A, List[A]] {
 
   def iterableFactory = List
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
-  protected[this] def newBuilder = List.newBuilder[A]()
+  protected[this] def newSpecificBuilder() = List.newBuilder[A]()
 
   @tailrec final def length: Int = if (isEmpty) 0 else tail.length
 

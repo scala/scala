@@ -18,7 +18,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
 
-  protected def coll: CC[K, V]
+  protected[this] def coll: CC[K, V]
 
   /** Removes a key from this map, returning a new map.
     *
@@ -59,4 +59,4 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
 }
 
 // TODO Special case small maps
-object Map extends MapFactory.Delegate[Map](HashMap)
+object Map extends MapFactoryWithBuilder.Delegate[Map](HashMap)

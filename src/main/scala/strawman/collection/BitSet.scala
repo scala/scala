@@ -12,7 +12,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   extends SortedSetOps[Int, SortedSet, C] {
   import BitSetOps._
 
-  protected def coll: C
+  protected[this] def coll: C
 
   final def ordering: Ordering[Int] = Ordering.Int
 

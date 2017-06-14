@@ -32,4 +32,4 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   )
 }
 
-object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)
+object SortedSet extends SortedIterableFactoryWithBuilder.Delegate[SortedSet](immutable.SortedSet)

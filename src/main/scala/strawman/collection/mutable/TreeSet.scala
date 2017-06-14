@@ -1,10 +1,10 @@
 package strawman
 package collection.mutable
 
-import collection.SortedIterableFactory
+import collection.{SortedIterableFactory, SortedIterableFactoryWithBuilder, StrictOptimizedIterableOps}
 import collection.mutable.{RedBlackTree => RB}
 
-import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit}
+import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 import java.lang.String
 
 /**
@@ -25,6 +25,7 @@ import java.lang.String
 sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
+    with StrictOptimizedIterableOps[A, TreeSet[A]]
     with Serializable {
 
   if (ordering eq null)
@@ -42,6 +43,8 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): TreeSet[B] = TreeSet.sortedFromIterable(it)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.sortedFromIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder[A]()
 
   def iterableFactory = Set
 
@@ -175,10 +178,12 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   * @author Lucien Pereira
   *
   */
-object TreeSet extends SortedIterableFactory[TreeSet] {
+object TreeSet extends SortedIterableFactoryWithBuilder[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()
 
   def sortedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] = Growable.fromIterable(empty[E], it)
+
+  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] = new GrowableBuilder[A, TreeSet[A]](empty)
 
 }

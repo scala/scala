@@ -17,4 +17,4 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
     with collection.SortedSetOps[A, CC, C]
 
 object SortedSet
-  extends SortedIterableFactory.Delegate[SortedSet](TreeSet)
+  extends SortedIterableFactoryWithBuilder.Delegate[SortedSet](TreeSet)

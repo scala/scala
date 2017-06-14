@@ -11,7 +11,7 @@ import scala.Predef.intWrapper
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedOptimizedGrowableSeq[A]
      with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-     with Buildable[A, ArrayBuffer[A]]
+     with StrictOptimizedIterableOps[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
@@ -49,9 +49,9 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
-  protected[this] def newBuilder = new ArrayBuffer[A]
+  protected[this] def newSpecificBuilder() = new ArrayBuffer[A]
 
-  def clear() =
+  def clear(): Unit =
     end = 0
 
   def add(elem: A): this.type = {

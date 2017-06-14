@@ -14,7 +14,7 @@ import scala.Predef.{assert, intWrapper}
 class ListBuffer[A]
   extends Seq[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
-     with Buildable[A, ListBuffer[A]]
+     with StrictOptimizedIterableOps[A, ListBuffer[A]]
      with Builder[A, ListBuffer[A]] {
 
   private var first: List[A] = Nil
@@ -35,7 +35,7 @@ class ListBuffer[A]
   def length = len
   override def knownSize = len
 
-  protected[this] def newBuilder = new ListBuffer[A]
+  protected[this] def newSpecificBuilder() = new ListBuffer[A]
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.fromIterable(result())

@@ -11,10 +11,10 @@ import scala.reflect.ClassTag
 class StringOps(val s: String)
   extends AnyVal
      with SeqOps[Char, Seq, String]
-     with Buildable[Char, String]
+     with StrictOptimizedIterableOps[Char, String]
      with ArrayLike[Char] {
 
-  protected def coll = new StringView(s)
+  protected[this] def coll = new StringView(s)
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
@@ -24,7 +24,7 @@ class StringOps(val s: String)
 
   def iterableFactory = List
 
-  protected[this] def newBuilder = new StringBuilder
+  protected[this] def newSpecificBuilder() = new StringBuilder
 
   def length = s.length
   def apply(i: Int) = s.charAt(i)

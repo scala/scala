@@ -2,7 +2,7 @@ package strawman
 package collection
 package immutable
 
-import mutable.Builder
+import mutable.{Builder, ImmutableBuilder}
 import immutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
@@ -27,7 +27,8 @@ import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
   */
 final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
-     with SortedSetOps[A, TreeSet, TreeSet[A]] {
+    with SortedSetOps[A, TreeSet, TreeSet[A]]
+    with StrictOptimizedIterableOps[A, TreeSet[A]] {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")
 
@@ -69,6 +70,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
   protected[this] def sortedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
     TreeSet.sortedFromIterable(coll)
 
+  protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder()
+
   def unordered: Set[A] = this
 
   /** Checks if this set contains element `elem`.
@@ -103,7 +106,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     else newSet(RB.delete(tree, elem))
 }
 
-object TreeSet extends SortedIterableFactory[TreeSet] {
+object TreeSet extends SortedIterableFactoryWithBuilder[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
@@ -111,6 +114,11 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
     it match {
       case ts: TreeSet[E] => ts
       case _ => empty[E] ++ it
+    }
+
+  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =
+    new ImmutableBuilder[A, TreeSet[A]](empty) {
+      def add(elem: A): this.type = { elems = elems + elem; this }
     }
 
 }

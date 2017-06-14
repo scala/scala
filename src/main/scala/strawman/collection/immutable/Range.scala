@@ -1,11 +1,13 @@
 package strawman
 package collection.immutable
 
-import collection.{IterableFactory, IterableOps, Iterator}
+import collection.{IterableFactory, IterableOps, Iterator, StrictOptimizedIterableOps}
 
 import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Numeric, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized}
 import scala.Predef.augmentString
 import java.lang.String
+
+import strawman.collection.mutable.Builder
 
 /** The `Range` class represents integer values in range
   *  ''[start;end)'' with non-zero step value `step`.
@@ -47,12 +49,15 @@ final class Range(
 )
   extends IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
+    with StrictOptimizedIterableOps[Int, IndexedSeq[Int]]
     with Serializable { range =>
 
-  def iterableFactory: IterableFactory[IndexedSeq] = ImmutableArray // FIXME Use Vector instead of Array
+  def iterableFactory: IterableFactory[IndexedSeq] = IndexedSeq
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): IndexedSeq[Int] =
     fromIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[Int, IndexedSeq[Int]] = IndexedSeq.newBuilder()
 
   def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
