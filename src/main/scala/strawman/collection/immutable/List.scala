@@ -4,8 +4,8 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Boolean, NoSuchElementException, Nothing, UnsupportedOperationException, Int}
-import mutable.{Builder, ListBuffer}
+import scala.{Any, Boolean, Int, NoSuchElementException, Nothing, UnsupportedOperationException}
+import mutable.{Builder, GrowableBuilder, ListBuffer}
 
 
 /** Concrete collection type: List */
@@ -62,7 +62,7 @@ object List extends IterableFactoryWithBuilder[List] {
     case _ => ListBuffer.fromIterable(coll).toList
   }
 
-  def newBuilder[A](): Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
+  def newBuilder[A](): Builder[A, List[A]] = new GrowableBuilder(ListBuffer.empty[A]).mapResult(_.toList)
 
   def empty[A]: List[A] = Nil
 }

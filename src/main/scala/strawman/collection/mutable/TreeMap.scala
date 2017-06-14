@@ -39,7 +39,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.sortedFromIterable(it)
 
-  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] = TreeMap.newBuilder()
+  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] =  new GrowableBuilder(TreeMap.empty[K, V])
 
   def iterator(): Iterator[(K, V)] = RB.iterator(tree)
 
@@ -175,13 +175,11 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   * @define Coll mutable.TreeMap
   * @define coll mutable tree map
   */
-object TreeMap extends SortedMapFactoryWithBuilder[TreeMap] {
+object TreeMap extends SortedMapFactory[TreeMap] {
 
   def sortedFromIterable[K : Ordering, V](it: collection.Iterable[(K, V)]): TreeMap[K, V] =
     Growable.fromIterable(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
-
-  def newBuilder[K : Ordering, V](): Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder[(K, V), TreeMap[K, V]](empty)
 
 }

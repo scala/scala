@@ -11,8 +11,7 @@ import scala.Predef.intWrapper
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedOptimizedGrowableSeq[A]
      with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-     with StrictOptimizedIterableOps[A, ArrayBuffer[A]]
-     with Builder[A, ArrayBuffer[A]] {
+     with StrictOptimizedIterableOps[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 
@@ -49,7 +48,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
-  protected[this] def newSpecificBuilder() = new ArrayBuffer[A]
+  protected[this] def newSpecificBuilder() = new GrowableBuilder(ArrayBuffer.empty[A])
 
   def clear(): Unit =
     end = 0
@@ -72,8 +71,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     }
     this
   }
-
-  def result() = this
 
   def insert(idx: Int, elem: A): Unit = {
     checkWithinBounds(idx, idx)
@@ -124,7 +121,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactoryWithBuilder[ArrayBuffer] {
+object ArrayBuffer extends IterableFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =
@@ -135,8 +132,6 @@ object ArrayBuffer extends IterableFactoryWithBuilder[ArrayBuffer] {
       new ArrayBuffer[B](array, array.length)
     }
     else new ArrayBuffer[B] ++= coll
-
-  def newBuilder[A](): Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }

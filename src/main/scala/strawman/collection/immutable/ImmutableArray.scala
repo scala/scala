@@ -1,6 +1,6 @@
 package strawman.collection.immutable
 
-import strawman.collection.mutable.{ArrayBuffer, Builder}
+import strawman.collection.mutable.{ArrayBuffer, Builder, GrowableBuilder}
 import strawman.collection.{IterableFactory, IterableFactoryWithBuilder, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
 
 import scala.{Any, Boolean, Int, Nothing}
@@ -95,7 +95,7 @@ object ImmutableArray extends IterableFactoryWithBuilder[ImmutableArray] {
     new ImmutableArray(ArrayBuffer.fromIterable(it).asInstanceOf[ArrayBuffer[Any]].toArray)
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
-    ArrayBuffer.newBuilder[A]()
+    new GrowableBuilder(ArrayBuffer.empty[A])
       .mapResult(b => new ImmutableArray[A](b.asInstanceOf[ArrayBuffer[Any]].toArray))
 
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)

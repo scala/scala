@@ -13,8 +13,6 @@ trait StrictOptimizedIterableOps[+A, +C]
   extends Any
     with IterableOps[A, AnyConstr, C] {
 
-  // def iterableFactory: IterableFactoryWithBuilder[CC]
-
   /** Optimized, push-based version of `partition`. */
   override def partition(p: A => Boolean): (C, C) = {
     val l, r = newSpecificBuilder()

@@ -89,4 +89,4 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
 }
 
-object Map extends MapFactoryWithBuilder.Delegate[Map](HashMap)
+object Map extends MapFactory.Delegate[Map](HashMap)
