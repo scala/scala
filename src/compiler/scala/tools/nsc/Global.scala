@@ -580,7 +580,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with Delambdafy
 
-  // phaseName = "bcode"
+  // phaseName = "jvm"
   object genBCode extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("cleanup")

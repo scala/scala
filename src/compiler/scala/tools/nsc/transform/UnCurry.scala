@@ -285,10 +285,16 @@ abstract class UnCurry extends InfoTransform
           }
         }
 
+        /* Java-style varargs = expects `Array` rather than `Seq`
+         * Note that `fun.isJavaDefined` is not good enough because
+         * if we override a varargs method defined in Java, `superaccessors`
+         * will make us a superaccessor which also takes `Array` rather than `Seq`.
+         * See scala/bug#10368 */
+        val javaStyleVarArgs = isJavaVarArgsMethod(fun)
         var suffix: Tree =
           if (treeInfo isWildcardStarArgList args) {
             val Typed(tree, _) = args.last
-            if (isJava)
+            if (javaStyleVarArgs)
               if (tree.tpe.typeSymbol == ArrayClass) tree
               else sequenceToArray(tree)
             else
@@ -297,7 +303,7 @@ abstract class UnCurry extends InfoTransform
           }
           else {
             def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
-            if (isJava) mkArray
+            if (javaStyleVarArgs) mkArray
             else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
             else arrayToSequence(mkArray, varargsElemType)
           }
