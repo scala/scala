@@ -317,9 +317,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           }
           else {
             mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
-            generatedType =
-              if (tree.symbol == ArrayClass) ObjectRef
-              else classBTypeFromSymbol(claszSymbol)
+            // When compiling Array.scala, the constructor invokes `Array.this.super.<init>`. The expectedType
+            // is `[Object` (computed by typeToBType, the type of This(Array) is `Array[T]`). If we would set
+            // the generatedType to `Array` below, the call to adapt at the end would fail. The situation is
+            // similar for primitives (`I` vs `Int`).
+            if (tree.symbol != ArrayClass && !definitions.isPrimitiveValueClass(tree.symbol)) {
+              generatedType = classBTypeFromSymbol(claszSymbol)
+            }
           }
 
         case Select(Ident(nme.EMPTY_PACKAGE_NAME), module) =>
@@ -551,7 +555,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           generatedType = genTypeApply()
 
-        case Apply(fun @ Select(Super(_, _), _), args) =>
+        case Apply(fun @ Select(Super(qual, _), _), args) =>
           def initModule() {
             // we initialize the MODULE$ field immediately after the super ctor
             if (!isModuleInitialized &&
@@ -568,13 +572,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               )
             }
           }
-          // 'super' call: Note: since constructors are supposed to
-          // return an instance of what they construct, we have to take
-          // special care. On JVM they are 'void', and Scala forbids (syntactically)
-          // to call super constructors explicitly and/or use their 'returned' value.
-          // therefore, we can ignore this fact, and generate code that leaves nothing
-          // on the stack (contrary to what the type in the AST says).
-          mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+
+          // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not jsut ALOAD_0)
+          genLoad(qual)
           genLoadArguments(args, paramTKs(app))
           generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos)
           initModule()
@@ -1060,11 +1060,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       receiverClass.info // ensure types the type is up to date; erasure may add lateINTERFACE to traits
       val receiverBType = classBTypeFromSymbol(receiverClass)
       val receiverName = receiverBType.internalName
-
-      def needsInterfaceCall(sym: Symbol) = {
-        sym.isTraitOrInterface ||
-          sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
-      }
 
       val jname  = method.javaSimpleName.toString
       val bmType = methodBTypeFromSymbol(method)
