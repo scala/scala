@@ -38,7 +38,7 @@ abstract class Pickler[T] {
   /** Reads value from pickled form.
    *
    *  @param  rd   the lexer from which lexemes are read
-   *  @return An `UnpickleSuccess value if the current input corresponds to the
+   *  @return An `UnpickleSuccess` value if the current input corresponds to the
    *          kind of value that is unpickled by the current subclass of `Pickler`,
    *          an `UnpickleFailure` value otherwise.
    *  @throws  `Lexer.MalformedInput` if input is invalid, or if
