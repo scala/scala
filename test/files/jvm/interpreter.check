@@ -18,7 +18,7 @@ scala> var x = 1
 x: Int = 1
 
 scala> x = 2
-x: Int = 2
+mutated x
 
 scala> val three = x+1
 three: Int = 3
@@ -308,8 +308,9 @@ scala> /*
   */
 */
 
+scala> 
 
-You typed two blank lines.  Starting a new command.
+scala> 
 
 scala> // multi-line string
 
@@ -317,7 +318,7 @@ scala> """
 hello
 there
 """
-res12: String =
+res9: String =
 "
 hello
 there
@@ -350,9 +351,8 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
-       def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
-On line 1: warning: match may not be exhaustive.
+       warning: match may not be exhaustive.
        It would fail on the following inputs: Exp(), Term()
 f: (e: Exp)Int
 

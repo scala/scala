@@ -8,10 +8,11 @@ import java.net.URL
 import PartialFunction.cond
 import scala.language.implicitConversions
 import scala.collection.mutable
-import scala.reflect.internal.{FatalError, MissingRequirementError, NoPhase}
+import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
-import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, SourceFile}
+import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, SourceFile}
 import scala.tools.nsc.{ConsoleWriter, Global, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
@@ -432,13 +433,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
 
-  /** Build a request from the user. `trees` is `line` after being parsed.
-    */
-  private[interpreter] def buildRequest(line: String, trees: List[Tree]): Request = {
-    executingRequest = new Request(line, trees)
-    reporter.currentRequest = executingRequest
-    executingRequest
-  }
 
   private def safePos(t: Tree, alt: Int): Int =
     try t.pos.start
@@ -459,85 +453,14 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     prevRequestList collectFirst { case r if r.defines contains sym => r }
   }
 
-  private[interpreter] def requestFromLine(line: String, synthetic: Boolean = false): Either[Result, Request] = {
-    val content = line
-
-    val trees: List[global.Tree] = parse(content) match {
-      case parse.Incomplete(_)     => return Left(Incomplete)
-      case parse.Error(_)          => return Left(Error)
-      case parse.Success(trees) => trees
+  private[interpreter] def requestFromLine(input: String, synthetic: Boolean = false): Either[Result, Request] =
+    parse(input) flatMap {
+      case (Nil, _) => Left(Error)
+      case (trees, firstXmlPos) =>
+        executingRequest = new Request(input, trees, firstXmlPos, synthetic = synthetic)
+        reporter.currentRequest = executingRequest
+        Right(executingRequest)
     }
-    reporter.trace(
-      trees map (t => {
-        // [Eugene to Paul] previously it just said `t map ...`
-        // because there was an implicit conversion from Tree to a list of Trees
-        // however Martin and I have removed the conversion
-        // (it was conflicting with the new reflection API),
-        // so I had to rewrite this a bit
-        val subs = t collect { case sub => sub }
-        subs map (t0 =>
-          "  " + safePos(t0, -1) + ": " + t0.shortClass + "\n"
-          ) mkString ""
-      }) mkString "\n"
-    )
-    // If the last tree is a bare expression, pinpoint where it begins using the
-    // AST node position and snap the line off there.  Rewrite the code embodied
-    // by the last tree as a ValDef instead, so we can access the value.
-    val last = trees.lastOption.getOrElse(EmptyTree)
-    last match {
-      case _:Assign                        => // we don't want to include assignments
-      case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
-        val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
-        val rewrittenLine = (
-          // In theory this would come out the same without the 1-specific test, but
-          // it's a cushion against any more sneaky parse-tree position vs. code mismatches:
-          // this way such issues will only arise on multiple-statement repl input lines,
-          // which most people don't use.
-          if (trees.size == 1) "val " + varName + " =\n" + content
-          else {
-            // The position of the last tree
-            val lastpos0 = earliestPosition(last)
-            // Oh boy, the parser throws away parens so "(2+2)" is mispositioned,
-            // with increasingly hard to decipher positions as we move on to "() => 5",
-            // (x: Int) => x + 1, and more.  So I abandon attempts to finesse and just
-            // look for semicolons and newlines, which I'm sure is also buggy.
-            val (raw1, raw2) = content splitAt lastpos0
-            repldbg("[raw] " + raw1 + "   <--->   " + raw2)
-
-            val adjustment = (raw1.reverse takeWhile (ch => (ch != ';') && (ch != '\n'))).size
-            val lastpos = lastpos0 - adjustment
-
-            // the source code split at the laboriously determined position.
-            val (l1, l2) = content splitAt lastpos
-            repldbg("[adj] " + l1 + "   <--->   " + l2)
-
-            val prefix   = if (l1.trim == "") "" else l1 + ";\n"
-            // Note to self: val source needs to have this precise structure so that
-            // error messages print the user-submitted part without the "val res0 = " part.
-            val combined   = prefix + "val " + varName + " =\n" + l2
-
-            repldbg(List(
-              "    line" -> line,
-              " content" -> content,
-              "     was" -> l2,
-              "combined" -> combined) map {
-              case (label, s) => label + ": '" + s + "'"
-            } mkString "\n"
-            )
-            combined
-          }
-          )
-        // Rewriting    "foo ; bar ; 123"
-        // to           "foo ; bar ; val resXX = 123"
-        requestFromLine(rewrittenLine, synthetic) match {
-          case Right(null) => Left(Error)       // disallowed statement type TODO???
-          case Right(req)  => return Right(req withOriginalLine line)
-          case x           => return x
-        }
-      case _ =>
-    }
-    Right(buildRequest(line, trees))
-  }
 
   // dealias non-public types so we don't see protected aliases like Self
   def dealiasNonPublic(tp: Type) = tp match {
@@ -603,7 +526,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     )
     bindRep.callEither("set", value) match {
       case Left(ex) =>
-        repldbg("Set failed in bind(%s, %s, %s)".format(name, boundType, value))
+        repldbg(s"Set failed in bind($name, $boundType, $value)")
         repldbg(stackTraceString(ex))
         Error
       case Right(_) =>
@@ -629,8 +552,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val newType  = p.tpe
     val tempName = freshInternalVarName()
 
-    quietRun("val %s = %s".format(tempName, name))
-    quietRun("val %s = %s.asInstanceOf[%s]".format(name, tempName, newType))
+    quietRun(s"val $tempName = $name")
+    quietRun(s"val $name = $tempName.asInstanceOf[$newType]")
   }
   override def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
   override def bind(p: NamedParam): Result                                    = bind(p.name, p.tpe, p.value)
@@ -775,10 +698,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case xs            => throw new IllegalStateException(s"Internal error: eval object $evalClass, ${xs.mkString("\n", "\n", "")}")
     }
 
-    def mkUnit(code: String) =
-      new CompilationUnit(new BatchSourceFile(label, packaged(code)))
-
-    def compile(code: String): Boolean = compile(mkUnit(code))
+    def compile(code: String): Boolean =
+      compile(new CompilationUnit(new BatchSourceFile(label, packaged(code))))
 
     def compile(unit: CompilationUnit): Boolean = {
       val run = new Run()
@@ -795,7 +716,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** One line of code submitted by the user for interpretation */
-  class Request(val line: String, val trees: List[Tree], generousImports: Boolean = false) extends ReplRequest {
+  class Request(val line: String, origTrees: List[Tree], firstXmlPos: Position = NoPosition, generousImports: Boolean = false, synthetic: Boolean = false) extends ReplRequest {
     def defines    = defHandlers flatMap (_.definedSymbols)
     def definesTermNames: List[String] = defines collect { case s: TermSymbol => s.decodedName.toString }
     def imports    = importedSymbols
@@ -804,18 +725,25 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     def eval: Either[Throwable, AnyRef] = lineRep.evalEither
 
-    private val preambleEndMember = "$ipos"+{lineRep.lineId}
-    // don't look until we've (tried) attributing the trees in unit!
-    lazy val preambleEndPos: Position =
-      unit.body.find {
-        case td: TypeDef => td.name.toString == preambleEndMember
-        case _ => false
-      }.map(_.pos).getOrElse(NoPosition)
+    // The source file contents only has the code originally input by the user,
+    // with unit's body holding the synthetic trees.
+    // When emitting errors, be careful not to refer to the synthetic code
+    private val unit = new CompilationUnit(new BatchSourceFile(if (synthetic) "<synthetic>" else label, line))
+    // a dummy position used for synthetic trees (needed for pres compiler to locate the trees for user input)
+    private val wholeUnit = Position.range(unit.source, 0, 0, line.length)
 
+    private def storeInVal(tree: Tree): Tree = {
+      val resName = newTermName(if (synthetic) freshInternalVarName() else freshUserVarName())
+      atPos(tree.pos.makeTransparent)(ValDef(NoMods, resName, TypeTree(), tree))
+    }
 
-    private var _originalLine: String = null
-    def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
-    def originalLine: String = if (_originalLine == null) line else _originalLine
+    // Wrap last tree in a valdef to give user a nice handle for it (`resN`)
+    val trees: List[Tree] =
+      origTrees.init :+ (origTrees.last match {
+        case tree@(_: Assign) => tree
+        case tree@(_: RefTree | _: TermTree) => storeInVal(tree)
+        case tree => tree
+      })
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
@@ -837,14 +765,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case _                => Nil
     }
 
-    /** Code to import bound names from previous lines - accessPath is code to
-      * append to objectName to access anything bound by request.
-      */
-    lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass, generousImports))
-
-    /** the line of code to compute */
-    def toCompute = line
 
     /** The path of the value that contains the user code. */
     def fullAccessPath = s"${lineRep.readPathInstance}$accessPath"
@@ -852,95 +772,121 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** The path of the given member of the wrapping instance. */
     def fullPath(vname: String) = s"$fullAccessPath.`$vname`"
 
-    /** generate the source code for the object that computes this request */
-    abstract class Wrapper extends IMain.CodeAssembler[MemberHandler] {
-      //      def path = originalPath("$intp")
-      // NOTE: it's important to terminate the preambleEndMember definition with a semi-colon
-      // to avoid collapsing it with subsequent `{` (making a refinement)
-      // We pick this jungle back apart in PresentationCompileResult.tree, so propagate any changes to there.
-      def preamble = s"""
-                        |$headerPreamble
-                        |${preambleHeader format lineRep.readName}
-                        |$importsPreamble
-                        |private type $preambleEndMember = _root_.scala.Nothing;
-                        |""".stripMargin + toCompute
-      def preambleLength = preamble.length - toCompute.length
+    /** Code to import bound names from previous lines - accessPath is code to
+      * append to objectName to access anything bound by request.
+      */
+    lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
+      exitingTyper(importsCode(referencedNames.toSet, this, definesClass, generousImports))
 
-      val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
 
-      /** A format string with %s for $read, specifying the wrapper definition. */
-      def preambleHeader: String
-
-      /** Like preambleHeader for an import wrapper. */
-      def prewrap: String = preambleHeader + "\n"
-
-      /** Like postamble for an import wrapper. */
-      def postwrap: String
-    }
-
-    class ObjectBasedWrapper extends Wrapper {
-      def preambleHeader = "object %s {"
-
-      def postamble = importsTrailer + "\n}"
-
-      def postwrap = "}\n"
-    }
-
-    class ClassBasedWrapper extends Wrapper {
-      def preambleHeader = "sealed class %s extends _root_.java.io.Serializable { "
-
-      /** Adds an object that instantiates the outer wrapping class. */
-      def postamble  = s"""
-                          |$importsTrailer
-                          |}
-                          |object ${lineRep.readName} {
-                          |   val INSTANCE = new ${lineRep.readName}();
-                          |}
-                          |""".stripMargin
-
-      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
-
-      /** Adds a val that instantiates the wrapping class. */
-      def postwrap = s"}\nval $iw = new $iw\n"
-    }
-
-    private[interpreter] lazy val ObjectSourceCode: Wrapper =
-      if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
-
-    private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
-      /** We only want to generate this code when the result
-        *  is a value which can be referred to as-is.
-        */
-      val evalResult = Request.this.value match {
-        case NoSymbol => ""
-        case sym      => "lazy val %s = %s".format(lineRep.resultName, originalPath(sym))
+    private val USER_CODE_PLACEHOLDER = newTermName("$user_code_placeholder$")
+    private object spliceUserCode extends Transformer {
+      var parents: List[Tree] = Nil
+      override def transform(tree: Tree): Tree = {
+        parents ::= tree
+        try super.transform(tree)
+        finally parents = parents.tail
       }
-      // first line evaluates object to make sure constructor is run
-      // initial "" so later code can uniformly be: + etc
-      val preamble = """
-                       |object %s {
-                       |  %s
-                       |  lazy val %s: _root_.java.lang.String = %s {
-                       |    %s
-                       |    (""
-                     """.stripMargin.format(
-        lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, fullAccessPath
-      )
 
-      val postamble = """
-                        |    )
-                        |  }
-                        |}
-                      """.stripMargin
-      val generate = (m: MemberHandler) => m resultExtractionCode Request.this
+      override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
+        stats flatMap {
+          case Ident(USER_CODE_PLACEHOLDER) =>
+            parents.foreach(p => p.setPos(wholeUnit))
+            trees
+          case t => List(transform(t))
+        }
     }
 
-    lazy val unit = {
-      val code = ObjectSourceCode(handlers)
-      showCodeIfDebugging(code)
-      lineRep.mkUnit(code)
+    private def parseSynthetic(code: String): List[Tree] = {
+      val stats = newUnitParser(code, "<synthetic>").parseStats()
+      stats foreach {_.foreach(t => t.pos = t.pos.makeTransparent)}
+      stats
     }
+
+    /** generate the source code for the object that computes this request */
+    def mkUnit: CompilationUnit = {
+      val readName = newTermName(lineRep.readName)
+
+      val stats = ListBuffer.empty[Tree]
+
+      stats ++= parseSynthetic(headerPreamble)
+
+      // the imports logic builds up a nesting of object $iw wrappers :-S
+      // (have to parse importsPreamble + ... + importsTrailer at once)
+      // This will be simplified when we stop wrapping to begin with.
+      val syntheticStats =
+        parseSynthetic(importsPreamble + s"`$USER_CODE_PLACEHOLDER`" + importsTrailer)
+
+      // don't use empty list of parents, since that triggers a rangepos bug in typer (the synthetic typer tree violates overlapping invariant)
+      val parents = List(atPos(wholeUnit.focus)(if (isClassBased) gen.rootScalaDot(tpnme.Serializable) else gen.rootScalaDot(tpnme.AnyRef)))
+
+      val wrapperTempl = gen.mkTemplate(parents, noSelfType, NoMods, ListOfNil, syntheticStats, superPos = wholeUnit.focus)
+
+      stats += (
+        if (isClassBased) ClassDef(Modifiers(Flags.SEALED), readName.toTypeName, Nil, wrapperTempl)
+        else ModuleDef(NoMods, readName, wrapperTempl))
+
+      if (isClassBased)
+        stats += q"""object $readName { val INSTANCE = new ${tq"""${readName.toTypeName}"""} }"""
+
+      val unspliced = PackageDef(atPos(wholeUnit.focus)(Ident(lineRep.packageName)), stats.toList)
+      unit.body = spliceUserCode.transform(unspliced)
+      unit.encounteredXml(firstXmlPos)
+
+//      settings.Xprintpos.value = true
+      showCode(asCompactString(unit.body))
+
+      unit
+    }
+
+    // Secret bookcase entrance for repl debuggers: end the line
+    // with "// show" and see what's going on.
+    private def showCode(code: => String) =
+      if (reporter.isDebug || (label == "<console>" && line.contains("// show")))
+        reporter.withoutUnwrapping(reporter.withoutTruncating(reporter.echo(code)))
+
+
+    // used for import wrapping (this will go away entirely when we use the more direct approach)
+    def wrapperDef(iw: String) =
+      if (isClassBased) s"sealed class $iw extends _root_.java.io.Serializable"
+      else s"object $iw"
+
+    import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+    /** Like postamble for an import wrapper. */
+    def postwrap: String =
+      if (isClassBased) s"val $iw = new $iw"
+      else ""
+
+
+    private def mkResultUnit(contributors: List[MemberHandler]): CompilationUnit = {
+      // The symbol defined by the last member handler
+      val resValSym = value
+
+      val extractionCode =
+        lineRep.packaged(stringFromWriter { code =>
+          // first line evaluates object to make sure constructor is run
+          // initial "" so later code can uniformly be: + etc
+          code.println(s"""
+             |object ${lineRep.evalName} {
+             |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
+             |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
+             |    $fullAccessPath
+             |    ( "" """.stripMargin) // the result extraction code will emit code to append strings to this initial ""
+
+          contributors map (_.resultExtractionCode(this)) foreach code.println
+
+          code.println("""
+             |    )
+             |  }
+             |}
+             """.stripMargin)
+        })
+
+      showCode(extractionCode)
+
+      new CompilationUnit(new BatchSourceFile("<synthetic>", extractionCode))
+    }
+
 
     /** Compile the object file.  Returns whether the compilation succeeded.
       *  If all goes well, the "types" map is computed. */
@@ -949,7 +895,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       reporter.reset()
 
       // compile the object containing the user's code
-      lineRep.compile(unit) && {
+      lineRep.compile(mkUnit) && {
         // extract and remember types
         typeOf
         typesOfDefinedTerms
@@ -967,7 +913,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         // compile the result-extraction object
         // TODO: can we remove dependency on reporter's printResults state?
         val handls = if (reporter.printResults) handlers else Nil
-        withoutWarnings(lineRep compile ResultObjectSourceCode(handls))
+        withoutWarnings(lineRep compile mkResultUnit(handls))
       }
     }
 
@@ -1004,7 +950,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       catch { case ex: Throwable => Left(lineRep.bindError(ex)) }
     }
 
-    override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
+    override def toString = s"Request(line=$line, ${trees.size} trees)"
   }
 
   override def finalize = close
@@ -1098,10 +1044,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     // Sadly isAnonymousClass does not return true for scala anonymous
     // classes because our naming scheme is not doing well against the
     // jvm's many assumptions.
-    def isScalaAnonymous(clazz: Class[_]) = (
+    def isScalaAnonymous(clazz: Class[_]) =
       try clazz.isAnonymousClass || (clazz.getName contains "$anon$")
       catch { case _: java.lang.InternalError => false }  // good ol' "Malformed class name"
-      )
+
 
     def supers(clazz: Class[_]): List[Class[_]] = {
       def loop(x: Class[_]): List[Class[_]] = x.getSuperclass match {
@@ -1147,37 +1093,32 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   } with ExprTyper { }
 
   /** Parse a line into and return parsing result (error, incomplete or success with list of trees) */
-  object parse {
-    abstract sealed class Result { def trees: List[Tree] }
-    case class Error(trees: List[Tree]) extends Result
-    case class Incomplete(trees: List[Tree]) extends Result
-    case class Success(trees: List[Tree]) extends Result
-
-    def apply(line: String): Result = debugging(s"""parse("$line")""") {
-      var isIncomplete = false
-      def parse = withoutWarnings {
+  def parse(line: String): Either[Result, (List[Tree], Position)] = {
+    var isIncomplete = false
+    currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {
+      withoutWarnings {
         reporter.reset()
-        val trees = newUnitParser(line, label).parseStats()
-        if (reporter.hasErrors) Error(trees)
-        else if (isIncomplete) Incomplete(trees)
-        else Success(trees)
+        val unit = newCompilationUnit(line, label)
+        val trees = newUnitParser(unit).parseStats()
+        if (reporter.hasErrors) Left(Error)
+        else if (isIncomplete) Left(Incomplete)
+        else Right((trees, unit.firstXmlPos))
       }
-      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true)(parse)
-    }
-    // code has a named package
-    def packaged(line: String): Boolean = {
-      def parses = {
-        reporter.reset()
-        val tree = newUnitParser(line).parse()
-        !reporter.hasErrors && {
-          tree match { case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME case _ => false }
-        }
-      }
-      reporter.suppressOutput(parses)
     }
   }
 
-  def packaged(line: String): Boolean = parse.packaged(line)
+  /** Does code start with a package definition? */
+  def isPackaged(line: String): Boolean =
+    reporter.suppressOutput {
+      reporter.reset()
+      val tree = newUnitParser(line).parse()
+      !reporter.hasErrors && {
+        tree match {
+          case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME
+          case _ => false
+        }
+      }
+    }
 
   def symbolOfLine(code: String): Symbol =
     exprTyper.symbolOfLine(code)
@@ -1356,22 +1297,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     )
   }
 
-  def showCodeIfDebugging(code: String) {
-    /** Secret bookcase entrance for repl debuggers: end the line
-      *  with "// show" and see what's going on.
-      */
-    def isShow = code.lines exists (_.trim endsWith "// show")
-    if (reporter.isDebug || isShow) {
-      reporter.suppressOutput(parse(code)) match {
-        case parse.Success(ts) =>
-          ts foreach { t =>
-            reporter.withoutUnwrapping(reporter.withoutTruncating(reporter.echo(asCompactString(t))))
-          }
-        case _ =>
-      }
-    }
-  }
-
   // debugging
   def debugging[T](msg: String)(res: T) = {
     repldbg(msg + " " + res)
@@ -1392,16 +1317,5 @@ object IMain {
 //  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
 //  def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
 
-  trait CodeAssembler[T] {
-    def preamble: String
-    def generate: T => String
-    def postamble: String
-
-    def apply(contributors: List[T]): String = stringFromWriter { code =>
-      code println preamble
-      contributors map generate foreach (code println _)
-      code println postamble
-    }
-  }
 }
 

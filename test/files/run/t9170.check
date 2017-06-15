@@ -2,15 +2,15 @@
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
        error: double definition:
-       def f[A](a: => A): Int at line 10 and
-       def f[A](a: => Either[Exception,A]): Int at line 10
+       def f[A](a: => A): Int at line 1 and
+       def f[A](a: => Either[Exception,A]): Int at line 1
        have same type after erasure: (a: Function0)Int
 
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
        error: double definition:
-       def f[A](a: => A): Int at line 10 and
-       def f[A](a: => Either[Exception,A]): Int at line 10
+       def f[A](a: => A): Int at line 1 and
+       def f[A](a: => Either[Exception,A]): Int at line 1
        have same type after erasure: (a: Function0)Int
 
 scala> object Y {
@@ -20,8 +20,8 @@ scala> object Y {
          def f[A](a: => Either[Exception, A]) = 2
              ^
 On line 3: error: double definition:
-       def f[A](a: => A): Int at line 11 and
-       def f[A](a: => Either[Exception,A]): Int at line 12
+       def f[A](a: => A): Int at line 2 and
+       def f[A](a: => Either[Exception,A]): Int at line 3
        have same type after erasure: (a: Function0)Int
 
 scala> :pa
@@ -38,8 +38,8 @@ object Y {
          def f[A](a: => Either[Exception, A]) = 2
              ^
 <pastie>:3: error: double definition:
-       def f[A](a: => A): Int at line 11 and
-       def f[A](a: => Either[Exception,A]): Int at line 12
+       def f[A](a: => A): Int at line 2 and
+       def f[A](a: => Either[Exception,A]): Int at line 3
        have same type after erasure: (a: Function0)Int
 
 scala> :quit

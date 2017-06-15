@@ -804,7 +804,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     val leadingElement = raw"(?s)\s*(package\s|/)".r
     def isPackaged(code: String): Boolean = {
       leadingElement.findPrefixMatchOf(code)
-        .map(m => if (m.group(1) == "/") intp.packaged(code) else true)
+        .map(m => if (m.group(1) == "/") intp.isPackaged(code) else true)
         .getOrElse(false)
     }
 

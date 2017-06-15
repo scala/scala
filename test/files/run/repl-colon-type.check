@@ -34,11 +34,15 @@ scala> :type lazy val f = 5
 Int
 
 scala> :type protected lazy val f = 5
+
+         lazy val $result = $line13.$read.$iw.$iw.f
                                                   ^
-       error: lazy value f cannot be accessed in object $iw
+<synthetic>:5: error: lazy value f cannot be accessed in object $iw
         Access to protected lazy value f not permitted because
         enclosing object $eval in package $line13 is not a subclass of
         object $iw where target is defined
+
+(To diagnose errors in synthetic code, try adding `// show` to the end of your input.)
 
 
 scala> :type def f = 5

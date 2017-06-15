@@ -44,7 +44,6 @@ Lost after 18/flatten {
  */
 class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, replVals: ReplValsImpl) {
   import intp.global._
-  import intp.parse
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -309,7 +308,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   lazy val phased: Phased       = new { val global: intp.global.type = intp.global } with Phased { }
 
   def unit(code: String)    = newCompilationUnit(code)
-  def trees(code: String)   = parse(code) match { case parse.Success(trees) => trees; case _ => Nil }
+  def trees(code: String)   = intp.parse(code).map(_._1).getOrElse(Nil)
 
   override def toString = s"""
     |** Power mode status **

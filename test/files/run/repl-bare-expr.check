@@ -13,18 +13,14 @@ scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Mooo
   1 +
   2 +
   3 } ; bippy+88+11
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
        ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
            ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                   ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 defined object Cow
 defined class Moo
 bippy: Int
@@ -38,7 +34,7 @@ defined class Ruminant
 res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
+mutated Bovine.x
 
 scala> Bovine.x
 res4: List[Any] = List(Ruminant(5), Cow, Moooooo)

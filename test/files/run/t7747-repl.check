@@ -6,10 +6,10 @@ scala> var y = 11
 y: Int = 11
 
 scala> x = 12
-x: Int = 12
+mutated x
 
 scala> y = 13
-y: Int = 13
+mutated y
 
 scala> val z = x * y
 z: Int = 156
@@ -28,18 +28,14 @@ scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Mooo
   1 +
   2 +
   3 } ; bippy+88+11
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
        ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
            ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                   ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
-On line 1: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 defined object Cow
 defined class Moo
 bippy: Int
@@ -53,7 +49,7 @@ defined class Ruminant
 res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
+mutated Bovine.x
 
 scala> Bovine.x
 res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
@@ -234,41 +230,56 @@ scala> case class Bingo()
 defined class Bingo
 
 scala> List(BippyBups(), PuppyPups(), Bingo()) // show
-sealed class $read extends _root_.java.io.Serializable {
-  def <init>() = {
-    super.<init>;
-    ()
-  };
-  sealed class $iw extends _root_.java.io.Serializable {
+package $line10 {
+  sealed class $read extends _root_.scala.Serializable {
     def <init>() = {
       super.<init>;
       ()
     };
-    import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line9.$read.INSTANCE.$iw.$iw.Bingo;
-    import $line9.$read.INSTANCE.$iw.$iw.Bingo;
     sealed class $iw extends _root_.java.io.Serializable {
       def <init>() = {
         super.<init>;
         ()
       };
-      private type $ipos10 = _root_.scala.Nothing;
-      val res3 = List(BippyBups, PuppyPups, Bingo)
+      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
+      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
+      sealed class $iw extends _root_.java.io.Serializable {
+        def <init>() = {
+          super.<init>;
+          ()
+        };
+        val res3 = List(BippyBups, PuppyPups, Bingo)
+      };
+      val $iw = new $iw.<init>
     };
     val $iw = new $iw.<init>
   };
-  val $iw = new $iw.<init>
+  object $read extends scala.AnyRef {
+    def <init>() = {
+      super.<init>;
+      ()
+    };
+    val INSTANCE = new $read.<init>
+  }
 }
-object $read extends scala.AnyRef {
-  def <init>() = {
-    super.<init>;
-    ()
-  };
-  val INSTANCE = new $read.<init>
+package $line10
+
+
+object $eval {
+  lazy val $result = $line10.$read.INSTANCE.$iw.$iw.res3
+  lazy val $print: _root_.java.lang.String =  {
+    $line10.$read.INSTANCE.$iw.$iw
+    ( ""
+ + "res3: List[Product with Serializable] = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
+
+    )
+  }
 }
+
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)

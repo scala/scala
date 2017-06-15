@@ -4,7 +4,7 @@
  */
 package scala.tools.nsc.interpreter
 
-import scala.reflect.internal.util.{RangePosition, StringOps}
+import scala.reflect.internal.util.{Position, RangePosition, StringOps}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
@@ -26,18 +26,22 @@ trait PresentationCompilation { self: IMain =>
   def presentationCompile(cursor: Int, buf: String): Either[Result, PresentationCompileResult] = {
     if (global == null) Left(Error)
     else {
-      val compiler = newPresentationCompiler()
+      val pc = newPresentationCompiler()
       val line1 = buf.patch(cursor, Cursor, 0)
-      val trees = compiler.newUnitParser(line1).parseStats()
-      val importer = global.mkImporter(compiler)
+      val trees = pc.newUnitParser(line1).parseStats()
+      val importer = global.mkImporter(pc)
       val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true)
-      val wrappedCode: String = request.ObjectSourceCode(request.handlers)
-      val unit = compiler.newCompilationUnit(wrappedCode)
-      import compiler._
+      val origUnit = request.mkUnit
+      val unit = new pc.CompilationUnit(origUnit.source)
+      unit.body = pc.mkImporter(global).importTree(origUnit.body)
+      import pc._
       val richUnit = new RichCompilationUnit(unit.source)
       unitOfFile(richUnit.source.file) = richUnit
+      richUnit.body = unit.body
       enteringTyper(typeCheck(richUnit))
-      val result = PresentationCompileResult(compiler)(cursor, buf, richUnit, request.ObjectSourceCode.preambleLength)
+      val inputRange = pc.wrappingPos(trees)
+      // too bad dependent method types don't work for constructors
+      val result = new PresentationCompileResult(pc, inputRange, cursor, buf) { val unit = richUnit ; override val compiler: pc.type = pc }
       Right(result)
     }
   }
@@ -76,34 +80,29 @@ trait PresentationCompilation { self: IMain =>
 
   private var lastCommonPrefixCompletion: Option[String] = None
 
-  abstract class PresentationCompileResult extends PresentationCompilationResult {
-    private[interpreter] val compiler: scala.tools.nsc.interactive.Global
-    def unit: compiler.RichCompilationUnit
-    /** The length of synthetic code the precedes the user written code */
-    def preambleLength: Int
+  abstract class PresentationCompileResult(val compiler: interactive.Global, val inputRange: Position, val cursor: Int, val buf: String) extends PresentationCompilationResult {
+    val unit: compiler.RichCompilationUnit // depmet broken for constructors, can't be ctor arg
+
     override def cleanup(): Unit = {
       compiler.askShutdown()
     }
     import compiler.CompletionResult
 
-    def completionsAt(cursor: Int): CompletionResult = {
-      val pos = unit.source.position(preambleLength + cursor)
-      compiler.completionsAt(pos)
-    }
-    def typedTreeAt(code: String, selectionStart: Int, selectionEnd: Int): compiler.Tree = {
-      val start = selectionStart + preambleLength
-      val end   = selectionEnd + preambleLength
-      val pos   = new RangePosition(unit.source, start, start, end)
-      compiler.typedTreeAt(pos)
-    }
+    def completionsAt(cursor: Int): CompletionResult = compiler.completionsAt(unit.source.position(cursor))
 
-    def tree: compiler.Tree = {
+    def typedTreeAt(code: String, selectionStart: Int, selectionEnd: Int): compiler.Tree =
+      compiler.typedTreeAt(new RangePosition(unit.source, selectionStart, selectionStart, selectionEnd))
+
+    // offsets are 0-based
+    def treeAt(start: Int, end: Int): compiler.Tree = treeAt(unit.source.position(start).withEnd(end))
+    def treeAt(pos: Position): compiler.Tree = {
       import compiler.{Locator, Template, Block}
-      val offset = preambleLength
-      val pos1 = unit.source.position(offset).withEnd(offset + buf.length)
-      new Locator(pos1) locateIn unit.body match {
-        case Template(_, _, constructor :: preambleEndMember :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
-        case t => t
+      new Locator(pos) locateIn unit.body match {
+        case t@Template(_, _, constructor :: (rest :+ last)) =>
+          if (rest.isEmpty) last
+          else Block(rest, last)
+        case t =>
+          t
       }
     }
 
@@ -114,14 +113,13 @@ trait PresentationCompilation { self: IMain =>
       compiler.showCode(tree)
 
     override def print = {
-      val tree1 = tree
-      treeString(tree1) + " // : " + tree1.tpe.safeToString
+      val tree = treeAt(inputRange)
+      treeString(tree) + " // : " + tree.tpe.safeToString
     }
 
 
-    override def typeAt(start: Int, end: Int) = {
+    override def typeAt(start: Int, end: Int) =
       typeString(typedTreeAt(buf, start, end))
-    }
 
     val NoCandidates = (-1, Nil)
     type Candidates = (Int, List[String])
@@ -159,7 +157,7 @@ trait PresentationCompilation { self: IMain =>
           }
 
           val matching = r.matchingResults().filterNot(shouldHide)
-          val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
+          val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(inputRange.start, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
           if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
           else if (matching.isEmpty) {
@@ -183,7 +181,7 @@ trait PresentationCompilation { self: IMain =>
       }
       lastCommonPrefixCompletion =
         if (found != NoCandidates && buf.length >= found._1)
-          Some(buf.substring(0, found._1) + StringOps.longestCommonPrefix(found._2))
+          Some(buf.substring(inputRange.start, found._1) + StringOps.longestCommonPrefix(found._2))
         else
           None
       found
@@ -191,16 +189,4 @@ trait PresentationCompilation { self: IMain =>
 
   }
 
-  object PresentationCompileResult {
-    def apply(compiler0: interactive.Global)(cursor0: Int, buf0: String, unit0: compiler0.RichCompilationUnit, preambleLength0: Int) = new PresentationCompileResult {
-      def cursor = cursor0
-      def buf = buf0
-
-      override val compiler = compiler0
-
-      override def unit = unit0.asInstanceOf[compiler.RichCompilationUnit]
-
-      override def preambleLength = preambleLength0
-    }
-  }
 }
