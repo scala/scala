@@ -218,7 +218,7 @@ abstract class Erasure extends InfoTransform
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
-  def javaSig(sym0: Symbol, info: Type): Option[String] = enteringErasure {
+  def javaSig(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = enteringErasure {
     val isTraitSignature = sym0.enclClass.isTrait
 
     def superSig(parents: List[Type]) = {
@@ -283,6 +283,7 @@ abstract class Erasure extends InfoTransform
                 boxedSig(tp)
             }
           def classSig = {
+            markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
             val sigCls = {
               if (needsJavaSig(preRebound, Nil)) {

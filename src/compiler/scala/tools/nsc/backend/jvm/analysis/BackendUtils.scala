@@ -4,7 +4,7 @@ package analysis
 
 import java.lang.invoke.LambdaMetafactory
 
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.tools.asm.Opcodes._
@@ -15,6 +15,7 @@ import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import scala.util.control.{NoStackTrace, NonFatal}
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -295,6 +296,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       val c = classBTypeFromParsedClassfile(internalName)
       if (c.isNestedClass.get) Some(c) else None
     }
+
+    def raiseError(msg: String, sig: String, e: Option[Throwable]): Unit = {
+      // don't crash on invalid generic signatures
+    }
   }
   /**
    * Visit the class node and collect all referenced nested classes.
@@ -447,7 +452,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 }
 
 object BackendUtils {
-  abstract class NestedClassesCollector[T] {
+  abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]
 
     def declaredNestedClasses(internalName: InternalName): List[T]
@@ -467,12 +472,15 @@ object BackendUtils {
       visitAnnotations(classNode.invisibleAnnotations)
       visitAnnotations(classNode.invisibleTypeAnnotations)
 
+      visitClassSignature(classNode.signature)
+
       for (f <- classNode.fields.asScala) {
         visitDescriptor(f.desc)
         visitAnnotations(f.visibleAnnotations)
         visitAnnotations(f.visibleTypeAnnotations)
         visitAnnotations(f.invisibleAnnotations)
         visitAnnotations(f.invisibleTypeAnnotations)
+        visitFieldSignature(f.signature)
       }
 
       for (m <- classNode.methods.asScala) {
@@ -500,6 +508,8 @@ object BackendUtils {
           case ma: MultiANewArrayInsnNode => visitDescriptor(ma.desc)
           case _ =>
         }
+
+        visitMethodSignature(m.signature)
       }
     }
 
@@ -563,6 +573,154 @@ object BackendUtils {
     def visitHandle(handle: Handle): Unit = {
       visitInternalNameOrArrayReference(handle.getOwner)
       visitDescriptor(handle.getDesc)
+    }
+  }
+
+  abstract class GenericSignatureVisitor {
+    def visitInternalName(internalName: InternalName): Unit
+
+    def raiseError(msg: String, sig: String, e: Option[Throwable] = None): Unit
+
+    def visitClassSignature(sig: String): Unit = if (sig != null) {
+      val p = new Parser(sig)
+      p.safely { p.classSignature() }
+    }
+
+    def visitMethodSignature(sig: String): Unit = if (sig != null) {
+      val p = new Parser(sig)
+      p.safely { p.methodSignature() }
+    }
+
+    def visitFieldSignature(sig: String): Unit = if (sig != null) {
+      val p = new Parser(sig)
+      p.safely { p.fieldSignature() }
+    }
+
+    private final class Parser(sig: String) {
+      private var index = 0
+      private val end = sig.length
+
+      private val Aborted: Throwable = new NoStackTrace { }
+      private def abort(): Nothing = throw Aborted
+
+      def safely(f: => Unit): Unit = try f catch {
+        case Aborted =>
+        case NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
+      }
+
+      private def current = {
+        if (index >= end) {
+          raiseError(s"Out of bounds, $index >= $end", sig)
+          abort() // Don't continue, even if `notifyInvalidSignature` returns
+        }
+        sig.charAt(index)
+      }
+
+      private def accept(c: Char): Unit = {
+        if (current != c) {
+          raiseError(s"Expected $c at $index, found $current", sig)
+          abort()
+        }
+        index += 1
+      }
+
+      private def skip(): Unit = { index += 1 }
+      private def getCurrentAndSkip(): Char = { val c = current; skip(); c }
+
+      private def skipUntil(isDelimiter: Char => Boolean): Unit = {
+        while (!isDelimiter(current)) { index += 1 }
+      }
+
+      private def appendUntil(builder: java.lang.StringBuilder, isDelimiter: Char => Boolean): Unit = {
+        val start = index
+        skipUntil(isDelimiter)
+        builder.append(sig, start, index)
+      }
+
+      def isBaseType(c: Char): Boolean = c match {
+        case 'B' | 'C' | 'D' | 'F' | 'I' | 'J' | 'S' | 'Z' => true
+        case _ => false
+      }
+
+      private val isClassNameEnd = (c: Char) => c == '<' || c == '.' || c == ';'
+
+      private def typeArguments(): Unit = if (current == '<') {
+        skip()
+        while (current != '>') current match {
+          case '*' | '+' | '-' =>
+            skip()
+          case _ =>
+            referenceTypeSignature()
+        }
+        accept('>')
+      }
+
+      @tailrec private def referenceTypeSignature(): Unit = getCurrentAndSkip() match {
+        case 'L' =>
+          val names = new java.lang.StringBuilder()
+
+          appendUntil(names, isClassNameEnd)
+          visitInternalName(names.toString)
+          typeArguments()
+
+          while (current == '.') {
+            skip()
+            names.append('$')
+            appendUntil(names, isClassNameEnd)
+            visitInternalName(names.toString)
+            typeArguments()
+          }
+          accept(';')
+
+        case 'T' =>
+          skipUntil(_ == ';')
+          skip()
+
+        case '[' =>
+          if (isBaseType(current)) skip()
+          else referenceTypeSignature()
+      }
+
+      private def typeParameters(): Unit = if (current == '<') {
+        skip()
+        while (current != '>') {
+          skipUntil(_ == ':'); skip()
+          val c = current
+          // The ClassBound can be missing, but only if there's an InterfaceBound after.
+          // This is an assumption that's not in the spec, see https://stackoverflow.com/q/44284928
+          if (c != ':' && c != '>') { referenceTypeSignature() }
+          while (current == ':') { skip(); referenceTypeSignature() }
+        }
+        accept('>')
+      }
+
+      def classSignature(): Unit = {
+        typeParameters()
+        while (index < end) referenceTypeSignature()
+      }
+
+      def methodSignature(): Unit = {
+        typeParameters()
+
+        accept('(')
+        while (current != ')') {
+          if (isBaseType(current)) skip()
+          else referenceTypeSignature()
+        }
+        accept(')')
+
+        if (current == 'V' || isBaseType(current)) skip()
+        else referenceTypeSignature()
+
+        while (index < end) {
+          accept('^')
+          referenceTypeSignature()
+        }
+      }
+
+      def fieldSignature(): Unit = if (sig != null) safely {
+        referenceTypeSignature()
+      }
     }
   }
 }

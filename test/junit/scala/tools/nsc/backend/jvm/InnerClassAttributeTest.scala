@@ -25,7 +25,23 @@ class InnerClassAttributeTest extends BytecodeTesting {
         |}
       """.stripMargin
     val c = compileClass(code, javaCode = List((jCode, "A.java")))
-    // No InnerClass entry for A$B due to scala/bug#10180
-    assert(c.innerClasses.asScala.isEmpty)
+    assertEquals(c.innerClasses.asScala.toList.map(_.name), List("A$B"))
+  }
+
+  @Test
+  def t10180(): Unit = {
+    val code =
+      """class Base[T]
+        |class C { class D }
+        |abstract class E { def foo: Option[C#D] }
+        |class F { private[this] val foo: Option[C#D] = null }
+        |abstract class G extends Base[C#D]
+        |abstract class H[T <: Base[C#D]]
+        |abstract class I { def foo[T <: Base[C#D]] = 42 }
+        |abstract class J { def foo[T <: Base[Array[C#D]]] = 42 }
+      """.stripMargin
+    val List(_, _, _, e, f, g, h, i, j) = compileClasses(code)
+    for (k <- List(e, f, g, h, i, j))
+      assertEquals(k.innerClasses.asScala.toList.map(_.name), List("C$D"))
   }
 }
