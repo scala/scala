@@ -92,6 +92,8 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override def exists(p: A => Boolean): Boolean =
     in.exists(p) || out.exists(p)
 
+  override def stringPrefix = "Queue"
+
   /** Returns the length of the queue.
    */
   override def length = in.length + out.length
