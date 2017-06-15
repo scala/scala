@@ -68,25 +68,6 @@ val timeBenchmark =
       }.evaluated
     )
 
-
-val timeJava8Benchmark =
-  project.in(file("benchmarks/timeJava8"))
-    .enablePlugins(JmhPlugin)
-    .settings(commonSettings: _*)
-    .settings(
-      charts := Def.inputTaskDyn {
-        val benchmarks = Def.spaceDelimited().parsed
-        val targetDir = crossTarget.value
-        val jmhReport = targetDir / "jmh-result.json"
-        val runTask = run in Jmh
-        Def.inputTask {
-          val _ = runTask.evaluated
-          strawman.collection.Bencharts(jmhReport, "Execution time (lower is better)", targetDir)
-          targetDir
-        }.toTask(s" -rf json -rff ${jmhReport.absolutePath} ${benchmarks.mkString(" ")}")
-      }.evaluated
-    )
-
 val memoryBenchmark =
   project.in(file("benchmarks/memory"))
     .dependsOn(collections)
