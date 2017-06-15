@@ -34,7 +34,7 @@ object Searching {
   }
   case class InsertionPoint(insertionPoint: Int) extends SearchResult
 
-  class SearchImpl[A, Repr](val coll: SeqLike[A, Repr]) extends AnyVal {
+  class SearchImpl[A, Repr](private val coll: SeqLike[A, Repr]) extends AnyVal {
     /** Search the sorted sequence for a specific element. If the sequence is an
       * `IndexedSeqLike`, a binary search is used. Otherwise, a linear search is used.
       *
