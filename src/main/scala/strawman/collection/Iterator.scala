@@ -124,7 +124,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
    * Implemented by means of a buffer to keep track of the last n elements during iteration.
    */
   def takeRight(n: Int): Iterator[A] = {
-    if (n == 0) Iterator.empty
+    if (n <= 0) Iterator.empty
     else {
       // Return an iterator that iterates over the elements via a buffer
       new Iterator[A]() {
@@ -144,11 +144,11 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
           index = if (index >= buf.length) 0 else index
           buf
         }
-        override def hasNext: Boolean = {
+        def hasNext: Boolean = {
           // Force initialization of buffer and return whether there are any elements left in the buffer
           buffer != null && count > 0
         }
-        override def next(): A = {
+        def next(): A = {
           val value = buffer(index)
           index = if (index + 1 >= buffer.length) 0 else index + 1
           count -= 1
@@ -187,11 +187,11 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
           buf
         }
 
-        override def hasNext: Boolean = {
-          // Force initialization of buffer and don't stop unitl the iterator is exhausted (without having returned the elements currently in the buffer since those are the ones to drop)
+        def hasNext: Boolean = {
+          // Force initialization of buffer and don't stop until the iterator is exhausted (without having returned the elements currently in the buffer since those are the ones to drop)
           buffer != null && self.hasNext
         }
-        override def next(): A = {
+        def next(): A = {
           val value = buffer(index)
           buffer(index) = self.next()
           index = if (index + 1 >= buffer.length) 0 else index + 1
