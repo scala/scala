@@ -49,8 +49,11 @@ You need the following:
 
 ## Roadmap
 
-1. Release a v0.2.0 targeting Scala 2.13 and Dotty. The goal of this
-   release is to implement most of the current collections and operations.
-2. Consider the inclusion of new collection types and new operations
+1. Q2 2017: release a v0.2.0 targeting Scala 2.13 and Dotty.
+    - Implement most of the current collections types
+    - Implement most of the current collections operations
+    - Alternative to `CanBuildFrom` to get implicit builders
+2. Q3 2017: consider the inclusion of new collection types and new operations
    (e.g. joins)
-3. External modules for parallel collections and Java interoperability
+    - Decisions will be made on the basis of benchmarks
+3. Q4 2017: external modules for parallel collections and Java interoperability
