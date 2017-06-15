@@ -688,7 +688,7 @@ abstract class ClassfileParser {
           accept(';')
           tpe
         case ARRAY_TAG =>
-          while ('0' <= sig.charAt(index) && sig.charAt(index) <= '9') index += 1
+          while ('0' <= sig.charAt(index) && sig.charAt(index) <= '9') index += 1 // TODO this line doesn't seem to correspond to the spec, remove?
           var elemtp = sig2type(tparams, skiptvs)
           // make unbounded Array[T] where T is a type variable into Array[T with Object]
           // (this is necessary because such arrays have a representation which is incompatible
@@ -769,7 +769,7 @@ abstract class ClassfileParser {
         ClassInfoType(parents.toList, instanceScope, sym)
       }
     GenPolyType(ownTypeParams, tpe)
-  } // sigToType
+  }
 
   def parseAttributes(sym: Symbol, symtype: Type, removedOuterParameter: Boolean = false) {
     def convertTo(c: Constant, pt: Type): Constant = {

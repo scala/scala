@@ -1,11 +1,15 @@
 package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.mutable.ListBuffer
+import scala.tools.asm.Attribute
 import scala.tools.asm.Opcodes._
+import scala.tools.asm.tree.{ClassNode, InnerClassNode}
+import scala.tools.nsc.symtab.classfile.JavaSignatureWalker
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -194,5 +198,84 @@ class BytecodeTest extends BytecodeTesting {
     val m = compileMethod(code)
     val List(ExceptionHandler(_, _, _, desc)) = m.handlers
     assert(desc == None, desc)
+  }
+
+  @Test
+  def t10180: Unit = {
+    // Inner classes referenced only in generic signatures should contribute to the
+    // InnerClass attribute.
+    val code =
+      """abstract class E { def foo: Option[C#D] }
+        class F { private[this] val foo: Option[C#D] = null }
+        abstract class G extends Base[C#D]
+        abstract class H[T <: Base[C#D]]
+        abstract class I { def foo[T <: Base[C#D]] = 42 }
+        abstract class J { def foo[T <: Base[Array[C#D]]] = 42 }
+        class C {
+          class D
+        }
+        class Base[T]
+      """.stripMargin
+    val classes = compileClasses(code)
+    def check(className: String): Unit = {
+      val inners = classes.find(_.name == className).get.innerClasses
+      assertTrue(inners.size == 1)
+      assertEquals("D", inners.get(0).innerName)
+      assertEquals("C", inners.get(0).outerName)
+    }
+    check("E")
+    check("F")
+    check("G")
+    check("H")
+    check("I")
+    check("J")
+  }
+
+  @Test
+  def t10180_walker: Unit = {
+    def namesOf(sig: String): List[String] = {
+      val buffer = ListBuffer[String]()
+      val walker = new JavaSignatureWalker {
+        override def visitName(internalName: CharSequence): Unit = buffer += internalName.toString
+        override def raiseError(msg: String): Unit = throw new RuntimeException(msg)
+      }
+      walker.walk(sig)
+      buffer.toList
+    }
+    assertEquals(List("a/b/C"), namesOf("La/b/C;"))
+    assertEquals(List("a/b/C"), namesOf("[[La/b/C;"))
+    assertEquals(List("a/b/C"), namesOf("()La/b/C;"))
+    assertEquals(List("X", "Z", "Z", "a/b/C$D"), namesOf("()La/b/C<LX;>.D<+LZ;-LZ;>;"))
+    assertEquals(List("a/b/C"), namesOf("()La/b/C<*>;"))
+    assertEquals(List("java/lang/String", "java/lang/Cloneable", "java/io/Serializable", "java/io/Serializable", "java/lang/Object"), namesOf("<T:Ljava/lang/String;:Ljava/lang/Cloneable;:Ljava/io/Serializable;U::Ljava/io/Serializable;>Ljava/lang/Object;"))
+    // Currently, scalac neither consumes generic throws declarations from signatures in ClassFileParser, nor does it emit
+    // them in `javaSig`. I've future proofed JavaSignatureWalker to parse them if that changes.
+    assertEquals(List("T1", "T2"), namesOf("()V^LT1;^LT2;"))
+  }
+
+  @Test
+  @Ignore("manually run test")
+  def walker(): Unit = {
+    val walker = new JavaSignatureWalker {
+      override def visitName(internalName: CharSequence): Unit = ()
+      override def raiseError(msg: String): Unit = throw new RuntimeException(msg)
+    }
+    import java.nio.file._
+    import scala.collection.JavaConverters._
+    val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/jre/lib/rt.jar")
+    val fs = FileSystems.newFileSystem(zipfile, null)
+    val root = fs.getRootDirectories.iterator().next()
+    val contents = Files.walk(root).iterator().asScala.toList
+    for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
+      val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
+      def signaturesOf(cls: ClassNode): Iterator[String] = {
+        val sigs = Iterator(classNode.signature) ++ classNode.methods.iterator().asScala.map(_.signature) ++ classNode.fields.iterator().asScala.map(_.signature)
+        sigs.filter(_ != null)
+      }
+      for (sig <- signaturesOf(classNode)) {
+        walker.walk(sig)
+      }
+    }
+
   }
 }
