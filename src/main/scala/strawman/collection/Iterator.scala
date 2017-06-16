@@ -171,7 +171,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
    * Implemented by means of a buffer to keep the last n elements from being returned during iteration.
    */
   def dropRight(n: Int): Iterator[A] = {
-    if (n == 0) self
+    if (n <= 0) self
     else {
       // Return an iterator that returns already buffered elements as it buffers new ones (using a buffer of most n elements)
       new Iterator[A]() {
