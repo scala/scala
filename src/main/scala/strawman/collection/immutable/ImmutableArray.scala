@@ -67,7 +67,11 @@ class ImmutableArray[+A] private (private val elements: scala.Array[Any]) extend
 
   override def take(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n)(apply)
 
+  override def takeRight(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n min length)(i => apply(length - (n min length) + i))
+
   override def drop(n: Int): ImmutableArray[A] = ImmutableArray.tabulate((length - n) max 0)(i => apply(n + i))
+
+  override def dropRight(n: Int): ImmutableArray[A] = ImmutableArray.tabulate((length - n) max 0)(apply)
 
   override def tail: ImmutableArray[A] =
     if (length > 0) {

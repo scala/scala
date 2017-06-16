@@ -82,6 +82,8 @@ sealed trait HashMap[K, +V]
 
   override def tail: HashMap[K, V] = this - head._1
 
+  override def init: HashMap[K, V] = this - last._1
+
   override def filter(pred: ((K, V)) => Boolean): HashMap[K, V] = {
     val buffer = new Array[HashMap[K, V]](bufferSize(size))
     nullToEmpty(filter0(pred, negate = false, 0, buffer, 0))
@@ -185,6 +187,10 @@ object HashMap extends MapFactory[HashMap] {
     override def head: (Any, Nothing) = throw new NoSuchElementException("Empty Map")
 
     override def tail: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
+
+    override def last: (Any, Nothing) = throw new NoSuchElementException("Empty Map")
+
+    override def init: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
 
   }
 

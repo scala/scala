@@ -86,6 +86,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 ### Transformations to collections having the same element type
 
 - [x] `drop`
+- [x] `dropRight`
 - [x] `empty`
 - [x] `filter` / `filterNot`
 - [ ] `groupBy`
@@ -96,7 +97,9 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `slice`
 - [x] `splitAt`
 - [x] `tail`
+- [x] `init`
 - [x] `take`
+- [x] `takeRight`
 - [x] `updated`
 
 ### Transformations to collections that can have a different element type

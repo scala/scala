@@ -137,7 +137,7 @@ sealed class ListMap[K, +V]
     override protected def next: ListMap[K, V1] = ListMap.this
 
     override def last: (K, V1) = (key, value)
-//    override def init: ListMap[K, V1] = next
+    override def init: ListMap[K, V1] = next
   }
 }
 

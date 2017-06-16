@@ -44,6 +44,8 @@ sealed trait HashSet[A]
 
   override def tail: HashSet[A] = this - head
 
+  override def init: HashSet[A] = this - last
+
   protected def get0(key: A, hash: Int, level: Int): Boolean
 
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
@@ -72,6 +74,8 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def tail: HashSet[Any] = throw new NoSuchElementException("Empty Set")
 
+    override def init: HashSet[Any] = throw new NoSuchElementException("Empty Set")
+
     override def size: Int = 0
 
     protected def get0(elem: Any, hash: Int, level: Int) = false
@@ -98,6 +102,10 @@ object HashSet extends IterableFactory[HashSet] {
     override def head: A = key
 
     override def tail: HashSet[A] = HashSet.empty[A]
+
+    override def last: A = key
+
+    override def init: HashSet[A] = HashSet.empty[A]
 
     override def size: Int = 1
 

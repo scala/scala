@@ -82,6 +82,8 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def tail: TreeMap[K, V] = new TreeMap(RB.delete(tree, firstKey))
 
+  override def init: TreeMap[K, V] = new TreeMap(RB.delete(tree, lastKey))
+
   override def drop(n: Int): TreeMap[K, V] = {
     if (n <= 0) this
     else if (n >= size) empty

@@ -28,6 +28,12 @@ class StrawmanTest {
     val ys7: Seq[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Seq[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Seq[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Seq[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Seq[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: Seq[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -44,6 +50,8 @@ class StrawmanTest {
     val ys15: Seq[(Int, Boolean)] = xs15
     val xs16 = xs.reverse
     val ys16: Seq[Int] = xs16
+    val xs17 = xs.init
+    val ys17: Seq[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -53,6 +61,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs10)
     println(xs11)
@@ -61,6 +72,7 @@ class StrawmanTest {
     println(xs14)
     println(xs15)
     println(xs16)
+    println(xs17)
   }
 
   def viewOps(xs: View[Int]): Unit = {
@@ -79,6 +91,12 @@ class StrawmanTest {
     val ys7: View[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: View[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: View[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: View[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: View[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: View[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -93,6 +111,8 @@ class StrawmanTest {
     val ys14: View[Any] = xs14
     val xs15 = xs.zip(xs9)
     val ys15: View[(Int, Boolean)] = xs15
+    val xs17 = xs.init
+    val ys17: View[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -102,6 +122,9 @@ class StrawmanTest {
     println(xs6.to(List))
     println(xs7.to(List))
     println(xs8.to(List))
+    println(xs8_2.to(List))
+    println(xs8_3.to(List))
+    println(xs8_4.to(List))
     println(xs9.to(List))
     println(xs10.to(List))
     println(xs11.to(List))
@@ -109,6 +132,7 @@ class StrawmanTest {
     println(xs13.to(List))
     println(xs14.to(List))
     println(xs15.to(List))
+    println(xs17.to(List))
   }
 
   def stringOps(xs: String): Unit = {
@@ -127,6 +151,12 @@ class StrawmanTest {
     val ys7: String = xs7
     val xs8 = xs.drop(2)
     val ys8: String = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: String = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: String = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: String = xs8_4
     val xs9 = xs.map(_ + 1)
     val ys9: Seq[Int] = xs9
     val xs9a = xs.map(_.toUpper)
@@ -145,6 +175,8 @@ class StrawmanTest {
     val ys14: Seq[Any] = xs14
     val xs15 = xs.zip(xs9)
     val ys15: Seq[(Char, Int)] = xs15
+    val xs17 = xs.init
+    val ys17: String = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -154,6 +186,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs9a)
     println(xs10)
@@ -163,6 +198,7 @@ class StrawmanTest {
     println(xs13)
     println(xs14)
     println(xs15)
+    println(xs17)
   }
 
   def arrayOps(xs: Array[Int]): Unit = {
@@ -181,6 +217,12 @@ class StrawmanTest {
     val ys7: Array[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Array[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Array[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Array[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Array[Int] = xs8_4
     val xs9 = arrayToArrayOps(xs).map(_ >= 0)
     val ys9: Array[Boolean] = xs9
     val xs10 = xs.flatMap(x => List(x, -x))
@@ -197,6 +239,8 @@ class StrawmanTest {
     val ys15: Array[(Int, Boolean)] = xs15
     val xs16 = xs.reverse
     val ys16: Array[Int] = xs16
+    val xs17 = xs.init
+    val ys17: Array[Int] = xs17
     println("-------")
     println(x1)
     println(x2)
@@ -206,6 +250,9 @@ class StrawmanTest {
     println(xs6.view)
     println(xs7.view)
     println(xs8.view)
+    println(xs8_2.view)
+    println(xs8_3.view)
+    println(xs8_4.view)
     println(xs9.view)
     println(xs10.view)
     println(xs11.view)
@@ -214,6 +261,7 @@ class StrawmanTest {
     println(xs14.view)
     println(xs15.view)
     println(xs16.view)
+    println(xs17.view)
   }
 
   def immutableArrayOps(xs: immutable.ImmutableArray[Int]): Unit = {
@@ -232,6 +280,12 @@ class StrawmanTest {
     val ys7: immutable.ImmutableArray[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: immutable.ImmutableArray[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: immutable.ImmutableArray[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: immutable.ImmutableArray[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: immutable.ImmutableArray[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: immutable.ImmutableArray[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -257,6 +311,9 @@ class StrawmanTest {
     println(xs6)
     println(xs7)
     println(xs8)
+    println(xs8_2)
+    println(xs8_3)
+    println(xs8_4)
     println(xs9)
     println(xs10)
     println(xs11)
@@ -283,6 +340,12 @@ class StrawmanTest {
     val ys7: Seq[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Seq[Int] = xs8
+    val xs8_2 = xs.dropRight(2)
+    val ys8_2: Seq[Int] = xs8_2
+    val xs8_3 = xs.take(2)
+    val ys8_3: Seq[Int] = xs8_3
+    val xs8_4 = xs.takeRight(2)
+    val ys8_4: Seq[Int] = xs8_4
     val xs9 = xs.map(_ >= 0)
     val ys9: Seq[Boolean] = xs9
     val xs10 = xs.flatMap(x => x :: -x :: Nil)
@@ -301,6 +364,8 @@ class StrawmanTest {
     val ys16: Seq[Int] = xs16
     val ys17 = LazyList.empty ++ LazyList.empty
     val ys18: LazyList[Nothing] = ys17
+    val xs19 = xs.init
+    val ys19: Seq[Int] = xs19
     println("-------")
     println(x1)
     println(x2)
@@ -313,6 +378,12 @@ class StrawmanTest {
     println(xs7.to(List))
     println(xs8)
     println(xs8.to(List))
+    println(xs8_2)
+    println(xs8_2.to(List))
+    println(xs8_3)
+    println(xs8_3.to(List))
+    println(xs8_4)
+    println(xs8_4.to(List))
     println(xs9)
     println(xs9.to(List))
     println(xs10)
@@ -340,6 +411,8 @@ class StrawmanTest {
     }
     println(xs17)
     println(xs17.to(List))
+    println(xs19)
+    println(xs19.to(List))
   }
 
   def equality(): Unit = {

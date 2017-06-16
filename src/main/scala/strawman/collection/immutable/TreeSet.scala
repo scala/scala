@@ -43,6 +43,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   override def tail: TreeSet[A] = new TreeSet(RB.delete(tree, firstKey))
 
+  override def init: TreeSet[A] = new TreeSet(RB.delete(tree, lastKey))
+
   override def drop(n: Int): TreeSet[A] = {
     if (n <= 0) this
     else if (n >= size) empty

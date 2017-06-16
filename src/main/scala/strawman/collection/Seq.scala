@@ -72,6 +72,14 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
     def length: Int = self.length
     def apply(i: Int): A = self(i)
   }
+
+  /** A collection containing the last `n` elements of this collection. */
+  override def takeRight(n: Int): C = fromSpecificIterable(view.takeRight(n))
+
+  /** The rest of the collection without its `n` last elements. For
+    * linear, immutable collections this should avoid making a copy. */
+  override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
+
   override def reverse: C = fromSpecificIterable(view.reverse)
 }
 
