@@ -178,7 +178,7 @@ class BoxUnboxTest extends BytecodeTesting {
       ("C", "escape")))
 
     assertNoInvoke(getMethod(c, "t13"))
-    //assertSameSummary(getInstructions(c, "t13"), List(ILOAD /*1*/, ILOAD /*2*/, IADD, IRETURN))
+    assertSameSummary(getInstructions(c, "t13"), List(ILOAD /*1*/, ILOAD /*2*/, IADD, IRETURN))
 
     assertEquals(getInstructions(c, "t14") collect { case Invoke(_, owner, name, _, _) => (owner, name) }, List(
       ("scala/runtime/IntRef", "create"),
@@ -192,7 +192,7 @@ class BoxUnboxTest extends BytecodeTesting {
     ))
 
     assertDoesNotInvoke(getInstructions(c, "t15"), "boxToInteger")
-    //assertSameSummary(getMethod(c, "t15"), List(NEW, DUP, ICONST_1, ICONST_1, "<init>", ARETURN))
+    assertSameSummary(getMethod(c, "t15"), List(NEW, DUP, ICONST_1, ICONST_1, "<init>", ARETURN))
 
     assertDoesNotInvoke(getInstructions(c, "t16"), "boxToInteger")
     assertDoesNotInvoke(getInstructions(c, "t16"), "boxToLong")
