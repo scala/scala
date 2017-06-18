@@ -59,6 +59,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - redundant casts (`("a", "b")._1`: the generic `_1` method returns `Object`, a cast
  *       to String is added. The cast is redundant after eliminating the tuple.)
  *     - empty local variable descriptors (local variables that were holding the box may become unused)
+  *    - push-pop (due to artifacts of eliminating runtime type tests on primitives)
  *
  * copy propagation (replaces LOAD n to the LOAD m for the smallest m that is an alias of n)
  *   + enables downstream:

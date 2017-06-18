@@ -12,10 +12,12 @@ import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 
+/**
+  * Tests for boxing/unboxing optimizations.
+  */
 @RunWith(classOf[JUnit4])
 class BoxUnboxTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:method"
-
   import compiler._
 
   @Test
@@ -115,6 +117,34 @@ class BoxUnboxTest extends BytecodeTesting {
         |    escape(if (b) i else j)      // force method M1. the escape here is a consumer for both boxes
         |    if (b) i.toInt else j.toInt  // both boxes (i, j) have their own unboxing consumer
         |  }
+        |
+        |  def t13(i: Int, j: Int): Int = (i: Any, j: Any) match { // used to be boxToInteger x2
+        |    case (a: Int, b: Int) => a + b
+        |    case _                => -1
+        |  }
+        |
+        |  // we need to make sure that since x and y escape, we don't accidentally forget to deref them
+        |  def t14(i: Int, j: Int)(b: Boolean): Int = {
+        |    var (x: Int, y: Int) = (i, j)
+        |    val close = (c: Boolean, n: Int) => if (c) x += n else y += n
+        |    escape(close)
+        |    (x, y) match {
+        |      case (w: Int, z: Int) => w + z
+        |      case _ => 0
+        |    }
+        |  }
+        |
+        |  def t15(i: Int): (Boolean, Boolean) = {
+        |    val boxt = (i: Integer)
+        |    (boxt.isInstanceOf[Object], boxt.isInstanceOf[Number])
+        |  }
+        |
+        |  def t16(i: Int, l: Long) = {
+        |    val bi: java.lang.Integer = i
+        |    val li: java.lang.Long = l
+        |    bi + li
+        |  }
+        |
         |}
       """.stripMargin
 
@@ -146,10 +176,32 @@ class BoxUnboxTest extends BytecodeTesting {
       ("java/lang/Integer", "valueOf"),
       ("java/lang/Integer", "valueOf"),
       ("C", "escape")))
+
+    assertNoInvoke(getMethod(c, "t13"))
+    //assertSameSummary(getInstructions(c, "t13"), List(ILOAD /*1*/, ILOAD /*2*/, IADD, IRETURN))
+
+    assertEquals(getInstructions(c, "t14") collect { case Invoke(_, owner, name, _, _) => (owner, name) }, List(
+      ("scala/runtime/IntRef", "create"),
+      ("scala/runtime/IntRef", "create"),
+      ("C", "escape")
+    ))
+
+    assertEquals(getInstructions(c, "t14") collect { case Field(_, owner, name, _) => (owner, name) }, List(
+      ("scala/runtime/IntRef", "elem"),
+      ("scala/runtime/IntRef", "elem")
+    ))
+
+    assertDoesNotInvoke(getInstructions(c, "t15"), "boxToInteger")
+    //assertSameSummary(getMethod(c, "t15"), List(NEW, DUP, ICONST_1, ICONST_1, "<init>", ARETURN))
+
+    assertDoesNotInvoke(getInstructions(c, "t16"), "boxToInteger")
+    assertDoesNotInvoke(getInstructions(c, "t16"), "boxToLong")
+    assertDoesNotInvoke(getInstructions(c, "t16"), "unboxToInt")
+    assertDoesNotInvoke(getInstructions(c, "t16"), "unboxToLong")
   }
 
   @Test
-  def refElimination(): Unit = {
+  def refEliminiation(): Unit = {
     val code =
       """class C {
         |  import runtime._
