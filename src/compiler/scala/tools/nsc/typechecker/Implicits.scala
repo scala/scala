@@ -1045,8 +1045,7 @@ trait Implicits {
                   if (sym.isPackageClass) sym.packageObject.typeOfThis
                   else singleType(pre, companionSymbolOf(sym, context))
                 val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
-                if (infos.nonEmpty)
-                  infoMap += (sym -> infos)
+                infoMap += (sym -> infos)
               }
               val bts = tp.baseTypeSeq
               var i = 1
