@@ -23,7 +23,8 @@ class ProcessResult(val line: String) {
   override def toString = "`%s` (%d lines, exit %d)".format(line, buffer.size, exitCode)
 }
 
-trait LoopCommands { self: { def echo(msg: String): Unit } =>
+trait LoopCommands {
+  protected def echo(msg: String): Unit
   protected def out: JPrintWriter
 
   // So outputs can be suppressed.

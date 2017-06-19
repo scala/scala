@@ -13,6 +13,10 @@ import Completion._
 trait Completion {
   def resetVerbosity(): Unit
   def complete(buffer: String, cursor: Int): Candidates
+
+  // Code accumulated in multi-line REPL input
+  def partialInput: String = ""
+  def withPartialInput[T](code: String)(body: => T): T = body
 }
 object NoCompletion extends Completion {
   def resetVerbosity() = ()

@@ -128,5 +128,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
     try new PasteAnalyzer(lines.toList).run()
     finally isRunning = false
   }
-  def unapply(line: String): Boolean = isPrompted(line)
+
+  // used during loop
+  def unapply(line: String): Boolean = !running && isPrompted(line)
 }

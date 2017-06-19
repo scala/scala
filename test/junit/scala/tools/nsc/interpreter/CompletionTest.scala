@@ -28,13 +28,11 @@ class CompletionTest {
     completer
   }
 
-  private def setupWithLoop(lines: String*): (ILoop, Completion) = {
+  private def interpretLines(lines: String*): (Completion, Repl) = {
     val intp = newIMain()
-    val iloop = new ILoop(ShellConfig(intp.settings))
-    iloop.intp = intp
-    lines foreach iloop.intp.interpret
-    val completer = new iloop.ReplCompletion(iloop.intp)
-    (iloop, completer)
+    lines foreach intp.interpret
+    val completer = new PresentationCompilerCompleter(intp)
+    (completer, intp)
   }
 
   implicit class BeforeAfterCompletion(completion: Completion) {
@@ -116,16 +114,15 @@ class CompletionTest {
 
   @Test
   def previousLineCompletions(): Unit = {
-    val (iloop, completer) = setupWithLoop(
+    val (completer, intp) = interpretLines(
       "class C { val x_y_z = 42 }",
-      "object O { type T = Int }"
-    )
+      "object O { type T = Int }")
 
     checkExact(completer, "new C().x_y")("x_y_z")
     checkExact(completer, "(1 : O.T).toCha")("toChar")
 
-    iloop.intp.interpret("case class X_y_z()")
-    val completer1 = new iloop.ReplCompletion(iloop.intp)
+    intp.interpret("case class X_y_z()")
+    val completer1 = new PresentationCompilerCompleter(intp)
     checkExact(completer1, "new X_y_")("X_y_z")
     checkExact(completer1, "X_y_")("X_y_z")
     checkExact(completer1, "X_y_z.app")("apply")
@@ -133,15 +130,15 @@ class CompletionTest {
 
   @Test
   def previousResultInvocation(): Unit = {
-    val (_, completer) = setupWithLoop("1 + 1")
+    val (completer, _) = interpretLines("1 + 1")
 
     checkExact(completer, ".toCha")("toChar")
   }
 
   @Test
   def multiLineInvocation(): Unit = {
-    val (iloop, completer) = setupWithLoop()
-    iloop.withPartialInput("class C {") {
+    val (completer, _) = interpretLines()
+    completer.withPartialInput("class C {") {
       checkExact(completer, "1 + 1.toCha")("toChar")
     }
   }

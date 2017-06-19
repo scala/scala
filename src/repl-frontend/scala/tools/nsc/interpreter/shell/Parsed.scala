@@ -65,4 +65,12 @@ object Parsed {
     new Parsed(onull(s), cursor, delimited)
 
   def dotted(s: String, cursor: Int): Parsed = new Parsed(onull(s), cursor, _ == '.')
+
+  // a leading dot plus something, but not ".." or "./", ignoring leading whitespace
+  private val dotlike = """\s*\.[^./].*""".r
+  def looksLikeInvocation(code: String) = code match {
+    case null      => false   // insurance
+    case dotlike() => true
+    case _         => false
+  }
 }

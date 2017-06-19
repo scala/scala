@@ -39,7 +39,8 @@ import scala.collection.JavaConverters._
   * @author Moez A. Abdel-Gawad
   * @author Lex Spoon
   */
-class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected val out: PrintWriter = new PrintWriter(Console.out, true)) extends LoopCommands {
+class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
+            protected val out: PrintWriter = new PrintWriter(Console.out, true)) extends LoopCommands {
   import config._
 
   // If set before calling run(), the provided interpreter will be used
@@ -62,16 +63,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
     else if (haveInteractiveConsole) new jline.InteractiveReader(isAcross = isAcross, isPaged = isPaged)
     else SimpleReader()
 
-
-  // Code accumulated in multi-line REPL input
-  // Set by interpretStartingWith
-  private[this] var partialInput: String                    = ""
-  protected[interpreter] def withPartialInput[T](code: String)(body: => T): T = {
-    val saved = partialInput
-    partialInput = code + "\n"
-    try body
-    finally partialInput = saved
-  }
 
   private val interpreterInitialized = new java.util.concurrent.CountDownLatch(1)
 
@@ -824,15 +815,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
   }
 
   private object invocation {
-    // a leading dot plus something, but not ".." or "./", ignoring leading whitespace
-    private val dotlike = """\s*\.[^./].*""".r
-    def looksLikeInvocation(code: String) = code match {
-      case null      => false   // insurance
-      case dotlike() => true
-      case _         => false
-    }
-
-    def unapply(line: String): Boolean = looksLikeInvocation(line)
+    // used during loop
+    def unapply(line: String): Boolean =
+      intp.mostRecentVar != "" && Parsed.looksLikeInvocation(line)
   }
 
   private val lineComment = """\s*//.*""".r   // all comment
@@ -857,57 +842,39 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
      *    and avoid the interpreter, as it's likely not valid scala code.
      */
     code match {
-      case ""                                       => None
-      case lineComment()                            => None                 // line comment, do nothing
-      case paste() if !paste.running                => paste.transcript(Iterator(code) ++ readWhile(!paste.isPromptOnly(_))) match {
-                                                         case Some(s) => interpretStartingWith(s)
-                                                         case _       => None
-                                                       }
-      case invocation() if intp.mostRecentVar != "" => interpretStartingWith(intp.mostRecentVar + code)
-      case _                                        => intp.interpret(code) match {
-        case Error                                                 => None
-        case Success                                               => Some(code)
-        case Incomplete if in.interactive && code.endsWith("\n\n") =>
-          echo("You typed two blank lines.  Starting a new command.")
-          None
-        case Incomplete                                            =>
-          withPartialInput(code) {
-            in.readLine(paste.ContinuePrompt) match {
-              case null =>
-                // we know compilation is going to fail since we're at EOF and the
-                // parser thinks the input is still incomplete, but since this is
-                // a file being read non-interactively we want to fail.  So we send
-                // it straight to the compiler for the nice error message.
-                intp.compileString(code)
-                None
-              case line => interpretStartingWith(s"$code\n$line")
+      case "" | lineComment() => None // empty or line comment, do nothing
+      case paste() =>
+        paste.transcript(Iterator(code) ++ readWhile(!paste.isPromptOnly(_))) match {
+          case Some(s) => interpretStartingWith(s)
+          case _       => None
+        }
+      case invocation() => interpretStartingWith(intp.mostRecentVar + code)
+      case _ =>
+        intp.interpret(code) match {
+          case Error      => None
+          case Success    => Some(code)
+          case Incomplete =>
+            if (in.interactive && code.endsWith("\n\n")) {
+              echo("You typed two blank lines.  Starting a new command.")
+              None
+            } else {
+              val prefix = code + "\n"
+              in.completion.withPartialInput(prefix) {
+                in.readLine(paste.ContinuePrompt) match {
+                  case null =>
+                    // we know compilation is going to fail since we're at EOF and the
+                    // parser thinks the input is still incomplete, but since this is
+                    // a file being read non-interactively we want to fail.
+                    // TODO: is this true ^^^^^^^^^^^^^^^^?
+                    // So we send it straight to the compiler for the nice error message.
+                    intp.compileString(code)
+                    None
+                  case line =>
+                    interpretStartingWith(prefix + line) // not in tailpos!
+                }
+              }
             }
-          }
-      }
-    }
-  }
-
-  // delegate to command completion or presentation compiler
-  class ReplCompletion(intp: Repl) extends Completion {
-    val pc = new PresentationCompilerCompleter(intp)
-    def resetVerbosity(): Unit = pc.resetVerbosity()
-    def complete(buffer: String, cursor: Int): Completion.Candidates = {
-      if (buffer.startsWith(":"))
-        colonCompletion(buffer, cursor).complete(buffer, cursor)
-      else {
-        // special case for:
-        //
-        // scala> 1
-        // scala> .toInt
-        val bufferWithVar =
-          if (invocation.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
-          else buffer
-
-        // prepend `partialInput` for multi-line input.
-        val bufferWithMultiLine = partialInput + bufferWithVar
-        val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
-        pc.complete(bufferWithMultiLine, cursor1)
-      }
+        }
     }
   }
 
@@ -965,7 +932,11 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null, protected va
           // enable TAB completion (we do this before blocking on input from the splash loop,
           // so that it can offer tab completion as soon as we're ready).
           if (doCompletion)
-            in.initCompletion(new ReplCompletion(intp))
+            in.initCompletion(new PresentationCompilerCompleter(intp) {
+              override def shellCompletion(buffer: String, cursor: Int): Option[Candidates] =
+                if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
+                else None
+            })
 
         }
       } orNull // null is used by readLine to signal EOF (`loop` will exit)

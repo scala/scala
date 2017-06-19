@@ -11,6 +11,32 @@ import scala.tools.nsc.interpreter.Repl
 class PresentationCompilerCompleter(intp: Repl) extends Completion {
   import PresentationCompilerCompleter._
 
+  private[this] var _partialInput: String = ""
+  override def partialInput: String = _partialInput
+  override def withPartialInput[T](code: String)(body: => T): T = {
+    val saved = partialInput
+    _partialInput = code
+    try body finally _partialInput = saved
+  }
+
+  def shellCompletion(buffer: String, cursor: Int): Option[Completion.Candidates] = None
+  def complete(buffer: String, cursor: Int): Completion.Candidates = {
+    shellCompletion(buffer, cursor) getOrElse {
+      // special case for:
+      //
+      // scala> 1
+      // scala> .toInt
+      val bufferWithVar =
+        if (Parsed.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
+        else buffer
+
+      // prepend `partialInput` for multi-line input.
+      val bufferWithMultiLine = partialInput + bufferWithVar
+      val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
+      completeCode(bufferWithMultiLine, cursor1)
+    }
+  }
+
   private var lastRequest = NoRequest
   private var tabCount = 0
 
@@ -18,7 +44,7 @@ class PresentationCompilerCompleter(intp: Repl) extends Completion {
 
   // A convenience for testing
   def complete(before: String, after: String = ""): Candidates = complete(before + after, before.length)
-  override def complete(buf: String, cursor: Int): Candidates = {
+  private def completeCode(buf: String, cursor: Int): Candidates = {
     require(cursor >= 0 && cursor <= buf.length)
 
     val request = Request(buf, cursor)
