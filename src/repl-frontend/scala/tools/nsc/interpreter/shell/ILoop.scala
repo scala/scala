@@ -22,7 +22,6 @@ import scala.tools.nsc.util.{stackTraceString, stringFromStream}
 import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, Repl, IMain, Phased, jline}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.nsc.interpreter.StdReplTags._
-import scala.tools.nsc.interpreter.shell.Completion._
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.ControlThrowable
 import scala.collection.JavaConverters._
@@ -60,7 +59,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   private lazy val defaultIn: InteractiveReader =
     if (batchMode) SimpleReader(batchText)
     else if (inOverride != null) SimpleReader(inOverride, out, interactive = true)
-    else if (haveInteractiveConsole) new jline.InteractiveReader(isAcross = isAcross, isPaged = isPaged)
+    else if (haveInteractiveConsole) new jline.JlineReader(isAcross = isAcross, isPaged = isPaged)
     else SimpleReader()
 
 
@@ -220,9 +219,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     val directorily  = """(\S*/)$""".r.unanchored
     val trailingWord = """(\S+)$""".r.unanchored
     def listed(i: Int, dir: Option[Path]) =
-      dir.filter(_.isDirectory).map(d => Candidates(i, d.toDirectory.list.map(_.name).toList)).getOrElse(NoCandidates)
+      dir.filter(_.isDirectory).map(d => CompletionResult(i, d.toDirectory.list.map(_.name).toList)).getOrElse(NoCompletions)
     def listedIn(dir: Directory, name: String) = dir.list.filter(_.name.startsWith(name)).map(_.name).toList
-    def complete(buffer: String, cursor: Int): Candidates =
+    def complete(buffer: String, cursor: Int): CompletionResult =
       buffer.substring(0, cursor) match {
         case emptyWord(s)        => listed(cursor, Directory.Current)
         case directorily(s)      => listed(cursor, Option(Path(s)))
@@ -233,8 +232,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
             else if (f.isDirectory) (cursor - s.length, List(s"${f.toAbsolute.path}/"))
             else if (f.parent.exists) (cursor - f.name.length, listedIn(f.parent.toDirectory, f.name))
             else (-1, Nil)
-          if (maybes.isEmpty) NoCandidates else Candidates(i, maybes)
-        case _                   => NoCandidates
+          if (maybes.isEmpty) NoCompletions else CompletionResult(i, maybes)
+        case _                   => NoCompletions
       }
   }
 
@@ -242,13 +241,13 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   val settingsCompletion: Completion = new Completion {
     def resetVerbosity(): Unit = ()
     val trailingWord = """(\S+)$""".r.unanchored
-    def complete(buffer: String, cursor: Int): Candidates = {
+    def complete(buffer: String, cursor: Int): CompletionResult = {
       buffer.substring(0, cursor) match {
         case trailingWord(s) =>
           val maybes = intp.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
                                .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).toList.sorted
-          if (maybes.isEmpty) NoCandidates else Candidates(cursor - s.length, maybes)
-        case _ => NoCandidates
+          if (maybes.isEmpty) NoCompletions else CompletionResult(cursor - s.length, maybes)
+        case _ => NoCompletions
       }
     }
   }
@@ -932,8 +931,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           // enable TAB completion (we do this before blocking on input from the splash loop,
           // so that it can offer tab completion as soon as we're ready).
           if (doCompletion)
-            in.initCompletion(new PresentationCompilerCompleter(intp) {
-              override def shellCompletion(buffer: String, cursor: Int): Option[Candidates] =
+            in.initCompletion(new ReplCompletion(intp) {
+              override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
                 if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
                 else None
             })

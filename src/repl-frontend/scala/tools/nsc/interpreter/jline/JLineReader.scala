@@ -7,25 +7,29 @@
 
 package scala.tools.nsc.interpreter.jline
 
-import java.util.{Collection => JCollection, List => JList}
+import java.{util => ju}
 
 import _root_.jline.{console => jconsole}
-import jline.console.ConsoleReader
 import jline.console.completer.{CandidateListCompletionHandler, Completer, CompletionHandler}
 import jconsole.history.{History => JHistory}
 
-import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.shell
-import scala.tools.nsc.interpreter.shell.{Completion, NoCompletion}
-import scala.tools.nsc.interpreter.shell.Completion.Candidates
-import scala.tools.nsc.interpreter.shell.History
+import scala.tools.nsc.interpreter.shell._
+
+trait JLineCompletion extends Completion with Completer {
+  final def complete(buf: String, cursor: Int, candidates: ju.List[CharSequence]): Int =
+    complete(if (buf == null) "" else buf, cursor) match {
+      case CompletionResult(newCursor, newCandidates) =>
+        newCandidates foreach candidates.add
+        newCursor
+    }
+}
 
 /**
  * Reads from the console using JLine.
  *
  * Eagerly instantiates all relevant JLine classes, so that we can detect linkage errors on `new JLineReader` and retry.
  */
-class InteractiveReader(isAcross: Boolean, isPaged: Boolean) extends shell.InteractiveReader {
+class JlineReader(isAcross: Boolean, isPaged: Boolean) extends InteractiveReader {
   def interactive = true
 
   val history: History = new JLineHistory.JLineFileHistory()
@@ -46,12 +50,16 @@ class InteractiveReader(isAcross: Boolean, isPaged: Boolean) extends shell.Inter
     reader
   }
 
-  private[this] var _completion: Completion = shell.NoCompletion
+  private[this] var _completion: Completion = NoCompletion
   def completion: Completion = _completion
 
   override def initCompletion(completion: Completion) = {
     _completion = completion
-    consoleReader.initCompletion(completion)
+    completion match {
+      case NoCompletion => // ignore
+      case jlineCompleter: Completer => consoleReader.initCompletion(jlineCompleter)
+      case _ => // should not happen, but hey
+    }
   }
 
   def reset()                     = consoleReader.getTerminal().reset()
@@ -61,7 +69,7 @@ class InteractiveReader(isAcross: Boolean, isPaged: Boolean) extends shell.Inter
 }
 
 // implements a jline interface
-private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.ConsoleReader with shell.VariColumnTabulator {
+private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.ConsoleReader with VariColumnTabulator {
   val marginSize = 3
 
   def width  = getTerminal.getWidth()
@@ -88,7 +96,7 @@ private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.Console
     }
   }
 
-  override def printColumns(items: JCollection[_ <: CharSequence]): Unit = {
+  override def printColumns(items: ju.Collection[_ <: CharSequence]): Unit = {
     import scala.collection.JavaConverters._
 
     printColumns_(items.asScala.toList map (_.toString))
@@ -121,28 +129,15 @@ private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.Console
   }
 
   // A hook for running code after the repl is done initializing.
-  def initCompletion(completion: Completion): Unit = {
+  def initCompletion(completer: Completer): Unit = {
     this setBellEnabled false
 
-    // adapt the JLine completion interface
-    def completer =
-      new Completer {
-        val tc = completion
-        def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
-          val buf = if (_buf == null) "" else _buf
-          val Candidates(newCursor, newCandidates) = completion.complete(buf, cursor)
-          newCandidates foreach (candidates add _)
-          newCursor
-        }
-      }
     getCompletionHandler match {
-      case clch: CandidateListCompletionHandler => clch.setPrintSpaceAfterFullCompletion(false)
+      case clch: CandidateListCompletionHandler =>
+        clch.setPrintSpaceAfterFullCompletion(false)
     }
 
-    completion match {
-      case NoCompletion       => ()
-      case _                  => this addCompleter completer
-    }
+    this addCompleter completer
 
     setAutoprintThreshold(400) // max completion candidates without warning
   }

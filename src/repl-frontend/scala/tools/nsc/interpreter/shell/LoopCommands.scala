@@ -105,20 +105,18 @@ trait LoopCommands {
     case _                                   => echo("?")
   }
 
-  import Completion.Candidates
-
   def colonCompletion(line: String, cursor: Int): Completion = line.trim match {
     case commandish(name @ CommandMatch(cmd), rest) =>
       if (name.length > cmd.name.length) cmd.completion
       else
         new Completion {
           def resetVerbosity(): Unit = ()
-          def complete(buffer: String, cursor: Int) = Candidates(cursor - name.length + 1, List(cmd.name))
+          def complete(buffer: String, cursor: Int) = CompletionResult(cursor - name.length + 1, List(cmd.name))
         }
     case commandish(name, _) if matchingCommands(name).nonEmpty =>
       new Completion {
         def resetVerbosity(): Unit = ()
-        def complete(buffer: String, cursor: Int) = Candidates(cursor - name.length + 1, matchingCommands(name).map(_.name))
+        def complete(buffer: String, cursor: Int) = CompletionResult(cursor - name.length + 1, matchingCommands(name).map(_.name))
       }
     case _ => NoCompletion
   }

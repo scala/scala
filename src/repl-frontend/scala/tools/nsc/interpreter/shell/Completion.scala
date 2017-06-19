@@ -5,14 +5,10 @@
 
 package scala.tools.nsc.interpreter.shell
 
-import Completion._
-
-/** An implementation-agnostic completion interface which makes no
- *  reference to the jline classes.
- */
 trait Completion {
   def resetVerbosity(): Unit
-  def complete(buffer: String, cursor: Int): Candidates
+
+  def complete(buffer: String, cursor: Int): CompletionResult
 
   // Code accumulated in multi-line REPL input
   def partialInput: String = ""
@@ -20,10 +16,8 @@ trait Completion {
 }
 object NoCompletion extends Completion {
   def resetVerbosity() = ()
-  def complete(buffer: String, cursor: Int) = NoCandidates
+  def complete(buffer: String, cursor: Int) = NoCompletions
 }
 
-object Completion {
-  case class Candidates(cursor: Int, candidates: List[String]) { }
-  val NoCandidates = Candidates(-1, Nil)
-}
+case class CompletionResult(cursor: Int, candidates: List[String])
+object NoCompletions extends CompletionResult(-1, Nil)

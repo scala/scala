@@ -7,7 +7,6 @@ import org.junit.Test
 
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.shell.Completion.Candidates
 import scala.tools.nsc.interpreter.shell._
 
 class CompletionTest {
@@ -24,19 +23,19 @@ class CompletionTest {
   private def setup(sources: SourceFile*): Completion = {
     val intp = newIMain()
     intp.compileSources(sources: _*)
-    val completer = new PresentationCompilerCompleter(intp)
+    val completer = new ReplCompletion(intp)
     completer
   }
 
   private def interpretLines(lines: String*): (Completion, Repl) = {
     val intp = newIMain()
     lines foreach intp.interpret
-    val completer = new PresentationCompilerCompleter(intp)
+    val completer = new ReplCompletion(intp)
     (completer, intp)
   }
 
   implicit class BeforeAfterCompletion(completion: Completion) {
-    def complete(before: String, after: String = ""): Candidates =
+    def complete(before: String, after: String = ""): CompletionResult =
       completion.complete(before + after, before.length)
   }
 
@@ -122,7 +121,7 @@ class CompletionTest {
     checkExact(completer, "(1 : O.T).toCha")("toChar")
 
     intp.interpret("case class X_y_z()")
-    val completer1 = new PresentationCompilerCompleter(intp)
+    val completer1 = new ReplCompletion(intp)
     checkExact(completer1, "new X_y_")("X_y_z")
     checkExact(completer1, "X_y_")("X_y_z")
     checkExact(completer1, "X_y_z.app")("apply")
