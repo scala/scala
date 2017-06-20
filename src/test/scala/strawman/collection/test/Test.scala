@@ -488,6 +488,8 @@ class StrawmanTest {
     val xs9t: mutable.HashMap[Int, String] = xs9
     val xs10 = xs1 ++ xs2
     val xs11: immutable.SortedMap[String, Int] = xs10
+    val xs12 = xs11.collect({ case (k, v) if k.length == v => (v, k) }: scala.PartialFunction[(String, Int), (Int, String)])
+    val xs13: immutable.SortedMap[Int, String] = xs12
   }
 
   def bitSets(xs: immutable.BitSet, ys: BitSet, zs: Set[Int]): Unit = {
