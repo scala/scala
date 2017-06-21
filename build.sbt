@@ -9,7 +9,7 @@ val commonSettings = Seq(
   scalaVersion := "2.12.2-ebe1180-SNAPSHOT", // from https://github.com/scala/scala/pull/5742
   scalaBinaryVersion := { if (!scalaVersion.value.startsWith("2.12.")) scalaBinaryVersion.value else "2.12" },
   crossScalaVersions := scalaVersion.value :: "2.13.0-M1" :: dotty.value :: Nil,
-  scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Yno-imports", "-language:higherKinds"/*, "-opt:l:classpath"*/),
+  scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-language:higherKinds"/*, "-opt:l:classpath"*/),
   scalacOptions ++= {
     if (!isDotty.value)
       Seq("-opt-warnings") // This option does not exist in Dotty
@@ -21,6 +21,13 @@ val commonSettings = Seq(
   parallelExecution in Test := false
 )
 
+val disablePublishing = Seq(
+  publishArtifact := false,
+  // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
+  publish := (),
+  publishLocal := ()
+)
+
 val collections =
   project.in(file("."))
     .settings(commonSettings: _*)
@@ -30,6 +37,7 @@ val collections =
         ("org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0").withDottyCompat(),
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
+      scalacOptions += "-Yno-imports",
       pomExtra :=
         <developers>
           <developer><id>ichoran</id><name>Rex Kerr</name></developer>
@@ -54,11 +62,25 @@ val collections =
       ).toList
     )
 
+val junit = project.in(file("test") / "junit")
+  .dependsOn(collections)
+  .settings(commonSettings ++ disablePublishing)
+  .settings(
+    fork in Test := true,
+    javaOptions in Test += "-Xss1M",
+    libraryDependencies ++= Seq(
+      "junit"            % "junit"           % "4.11",
+      "com.novocode"     % "junit-interface" % "0.11"   % Test,
+      "org.openjdk.jol"  % "jol-core"        % "0.5"
+    ),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
+  )
+
 val timeBenchmark =
   project.in(file("benchmarks/time"))
     .dependsOn(collections)
     .enablePlugins(JmhPlugin)
-    .settings(commonSettings: _*)
+    .settings(commonSettings ++ disablePublishing)
     .settings(
       charts := Def.inputTaskDyn {
         val benchmarks = Def.spaceDelimited().parsed
@@ -76,7 +98,7 @@ val timeBenchmark =
 val memoryBenchmark =
   project.in(file("benchmarks/memory"))
     .dependsOn(collections)
-    .settings(commonSettings: _*)
+    .settings(commonSettings ++ disablePublishing)
     .settings(
       libraryDependencies += ("org.spire-math" %% "jawn-ast" % "0.10.4").withDottyCompat(),
       charts := Def.inputTaskDyn {
