@@ -12,10 +12,9 @@ import scala.Predef.{assert, intWrapper}
 
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
-  extends Seq[A]
+  extends GrowableSeq[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
-     with Buildable[A, ListBuffer[A]]
-     with Builder[A, ListBuffer[A]] {
+     with StrictOptimizedIterableOps[A, ListBuffer[A]] {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
@@ -35,10 +34,10 @@ class ListBuffer[A]
   def length = len
   override def knownSize = len
 
-  protected[this] def newBuilder = new ListBuffer[A]
+  protected[this] def newSpecificBuilder() = new GrowableBuilder(ListBuffer.empty[A])
 
   private def copyElems(): Unit = {
-    val buf = ListBuffer.fromIterable(result())
+    val buf = ListBuffer.fromIterable(this)
     first = buf.first
     last0 = buf.last0
     aliased = false
@@ -195,16 +194,12 @@ class ListBuffer[A]
     this
   }
 
-  def result() = this
-
   override def className = "ListBuffer"
 }
 
-object ListBuffer extends IterableFactoryWithBuilder[ListBuffer] {
+object ListBuffer extends IterableFactory[ListBuffer] {
 
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
-
-  def newBuilder[A](): Builder[A, ListBuffer[A]] = new ListBuffer[A]
 
   def empty[A]: ListBuffer[A] = new ListBuffer[A]
 }

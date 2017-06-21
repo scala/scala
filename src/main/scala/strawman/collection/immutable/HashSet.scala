@@ -2,10 +2,10 @@ package strawman
 package collection
 package immutable
 
-import mutable.Builder
+import mutable.{Builder, ImmutableBuilder}
 import Hashing.computeHash
 
-import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, sys}
+import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, `inline`, sys}
 import scala.Predef.assert
 import java.lang.Integer
 
@@ -25,14 +25,17 @@ import java.lang.Integer
 @SerialVersionUID(2L)
 sealed trait HashSet[A]
   extends Set[A]
-     with SetOps[A, HashSet, HashSet[A]]
-     with Serializable {
+    with SetOps[A, HashSet, HashSet[A]]
+    with StrictOptimizedIterableOps[A, HashSet[A]]
+    with Serializable {
 
   import HashSet.nullToEmpty
 
   def iterableFactory = HashSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[A, HashSet[A]] = HashSet.newBuilder()
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
@@ -54,7 +57,7 @@ sealed trait HashSet[A]
 
 }
 
-object HashSet extends IterableFactory[HashSet] {
+object HashSet extends IterableFactoryWithBuilder[HashSet] {
 
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] =
     it match {
@@ -63,6 +66,11 @@ object HashSet extends IterableFactory[HashSet] {
     }
 
   def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
+
+  def newBuilder[A](): Builder[A, HashSet[A]] =
+    new ImmutableBuilder[A, HashSet[A]](empty) {
+      def add(elem: A): this.type = { elems = elems + elem; this }
+    }
 
   private object EmptyHashSet extends HashSet[Any] {
 

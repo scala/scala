@@ -86,7 +86,7 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
 /** Base trait for linear Seq operations */
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
 
-  protected def coll: Seq[A]
+  protected[this] def coll: Seq[A]
 
   /** To be overridden in implementations: */
   def isEmpty: Boolean

@@ -18,7 +18,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
 
-  protected def coll: Map[K, V]
+  protected[this] def coll: Map[K, V]
 
   def iterableFactory = Iterable
 

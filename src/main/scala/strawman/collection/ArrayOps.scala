@@ -1,18 +1,19 @@
 package strawman
 package collection
 
-import scala.{Array, Char, Int, AnyVal}
+import scala.{AnyVal, Array, Char, Int}
 import scala.Predef.???
-import mutable.ArrayBuffer
+import mutable.{ArrayBuffer, GrowableBuilder}
 
 import scala.reflect.ClassTag
+
 class ArrayOps[A](val xs: Array[A])
   extends AnyVal
-     with SeqOps[A, immutable.Seq, Array[A]]  // should be IndexedSeq once we have an instance type
-     with Buildable[A, Array[A]]
-     with ArrayLike[A] {
+    with SeqOps[A, immutable.IndexedSeq, Array[A]]
+    with StrictOptimizedIterableOps[A, Array[A]]
+    with ArrayLike[A] {
 
-  protected def coll = new ArrayView(xs)
+  protected[this] def coll = new ArrayView(xs)
 
   def length = xs.length
   def apply(i: Int) = xs.apply(i)
@@ -21,12 +22,12 @@ class ArrayOps[A](val xs: Array[A])
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
-  def iterableFactory = immutable.Seq
+  def iterableFactory = immutable.IndexedSeq
 
   protected[this] def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
   protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
 
-  protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
+  protected[this] def newSpecificBuilder() = new GrowableBuilder(ArrayBuffer.empty[A]).mapResult(_.toArray(elemTag))
 
   override def knownSize = xs.length
 

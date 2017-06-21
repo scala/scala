@@ -14,7 +14,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   extends IterableOps[(K, V), Iterable, C]
      with PartialFunction[K, V] {
 
-  protected def coll: Map[K, V]
+  protected[this] def coll: Map[K, V]
 
   /** Similar to fromIterable, but returns a Map collection type */
   protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
@@ -85,4 +85,4 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
 }
 
-object Map extends MapFactory.Delegate[Map](immutable.Map)
+object Map extends MapFactoryWithBuilder.Delegate[Map](immutable.Map)

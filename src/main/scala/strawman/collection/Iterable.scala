@@ -13,7 +13,8 @@ import java.lang.String
 trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
 
   /** The collection itself */
-  protected def coll: this.type = this
+  protected[this] def coll: this.type = this
+
 }
 
 /** Base trait for Iterable operations
@@ -28,13 +29,23 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   */
 trait IterableOps[+A, +CC[X], +C] extends Any {
 
-  protected def coll: Iterable[A]
+  protected[this] def coll: Iterable[A]
 
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
 
+  protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.fromIterable(it)
+
   def iterableFactory: IterableFactory[CC]
 
-  protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.fromIterable(it)
+  /**
+    * @return a strict builder for the same collection type.
+    *
+    * Note that in the case of lazy collections (e.g. [[View]] or [[immutable.LazyList]]),
+    * it is possible to implement this method but the resulting `Builder` will break laziness.
+    * As a consequence, operations should preferably be implemented on top of views rather
+    * than builders.
+    */
+  protected[this] def newSpecificBuilder(): Builder[A, C]
 
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
@@ -93,7 +104,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[C](f: FromSpecificIterable[A, C]): C = f.fromSpecificIterable(coll)
+  def to[C1](f: FromSpecificIterable[A, C1]): C1 = f.fromSpecificIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -265,25 +276,3 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   def zip[B](xs: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 }
-
-/** Base trait for strict collections that can be built using a builder.
-  * @tparam  A    the element type of the collection
-  * @tparam C  the type of the underlying collection
-  */
-trait Buildable[+A, +C] extends Any with IterableOps[A, AnyConstr, C]  {
-
-  /** Creates a new builder. */
-  protected[this] def newBuilder: Builder[A, C]
-
-  /** Optimized, push-based version of `partition`. */
-  override def partition(p: A => Boolean): (C, C) = {
-    val l, r = newBuilder
-    coll.iterator().foreach(x => (if (p(x)) l else r) += x)
-    (l.result(), r.result())
-  }
-
-  // one might also override other transforms here to avoid generating
-  // iterators if it helps efficiency.
-}
-
-

@@ -14,7 +14,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
      with (A => Boolean)
      with Equals {
 
-  protected def coll: C
+  protected[this] def coll: C
 
   def contains(elem: A): Boolean
 

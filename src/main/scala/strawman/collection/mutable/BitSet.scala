@@ -28,6 +28,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
+    with StrictOptimizedIterableOps[Int, BitSet]
     with Serializable {
 
   def this(initSize: Int) = this(new Array[Long](math.max((initSize + 63) >> 6, 1)))
@@ -41,6 +42,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet =
     BitSet.fromSpecificIterable(coll)
+
+  protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = new GrowableBuilder(BitSet.empty)
 
   protected[collection] final def nwords: Int = elems.length
 

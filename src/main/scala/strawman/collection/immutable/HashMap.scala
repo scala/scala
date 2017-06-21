@@ -1,12 +1,14 @@
 package strawman
 package collection.immutable
 
-import collection.{Iterator, MapFactory}
+import collection.{Iterator, MapFactory, MapFactoryWithBuilder, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
-import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, math, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, sys}
+import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, `inline`, math, sys}
 import java.lang.{Integer, String, System}
+
+import strawman.collection.mutable.{Builder, ImmutableBuilder}
 
 /** This class implements immutable maps using a hash trie.
   *
@@ -28,8 +30,9 @@ import java.lang.{Integer, String, System}
 @SerialVersionUID(2L)
 sealed trait HashMap[K, +V]
   extends Map[K, V]
-     with MapOps[K, V, HashMap, HashMap[K, V]]
-     with Serializable {
+    with MapOps[K, V, HashMap, HashMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), HashMap[K, V]]
+    with Serializable {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
@@ -39,6 +42,8 @@ sealed trait HashMap[K, +V]
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
     HashMap.fromIterable(it)
+
+  protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] = HashMap.newBuilder()
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
 
@@ -98,7 +103,7 @@ sealed trait HashMap[K, +V]
 
 }
 
-object HashMap extends MapFactory[HashMap] {
+object HashMap extends MapFactoryWithBuilder[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 
@@ -106,6 +111,11 @@ object HashMap extends MapFactory[HashMap] {
     it match {
       case hm: HashMap[K, V] => hm
       case _ => empty ++ it
+    }
+
+  def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] =
+    new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
+      def add(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
   private[collection] abstract class Merger[A, B] {

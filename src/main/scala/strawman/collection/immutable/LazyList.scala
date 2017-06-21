@@ -36,6 +36,9 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): LazyList[A] = fromIterable(coll)
 
+  protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
+    IndexedSeq.newBuilder().mapResult(_.to(LazyList))
+
   override def className = "LazyList"
 
   override def toString =

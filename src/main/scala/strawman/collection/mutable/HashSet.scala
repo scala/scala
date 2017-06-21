@@ -22,7 +22,7 @@ import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, Unit}
 final class HashSet[A](contents: FlatHashTable.Contents[A])
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with Buildable[A, HashSet[A]]
+    with StrictOptimizedIterableOps[A, HashSet[A]]
     with Serializable {
 
   private[this] val table = new FlatHashTable[A]
@@ -35,7 +35,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
-  protected[this] def newBuilder: Builder[A, HashSet[A]] = HashSet.newBuilder[A]()
+  protected[this] def newSpecificBuilder(): Builder[A, HashSet[A]] =  new GrowableBuilder(HashSet.empty[A])
 
   def add(elem: A): this.type = {
     table.addElem(elem)
@@ -75,12 +75,10 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
 }
 
-object HashSet extends IterableFactoryWithBuilder[HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = Growable.fromIterable(empty[B], it)
 
   def empty[A]: HashSet[A] = new HashSet[A]
-
-  def newBuilder[A](): Builder[A, HashSet[A]] = new GrowableBuilder[A, HashSet[A]](empty)
 
 }
