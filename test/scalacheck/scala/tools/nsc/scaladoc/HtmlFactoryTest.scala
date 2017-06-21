@@ -130,6 +130,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     }
 
     result
+    false
   }
 
   def shortComments(root: scala.xml.Node) =
