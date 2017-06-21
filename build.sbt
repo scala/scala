@@ -76,6 +76,16 @@ val junit = project.in(file("test") / "junit")
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
   )
 
+val scalacheck = project.in(file("test") / "scalacheck")
+  .dependsOn(collections)
+  .settings(commonSettings)
+  .settings(disablePublishing)
+  .settings(
+    fork in Test := true,
+    javaOptions in Test += "-Xss1M",
+    libraryDependencies ++= Seq("org.scalacheck" %% "scalacheck" % "1.13.5" % Test)
+  )
+
 val timeBenchmark =
   project.in(file("benchmarks/time"))
     .dependsOn(collections)
