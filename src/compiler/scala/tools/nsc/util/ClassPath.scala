@@ -23,6 +23,7 @@ trait ClassPath {
   def asURLs: Seq[URL]
 
   /** Empty string represents root package */
+  private[nsc] def hasPackage(pkg: String): Boolean
   private[nsc] def packages(inPackage: String): Seq[PackageEntry]
   private[nsc] def classes(inPackage: String): Seq[ClassFileEntry]
   private[nsc] def sources(inPackage: String): Seq[SourceFileEntry]
