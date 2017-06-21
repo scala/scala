@@ -3,8 +3,9 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, `inline`, None, NoSuchElementException, Nothing, Option, Ordering, PartialFunction, Some}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Some, `inline`}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
 trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]]
@@ -12,7 +13,8 @@ trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]]
 /** Base Map implementation type */
 trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   extends IterableOps[(K, V), Iterable, C]
-     with PartialFunction[K, V] {
+    with PartialFunction[K, V]
+    with Equals {
 
   protected[this] def coll: Map[K, V]
 
@@ -82,6 +84,31 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
+
+  def canEqual(that: Any): Boolean = true
+
+  override def equals(o: Any): Boolean = o match {
+    case that: Map[b, _] =>
+      (this eq that) ||
+      (that canEqual this) &&
+      (this.size == that.size) && {
+        try {
+          this forall {
+            case (k, v) => that.get(k.asInstanceOf[b]) match {
+              case Some(`v`) =>
+                true
+              case _ => false
+            }
+          }
+        } catch {
+          case _: ClassCastException => false
+        }
+      }
+    case _ =>
+      false
+  }
+
+  override def hashCode(): Int = Set.unorderedHash(coll, "Map".##)
 
 }
 
