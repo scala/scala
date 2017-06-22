@@ -829,7 +829,7 @@ self =>
       def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
       val arguments = right match {
         case Parens(args) => mkNamed(args)
-        case _            => List(right)
+        case _            => right :: Nil
       }
       if (isExpr) {
         if (treeInfo.isLeftAssoc(op)) {

@@ -22,7 +22,8 @@ class CallGraphTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.bTypes
   val notPerRun: List[Clearable] = List(
-    bTypes.classBTypeFromInternalName,
+    bTypes.classBTypeCacheFromSymbol,
+    bTypes.classBTypeCacheFromClassfile,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)
@@ -145,7 +146,7 @@ class CallGraphTest extends BytecodeTesting {
     val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
-    val classTp = classBTypeFromInternalName("java/lang/Class")
+    val classTp = cachedClassBType("java/lang/Class").get
     val r = callGraph.callsites(m)(fn)
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }
@@ -159,12 +160,16 @@ class CallGraphTest extends BytecodeTesting {
         |  def t2(i: Int, f: Int => Int, z: Int) = h(f) + i - z
         |  def t3(f: Int => Int) = h(x => f(x + 1))
         |}
-        |trait D {
-        |  def iAmASam(x: Int): Int
-        |  def selfSamCall = iAmASam(10)
+        |@FunctionalInterface trait D {
+        |  def iAmASamD(x: Int): Int
+        |  def selfSamCallD = iAmASamD(10)
+        |}
+        |trait E {
+        |  def iAmASamE(x: Int): Int
+        |  def selfSamCallE = iAmASamE(10)
         |}
         |""".stripMargin
-    val List(c, d) = compile(code)
+    val List(c, d, e) = compile(code)
 
     def callIn(m: String) = callGraph.callsites.find(_._1.name == m).get._2.values.head
     val t1h = callIn("t1")
@@ -176,8 +181,11 @@ class CallGraphTest extends BytecodeTesting {
     val t3h = callIn("t3")
     assertEquals(t3h.argInfos.toList, List((1, FunctionLiteral)))
 
-    val selfSamCall = callIn("selfSamCall")
-    assertEquals(selfSamCall.argInfos.toList, List((0,ForwardedParam(0))))
+    val selfSamCallD = callIn("selfSamCallD")
+    assertEquals(selfSamCallD.argInfos.toList, List((0,ForwardedParam(0))))
+
+    val selfSamCallE = callIn("selfSamCallE")
+    assertEquals(selfSamCallE.argInfos.toList, List())
   }
 
   @Test

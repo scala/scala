@@ -31,7 +31,7 @@ package object reify {
       // HACK around scala/bug#6259
       // If we're in the constructor of an object or others don't have easy access to `this`, we have no good way to grab
       // the class of that object.  Instead, we construct an anonymous class and grab his class file, assuming
-      // this is enough to get the correct class loadeer for the class we *want* a mirror for, the object itself.
+      // this is enough to get the correct class loader for the class we *want* a mirror for, the object itself.
       rClassTree orElse Apply(Select(gen.mkAnonymousNew(Nil), sn.GetClass), Nil)
     }
     // JavaUniverse is defined in scala-reflect.jar, so we must be very careful in case someone reifies stuff having only scala-library.jar on the classpath

@@ -118,17 +118,22 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryNameString
-      classBTypeFromInternalName.getOrElse(internalName, {
-        // The new ClassBType is added to the map in its constructor, before we set its info. This
-        // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-        val res = ClassBType(internalName)
-        if (completeSilentlyAndCheckErroneous(classSym)) {
-          res.info = Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-          res
-        } else {
-          setClassInfo(classSym, res)
-        }
-      })
+      cachedClassBType(internalName) match {
+        case Some(bType) =>
+          if (currentRun.compiles(classSym))
+            assert(classBTypeCacheFromSymbol.contains(internalName), s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+          bType
+        case None =>
+          // The new ClassBType is added to the map in its constructor, before we set its info. This
+          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+          val res = ClassBType(internalName)(classBTypeCacheFromSymbol)
+          if (completeSilentlyAndCheckErroneous(classSym)) {
+            res.info = Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+            res
+          } else {
+            setClassInfo(classSym, res)
+          }
+      }
     }
   }
 
@@ -358,7 +363,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
      * We collect them here.
      */
-    val nestedClassSymbols = {
+    lazy val nestedClassSymbols = {
       val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
 
       // The lambdalift phase lifts all nested classes to the enclosing class, so if we collect
@@ -430,7 +435,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * for A contain both the class B and the module class B.
      * Here we get rid of the module class B, making sure that the class B is present.
      */
-    val nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter(s => {
+    def nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter(s => {
       if (s.isJavaDefined && s.isModuleClass) {
         // We could also search in nestedClassSymbols for s.linkedClassOfClass, but sometimes that
         // returns NoSymbol, so it doesn't work.
@@ -440,9 +445,15 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       } else true
     })
 
-    val nestedClasses = nestedClassSymbolsNoJavaModuleClasses.map(classBTypeFromSymbol)
+    val nestedClasses = {
+      val ph = phase
+      Lazy(enteringPhase(ph)(nestedClassSymbolsNoJavaModuleClasses.map(classBTypeFromSymbol)))
+    }
 
-    val nestedInfo = buildNestedInfo(classSym)
+    val nestedInfo = {
+      val ph = phase
+      Lazy(enteringPhase(ph)(buildNestedInfo(classSym)))
+    }
 
     val inlineInfo = buildInlineInfo(classSym, classBType.internalName)
 
@@ -550,7 +561,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
     val sam = {
-      if (classSym.isEffectivelyFinal) None
+      val considerSam = !classSym.isEffectivelyFinal && {
+        isFunctionSymbol(classSym) || classSym.hasAnnotation(FunctionalInterfaceClass)
+      }
+      if (!considerSam) None
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
         // empty parameter list in uncurry and would therefore be picked as SAM.
@@ -610,11 +624,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
               annotatedInline   = info.annotatedInline,
               annotatedNoInline = info.annotatedNoInline)
             if (methodSym.isMixinConstructor)
-              List((staticMethodSignature, staticMethodInfo))
+              (staticMethodSignature, staticMethodInfo) :: Nil
             else
-              List((signature, info), (staticMethodSignature, staticMethodInfo))
+              (signature, info) :: (staticMethodSignature, staticMethodInfo) :: Nil
           } else
-            List((signature, info))
+            (signature, info) :: Nil
         }
     }).toMap
 
@@ -629,16 +643,16 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    classBTypeFromInternalName.getOrElse(internalName, {
-      val c = ClassBType(internalName)
+    cachedClassBType(internalName).getOrElse({
+      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
       // class info consistent with BCodeHelpers.genMirrorClass
-      val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
+      val nested = Lazy(exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
       c.info = Right(ClassInfo(
         superClass = Some(ObjectRef),
         interfaces = Nil,
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
-        nestedInfo = None,
+        nestedInfo = Lazy(None),
         inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
       c
     })
@@ -646,14 +660,14 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
     val internalName = mainClass.javaBinaryNameString + "BeanInfo"
-    classBTypeFromInternalName.getOrElse(internalName, {
-      val c = ClassBType(internalName)
+    cachedClassBType(internalName).getOrElse({
+      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
       c.info = Right(ClassInfo(
         superClass = Some(sbScalaBeanInfoRef),
         interfaces = Nil,
         flags = javaFlags(mainClass),
-        nestedClasses = Nil,
-        nestedInfo = None,
+        nestedClasses = Lazy(Nil),
+        nestedInfo = Lazy(None),
         inlineInfo = EmptyInlineInfo))
       c
     })

@@ -58,11 +58,6 @@ trait Namers extends MethodSynthesis {
     private lazy val innerNamer =
       if (isTemplateContext(context)) createInnerNamer() else this
 
-    // Cached as a val because `settings.isScala212` parses the Scala version each time...
-    // Not in Namers because then we need to go to outer first to check this.
-    // I do think it's ok to check every time we create a Namer instance (so, not a lazy val).
-    private[this] val isScala212 = settings.isScala212
-
     def createNamer(tree: Tree): Namer = {
       val sym = tree match {
         case ModuleDef(_, _, _) => tree.symbol.moduleClass
@@ -1379,11 +1374,6 @@ trait Namers extends MethodSynthesis {
       if (mexists(vparamss)(_.symbol.hasDefault) || mexists(overridden.paramss)(_.hasDefault))
         addDefaultGetters(meth, ddef, vparamss, tparams,  overridden)
 
-      // fast track macros, i.e. macros defined inside the compiler, are hardcoded
-      // hence we make use of that and let them have whatever right-hand side they need
-      // (either "macro ???" as they used to or just "???" to maximally simplify their compilation)
-      if (fastTrack contains meth) meth setFlag MACRO
-
       // macro defs need to be typechecked in advance
       // because @macroImpl annotation only gets assigned during typechecking
       // otherwise macro defs wouldn't be able to robustly coexist with their clients
@@ -1586,7 +1576,7 @@ trait Namers extends MethodSynthesis {
               val valOwner = owner.owner
               // there's no overriding outside of classes, and we didn't use to do this in 2.11, so provide opt-out
 
-              if (!isScala212 || !valOwner.isClass) WildcardType
+              if (!settings.isScala212 || !valOwner.isClass) WildcardType
               else {
                 // normalize to getter so that we correctly consider a val overriding a def
                 // (a val's name ends in a " ", so can't compare to def)

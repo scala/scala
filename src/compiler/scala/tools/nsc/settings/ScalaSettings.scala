@@ -36,7 +36,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def futureSettings = List[BooleanSetting]()
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
+  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.exists(_.isHelping)
@@ -83,7 +83,8 @@ trait ScalaSettings extends AbsScalaSettings
    * The previous "-source" option is intended to be used mainly
    * though this helper.
    */
-  def isScala211: Boolean = source.value >= ScalaVersion("2.11.0")
+  private[this] val version211 = ScalaVersion("2.11.0")
+  def isScala211: Boolean = source.value >= version211
   private[this] val version212 = ScalaVersion("2.12.0")
   def isScala212: Boolean = source.value >= version212
   private[this] val version213 = ScalaVersion("2.13.0")
@@ -121,6 +122,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xprint             = PhasesSetting       ("-Xprint", "Print out program after")
   val Xprintpos          = BooleanSetting      ("-Xprint-pos", "Print tree positions, as offsets.")
   val printtypes         = BooleanSetting      ("-Xprint-types", "Print tree types (debugging option).")
+  val printArgs          = BooleanSetting      ("-Xprint-args", "Print all compiler arguments and exit.")
   val prompt             = BooleanSetting      ("-Xprompt", "Display a prompt after each error (debugging option).")
   val resident           = BooleanSetting      ("-Xresident", "Compiler stays resident: read source filenames from standard input.")
   val script             = StringSetting       ("-Xscript", "object", "Treat the source file as a script and wrap it in a main method.", "")
