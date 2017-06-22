@@ -17,7 +17,7 @@ object Vector extends IterableFactoryWithBuilder[Vector] {
   def fromIterable[E](it: collection.Iterable[E]): Vector[E] =
     it match {
       case v: Vector[E] => v
-      case _            => NIL ++ it
+      case _            => (newBuilder() ++= it).result()
     }
 
   def newBuilder[A](): Builder[A, Vector[A]] = new VectorBuilder[A]
@@ -81,7 +81,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   /*override*/ def lengthCompare(len: Int): Int = length - len
 
-  private[collection] def initIterator[B >: A](s: VectorIterator[B]) {
+  private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit = {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
@@ -127,14 +127,14 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
     */
-  @`inline` def +: [B >: A](elem: B): Vector[B] = appendFront(elem)
+  @`inline` def +: [B >: A](elem: B): Vector[B] = prepend(elem)
 
   /** Alias for `appendBack`
     *
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
     */
-  @`inline` def :+ [B >: A](elem: B): Vector[B] = appendBack(elem)
+  @`inline` def :+ [B >: A](elem: B): Vector[B] = append(elem)
 
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
@@ -273,7 +273,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
    *    @return a new $coll consisting of `value` followed
    *            by all elements of this $coll.
    */
-  def appendFront[B >: A](value: B): Vector[B] = {
+  def prepend[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
@@ -377,7 +377,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
    *    @return a new $coll consisting of
    *            all elements of this $coll followed by `value`.
    */
-  def appendBack[B >: A](value: B): Vector[B] = {
+  def append[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31
