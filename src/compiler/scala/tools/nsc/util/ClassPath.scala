@@ -14,6 +14,7 @@ import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
 import Jar.isJarOrZip
+import scala.concurrent.ExecutionContext
 
 /**
   * A representation of the compiler's class- or sourcepath.
@@ -93,6 +94,19 @@ trait ClassPath {
   /** The whole sourcepath in the form of one String.
     */
   def asSourcePathString: String
+
+
+  def startInUse(executionContext: ExecutionContext, proactive:Boolean) = ()
+  def endInUse() = ()
+
+  /**
+    * make some upstream cache valid, and perform to initial work if the underlying data may have changed
+    * return value is used by upstream caches to resync
+    * @param executionContext for any background work to be done
+    * @param proactive a hint as to whether to expend effort
+    * @return the time of the last known or possible change.
+    */
+  def makeCacheValid(executionContext: ExecutionContext, proactive:Boolean):Long = System.nanoTime()
 }
 
 object ClassPath {
@@ -169,9 +183,11 @@ object ClassPath {
   @deprecated("shim for sbt's compiler interface", since = "2.12.0")
   sealed abstract class JavaContext
 }
-
-trait ClassRepresentation {
+trait Named {
   def name: String
+}
+
+trait ClassRepresentation extends Named {
   def binary: Option[AbstractFile]
   def source: Option[AbstractFile]
 }

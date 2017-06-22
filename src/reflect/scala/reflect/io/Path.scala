@@ -37,10 +37,7 @@ object Path {
     ext == "jar" || ext == "zip"
   }
   def extension(name: String): String = {
-    var i = name.length - 1
-    while (i >= 0 && name.charAt(i) != '.')
-      i -= 1
-
+    val i = name.lastIndexOf('.')
     if (i < 0) ""
     else name.substring(i + 1).toLowerCase
   }

@@ -3,6 +3,8 @@
  */
 package scala.tools.nsc.classpath
 
+import java.io.File
+
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.io.Path.string2path
 import scala.tools.nsc.Settings
@@ -63,7 +65,8 @@ class ClassPathFactory(settings: Settings) {
     if (file.isJarOrZip)
       ZipAndJarSourcePathFactory.create(file, settings)
     else if (file.isDirectory)
-      DirectorySourcePath(file.file)
+      if (settings.YClassPathRawDir) new RawDirSourcesPath(file.file, ClassPathFactory.dirPolicy(file.file, settings))
+      else new DirectorySourcePath(file.file)
     else
       sys.error(s"Unsupported sourcepath element: $file")
 }
@@ -75,8 +78,18 @@ object ClassPathFactory {
       if (file.isJarOrZip)
         ZipAndJarClassPathFactory.create(file, settings)
       else if (file.isDirectory)
-        DirectoryClassPath(file.file)
+        if (settings.YClassPathRawDir) new RawDirClassesPath(file.file, dirPolicy(file.file, settings))
+        else new DirectoryClassPath(file.file)
       else
         sys.error(s"Unsupported classpath element: $file")
   }
+  def dirPolicy(file:File, settings: Settings): LivenessChecker.ForDir = {
+    //TODO
+    LivenessChecker.FileWatcher
+  }
+  def filePolicy(file:File, settings: Settings): LivenessChecker.ForFile = {
+    //TODO
+    LivenessChecker.FileWatcher
+  }
+
 }
