@@ -2,11 +2,11 @@ package strawman
 package collection.test
 
 import java.lang.String
-import scala.{Either, Int, Left, Nothing, Unit, Array, Option, StringContext, Boolean, Any, Char}
-import scala.Predef.{assert, println, charWrapper, identity}
 
+import scala.{Any, Array, Boolean, Char, Either, Int, Left, Nothing, Option, StringContext, Unit}
+import scala.Predef.{assert, charWrapper, identity, println}
 import collection._
-import collection.immutable.{List, Nil, LazyList, Range}
+import collection.immutable.{ImmutableArray, LazyList, List, Nil, Range, Vector}
 import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
 
@@ -264,6 +264,15 @@ class StrawmanTest {
     println(xs17.view)
   }
 
+  def immutableSeqOps(xs: immutable.Seq[Int]): Unit = {
+    val xs1 = xs :+ 42
+    assert(xs1 == (xs ++ immutable.Seq(42)))
+    val xs2 = 42 +: xs
+    assert(xs2 == (immutable.Seq(42) ++ xs))
+    val xs3 = xs.updated(1, 42)
+    assert(xs3(1) == 42)
+  }
+
   def immutableArrayOps(xs: immutable.ImmutableArray[Int]): Unit = {
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
@@ -493,17 +502,27 @@ class StrawmanTest {
   @Test
   def mainTest: Unit = {
     val ints = List(1, 2, 3)
+    val intsVec = ints.to(Vector)
+    val intsLzy = ints.to(LazyList)
+    val intsArr = ints.to(ImmutableArray)
     val intsBuf = ints.to(ArrayBuffer)
     val intsListBuf = ints.to(ListBuffer)
     val intsView = ints.view
     seqOps(ints)
+    seqOps(intsVec)
+    seqOps(intsLzy)
+    seqOps(intsArr)
     seqOps(intsBuf)
     seqOps(intsListBuf)
     viewOps(intsView)
     stringOps("abc")
     arrayOps(Array(1, 2, 3))
-    immutableArrayOps(immutable.ImmutableArray.tabulate(3)(identity))
-    lazyListOps(LazyList(1, 2, 3))
+    immutableSeqOps(ints)
+    immutableSeqOps(intsVec)
+    immutableSeqOps(intsLzy)
+    immutableSeqOps(intsArr)
+    immutableArrayOps(intsArr)
+    lazyListOps(intsLzy)
     equality()
   }
 }

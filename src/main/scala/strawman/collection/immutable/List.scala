@@ -29,13 +29,12 @@ sealed trait List[+A]
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
 
+  override def prepend[B >: A](elem: B): List[B] = elem :: this
+
   /** Prepend operation that avoids copying this list */
   def ++:[B >: A](prefix: List[B]): List[B] =
     if (prefix.isEmpty) this
     else prefix.head :: prefix.tail ++: this
-
-  def updated[B >: A](index: Int, elem: B): List[B] =
-    collection.generic.Updated.strict(index, elem, coll, () => List.newBuilder[B]())
 
   /** When concatenating with another list `xs`, avoid copying `xs` */
   override def concat[B >: A](xs: IterableOnce[B]): List[B] = xs match {

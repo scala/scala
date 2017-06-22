@@ -34,7 +34,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
   def iterator(): Iterator[A] = view.iterator()
 
-  /*override*/ def updated[B >: A](index: Int, elem: B): ImmutableArray[B] = {
+  override def updated[B >: A](index: Int, elem: B): ImmutableArray[B] = {
     val dest = scala.Array.ofDim[Any](length)
     java.lang.System.arraycopy(elements, 0, dest, 0, length)
     dest(index) = elem
@@ -43,10 +43,17 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
   override def map[B](f: A => B): ImmutableArray[B] = ImmutableArray.tabulate(length)(i => f(apply(i)))
 
-  def :+ [B >: A](elem: B): ImmutableArray[B] = {
+  override def prepend[B >: A](elem: B): ImmutableArray[B] = {
+    val dest = scala.Array.ofDim[Any](length + 1)
+    dest(0) = elem
+    java.lang.System.arraycopy(elements, 0, dest, 1, length)
+    new ImmutableArray(dest)
+  }
+
+  override def append [B >: A](elem: B): ImmutableArray[B] = {
     val dest = scala.Array.ofDim[Any](length + 1)
     java.lang.System.arraycopy(elements, 0, dest, 0, length)
-    dest(length) = elem.asInstanceOf[Any]
+    dest(length) = elem
     new ImmutableArray(dest)
   }
 

@@ -42,9 +42,6 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   protected[this] def toCollection: LazyList[A] => IterableOnce[A] = identity
 
-  def updated[B >: A](index: Int, elem: B): LazyList[B] =
-    zipWithIndex.map { case (a, i) => if (i == index) elem else a }
-
   def zipWithIndex: LazyList[(A, Int)] =
     LazyList.unfold((0, this)) { case (i, as) =>
       as.force.map { case (a, _as) => ((a, i), (i + 1, _as)) }

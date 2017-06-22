@@ -120,21 +120,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       throw new IndexOutOfBoundsException(index.toString)
   }
 
-  /*override*/ def updated[B >: A](index: Int, elem: B): Vector[B] = updateAt(index, elem)
-
-  /** Alias for `appendFront`.
-    *
-    * Note that :-ending operators are right associative (see example).
-    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
-    */
-  @`inline` def +: [B >: A](elem: B): Vector[B] = prepend(elem)
-
-  /** Alias for `appendBack`
-    *
-    * Note that :-ending operators are right associative (see example).
-    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
-    */
-  @`inline` def :+ [B >: A](elem: B): Vector[B] = append(elem)
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = updateAt(index, elem)
 
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
@@ -247,33 +233,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     dirty = true
   }
 
-  /** A copy of the $coll with an element prepended.
-   *
-   *  @param  value  the prepended element
-   *  @tparam B      the element type of the returned $coll.
-   *  @return a new collection of type `Vector[B]` consisting of `value` followed
-   *          by all elements of this $coll.
-   *
-   *    @inheritdoc
-   *
-   *    Also, the original $coll is not modified, so you will want to capture the result.
-   *
-   *    Example:
-   *    {{{
-   *      scala> val x = List(1)
-   *      x: List[Int] = List(1)
-   *
-   *      scala> val y = 2 +: x
-   *      y: List[Int] = List(2, 1)
-   *
-   *      scala> println(x)
-   *      List(1)
-   *    }}}
-   *
-   *    @return a new $coll consisting of `value` followed
-   *            by all elements of this $coll.
-   */
-  def prepend[B >: A](value: B): Vector[B] = {
+  override def prepend[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
@@ -351,33 +311,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     }
   }
 
-  /** A copy of this $coll with an element appended.
-   *
-   *  @param  value  the appended element
-   *  @tparam B      the element type of the returned $coll.
-   *  @return a new collection of type `Vector[B]` consisting of
-   *          all elements of this $coll followed by `value`.
-   *
-   *    @inheritdoc
-   *
-   *    $willNotTerminateInf
-   *
-   *    Example:
-   *    {{{
-   *       scala> val a = List(1)
-   *       a: List[Int] = List(1)
-   *
-   *       scala> val b = a :+ 2
-   *       b: List[Int] = List(1, 2)
-   *
-   *       scala> println(a)
-   *       List(1)
-   *    }}}
-   *
-   *    @return a new $coll consisting of
-   *            all elements of this $coll followed by `value`.
-   */
-  def append[B >: A](value: B): Vector[B] = {
+  override def append[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31

@@ -87,8 +87,6 @@ final class NumericRange[T](
     else locationAfterN(idx)
   }
 
-  def updated[B >: T](index: Int, elem: B): IndexedSeq[B] = collection.generic.Updated.toImmutableArray(index, elem, coll)
-
   @`inline` override def foreach[@specialized(Unit) U](f: T => U): Unit = {
     var count = 0
     var current = start
