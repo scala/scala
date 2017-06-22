@@ -4,7 +4,6 @@ package collection
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
 import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, StringContext, Some, Unit}
-import scala.Predef.<:<
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 
