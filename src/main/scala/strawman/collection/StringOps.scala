@@ -1,7 +1,5 @@
 package strawman.collection
 
-import strawman.collection.immutable.List
-
 import scala.{Array, Char, Int, AnyVal}
 import scala.Predef.String
 import strawman.collection.mutable.StringBuilder
@@ -15,9 +13,9 @@ class StringOps(val s: String)
     with StrictOptimizedIterableOps[Char, String]
     with ArrayLike[Char] {
 
-  protected[this] def coll = new StringView(s)
+  protected[this] def coll = StringView(s)
 
-  protected[this] def toCollection: String => IterableOnce[Char] = strawman.collection.stringToStringOps
+  protected[this] def toCollection: String => IterableOnce[Char] = StringView
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
@@ -25,7 +23,7 @@ class StringOps(val s: String)
     sb.result()
   }
 
-  def iterableFactory = List
+  def iterableFactory = immutable.IndexedSeq
 
   protected[this] def newSpecificBuilder() = new StringBuilder
 
