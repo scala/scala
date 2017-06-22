@@ -14,14 +14,14 @@ class ArrayOps[A](val xs: Array[A])
     with StrictOptimizedIterableOps[A, Array[A]]
     with ArrayLike[A] {
 
-  protected[this] def coll = new ArrayView(xs)
+  protected[this] def coll = ArrayView(xs)
 
-  protected[this] def toCollection: Array[A] => IterableOnce[A] = strawman.collection.arrayToArrayOps
+  protected[this] def toCollection: Array[A] => IterableOnce[A] = ArrayView(_)
 
   def length = xs.length
   def apply(i: Int) = xs.apply(i)
 
-  override def view = new ArrayView(xs)
+  override def view = ArrayView(xs)
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
