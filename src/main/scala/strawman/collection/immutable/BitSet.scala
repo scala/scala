@@ -67,6 +67,11 @@ object BitSet extends SpecificIterableFactoryWithBuilder[Int, BitSet] {
       case _          => empty.++(it)
     }
 
+  def empty: BitSet = new BitSet1(0L)
+
+  def newBuilder(): Builder[Int, BitSet] =
+    new GrowableBuilder(mutable.BitSet.empty).mapResult(bs => fromBitMaskNoCopy(bs.elems))
+
   private def createSmall(a: Long, b: Long): BitSet = if (b == 0L) new BitSet1(a) else new BitSet2(a, b)
 
   /** A bitset containing all the bits in an array */
@@ -91,11 +96,6 @@ object BitSet extends SpecificIterableFactoryWithBuilder[Int, BitSet] {
     else if (len == 2) createSmall(elems(0), elems(1))
     else new BitSetN(elems)
   }
-
-  def empty: BitSet = new BitSet1(0L)
-
-  def newBuilder(): Builder[Int, BitSet] =
-    new GrowableBuilder(mutable.BitSet.empty).mapResult(bs => fromBitMaskNoCopy(bs.elems))
 
   @SerialVersionUID(2260107458435649300L)
   class BitSet1(val elems: Long) extends BitSet {

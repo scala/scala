@@ -4,7 +4,7 @@ package mutable
 
 import strawman.collection.{IterableOnce, MapFactory}
 
-import scala.{Boolean, Option, Unit, `inline`}
+import scala.{Boolean, None, Option, Some, Unit, `inline`}
 
 /** Base type of mutable Maps */
 trait Map[K, V]
@@ -46,6 +46,26 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     *  @param value  The new value
     */
   def update(key: K, value: V): Unit = { coll += ((key, value)) }
+
+  /** If given key is already in this map, returns associated value.
+   *
+   *  Otherwise, computes value from given expression `op`, stores with key
+   *  in map and returns that value.
+   *
+   *  Concurrent map implementations may evaluate the expression `op`
+   *  multiple times, or may evaluate `op` without inserting the result.
+   *
+   *  @param  key the key to test
+   *  @param  op  the computation yielding the value to associate with `key`, if
+   *              `key` is previously unbound.
+   *  @return     the value associated with key (either previously or as a result
+   *              of executing the method).
+   */
+  def getOrElseUpdate(key: K, op: => V): V =
+    get(key) match {
+      case Some(v) => v
+      case None => val d = op; this(key) = d; d
+    }
 
   override def clone(): C = empty ++= coll
 

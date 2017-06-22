@@ -14,7 +14,7 @@ import scala.Predef.{???, intWrapper}
   */
 class ImmutableArray[+A] private (private val elements: scala.Array[Any])
   extends IndexedSeq[A]
-    with SeqOps[A, ImmutableArray, ImmutableArray[A]]
+    with IndexedSeqOps[A, ImmutableArray, ImmutableArray[A]]
     with StrictOptimizedIterableOps[A, ImmutableArray[A]] {
 
   def iterableFactory: IterableFactory[ImmutableArray] = ImmutableArray

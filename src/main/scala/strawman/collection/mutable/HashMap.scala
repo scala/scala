@@ -80,6 +80,22 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
     else { val v = e.value; e.value = value; Some(v) }
   }
 
+  override def getOrElseUpdate(key: K, defaultValue: => V): V = {
+    val hash = table.elemHashCode(key)
+    val i = table.index(hash)
+    val entry = table.findEntry0(key, i)
+    if (entry != null) entry.value
+    else {
+      val table0 = table
+      val default = defaultValue
+      // Avoid recomputing index if the `defaultValue()` hasn't triggered
+      // a table resize.
+      val newEntryIndex = if (table0 eq table) i else table.index(hash)
+      table.addEntry0(table.createNewEntry(key, default), newEntryIndex)
+      default
+    }
+  }
+
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     table.serializeTo(out, { entry =>
       out.writeObject(entry.key)

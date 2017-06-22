@@ -139,7 +139,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
   final def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
-  protected[this] final def findEntry0(key: A, h: Int): Entry = {
+  protected[collection] final def findEntry0(key: A, h: Int): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -152,7 +152,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
-  protected[this] final def addEntry0(e: Entry, h: Int): Unit = {
+  protected[collection] final def addEntry0(e: Entry, h: Int): Unit = {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
@@ -363,7 +363,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     * Note: we take the most significant bits of the hashcode, not the lower ones
     * this is of crucial importance when populating the table in parallel
     */
-  protected final def index(hcode: Int): Int = {
+  protected[collection] final def index(hcode: Int): Int = {
     val ones = table.length - 1
     val exponent = Integer.numberOfLeadingZeros(ones)
     (improve(hcode, seedvalue) >>> exponent) & ones
@@ -408,7 +408,7 @@ private[collection] object HashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(key: KeyType) = key.##
+    protected[collection] def elemHashCode(key: KeyType) = key.##
 
     /**
       * Defer to a high-quality hash in [[scala.util.hashing]].

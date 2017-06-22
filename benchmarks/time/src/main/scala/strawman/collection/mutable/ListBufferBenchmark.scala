@@ -77,4 +77,10 @@ class ListBufferBenchmark {
   @Benchmark
   def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
+  @Benchmark
+  def groupBy(bh: Blackhole): Unit = {
+    val result = xs.groupBy(_ % 5)
+    bh.consume(result)
+  }
+
 }
