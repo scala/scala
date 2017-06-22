@@ -152,7 +152,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     }
 
     override def last = lastOption.get
-    /*override*/ def lastOption = {
+    override def lastOption = {
       val elem = if (until.isDefined) RB.maxKeyBefore(tree, until.get) else RB.maxKey(tree)
       (elem, from) match {
         case (Some(e), Some(fr)) if ordering.compare(e, fr) < 0 => None

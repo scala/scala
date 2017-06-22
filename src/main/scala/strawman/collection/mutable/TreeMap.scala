@@ -154,7 +154,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     }
 
     override def last = lastOption.get
-    /*override*/ def lastOption = {
+    override def lastOption = {
       val entry = if (until.isDefined) RB.maxBefore(tree, until.get) else RB.max(tree)
       (entry, from) match {
         case (Some(e), Some(fr)) if ordering.compare(e._1, fr) < 0 => None

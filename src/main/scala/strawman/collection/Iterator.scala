@@ -1,7 +1,7 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, NoSuchElementException, Nothing, Unit}
+import scala.{Any, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, Some, Unit}
 import strawman.collection.mutable.ArrayBuffer
 
 /** A core Iterator class
@@ -29,6 +29,48 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     res
   }
 
+  /** Tests whether a predicate holds for some of the values produced by this iterator.
+    *  $mayNotTerminateInf
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return        `true` if the given predicate `p` holds for some of the values
+    *                 produced by this iterator, otherwise `false`.
+    *  @note          Reuse: $consumesIterator
+    */
+  def exists(p: A => Boolean): Boolean = {
+    var res = false
+    while (!res && hasNext) res = p(next())
+    res
+  }
+
+  /** Counts the number of elements in the $coll which satisfy a predicate.
+    *
+    *  @param p     the predicate  used to test elements.
+    *  @return      the number of elements satisfying the predicate `p`.
+    */
+  def count(p: A => Boolean): Int = {
+    var res = 0
+    while (hasNext) if (p(next())) res += 1
+    res
+  }
+
+  /** Finds the first value produced by the iterator satisfying a
+    *  predicate, if any.
+    *  $mayNotTerminateInf
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an option value containing the first value produced by the iterator that satisfies
+    *           predicate `p`, or `None` if none exists.
+    *  @note    Reuse: $consumesIterator
+    */
+  def find(p: A => Boolean): Option[A] = {
+    while (hasNext) {
+      val a = next()
+      if (p(a)) return Some(a)
+    }
+    None
+  }
+
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
     while (hasNext) {
@@ -39,6 +81,41 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 
   def foldRight[B](z: B)(op: (A, B) => B): B =
     if (hasNext) op(next(), foldRight(z)(op)) else z
+
+/** Produces a collection containing cumulative results of applying the
+   *  operator going left to right.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependent
+   *
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @return        iterator with intermediate results
+   *  @note          Reuse: $consumesAndProducesIterator
+   */
+  def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new Iterator[B] {
+    // We use an intermediate iterator that iterates through the first element `z`
+    // and then that will be modified to iterate through the collection
+    private var current: Iterator[B] =
+      new Iterator[B] {
+        def hasNext: Boolean = true
+        def next(): B = {
+          // Here we change our self-reference to a new iterator that iterates through `self`
+          current = new Iterator[B] {
+            private var acc = z
+            def next(): B = {
+              acc = op(acc, self.next())
+              acc
+            }
+            def hasNext: Boolean = self.hasNext
+          }
+          z
+        }
+      }
+    def next(): B = current.next()
+    def hasNext: Boolean = current.hasNext
+  }
 
   def foreach[U](f: A => U): Unit =
     while (hasNext) f(next())
@@ -199,6 +276,44 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         }
       }
     }
+  }
+
+  /** Skips longest sequence of elements of this iterator which satisfy given
+    *  predicate `p`, and returns an iterator of the remaining elements.
+    *
+    *  @param p the predicate used to skip elements.
+    *  @return  an iterator consisting of the remaining elements
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def dropWhile(p: A => Boolean): Iterator[A] = new Iterator[A] {
+    // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
+    private[this] var status = -1
+    // Local buffering to avoid double-wrap with .buffered
+    private[this] var fst: A = _
+    def hasNext: Boolean =
+      if (status == 1) self.hasNext
+      else if (status == 0) true
+      else {
+        while (self.hasNext) {
+          val a = self.next()
+          if (!p(a)) {
+            fst = a
+            status = 0
+            return true
+          }
+        }
+        status = 1
+        false
+      }
+    def next() =
+      if (hasNext) {
+        if (status == 1) self.next()
+        else {
+          status = 1
+          fst
+        }
+      }
+      else Iterator.empty.next()
   }
 
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new Iterator[(A, B)] {
