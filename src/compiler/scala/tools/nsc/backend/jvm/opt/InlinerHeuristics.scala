@@ -7,12 +7,15 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import java.util.regex.Pattern
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
+import scala.collection.mutable
 
 class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import bTypes._
@@ -338,4 +341,94 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     ("javafx/util/Callback", "call(Ljava/lang/Object;)Ljava/lang/Object;")
   )
   def javaSam(internalName: InternalName): Option[String] = javaSams.get(internalName)
+}
+
+object InlinerHeuristics {
+  class InlineSourceMatcher(inlineFromSetting: String) {
+    // `terminal` is true if all remaining entries are of the same negation as this one
+    case class Entry(pattern: Pattern, negated: Boolean, terminal: Boolean) {
+      def matches(internalName: InternalName): Boolean = pattern.matcher(internalName).matches()
+    }
+    val startAllow: Boolean = inlineFromSetting == "**" || inlineFromSetting.startsWith("**:")
+    val entries: List[Entry] = parse()
+
+    def allow(internalName: InternalName): Boolean = {
+      var answer = startAllow
+      @tailrec def check(es: List[Entry]): Boolean = es match {
+        case e :: rest =>
+          if (answer && e.negated && e.matches(internalName))
+            answer = false
+          else if (!answer && !e.negated && e.matches(internalName))
+            answer = true
+
+          if (e.terminal && answer != e.negated) answer
+          else check(rest)
+
+        case _ =>
+          answer
+      }
+      check(entries)
+    }
+
+    private def parse(): List[Entry] = {
+      var result = List.empty[Entry]
+
+      val patternsRevIterator = {
+        val patterns = inlineFromSetting.split(':')
+        val it = patterns.reverseIterator
+        val withoutFirstStarStar = if (startAllow) it.take(patterns.length - 1) else it
+        withoutFirstStarStar.filterNot(_.isEmpty)
+      }
+      for (p <- patternsRevIterator) {
+        val len = p.length
+        var index = 0
+        def current = if (index < len) p.charAt(index) else 0.toChar
+        def next() = index += 1
+
+        val negated = current == '!'
+        if (negated) next()
+
+        val regex = new java.lang.StringBuilder
+
+        while (index < len) {
+          if (current == '*') {
+            next()
+            if (current == '*') {
+              next()
+              val starStarDot = current == '.'
+              if (starStarDot) {
+                next()
+                // special case: "a.**.C" matches "a.C", and "**.C" matches "C"
+                val i = index - 4
+                val allowEmpty = i < 0 || (i == 0 && p.charAt(i) == '!') || p.charAt(i) == '.'
+                if (allowEmpty) regex.append("(?:.*/|)")
+                else regex.append(".*/")
+              } else
+                regex.append(".*")
+            } else {
+              regex.append("[^/]*")
+            }
+          } else if (current == '.') {
+            next()
+            regex.append('/')
+          } else {
+            val start = index
+            var needEscape = false
+            while (index < len && current != '.' && current != '*') {
+              needEscape = needEscape || "\\.[]{}()*+-?^$|".indexOf(current) != -1
+              next()
+            }
+            if (needEscape) regex.append("\\Q")
+            regex.append(p, start, index)
+            if (needEscape) regex.append("\\E")
+          }
+        }
+
+        val isTerminal = result.isEmpty || result.head.terminal && result.head.negated == negated
+        result ::= Entry(Pattern.compile(regex.toString), negated, isTerminal)
+      }
+
+      result
+    }
+  }
 }
