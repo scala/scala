@@ -25,7 +25,7 @@ import scala.language.implicitConversions
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Implicits {
+trait Implicits extends ImplicitChains {
   self: Analyzer =>
 
   import global._
@@ -89,7 +89,11 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
+    if (!nestedImplicit) implicitErrors = List()
+    implicitTypeStack = pt :: implicitTypeStack
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
+    if (result.isSuccess) removeErrorsFor(pt)
+    implicitTypeStack = implicitTypeStack.drop(1)
 
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
       implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
@@ -716,7 +720,11 @@ trait Implicits {
             val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+            val withinBounds = checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+            if (!withinBounds) {
+              val err = NonConfBounds(pt, tree, implicitNesting, targs, undetParams)
+              implicitErrors = err :: implicitErrors
+            }
             context.reporter.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
@@ -1549,6 +1557,73 @@ trait Implicits {
       }
     }
   }
+}
+
+trait ImplicitChains {
+  self: Analyzer =>
+
+  import global._
+
+  val candidateRegex = """.*\.this\.(.*)""".r
+
+  def shortName(ident: String) = ident.split('.').toList.lastOption.getOrElse(ident)
+
+  trait ImpFailReason
+  {
+    def tpe: Type
+    def candidate: Tree
+    def nesting: Int
+
+    lazy val unapplyCandidate = candidate match {
+      case TypeApply(name, _) => name
+      case a => a
+    }
+
+    def candidateName = unapplyCandidate match {
+      case Select(_, name) => name.toString
+      case Ident(name) => name.toString
+      case a => a.toString
+    }
+
+    lazy val cleanCandidate = {
+      unapplyCandidate.toString match {
+        case candidateRegex(suf) => suf
+        case a => a
+      }
+    }
+
+    override def equals(other: Any) = other match {
+      case o: ImpFailReason =>
+        o.tpe.toString == tpe.toString && candidateName == o.candidateName
+      case _ => false
+    }
+
+    override def hashCode = (tpe.toString.hashCode, candidateName.hashCode).hashCode
+  }
+
+  case class ImpError(tpe: Type, candidate: Tree, nesting: Int, param: Symbol)
+  extends ImpFailReason
+  {
+    override def toString =
+      s"ImpError(${shortName(tpe.toString)}, ${shortName(candidate.toString)}), $nesting, $param"
+  }
+
+  case class NonConfBounds(tpe: Type, candidate: Tree, nesting: Int, targs: List[Type], tparams: List[Symbol])
+  extends ImpFailReason
+  {
+    override def toString =
+      s"NonConfBounds(${shortName(tpe.toString)}, ${shortName(candidate.toString)}), $nesting, $targs, $tparams"
+  }
+
+  var implicitTypeStack = List[Type]()
+  var implicitErrors = List[ImpFailReason]()
+  def implicitNesting = implicitTypeStack.length - 1
+
+  def nestedImplicit = implicitTypeStack.nonEmpty
+
+  def removeErrorsFor(tpe: Type): Unit =
+    implicitErrors = implicitErrors.dropWhile(_.tpe == tpe)
+
 }
 
 object ImplicitsStats {

@@ -10,7 +10,7 @@ package typechecker
  *  @author Lukas Rytz
  *  @version 1.0
  */
-trait AnalyzerPlugins { self: Analyzer =>
+trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
   import global._
 
   trait AnalyzerPlugin {
@@ -160,7 +160,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param tree The tree that requested the implicit
      * @param param The implicit parameter that was resolved
      */
-    def noImplicitFoundError(tree: Tree, param: Symbol): Option[String] = None
+    def noImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] = None
   }
 
   /**
@@ -358,10 +358,10 @@ trait AnalyzerPlugins { self: Analyzer =>
   })
 
   /** @see AnalyzerPlugin.noImplicitFoundError */
-  def pluginsNoImplicitFoundError(tree: Tree, param: Symbol): Option[String] =
+  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] =
     invoke(new CumulativeOp[Option[String]] {
       def default = None
-      def accumulate = (tpe, p) => p.noImplicitFoundError(tree, param)
+      def accumulate = (tpe, p) => p.noImplicitFoundError(param, errors)
     })
 
   /** A list of registered macro plugins */
