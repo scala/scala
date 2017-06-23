@@ -153,6 +153,14 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param pt    The return type of the enclosing method
      */
     def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = tpe
+
+    /**
+     * Construct a custom error message for implicit parameters that could not be resolved.
+     *
+     * @param tree The tree that requested the implicit
+     * @param param The implicit parameter that was resolved
+     */
+    def noImplicitFoundError(tree: Tree, param: Symbol): Option[String] = None
   }
 
   /**
@@ -348,6 +356,13 @@ trait AnalyzerPlugins { self: Analyzer =>
     def default = adaptTypeOfReturn(tree.expr, pt, tpe)
     def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
   })
+
+  /** @see AnalyzerPlugin.noImplicitFoundError */
+  def pluginsNoImplicitFoundError(tree: Tree, param: Symbol): Option[String] =
+    invoke(new CumulativeOp[Option[String]] {
+      def default = None
+      def accumulate = (tpe, p) => p.noImplicitFoundError(tree, param)
+    })
 
   /** A list of registered macro plugins */
   private var macroPlugins: List[MacroPlugin] = Nil

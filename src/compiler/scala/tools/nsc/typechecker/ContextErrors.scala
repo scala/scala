@@ -146,7 +146,7 @@ trait ContextErrors {
     MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
   def NoImplicitFoundError(tree: Tree, param: Symbol)(implicit context: Context): Unit = {
-    def errMsg = {
+    def defaultErrMsg = {
       val paramName = param.name
       val paramTp = param.tpe
       def evOrParam = (
@@ -159,6 +159,7 @@ trait ContextErrors {
         case _ => s"could not find implicit value for $evOrParam $paramTp"
       }
     }
+    val errMsg = pluginsNoImplicitFoundError(tree, param).getOrElse(defaultErrMsg)
     issueNormalTypeError(tree, errMsg)
   }
 
