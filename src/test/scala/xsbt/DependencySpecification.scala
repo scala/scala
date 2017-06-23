@@ -1,7 +1,7 @@
 package xsbt
 
 import xsbti.TestCallback.ExtractedClassDependencies
-import sbt.internal.util.UnitSpec
+import sbt.internal.inc.UnitSpec
 
 class DependencySpecification extends UnitSpec {
 

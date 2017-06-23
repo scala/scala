@@ -1,6 +1,6 @@
 package xsbt
 
-import sbt.internal.util.UnitSpec
+import sbt.internal.inc.UnitSpec
 import xsbti.UseScope
 
 class ExtractUsedNamesSpecification extends UnitSpec {

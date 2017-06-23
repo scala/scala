@@ -7,7 +7,7 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Paths
 
-import sbt.internal.util.UnitSpec
+import sbt.internal.inc.UnitSpec
 
 class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
   private def initFileSystem(uri: URI): Option[FileSystem] = {

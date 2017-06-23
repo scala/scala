@@ -2,7 +2,7 @@ package xsbt
 
 import xsbti.api._
 import xsbt.api.SameAPI
-import sbt.internal.util.UnitSpec
+import sbt.internal.inc.UnitSpec
 
 class ExtractAPISpecification extends UnitSpec {
 
