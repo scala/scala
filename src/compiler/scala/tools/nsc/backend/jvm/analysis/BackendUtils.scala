@@ -531,18 +531,16 @@ object BackendUtils {
     // primitives and the brackets of array descriptors
     def visitDescriptor(desc: String): Unit = (desc.charAt(0): @switch) match {
       case '(' =>
-        val internalNames = mutable.ListBuffer.empty[String]
         var i = 1
         while (i < desc.length) {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
             while (desc.charAt(i) != ';') i += 1
-            internalNames += desc.substring(start, i)
+            visitInternalName(desc.substring(start, i))
           }
           // skips over '[', ')', primitives
           i += 1
         }
-        internalNames foreach visitInternalName
 
       case 'L' =>
         visitInternalName(desc.substring(1, desc.length - 1))
@@ -597,13 +595,16 @@ object BackendUtils {
     }
 
     private final class Parser(sig: String) {
+      // For performance, `Char => Boolean` is not specialized
+      private trait CharBooleanFunction { def apply(c: Char): Boolean }
+
       private var index = 0
       private val end = sig.length
 
       private val Aborted: Throwable = new NoStackTrace { }
       private def abort(): Nothing = throw Aborted
 
-      def safely(f: => Unit): Unit = try f catch {
+      @inline def safely(f: => Unit): Unit = try f catch {
         case Aborted =>
         case NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
       }
@@ -627,11 +628,11 @@ object BackendUtils {
       private def skip(): Unit = { index += 1 }
       private def getCurrentAndSkip(): Char = { val c = current; skip(); c }
 
-      private def skipUntil(isDelimiter: Char => Boolean): Unit = {
+      private def skipUntil(isDelimiter: CharBooleanFunction): Unit = {
         while (!isDelimiter(current)) { index += 1 }
       }
 
-      private def appendUntil(builder: java.lang.StringBuilder, isDelimiter: Char => Boolean): Unit = {
+      private def appendUntil(builder: java.lang.StringBuilder, isDelimiter: CharBooleanFunction): Unit = {
         val start = index
         skipUntil(isDelimiter)
         builder.append(sig, start, index)
@@ -642,7 +643,7 @@ object BackendUtils {
         case _ => false
       }
 
-      private val isClassNameEnd = (c: Char) => c == '<' || c == '.' || c == ';'
+      private val isClassNameEnd: CharBooleanFunction = (c: Char) => c == '<' || c == '.' || c == ';'
 
       private def typeArguments(): Unit = if (current == '<') {
         skip()
@@ -657,7 +658,7 @@ object BackendUtils {
 
       @tailrec private def referenceTypeSignature(): Unit = getCurrentAndSkip() match {
         case 'L' =>
-          val names = new java.lang.StringBuilder()
+          val names = new java.lang.StringBuilder(32)
 
           appendUntil(names, isClassNameEnd)
           visitInternalName(names.toString)

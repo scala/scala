@@ -112,4 +112,36 @@ class NestedClassesCollectorTest {
       classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
     }
   }
+
+  @Test
+  @Ignore("manually run test")
+  def allJars(): Unit = {
+    // for i in $(find /Users/jz/.ivy2/cache -name jars); do find $i -name '*.jar' | head -1; done > /tmp/jars.txt
+    import java.nio.file._
+    import collection.JavaConverters._
+    val allJars = Files.readAllLines(Paths.get("/tmp/jars.txt")).asScala
+    for (path <- allJars) {
+      var currentClass: Path = null
+      try {
+        import java.nio.file._
+        import scala.collection.JavaConverters._
+        val zipfile = Paths.get(path)
+        println(path)
+        val fs = FileSystems.newFileSystem(zipfile, null)
+        val root = fs.getRootDirectories.iterator().next()
+        val contents = Files.walk(root).iterator().asScala.toList
+        for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
+          currentClass = f
+          val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
+          c.visitClassSignature(classNode.signature)
+          classNode.methods.iterator().asScala.map(_.signature).foreach(c.visitMethodSignature)
+          classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
+        }
+      } catch {
+        case t: Throwable =>
+          println("currentClass = " + currentClass)
+          t.printStackTrace()
+      }
+    }
+  }
 }
