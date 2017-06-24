@@ -720,11 +720,7 @@ trait Implicits extends ImplicitChains {
             val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            val withinBounds = checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            if (!withinBounds) {
-              val err = NonConfBounds(pt, tree, implicitNesting, targs, undetParams)
-              implicitErrors = err :: implicitErrors
-            }
+            checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
             context.reporter.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
@@ -766,6 +762,15 @@ trait Implicits extends ImplicitChains {
 
             context.reporter.firstError match {
               case Some(err) =>
+                itree3 match {
+                  case TypeApply(fun, args) =>
+                    fun.tpe match {
+                      case PolyType(tparams, restpe) if tparams.nonEmpty && sameLength(tparams, args) =>
+                        val targs = mapList(args)(treeTpe)
+                        val ncb = NonConfBounds(pt, itree3, implicitNesting, targs, tparams)
+                        implicitErrors = ncb :: implicitErrors
+                    }
+                }
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
                 val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams)

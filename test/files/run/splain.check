@@ -1,7 +1,10 @@
 newSource1.scala:13: error: no implicit for value e; chains: g, i1, i1, g, i1, i1
   implicitly[II]
             ^
-newSource1.scala:17: error: type mismatch
-found: ImplicitChain.I1, req: ImplicitChain.I2
-  f(a)
+newSource1.scala:6: error: type mismatch
+found: FoundReq.L, req: FoundReq.R
+  f(new L)
     ^
+newSource1.scala:7: error: no implicit for value e; chains: g: [Bounds.Arg/type A, Nothing/type B], g: [Bounds.Arg/type A, Nothing/type B]
+  implicitly[F[Arg]]
+            ^
