@@ -1,3 +1,7 @@
 newSource1.scala:13: error: no implicit for value e; chains: g, i1, i1, g, i1, i1
   implicitly[II]
             ^
+newSource1.scala:17: error: type mismatch
+found: ImplicitChain.I1, req: ImplicitChain.I2
+  f(a)
+    ^

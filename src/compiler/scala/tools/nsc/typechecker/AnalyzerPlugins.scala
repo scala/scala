@@ -161,6 +161,14 @@ trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
      * @param param The implicit parameter that was resolved
      */
     def noImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] = None
+
+    /**
+     * Construct a custom message for found/required errors
+     *
+     * @param found actual type
+     * @param req expected type
+     */
+    def foundReqMsg(found: Type, req: Type): Option[String] = None
   }
 
   /**
@@ -362,6 +370,13 @@ trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
     invoke(new CumulativeOp[Option[String]] {
       def default = None
       def accumulate = (tpe, p) => p.noImplicitFoundError(param, errors)
+    })
+
+  /** @see AnalyzerPlugin.foundReqMsg */
+  def pluginsFoundReqMsg(found: Type, req: Type): Option[String] =
+    invoke(new CumulativeOp[Option[String]] {
+      def default = None
+      def accumulate = (tpe, p) => p.foundReqMsg(found, req)
     })
 
   /** A list of registered macro plugins */

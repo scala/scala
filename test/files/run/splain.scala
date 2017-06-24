@@ -19,6 +19,10 @@ object ImplicitChain
   implicit def i4(implicit impPar9: I2): I4 = ???
   implicit def g(implicit impPar3: I1, impPar1: I4): II = ???
   implicitly[II]
+
+  val a = new I1 {}
+  def f(b: I2) = ???
+  f(a)
 }
   """.trim
 
@@ -32,6 +36,10 @@ object ImplicitChain
       override def noImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] = {
         val chain = errors.map(_.candidateName).mkString(", ")
         Some(s"no implicit for $param; chains: $chain")
+      }
+
+      override def foundReqMsg(found: Type, req: Type): Option[String] = {
+        Some(s"\nfound: $found, req: $req")
       }
     }
 
