@@ -193,6 +193,50 @@ class CompletionTest {
     checkExact(completer, s"($ident: Int) => tia")(ident)
   }
 
+  @Test
+  def dependentTypeImplicits_t10353(): Unit = {
+    val code =
+      """
+package test
+
+// tests for autocomplete on repl
+
+object Test {
+  trait Conv[In] {
+    type Out
+    def apply(in: In): Out
+  }
+  object Conv {
+    type Aux[In, Out0] = Conv[In] { type Out = Out0 }
+    implicit val int2String = new Conv[Int] {
+      type Out = String
+      override def apply(i: Int) = i.toString
+    }
+  }
+
+  // autocomplete works on repl: `test.Test.withParens().<TAB>` shows completions for String
+  def withParens[Out]()(implicit conv: Conv.Aux[Int, Out]): Out = "5".asInstanceOf[Out]
+
+  // autocomplete doesn't work on repl: `test.Test.withoutParens.` doesn't suggest anything
+  // when saving intermediate result it works though: `val a = test.Test.withoutParens; a.<TAB>`
+  def withoutParens[Out](implicit conv: Conv.Aux[Int, Out]): Out = "5".asInstanceOf[Out]
+}
+
+// this works fine
+object Test2 {
+  trait A
+  implicit val a: A = ???
+  def withParens()(implicit a: A): String = "something"
+  def withoutParens(implicit a: A): String = "something"
+}
+"""
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    intp.compileSources(new BatchSourceFile("<paste>", code))
+    checkExact(completer, "val x = test.Test.withoutParens; x.charA")("charAt")
+    checkExact(completer, "test.Test.withoutParens.charA")("charAt")
+  }
+
   def checkExact(completer: PresentationCompilerCompleter, before: String, after: String = "")(expected: String*): Unit = {
     assertEquals(expected.toSet, completer.complete(before, after).candidates.toSet)
   }
