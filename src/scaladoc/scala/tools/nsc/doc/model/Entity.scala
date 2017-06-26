@@ -515,7 +515,7 @@ trait ImplicitConversion {
  *     in this case, it won't be possible to call the member directly, the type checker will fail attempting to adapt
  *     the call arguments (or if they fit it will call the original class method)
  *  2) shadowing from other possible implicit conversions ()
- *     this will result in an ambiguous implicit converion error
+ *     this will result in an ambiguous implicit conversion error
  */
 trait ImplicitMemberShadowing {
   /** The members that shadow the current entry use .inTemplate to get to the template name */

@@ -347,7 +347,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
           val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
-          StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
+          (processName(path) + typeArgString(typeArgs)).stripPrefix("<empty>.")
         }
       })
       case TypeBoundsType(lower, upper) => {
@@ -392,7 +392,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def typeArgString(typeArgs: Seq[Type]): String =
     if (typeArgs.isEmpty) ""
-    else typeArgs.map(toString).map(StringUtil.trimStart(_, "=> ")).mkString("[", ", ", "]")
+    else typeArgs.map(toString).map(_.stripPrefix("=> ")).mkString("[", ", ", "]")
 
   def typeParamString(params: Seq[Symbol]): String =
     if (params.isEmpty) ""

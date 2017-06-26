@@ -10,7 +10,7 @@ package scala
 package collection
 
 import generic._
-import mutable.{ Builder }
+import mutable.Builder
 import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.language.higherKinds

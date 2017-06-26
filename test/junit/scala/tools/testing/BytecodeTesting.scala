@@ -4,6 +4,7 @@ import junit.framework.AssertionFailedError
 import org.junit.Assert._
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.Clearable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
@@ -19,12 +20,38 @@ import scala.tools.nsc.{Global, Settings}
 import scala.tools.partest.ASMConverters._
 
 trait BytecodeTesting extends ClearAfterClass {
-  def compilerArgs = "" // to be overridden
+  /**
+   * Overwrite to set additional compiler flags
+   */
+  def compilerArgs = ""
+
   val compiler = cached("compiler", () => BytecodeTesting.newCompiler(extraArgs = compilerArgs))
 }
 
 class Compiler(val global: Global) {
   import BytecodeTesting._
+
+  private var keptPerRunCaches: List[Clearable] = Nil
+
+  /**
+   * Clear certain per-run caches before a compilation, instead of after. This allows inspecting
+   * their content after a compilation run.
+   */
+  def keepPerRunCachesAfterRun(caches: List[Clearable]): Unit = {
+    caches foreach global.perRunCaches.unrecordCache
+    keptPerRunCaches = caches
+  }
+
+
+  /**
+   * Get class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not
+   * the same, these are created new from the classfile byte array. They are completely separate
+   * instances which cannot be used to look up methods / callsites in the callGraph hash maps for
+   * example.
+   * NOTE: This method only works if `global.genBCode.bTypes.byteCodeRepository.compilingClasses`
+   * was passed to [[keepPerRunCachesAfterRun]].
+   */
+  def compiledClassesFromCache = global.genBCode.bTypes.byteCodeRepository.compilingClasses.valuesIterator.map(_._1).toList.sortBy(_.name)
 
   def resetOutput(): Unit = {
     global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
@@ -33,6 +60,7 @@ class Compiler(val global: Global) {
   def newRun: global.Run = {
     global.reporter.reset()
     resetOutput()
+    keptPerRunCaches.foreach(_.clear())
     new global.Run()
   }
 

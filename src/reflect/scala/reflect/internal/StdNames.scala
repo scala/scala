@@ -540,7 +540,7 @@ trait StdNames {
     val x_8 : NameType  = "x$8"
     val x_9 : NameType  = "x$9"
 
-    @switch def syntheticParamName(i: Int): TermName = i match {
+    def syntheticParamName(i: Int): TermName = (i: @switch) match {
       case 0  => nme.x_0
       case 1  => nme.x_1
       case 2  => nme.x_2
@@ -554,7 +554,7 @@ trait StdNames {
       case _  => newTermName("x$" + i)
     }
 
-    @switch def productAccessorName(j: Int): TermName = j match {
+    def productAccessorName(j: Int): TermName = (j: @switch) match {
       case 1  => nme._1
       case 2  => nme._2
       case 3  => nme._3
@@ -1040,6 +1040,7 @@ trait StdNames {
     }
 
     def newBitmapName(bitmapPrefix: Name, n: Int) = bitmapPrefix append ("" + n)
+    def isTransientBitmap(name: Name) = name == nme.BITMAP_TRANSIENT || name == nme.BITMAP_CHECKINIT_TRANSIENT
 
     val BITMAP_NORMAL: NameType              = BITMAP_PREFIX + ""           // initialization bitmap for public/protected lazy vals
     val BITMAP_TRANSIENT: NameType           = BITMAP_PREFIX + "trans$"     // initialization bitmap for transient lazy vals

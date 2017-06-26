@@ -149,7 +149,7 @@ class Scaladoc extends ScalaMatchingTask {
   /** Instruct the scaladoc tool to use the binary given to create diagrams */
   private var docDiagramsDotPath: Option[String] = None
 
-  /** Instruct the scaladoc to produce textual ouput from html pages, for easy diff-ing */
+  /** Instruct the scaladoc to produce textual output from html pages, for easy diff-ing */
   private var docRawOutput: Boolean = false
 
   /** Instruct the scaladoc not to generate prefixes */

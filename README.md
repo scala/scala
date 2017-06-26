@@ -39,6 +39,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
+
 # Repository structure
 
 ```
@@ -72,6 +73,13 @@ You need the following tools:
 
 Mac OS X and Linux work. Windows may work if you use Cygwin. Community help with keeping
 the build working on Windows is appreciated.
+
+## Tools we use
+
+We are grateful for the following OSS licenses:
+  - [JProfiler Java profiler](https://www.ej-technologies.com/products/jprofiler/overview.html)
+  - [YourKit Java Profiler](https://www.yourkit.com/java/profiler/)
+  - [IntelliJ IDEA](https://www.jetbrains.com/idea/download/)
 
 ## Build setup
 

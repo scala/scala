@@ -553,6 +553,20 @@ but are required to be properly nested.  Therefore, a comment like
 `/* /* */` will be rejected as having an unterminated
 comment.
 
+## Trailing Commas in Multi-line Expressions
+
+If a comma (`,`) is followed immediately, ignoring whitespace, by a newline and
+a closing parenthesis (`)`), bracket (`]`), or brace (`}`), then the comma is
+treated as a "trailing comma" and is ignored. For example:
+
+```scala
+foo(
+  23,
+  "bar",
+  true,
+)
+```
+
 ## XML mode
 
 In order to allow literal inclusion of XML fragments, lexical analysis
