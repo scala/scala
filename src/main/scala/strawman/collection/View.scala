@@ -90,12 +90,12 @@ object View extends IterableFactory[View] {
     /** The view consisting of all elements of the underlying collection
      *  that satisfy `p`.
      */
-    val left = Partitioned(this, true)
+    val first = Partitioned(this, true)
 
     /** The view consisting of all elements of the underlying collection
      *  that do not satisfy `p`.
      */
-    val right = Partitioned(this, false)
+    val second = Partitioned(this, false)
   }
 
   /** A view representing one half of a partition. */
@@ -209,12 +209,12 @@ object View extends IterableFactory[View] {
   }
 
   case class Unzip[A, A1, A2](underlying: Iterable[A])(implicit asPair: A <:< (A1, A2)) {
-    val left: View[A1] =
+    val first: View[A1] =
       new View[A1] {
         def iterator(): Iterator[A1] = underlying.iterator().map(_._1)
         override def knownSize: Int = underlying.knownSize
       }
-    val right: View[A2] =
+    val second: View[A2] =
       new View[A2] {
         def iterator(): Iterator[A2] = underlying.iterator().map(_._2)
         override def knownSize: Int = underlying.knownSize

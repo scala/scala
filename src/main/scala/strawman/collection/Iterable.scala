@@ -6,6 +6,7 @@ import scala.reflect.ClassTag
 import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, StringContext, Some, Unit}
 import scala.Predef.<:<
 import java.lang.{String, UnsupportedOperationException}
+import scala.Predef.<:<
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
@@ -460,7 +461,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   def partition(p: A => Boolean): (C, C) = {
     val pn = View.Partition(coll, p)
-    (fromSpecificIterable(pn.left), fromSpecificIterable(pn.right))
+    (fromSpecificIterable(pn.first), fromSpecificIterable(pn.second))
   }
 
   /** Splits this $coll into two at a given position.
@@ -659,7 +660,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   def unzip[A1, A2](implicit asPair: A <:< (A1, A2)): (CC[A1], CC[A2]) = {
     val unzipped = View.Unzip(coll)
-    (fromIterable(unzipped.left), fromIterable(unzipped.right))
+    (fromIterable(unzipped.first), fromIterable(unzipped.second))
   }
 
 }
