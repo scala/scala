@@ -1,7 +1,7 @@
 package scala.reflect.reify
 package phases
 
-import scala.collection.{ mutable }
+import scala.collection.mutable
 
 trait Metalevels {
   self: Reifier =>

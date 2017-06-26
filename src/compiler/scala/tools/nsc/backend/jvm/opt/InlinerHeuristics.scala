@@ -64,13 +64,6 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     }).filterNot(_._2.isEmpty).toMap
   }
 
-  private def isTraitStaticSuperAccessorName(s: String) = s.endsWith("$")
-  private def traitStaticSuperAccessorName(s: String) = s + "$"
-
-  private def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
-    owner.isInterface == Right(true) && BytecodeUtils.isStaticMethod(method) && isTraitStaticSuperAccessorName(method.name)
-  }
-
   private def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
     @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
       insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
@@ -87,16 +80,25 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     }
     find(method.instructions.getFirst)
   }
+
+  private def traitStaticSuperAccessorName(s: String) = s + "$"
+
+  private def traitMethodInvocation(method: MethodNode): Option[MethodInsnNode] =
+    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && traitStaticSuperAccessorName(mi.name) == method.name)
+
   private def superAccessorInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && isTraitStaticSuperAccessorName(mi.name))
+    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && mi.name == traitStaticSuperAccessorName(method.name))
+
+  private def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
+    owner.isInterface == Right(true) &&
+      BytecodeUtils.isStaticMethod(method) &&
+      traitMethodInvocation(method).nonEmpty
+  }
 
   private def isMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
     owner.isInterface == Right(false) &&
       !BytecodeUtils.isStaticMethod(method) &&
-      (superAccessorInvocation(method) match {
-        case Some(mi) => mi.name == traitStaticSuperAccessorName(method.name)
-        case _ => false
-      })
+      superAccessorInvocation(method).nonEmpty
   }
 
   private def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
