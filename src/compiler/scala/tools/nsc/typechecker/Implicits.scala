@@ -262,7 +262,21 @@ trait Implicits {
 
   /** A class which is used to track pending implicits to prevent infinite implicit searches.
    */
-  case class OpenImplicit(info: ImplicitInfo, pt: Type, tree: Tree)
+  case class OpenImplicit(info: ImplicitInfo, pt: Type, tree: Tree) {
+    // JZ: should be a case class parameter, but I have reason to believe macros/plugins peer into OpenImplicit
+    // so I'm avoiding a signature change
+    def isView: Boolean = _isView
+    private def isView_=(value: Boolean): Unit = _isView = value
+
+    private[this] var _isView: Boolean = false
+  }
+  object OpenImplicit {
+    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean): OpenImplicit = {
+      val result = new OpenImplicit(info, pt, tree)
+      result.isView = isView
+      result
+    }
+  }
 
   /** A sentinel indicating no implicit was found */
   val NoImplicitInfo = new ImplicitInfo(null, NoType, NoSymbol) {
@@ -474,7 +488,7 @@ trait Implicits {
            DivergentSearchFailure
          case None =>
            try {
-             context.openImplicits = OpenImplicit(info, pt, tree) :: context.openImplicits
+             context.openImplicits = OpenImplicit(info, pt, tree, isView) :: context.openImplicits
              // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
              val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
              if (result.isDivergent) {
