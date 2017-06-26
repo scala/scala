@@ -9,6 +9,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
+import scala.collection.JavaConverters._
 
 @RunWith(classOf[JUnit4])
 class BytecodeTest extends BytecodeTesting {
@@ -194,5 +195,13 @@ class BytecodeTest extends BytecodeTesting {
     val m = compileMethod(code)
     val List(ExceptionHandler(_, _, _, desc)) = m.handlers
     assert(desc == None, desc)
+  }
+
+  @Test
+  def classesEndingInDollarHaveSignature(): Unit = {
+    // A name-based test in the backend prevented classes ending in $ from getting a Scala signature
+    val code = "class C$"
+    val c = compileClass(code)
+    assertEquals(c.attrs.asScala.toList.map(_.`type`).sorted, List("ScalaInlineInfo", "ScalaSig"))
   }
 }

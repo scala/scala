@@ -12,6 +12,7 @@ import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
 import scala.reflect.internal.Flags
+import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
 
 /*
@@ -501,10 +502,17 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      */
     def getAnnotPickle(jclassName: String, sym: Symbol): Option[AnnotationInfo] = {
       currentRun.symData get sym match {
-        case Some(pickle) if !nme.isModuleName(newTermName(jclassName)) =>
+        case Some(pickle) if !sym.isModuleClass => // pickles for module classes are in the companion / mirror class
           val scalaAnnot = {
-            val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
-            AnnotationInfo(sigBytes.sigAnnot, Nil, (nme.bytes, sigBytes) :: Nil)
+            val sigBytes = new ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
+            val (annTp, arg) = if (sigBytes.fitsInOneString) {
+              val tp = definitions.ScalaSignatureAnnotation.tpe
+              (tp, LiteralAnnotArg(Constant(sigBytes.strEncode)))
+            } else {
+              val tp = definitions.ScalaLongSignatureAnnotation.tpe
+              (tp, ArrayAnnotArg(sigBytes.arrEncode.map(s => LiteralAnnotArg(Constant(s)))))
+            }
+            AnnotationInfo(annTp, Nil, (nme.bytes, arg) :: Nil)
           }
           pickledBytes += pickle.writeIndex
           currentRun.symData -= sym
@@ -593,59 +601,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
         }).getOrElse(AnnotationRetentionPolicyClassValue)
 
-    def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
-      val ca = new Array[Char](bytes.length)
-      var idx = 0
-      while(idx < bytes.length) {
-        val b: Byte = bytes(idx)
-        assert((b & ~0x7f) == 0)
-        ca(idx) = b.asInstanceOf[Char]
-        idx += 1
-      }
-      ca
-    }
-
-    final def arrEncode(sb: ScalaSigBytes): Array[String] = {
-      var strs: List[String]  = Nil
-      val bSeven: Array[Byte] = sb.sevenBitsMayBeZero
-      // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
-      var prevOffset = 0
-      var offset     = 0
-      var encLength  = 0
-      while(offset < bSeven.length) {
-        val deltaEncLength = (if(bSeven(offset) == 0) 2 else 1)
-        val newEncLength = encLength.toLong + deltaEncLength
-        if(newEncLength >= 65535) {
-          val ba     = bSeven.slice(prevOffset, offset)
-          strs     ::= new java.lang.String(ubytesToCharArray(ba))
-          encLength  = 0
-          prevOffset = offset
-        } else {
-          encLength += deltaEncLength
-          offset    += 1
-        }
-      }
-      if(prevOffset < offset) {
-        assert(offset == bSeven.length)
-        val ba = bSeven.slice(prevOffset, offset)
-        strs ::= new java.lang.String(ubytesToCharArray(ba))
-      }
-      assert(strs.size > 1, "encode instead as one String via strEncode()") // TODO too strict?
-      strs.reverse.toArray
-    }
-
-    /*
-     *  can-multi-thread
-     */
-    private def strEncode(sb: ScalaSigBytes): String = {
-      val ca = ubytesToCharArray(sb.sevenBitsMayBeZero)
-      new java.lang.String(ca)
-      // debug val bvA = new asm.ByteVector; bvA.putUTF8(s)
-      // debug val enc: Array[Byte] = scala.reflect.internal.pickling.ByteCodecs.encode(bytes)
-      // debug assert(enc(idx) == bvA.getByte(idx + 2))
-      // debug assert(bvA.getLength == enc.size + 2)
-    }
-
     /*
      * For arg a LiteralAnnotArg(constt) with const.tag in {ClazzTag, EnumTag}
      * as well as for arg a NestedAnnotArg
@@ -672,17 +627,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
                 av.visitEnum(name, edesc, evalue)
             }
           }
-
-        case sb @ ScalaSigBytes(bytes) =>
-          // see http://www.scala-lang.org/sid/10 (Storage of pickled Scala signatures in class files)
-          // also JVMS Sec. 4.7.16.1 The element_value structure and JVMS Sec. 4.4.7 The CONSTANT_Utf8_info Structure.
-          if (sb.fitsInOneString) {
-            av.visit(name, strEncode(sb))
-          } else {
-            val arrAnnotV: asm.AnnotationVisitor = av.visitArray(name)
-            for(arg <- arrEncode(sb)) { arrAnnotV.visit(name, arg) }
-            arrAnnotV.visitEnd()
-          }          // for the lazy val in ScalaSigBytes to be GC'ed, the invoker of emitAnnotations() should hold the ScalaSigBytes in a method-local var that doesn't escape.
 
         case ArrayAnnotArg(args) =>
           val arrAnnotV: asm.AnnotationVisitor = av.visitArray(name)
@@ -1309,5 +1253,90 @@ object BCodeHelpers {
     val Static  = new InvokeStyle(1) // InvokeStatic
     val Special = new InvokeStyle(2) // InvokeSpecial (private methods, constructors)
     val Super   = new InvokeStyle(3) // InvokeSpecial (super calls)
+  }
+
+  /**
+   * Contains helpers around converting a Scala signature (array of bytes) into an array of `Long`.
+   *  Details about the storage format of pickles at the bytecode level (classfile annotations) can be found in SIP-10.
+   */
+  class ScalaSigBytes(bytes: Array[Byte]) {
+    override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
+    lazy val sevenBitsMayBeZero: Array[Byte] = {
+      mapToNextModSevenBits(scala.reflect.internal.pickling.ByteCodecs.encode8to7(bytes))
+    }
+
+    private def mapToNextModSevenBits(src: Array[Byte]): Array[Byte] = {
+      var i = 0
+      val srclen = src.length
+      while (i < srclen) {
+        val in = src(i)
+        src(i) = (if (in == 0x7f) 0.toByte else (in + 1).toByte)
+        i += 1
+      }
+      src
+    }
+
+    /* In order to store a byte array (the pickle) using a bytecode-level annotation,
+     * the most compact representation is used (which happens to be string-constant and not byte array as one would expect).
+     * However, a String constant in a classfile annotation is limited to a maximum of 65535 characters.
+     * Method `fitsInOneString` tells us whether the pickle can be held by a single classfile-annotation of string-type.
+     * Otherwise an array of strings will be used.
+     */
+    def fitsInOneString: Boolean = {
+      // due to escaping, a zero byte in a classfile-annotation of string-type takes actually two characters.
+      var i = 0
+      var numZeros = 0
+      while (i < sevenBitsMayBeZero.length) {
+        if (sevenBitsMayBeZero(i) == 0) numZeros += 1
+        i += 1
+      }
+
+      (sevenBitsMayBeZero.length + numZeros) <= 65535
+    }
+    def strEncode: String = {
+      val ca = ubytesToCharArray(sevenBitsMayBeZero)
+      new java.lang.String(ca)
+    }
+
+    final def arrEncode: Array[String] = {
+      var strs: List[String]  = Nil
+      val bSeven: Array[Byte] = sevenBitsMayBeZero
+      // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
+      var prevOffset = 0
+      var offset     = 0
+      var encLength  = 0
+      while (offset < bSeven.length) {
+        val deltaEncLength = if (bSeven(offset) == 0) 2 else 1
+        val newEncLength = encLength.toLong + deltaEncLength
+        if (newEncLength >= 65535) {
+          val ba     = bSeven.slice(prevOffset, offset)
+          strs     ::= new java.lang.String(ubytesToCharArray(ba))
+          encLength  = 0
+          prevOffset = offset
+        } else {
+          encLength += deltaEncLength
+          offset    += 1
+        }
+      }
+      if (prevOffset < offset) {
+        assert(offset == bSeven.length)
+        val ba = bSeven.slice(prevOffset, offset)
+        strs ::= new java.lang.String(ubytesToCharArray(ba))
+      }
+      assert(strs.size > 1, "encode instead as one String via strEncode()") // TODO too strict?
+      strs.reverse.toArray
+    }
+
+    private def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
+      val ca = new Array[Char](bytes.length)
+      var idx = 0
+      while(idx < bytes.length) {
+        val b: Byte = bytes(idx)
+        assert((b & ~0x7f) == 0)
+        ca(idx) = b.asInstanceOf[Char]
+        idx += 1
+      }
+      ca
+    }
   }
 }
