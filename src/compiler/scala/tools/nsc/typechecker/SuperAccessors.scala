@@ -57,7 +57,7 @@ import symtab.Flags._
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
   import definitions._
-  import analyzer.{ restrictionError }
+  import analyzer.restrictionError
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors"

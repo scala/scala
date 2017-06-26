@@ -748,6 +748,12 @@ class MutableSettings(val errorFn: String => Unit)
 
     def contains(choice: domain.Value): Boolean = value contains choice
 
+    // programmatically.
+    def enable(choice: domain.Value): Unit = { nays -= choice ; yeas += choice ; compute() }
+
+    // programmatically. Disabling expanding option is otherwise disallowed.
+    def disable(choice: domain.Value): Unit = { yeas -= choice ; nays += choice ; compute() }
+
     override def isHelping: Boolean = sawHelp
 
     override def help: String = {

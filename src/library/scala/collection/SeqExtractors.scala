@@ -11,8 +11,8 @@ object +: {
 
 /** An extractor used to init/last deconstruct sequences. */
 object :+ {
-  /** Splits a sequence into init :+ tail.
-   * @return Some((init, tail)) if sequence is non-empty. None otherwise.
+  /** Splits a sequence into init :+ last.
+   * @return Some((init, last)) if sequence is non-empty. None otherwise.
    */
   def unapply[T,Coll <: SeqLike[T, Coll]](
       t: Coll with SeqLike[T, Coll]): Option[(Coll, T)] =

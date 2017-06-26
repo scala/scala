@@ -1,7 +1,6 @@
 package scala.runtime;
 
 import java.lang.invoke.*;
-import java.util.regex.Pattern;
 
 public final class SymbolLiteral {
     private SymbolLiteral() {

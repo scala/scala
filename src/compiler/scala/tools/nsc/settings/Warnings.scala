@@ -28,6 +28,7 @@ trait Warnings {
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
     val Params    = Choice("params",    "Warn if a value parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+    val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
   }
 
   // The -Ywarn-unused warning group.
@@ -130,8 +131,8 @@ trait Warnings {
     domain  = LintWarnings,
     default = Some(List("_"))
   ).withPostSetHook { s =>
-    val unused = List("imports", "privates", "locals", "implicits")
-    if (s contains Unused) unused.foreach(warnUnused.add)
+    if (s contains Unused) warnUnused.enable(UnusedWarnings.Linted)
+    else warnUnused.disable(UnusedWarnings.Linted)
   }
 
   allLintWarnings foreach {

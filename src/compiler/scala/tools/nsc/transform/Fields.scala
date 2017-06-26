@@ -505,7 +505,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             mixedInAccessorAndFields foreach enterAll
 
             // both oldDecls and mixedInAccessorAndFields (a list of lists) contribute
-            val bitmapSyms = accessorSymbolSynth.computeBitmapInfos(newDecls.toList)
+            val bitmapSyms = accessorSymbolSynth.computeBitmapInfos(newDecls.filter(sym => sym.isValue && !sym.isMethod).toList)
 
             bitmapSyms foreach enter
 
