@@ -1,30 +1,28 @@
 
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
-<console>:11: error: double definition:
-def f[A](a: => A): Int at line 11 and
-def f[A](a: => Either[Exception,A]): Int at line 11
-have same type after erasure: (a: Function0)Int
-       object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
+       error: double definition:
+       def f[A](a: => A): Int at line 1 and
+       def f[A](a: => Either[Exception,A]): Int at line 1
+       have same type after erasure: (a: Function0)Int
 
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
-<console>:11: error: double definition:
-def f[A](a: => A): Int at line 11 and
-def f[A](a: => Either[Exception,A]): Int at line 11
-have same type after erasure: (a: Function0)Int
-       object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
+       error: double definition:
+       def f[A](a: => A): Int at line 1 and
+       def f[A](a: => Either[Exception,A]): Int at line 1
+       have same type after erasure: (a: Function0)Int
 
 scala> object Y {
      |   def f[A](a: =>  A) = 1
      |   def f[A](a: => Either[Exception, A]) = 2
      | }
-<console>:13: error: double definition:
-def f[A](a: => A): Int at line 12 and
-def f[A](a: => Either[Exception,A]): Int at line 13
-have same type after erasure: (a: Function0)Int
          def f[A](a: => Either[Exception, A]) = 2
              ^
+On line 3: error: double definition:
+       def f[A](a: => A): Int at line 2 and
+       def f[A](a: => Either[Exception,A]): Int at line 3
+       have same type after erasure: (a: Function0)Int
 
 scala> :pa
 // Entering paste mode (ctrl-D to finish)
@@ -36,11 +34,12 @@ object Y {
 
 // Exiting paste mode, now interpreting.
 
-<pastie>:13: error: double definition:
-def f[A](a: => A): Int at line 12 and
-def f[A](a: => Either[Exception,A]): Int at line 13
-have same type after erasure: (a: Function0)Int
+
          def f[A](a: => Either[Exception, A]) = 2
              ^
+<pastie>:3: error: double definition:
+       def f[A](a: => A): Int at line 2 and
+       def f[A](a: => Either[Exception,A]): Int at line 3
+       have same type after erasure: (a: Function0)Int
 
 scala> :quit

@@ -18,7 +18,7 @@ scala> var x = 1
 x: Int = 1
 
 scala> x = 2
-x: Int = 2
+mutated x
 
 scala> val three = x+1
 three: Int = 3
@@ -30,12 +30,11 @@ scala> val four: anotherint = 4
 four: anotherint = 4
 
 scala> val bogus: anotherint = "hello"
-<console>:12: error: type mismatch;
- found   : String("hello")
- required: anotherint
-    (which expands to)  Int
-       val bogus: anotherint = "hello"
                                ^
+       error: type mismatch;
+        found   : String("hello")
+        required: anotherint
+           (which expands to)  Int
 
 scala> trait PointlessTrait
 defined trait PointlessTrait
@@ -277,14 +276,12 @@ scala> // interior syntax errors should *not* go into multi-line input mode.
 scala> // both of the following should abort immediately:
 
 scala> def x => y => z
-<console>:1: error: '=' expected but '=>' found.
-def x => y => z
-      ^
+             ^
+       error: '=' expected but '=>' found.
 
 scala> [1,2,3]
-<console>:1: error: illegal start of definition
-[1,2,3]
-^
+       ^
+       error: illegal start of definition
 
 scala> 
 
@@ -311,8 +308,9 @@ scala> /*
   */
 */
 
+scala> 
 
-You typed two blank lines.  Starting a new command.
+scala> 
 
 scala> // multi-line string
 
@@ -320,7 +318,7 @@ scala> """
 hello
 there
 """
-res12: String =
+res9: String =
 "
 hello
 there
@@ -353,16 +351,14 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
-<console>:18: warning: match may not be exhaustive.
-It would fail on the following inputs: Exp(), Term()
-       def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
+       warning: match may not be exhaustive.
+       It would fail on the following inputs: Exp(), Term()
 f: (e: Exp)Int
 
 scala> :quit
 plusOne: (x: Int)Int
 res0: Int = 6
 res0: String = after reset
-<console>:12: error: not found: value plusOne
-       plusOne(5) // should be undefined now
        ^
+       error: not found: value plusOne

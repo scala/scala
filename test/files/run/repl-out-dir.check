@@ -5,7 +5,9 @@ defined class Bippy
 scala> val x = Bippy(1)
 x: Bippy = Bippy(1)
 
-scala> $intp.showDirectory
+scala> $intp.reporter.withoutUnwrapping {
+  println($intp.showDirectory)
+}
 repl-out-dir-run.obj
     $line1
         $eval$.class
@@ -43,5 +45,6 @@ repl-out-dir-run.obj
     $repl_$init.class
     Test$.class
     Test.class
+
 
 scala> :quit

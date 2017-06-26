@@ -5,9 +5,9 @@ scala> {
   val tt = implicitly[TypeTag[x.type]]
   println(tt)
 }
-<console>:15: free term: Ident(TermName("x")) defined by res0  in <console>:14:14
          val tt = implicitly[TypeTag[x.type]]
                             ^
+On line 4: free term: Ident(TermName("x")) defined by res0  in <console>:3:7
 TypeTag[x.type]
 
 scala> :quit

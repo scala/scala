@@ -1,16 +1,14 @@
 
 scala> val i: Int = "foo"
-<console>:11: error: type mismatch;
- found   : String("foo")
- required: Int
-       val i: Int = "foo"
                     ^
+       error: type mismatch;
+        found   : String("foo")
+        required: Int
 
 scala> { val j = 42 ; val i: Int = "foo" + j }
-<console>:12: error: type mismatch;
- found   : String
- required: Int
-       { val j = 42 ; val i: Int = "foo" + j }
                                          ^
+       error: type mismatch;
+        found   : String
+        required: Int
 
 scala> :quit

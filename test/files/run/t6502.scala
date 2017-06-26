@@ -1,17 +1,21 @@
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.{ ILoop, replProps }
+import scala.tools.nsc.interpreter.shell.ILoop
 import scala.tools.partest._
 
 object Test extends StoreReporterDirectTest {
   def code = ???
 
-  lazy val headerLength = replProps.welcome.lines.size
-  lazy val promptLength = replProps.prompt.lines.size - 1  // extra newlines
-
-  def compileCode(code: String, jarFileName: String) = {
+  private def compileCode(code: String, jarFileName: String) = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
     compileString(newCompiler("-cp", classpath, "-d", s"${testOutput.path}/$jarFileName"))(code)
   }
+  private def runAdded(codeToRun: String): String = {
+    val lines = ILoop.run(codeToRun, settings).lines.toList
+    val (added, output) = lines.partition(l => l.contains("Added") && l.contains("test1.jar"))
+    assert(added.nonEmpty, lines)
+    output.mkString("\n")
+  }
+
 
   def app1 = """
     package test
@@ -54,16 +58,7 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar
       |test.Test.test()
       |""".stripMargin.trim
-    val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
-    lines      = lines drop promptLength
-    val added  = lines.next
-    assert (
-      added.contains("Added") && added.contains("test1.jar"),
-      s"[${added}] in [${output.lines.mkString("/")}]"
-    )
-    lines      = lines drop promptLength
-    val r = lines.next
+    val r = runAdded(codeToRun)
     assert(r.contains("testing..."), r)
   }
 
@@ -77,13 +72,7 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar1
       |:require ${testOutput.path}/$jar2
       |""".stripMargin.trim
-    val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
-    lines      = lines drop promptLength
-    val added  = lines.next
-    assert(added.contains("Added") && added.contains("test1.jar"), added)
-    lines      = lines drop promptLength
-    val msg    = lines.next
+    val msg = runAdded(codeToRun)
     assert(msg.contains("test2.jar") && msg.contains("contains a classfile that already exists on the classpath: test.Test$"), msg)
   }
 
@@ -98,14 +87,8 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar3
       |test.Test3.test()
       |""".stripMargin.trim
-    val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
-    lines      = lines drop promptLength
-    val added  = lines.next
-    assert(added.contains("Added") && added.contains("test1.jar"), added)
-    lines      = lines drop (2 * promptLength + 1)
-    val r = lines.next
-    assert(r.contains("new object in existing package"), r)
+    val output = runAdded(codeToRun)
+    assert(output.contains("new object in existing package"), output)
   }
 
   def test4(): Unit = {
@@ -115,13 +98,7 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar1
       |:require ${testOutput.path}/$jar1
       |""".stripMargin.trim
-    val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
-    lines      = lines drop promptLength
-    val added  = lines.next
-    assert(added.contains("Added") && added.contains("test1.jar"), added)
-    lines      = lines drop promptLength
-    val msg    = lines.next
+    val msg = runAdded(codeToRun)
     assert(msg.contains("test1.jar") && msg.contains("contains a classfile that already exists on the classpath: test.Test$"), msg)
   }
 

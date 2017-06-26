@@ -3,17 +3,18 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
+
+import Results.{Result, Success}
 
 trait ExprTyper {
   val repl: IMain
 
   import repl._
-  import global.{ reporter => _, Import => _, _ }
+  import global.{ phase, Symbol, Type, exitingTyper, NoSymbol, NoType, NoPrefix }
   import naming.freshInternalVarName
 
-  private def doInterpret(code: String): IR.Result = {
+  private def doInterpret(code: String): Result = {
     // interpret/interpretSynthetic may change the phase, which would have unintended effects on types.
     val savedPhase = phase
     try interpretSynthetic(code) finally phase = savedPhase
@@ -28,7 +29,7 @@ trait ExprTyper {
       val line = "def " + name + " = " + code
 
       doInterpret(line) match {
-        case IR.Success =>
+        case Success =>
           val sym0 = symbolOfTerm(name)
           // drop NullaryMethodType
           sym0.cloneSymbol setInfo exitingTyper(sym0.tpe_*.finalResultType)
@@ -39,7 +40,7 @@ trait ExprTyper {
       val old = repl.definedSymbolList.toSet
 
       doInterpret(code) match {
-        case IR.Success =>
+        case Success =>
           repl.definedSymbolList filterNot old match {
             case Nil        => NoSymbol
             case sym :: Nil => sym
@@ -52,13 +53,13 @@ trait ExprTyper {
       doInterpret(code)
       NoSymbol
     }
-    beSilentDuring(asExpr()) orElse beSilentDuring(asDefn()) orElse asError()
+    reporter.suppressOutput { asExpr() orElse asDefn() } orElse asError()
   }
 
   private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String, silent: Boolean = true): Type = {
     if (typeOfExpressionDepth > 2) {
-      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
+//      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
       return NoType
     }
     typeOfExpressionDepth += 1
@@ -66,7 +67,7 @@ trait ExprTyper {
     // while letting errors through, so it is first trying it silently: if there
     // is an error, and errors are desired, then it re-evaluates non-silently
     // to induce the error message.
-    try beSilentDuring(symbolOfLine(expr).tpe) match {
+    try reporter.suppressOutput(symbolOfLine(expr).tpe) match {
       case NoType if !silent => symbolOfLine(expr).tpe // generate error
       case tpe               => tpe
     }
@@ -79,12 +80,12 @@ trait ExprTyper {
       val name = freshInternalVarName()
       val line = "def %s: %s = ???" format (name, typeString)
       doInterpret(line) match {
-        case IR.Success =>
+        case Success =>
           val sym0 = symbolOfTerm(name)
           Some(sym0.asMethod.returnType)
         case _          => None
       }
     }
-    beSilentDuring(asProperType()) getOrElse NoType
+    reporter.suppressOutput(asProperType()) getOrElse NoType
   }
 }

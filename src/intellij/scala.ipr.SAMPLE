@@ -164,7 +164,7 @@
       <module fileurl="file://$PROJECT_DIR$/partest-javaagent.iml" filepath="$PROJECT_DIR$/partest-javaagent.iml" />
       <module fileurl="file://$PROJECT_DIR$/reflect.iml" filepath="$PROJECT_DIR$/reflect.iml" />
       <module fileurl="file://$PROJECT_DIR$/repl.iml" filepath="$PROJECT_DIR$/repl.iml" />
-      <module fileurl="file://$PROJECT_DIR$/repl-jline.iml" filepath="$PROJECT_DIR$/repl-jline.iml" />
+      <module fileurl="file://$PROJECT_DIR$/repl-frontend.iml" filepath="$PROJECT_DIR$/repl-frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala-build.iml" filepath="$PROJECT_DIR$/scala-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalacheck.iml" filepath="$PROJECT_DIR$/scalacheck.iml" />
@@ -265,7 +265,7 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="repl-jline-deps">
+    <library name="repl-frontend-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />

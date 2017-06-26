@@ -1,3 +1,7 @@
+import java.io.OutputStream
+
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
+
 object Test {
   import scala.tools.nsc._
   import interpreter._
@@ -9,7 +13,7 @@ object Test {
     val settings = new Settings
     settings.classpath.value = System.getProperty("java.class.path")
 
-    val intp = new IMain(settings, new PrintWriter(new NullOutputStream))
+    val intp = new IMain(settings, new ReplReporterImpl(settings, new PrintWriter(new NullOutputStream)))
     intp.interpret("def x0 = 123")
     intp.interpret("val x1 = x0 * 2")
     println(intp.valueOfTerm("x1"))

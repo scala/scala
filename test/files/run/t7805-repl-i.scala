@@ -1,9 +1,8 @@
-
-import scala.tools.partest.{ ReplTest, Welcoming }
+import scala.tools.partest.ReplTest
 import scala.tools.nsc.{ GenericRunnerSettings, Settings }
 import scala.tools.nsc.settings.MutableSettings
 
-object Test extends ReplTest with HangingRepl with Welcoming {
+object Test extends ReplTest with HangingRepl {
   def script = testPath changeExtension "script"
   override def transformSettings(s: Settings) = s match {
     case m: MutableSettings =>

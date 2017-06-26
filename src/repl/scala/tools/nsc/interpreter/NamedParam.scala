@@ -3,17 +3,15 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
 
 import scala.language.implicitConversions
-
-import NamedParam._
+import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
-import scala.reflect.{ClassTag}
-import scala.tools.nsc.typechecker.{ TypeStrings }
+import scala.tools.nsc.typechecker.TypeStrings
 
 trait NamedParamCreator {
+  import NamedParam._
   protected def freshName: () => String
 
   def apply[T: ru.TypeTag : ClassTag](name: String, x: T): NamedParam = new Typed[T](name, x)
@@ -37,11 +35,11 @@ object NamedParam extends NamedParamCreator {
   }
 }
 
-case class NamedParamClass(name: String, tpe: String, value: Any) extends NamedParam { }
-
 trait NamedParam {
   def name: String
   def tpe: String
   def value: Any
   override def toString = name + ": " + tpe
 }
+
+case class NamedParamClass(name: String, tpe: String, value: Any) extends NamedParam

@@ -4,10 +4,4 @@ Make sure that term memberHandlers is in your classpath and check for conflictin
 A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
 class IMain extends Imports
             ^
-t5148.scala:4: error: Symbol 'type <none>.Request.Wrapper' is missing from the classpath.
-This symbol is required by 'value scala.tools.nsc.interpreter.Imports.wrapper'.
-Make sure that type Wrapper is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
-A full rebuild may help if 'Imports.class' was compiled against an incompatible version of <none>.Request.
-class IMain extends Imports
-      ^
-two errors found
+one error found

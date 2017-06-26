@@ -7,7 +7,7 @@
 package scala.tools.nsc
 
 import java.net.URL
-import util.Exceptional.unwrap
+import util.Exceptional.rootCause
 import scala.reflect.internal.util.ScalaClassLoader
 
 trait CommonRunner {
@@ -27,7 +27,7 @@ trait CommonRunner {
    */
   def runAndCatch(urls: Seq[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
     try   { run(urls, objectName, arguments) ; Right(true) }
-    catch { case e: Throwable => Left(unwrap(e)) }
+    catch { case e: Throwable => Left(rootCause(e)) }
   }
 }
 

@@ -1,4 +1,5 @@
 import scala.tools.nsc._
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
@@ -147,7 +148,7 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
   def appendix() = {
     val settings = new Settings
     settings.classpath.value = sys.props("java.class.path")
-    val interp = new interpreter.IMain(settings)
+    val interp = new interpreter.IMain(settings, new ReplReporterImpl(settings))
     interp.interpret("def plusOne(x: Int) = x + 1")
     interp.interpret("plusOne(5)")
     interp.reset()

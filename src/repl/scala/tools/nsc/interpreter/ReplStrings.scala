@@ -8,7 +8,7 @@ package interpreter
 
 import scala.reflect.internal.Chars
 
-trait ReplStrings {
+object ReplStrings {
   /** Convert a string into code that can recreate the string.
    *  This requires replacing all special characters by escape
    *  codes. It does not add the surrounding " marks.
@@ -40,4 +40,10 @@ trait ReplStrings {
   private[this] val inquotes = """(['"])(.*?)\1""".r
   def unquoted(s: String) = s match { case inquotes(_, w) => w ; case _ => s }
   def words(s: String) = (s.trim split "\\s+" filterNot (_ == "") map unquoted).toList
+
+  //  /* An s-interpolator that uses `stringOf(arg)` instead of `String.valueOf(arg)`. */
+  //  private[nsc] implicit class `smart stringifier`(val sc: StringContext) extends AnyVal {
+  //    import StringContext.treatEscapes, scala.runtime.ScalaRunTime.stringOf
+  //    def ss(args: Any*): String = sc.standardInterpolator(treatEscapes, args map stringOf)
+  //  }
 }
