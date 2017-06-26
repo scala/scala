@@ -6,14 +6,13 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, GrowableBuilder, ListBuffer}
 import scala.{Any, Boolean, Int, NoSuchElementException, Nothing, UnsupportedOperationException}
-import scala.Predef.identity
 
 
 /** Concrete collection type: List */
 sealed trait List[+A]
   extends Seq[A]
      with LinearSeq[A]
-     with SeqOps[A, List, List[A]]
+     with LinearSeqOps[A, List, List[A]]
      with StrictOptimizedIterableOps[A, List[A]] {
 
   def iterableFactory = List
@@ -21,8 +20,6 @@ sealed trait List[+A]
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
   protected[this] def newSpecificBuilder() = List.newBuilder[A]()
-
-  protected[this] def toCollection: List[A] => IterableOnce[A] = identity
 
   @tailrec final def length: Int = if (isEmpty) 0 else tail.length
 

@@ -9,13 +9,11 @@ import scala.reflect.ClassTag
 class StringOps(val s: String)
   extends AnyVal
     with IterableOnce[Char]
-    with SeqOps[Char, Seq, String]
+    with IndexedSeqOps[Char, immutable.IndexedSeq, String]
     with StrictOptimizedIterableOps[Char, String]
     with ArrayLike[Char] {
 
   protected[this] def coll = StringView(s)
-
-  protected[this] def toCollection: String => IterableOnce[Char] = StringView
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder

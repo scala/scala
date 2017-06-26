@@ -5,13 +5,14 @@ package mutable
 import java.lang.IndexOutOfBoundsException
 
 import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
-import scala.Predef.{intWrapper, identity}
+import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
-  extends IndexedOptimizedGrowableSeq[A]
-     with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-     with StrictOptimizedIterableOps[A, ArrayBuffer[A]] {
+  extends IndexedSeq[A]
+    with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with IndexedOptimizedGrowableSeq[A]
+    with StrictOptimizedIterableOps[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 
@@ -49,8 +50,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
   protected[this] def newSpecificBuilder() = new GrowableBuilder(ArrayBuffer.empty[A])
-
-  protected[this] def toCollection: ArrayBuffer[A] => IterableOnce[A] = identity
 
   def clear(): Unit =
     end = 0

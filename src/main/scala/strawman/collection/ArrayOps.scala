@@ -10,13 +10,11 @@ import scala.reflect.ClassTag
 class ArrayOps[A](val xs: Array[A])
   extends AnyVal
     with IterableOnce[A]
-    with SeqOps[A, immutable.IndexedSeq, Array[A]]
+    with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
     with StrictOptimizedIterableOps[A, Array[A]]
     with ArrayLike[A] {
 
   protected[this] def coll = ArrayView(xs)
-
-  protected[this] def toCollection: Array[A] => IterableOnce[A] = ArrayView(_)
 
   def length = xs.length
   def apply(i: Int) = xs.apply(i)

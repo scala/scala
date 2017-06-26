@@ -26,21 +26,13 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with ArrayLike[A]
   with Equals {
 
-  /** Evidence that type `C` is (or can be converted to) an `IterableOnce[A]` */
-  protected[this] def toCollection: C => IterableOnce[A]
-
   /** Returns new $coll with elements in reversed order.
    *
    *  $willNotTerminateInf
    *
    *  @return A new $coll with all elements of this $coll in reversed order.
    */
-  def reverse: C = {
-    var xs: List[A] = Nil
-    val it = coll.iterator()
-    while (it.hasNext) xs = it.next() :: xs
-    fromSpecificIterable(xs)
-  }
+  def reverse: C = fromSpecificIterable(reversed)
 
   /** An iterator yielding elements in reversed order.
    *
@@ -50,7 +42,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *
    *  @return  an iterator yielding the elements of this $coll in reversed order
    */
-  def reverseIterator: Iterator[A] = toCollection(reverse).iterator()
+  def reverseIterator(): Iterator[A] = reversed.iterator()
 
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
@@ -95,16 +87,14 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
     def apply(i: Int): A = self(i)
   }
 
+  override protected[this] def reversed: Iterable[A] = view.reverse
+
   /** A collection containing the last `n` elements of this collection. */
   override def takeRight(n: Int): C = fromSpecificIterable(view.takeRight(n))
 
   /** The rest of the collection without its `n` last elements. For
     * linear, immutable collections this should avoid making a copy. */
   override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
-
-  override def reverse: C = fromSpecificIterable(view.reverse)
-
-  override def reverseIterator: Iterator[A] = view.reverse.iterator()
 
 }
 

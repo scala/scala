@@ -5,7 +5,6 @@ package immutable
 import strawman.collection.mutable.Builder
 
 import scala.{Any, Int, None, Nothing, Option, Some, StringContext}
-import scala.Predef.{???, identity}
 import scala.annotation.tailrec
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
@@ -39,8 +38,6 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
     IndexedSeq.newBuilder().mapResult(_.to(LazyList))
-
-  protected[this] def toCollection: LazyList[A] => IterableOnce[A] = identity
 
   def zipWithIndex: LazyList[(A, Int)] =
     LazyList.unfold((0, this)) { case (i, as) =>

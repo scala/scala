@@ -6,7 +6,7 @@ import strawman.collection.mutable.{Builder, ReusableBuilder}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.{AnyRef, Array, Boolean, IllegalArgumentException, IndexOutOfBoundsException, `inline`, Int, math, NoSuchElementException, Nothing, Serializable, SerialVersionUID, Unit, UnsupportedOperationException}
-import scala.Predef.{identity, intWrapper}
+import scala.Predef.intWrapper
 
 /** Companion object to the Vector class
  */
@@ -73,8 +73,6 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   protected[this] def newSpecificBuilder(): Builder[A, Vector[A]] = Vector.newBuilder()
 
-  protected[this] def toCollection: Vector[A] => IterableOnce[A] = identity
-
   private[immutable] var dirty = false
 
   def length: Int = endIndex - startIndex
@@ -87,13 +85,13 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
 
-  override def iterator: VectorIterator[A] = {
+  override def iterator(): VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     initIterator(s)
     s
   }
 
-  override def reverseIterator: Iterator[A] = new Iterator[A] {
+  override def reverseIterator(): Iterator[A] = new Iterator[A] {
     private var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =

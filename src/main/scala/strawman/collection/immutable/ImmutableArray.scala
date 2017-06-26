@@ -6,7 +6,7 @@ import strawman.collection.{IterableFactory, IterableFactoryWithBuilder, Iterabl
 
 import scala.{Any, Boolean, Int, Nothing}
 import scala.runtime.ScalaRunTime
-import scala.Predef.{???, identity, intWrapper}
+import scala.Predef.{???, intWrapper}
 
 /**
   * An immutable array.
@@ -23,8 +23,6 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
 
   protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()
-
-  protected[this] def toCollection: ImmutableArray[A] => IterableOnce[A] = identity
 
   def length: Int = elements.length
 
