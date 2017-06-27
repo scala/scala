@@ -2,10 +2,10 @@ package strawman
 package collection
 package immutable
 
-import scala.{None, Nothing, Option, Some, StringContext, Any, Int}
-import scala.Predef.???
+import strawman.collection.mutable.Builder
+
+import scala.{Any, Int, None, Nothing, Option, Some, StringContext}
 import scala.annotation.tailrec
-import mutable.Builder
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
   extends Seq[A]
@@ -39,6 +39,11 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
   protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
     IndexedSeq.newBuilder().mapResult(_.to(LazyList))
 
+  def zipWithIndex: LazyList[(A, Int)] =
+    LazyList.unfold((0, this)) { case (i, as) =>
+      as.force.map { case (a, _as) => ((a, i), (i + 1, _as)) }
+    }
+
   override def className = "LazyList"
 
   override def toString =
@@ -69,5 +74,21 @@ object LazyList extends IterableFactory[LazyList] {
     new LazyList(if (it.hasNext) Some(it.next(), fromIterator(it)) else None)
 
   def empty[A]: LazyList[A] = Empty
+
+  /**
+    * @return a LazyList by using a function `f` producing elements of
+    *         type `A` and updating an internal state `S`.
+    * @param init State initial value
+    * @param f    Computes the next element (or returns `None` to signal
+    *             the end of the collection)
+    * @tparam A   Type of the elements
+    * @tparam S   Type of the internal state
+    */
+  def unfold[A, S](init: S)(f: S => Option[(A, S)]): LazyList[A] = {
+    def loop(s: S): LazyList[A] = new LazyList[A]({
+      f(s).map { case (a, _s) => (a, loop(_s)) }
+    })
+    loop(init)
+  }
 
 }

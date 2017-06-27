@@ -14,18 +14,18 @@ import scala.Predef.intWrapper
 @Warmup(iterations = 12)
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
-class ScalaVectorBenchmark {
+class VectorBenchmark {
 
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: scala.Vector[Long] = _
-  var xss: scala.Array[scala.Vector[Long]] = _
+  var xs: Vector[Long] = _
+  var xss: scala.Array[Vector[Long]] = _
   var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    def freshCollection() = scala.Vector((1 to size).map(_.toLong): _*)
+    def freshCollection() = Vector((1 to size).map(_.toLong): _*)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
     if (size > 0) {
@@ -35,7 +35,7 @@ class ScalaVectorBenchmark {
 
   @Benchmark
   def cons(bh: Blackhole): Unit = {
-    var ys = scala.Vector.empty[Long]
+    var ys = Vector.empty[Long]
     var i = 0L
     while (i < size) {
       ys = ys :+ i
@@ -75,11 +75,5 @@ class ScalaVectorBenchmark {
 
   @Benchmark
   def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
-
-  @Benchmark
-  def groupBy(bh: Blackhole): Unit = {
-    val result = xs.groupBy(_ % 5)
-    bh.consume(result)
-  }
 
 }

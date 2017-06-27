@@ -47,6 +47,14 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   protected[this] def newSpecificBuilder(): Builder[A, C]
 
+  // Consumes all the collection!
+  protected[this] def reversed: Iterable[A] = {
+    var xs: immutable.List[A] = immutable.Nil
+    val it = coll.iterator()
+    while (it.hasNext) xs = it.next() :: xs
+    xs
+  }
+
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */

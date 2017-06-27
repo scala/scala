@@ -9,9 +9,10 @@ import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
-  extends IndexedOptimizedGrowableSeq[A]
-     with SeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-     with StrictOptimizedIterableOps[A, ArrayBuffer[A]] {
+  extends IndexedSeq[A]
+    with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with IndexedOptimizedGrowableSeq[A]
+    with StrictOptimizedIterableOps[A, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 

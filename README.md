@@ -46,7 +46,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [ ] `LinkedList`
 - [ ] `DoubleLinkedList`
 - [x] `Range` / `NumericRange`
-- [ ] `Vector`
+- [x] `Vector`
 - [x] `HashMap`
 - [x] `TreeMap`
 - [ ] `IntMap` / `LongMap` (?)
@@ -56,7 +56,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `ListSet`
 - [x] `TreeSet`
 - [ ] `EqSet`
-- [ ] `BitSet`
+- [x] `BitSet`
 - [x] `View`
 
 ## Implemented operations (on the relevant collection types)
@@ -102,10 +102,12 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `init`
 - [x] `take`
 - [x] `takeRight`
-- [x] `updated`
 
 ### Transformations to collections that can have a different element type
 
+- [x] `updated`
+- [x] `prepend`
+- [x] `append`
 - [x] `++` / `concat` / `union`
 - [x] `flatMap`
 - [x] `map`

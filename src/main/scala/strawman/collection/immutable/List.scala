@@ -4,15 +4,15 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Boolean, Int, NoSuchElementException, Nothing, UnsupportedOperationException}
 import mutable.{Builder, GrowableBuilder, ListBuffer}
+import scala.{Any, Boolean, Int, NoSuchElementException, Nothing, UnsupportedOperationException}
 
 
 /** Concrete collection type: List */
 sealed trait List[+A]
   extends Seq[A]
      with LinearSeq[A]
-     with SeqOps[A, List, List[A]]
+     with LinearSeqOps[A, List, List[A]]
      with StrictOptimizedIterableOps[A, List[A]] {
 
   def iterableFactory = List
@@ -25,6 +25,8 @@ sealed trait List[+A]
 
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
+
+  override def prepend[B >: A](elem: B): List[B] = elem :: this
 
   /** Prepend operation that avoids copying this list */
   def ++:[B >: A](prefix: List[B]): List[B] =

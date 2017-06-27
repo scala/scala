@@ -1,7 +1,7 @@
 package strawman.collection.immutable
 
 import strawman.collection
-import strawman.collection.{IterableFactory, Iterator, StrictOptimizedIterableOps}
+import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
 import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized}
 import scala.Predef.ArrowAssoc

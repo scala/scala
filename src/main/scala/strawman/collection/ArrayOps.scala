@@ -9,16 +9,17 @@ import scala.reflect.ClassTag
 
 class ArrayOps[A](val xs: Array[A])
   extends AnyVal
-    with SeqOps[A, immutable.IndexedSeq, Array[A]]
+    with IterableOnce[A]
+    with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
     with StrictOptimizedIterableOps[A, Array[A]]
     with ArrayLike[A] {
 
-  protected[this] def coll = new ArrayView(xs)
+  protected[this] def coll = ArrayView(xs)
 
   def length = xs.length
   def apply(i: Int) = xs.apply(i)
 
-  override def view = new ArrayView(xs)
+  override def view = ArrayView(xs)
 
   def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 

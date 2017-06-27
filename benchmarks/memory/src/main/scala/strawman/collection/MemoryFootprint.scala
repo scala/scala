@@ -1,6 +1,7 @@
 package bench
 
-import strawman.collection.immutable.{LazyList, List, Range, NumericRange}
+import strawman.collection.immutable.{LazyList, List, Range, NumericRange, Vector}
+import strawman.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import scala.{Any, AnyRef, App, Int, Long, Seq, StringContext}
 import scala.Predef.{ArrowAssoc, println, intWrapper}
@@ -8,7 +9,6 @@ import scala.compat.Platform
 import java.lang.Runtime
 import java.nio.file.{Files, Paths}
 
-import strawman.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object MemoryFootprint extends App {
 
@@ -40,6 +40,8 @@ object MemoryFootprint extends App {
       "scala.List"    -> benchmark(scala.List.fill(_)(obj)),
       "List"          -> benchmark(List.fill(_)(obj)),
       "LazyList"      -> benchmark(LazyList.fill(_)(obj)),
+      "scala.Vector"  -> benchmark(scala.Vector.fill(_)(obj)),
+      "Vector"        -> benchmark(Vector.fill(_)(obj)),
       "scala.HashSet" -> benchmark(n => scala.collection.immutable.HashSet((1 to n).map(_.toString): _*)),
       "HashSet"       -> benchmark(n => strawman.collection.immutable.HashSet((1 to n).map(_.toString): _*)),
       "scala.TreeSet" -> benchmark(n => scala.collection.immutable.TreeSet((1 to n).map(_.toString): _*)),

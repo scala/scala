@@ -18,20 +18,33 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
+object IndexedSeq extends IterableFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
+
 /** Base trait for Seq operations */
 trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
   with ArrayLike[A]
   with Equals {
 
-  def reverse: C = {
-    var xs: List[A] = Nil
-    val it = coll.iterator()
-    while (it.hasNext) xs = it.next() :: xs
-    fromSpecificIterable(xs)
-  }
+  /** Returns new $coll with elements in reversed order.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return A new $coll with all elements of this $coll in reversed order.
+   */
+  def reverse: C = fromSpecificIterable(reversed)
 
-  /** Do the elements of this collection are the same (and in the same order)
+  /** An iterator yielding elements in reversed order.
+   *
+   *   $willNotTerminateInf
+   *
+   * Note: `xs.reverseIterator` is the same as `xs.reverse.iterator` but might be more efficient.
+   *
+   *  @return  an iterator yielding the elements of this $coll in reversed order
+   */
+  def reverseIterator(): Iterator[A] = reversed.iterator()
+
+  /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =
@@ -68,10 +81,13 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
 /** Base trait for indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
+
   override def view: IndexedView[A] = new IndexedView[A] {
     def length: Int = self.length
     def apply(i: Int): A = self(i)
   }
+
+  override protected[this] def reversed: Iterable[A] = view.reverse
 
   /** A collection containing the last `n` elements of this collection. */
   override def takeRight(n: Int): C = fromSpecificIterable(view.takeRight(n))
@@ -80,7 +96,6 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
     * linear, immutable collections this should avoid making a copy. */
   override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
 
-  override def reverse: C = fromSpecificIterable(view.reverse)
 }
 
 /** Base trait for linear Seq operations */

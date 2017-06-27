@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import collection.{IterableFactory, IterableOps, Iterator, StrictOptimizedIterableOps}
+import collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
 import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Numeric, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized}
 import scala.Predef.augmentString
