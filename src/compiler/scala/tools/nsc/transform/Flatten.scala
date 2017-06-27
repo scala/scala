@@ -109,6 +109,10 @@ abstract class Flatten extends InfoTransform {
   def transformInfo(sym: Symbol, tp: Type): Type = flattened(tp)
 
   protected def newTransformer(unit: CompilationUnit): Transformer = new Flattener
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new FlattenPhase(prev)
+  private class FlattenPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class Flattener extends Transformer {
     /** Buffers for lifted out classes */

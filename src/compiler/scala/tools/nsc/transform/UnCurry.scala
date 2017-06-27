@@ -62,6 +62,11 @@ abstract class UnCurry extends InfoTransform
   val phaseName: String = "uncurry"
 
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new UncurryPhase(prev)
+  private class UncurryPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   override def changesBaseClasses = false
 
 // ------ Type transformation --------------------------------------------------------
@@ -108,12 +113,7 @@ abstract class UnCurry extends InfoTransform
     // which hit at this point should not be hard to come by, but the immediate
     // motivation can be seen in continuations-neg/t3718.
     override def transform(tree: Tree): Tree =
-      try postTransform(mainTransform(tree))
-      catch { case ex: TypeError =>
-        reporter.error(ex.pos, ex.msg)
-        debugStack(ex)
-        EmptyTree
-      }
+      postTransform(mainTransform(tree))
 
     /* Is tree a reference `x` to a call by name parameter that needs to be converted to
      * x.apply()? Note that this is not the case if `x` is used as an argument to another

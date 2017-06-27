@@ -42,7 +42,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-    if (settings.Ydelambdafy.value == "method") new Phase(prev)
+    if (settings.Ydelambdafy.value == "method") new DelambdafyPhase(prev)
     else new SkipPhase(prev)
   }
 
@@ -52,6 +52,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new DelambdafyTransformer(unit)
+
+  private class DelambdafyPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     // we need to know which methods refer to the 'this' reference so that we can determine which lambdas need access to it

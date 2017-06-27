@@ -47,6 +47,10 @@ abstract class LambdaLift extends InfoTransform {
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new LambdaLifter(unit)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new LambdaLiftPhase(prev)
+  private class LambdaLiftPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
 
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 

@@ -32,6 +32,7 @@ abstract class Pickler extends SubComponent {
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
     def apply(unit: CompilationUnit) {
       def pickle(tree: Tree) {
         def add(sym: Symbol, pickle: Pickle) = {

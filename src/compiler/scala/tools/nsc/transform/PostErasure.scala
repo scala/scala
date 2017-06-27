@@ -17,6 +17,11 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
   val phaseName: String = "posterasure"
 
   def newTransformer(unit: CompilationUnit): Transformer = new PostErasureTransformer(unit)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new PostErasurePhase(prev)
+  private class PostErasurePhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
+  }
+
   override def changesBaseClasses = false
 
   class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {

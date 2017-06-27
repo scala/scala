@@ -202,7 +202,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  values for outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
-  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with UnderConstructionTransformer {
+  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 
@@ -267,6 +267,13 @@ abstract class ExplicitOuter extends InfoTransform
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
+
+    /** The stack of class symbols in which a call to this() or to the super
+      * constructor, or early definition is active
+      */
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
+    protected val selfOrSuperCalls = collection.mutable.Stack[Symbol]()
+
     override def transform(tree: Tree): Tree = {
       def sym = tree.symbol
       val savedOuterParam = outerParam
@@ -279,7 +286,13 @@ abstract class ExplicitOuter extends InfoTransform
             assert(outerParam.name startsWith nme.OUTER, outerParam.name)
           case _ =>
         }
-        super.transform(tree)
+        if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree)) {
+          selfOrSuperCalls push currentOwner.owner
+          val transformed = super.transform(tree)
+          selfOrSuperCalls.pop()
+          transformed
+        } else
+          super.transform(tree)
       }
       finally outerParam = savedOuterParam
     }
@@ -483,6 +496,7 @@ abstract class ExplicitOuter extends InfoTransform
     new Phase(prev)
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def run(): Unit = super.run() // OPT: we override run to make all phases siblings in call-trees of profiles
     override val checkable = false
   }
 }
