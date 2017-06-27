@@ -63,14 +63,14 @@ trait PhaseAssembly {
      * node object does not exits, then create it.
      */
     def getNodeByPhase(name: String): Node =
-      nodes.getOrElseUpdate(name, new Node(name))
+      nodes.getOrElseUpdate(name, Node(name))
 
     /* Connect the frm and to nodes with an edge and make it soft.
      * Also add the edge object to the set of edges, and to the dependency
      * list of the nodes
      */
     def softConnectNodes(frm: Node, to: Node) {
-      val e = new Edge(frm, to, false)
+      val e = Edge(frm, to, false)
       this.edges += e
 
       frm.after += e
@@ -82,7 +82,7 @@ trait PhaseAssembly {
      * list of the nodes
      */
     def hardConnectNodes(frm: Node, to: Node) {
-      val e = new Edge(frm, to, true)
+      val e = Edge(frm, to, true)
       this.edges += e
 
       frm.after += e
