@@ -39,10 +39,11 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
   protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
     IndexedSeq.newBuilder().mapResult(_.to(LazyList))
 
-  def zipWithIndex: LazyList[(A, Int)] =
-    LazyList.unfold((0, this)) { case (i, as) =>
-      as.force.map { case (a, _as) => ((a, i), (i + 1, _as)) }
-    }
+// The following is commented because we need to compare it with the default implementation first
+//  def zipWithIndex: LazyList[(A, Int)] =
+//    LazyList.unfold((0, this)) { case (i, as) =>
+//      as.force.map { case (a, _as) => ((a, i), (i + 1, _as)) }
+//    }
 
   override def className = "LazyList"
 

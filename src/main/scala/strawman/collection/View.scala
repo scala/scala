@@ -209,6 +209,10 @@ object View extends IterableFactory[View] {
         }
         def hasNext: Boolean = it.hasNext
       }
+  }
+
+  case class ZipWithIndex[A](underlying: Iterable[A]) extends View[(A, Int)] {
+    def iterator(): Iterator[(A, Int)] = underlying.iterator().zipWithIndex
     override def knownSize: Int = underlying.knownSize
   }
 

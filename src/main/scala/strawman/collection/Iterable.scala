@@ -482,11 +482,11 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   /** Takes longest prefix of elements that satisfy a predicate.
     *  $orderDependent
-    *  @param   pred  The predicate used to test elements.
+    *  @param   p  The predicate used to test elements.
     *  @return  the longest prefix of this $coll whose elements all satisfy
     *           the predicate `p`.
     */
-  def takeWhile(pred: A => Boolean): C = fromSpecificIterable(View.TakeWhile(coll, pred))
+  def takeWhile(p: A => Boolean): C = fromSpecificIterable(View.TakeWhile(coll, p))
 
   /** Splits this $coll into a prefix/suffix pair according to a predicate.
     *
@@ -519,6 +519,42 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def dropWhile(p: A => Boolean): C = fromSpecificIterable(View.DropWhile(coll, p))
+
+  /** Partitions elements in fixed size ${coll}s.
+   *  @see [[scala.collection.Iterator]], method `grouped`
+   *
+   *  @param size the number of elements per group
+   *  @return An iterator producing ${coll}s of size `size`, except the
+   *          last will be less than size `size` if the elements don't divide evenly.
+   */
+  def grouped(size: Int): Iterator[C] =
+    coll.iterator().grouped(size).map(fromSpecificIterable)
+
+  /** Groups elements in fixed size blocks by passing a "sliding window"
+    *  over them (as opposed to partitioning them, as is done in `grouped`.)
+    *  The "sliding window" step is set to one.
+    *  @see [[scala.collection.Iterator]], method `sliding`
+    *
+    *  @param size the number of elements per group
+    *  @return An iterator producing ${coll}s of size `size`, except the
+    *          last element (which may be the only element) will be truncated
+    *          if there are fewer than `size` elements remaining to be grouped.
+    */
+  def sliding(size: Int): Iterator[C] = sliding(size, 1)
+
+  /** Groups elements in fixed size blocks by passing a "sliding window"
+    *  over them (as opposed to partitioning them, as is done in grouped.)
+    *  @see [[scala.collection.Iterator]], method `sliding`
+    *
+    *  @param size the number of elements per group
+    *  @param step the distance between the first elements of successive
+    *         groups
+    *  @return An iterator producing ${coll}s of size `size`, except the
+    *          last element (which may be the only element) will be truncated
+    *          if there are fewer than `size` elements remaining to be grouped.
+    */
+  def sliding(size: Int, step: Int): Iterator[C] =
+    coll.iterator().sliding(size, step).map(fromSpecificIterable)
 
   /** The rest of the collection without its first element. */
   def tail: C = {
@@ -655,9 +691,27 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** Alias for `concat` */
   @`inline` final def ++ [B >: A](xs: IterableOnce[B]): CC[B] = concat(xs)
 
-  /** Zip. Interesting because it requires to align to source collections. */
+  /** Returns a $coll formed from this $coll and another iterable collection
+    *  by combining corresponding elements in pairs.
+    *  If one of the two collections is longer than the other, its remaining elements are ignored.
+    *
+    *  @param   xs  The iterable providing the second half of each result pair
+    *  @tparam  B     the type of the second half of the returned pairs
+    *  @return        a new collection of type `That` containing pairs consisting of
+    *                 corresponding elements of this $coll and `that`. The length
+    *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
+    */
   def zip[B](xs: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
+
+  /** Zips this $coll with its indices.
+    *
+    *  @return        A new collection of type `That` containing pairs consisting of all elements of this
+    *                 $coll paired with their index. Indices start at `0`.
+    *  @example
+    *    `List("a", "b", "c").zipWithIndex == List(("a", 0), ("b", 1), ("c", 2))`
+    */
+  def zipWithIndex: CC[(A @uncheckedVariance, Int)] = fromIterable(View.ZipWithIndex(coll))
 
   /** Converts this $coll of pairs into two collections of the first and second
     *  half of each pair.
