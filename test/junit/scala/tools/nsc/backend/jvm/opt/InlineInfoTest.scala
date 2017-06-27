@@ -20,17 +20,11 @@ class InlineInfoTest extends BytecodeTesting {
 
   override def compilerArgs = "-opt:l:classpath"
 
-  def notPerRun: List[Clearable] = List(
+  compiler.keepPerRunCachesAfterRun(List(
     bTypes.classBTypeCacheFromSymbol,
     bTypes.classBTypeCacheFromClassfile,
     bTypes.byteCodeRepository.compilingClasses,
-    bTypes.byteCodeRepository.parsedClasses)
-  notPerRun foreach global.perRunCaches.unrecordCache
-
-  def compile(code: String) = {
-    notPerRun.foreach(_.clear())
-    compiler.compileClasses(code)
-  }
+    bTypes.byteCodeRepository.parsedClasses))
 
   @Test
   def inlineInfosFromSymbolAndAttribute(): Unit = {
@@ -51,7 +45,7 @@ class InlineInfoTest extends BytecodeTesting {
         |}
         |class C extends T with U
       """.stripMargin
-    val classes = compile(code)
+    val classes = compileClasses(code)
 
     val fromSyms = classes.map(c => global.genBCode.bTypes.cachedClassBType(c.name).get.info.get.inlineInfo)
 

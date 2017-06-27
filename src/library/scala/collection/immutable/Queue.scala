@@ -92,6 +92,8 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override def exists(p: A => Boolean): Boolean =
     in.exists(p) || out.exists(p)
 
+  override def stringPrefix = "Queue"
+
   /** Returns the length of the queue.
    */
   override def length = in.length + out.length
@@ -108,8 +110,14 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Queue[A], B, That]): That = {
     if (bf eq Queue.ReusableCBF) {
-      val thatQueue = that.asInstanceOf[Queue[B]]
-      new Queue[B](thatQueue.in ++ (thatQueue.out reverse_::: this.in), this.out).asInstanceOf[That]
+      val newIn =
+        if (that.isInstanceOf[Queue[_]]) {
+          val thatQueue: Queue[B] = that.asInstanceOf[Queue[B]]
+          thatQueue.in ++ (thatQueue.out reverse_::: this.in)
+        } else {
+          (new ListBuffer[B] ++= that.seq).prependToList(this.in)
+        }
+      new Queue[B](newIn, this.out).asInstanceOf[That]
     } else {
       super.++(that)(bf)
     }

@@ -159,25 +159,41 @@ trait SyntheticMethods extends ast.TreeDSL {
     def thatCast(eqmeth: Symbol): Tree =
       gen.mkCast(Ident(eqmeth.firstParam), clazz.tpe)
 
-    /* The equality method core for case classes and inline classes.
+    /* The equality method core for case classes and derived value classes.
+     * Generally:
      * 1+ args:
      *   (that.isInstanceOf[this.C]) && {
      *       val x$1 = that.asInstanceOf[this.C]
      *       (this.arg_1 == x$1.arg_1) && (this.arg_2 == x$1.arg_2) && ... && (x$1 canEqual this)
      *      }
-     * Drop canBuildFrom part if class is final and canBuildFrom is synthesized
+     * Drop:
+     * - canEqual part if class is final and canEqual is synthesized.
+     * - test for arg_i if arg_i has type Nothing, Null, or Unit
+     * - asInstanceOf if no equality checks need made (see scala/bug#9240, scala/bug#10361)
      */
     def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
+      def usefulEquality(acc: Symbol): Boolean = {
+        val rt = acc.info.resultType
+        rt != NothingTpe && rt != NullTpe && rt != UnitTpe
+      }
+
       val otherName = context.unit.freshTermName(clazz.name + "$")
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
-      val pairwise  = accessors map (acc => fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
+      val pairwise  = accessors collect {
+        case acc if usefulEquality(acc) =>
+          fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc))
+      }
       val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(mkThis))
       val tests     = if (clazz.isDerivedValueClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
 
-      thatTest(eqmeth) AND Block(
-        ValDef(otherSym, thatCast(eqmeth)),
-        AND(tests: _*)
-      )
+      if (tests.isEmpty) {
+        thatTest(eqmeth)
+      } else {
+        thatTest(eqmeth) AND Block(
+          ValDef(otherSym, thatCast(eqmeth)),
+          AND(tests: _*)
+        )
+      }
     }
 
     /* The equality method for case classes.

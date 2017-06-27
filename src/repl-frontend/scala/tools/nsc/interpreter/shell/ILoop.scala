@@ -655,8 +655,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     else if (existingClass.nonEmpty) echo(s"The path '$f' cannot be loaded, it contains a classfile that already exists on the classpath: ${existingClass.get}")
     else {
       intp.addUrlsToClassPath(f.toURI.toURL)
-      echo("Added '%s' to classpath.".format(f.path, intp.classPathString))
-      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.classPathString))
+      echo("Added '%s' to classpath.".format(f.path))
+      repldbg("Added '%s'. Your new classpath is:\n\"%s\"".format(f.path, intp.classPathString))
     }
   }
 
