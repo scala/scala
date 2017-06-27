@@ -50,11 +50,11 @@ object Bounds
     import analyzer._
 
     object analyzerPlugin extends AnalyzerPlugin {
-      override def noImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] = {
+      override def noImplicitFoundError(param: Symbol, errors: List[ImplicitError]): Option[String] = {
         val chain = errors
           .map {
-            case a @ ImpError(_, _, _, _) => a.candidateName
-            case b @ NonConfBounds(_, _, _, a, p) =>
+            case a @ ImplicitError.NotFound(_, _, _, _) => a.candidateName
+            case b @ ImplicitError.NonconformantBounds(_, _, _, a, p, _) =>
               val diff = a.zip(p).map { case (l, r) => s"$l/$r" }.mkString("[", ", ", "]")
               s"${b.candidateName}: $diff"
           }

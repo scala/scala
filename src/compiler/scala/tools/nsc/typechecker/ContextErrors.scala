@@ -159,16 +159,16 @@ trait ContextErrors {
         case _ => s"could not find implicit value for $evOrParam $paramTp"
       }
     }
-    if (!nestedImplicit) {
-      val errMsg = pluginsNoImplicitFoundError(param, implicitErrors).getOrElse(defaultErrMsg)
+    if (!ImplicitError.nested) {
+      val errMsg = pluginsNoImplicitFoundError(param, ImplicitError.errors).getOrElse(defaultErrMsg)
       issueNormalTypeError(tree, errMsg)
     }
     else {
-      implicitTypeStack
+      ImplicitError.stack
         .headOption
-        .map(ImpError(_, tree, implicitNesting, param))
-        .foreach(err => implicitErrors = err :: implicitErrors)
-        issueNormalTypeError(tree, defaultErrMsg)
+        .map(ImplicitError.NotFound(_, tree, ImplicitError.nesting, param))
+        .foreach(err => ImplicitError.push(err))
+      issueNormalTypeError(tree, defaultErrMsg)
     }
   }
 

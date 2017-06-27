@@ -160,7 +160,7 @@ trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
      * @param tree The tree that requested the implicit
      * @param param The implicit parameter that was resolved
      */
-    def noImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] = None
+    def noImplicitFoundError(param: Symbol, errors: List[ImplicitError]): Option[String] = None
 
     /**
      * Construct a custom message for found/required errors
@@ -366,7 +366,7 @@ trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
   })
 
   /** @see AnalyzerPlugin.noImplicitFoundError */
-  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImpFailReason]): Option[String] =
+  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImplicitError]): Option[String] =
     invoke(new CumulativeOp[Option[String]] {
       def default = None
       def accumulate = (tpe, p) => p.noImplicitFoundError(param, errors)
