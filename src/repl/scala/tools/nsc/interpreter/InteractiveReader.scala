@@ -122,7 +122,7 @@ class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
   }
 
   /** Block for the result line, or null on ctrl-D. */
-  def line: String = result.take getOrElse null
+  def line: String = result.take.orNull
 }
 object SplashLoop {
   def apply(reader: SplashReader, prompt: String): SplashLoop = new SplashLoop(reader, prompt)
