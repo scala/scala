@@ -19,10 +19,7 @@ env:
 
 # the key is restricted using forced commands so that it can only upload to the directory we need here
 after_success:
-  - openssl aes-256-cbc -pass "pass:$PRIV_KEY_SECRET" -in spec/id_dsa_travis.enc -out spec/id_dsa_travis -d -a
-  - chmod 600 spec/id_dsa_travis
-  - eval "$(ssh-agent)"
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && ssh-add -D && ssh-add spec/id_dsa_travis && rsync -e "ssh -o StrictHostKeyChecking=no" -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.12/'
+  - ./scripts/travis-publish-spec.sh
 
 # using S3 would be simpler, but we want to upload to scala-lang.org
 # after_success: bundle exec s3_website push --headless
