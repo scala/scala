@@ -2,25 +2,22 @@ package strawman
 package collection.test
 
 import org.junit.Test
-import strawman.collection.Iterable
-import strawman.collection.immutable.{List, HashSet}
+import strawman.collection.Seq
+import strawman.collection.immutable.{ImmutableArray, List}
 
 import scala.{Int, Some, Unit}
-import scala.Predef.$conforms
+import scala.Predef.{$conforms, assert}
 
 class FlattenTest {
 
-  def f(xs: Iterable[Iterable[Int]], ys: Iterable[Int]): Unit = {
-    xs.flatten                   // Iterable[Iterable[Int]] => Iterable[Int]
-    ys.flatMap(y => Some(y))     // Iterable[Option[Int]]   => Iterable[Int]
-    ys.map(y => Some(y)).flatten // Iterable[Option[Int]]   => Iterable[Int]
+  def f(xs: Seq[Seq[Int]], ys: Seq[Int]): Unit = {
+    assert(xs.flatten == ys)
+    assert(ys.flatMap(y => Some(y)) == ys.map(y => Some(y)).flatten)
   }
 
-//  @Test
+  @Test
   def flattenTest: Unit = {
-
-    f(List(HashSet(1, 2, 3)), List(1, 2, 3))
-
+    f(List(ImmutableArray(1, 2, 3)), List(1, 2, 3))
   }
 
 }
