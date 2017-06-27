@@ -39,3 +39,14 @@ object Collectionstrawman_v0_ArrayBuffer {
   import scala.collection.mutable.ArrayBuffer
   val xs: ArrayBuffer[Int] = ArrayBuffer(1, 2, 3)
 }
+
+object Collectionstrawman_v0_ArrayAndString {
+  def foo(xs: Array[Int], ys: String): Unit = {
+    xs.map(x => x + 1)
+    ys.map(c => c.toUpper)
+  }
+}
+
+object Collectionstrawman_v0_Range {
+  for (i <- 1 to 10; j <- 0 until 10) yield (i, j)
+}

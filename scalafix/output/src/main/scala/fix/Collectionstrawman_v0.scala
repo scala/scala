@@ -1,8 +1,9 @@
 package fix
 
 import scala.{ List => _, Nil => _, Seq => _, Vector => _, :: => _, #:: => _ }
-import scala.Predef.{ Map => _ }
-import strawman.collection.immutable.{ LazyList, List, Map, Nil, Seq, Vector, :: }
+import scala.Predef.{ Map => _, augmentString => _, intArrayOps => _ }
+import strawman.collection.{ stringToStringOps, arrayToArrayOps }
+import strawman.collection.immutable.{ LazyList, List, Map, Nil, Range, Seq, Vector, :: }
 import strawman.collection.immutable.LazyList.#::
 
 object Collectionstrawman_v0_List {
@@ -40,4 +41,15 @@ object Collectionstrawman_v0_Map {
 object Collectionstrawman_v0_ArrayBuffer {
   import strawman.collection.mutable.ArrayBuffer
   val xs: ArrayBuffer[Int] = ArrayBuffer(1, 2, 3)
+}
+
+object Collectionstrawman_v0_ArrayAndString {
+  def foo(xs: Array[Int], ys: String): Unit = {
+    xs.map(x => x + 1)
+    ys.map(c => c.toUpper)
+  }
+}
+
+object Collectionstrawman_v0_Range {
+  for (i <- Range.inclusive(1, 10); j <- Range(0, 10)) yield (i, j)
 }
