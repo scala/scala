@@ -15,18 +15,23 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
-import scala.collection.mutable
+import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
 
 class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import bTypes._
   import callGraph._
+
+  val inlineSourceMatcher = new InlineSourceMatcher(compilerSettings.optInlineFrom.value)
 
   final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite
     for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
   }
 
-  def canInlineFromSource(sourceFilePath: Option[String]) = compilerSettings.optInlineGlobal || sourceFilePath.isDefined
+  def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
+    compilerSettings.optLClasspath || (compilerSettings.optLProject && sourceFilePath.isDefined) ||
+     inlineSourceMatcher.allow(calleeDeclarationClass)
+  }
 
   /**
    * Select callsites from the call graph that should be inlined, grouped by the containing method.
