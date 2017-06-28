@@ -140,7 +140,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
 
         if (field.isLazy)
           if (field hasAnnotation TransientAttr) BITMAP_TRANSIENT else BITMAP_NORMAL
-        else if (doCheckInit && !(field hasFlag DEFAULTINIT | PRESUPER))
+        else if (doCheckInit && !(field hasFlag DEFAULTINIT | PRESUPER | PARAMACCESSOR))
           if (field hasAnnotation TransientAttr) BITMAP_CHECKINIT_TRANSIENT else BITMAP_CHECKINIT
         else NO_NAME
       }
@@ -330,7 +330,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
       /** Make getters check the initialized bit, and the class constructor & setters are changed to set the initialized bits. */
       def wrapRhsWithInitChecks(sym: Symbol)(rhs: Tree): Tree =
         if (sym.isConstructor) addInitBitsTransformer transform rhs
-        else if ((sym hasFlag ACCESSOR) && !(sym hasFlag LAZY)) {
+        else if ((sym hasFlag ACCESSOR) && !(sym hasFlag (LAZY | PARAMACCESSOR))) {
           val field = clazz.info.decl(sym.localName)
           if (field == NoSymbol) rhs
           else bitmapOf(field) match {
