@@ -34,6 +34,10 @@ trait ParsersCommon extends ScannersCommon { self =>
   def newLiteral(const: Any) = Literal(Constant(const))
   def literalUnit            = gen.mkSyntheticUnit()
 
+  // Pulls type applications at extractor call sites into lazy vals
+  // which precede the match.
+  lazy val matchRewriter = new MatchRewriter[self.global.type](global)
+
   /** This is now an abstract class, only to work around the optimizer:
    *  methods in traits are never inlined.
    */
@@ -1569,7 +1573,7 @@ self =>
               }
             }
           } else if (in.token == MATCH) {
-            t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+            t = atPos(t.pos.start, in.skipToken())(matchRewriter.rewrite(Match(stripParens(t), inBracesOrNil(caseClauses()))))
           }
           // in order to allow anonymous functions as statements (as opposed to expressions) inside
           // templates, we have to disambiguate them from self type declarations - bug #1565
@@ -1766,7 +1770,7 @@ self =>
      */
     def blockExpr(): Tree = atPos(in.offset) {
       inBraces {
-        if (in.token == CASE) Match(EmptyTree, caseClauses())
+        if (in.token == CASE) matchRewriter.rewrite(Match(EmptyTree, caseClauses()))
         else block()
       }
     }
@@ -2246,7 +2250,7 @@ self =>
       val vds   = new ListBuffer[List[ValDef]]
       val start = in.offset
       def paramClause(): List[ValDef] = if (in.token == RPAREN) Nil else {
-        val implicitmod = 
+        val implicitmod =
           if (in.token == IMPLICIT) {
             if (implicitOffset == -1) { implicitOffset = in.offset ; implicitSection = vds.length }
             else if (warnAt == -1) warnAt = in.offset

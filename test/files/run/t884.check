@@ -1,0 +1,22 @@
+optImplicitTest
+Show[Int]
+Eq[Int]
+Nothing
+fromStringTest
+(Int,55)
+(Double,99)
+((Double,Double),57)
+(Unknown,0)
+associatedIntTest
+abcdefghijklmnopqrstuvwxyz: String -> 26
+true: Boolean -> 1
+false: Boolean -> 0
+Array[Boolean] -> 3
+71: Int -> 4
+981: Long -> 8
+Array[Int] -> 16
+Array[Long] -> 40
+whatListTest
+string
+int
+blub

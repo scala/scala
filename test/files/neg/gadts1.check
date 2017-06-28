@@ -1,9 +1,16 @@
-gadts1.scala:20: error: Test.Cell[a] does not take parameters
+gadts1.scala:17: error: type mismatch;
+ found   : Test.Term[a(in method f)]
+ required: Test.Cell[a(in lazy value TypeArgsPattern1)]
+  t match {
+    ^
+gadts1.scala:20: error: type mismatch;
+ found   : Any
+ required: Test.Int
     case Cell[a](x: Int) => c.x = 5
-                ^
+                 ^
 gadts1.scala:20: error: type mismatch;
  found   : Int(5)
  required: a
     case Cell[a](x: Int) => c.x = 5
                                   ^
-two errors found
+three errors found
