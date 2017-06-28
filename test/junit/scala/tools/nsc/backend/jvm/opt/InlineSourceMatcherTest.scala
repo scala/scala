@@ -8,9 +8,20 @@ import org.junit.runners.JUnit4
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.InlineSourceMatcherTest._
 import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class InlineSourceMatcherTest {
+class InlineSourceMatcherTest extends BytecodeTesting {
+  import compiler._
+
+  override def compilerArgs = "-opt:l:inline -opt-warnings"
+  def setInlineFrom(s: String): Unit = {
+    global.settings.optInlineFrom.value = s
+    // the setting is read once per run
+    global.perRunCaches.clearAll()
+  }
+
   case class E(regex: String, negated: Boolean = false, terminal: Boolean = true)
 
   def check(pat: String, expect: E*): InlineSourceMatcher = {
@@ -156,6 +167,63 @@ class InlineSourceMatcherTest {
       val m = check("**:!**.C:C", E("(?:.*/|)C", true, false), E("C", false, true))
       m.a("C")
       m.d("a/C")
+    }
+  }
+
+  @Test
+  def inlineFromSameClass(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f = 1
+        |  def t = f
+        |}
+      """.stripMargin
+
+    def n(): Unit = assertInvoke(getMethod(compileClass(code), "t"), "C", "f")
+    def y(): Unit = assertNoInvoke(getMethod(compileClass(code), "t"))
+
+    setInlineFrom(""); n()
+    setInlineFrom("C"); y()
+    setInlineFrom("**:!**.C"); n()
+    setInlineFrom("**:!**.C:C"); y()
+  }
+
+  @Test
+  def inlineFromPackages(): Unit = {
+    val code =
+      """package a { class C {
+        |  object D { @inline def f = 1 }
+        |  @inline final def f = 2
+        |}}
+        |package b { class E { import a._
+        |  def t1(c: C) = c.f
+        |  def t2(c: C) = c.D.f
+        |}}
+      """.stripMargin
+
+    {
+      setInlineFrom("")
+      val List(_, _, e) = compileClasses(code)
+      assertInvoke(getMethod(e, "t1"), "a/C", "f")
+      assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
+    }
+    {
+      setInlineFrom("a.C")
+      val List(_, _, e) = compileClasses(code)
+      assertNoInvoke(getMethod(e, "t1"))
+      assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
+    }
+    {
+      setInlineFrom("a.C*")
+      val List(_, _, e) = compileClasses(code)
+      assertNoInvoke(getMethod(e, "t1"))
+      assertDoesNotInvoke(getMethod(e, "t2"), "f") // t2 still has an invocation to the getter `D`
+    }
+    {
+      setInlineFrom("a.C*:!a.C*$")
+      val List(_, _, e) = compileClasses(code)
+      assertNoInvoke(getMethod(e, "t1"))
+      assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
     }
   }
 }

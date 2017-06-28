@@ -11,6 +11,7 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.generic.Clearable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -21,7 +22,17 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import bTypes._
   import callGraph._
 
-  val inlineSourceMatcher = new InlineSourceMatcher(compilerSettings.optInlineFrom.value)
+  // Hack to read the `optInlineFrom` once per run. It happens at the end of a run though..
+  // We use it in InlineSourceMatcherTest so we can change the setting without a new Global.
+  // Better, general idea here: https://github.com/scala/scala/pull/5825#issuecomment-291542859
+  object HasMatcher extends Clearable {
+    recordPerRunCache(this)
+    private def build() = new InlineSourceMatcher(compilerSettings.optInlineFrom.value)
+    var m: InlineSourceMatcher = build()
+    override def clear(): Unit = m = build()
+  }
+
+  def inlineSourceMatcher = HasMatcher.m
 
   final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite
