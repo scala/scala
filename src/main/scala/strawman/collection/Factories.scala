@@ -48,7 +48,7 @@ trait BuildFromLowPriority {
   }
 
   /** Build the source collection type from an Iterable with SortedOps */
-  implicit def buildFromSortedOps[CC[X] <: Iterable[X] with SortedOps[X, CC, CC[X]], A, E : Ordering]: BuildFrom[CC[A], E, CC[E]] = new BuildFrom[CC[A], E, CC[E]] {
+  implicit def buildFromSortedOps[CC[X] <: Iterable[X] with SortedOps[X, CC, _], A, E : Ordering]: BuildFrom[CC[A], E, CC[E]] = new BuildFrom[CC[A], E, CC[E]] {
     def newBuilder(from: CC[A]): Builder[E, CC[E]] = from.sortedIterableFactory.newBuilder[E]()
     def fromSpecificIterable(from: CC[A])(it: Iterable[E]): CC[E] = from.sortedIterableFactory.fromSpecificIterable(it)
   }

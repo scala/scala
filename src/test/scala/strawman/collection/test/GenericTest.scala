@@ -36,8 +36,6 @@ object Parse {
     parts.foldLeft[Option[Builder[A, C]]](Some(bf.newBuilder)) { (maybeBuilder, s) =>
       (maybeBuilder, parseA.parse(s)) match {
         case (Some(builder), Some(a)) =>
-          scala.Predef.println(a)
-          scala.Predef.println(builder.result)
           Some(builder += a)
         case _ => None
       }

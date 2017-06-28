@@ -44,7 +44,7 @@ class TraverseTest {
       case (Right(builder), Right(b)) => Right(builder += b)
       case (Left(a)       ,        _) => Left(a)
       case (_             ,  Left(a)) => Left(a)
-    }.map(_.result)
+    }.right.map(_.result)
 
   @Test
   def optionSequence1Test: Unit = {
