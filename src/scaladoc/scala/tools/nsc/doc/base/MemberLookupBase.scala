@@ -15,7 +15,7 @@ trait MemberLookupBase {
   def internalLink(sym: Symbol, site: Symbol): Option[LinkTo]
   def chooseLink(links: List[LinkTo]): LinkTo
   def toString(link: LinkTo): String
-  def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal]
+  def findExternalLink(sym: Symbol, name: String): Option[LinkTo]
   def warnNoLink: Boolean
 
   import global._
@@ -69,9 +69,9 @@ trait MemberLookupBase {
           }
 
           if (sym.isClass || sym.isModule || sym.isTrait || sym.hasPackageFlag)
-            findExternalLink(sym, linkName(sym))
+            findExternalLink(sym, "")
           else if (owner.isClass || owner.isModule || owner.isTrait || owner.hasPackageFlag)
-            findExternalLink(sym, linkName(owner) + "@" + externalSignature(sym))
+            findExternalLink(owner, externalSignature(sym))
           else
             None
         }
