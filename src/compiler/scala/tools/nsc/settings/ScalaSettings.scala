@@ -307,8 +307,26 @@ trait ScalaSettings extends AbsScalaSettings
   val optInlineFrom = StringSetting(
     "-opt-inline-from",
     "patterns",
-    "Classfile name patterns from which to allow inlining. ** = anything, * = package or class name, ! to exclude. Example: scala.**:!scala.Predef$:corp.*.util.*:corp.**.*Util*",
-    "")
+    "Patterns for classfile names from which to allow inlining, `help` for details.",
+    "",
+    helpText = Some(
+      """Patterns for classfile names from which the inliner is allowed to pull in code.
+        |  *              Matches classes in the empty package
+        |  **             All classes
+        |  a.C            Class a.C
+        |  a.*            Classes in package a
+        |  a.**           Classes in a and in sub-packages of a
+        |  **.Util        Classes named Util in any package (including the empty package)
+        |  a.**.*Util*    Classes in a and sub-packages with Util in their name (including a.Util)
+        |  a.C$D          The nested class D defined in class a.C
+        |  scala.Predef$  The scala.Predef object
+        |
+        |The setting accepts a colon-separated list of patterns. A leading `!` marks a pattern excluding.
+        |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
+        |For example, `a.**:!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |
+        |Note: on the command-line you might need to quote patterns containing `*` to prevent the shell
+        |from expanding it to a list of files in the current directory.""".stripMargin))
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",

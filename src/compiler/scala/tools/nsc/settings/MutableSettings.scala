@@ -235,7 +235,7 @@ class MutableSettings(val errorFn: String => Unit)
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
-  def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
+  def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String]) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
     add(new ScalaVersionSetting(name, arg, descr, initial, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
@@ -500,18 +500,30 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     val arg: String,
     descr: String,
-    val default: String)
+    val default: String,
+    helpText: Option[String])
   extends Setting(name, descr) {
     type T = String
     protected var v: T = default
 
+    protected var sawHelp: Boolean = false
+
     def tryToSet(args: List[String]) = args match {
       case Nil      => errorAndValue("missing argument", None)
-      case x :: xs  => value = x ; Some(xs)
+      case x :: xs  =>
+        if (helpText.nonEmpty && x == "help")
+          sawHelp = true
+        else
+          value = x
+        Some(xs)
     }
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
     withHelpSyntax(name + " <" + arg + ">")
+
+    override def isHelping: Boolean = sawHelp
+
+    override def help = helpText.get
   }
 
   /** A setting represented by a Scala version.
@@ -554,7 +566,7 @@ class MutableSettings(val errorFn: String => Unit)
     default: String,
     prependPath: StringSetting,
     appendPath: StringSetting)
-  extends StringSetting(name, "path", descr, default) {
+  extends StringSetting(name, "path", descr, default, None) {
     import util.ClassPath.join
     def prepend(s: String) = prependPath.value = join(s, prependPath.value)
     def append(s: String) = appendPath.value = join(appendPath.value, s)
@@ -571,7 +583,7 @@ class MutableSettings(val errorFn: String => Unit)
   class OutputSetting private[nsc](
     private[nsc] val outputDirs: OutputDirs,
     default: String)
-    extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default) {
+    extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None) {
       value = default
       override def value_=(str: String) {
         super.value_=(str)
