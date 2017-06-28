@@ -1081,9 +1081,10 @@ trait Implicits {
        *                 in order to cache them in infoMapCache
        */
       def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) {
-        if (seen(tp))
+        val tpWithoutAnnotations = tp.map(_.withoutAnnotations)
+        if (seen(tpWithoutAnnotations))
           return
-        seen += tp
+        seen += tpWithoutAnnotations
         tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isClass) {
