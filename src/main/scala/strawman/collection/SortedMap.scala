@@ -12,7 +12,7 @@ trait SortedMap[K, +V]
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
   extends MapOps[K, V, Map, C]
-     with SortedOps[K, C, SortedSet] {
+     with SortedOps[K, SortedSet, C] {
 
   def sortedIterableFactory = SortedSet
 

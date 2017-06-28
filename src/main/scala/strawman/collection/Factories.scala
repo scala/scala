@@ -48,7 +48,7 @@ trait BuildFromLowPriority {
   }
 
   /** Build the source collection type from an Iterable with SortedOps */
-  implicit def buildFromSortedOps[CC[X] <: Iterable[X] with SortedOps[X, CC[X], CC], A, E : Ordering]: BuildFrom[CC[A], E, CC[E]] = new BuildFrom[CC[A], E, CC[E]] {
+  implicit def buildFromSortedOps[CC[X] <: Iterable[X] with SortedOps[X, CC, CC[X]], A, E : Ordering]: BuildFrom[CC[A], E, CC[E]] = new BuildFrom[CC[A], E, CC[E]] {
     def newBuilder(from: CC[A]): Builder[E, CC[E]] = from.sortedIterableFactory.newBuilder[E]()
     def fromSpecificIterable(from: CC[A])(it: Iterable[E]): CC[E] = from.sortedIterableFactory.fromSpecificIterable(it)
   }
@@ -62,8 +62,8 @@ trait BuildFromLowPriority {
 trait FromSpecificIterable[-A, +C] extends Any with BuildFrom[Any, A, C] {
   def fromSpecificIterable(from: Any)(it: Iterable[A]): C = fromSpecificIterable(it)
   def fromSpecificIterable(it: Iterable[A]): C
-  def newBuilder(from: Any): Builder[A, C] = newBuilder
-  def newBuilder: Builder[A, C]
+  def newBuilder(from: Any): Builder[A, C] = newBuilder()
+  def newBuilder(): Builder[A, C]
 }
 
 /** Base trait for companion objects of unconstrained collection types */
@@ -79,7 +79,7 @@ object IterableFactory {
   implicit def toSpecific[A, CC[_]](factory: IterableFactory[CC]): FromSpecificIterable[A, CC[A]] =
     new FromSpecificIterable[A, CC[A]] {
       def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.fromIterable[A](it)
-      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]()
+      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
     }
 
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
@@ -93,7 +93,7 @@ trait SpecificIterableFactory[-A, +C] extends FromSpecificIterable[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecificIterable(View.Elems(xs: _*))
   def fill(n: Int)(elem: => A): C = fromSpecificIterable(View.Fill(n)(elem))
-  def newBuilder: Builder[A, C] = new ArrayBuffer[A]().mapResult(fromSpecificIterable _)
+  def newBuilder(): Builder[A, C] = new ArrayBuffer[A]().mapResult(fromSpecificIterable _)
 }
 
 /** Factory methods for collections of kind `* −> * -> *` */
@@ -110,7 +110,7 @@ object MapFactory {
   implicit def toSpecific[K, V, CC[_, _]](factory: MapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
     new FromSpecificIterable[(K, V), CC[K, V]] {
       def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = factory.fromIterable[K, V](it)
-      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
+      def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
     }
 
   class Delegate[C[X, Y]](delegate: MapFactory[C]) extends MapFactory[C] {
@@ -133,7 +133,7 @@ object SortedIterableFactory {
   implicit def toSpecific[A: Ordering, CC[_]](factory: SortedIterableFactory[CC]): FromSpecificIterable[A, CC[A]] =
     new FromSpecificIterable[A, CC[A]] {
       def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.sortedFromIterable[A](it)
-      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]()
+      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
     }
 
   class Delegate[CC[_]](delegate: SortedIterableFactory[CC]) extends SortedIterableFactory[CC] {
@@ -156,7 +156,7 @@ object SortedMapFactory {
   implicit def toSpecific[K : Ordering, V, CC[X, Y]](factory: SortedMapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
     new FromSpecificIterable[(K, V), CC[K, V]] {
       def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = factory.sortedFromIterable[K, V](it)
-      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
+      def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
     }
 
   class Delegate[C[X, Y]](delegate: SortedMapFactory[C]) extends SortedMapFactory[C] {

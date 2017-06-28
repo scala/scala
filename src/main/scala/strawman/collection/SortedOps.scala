@@ -3,7 +3,7 @@ package strawman.collection
 import scala.{Ordering, Option, Some}
 
 /** Base trait for sorted collections */
-trait SortedOps[A, +C, +CC[_]] {
+trait SortedOps[A, +CC[_], +C] {
 
   implicit def ordering: Ordering[A]
 

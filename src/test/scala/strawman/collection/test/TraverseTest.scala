@@ -14,13 +14,13 @@ import scala.math.Ordering
 class TraverseTest {
 
   // You can either overload methods for IterableOps and Iterable with SortedOps (if you want to support constrained collection types)
-  def optionSequence1[C[X] <: IterableOps[X, C, _], A](xs: C[Option[A]]): Option[C[A]] =
-    xs.foldLeft[Option[Builder[A, C[A]]]](Some(xs.iterableFactory.newBuilder[A]())) {
+  def optionSequence1[CC[X] <: IterableOps[X, CC, _], A](xs: CC[Option[A]]): Option[CC[A]] =
+    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.iterableFactory.newBuilder[A]())) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
-  def optionSequence1[C[X] <: Iterable[X] with SortedOps[X, C[X], C], A : Ordering](xs: C[Option[A]]): Option[C[A]] =
-    xs.foldLeft[Option[Builder[A, C[A]]]](Some(xs.sortedIterableFactory.newBuilder[A]())) {
+  def optionSequence1[CC[X] <: Iterable[X] with SortedOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
+    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.sortedIterableFactory.newBuilder[A]())) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result)
