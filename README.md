@@ -65,7 +65,9 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 - [x] `apply`
 - [x] `contains`
+- [x] `containsSlice`
 - [x] `count`
+- [x] `endsWith`
 - [x] `find`
 - [x] `firstKey`
 - [x] `forall` / `exists`
@@ -76,7 +78,8 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `getOrElse`
 - [x] `getOrElseUpdate`
 - [x] `head`
-- [x] `indexWhere`
+- [x] `indexOf` / `indexWhere` / `lastIndexOf` / `lastIndexWhere` / `indexOfSlice` / `lastIndexOfSlice`
+- [x] `indices`
 - [x] `isDefinedAt`
 - [x] `isEmpty` / `nonEmpty`
 - [x] `keysIteratorFrom`
@@ -89,6 +92,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `reduce` / `reduceOption` / `reduceLeft` / `reduceRight`
 - [x] `size`
 - [x] `span`
+- [x] `startsWith`
 - [x] `sum`
 - [x] `to`
 
@@ -98,19 +102,21 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `empty`
 - [x] `filter` / `filterNot`
 - [x] `groupBy`
+- [x] `init`
 - [x] `intersect`
 - [x] `partition`
 - [x] `range`
 - [x] `rangeImpl`
+- [x] `sorted` / `sortBy` / `sortWith`
 - [x] `slice`
 - [x] `splitAt`
 - [x] `tail`
-- [x] `init`
 - [x] `take` / `takeRight` / `takeWhile`
 - [x] `updated`
 
 ### Transformations to collections that can have a different element type
 
+- [x] `combinations`
 - [x] `updated`
 - [x] `prepend`
 - [x] `append`
@@ -119,6 +125,8 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `grouped`
 - [x] `map`
 - [x] `merged`
+- [x] `padTo`
+- [x] `permutations`
 - [x] `scan` / `scanLeft` / `scanRight`
 - [x] `sliding`
 - [x] `unzip`

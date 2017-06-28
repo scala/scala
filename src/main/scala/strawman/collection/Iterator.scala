@@ -1,7 +1,7 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
+import scala.{Any, Array, Boolean, Int, math, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
 import scala.Predef.{intWrapper, require}
 import strawman.collection.mutable.ArrayBuffer
 
@@ -301,8 +301,9 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def foreach[U](f: A => U): Unit =
     while (hasNext) f(next())
 
-  def indexWhere(p: A => Boolean): Int = {
-    var i = 0
+  def indexWhere(p: A => Boolean, from: Int): Int = {
+    var i = math.max(from, 0)
+    drop(from)
     while (hasNext) {
       if (p(next())) return i
       i += 1

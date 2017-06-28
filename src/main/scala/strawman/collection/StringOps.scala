@@ -14,6 +14,8 @@ class StringOps(val s: String)
     with ArrayLike[Char] {
 
   protected[this] def coll = StringView(s)
+  protected[this] def c: String = s
+  protected[this] def seq: Seq[Char] = iterableFactory.fromIterable(coll)
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder

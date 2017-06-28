@@ -203,9 +203,6 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
    */
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = if (isEmpty) None else Some(reduceRight(op))
 
-  /** The index of the first element in this collection for which `p` holds. */
-  def indexWhere(p: A => Boolean): Int = coll.iterator().indexWhere(p)
-
   /** Is the collection empty? */
   def isEmpty: Boolean = !coll.iterator().hasNext
 
