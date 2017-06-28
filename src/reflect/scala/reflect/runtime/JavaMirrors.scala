@@ -552,7 +552,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     }
 
     def javaClass(path: String): jClass[_] =
-      jClass.forName(path, true, classLoader)
+      jClass.forName(path, false, classLoader)
 
     /** Does `path` correspond to a Java class with that fully qualified name in the current class loader? */
     def tryJavaClass(path: String): Option[jClass[_]] = (
