@@ -244,7 +244,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             in.nextToken()
             done = true
             val tpeArg = convertToTypeId(t)
-            TypeApply(q"_root_.scala.Predef.classOf", tpeArg :: Nil)
+            TypeApply(Select(gen.mkAttributedRef(definitions.PredefModule), nme.classOf), tpeArg :: Nil)
           } else {
             Select(t, ident())
           }
