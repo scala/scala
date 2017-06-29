@@ -52,4 +52,4 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
 
 }
 
-object SortedMap extends SortedMapFactoryWithBuilder.Delegate[SortedMap](TreeMap)
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap)

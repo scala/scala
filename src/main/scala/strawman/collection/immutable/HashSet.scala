@@ -57,7 +57,7 @@ sealed trait HashSet[A]
 
 }
 
-object HashSet extends IterableFactoryWithBuilder[HashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] =
     it match {

@@ -1,6 +1,5 @@
 package strawman.collection
 
-import strawman.collection.mutable.Builder
 import scala.{Ordering, `inline`}
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -32,4 +31,4 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   )
 }
 
-object SortedSet extends SortedIterableFactoryWithBuilder.Delegate[SortedSet](immutable.SortedSet)
+object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)

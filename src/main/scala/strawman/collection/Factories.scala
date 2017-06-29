@@ -3,7 +3,7 @@ package collection
 
 import scala.language.implicitConversions
 
-import strawman.collection.mutable.{ArrayBuffer, Builder}
+import strawman.collection.mutable.Builder
 
 import scala.{Any, Int, Nothing, Ordering}
 import scala.annotation.unchecked.uncheckedVariance
@@ -72,7 +72,7 @@ trait IterableFactory[+CC[_]] {
   def empty[A]: CC[A]
   def apply[A](xs: A*): CC[A] = fromIterable(View.Elems(xs: _*))
   def fill[A](n: Int)(elem: => A): CC[A] = fromIterable(View.Fill(n)(elem))
-  def newBuilder[A](): Builder[A, CC[A]] = new ArrayBuffer[A]().mapResult(fromIterable _)
+  def newBuilder[A](): Builder[A, CC[A]]
 }
 
 object IterableFactory {
@@ -85,7 +85,7 @@ object IterableFactory {
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
-    override def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
   }
 }
 
@@ -93,7 +93,7 @@ trait SpecificIterableFactory[-A, +C] extends FromSpecificIterable[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecificIterable(View.Elems(xs: _*))
   def fill(n: Int)(elem: => A): C = fromSpecificIterable(View.Fill(n)(elem))
-  def newBuilder(): Builder[A, C] = new ArrayBuffer[A]().mapResult(fromSpecificIterable _)
+  def newBuilder(): Builder[A, C]
 }
 
 /** Factory methods for collections of kind `* −> * -> *` */
@@ -101,12 +101,10 @@ trait MapFactory[+CC[X, Y]] {
   def empty[K, V]: CC[K, V]
   def fromIterable[K, V](it: Iterable[(K, V)]): CC[K, V]
   def apply[K, V](elems: (K, V)*): CC[K, V] = fromIterable(elems.toStrawman)
-  def newBuilder[K, V](): Builder[(K, V), CC[K, V]] = new ArrayBuffer[(K, V)]().mapResult(fromIterable _)
+  def newBuilder[K, V](): Builder[(K, V), CC[K, V]]
 }
 
 object MapFactory {
-  import scala.language.implicitConversions
-
   implicit def toSpecific[K, V, CC[_, _]](factory: MapFactory[CC]): FromSpecificIterable[(K, V), CC[K, V]] =
     new FromSpecificIterable[(K, V), CC[K, V]] {
       def fromSpecificIterable(it: Iterable[(K, V)]): CC[K, V] = factory.fromIterable[K, V](it)
@@ -116,7 +114,7 @@ object MapFactory {
   class Delegate[C[X, Y]](delegate: MapFactory[C]) extends MapFactory[C] {
     def fromIterable[K, V](it: Iterable[(K, V)]): C[K, V] = delegate.fromIterable(it)
     def empty[K, V]: C[K, V] = delegate.empty
-    override def newBuilder[K, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
+    def newBuilder[K, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
   }
 }
 
@@ -126,7 +124,7 @@ trait SortedIterableFactory[+CC[_]] {
   def empty[A : Ordering]: CC[A]
   def apply[A : Ordering](xs: A*): CC[A] = sortedFromIterable(View.Elems(xs: _*))
   def fill[A : Ordering](n: Int)(elem: => A): CC[A] = sortedFromIterable(View.Fill(n)(elem))
-  def newBuilder[A : Ordering](): Builder[A, CC[A]] = new ArrayBuffer[A]().mapResult(sortedFromIterable[A] _)
+  def newBuilder[A : Ordering](): Builder[A, CC[A]]
 }
 
 object SortedIterableFactory {
@@ -139,7 +137,7 @@ object SortedIterableFactory {
   class Delegate[CC[_]](delegate: SortedIterableFactory[CC]) extends SortedIterableFactory[CC] {
     def empty[A : Ordering]: CC[A] = delegate.empty
     def sortedFromIterable[E : Ordering](it: Iterable[E]): CC[E] = delegate.sortedFromIterable(it)
-    override def newBuilder[A : Ordering](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+    def newBuilder[A : Ordering](): Builder[A, CC[A]] = delegate.newBuilder[A]()
   }
 }
 
@@ -149,7 +147,7 @@ trait SortedMapFactory[+CC[X, Y]] {
   def sortedFromIterable[K : Ordering, V](it: Iterable[(K, V)]): CC[K, V]
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] =
     sortedFromIterable(elems.toStrawman)
-  def newBuilder[K : Ordering, V](): Builder[(K, V), CC[K, V]] = new ArrayBuffer[(K, V)]().mapResult(sortedFromIterable[K, V] _)
+  def newBuilder[K : Ordering, V](): Builder[(K, V), CC[K, V]]
 }
 
 object SortedMapFactory {
@@ -162,6 +160,6 @@ object SortedMapFactory {
   class Delegate[C[X, Y]](delegate: SortedMapFactory[C]) extends SortedMapFactory[C] {
     def sortedFromIterable[K : Ordering, V](it: Iterable[(K, V)]): C[K, V] = delegate.sortedFromIterable(it)
     def empty[K : Ordering, V]: C[K, V] = delegate.empty
-    override def newBuilder[K : Ordering, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
+    def newBuilder[K : Ordering, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
   }
 }

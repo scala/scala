@@ -2,7 +2,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, GrowableBuilder}
-import strawman.collection.{IterableFactory, IterableFactoryWithBuilder, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
+import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
 
 import scala.{Any, Boolean, Int, Nothing}
 import scala.runtime.ScalaRunTime
@@ -102,7 +102,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
 }
 
-object ImmutableArray extends IterableFactoryWithBuilder[ImmutableArray] {
+object ImmutableArray extends IterableFactory[ImmutableArray] {
 
   private[this] lazy val emptyImpl = new ImmutableArray[Nothing](new scala.Array[Any](0))
 
@@ -112,8 +112,7 @@ object ImmutableArray extends IterableFactoryWithBuilder[ImmutableArray] {
     new ImmutableArray(ArrayBuffer.fromIterable(it).asInstanceOf[ArrayBuffer[Any]].toArray)
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
-    new GrowableBuilder(ArrayBuffer.empty[A])
-      .mapResult(b => new ImmutableArray[A](b.asInstanceOf[ArrayBuffer[Any]].toArray))
+    ArrayBuffer.newBuilder[A]().mapResult(b => new ImmutableArray[A](b.asInstanceOf[ArrayBuffer[Any]].toArray))
 
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 

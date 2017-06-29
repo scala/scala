@@ -2,9 +2,6 @@ package strawman
 package collection
 package immutable
 
-import strawman.collection.mutable.Builder
-import strawman.collection.IterableFactory
-
 import scala.{Any, `inline`}
 
 /** Base trait for immutable set collections */

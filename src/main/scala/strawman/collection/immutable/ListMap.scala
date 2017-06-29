@@ -154,7 +154,7 @@ sealed class ListMap[K, +V]
   * @define Coll ListMap
   * @define coll list map
   */
-object ListMap extends MapFactoryWithBuilder[ListMap] {
+object ListMap extends MapFactory[ListMap] {
 
   def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
 

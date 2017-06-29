@@ -45,7 +45,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet =
     BitSet.fromSpecificIterable(coll)
 
-  protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = new GrowableBuilder(BitSet.empty)
+  protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = BitSet.newBuilder()
 
   protected[collection] final def nwords: Int = elems.length
 
@@ -108,5 +108,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
   def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet = Growable.fromIterable(empty, it)
 
   def empty: BitSet = new BitSet()
+
+  def newBuilder(): Builder[Int, BitSet] = new GrowableBuilder(empty)
 
 }

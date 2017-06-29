@@ -120,4 +120,9 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
       case _ => empty[E] ++ it
     }
 
+  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =
+    new ImmutableBuilder[A, TreeSet[A]](empty) {
+      def add(elem: A): this.type = { elems = elems + elem; this }
+    }
+
 }

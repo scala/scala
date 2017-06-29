@@ -1,6 +1,6 @@
 package strawman.collection
 
-import strawman.collection.mutable.Builder
+import strawman.collection.mutable.{ArrayBuffer, Builder}
 
 import scala.{Any, Boolean, Equals, Int, Nothing, annotation}
 import scala.Predef.intWrapper
@@ -194,6 +194,8 @@ object View extends IterableFactory[View] {
       }
     override def knownSize: Int = underlying.knownSize
   }
+
+  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(fromIterable)
 
 }
 

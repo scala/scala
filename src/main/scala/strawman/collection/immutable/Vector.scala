@@ -10,7 +10,7 @@ import scala.Predef.intWrapper
 
 /** Companion object to the Vector class
  */
-object Vector extends IterableFactoryWithBuilder[Vector] {
+object Vector extends IterableFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL
 

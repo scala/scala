@@ -130,4 +130,4 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
 }
 
-object Map extends MapFactoryWithBuilder.Delegate[Map](immutable.Map)
+object Map extends MapFactory.Delegate[Map](immutable.Map)

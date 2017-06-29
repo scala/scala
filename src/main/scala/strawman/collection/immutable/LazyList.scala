@@ -2,7 +2,7 @@ package strawman
 package collection
 package immutable
 
-import strawman.collection.mutable.Builder
+import strawman.collection.mutable.{ArrayBuffer, Builder}
 
 import scala.{Any, Int, None, Nothing, Option, Some, StringContext}
 import scala.annotation.tailrec
@@ -90,5 +90,7 @@ object LazyList extends IterableFactory[LazyList] {
     })
     loop(init)
   }
+
+  def newBuilder[A](): Builder[A, LazyList[A]] = ArrayBuffer.newBuilder[A]().mapResult(fromIterable)
 
 }
