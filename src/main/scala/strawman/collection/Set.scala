@@ -1,7 +1,8 @@
 package strawman
 package collection
 
-import scala.{Any, Boolean, Equals, `inline`, Int}
+import scala.{Any, Array, Boolean, Equals, `inline`, Int}
+import scala.Predef.intWrapper
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for set collections.
@@ -26,7 +27,80 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     */
   @`inline` final def apply(elem: A): Boolean = this.contains(elem)
 
+  /** Tests whether this set is a subset of another set.
+    *
+    *  @param that  the set to test.
+    *  @return     `true` if this set is a subset of `that`, i.e. if
+    *              every element of this set is also an element of `that`.
+    */
   def subsetOf(that: Set[A]): Boolean = this.forall(that)
+
+  /** An iterator over all subsets of this set of the given size.
+    *  If the requested size is impossible, an empty iterator is returned.
+    *
+    *  @param len  the size of the subsets.
+    *  @return     the iterator.
+    */
+  def subsets(len: Int): Iterator[C] = {
+    if (len < 0 || len > size) Iterator.empty
+    else new SubsetsItr(coll.to(IndexedSeq), len)
+  }
+
+  /** An iterator over all subsets of this set.
+    *
+    *  @return     the iterator.
+    */
+  def subsets(): Iterator[C] = new Iterator[C] {
+    private val elms = coll.to(IndexedSeq)
+    private var len = 0
+    private var itr: Iterator[C] = Iterator.empty
+
+    def hasNext = len <= elms.size || itr.hasNext
+    def next = {
+      if (!itr.hasNext) {
+        if (len > elms.size) Iterator.empty.next()
+        else {
+          itr = new SubsetsItr(elms, len)
+          len += 1
+        }
+      }
+
+      itr.next()
+    }
+  }
+
+  /** An Iterator including all subsets containing exactly len elements.
+    *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
+    *  ListSet(1,2,3).subsets => {{1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
+    *
+    *  @author Eastsun
+    */
+  private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends Iterator[C] {
+    private val idxs = Array.range(0, len+1)
+    private var _hasNext = true
+    idxs(len) = elms.size
+
+    def hasNext = _hasNext
+    def next(): C = {
+      if (!hasNext) Iterator.empty.next()
+
+      val buf = newSpecificBuilder()
+      idxs.slice(0, len) foreach (idx => buf += elms(idx))
+      val result = buf.result()
+
+      var i = len - 1
+      while (i >= 0 && idxs(i) == idxs(i+1)-1) i -= 1
+
+      if (i < 0) _hasNext = false
+      else {
+        idxs(i) += 1
+        for (j <- (i+1) until len)
+          idxs(j) = idxs(j-1) + 1
+      }
+
+      result
+    }
+  }
 
   def canEqual(that: Any) = true
 
@@ -52,6 +126,17 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
 
   /** Alias for `intersect` */
   @`inline` final def & (that: Set[A]): C = intersect(that)
+
+  /** Computes the difference of this set and another set.
+    *
+    *  @param that the set of elements to exclude.
+    *  @return     a set containing those elements of this
+    *              set that are not also contained in the given set `that`.
+    */
+  def diff(that: Set[A]): C
+
+  /** Alias for `diff` */
+  @`inline` final def &~ (that: Set[A]): C = this diff that
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *

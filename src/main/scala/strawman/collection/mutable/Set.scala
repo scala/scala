@@ -48,6 +48,8 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     res
   }
 
+  def diff(that: collection.Set[A]): C = that.foldLeft(clone())(_ -= _)
+
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()
     val toRemove = Set[A]()

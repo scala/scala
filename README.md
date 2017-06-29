@@ -94,6 +94,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 ### Transformations to collections having the same element type
 
+- [x] `diff`
 - [x] `drop` / `dropRight` / `dropWhile`
 - [x] `empty`
 - [x] `filter` / `filterNot`
@@ -104,6 +105,8 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `rangeImpl`
 - [x] `slice`
 - [x] `splitAt`
+- [x] `substetOf`
+- [x] `subsets`
 - [x] `tail`
 - [x] `init`
 - [x] `take` / `takeRight` / `takeWhile`
