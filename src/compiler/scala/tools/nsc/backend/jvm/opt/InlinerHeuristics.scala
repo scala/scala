@@ -360,12 +360,13 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
 }
 
 object InlinerHeuristics {
-  class InlineSourceMatcher(inlineFromSetting: String) {
+  class InlineSourceMatcher(inlineFromSetting: List[String]) {
     // `terminal` is true if all remaining entries are of the same negation as this one
     case class Entry(pattern: Pattern, negated: Boolean, terminal: Boolean) {
       def matches(internalName: InternalName): Boolean = pattern.matcher(internalName).matches()
     }
-    val startAllow: Boolean = inlineFromSetting == "**" || inlineFromSetting.startsWith("**:")
+    private val patternStrings = inlineFromSetting.filterNot(_.isEmpty)
+    val startAllow: Boolean = patternStrings.headOption.contains("**")
     val entries: List[Entry] = parse()
 
     def allow(internalName: InternalName): Boolean = {
@@ -390,10 +391,8 @@ object InlinerHeuristics {
       var result = List.empty[Entry]
 
       val patternsRevIterator = {
-        val patterns = inlineFromSetting.split(':')
-        val it = patterns.reverseIterator
-        val withoutFirstStarStar = if (startAllow) it.take(patterns.length - 1) else it
-        withoutFirstStarStar.filterNot(_.isEmpty)
+        val it = patternStrings.reverseIterator
+        if (startAllow) it.take(patternStrings.length - 1) else it
       }
       for (p <- patternsRevIterator) {
         val len = p.length

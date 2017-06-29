@@ -12,7 +12,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class PatmatBytecodeTest extends BytecodeTesting {
-  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:l:inline -opt-inline-from **"))
+  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:l:inline -opt-inline-from:**"))
 
   import compiler._
 

@@ -98,7 +98,7 @@ object ScriptCommands {
   )
 
   private[this] val enableOptimizerNewFlags = Seq(
-    scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from", "scala/**")
+    scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
   )
 
   private[this] val noDocs = Seq(

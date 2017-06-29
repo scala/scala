@@ -230,7 +230,7 @@ class MutableSettings(val errorFn: String => Unit)
     )
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
     add(new IntSetting(name, descr, default, range, parser))
-  def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
+  def MultiStringSetting(name: String, arg: String, descr: String, helpText: Option[String]) = add(new MultiStringSetting(name, arg, descr, helpText))
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
@@ -505,8 +505,9 @@ class MutableSettings(val errorFn: String => Unit)
   extends Setting(name, descr) {
     type T = String
     protected var v: T = default
-
     protected var sawHelp: Boolean = false
+
+    withHelpSyntax(name + " <" + arg + ">")
 
     def tryToSet(args: List[String]) = args match {
       case Nil      => errorAndValue("missing argument", None)
@@ -518,8 +519,6 @@ class MutableSettings(val errorFn: String => Unit)
         Some(xs)
     }
     def unparse: List[String] = if (value == default) Nil else List(name, value)
-
-    withHelpSyntax(name + " <" + arg + ">")
 
     override def isHelping: Boolean = sawHelp
 
@@ -801,16 +800,25 @@ class MutableSettings(val errorFn: String => Unit)
   class MultiStringSetting private[nsc](
     name: String,
     val arg: String,
-    descr: String)
+    descr: String,
+    helpText: Option[String])
   extends Setting(name, descr) with Clearable {
     type T = List[String]
     protected var v: T = Nil
-    def appendToValue(str: String) = value ++= List(str)
+    protected var sawHelp: Boolean = false
+
+    withHelpSyntax(name + ":<" + arg + ">")
 
     // try to set. halting means halt at first non-arg
     protected def tryToSetArgs(args: List[String], halting: Boolean) = {
       def loop(args: List[String]): List[String] = args match {
-        case arg :: rest => if (halting && (arg startsWith "-")) args else { appendToValue(arg) ; loop(rest) }
+        case arg :: rest =>
+          if (halting && (arg startsWith "-")) args
+          else {
+            if (helpText.isDefined && arg == "help") sawHelp = true
+            else value ++= List(arg)
+            loop(rest)
+          }
         case Nil         => Nil
       }
       Some(loop(args))
@@ -823,7 +831,9 @@ class MutableSettings(val errorFn: String => Unit)
     def unparse: List[String] = value map (name + ":" + _)
     def contains(s: String)   = value contains s
 
-    withHelpSyntax(name + ":<" + arg + ">")
+    override def isHelping: Boolean = sawHelp
+
+    override def help = helpText.get
   }
 
   /** A setting represented by a string in a given set of `choices`,

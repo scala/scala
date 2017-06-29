@@ -1,1 +1,1 @@
--opt:l:inline -opt-inline-from **
+-opt:l:inline -opt-inline-from:**

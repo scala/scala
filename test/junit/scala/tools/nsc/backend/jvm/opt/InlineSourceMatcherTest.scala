@@ -17,7 +17,7 @@ class InlineSourceMatcherTest extends BytecodeTesting {
 
   override def compilerArgs = "-opt:l:inline -opt-warnings"
   def setInlineFrom(s: String): Unit = {
-    global.settings.optInlineFrom.value = s
+    global.settings.optInlineFrom.value = s.split(':').toList
     // the setting is read once per run
     global.perRunCaches.clearAll()
   }
@@ -25,7 +25,7 @@ class InlineSourceMatcherTest extends BytecodeTesting {
   case class E(regex: String, negated: Boolean = false, terminal: Boolean = true)
 
   def check(pat: String, expect: E*): InlineSourceMatcher = {
-    val m = new InlineSourceMatcher(pat)
+    val m = new InlineSourceMatcher(pat.split(':').toList)
     val es = m.entries
     assertEquals(es.length, expect.length)
 

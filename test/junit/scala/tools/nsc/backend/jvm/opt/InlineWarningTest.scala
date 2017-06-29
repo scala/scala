@@ -11,7 +11,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlineWarningTest extends BytecodeTesting {
-  def optInline = "-opt:l:inline -opt-inline-from **"
+  def optInline = "-opt:l:inline -opt-inline-from:**"
   override def compilerArgs = s"$optInline -opt-warnings"
 
   import compiler._

@@ -234,7 +234,7 @@ trait ScalaSettings extends AbsScalaSettings
     val boxUnbox                = Choice("box-unbox",                 "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
     val closureInvocations      = Choice("closure-invocations" ,      "Rewrite closure invocations to the implementation method.")
-    val inline                  = Choice("inline",                    "Inline method invocations according to -Yopt-inline-heuristics and -opt-inlnie-from.")
+    val inline                  = Choice("inline",                    "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
 
     // note: unlike the other optimizer levels, "l:none" appears up in the `opt.value` set because it's not an expanding option (expandsTo is empty)
     val lNone = Choice("l:none",
@@ -254,16 +254,16 @@ trait ScalaSettings extends AbsScalaSettings
 
     private val inlineChoices = List(lMethod, inline)
     val lInline = Choice("l:inline",
-      "Enable cross-method optimizations: " + inlineChoices.mkString("", ",", "."),
+      "Enable cross-method optimizations (note: inlining requires -opt-inline-from): " + inlineChoices.mkString("", ",", "."),
       expandsTo = inlineChoices)
 
     val lProject = Choice(
       "l:project",
-      "[deprecated, use -opt:l:inline, -opt-inlnie-from] Enable cross-method optimizations within the current project.")
+      "[deprecated, use -opt:l:inline, -opt-inline-from] Enable cross-method optimizations within the current project.")
 
     val lClasspath = Choice(
       "l:classpath",
-      "[deprecated, use -opt:l:inline, -opt-inlnie-from] Enable cross-method optimizations across the entire classpath.")
+      "[deprecated, use -opt:l:inline, -opt-inline-from] Enable cross-method optimizations across the entire classpath.")
   }
 
   // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
@@ -304,11 +304,10 @@ trait ScalaSettings extends AbsScalaSettings
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
 
-  val optInlineFrom = StringSetting(
+  val optInlineFrom = MultiStringSetting(
     "-opt-inline-from",
     "patterns",
     "Patterns for classfile names from which to allow inlining, `help` for details.",
-    "",
     helpText = Some(
       """Patterns for classfile names from which the inliner is allowed to pull in code.
         |  *              Matches classes in the empty package
@@ -321,7 +320,8 @@ trait ScalaSettings extends AbsScalaSettings
         |  a.C$D          The nested class D defined in class a.C
         |  scala.Predef$  The scala.Predef object
         |
-        |The setting accepts a colon-separated list of patterns. A leading `!` marks a pattern excluding.
+        |The setting accepts a list of patterns: `-opt-inline-from:p1:p2`. The setting can be passed
+        |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.
         |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
         |For example, `a.**:!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
         |
@@ -402,10 +402,10 @@ trait ScalaSettings extends AbsScalaSettings
   val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
   val optimise      = BooleanSetting("-optimise", "Compiler flag for the optimizer in Scala 2.11")
     .withAbbreviation("-optimize")
-    .withDeprecationMessage("In 2.12, -optimise enables -opt:l:inline -opt-inline-from **. Check -opt:help for using the Scala 2.12 optimizer.")
+    .withDeprecationMessage("In 2.12, -optimise enables -opt:l:inline -opt-inline-from:**. Check -opt:help for using the Scala 2.12 optimizer.")
     .withPostSetHook(_ => {
       opt.enable(optChoices.lInline)
-      optInlineFrom.value = "**"
+      optInlineFrom.value = List("**")
     })
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
 
@@ -451,9 +451,9 @@ trait ScalaSettings extends AbsScalaSettings
     */
 
     if (opt.value.contains(optChoices.lProject))
-      Some("-opt:l:project is deprecated, use -opt:l:inline and -opt-inlnie-from")
+      Some("-opt:l:project is deprecated, use -opt:l:inline and -opt-inline-from")
     else if (opt.value.contains(optChoices.lClasspath))
-      Some("-opt:l:classpath is deprecated, use -opt:l:inline and -opt-inlnie-from")
+      Some("-opt:l:classpath is deprecated, use -opt:l:inline and -opt-inline-from")
     else
       None
   }
