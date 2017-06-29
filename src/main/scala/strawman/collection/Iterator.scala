@@ -78,7 +78,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
    *
    *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
-  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
+  class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends Iterator[Seq[B]] {
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
@@ -127,8 +127,8 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
      *  so a subsequent self.hasNext would not test self after the
      *  group was consumed.
      */
-    private def takeDestructively(size: Int): Seq[A] = {
-      val buf = new ArrayBuffer[A]
+    private def takeDestructively(size: Int): Seq[B] = {
+      val buf = new ArrayBuffer[B]
       var i = 0
       // The order of terms in the following condition is important
       // here as self.hasNext could be blocking

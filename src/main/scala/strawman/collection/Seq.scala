@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, math, Ordering}
+import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, math, Ordering, Unit}
 import scala.Predef.{intWrapper}
 import java.lang.Object
 import strawman.collection.immutable.Range
@@ -62,7 +62,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     * @return `true` if the sequence `that` is contained in this $coll at
     *         index `offset`, otherwise `false`.
     */
-  def startsWith[B](that: Seq[B], offset: Int = 0): Boolean = {
+  def startsWith[B >: A](that: Seq[B], offset: Int = 0): Boolean = {
     val i = coll.iterator() drop offset
     val j = that.iterator()
     while (j.hasNext && i.hasNext)
@@ -77,7 +77,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @param  that    the sequence to test
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
-  def endsWith[B](that: Seq[B]): Boolean = {
+  def endsWith[B >: A](that: Seq[B]): Boolean = {
     val i = coll.iterator().drop(length - that.length)
     val j = that.iterator()
     while (i.hasNext && j.hasNext)
@@ -263,7 +263,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
       }
       result
     }
-    private def swap(i: Int, j: Int) {
+    private def swap(i: Int, j: Int): Unit = {
       val tmpI = idxs(i)
       idxs(i) = idxs(j)
       idxs(j) = tmpI
@@ -533,7 +533,7 @@ object SeqOps {
             cache(largest%(n1-n0)) = iter.next().asInstanceOf[AnyRef]
             largest += 1
           }
-          if (Wopt(i) == cache((i+m)%(n1-n0))) {
+          if (Wopt(i) == cache((i+m)%(n1-n0)).asInstanceOf[B]) {
             i += 1
             if (i == n1-n0) {
               if (forward) return m+m0
