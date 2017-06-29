@@ -94,6 +94,10 @@ object View extends IterableFactory[View] {
       }
   }
 
+  case class FilterKeys[K, V](underlying: Iterable[(K, V)], p: K => Boolean) extends View[(K, V)] {
+    def iterator(): Iterator[(K, V)] = underlying.iterator().filter(kv => p(kv._1))
+  }
+
   /** A view that partitions an underlying collection into two views */
   case class Partition[A](underlying: Iterable[A], p: A => Boolean) {
 
@@ -147,6 +151,11 @@ object View extends IterableFactory[View] {
   case class Map[A, B](underlying: Iterable[A], f: A => B) extends View[B] {
     def iterator() = underlying.iterator().map(f)
     override def knownSize = underlying.knownSize
+  }
+
+  case class MapValues[K, V, W](underlying: Iterable[(K, V)], f: V => W) extends View[(K, W)] {
+    def iterator(): Iterator[(K, W)] = underlying.iterator().map(kv => (kv._1, f(kv._2)))
+    override def knownSize: Int = underlying.knownSize
   }
 
   /** A view that flatmaps elements of the underlying collection. */
