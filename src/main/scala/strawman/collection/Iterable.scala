@@ -481,6 +481,27 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** A collection containing the last `n` elements of this collection. */
   def takeRight(n: Int): C = fromSpecificIterable(View.TakeRight(coll, n))
 
+  /** Takes longest prefix of elements that satisfy a predicate.
+    *  $orderDependent
+    *  @param   pred  The predicate used to test elements.
+    *  @return  the longest prefix of this $coll whose elements all satisfy
+    *           the predicate `p`.
+    */
+  def takeWhile(pred: A => Boolean): C = fromSpecificIterable(View.TakeWhile(coll, pred))
+
+  /** Splits this $coll into a prefix/suffix pair according to a predicate.
+    *
+    *  Note: `c span p`  is equivalent to (but possibly more efficient than)
+    *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the
+    *  predicate `p` does not cause any side-effects.
+    *  $orderDependent
+    *
+    *  @param p the test predicate
+    *  @return  a pair consisting of the longest prefix of this $coll whose
+    *           elements all satisfy `p`, and the rest of this $coll.
+    */
+  def span(p: A => Boolean): (C, C) = (takeWhile(p), dropWhile(p))
+
   /** The rest of the collection without its `n` first elements. For
     *  linear, immutable collections this should avoid making a copy.
     */

@@ -5,7 +5,7 @@ package immutable
 import mutable.{Builder, ImmutableBuilder}
 import immutable.{RedBlackTree => RB}
 
-import scala.{Boolean, Int, NullPointerException, Option, Ordering, Some, Unit}
+import scala.{Boolean, Int, math, NullPointerException, Option, Ordering, Some, Unit}
 
 /** This class implements immutable sorted sets using a tree.
   *
@@ -69,6 +69,29 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     else if (n >= size) this
     else newSet(RB.take(tree, n))
   }
+
+  override def slice(from: Int, until: Int): TreeSet[A] = {
+    if (until <= from) empty
+    else if (from <= 0) take(until)
+    else if (until >= size) drop(from)
+    else newSet(RB.slice(tree, from, until))
+  }
+
+  override def dropRight(n: Int): TreeSet[A] = take(size - math.max(n, 0))
+
+  override def takeRight(n: Int): TreeSet[A] = drop(size - math.max(n, 0))
+
+  private[this] def countWhile(p: A => Boolean): Int = {
+    var result = 0
+    val it = iterator()
+    while (it.hasNext && p(it.next())) result += 1
+    result
+  }
+  override def dropWhile(p: A => Boolean): TreeSet[A] = drop(countWhile(p))
+
+  override def takeWhile(p: A => Boolean): TreeSet[A] = take(countWhile(p))
+
+  override def span(p: A => Boolean): (TreeSet[A], TreeSet[A]) = splitAt(countWhile(p))
 
   override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
 

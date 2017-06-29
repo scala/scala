@@ -5,7 +5,7 @@ package immutable
 import strawman.collection.immutable.{RedBlackTree => RB}
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
 
-import scala.{Int, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
+import scala.{Boolean, Int, math, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 
 /** This class implements immutable maps using a tree.
   *
@@ -99,6 +99,30 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     else if (n >= size) this
     else new TreeMap(RB.take(tree, n))
   }
+
+  override def slice(from: Int, until: Int) = {
+    if (until <= from) empty
+    else if (from <= 0) take(until)
+    else if (until >= size) drop(from)
+    else new TreeMap(RB.slice(tree, from, until))
+  }
+
+  override def dropRight(n: Int): TreeMap[K, V] = take(size - math.max(n, 0))
+
+  override def takeRight(n: Int): TreeMap[K, V] = drop(size - math.max(n, 0))
+
+  private[this] def countWhile(p: ((K, V)) => Boolean): Int = {
+    var result = 0
+    val it = iterator()
+    while (it.hasNext && p(it.next())) result += 1
+    result
+  }
+
+  override def dropWhile(p: ((K, V)) => Boolean): TreeMap[K, V] = drop(countWhile(p))
+
+  override def takeWhile(p: ((K, V)) => Boolean): TreeMap[K, V] = take(countWhile(p))
+
+  override def span(p: ((K, V)) => Boolean): (TreeMap[K, V], TreeMap[K, V]) = splitAt(countWhile(p))
 
 }
 

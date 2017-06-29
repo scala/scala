@@ -139,6 +139,10 @@ object View extends IterableFactory[View] {
       if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
   }
 
+  case class TakeWhile[A](underlying: Iterable[A], p: A => Boolean) extends View[A] {
+    def iterator(): Iterator[A] = underlying.iterator().takeWhile(p)
+  }
+
   case class ScanLeft[A, B](underlying: Iterable[A], z: B, op: (B, A) => B) extends View[B] {
     def iterator(): Iterator[B] = underlying.iterator().scanLeft(z)(op)
     override def knownSize: Int =

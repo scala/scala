@@ -39,6 +39,16 @@ sealed trait List[+A]
     case _ => super.concat(xs)
   }
 
+  override def span(p: A => Boolean): (List[A], List[A]) = {
+    val b = new ListBuffer[A]
+    var these = this
+    while (!these.isEmpty && p(these.head)) {
+      b += these.head
+      these = these.tail
+    }
+    (b.toList, these)
+  }
+
   override def className = "List"
 }
 

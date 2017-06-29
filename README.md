@@ -82,6 +82,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `lastKey`
 - [x] `mkString`
 - [x] `size`
+- [x] `span`
 - [x] `sum`
 - [x] `to`
 
