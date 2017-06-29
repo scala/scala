@@ -1,7 +1,8 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, Some, Unit}
+import scala.{Any, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
+import scala.Predef.{intWrapper, require}
 import strawman.collection.mutable.ArrayBuffer
 
 /** A core Iterator class
@@ -70,6 +71,186 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     }
     None
   }
+
+  /** A flexible iterator for transforming an `Iterator[A]` into an
+   *  Iterator[Seq[A]], with configurable sequence size, step, and
+   *  strategy for dealing with elements which don't fit evenly.
+   *
+   *  Typical uses can be achieved via methods `grouped` and `sliding`.
+   */
+  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
+
+    require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
+
+    private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
+    private[this] var filled = false                          // whether the buffer is "hot"
+    private[this] var _partial = true                         // whether we deliver short sequences
+    private[this] var pad: Option[() => B] = None             // what to pad short sequences with
+
+    /** Public functions which can be used to configure the iterator before use.
+     *
+     *  Pads the last segment if necessary so that all segments will
+     *  have the same size.
+     *
+     *  @param x The element that will be appended to the last segment, if necessary.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPartial(true)`.
+     */
+    def withPadding(x: => B): this.type = {
+      pad = Some(() => x)
+      this
+    }
+    /** Public functions which can be used to configure the iterator before use.
+     *
+     *  Select whether the last segment may be returned with less than `size`
+     *  elements. If not, some elements of the original iterator may not be
+     *  returned at all.
+     *
+     *  @param x `true` if partial segments may be returned, `false` otherwise.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPadding`.
+     */
+    def withPartial(x: Boolean): this.type = {
+      _partial = x
+      if (_partial == true) // reset pad since otherwise it will take precedence
+        pad = None
+
+      this
+    }
+
+    /** For reasons which remain to be determined, calling
+     *  self.take(n).toSeq cause an infinite loop, so we have
+     *  a slight variation on take for local usage.
+     *  NB: self.take.toSeq is slice.toStream, lazily built on self,
+     *  so a subsequent self.hasNext would not test self after the
+     *  group was consumed.
+     */
+    private def takeDestructively(size: Int): Seq[A] = {
+      val buf = new ArrayBuffer[A]
+      var i = 0
+      // The order of terms in the following condition is important
+      // here as self.hasNext could be blocking
+      while (i < size && self.hasNext) {
+        buf += self.next
+        i += 1
+      }
+      buf
+    }
+
+    private def padding(x: Int) = immutable.ImmutableArray.fill(x)(pad.get())
+    private def gap = (step - size) max 0
+
+    private def go(count: Int) = {
+      val prevSize = buffer.size
+      def isFirst = prevSize == 0
+      // If there is padding defined we insert it immediately
+      // so the rest of the code can be oblivious
+      val xs: Seq[B] = {
+        val res = takeDestructively(count)
+        // was: extra checks so we don't calculate length unless there's reason
+        // but since we took the group eagerly, just use the fast length
+        val shortBy = count - res.length
+        if (shortBy > 0 && pad.isDefined) res ++ padding(shortBy) else res
+      }
+      lazy val len = xs.length
+      lazy val incomplete = len < count
+
+      // if 0 elements are requested, or if the number of newly obtained
+      // elements is less than the gap between sequences, we are done.
+      def deliver(howMany: Int) = {
+        (howMany > 0 && (isFirst || len > gap)) && {
+          if (!isFirst)
+            buffer dropInPlace (step min prevSize)
+
+          val available =
+            if (isFirst) len
+            else howMany min (len - gap)
+
+          buffer ++= (xs takeRight available)
+          filled = true
+          true
+        }
+      }
+
+      if (xs.isEmpty) false                         // self ran out of elements
+      else if (_partial) deliver(len min size)      // if _partial is true, we deliver regardless
+      else if (incomplete) false                    // !_partial && incomplete means no more seqs
+      else if (isFirst) deliver(len)                // first element
+      else deliver(step min size)                   // the typical case
+    }
+
+    // fill() returns false if no more sequences can be produced
+    private def fill(): Boolean = {
+      if (!self.hasNext) false
+      // the first time we grab size, but after that we grab step
+      else if (buffer.isEmpty) go(size)
+      else go(step)
+    }
+
+    def hasNext = filled || fill()
+    def next = {
+      if (!filled)
+        fill()
+
+      if (!filled)
+        throw new NoSuchElementException("next on empty iterator")
+      filled = false
+      immutable.ImmutableArray.fromArrayBuffer(buffer)
+    }
+  }
+
+  /** Returns an iterator which groups this iterator into fixed size
+   *  blocks.  Example usages:
+   *  {{{
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7)))
+   *    (1 to 7).iterator grouped 3 toList
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6))
+   *    (1 to 7).iterator grouped 3 withPartial false toList
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7, 20, 25)
+   *    // Illustrating that withPadding's argument is by-name.
+   *    val it2 = Iterator.iterate(20)(_ + 5)
+   *    (1 to 7).iterator grouped 3 withPadding it2.next toList
+   *  }}}
+   *
+   *  @note Reuse: $consumesAndProducesIterator
+   */
+  def grouped[B >: A](size: Int): GroupedIterator[B] =
+    new GroupedIterator[B](self, size, size)
+
+  /** Returns an iterator which presents a "sliding window" view of
+   *  this iterator.  The first argument is the window size, and
+   *  the second argument `step` is how far to advance the window
+   *  on each iteration. The `step` defaults to `1`.
+   *
+   *  The default `GroupedIterator` can be configured to either
+   *  pad a partial result to size `size` or suppress the partial
+   *  result entirely.
+   *
+   *  Example usages:
+   *  {{{
+   *    // Returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
+   *    (1 to 5).iterator.sliding(3).toList
+   *    // Returns List(List(1, 2, 3, 4), List(4, 5))
+   *    (1 to 5).iterator.sliding(4, 3).toList
+   *    // Returns List(List(1, 2, 3, 4))
+   *    (1 to 5).iterator.sliding(4, 3).withPartial(false).toList
+   *    // Returns List(List(1, 2, 3, 4), List(4, 5, 20, 25))
+   *    // Illustrating that withPadding's argument is by-name.
+   *    val it2 = Iterator.iterate(20)(_ + 5)
+   *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList
+   *  }}}
+   *
+   *  @return An iterator producing `Seq[B]`s of size `size`, except the
+   *          last element (which may be the only element) will be truncated
+   *          if there are fewer than `size` elements remaining to be grouped.
+   *          This behavior can be configured.
+   *
+   *  @note Reuse: $consumesAndProducesIterator
+   */
+  def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
+    new GroupedIterator[B](self, size, step)
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
@@ -342,6 +523,23 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     val thatIterator = that.iterator()
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
+  }
+
+  /** Creates an iterator that pairs each element produced by this iterator
+    *  with its index, counting from 0.
+    *
+    *  @return        a new iterator containing pairs consisting of
+    *                 corresponding elements of this iterator and their indices.
+    *  @note          Reuse: $consumesAndProducesIterator
+    */
+  def zipWithIndex: Iterator[(A, Int)] = new Iterator[(A, Int)] {
+    var idx = 0
+    def hasNext = self.hasNext
+    def next() = {
+      val ret = (self.next(), idx)
+      idx += 1
+      ret
+    }
   }
 
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {

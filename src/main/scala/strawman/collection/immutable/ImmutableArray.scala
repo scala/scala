@@ -108,11 +108,14 @@ object ImmutableArray extends IterableFactory[ImmutableArray] {
 
   def empty[A]: ImmutableArray[A] = emptyImpl
 
+  def fromArrayBuffer[A](arr: ArrayBuffer[A]): ImmutableArray[A] =
+    new ImmutableArray[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
+
   def fromIterable[A](it: strawman.collection.Iterable[A]): ImmutableArray[A] =
-    new ImmutableArray(ArrayBuffer.fromIterable(it).asInstanceOf[ArrayBuffer[Any]].toArray)
+    fromArrayBuffer(ArrayBuffer.fromIterable(it))
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
-    ArrayBuffer.newBuilder[A]().mapResult(b => new ImmutableArray[A](b.asInstanceOf[ArrayBuffer[Any]].toArray))
+    ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)
 
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 
