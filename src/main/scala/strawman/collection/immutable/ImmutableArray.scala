@@ -80,7 +80,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
   override def partition(p: A => Boolean): (ImmutableArray[A], ImmutableArray[A]) = {
     val pn = View.Partition(coll, p)
-    (ImmutableArray.fromIterable(pn.left), ImmutableArray.fromIterable(pn.right))
+    (ImmutableArray.fromIterable(pn.first), ImmutableArray.fromIterable(pn.second))
   }
 
   override def take(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n)(apply)
