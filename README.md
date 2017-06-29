@@ -65,8 +65,10 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 - [x] `apply`
 - [x] `contains`
+- [x] `count`
+- [x] `find`
 - [x] `firstKey`
-- [x] `forall`
+- [x] `forall` / `exists`
 - [x] `foreach`
 - [x] `foldLeft`
 - [x] `foldRight`
@@ -78,17 +80,21 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `isDefinedAt`
 - [x] `isEmpty` / `nonEmpty`
 - [x] `keysIteratorFrom`
-- [x] `last`
+- [x] `last` / `lastOption`
 - [x] `lastKey`
+- [x] `max` / `maxBy`
+- [x] `min` / `minBy`
 - [x] `mkString`
+- [x] `product`
+- [x] `reduce` / `reduceOption` / `reduceLeft` / `reduceRight`
 - [x] `size`
+- [x] `span`
 - [x] `sum`
 - [x] `to`
 
 ### Transformations to collections having the same element type
 
-- [x] `drop`
-- [x] `dropRight`
+- [x] `drop` / `dropRight` / `dropWhile`
 - [x] `empty`
 - [x] `filter` / `filterNot`
 - [x] `groupBy`
@@ -100,8 +106,8 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `splitAt`
 - [x] `tail`
 - [x] `init`
-- [x] `take`
-- [x] `takeRight`
+- [x] `take` / `takeRight` / `takeWhile`
+- [x] `updated`
 
 ### Transformations to collections that can have a different element type
 
@@ -110,9 +116,13 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `append`
 - [x] `++` / `concat` / `union`
 - [x] `flatMap`
+- [x] `grouped`
 - [x] `map`
 - [x] `merged`
-- [x] `zip`
+- [x] `scan` / `scanLeft` / `scanRight`
+- [x] `sliding`
+- [x] `unzip`
+- [x] `zip` / `zipWithIndex`
 
 ### In-place mutating operations
 

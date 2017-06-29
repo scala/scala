@@ -12,7 +12,14 @@ import org.junit.Test
 
 class StrawmanTest {
 
+  def iterableOps(xs: Iterable[Int]): Unit = {
+    val x1 = xs.map(x => (x, x))
+    val (x2, x3) = x1.unzip
+    assert(xs == x2 && xs == x3)
+  }
+
   def seqOps(xs: Seq[Int]): Unit = {
+    iterableOps(xs)
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
@@ -136,6 +143,7 @@ class StrawmanTest {
   }
 
   def stringOps(xs: String): Unit = {
+    iterableOps(xs.map(_.intValue))
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
@@ -274,6 +282,7 @@ class StrawmanTest {
   }
 
   def immutableArrayOps(xs: immutable.ImmutableArray[Int]): Unit = {
+    iterableOps(xs)
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
@@ -441,6 +450,7 @@ class StrawmanTest {
   }
 
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
+    iterableOps(xs)
     val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs2: immutable.SortedSet[String] = xs1
     val l = List(1,2,3)
@@ -481,6 +491,7 @@ class StrawmanTest {
   }
 
   def bitSets(xs: immutable.BitSet, ys: BitSet, zs: Set[Int]): Unit = {
+    iterableOps(xs)
     val xs1 = xs & zs
     val xs2: immutable.BitSet = xs1
     val xs3 = xs ^ ys
