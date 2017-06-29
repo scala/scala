@@ -28,6 +28,7 @@ sealed abstract class BitSet
   def empty: BitSet = BitSet.empty
 
   def iterableFactory = Set
+  def sortedIterableFactory = SortedSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
   protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.sortedFromIterable(it)
@@ -59,7 +60,7 @@ sealed abstract class BitSet
   protected def updateWord(idx: Int, w: Long): BitSet
 }
 
-object BitSet extends SpecificIterableFactoryWithBuilder[Int, BitSet] {
+object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
   def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet =
     it match {
@@ -70,7 +71,7 @@ object BitSet extends SpecificIterableFactoryWithBuilder[Int, BitSet] {
   def empty: BitSet = new BitSet1(0L)
 
   def newBuilder(): Builder[Int, BitSet] =
-    new GrowableBuilder(mutable.BitSet.empty).mapResult(bs => fromBitMaskNoCopy(bs.elems))
+    mutable.BitSet.newBuilder().mapResult(bs => fromBitMaskNoCopy(bs.elems))
 
   private def createSmall(a: Long, b: Long): BitSet = if (b == 0L) new BitSet1(a) else new BitSet2(a, b)
 

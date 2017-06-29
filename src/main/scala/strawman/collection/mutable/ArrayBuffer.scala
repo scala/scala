@@ -49,7 +49,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
 
-  protected[this] def newSpecificBuilder() = new GrowableBuilder(ArrayBuffer.empty[A])
+  protected[this] def newSpecificBuilder(): Builder[A, ArrayBuffer[A]] = ArrayBuffer.newBuilder()
 
   def clear(): Unit =
     end = 0
@@ -133,6 +133,8 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
       new ArrayBuffer[B](array, array.length)
     }
     else new ArrayBuffer[B] ++= coll
+
+  def newBuilder[A](): Builder[A, ArrayBuffer[A]] = new GrowableBuilder(empty[A])
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }

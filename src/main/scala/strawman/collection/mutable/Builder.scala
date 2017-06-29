@@ -1,8 +1,11 @@
 package strawman.collection.mutable
 
-import scala.{Boolean, Any, Char, Unit}
+import scala.{Any, Boolean, Char, Unit}
 import java.lang.String
+
 import strawman.collection.IterableOnce
+
+import scala.math.Ordering
 
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>

@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import strawman.collection.{Iterator, MapFactory, MapFactoryWithBuilder, StrictOptimizedIterableOps}
+import strawman.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 
 import scala.{Boolean, Int, None, Option, SerialVersionUID, Serializable, Some, Unit}
 import java.lang.String
@@ -27,6 +27,8 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
     with StrictOptimizedIterableOps[(K, V), HashMap[K, V]]
     with Serializable {
 
+  def mapFactory = HashMap
+
   private[this] val table: HashTable[K, V, DefaultEntry[K, V]] =
     new HashTable[K, V, DefaultEntry[K, V]] {
       def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
@@ -41,7 +43,7 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.fromIterable(it)
 
-  protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] =  new GrowableBuilder(HashMap.empty[K, V])
+  protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] =  HashMap.newBuilder()
 
   def iterator(): Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
 
@@ -114,6 +116,8 @@ object HashMap extends MapFactory[HashMap] {
   def empty[K, V]: HashMap[K, V] = new HashMap[K, V]
 
   def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] = Growable.fromIterable(empty[K, V], it)
+
+  def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] = new GrowableBuilder(HashMap.empty[K, V])
 
 }
 

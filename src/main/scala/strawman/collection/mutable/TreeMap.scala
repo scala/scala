@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.{Iterator, SortedMapFactory, SortedMapFactoryWithBuilder, StrictOptimizedIterableOps}
+import collection.{Iterator, SortedMapFactory, StrictOptimizedIterableOps}
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
@@ -28,6 +28,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with StrictOptimizedIterableOps[(K, V), TreeMap[K, V]]
     with Serializable {
 
+  def mapFactory = Map
+  def sortedMapFactory = TreeMap
+
   /**
     * Creates an empty `TreeMap`.
     * @param ord the implicit ordering used to compare objects of type `K`.
@@ -39,7 +42,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] = TreeMap.sortedFromIterable(it)
 
-  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] =  new GrowableBuilder(TreeMap.empty[K, V])
+  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] = TreeMap.newBuilder()
 
   def iterator(): Iterator[(K, V)] = RB.iterator(tree)
 
@@ -181,5 +184,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
     Growable.fromIterable(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
+
+  def newBuilder[K: Ordering, V](): Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder(empty[K, V])
 
 }

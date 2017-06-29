@@ -113,7 +113,7 @@ sealed class ListSet[A]
   * @define Coll ListSet
   * @define coll list set
   */
-object ListSet extends IterableFactoryWithBuilder[ListSet] {
+object ListSet extends IterableFactory[ListSet] {
 
   def fromIterable[E](it: strawman.collection.Iterable[E]): ListSet[E] =
     it match {

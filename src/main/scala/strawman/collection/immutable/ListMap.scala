@@ -50,6 +50,7 @@ sealed class ListMap[K, +V]
     with Serializable {
 
   def iterableFactory = List
+  def mapFactory = ListMap
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
 
@@ -153,7 +154,7 @@ sealed class ListMap[K, +V]
   * @define Coll ListMap
   * @define coll list map
   */
-object ListMap extends MapFactoryWithBuilder[ListMap] {
+object ListMap extends MapFactory[ListMap] {
 
   def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
 

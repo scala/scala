@@ -2,9 +2,6 @@ package strawman
 package collection
 package immutable
 
-import strawman.collection.MapFactory
-import strawman.collection.mutable.Builder
-
 import scala.`inline`
 
 /** Base type of immutable Maps */
@@ -59,4 +56,4 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
 }
 
 // TODO Special case small maps
-object Map extends MapFactoryWithBuilder.Delegate[Map](HashMap)
+object Map extends MapFactory.Delegate[Map](HashMap)

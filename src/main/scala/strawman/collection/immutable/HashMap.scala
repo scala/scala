@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import collection.{Iterator, MapFactoryWithBuilder, StrictOptimizedIterableOps}
+import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
@@ -37,6 +37,7 @@ sealed trait HashMap[K, +V]
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
   def iterableFactory = List
+  def mapFactory = HashMap
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
 
@@ -103,7 +104,7 @@ sealed trait HashMap[K, +V]
 
 }
 
-object HashMap extends MapFactoryWithBuilder[HashMap] {
+object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 

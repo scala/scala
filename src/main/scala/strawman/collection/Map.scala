@@ -21,6 +21,8 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   /** Similar to fromIterable, but returns a Map collection type */
   protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
 
+  def mapFactory: MapFactory[CC]
+
   /** Optionally returns the value associated with a key.
     *
     *  @param  key    the key value
@@ -128,4 +130,4 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
 
 }
 
-object Map extends MapFactoryWithBuilder.Delegate[Map](immutable.Map)
+object Map extends MapFactory.Delegate[Map](immutable.Map)

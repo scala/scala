@@ -12,7 +12,11 @@ trait SortedMap[K, +V]
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
   extends MapOps[K, V, Map, C]
-     with SortedOps[K, C] {
+     with SortedOps[K, SortedSet, C] {
+
+  def sortedIterableFactory = SortedSet
+
+  def sortedMapFactory: SortedMapFactory[CC]
 
   protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
 
@@ -48,4 +52,4 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
 
 }
 
-object SortedMap extends SortedMapFactoryWithBuilder.Delegate[SortedMap](TreeMap)
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap)

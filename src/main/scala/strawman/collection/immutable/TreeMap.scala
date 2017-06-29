@@ -37,6 +37,8 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
   def iterableFactory = List
+  def mapFactory = Map
+  def sortedMapFactory = TreeMap
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     TreeMap.sortedFromIterable(coll)
@@ -104,7 +106,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   *  @define Coll immutable.TreeMap
   *  @define coll immutable tree map
   */
-object TreeMap extends SortedMapFactoryWithBuilder[TreeMap] {
+object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
 
