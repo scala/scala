@@ -1,7 +1,7 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
+import scala.{Any, Array, Boolean, Int, math, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
 import scala.Predef.{intWrapper, require}
 import strawman.collection.mutable.ArrayBuffer
 
@@ -78,7 +78,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
    *
    *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
-  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
+  class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends Iterator[Seq[B]] {
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
@@ -127,8 +127,8 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
      *  so a subsequent self.hasNext would not test self after the
      *  group was consumed.
      */
-    private def takeDestructively(size: Int): Seq[A] = {
-      val buf = new ArrayBuffer[A]
+    private def takeDestructively(size: Int): Seq[B] = {
+      val buf = new ArrayBuffer[B]
       var i = 0
       // The order of terms in the following condition is important
       // here as self.hasNext could be blocking
@@ -301,8 +301,9 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def foreach[U](f: A => U): Unit =
     while (hasNext) f(next())
 
-  def indexWhere(p: A => Boolean): Int = {
-    var i = 0
+  def indexWhere(p: A => Boolean, from: Int): Int = {
+    var i = math.max(from, 0)
+    drop(from)
     while (hasNext) {
       if (p(next())) return i
       i += 1

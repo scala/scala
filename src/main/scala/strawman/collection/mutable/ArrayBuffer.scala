@@ -16,6 +16,8 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def this() = this(new Array[AnyRef](16), 0)
 
+  def this(initLength: Int) = this(new Array[AnyRef](initLength), initLength)
+
   private var array: Array[AnyRef] = initElems
   private var end = initLength
 
