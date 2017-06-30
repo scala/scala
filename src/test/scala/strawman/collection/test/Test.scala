@@ -87,8 +87,6 @@ class StrawmanTest {
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
     val y2: String = x2
-    val x3 = xs.indexWhere(_ % 2 == 0)
-    val y3: Int = x3
     val x4 = xs.head
     val y4: Int = x4
     val x5 = xs.to(List)
@@ -123,7 +121,6 @@ class StrawmanTest {
     println("-------")
     println(x1)
     println(x2)
-    println(x3)
     println(x4)
     println(x5)
     println(xs6.to(List))

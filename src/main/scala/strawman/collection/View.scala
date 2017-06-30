@@ -231,6 +231,23 @@ object View extends IterableFactory[View] {
       }
   }
 
+  case class PadTo[A](underlying: Iterable[A], len: Int, elem: A) extends View[A] {
+    def iterator(): Iterator[A] = new Iterator[A] {
+      private var i = 0
+      private var it = underlying.iterator()
+      def next(): A = {
+        val a =
+          if (it.hasNext) it.next()
+          else if (i < len) elem
+          else Iterator.empty.next()
+        i += 1
+        a
+      }
+      def hasNext: Boolean = i < len
+    }
+    override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
+  }
+
 }
 
 /** A trait representing indexable collections with finite length */

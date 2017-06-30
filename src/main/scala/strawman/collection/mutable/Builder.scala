@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{Any, Boolean, Char, Unit}
+import scala.{Boolean, Any, Char, Int, Unit}
 import java.lang.String
 
 import strawman.collection.IterableOnce
@@ -18,6 +18,16 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   /** Result collection consisting of all elements appended so far. */
   def result(): To
 
+  /** Gives a hint how many elements are expected to be added
+    *  when the next `result` is called. Some builder classes
+    *  will optimize their representation based on the hint. However,
+    *  builder implementations are still required to work correctly even if the hint is
+    *  wrong, i.e. a different number of elements is added.
+    *
+    *  @param size  the hint how many elements will be added.
+    */
+  def sizeHint(size: Int): Unit = ()
+
   /** A builder resulting from this builder my mapping the result using `f`. */
   def mapResult[NewTo](f: To => NewTo) = new Builder[A, NewTo] {
     def add(x: A): this.type = { self += x; this }
@@ -25,6 +35,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
     override def addAll(xs: IterableOnce[A]): this.type = { self ++= xs; this }
     def result(): NewTo = f(self.result())
   }
+
 }
 
 class StringBuilder extends Builder[Char, String] {
