@@ -119,14 +119,14 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
     *          the predicate `p`. The resulting map wraps the original map without copying any elements.
     */
-  def filterKeys(p: K => Boolean): CC[K, V @uncheckedVariance] = mapFromIterable(View.FilterKeys(coll, p))
+  def filterKeys(p: K => Boolean): View[(K, V)] = View.FilterKeys(coll, p)
 
   /** Transforms this map by applying a function to every retrieved value.
     *  @param  f   the function used to transform values of this map.
     *  @return a map view which maps every key of this map
     *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
     */
-  def mapValues[W](f: V => W): CC[K, W] = mapFromIterable(View.MapValues(coll, f))
+  def mapValues[W](f: V => W): View[(K, W)] = View.MapValues(coll, f)
 
   /** Defines the default value computation for the map,
     *  returned when a key is not found
