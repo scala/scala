@@ -72,12 +72,13 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class DefaultKeySet extends Set[K] with Serializable {
-    def contains(key : K) = MapOps.this.coll.contains(key)
+    def contains(key: K) = MapOps.this.coll.contains(key)
     def iterator() = keysIterator()
     override def size = coll.size
     override def foreach[U](f: K => U) = keysIterator() foreach f
     def iterableFactory: IterableFactory[Set] = Set
     def empty: Set[K] = iterableFactory.empty
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(iterableFactory.fromIterable(coll).diff(that))
     protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = iterableFactory.fromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
   }
