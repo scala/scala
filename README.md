@@ -10,21 +10,21 @@ Prototype improvements for Scala collections.
 
 ## Use it in your project
 
-We published a 0.1.0 version so that you can experiment with the new design.
-Note that most of the collection implementations are incomplete!
+Add the following dependency to your project:
 
 ~~~ scala
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.1.0"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0"
 ~~~
 
-Only Scala 2.12 is supported so far.
+The 0.2.0 version is compatible with Scala 2.13 and Dotty. Scala 2.12 is also supported
+but you might encounter type inference issues with it.
 
 We also automatically publish snapshots on Sonatype:
 
 ~~~ scala
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0-SNAPSHOT"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.3.0-SNAPSHOT"
 ~~~
 
 ## Contributing
