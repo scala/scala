@@ -841,7 +841,7 @@ self =>
         if (treeInfo.isLeftAssoc(op)) {
           Apply(mkSelection(left), arguments)
         } else {
-          val x = freshTermName()
+          val x = freshTermName(nme.RIGHT_ASSOC_OP_PREFIX)
           Block(
             List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
             Apply(mkSelection(right), List(Ident(x))))

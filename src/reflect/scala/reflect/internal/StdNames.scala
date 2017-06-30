@@ -333,6 +333,7 @@ trait StdNames {
     val FRESH_SUFFIX                   = "macro$" // uses a keyword to avoid collisions with mangled names
     val QUAL_PREFIX                    = "qual$"
     val NAMEDARG_PREFIX                = "x$"
+    val RIGHT_ASSOC_OP_PREFIX          = "rassoc$"
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
