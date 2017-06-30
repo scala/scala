@@ -26,7 +26,7 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   // sound bcs of VarianceNote
 
   def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
-    if (pf.isDefinedAt(a)) View.Elems(pf(a))
+    if (pf.isDefinedAt(a)) View.Single(pf(a))
     else View.Empty
   )
 }
