@@ -83,6 +83,18 @@ package util {
 }
 ```
 
+As a convenience, multiple bindings of a type identifier to the same
+underlying type is permitted. This is possible when import clauses introduce
+a binding of a member type alias with the same binding precedence, typically
+through wildcard imports. This allows redundant type aliases to be imported
+without introducing an ambiguity.
+
+```scala
+object X { type T = annotation.tailrec }
+object Y { type T = annotation.tailrec }
+object Z { import X._, Y._, annotation.{tailrec => T} ; @T def f: Int = { f ; 42 } }
+```
+
 ###### Example
 
 Assume the following two definitions of objects named `X` in packages `p` and `q`
