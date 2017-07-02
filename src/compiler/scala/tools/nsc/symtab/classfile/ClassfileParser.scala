@@ -519,6 +519,7 @@ abstract class ClassfileParser {
       }
       propagatePackageBoundary(jflags, sym)
       parseAttributes(sym, info)
+      addJavaFlagsAnnotations(sym, jflags)
       getScope(jflags) enter sym
 
       // sealed java enums
@@ -589,6 +590,7 @@ abstract class ClassfileParser {
         sym setInfo info
         propagatePackageBoundary(jflags, sym)
         parseAttributes(sym, info, removedOuterParameter)
+        addJavaFlagsAnnotations(sym, jflags)
         if (jflags.isVarargs)
           sym modifyInfo arrayToRepeated
 
@@ -1047,6 +1049,12 @@ abstract class ClassfileParser {
     // begin parseAttributes
     for (i <- 0 until u2) parseAttribute()
   }
+
+  /** Apply `@native`/`@transient`/`@volatile` annotations to `sym`,
+    * if the corresponding flag is set in `flags`.
+    */
+  def addJavaFlagsAnnotations(sym: Symbol, flags: JavaAccFlags): Unit =
+    flags.toScalaAnnotations(symbolTable) foreach (ann => sym.addAnnotation(ann))
 
   /** Enter own inner classes in the right scope. It needs the scopes to be set up,
    *  and implicitly current class' superclasses.
