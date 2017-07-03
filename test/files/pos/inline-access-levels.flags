@@ -1,1 +1,1 @@
--opt:l:classpath -Xfatal-warnings -opt-warnings
+-opt:l:inline -opt-inline-from:** -Xfatal-warnings -opt-warnings

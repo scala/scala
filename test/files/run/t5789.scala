@@ -5,7 +5,7 @@ import scala.tools.partest.ReplTest
 
 
 object Test extends ReplTest {
-  override def extraSettings = "-opt:l:classpath"
+  override def extraSettings = "-opt:l:inline -opt-inline-from:**"
   def code = """
     val n = 2
     () => n

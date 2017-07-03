@@ -1,1 +1,1 @@
--Yoverride-vars -opt:l:project
+-Yoverride-vars -opt:l:inline -opt-inline-from:**

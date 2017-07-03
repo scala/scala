@@ -1,1 +1,1 @@
--Ydelambdafy:method -opt:l:classpath
+-Ydelambdafy:method -opt:l:inline -opt-inline-from:**

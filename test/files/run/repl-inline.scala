@@ -15,7 +15,7 @@ assert(h == "h", h)
   def main(args: Array[String]) {
     def test(f: Settings => Unit): Unit = {
       val settings = new Settings()
-      settings.processArgumentString("-opt:l:classpath")
+      settings.processArgumentString("-opt:l:inline -opt-inline-from:**")
       f(settings)
       settings.usejavacp.value = true
       val repl = new interpreter.IMain(settings)

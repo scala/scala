@@ -16,7 +16,7 @@ import Opcodes._
 // verify. So the test includes a version check that short-circuits the whole test
 // on JDK 6
 object Test extends DirectTest {
-  override def extraSettings: String = "-opt:l:classpath -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = "-opt:l:inline -opt-inline-from:** -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
   def generateClass() {
     val invokerClassName =  "DynamicInvoker"

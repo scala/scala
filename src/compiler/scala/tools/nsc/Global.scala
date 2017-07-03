@@ -1296,7 +1296,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       unitbuf += unit
       compiledFiles += unit.source.file.path
     }
-    private def warnDeprecatedAndConflictingSettings(unit: CompilationUnit) {
+    private def warnDeprecatedAndConflictingSettings() {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
         currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
@@ -1397,7 +1397,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compileSources(sources: List[SourceFile]) = if (!reporter.hasErrors) {
 
       def checkDeprecations() = {
-        warnDeprecatedAndConflictingSettings(newCompilationUnit(""))
+        warnDeprecatedAndConflictingSettings()
         reporting.summarizeErrors()
       }
 
@@ -1419,7 +1419,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       val startTime = currentTime
 
       reporter.reset()
-      warnDeprecatedAndConflictingSettings(unitbuf.head)
+      warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
       while (globalPhase.hasNext && !reporter.hasErrors) {
