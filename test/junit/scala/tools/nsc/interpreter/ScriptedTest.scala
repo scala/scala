@@ -96,7 +96,7 @@ class ScriptedTest {
   }
   @Test def `on compile error`(): Unit = {
     val engine = scripted
-    val err = "not found: value foo in def f = foo at line number 11 at column number 16"
+    val err = "not found: value foo in def f = foo at line number 11 at column number 9"
     assertThrows[ScriptException](engine.compile("def f = foo"), _ == err)
   }
 }

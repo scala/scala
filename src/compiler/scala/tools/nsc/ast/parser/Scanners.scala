@@ -543,6 +543,14 @@ trait Scanners extends ScannersCommon {
           }
           fetchDoubleQuote()
         case '\'' =>
+          def unclosedCharLit() = {
+            val unclosed = "unclosed character literal"
+            // advise if previous token was Symbol contiguous with the orphan single quote at offset
+            val msg =
+              if (token == SYMBOLLIT && offset == lastOffset) s"""$unclosed (or use " for string literal "$strVal")"""
+              else unclosed
+            syntaxError(msg)
+          }
           def fetchSingleQuote() = {
             nextChar()
             if (isIdentifierStart(ch))
@@ -550,17 +558,25 @@ trait Scanners extends ScannersCommon {
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
+              val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
-                nextChar()
-                token = CHARLIT
-                setStrVal()
+                if (isEmptyCharLit && settings.isScala213)
+                  syntaxError("empty character literal (use '\\'' for single quote)")
+                else {
+                  if (isEmptyCharLit)
+                    deprecationWarning("deprecated syntax for character literal (use '\\'' for single quote)", "2.12.2")
+                  nextChar()
+                  token = CHARLIT
+                  setStrVal()
+                }
+              } else if (isEmptyCharLit) {
+                syntaxError("empty character literal")
               } else {
-                syntaxError("unclosed character literal")
+                unclosedCharLit()
               }
             }
-            else
-              syntaxError("unclosed character literal")
+            else unclosedCharLit()
           }
           fetchSingleQuote()
         case '.' =>
@@ -792,7 +808,7 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))

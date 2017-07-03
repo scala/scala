@@ -9,7 +9,7 @@ package interpreter
 import reporters._
 import IMain._
 
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{OffsetPosition, Position}
 
 /** Like ReplGlobal, a layer for ensuring extra functionality.
  */
@@ -40,14 +40,25 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
     case INFO    => RESET
   }
 
+  private val promptLength = replProps.promptText.lines.toList.last.length
+  private val indentation  = " " * promptLength
+
+  // colorized console labels
+  override protected def clabel(severity: Severity): String = {
+    val label0 = super.clabel(severity)
+    if (replProps.colorOk) s"${severityColor(severity)}${label0}${RESET}" else label0
+  }
+
+  // shift indentation for source text entered at prompt
   override def print(pos: Position, msg: String, severity: Severity) {
-    val prefix = (
-      if (replProps.colorOk)
-        severityColor(severity) + clabel(severity) + RESET
-      else
-        clabel(severity)
-    )
-    printMessage(pos, prefix + msg)
+    val adjusted =
+      if (pos.source.file.name == "<console>")
+        new OffsetPosition(pos.source, pos.offset.getOrElse(0)) {
+          override def lineContent = s"${indentation}${super.lineContent}"
+          override def lineCaret   = s"${indentation}${super.lineCaret}"
+        }
+      else pos
+    super.print(adjusted, msg, severity)
   }
 
   override def printMessage(msg: String) {
@@ -63,12 +74,8 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
     else Console.println("[init] " + msg)
   }
 
-  override def displayPrompt() {
-    if (intp.totalSilence) ()
-    else super.displayPrompt()
-  }
+  override def displayPrompt() = if (!intp.totalSilence) super.displayPrompt()
 
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String) =
     s"; for details, enable `:setting $name' or `:replay $name'"
-
 }
