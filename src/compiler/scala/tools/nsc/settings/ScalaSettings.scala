@@ -193,7 +193,16 @@ trait ScalaSettings extends AbsScalaSettings
   val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
+    .withPostSetHook(postSetExclusive(Ysysdef, Ypredef))
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
+    .withPostSetHook(postSetExclusive(Ysysdef, Ypredef))
+  val Ysysdef: StringSetting =
+    StringSetting     ("-Ysysdef", "imports", "Comma-separated list of fully qualified system imports, added to every source file. _ for none.", "java.lang._, scala._")
+  .withPostSetHook(postSetExclusive(noimports, nopredef))
+  val Ypredef: StringSetting =
+    StringSetting     ("-Ypredef", "imports", "Comma-separated list of fully qualified predef imports, added if not clashing with top-level imports. _ for none.", "scala.Predef._")
+  .withPostSetHook(postSetExclusive(noimports, nopredef))
+
   val noAdaptedArgs   = BooleanSetting    ("-Yno-adapted-args", "Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.")
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")
@@ -325,6 +334,10 @@ trait ScalaSettings extends AbsScalaSettings
   val YoptTrace = StringSetting("-Yopt-trace", "package/Class.method", "Trace the optimizer progress for methods; `_` to print all, prefix match to select.", "")
 
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
+
+  private def postSetExclusive(peers: Setting*)(s: Setting): Unit =
+    peers.find(_.isSetByUser).foreach(peer =>
+      errorFn(s"Flag ${s.name} can not be used in conjunction with flag ${peer.name}"))
 
   object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }
   val Ystatistics = {

@@ -27,9 +27,11 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.GenBCode
+import scala.annotation.tailrec
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
+import scala.tools.nsc.settings.ScalaSettings
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -434,6 +436,38 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   import syntaxAnalyzer.{ UnitScanner, UnitParser, JavaUnitParser }
+
+  private[this] def resolveSettingImports(setting: ScalaSettings#StringSetting): List[Import] = {
+    def resolveSymbol(imp: Import): Symbol = {
+      @tailrec def loop(tree: Tree, acc: List[Name]): List[Name] = tree match {
+        case Select(expr: Tree, name) => loop(expr, name :: acc)
+        case Ident(name) => name :: acc
+        case _ => acc
+      }
+      loop(imp.expr, Nil).foldLeft(RootClass: Symbol) { (parent, name) =>
+        val s = parent.info member name
+        if (s != NoSymbol) s
+        else abort(s"Unable to find '$name' for setting '${setting.name} ${setting.value}'. Note: These imports must be fully qualified.")
+      }
+    }
+
+    val trimmedValue = setting.value.trim
+    if (trimmedValue.isEmpty || trimmedValue == "_") Nil
+    else
+      newUnitParser(setting.value, s"<flag-${setting.name}>")
+        .parseRule(rule => rule.commaSeparated(rule.importExpr()))
+        .collect { case imp: Import =>
+          gen.mkImportFromSelector(resolveSymbol(imp), imp.selectors)
+    }
+  }
+
+  // These are only used when either -Ysysdef or -Ypredef is set
+  lazy val globalSysdefImports: List[Import] = resolveSettingImports(settings.Ysysdef)
+  lazy val globalPredefImports: List[Import] = resolveSettingImports(settings.Ypredef)
+
+  // Combination of the sysdef and predef imports, used for determining which predef imports
+  // are evicted for a compilation unit
+  lazy val globalRootImports: List[Import]   = globalSysdefImports ::: globalPredefImports
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer

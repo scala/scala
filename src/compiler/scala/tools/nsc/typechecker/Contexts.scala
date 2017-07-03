@@ -100,8 +100,79 @@ trait Contexts { self: Analyzer =>
   }
 
 
+  // Collects the leading imports in a given unit body.
+  //
+  // This method should return the list of imports that's
+  // checked in `noPredefImportForUnit`
+  //
+  private[this] def collectLeadingImports(body: Tree): List[Import] = {
+    @tailrec def loop(rem: List[Tree], acc: List[Import]): List[Import] = rem match {
+      case tree :: tail => tree match {
+        case PackageDef(_, stats) => loop(stats ::: tail, acc)
+        case imp: Import => loop(tail, imp :: acc)
+        case _ => loop(tail, acc)
+      }
+      case Nil => acc
+    }
+    loop(body :: Nil, Nil).reverse
+  }
+
+  def resolveSymbol(tree0: Tree, context: Context): Symbol = {
+    @tailrec def expandNames(tree: Tree, acc: List[Name]): List[Name] = tree match {
+      case Select(expr: Tree, name) => expandNames(expr, name :: acc)
+      case Ident(name) => name :: acc
+      case _ => acc
+    }
+    expandNames(tree0, Nil) match {
+      case head :: tail =>
+        try {
+          val start = context.lookupSymbol(head, _ => true).symbol
+          tail.foldLeft(start)((parent, name) => parent.info member name)
+        } catch { case _: Throwable => NoSymbol }
+      case Nil => NoSymbol
+    }
+  }
+
+  /** Determines which global predefs are relevant for a given
+    * compilation unit.
+    *
+    * This is done by evaluating leading imports against the global
+    * predef imports. If a leading import imports the same symbol as a
+    * global predef, the global predef is excluded for this
+    * compilation unit. This comparison is done by looking at the
+    * import expression-- import selectors are ignored for this
+    * process.
+    */
+  def localPredefImports(unit: CompilationUnit): List[Import] = {
+    val leadingImports = collectLeadingImports(unit.body)
+
+    // an initial context of all sysdefs and predefs needed
+    // for evaluating the compilation unit's leading imports
+    val context0 = globalRootImports.foldLeft(startContext)((c, imp) => c.make(imp))
+
+    val (_, rootImports) = leadingImports
+      .foldLeft((context0, globalPredefImports)) { case ((ctx, imps), imp) =>
+        val sym = resolveSymbol(imp.expr, ctx)
+        val filteredRootImports = imps.filter(_.expr.symbol != sym)
+        (ctx.make(imp), filteredRootImports)
+      }
+
+    rootImports
+  }
+
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
+
+    val localRootImports =
+      if (settings.Ysysdef.isSetByUser || settings.Ypredef.isSetByUser) {
+        // 'new' feature flagged implementation
+        if (unit.isJava) RootImports.javaList.map(gen.mkWildcardImport)
+        else globalSysdefImports ::: localPredefImports(unit)
+      } else
+        // original implementation
+        rootImports(unit).map(gen.mkWildcardImport)
+
+    val localRootImportContext =
+      localRootImports.foldLeft(startContext)((c, imp) => c.make(imp))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -111,8 +182,8 @@ trait Contexts { self: Analyzer =>
     // We detect `scala-xml` by looking for `scala.xml.TopScope` and
     // inject the equivalent of `import scala.xml.{TopScope => $scope}`
     val contextWithXML =
-      if (!unit.hasXml || ScalaXmlTopScope == NoSymbol) rootImportsContext
-      else rootImportsContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
+      if (!unit.hasXml || ScalaXmlTopScope == NoSymbol) localRootImportContext
+      else localRootImportContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
 
     val c = contextWithXML.make(tree, unit = unit)
 
