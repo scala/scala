@@ -139,6 +139,19 @@ object ScalaRunTime {
   // More background at ticket #2318.
   def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 
+  def lookupStructuralMethod(c: Class[_], m: String, params: Array[Class[_]]): JMethod = {
+    val res =
+      try c.getMethod(m, params: _*)
+      catch {
+        case e: java.lang.NoSuchMethodException =>
+          // Workaround for scala/bug#10334
+          val ms = c.getMethods.filter(x => x.getName == m && !x.isBridge)
+          if (ms.length == 1) ms(0)
+          else throw e
+      }
+    ensureAccessible(res)
+  }
+
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
