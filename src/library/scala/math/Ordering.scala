@@ -160,7 +160,7 @@ trait LowPriorityOrderingImplicits {
   * new orderings.
   */
 object Ordering extends LowPriorityOrderingImplicits {
-  def apply[T](implicit ord: Ordering[T]) = ord
+  @inline def apply[T](implicit ord: Ordering[T]) = ord
 
   trait ExtraImplicits {
     /** Not in the standard scope due to the potential for divergence:

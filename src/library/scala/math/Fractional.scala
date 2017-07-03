@@ -25,6 +25,8 @@ trait Fractional[T] extends Numeric[T] {
 }
 
 object Fractional {
+  @inline def apply[T](implicit frac: Fractional[T]): Fractional[T] = frac
+
   trait ExtraImplicits {
     implicit def infixFractionalOps[T](x: T)(implicit num: Fractional[T]): Fractional[T]#FractionalOps = new num.FractionalOps(x)
   }

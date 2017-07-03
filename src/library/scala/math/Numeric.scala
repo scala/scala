@@ -15,6 +15,8 @@ import scala.language.implicitConversions
  * @since 2.8
  */
 object Numeric {
+  @inline def apply[T](implicit num: Numeric[T]): Numeric[T] = num
+
   trait ExtraImplicits {
     /** These implicits create conversions from a value for which an implicit Numeric
      *  exists to the inner class which creates infix operations.  Once imported, you

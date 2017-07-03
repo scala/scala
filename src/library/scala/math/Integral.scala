@@ -27,6 +27,8 @@ trait Integral[T] extends Numeric[T] {
 }
 
 object Integral {
+  @inline def apply[T](implicit int: Integral[T]): Integral[T] = int
+
   trait ExtraImplicits {
     /** The regrettable design of Numeric/Integral/Fractional has them all
      *  bumping into one another when searching for this implicit, so they
