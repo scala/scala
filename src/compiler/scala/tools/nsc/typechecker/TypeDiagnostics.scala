@@ -714,9 +714,9 @@ trait TypeDiagnostics {
      *  to a cyclic reference, and None otherwise.
      */
     def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
-      case ValDef(_, _, tpt, _) if tpt.tpe == null        => "recursive "+sym+" needs type"
-      case DefDef(_, _, _, _, tpt, _) if tpt.tpe == null  => List(cyclicAdjective(sym), sym, "needs result type") mkString " "
-      case Import(expr, selectors)                        =>
+      case ValDef(_, _, TypeTree(), _)       => "recursive "+sym+" needs type"
+      case DefDef(_, _, _, _, TypeTree(), _) => List(cyclicAdjective(sym), sym, "needs result type") mkString " "
+      case Import(expr, selectors)           =>
         ( "encountered unrecoverable cycle resolving import." +
           "\nNote: this is often due in part to a class depending on a definition nested within its companion." +
           "\nIf applicable, you may wish to try moving some members into another object."
