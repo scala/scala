@@ -92,7 +92,10 @@ without introducing an ambiguity.
 ```scala
 object X { type T = annotation.tailrec }
 object Y { type T = annotation.tailrec }
-object Z { import X._, Y._, annotation.{tailrec => T} ; @T def f: Int = { f ; 42 } }
+object Z {
+  import X._, Y._, annotation.{tailrec => T}  // OK, all T mean tailrec
+  @T def f: Int = { f ; 42 }                  // error, f is not tail recursive
+}
 ```
 
 ###### Example
