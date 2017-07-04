@@ -21,8 +21,6 @@ sealed trait List[+A]
 
   protected[this] def newSpecificBuilder() = List.newBuilder[A]()
 
-  @tailrec final def length: Int = if (isEmpty) 0 else tail.length
-
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
 
