@@ -1,10 +1,12 @@
 package strawman.collection
 
-import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, math, Ordering, Unit}
-import scala.Predef.{intWrapper}
+import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, Ordering, Unit, math}
+import scala.Predef.intWrapper
 import java.lang.Object
+
 import strawman.collection.immutable.Range
 
+import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
@@ -661,6 +663,18 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
   }
+
+  override def size: Int = {
+    var these = coll
+    var len = 0
+    while (!these.isEmpty) {
+      len += 1
+      these = these.tail
+    }
+    len
+  }
+
+  override def length: Int = size
 
   /** Optimized version of `drop` that avoids copying
     *  Note: `drop` is defined here, rather than in a trait like `LinearSeqMonoTransforms`,

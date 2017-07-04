@@ -28,8 +28,6 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
   override def head = force.get._1
   override def tail: LazyList[A] = force.get._2
 
-  @tailrec final def length: Int = if (isEmpty) 0 else tail.length
-
   def prependLazy[B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 
   def iterableFactory = LazyList
