@@ -113,14 +113,6 @@ object View extends IterableFactory[View] {
       if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
   }
 
-  /** A view that drops trailing elements of the underlying collection. */
-  case class DropRight[A](underlying: Iterable[A], n: Int) extends View[A] {
-    def iterator() = underlying.iterator().dropRight(n)
-    protected val normN = n max 0
-    override def knownSize =
-      if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
-  }
-
   case class DropWhile[A](underlying: Iterable[A], p: A => Boolean) extends View[A] {
     def iterator() = underlying.iterator().dropWhile(p)
   }
@@ -128,14 +120,6 @@ object View extends IterableFactory[View] {
   /** A view that takes leading elements of the underlying collection. */
   case class Take[A](underlying: Iterable[A], n: Int) extends View[A] {
     def iterator() = underlying.iterator().take(n)
-    protected val normN = n max 0
-    override def knownSize =
-      if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
-  }
-
-  /** A view that takes trailing elements of the underlying collection. */
-  case class TakeRight[A](underlying: Iterable[A], n: Int) extends View[A] {
-    def iterator() = underlying.iterator().takeRight(n)
     protected val normN = n max 0
     override def knownSize =
       if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
@@ -269,6 +253,8 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] { self =>
     }
   }
 
+  override def knownSize: Int = length
+
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def takeRight(n: Int): IndexedView[A] = new IndexedView.TakeRight(this, n)
   override def drop(n: Int): IndexedView[A] = new IndexedView.Drop(this, n)
@@ -286,11 +272,11 @@ object IndexedView {
     def apply(i: Int) = underlying.apply(i)
   }
 
-  class TakeRight[A](underlying: IndexedView[A], n: Int)
-  extends View.TakeRight(underlying, n) with IndexedView[A] {
-    override def iterator() = super.iterator() // needed to avoid "conflicting overrides" error
+  class TakeRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
+    private val normN = n max 0
+    private val delta = underlying.length - normN
     def length = underlying.length min normN
-    def apply(i: Int) = underlying.apply(i)
+    def apply(i: Int) = underlying.apply(i + delta)
   }
 
   class Drop[A](underlying: IndexedView[A], n: Int)
@@ -300,16 +286,13 @@ object IndexedView {
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
-  class DropRight[A](underlying: IndexedView[A], n: Int)
-  extends View.DropRight(underlying, n) with IndexedView[A] {
-    override def iterator() = super.iterator()
+  class DropRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
+    private val normN = n max 0
     def length = (underlying.length - normN) max 0
-    def apply(i: Int) = underlying.apply(i + normN)
+    def apply(i: Int) = underlying.apply(i)
   }
 
-  class Map[A, B](underlying: IndexedView[A], f: A => B)
-  extends View.Map(underlying, f) with IndexedView[B] {
-    override def iterator() = super.iterator()
+  class Map[A, B](underlying: IndexedView[A], f: A => B) extends IndexedView[B] {
     def length = underlying.length
     def apply(n: Int) = f(underlying.apply(n))
   }

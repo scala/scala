@@ -136,7 +136,10 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
     }
     else new ArrayBuffer[B] ++= coll
 
-  def newBuilder[A](): Builder[A, ArrayBuffer[A]] = new GrowableBuilder(empty[A])
+  def newBuilder[A](): Builder[A, ArrayBuffer[A]] =
+    new GrowableBuilder[A, ArrayBuffer[A]](empty) {
+      override def sizeHint(size: Int): Unit = elems.ensureSize(size)
+    }
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
