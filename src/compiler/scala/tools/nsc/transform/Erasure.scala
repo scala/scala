@@ -402,16 +402,14 @@ abstract class Erasure extends InfoTransform
       *  to tree, which is assumed to be the body of a constructor of class clazz.
       */
     private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-      def mixinConstructorCall(mc: Symbol): Tree = atPos(tree.pos) {
-        Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+      def mixinConstructorCalls: List[Tree] = {
+        for (mc <- clazz.mixinClasses.reverse if mc.isTrait && mc.primaryConstructor != NoSymbol)
+          yield atPos(tree.pos) {
+            Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+          }
       }
-      val mixinConstructorCalls: List[Tree] = {
-        for (mc <- clazz.mixinClasses.reverse
-             if mc.isTrait && mc.primaryConstructor != NoSymbol)
-          yield mixinConstructorCall(mc)
-      }
-      tree match {
 
+      tree match {
         case Block(Nil, expr) =>
           // AnyVal constructor - have to provide a real body so the
           // jvm doesn't throw a VerifyError. But we can't add the
@@ -726,8 +724,16 @@ abstract class Erasure extends InfoTransform
               assert(qual1.symbol.isStable, qual1.symbol)
               adaptMember(selectFrom(applyMethodWithEmptyParams(qual1)))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
-              assert(tree.symbol.owner != ArrayClass)
-              selectFrom(cast(qual1, tree.symbol.owner.tpe.resultType))
+              // For example in `(foo: Option[String]).get.trim`, the qualifier has type `Object`.
+              // A `QualTypeSymAttachment` is present if the selected member's owner is not an
+              // accessible (java-defined) class, see `preErase`. Selections from `super` are not
+              // handled here because inserting a cast would not be legal. Instead there's a
+              // special case in `typedSelectInternal`.
+              val qualTpe = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
+                case Some(a) => a.sym.tpe
+                case None => tree.symbol.owner.tpe.resultType
+              }
+              selectFrom(cast(qual1, qualTpe))
             } else {
               selectFrom(qual1)
             }
@@ -938,9 +944,6 @@ abstract class Erasure extends InfoTransform
      *   - Add bridge definitions to a template.
      *   - Replace all types in type nodes and the EmptyTree object by their erasure.
      *     Type nodes of type Unit representing result types of methods are left alone.
-     *   - Given a selection q.s, where the owner of `s` is not accessible but the
-     *     type symbol of q's type qT is accessible, insert a cast (q.asInstanceOf[qT]).s
-     *     This prevents illegal access errors (see #4283).
      *   - Remove all instance creations new C(arg) where C is an inlined class.
      *   - Reset all other type attributes to null, thus enforcing a retyping.
      */
@@ -1153,24 +1156,47 @@ abstract class Erasure extends InfoTransform
             }
           }
 
-          def isJvmAccessible(sym: Symbol) = (sym.isClass && !sym.isJavaDefined) || localTyper.context.isAccessible(sym, sym.owner.thisType)
-          if (!isJvmAccessible(owner) && qual.tpe != null) {
-            qual match {
-              case Super(_, _) =>
-                // Insert a cast here at your peril -- see scala/bug#5162.
-                reporter.error(tree.pos, s"Unable to access ${tree.symbol.fullLocationString} with a super reference.")
-                tree
-              case _ =>
-                // Todo: Figure out how qual.tpe could be null in the check above (it does appear in build where SwingWorker.this
-                // has a null type).
-                val qualSym = qual.tpe.widen.typeSymbol
-                if (isJvmAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
-                  // insert cast to prevent illegal access error (see #4283)
-                  // util.trace("insert erasure cast ") (*/
-                  treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
-                } else tree
+          // This code may add an QualTypeSymAttachment to the Select tree. The referenced class is
+          // then used in erasure type checking as the type of the Select's qualifier. This fixes
+          // two situations where erasure type checking cannot assign a precise enough type.
+          //
+          //  - In a `super.m` selection, erasure typing assigns the type of the superclass to the
+          //    Super tree. This is wrong if `m` is a member of a trait (not the superclass). A
+          //    special-case in `typedSelectInternal` assigns m's owner in this case.
+          //  - In a non-super selection, the qualifier may erase to a type that doesn't hold the
+          //    selected member, for example `(q: Option[String]).get.trim` erases to Object, not
+          //    String. Erasure's `adaptMember` then introduces a cast to the member's owner.
+          //
+          // In both cases, using the member's owner is not legal if the member is defined in
+          // Java and the owner class is not accessible (scala/bug#7936, scala/bug#4283). In this
+          // situation we store a valid class type of the qualifier in the attachment.
+          //   - For `super.m`, we store a direct parent of the current class
+          //   - For a non-super selection, we store the non-erased class type of the qualifier
+          //
+          // In addition, for `super.m` selections, we also store a direct parent of the current
+          // class if `m` is defined in Java. This avoids the need for having the Java class as
+          // a direct parent (scala-dev#143).
+          if (qual.isInstanceOf[Super]) {
+            val qualSym = accessibleOwnerOrParentDefiningMember(sym, qual.tpe.typeSymbol.parentSymbols, localTyper.context) match {
+              case Some(p) => p
+              case None =>
+                // There is no test for this warning, I have been unable to come up with an example that would trigger it.
+                // In a selection `a.m`, there must be a direct parent from which `m` can be selected.
+                reporter.error(tree.pos, s"Unable to emit super reference to ${sym.fullLocationString}, $owner is not accessible in ${localTyper.context.enclClass.owner}")
+                owner
             }
-          } else tree
+            if (qualSym != owner)
+              tree.updateAttachment(new QualTypeSymAttachment(qualSym))
+          } else if (!isJvmAccessible(owner, localTyper.context)) {
+            val qualSym = qual.tpe.typeSymbol
+            if (qualSym != owner && isJvmAccessible(qualSym, localTyper.context) && definesMemberAfterErasure(qualSym, sym))
+              tree.updateAttachment(new QualTypeSymAttachment(qualSym))
+            else
+              reporter.error(tree.pos, s"Unable to emit reference to ${sym.fullLocationString}, $owner is not accessible in ${localTyper.context.enclClass.owner}")
+          }
+
+          tree
+
         case Template(parents, self, body) =>
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
@@ -1292,6 +1318,40 @@ abstract class Erasure extends InfoTransform
 
     // we still need to check our ancestors even if the INTERFACE flag is set, as it doesn't take inheritance into account
     ok(tpSym) && tpSym.ancestors.forall(sym => (sym eq AnyClass) || (sym eq ObjectClass) || ok(sym))
+  }
+
+  final def isJvmAccessible(cls: Symbol, context: global.analyzer.Context): Boolean =
+    !cls.isJavaDefined || context.isAccessible(cls, cls.owner.thisType)
+
+  /**
+   * Check if a class defines a member after erasure. The phase travel is important for
+   * `trait T extends AClass`: after erasure (and in bytecode), `T` has supertype `Object`, not
+   * `AClass`.
+   */
+  final def definesMemberAfterErasure(cls: Symbol, member: Symbol): Boolean =
+    exitingErasure(cls.tpe.member(member.name).alternatives.contains(member))
+
+  /**
+   * The goal of this method is to find a class that is accessible (in bytecode) and can be used
+   * to select `member`.
+   * - For constructors, it returns the `member.owner`. We can assume the class is accessible: if
+   *   it wasn't, the typer would have rejected the program, as the class is referenced in source.
+   * - For Scala-defined members it also returns `member.owner`, all Scala-defined classes are
+   *   public in bytecode.
+   * - For Java-defined members we prefer a direct parent over of the owner, even if the owner is
+   *   accessible. This way the owner doesn't need to be added as a direct parent, see scala-dev#143.
+   */
+  final def accessibleOwnerOrParentDefiningMember(member: Symbol, parents: List[Symbol], context: global.analyzer.Context): Option[Symbol] = {
+    def eraseAny(cls: Symbol) = if (cls == AnyClass || cls == AnyValClass) ObjectClass else cls
+
+    if (member.isConstructor || !member.isJavaDefined) Some(eraseAny(member.owner))
+    else parents.find { p =>
+      val e = eraseAny(p)
+      isJvmAccessible(e, context) && definesMemberAfterErasure(e, member)
+    } orElse {
+      val e = eraseAny(member.owner)
+      if (isJvmAccessible(e, context)) Some(e) else None
+    }
   }
 
   private class TypeRefAttachment(val tpe: TypeRef)
