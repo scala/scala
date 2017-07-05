@@ -13,7 +13,7 @@ package immutable
 import collection.{Iterator, MapFactory}
 
 import scala.annotation.tailrec
-import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, NoSuchElementException, Nothing, Option, SerialVersionUID, Serializable, Some, sys, throws}
+import scala.{Any, AnyRef, Array, Boolean, Int, None, NoSuchElementException, Nothing, Option, SerialVersionUID, Serializable, Some, sys, throws}
 import java.lang.Integer
 
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
