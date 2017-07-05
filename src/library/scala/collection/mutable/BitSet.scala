@@ -77,7 +77,13 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
     }
   }
 
-  protected def fromBitMaskNoCopy(words: Array[Long]): BitSet = new BitSet(words)
+  protected def fromBitMaskNoCopy(words: Array[Long]): BitSet = {
+    if (words.length == 0) {
+      empty
+    } else {
+      new BitSet(words)
+    }
+  }
 
   override def add(elem: Int): Boolean = {
     require(elem >= 0)
@@ -190,13 +196,23 @@ object BitSet extends BitSetFactory[BitSet] {
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {
     val len = elems.length
-    val a = new Array[Long](len)
-    Array.copy(elems, 0, a, 0, len)
-    new BitSet(a)
+    if (len == 0) {
+      empty
+    } else {
+      val a = new Array[Long](len)
+      Array.copy(elems, 0, a, 0, len)
+      new BitSet(a)
+    }
   }
 
   /** A bitset containing all the bits in an array, wrapping the existing
    *  array without copying.
    */
-  def fromBitMaskNoCopy(elems: Array[Long]): BitSet = new BitSet(elems)
+  def fromBitMaskNoCopy(elems: Array[Long]): BitSet = {
+    if (elems.length == 0) {
+      empty
+    } else {
+      new BitSet(elems)
+    }
+  }
 }
