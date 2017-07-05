@@ -45,3 +45,12 @@ object Test extends App {
   def h[R](pf: PartialFunction[(Double, Double), R]): Int = 2
   assert(h { case (a: Double, b: Double) => 42: Int } == 2)
 }
+
+trait SortedMap {
+  def collect[B](pf: PartialFunction[(String, Int), B]): Int = 0
+  def collect[K2 : Ordering, V2](pf: PartialFunction[(String, Int), (K2, V2)]): Int = 0
+  def collectF[B](pf: Function1[(String, Int), B]): Int = 0
+  def collectF[K2 : Ordering, V2](pf: Function1[(String, Int), (K2, V2)]): Int = 0
+  def foo(xs: SortedMap) = xs.collect { case (k, v) => 1 }
+  def fooF(xs: SortedMap) = xs.collectF { case (k, v) => 1 }
+}

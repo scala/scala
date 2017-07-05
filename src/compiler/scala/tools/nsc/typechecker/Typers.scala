@@ -3340,13 +3340,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             def funArgTypes(tpAlts: List[(Type, Symbol)]) = tpAlts.map { case (tp, alt) =>
               val relTp = tp.asSeenFrom(pre, alt.owner)
-              val argTps = functionOrSamArgTypes(relTp)
+              val argTps = functionOrPfOrSamArgTypes(relTp)
               //println(s"funArgTypes $argTps from $relTp")
               argTps.map(approximateAbstracts)
             }
 
             def functionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
               try functionType(funArgTypes(argTpWithAlt).transpose.map(lub), WildcardType)
+              catch { case _: IllegalArgumentException => WildcardType }
+
+            def partialFunctionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
+              try appliedType(PartialFunctionClass, funArgTypes(argTpWithAlt).transpose.map(lub) :+ WildcardType)
               catch { case _: IllegalArgumentException => WildcardType }
 
             // To propagate as much information as possible to typedFunction, which uses the expected type to
@@ -3359,7 +3363,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // and lubbing the argument types (we treat SAM and FunctionN types equally, but non-function arguments
             // do not receive special treatment: they are typed under WildcardType.)
             val altArgPts =
-              if (settings.isScala212 && args.exists(treeInfo.isFunctionMissingParamType))
+              if (settings.isScala212 && args.exists(t => treeInfo.isFunctionMissingParamType(t) || treeInfo.isPartialFunctionMissingParamType(t)))
                 try alts.map(alt => formalTypes(alt.info.paramTypes, argslen).map(ft => (ft, alt))).transpose // do least amount of work up front
                 catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
               else args.map(_ => Nil) // will type under argPt == WildcardType
@@ -3374,7 +3378,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // the overloaded type into a single function type from which `typedFunction`
                   // can derive the argument type for `x` in the function literal above
                   val argPt =
-                    if (argPtAlts.nonEmpty && treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
+                    if (argPtAlts.isEmpty) WildcardType
+                    else if (treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
+                    else if (treeInfo.isPartialFunctionMissingParamType(tree)) partialFunctionProto(argPtAlts)
                     else WildcardType
 
                   val argTyped = typedArg(tree, amode, BYVALmode, argPt)
