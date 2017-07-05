@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, Boolean, Equals, Int, Nothing, annotation}
+import scala.{Any, Boolean, Equals, IndexOutOfBoundsException, Int, Nothing, annotation, throws}
 import scala.Predef.{<:<, intWrapper}
 
 /** Concrete collection type: View */
@@ -253,6 +253,7 @@ object View extends IterableFactory[View] {
 /** A trait representing indexable collections with finite length */
 trait ArrayLike[+A] extends Any {
   def length: Int
+  @throws[IndexOutOfBoundsException]
   def apply(i: Int): A
 }
 
@@ -283,6 +284,7 @@ object IndexedView {
   extends View.Take(underlying, n) with IndexedView[A] {
     override def iterator() = super.iterator() // needed to avoid "conflicting overrides" error
     def length = underlying.length min normN
+    @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
   }
 
@@ -290,6 +292,7 @@ object IndexedView {
   extends View.TakeRight(underlying, n) with IndexedView[A] {
     override def iterator() = super.iterator() // needed to avoid "conflicting overrides" error
     def length = underlying.length min normN
+    @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
   }
 
@@ -297,6 +300,7 @@ object IndexedView {
   extends View.Drop(underlying, n) with IndexedView[A] {
     override def iterator() = super.iterator()
     def length = (underlying.length - normN) max 0
+    @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
@@ -304,6 +308,7 @@ object IndexedView {
   extends View.DropRight(underlying, n) with IndexedView[A] {
     override def iterator() = super.iterator()
     def length = (underlying.length - normN) max 0
+    @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
@@ -311,11 +316,13 @@ object IndexedView {
   extends View.Map(underlying, f) with IndexedView[B] {
     override def iterator() = super.iterator()
     def length = underlying.length
+    @throws[IndexOutOfBoundsException]
     def apply(n: Int) = f(underlying.apply(n))
   }
 
   case class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
     def length = underlying.length
+    @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(length - 1 - i)
   }
 }

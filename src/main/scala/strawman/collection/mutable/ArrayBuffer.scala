@@ -4,7 +4,7 @@ package mutable
 
 import java.lang.IndexOutOfBoundsException
 
-import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math, Any}
+import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
@@ -36,6 +36,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     if (hi > end) throw new IndexOutOfBoundsException(hi.toString)
   }
 
+  @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
 
   def update(n: Int, elem: A): Unit = array(n) = elem.asInstanceOf[AnyRef]
@@ -142,6 +143,7 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
 }
 
 class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {
+  @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
   override def className = "ArrayBufferView"
 }

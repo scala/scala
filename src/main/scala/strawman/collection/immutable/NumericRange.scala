@@ -3,7 +3,7 @@ package strawman.collection.immutable
 import strawman.collection
 import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
-import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized}
+import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, NoSuchElementException, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized, throws}
 import scala.Predef.ArrowAssoc
 import java.lang.String
 
@@ -80,6 +80,7 @@ final class NumericRange[T](
   def copy(start: T, end: T, step: T): NumericRange[T] =
     new NumericRange[T](start, end, step, isInclusive)
 
+  @throws[IndexOutOfBoundsException]
   def apply(idx: Int): T = {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     else locationAfterN(idx)
@@ -403,7 +404,9 @@ private class NumericRangeIterator[T](
   private var _hasNext: Boolean = !initiallyEmpty
   private var _next: T = start
   def hasNext: Boolean = _hasNext
+  @throws[NoSuchElementException]
   def next(): T = {
+    if (!_hasNext) Iterator.empty.next()
     val value = _next
     _hasNext = value != lastElement
     _next = num.plus(value, step)

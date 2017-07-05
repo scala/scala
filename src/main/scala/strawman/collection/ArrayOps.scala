@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{AnyVal, Array, Char, Int}
+import scala.{AnyVal, Array, ArrayIndexOutOfBoundsException, Char, Int, throws}
 import scala.Predef.???
 import mutable.{ArrayBuffer, GrowableBuilder}
 
@@ -19,6 +19,7 @@ class ArrayOps[A](val xs: Array[A])
   protected[this] def seq: Seq[A] = iterableFactory.fromIterable(coll)
 
   def length = xs.length
+  @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int) = xs.apply(i)
 
   override def view = ArrayView(xs)
@@ -45,6 +46,7 @@ class ArrayOps[A](val xs: Array[A])
 
 case class ArrayView[A](xs: Array[A]) extends IndexedView[A] {
   def length = xs.length
+  @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = xs(n)
   override def className = "ArrayView"
 }

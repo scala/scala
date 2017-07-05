@@ -13,7 +13,7 @@ package immutable
 import collection.{Iterator, MapFactory}
 
 import scala.annotation.tailrec
-import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, sys}
+import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, NoSuchElementException, Nothing, Option, SerialVersionUID, Serializable, Some, sys, throws}
 import java.lang.Integer
 
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
@@ -101,6 +101,7 @@ sealed class ListMap[K, +V]
 
     override def isEmpty: Boolean = false
 
+    @throws[NoSuchElementException]
     override def apply(k: K): V1 = applyInternal(this, k)
 
     @tailrec private[this] def applyInternal(cur: ListMap[K, V1], k: K): V1 =
