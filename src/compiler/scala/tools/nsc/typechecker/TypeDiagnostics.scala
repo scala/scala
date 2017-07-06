@@ -606,7 +606,7 @@ trait TypeDiagnostics {
         warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams || warnUnusedImplicits
       }
 
-      def apply(unit: CompilationUnit): Unit = if (warningsEnabled) {
+      def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
         val p = new UnusedPrivates
         p.traverse(unit.body)
         if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
