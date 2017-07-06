@@ -1361,10 +1361,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
                                         implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type,
                                         serializable: Boolean, markerInterfaces: Seq[asm.Type]) = {
-    import java.lang.invoke.LambdaMetafactory.{FLAG_MARKERS, FLAG_SERIALIZABLE}
+    import java.lang.invoke.LambdaMetafactory.{FLAG_MARKERS, FLAG_SERIALIZABLE, FLAG_BRIDGES}
+    // scala/bug#10334: make sure that a lambda object for `T => U` has a method `apply(T)U`, not only the `(Object)Object`
+    // version. Using the lambda a structural type `{def apply(t: T): U}` causes a reflective lookup for this method.
+    val needsBridge = samMethodType != instantiatedMethodType
+    val bridges = if (needsBridge) Seq(Int.box(1), instantiatedMethodType) else Nil
     def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
-    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE)
-    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces
+    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(needsBridge, FLAG_BRIDGES)
+    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces ++ bridges
     jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
   }
 
