@@ -72,4 +72,24 @@ class InlineInfoTest extends BytecodeTesting {
       "<init>()V" -> MethodInlineInfo(false,false,false),
       "baz()I"    -> MethodInlineInfo(true,false,false)))
   }
+
+  @Test
+  def sd402(): Unit = {
+    val jCode =
+      """package java.nio.file;
+        |public interface WatchEvent<T> {
+        |  public static interface Kind<T> {
+        |    static default String HAI() { return ""; }
+        |  }
+        |}
+        |
+      """.stripMargin
+    compileClasses("class C { def t: java.nio.file.WatchEvent.Kind[String] = null }", javaCode = List((jCode, "WatchEvent.java")))
+    // before the fix of scala-dev#402, the companion of the nested class `Kind` (containing the static method) was taken from
+    // the classpath (classfile WatchEvent$Kind.class) instead of the actual companion from the source, so the static method was missing.
+    val info = global.genBCode.bTypes.cachedClassBType("java/nio/file/WatchEvent$Kind").get.info.get.inlineInfo
+    assertEquals(info.methodInfos, Map(
+      "HAI()Ljava/lang/String;" -> MethodInlineInfo(true,false,false),
+      "<init>()V"               -> MethodInlineInfo(false,false,false)))
+  }
 }
