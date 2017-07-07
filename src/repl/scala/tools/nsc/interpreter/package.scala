@@ -133,41 +133,45 @@ package object interpreter extends ReplConfig with ReplStrings {
 
     }
 
-    def kindCommandInternal(expr: String, verbose: Boolean): Unit = {
+    def kindCommandInternal(typeString: String, verbose: Boolean): Unit = {
       val catcher = catching(classOf[MissingRequirementError],
                              classOf[ScalaReflectionException])
-      def typeFromTypeString: Option[ClassSymbol] = catcher opt {
-        exprTyper.typeOfTypeString(expr).typeSymbol.asClass
-      }
-      def typeFromNameTreatedAsTerm: Option[ClassSymbol] = catcher opt {
-        val moduleClass = exprTyper.typeOfExpression(expr).typeSymbol
-        moduleClass.linkedClassOfClass.asClass
-      }
-      def typeFromFullName: Option[ClassSymbol] = catcher opt {
-        intp.global.rootMirror.staticClass(expr)
-      }
-      def typeOfTerm: Option[TypeSymbol] = replInfo(symbolOfLine(expr)).typeSymbol match {
-        case sym: TypeSymbol => Some(sym)
-        case _ => None
-      }
-      (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) foreach { sym =>
-        val (kind, tpe) = exitingTyper {
-          val tpe = sym.tpeHK
-          (intp.global.inferKind(NoPrefix)(tpe, sym.owner), tpe)
-        }
-        echoKind(tpe, kind, verbose)
+      val tpe: Type = exprTyper.typeOfTypeString(typeString)
+      tpe match {
+        case NoType =>
+          echo(s"<console>: error: type $typeString was not found")
+        // This is a special handling for type lambdas
+        case TypeRef(pre, sym, args) if args contains WildcardType =>
+          catcher opt {
+            val kind = exitingTyper {
+              val sym = tpe.typeSymbol.asClass
+              val owner = sym.owner
+              val kind0 = intp.global.inferKind(NoPrefix)(TypeRef(pre, sym, Nil), owner)
+              kind0 match {
+                case TypeConKind(bounds, kargs) if args.size == kargs.size =>
+                  TypeConKind(bounds, (args.toList zip kargs.toList) flatMap {
+                    case (WildcardType, karg) => List(karg)
+                    case _                    => Nil
+                  })
+                case k => k
+              }
+            }
+            echoKind(tpe, kind, verbose)
+          }
+        case _ =>
+          catcher opt {
+            val kind = exitingTyper {
+              val sym = tpe.typeSymbol.asClass
+              val owner = sym.owner
+              intp.global.inferKind(NoPrefix)(tpe, owner)
+            }
+            echoKind(tpe, kind, verbose)
+          }
       }
     }
 
-    def echoKind(tpe: Type, kind: Kind, verbose: Boolean) {
-      def typeString(tpe: Type): String = {
-        tpe match {
-          case TypeRef(_, sym, _) => typeString(sym.info)
-          case RefinedType(_, _)  => tpe.toString
-          case _                  => tpe.typeSymbol.fullName
-        }
-      }
-      printAfterTyper(typeString(tpe) + "'s kind is " + kind.scalaNotation)
+    def echoKind(tpe: Type, kind: Kind, verbose: Boolean): Unit = {
+      printAfterTyper(tpe.toString + "'s kind is " + kind.scalaNotation)
       if (verbose) {
         echo(kind.starNotation)
         echo(kind.description)

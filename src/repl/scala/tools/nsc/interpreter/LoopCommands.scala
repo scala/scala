@@ -34,7 +34,10 @@ trait LoopCommands { self: { def echo(msg: String): Unit } =>
   def commands: List[LoopCommand]
 
   // a single interpreter command
-  abstract class LoopCommand(val name: String, val help: String) extends (String => Result) {
+  abstract class LoopCommand(
+      val name: String,
+      val help: String,
+      val detailedHelp: Option[String]) extends (String => Result) {
     def usage: String = ""
     def usageMsg: String = s":$name${
       if (usage == "") "" else " " + usage
@@ -52,17 +55,24 @@ trait LoopCommands { self: { def echo(msg: String): Unit } =>
   }
   object LoopCommand {
     def nullary(name: String, help: String, f: () => Result): LoopCommand =
-      new NullaryCmd(name, help, _ => f())
+      nullary(name, help, None, f)
+
+    def nullary(name: String, help: String, detailedHelp: Option[String], f: () => Result): LoopCommand =
+      new NullaryCmd(name, help, detailedHelp, _ => f())
 
     def cmd(name: String, usage: String, help: String, f: String => Result, completion: Completion = NoCompletion): LoopCommand =
-      if (usage == "") new NullaryCmd(name, help, f)
-      else new LineCmd(name, usage, help, f, completion)
+      cmdWithHelp(name, usage, help, None, f, completion)
+
+    def cmdWithHelp(name: String, usage: String, help: String, detailedHelp: Option[String],
+      f: String => Result, completion: Completion = NoCompletion): LoopCommand =
+      if (usage == "") new NullaryCmd(name, help, detailedHelp, f)
+      else new LineCmd(name, usage, help, detailedHelp, f, completion)
   }
 
   /** print a friendly help message */
   def helpCommand(line: String): Result = line match {
     case ""                => helpSummary()
-    case CommandMatch(cmd) => echo(f"%n${cmd.help}")
+    case CommandMatch(cmd) => echo(f"%n${cmd.detailedHelp getOrElse cmd.help}")
     case _                 => ambiguousError(line)
   }
 
@@ -123,17 +133,19 @@ trait LoopCommands { self: { def echo(msg: String): Unit } =>
     case _ => NoCompletion
   }
 
-  class NullaryCmd(name: String, help: String, f: String => Result) extends LoopCommand(name, help) {
+  class NullaryCmd(name: String, help: String, detailedHelp: Option[String],
+    f: String => Result) extends LoopCommand(name, help, detailedHelp) {
     def apply(line: String): Result = f(line)
   }
 
-  class LineCmd(name: String, argWord: String, help: String, f: String => Result, override val completion: Completion) extends LoopCommand(name, help) {
+  class LineCmd(name: String, argWord: String, help: String, detailedHelp: Option[String],
+    f: String => Result, override val completion: Completion) extends LoopCommand(name, help, detailedHelp) {
     override def usage = argWord
     def apply(line: String): Result = f(line)
   }
 
-  class VarArgsCmd(name: String, argWord: String, help: String, f: List[String] => Result)
-            extends LoopCommand(name, help) {
+  class VarArgsCmd(name: String, argWord: String, help: String, detailedHelp: Option[String],
+      f: List[String] => Result) extends LoopCommand(name, help, detailedHelp) {
     override def usage = argWord
     def apply(line: String): Result = apply(words(line))
     def apply(args: List[String]) = f(args)

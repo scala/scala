@@ -123,7 +123,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** Show the history */
-  lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)") {
+  lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)", None) {
     override def usage = "[num]"
     def defaultLines = 20
 
@@ -174,7 +174,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Prompt to print when awaiting input */
   def prompt = replProps.prompt
 
-  import LoopCommand.{ cmd, nullary }
+  import LoopCommand.{ cmd, nullary, cmdWithHelp }
 
   /** Standard commands **/
   lazy val standardCommands = List(
@@ -198,7 +198,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("settings", "<options>", "update compiler options, if possible; see reset", changeSettings, settingsCompletion),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
-    cmd("kind", "[-v] <expr>", "display the kind of expression's type", kindCommand),
+    cmdWithHelp("kind", kindUsage, "display the kind of a type. see also :help kind", Some(kindCommandDetailedHelp), kindCommand),
     nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
   )
 
@@ -295,14 +295,54 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   // Still todo: modules.
   private def typeCommand(line0: String): Result = {
     line0.trim match {
-      case "" => ":type [-v] <expression>"
+      case "" => ":type [-v] <expression>. see also :help kind"
       case s  => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
     }
   }
 
+  private lazy val kindUsage: String = "[-v] <type>"
+
+  private lazy val kindCommandDetailedHelp: String =
+    s""":kind $kindUsage
+       |Displays the kind of a given type.
+       |
+       |    -v      Displays verbose info.
+       |
+       |"Kind" is a word used to classify types and type constructors
+       |according to their level of abstractness.
+       |
+       |Concrete, fully specified types such as `Int` and `Option[Int]`
+       |are called "proper types" and denoted as `A` using Scala
+       |notation, or with the `*` symbol.
+       |
+       |    scala> :kind Option[Int]
+       |    Option[Int]'s kind is A
+       |
+       |In the above, `Option` is an example of a first-order type
+       |constructor, which is denoted as `F[A]` using Scala notation, or
+       |* -> * using the star notation. `:kind` also includes variance
+       |information in its output, so if we ask for the kind of `Option`,
+       |we actually see `F[+A]`:
+       |
+       |    scala> :k -v Option
+       |    Option's kind is F[+A]
+       |    * -(+)-> *
+       |    This is a type constructor: a 1st-order-kinded type.
+       |
+       |When you have more complicated types, `:kind` can be used to find
+       |out what you need to pass in.
+       |
+       |    scala> trait ~>[-F1[_], +F2[_]] {}
+       |    scala> :kind ~>
+       |    ~>'s kind is X[-F1[A1],+F2[A2]]
+       |
+       |This shows that `~>` accepts something of `F[A]` kind, such as
+       |`List` or `Vector`.
+       |""".stripMargin
+
   private def kindCommand(expr: String): Result = {
     expr.trim match {
-      case "" => ":kind [-v] <expression>"
+      case "" => s":kind $kindUsage"
       case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
     }
   }
@@ -572,7 +612,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** fork a shell and run a command */
-  lazy val shCommand = new LoopCommand("sh", "run a shell command (result is implicitly => List[String])") {
+  lazy val shCommand = new LoopCommand("sh", "run a shell command (result is implicitly => List[String])", None) {
     override def usage = "<command line>"
     def apply(line: String): Result = line match {
       case ""   => showUsage()

@@ -12,6 +12,7 @@ trait ExprTyper {
   import repl._
   import global.{ reporter => _, Import => _, _ }
   import naming.freshInternalVarName
+  import global.definitions.{ MaxFunctionArity, NothingTpe }
 
   private def doInterpret(code: String): IR.Result = {
     // interpret/interpretSynthetic may change the phase, which would have unintended effects on types.
@@ -73,18 +74,42 @@ trait ExprTyper {
     finally typeOfExpressionDepth -= 1
   }
 
-  // This only works for proper types.
+  // Try typeString[Nothing], typeString[Nothing, Nothing], etc.
   def typeOfTypeString(typeString: String): Type = {
+    val properTypeOpt = typeOfProperTypeString(typeString)
+    def typeFromTypeString(n: Int): Option[Type] = {
+      val ts = typeString + List.fill(n)("_root_.scala.Nothing").mkString("[", ", ", "]")
+      val tpeOpt = typeOfProperTypeString(ts)
+      tpeOpt map {
+        // Type lambda is detected. Substitute Nothing with WildcardType.
+        case TypeRef(pre, sym, args) if args.size != n =>
+          TypeRef(pre, sym, args map {
+            case NothingTpe => WildcardType
+            case t          => t
+          })
+        case TypeRef(pre, sym, args) => TypeRef(pre, sym, Nil)
+        case tpe                     => tpe
+      }
+    }
+    val typeOpt = (properTypeOpt /: (1 to MaxFunctionArity)) {
+      (acc, n: Int) => acc orElse typeFromTypeString(n) }
+    typeOpt getOrElse NoType
+  }
+
+  // This only works for proper types.
+  private[interpreter] def typeOfProperTypeString(typeString: String): Option[Type] = {
     def asProperType(): Option[Type] = {
       val name = freshInternalVarName()
-      val line = "def %s: %s = ???" format (name, typeString)
+      val line = s"def $name: $typeString = ???"
       doInterpret(line) match {
         case IR.Success =>
-          val sym0 = symbolOfTerm(name)
-          Some(sym0.asMethod.returnType)
+          val tpe0 = exitingTyper {
+            symbolOfTerm(name).asMethod.returnType
+          }
+          Some(tpe0)
         case _          => None
       }
     }
-    beSilentDuring(asProperType()) getOrElse NoType
+    beSilentDuring(asProperType())
   }
 }
