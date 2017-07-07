@@ -1530,7 +1530,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val arrayUpdateMethod      = getMemberMethod(ScalaRunTimeModule, nme.array_update)
       lazy val arrayLengthMethod      = getMemberMethod(ScalaRunTimeModule, nme.array_length)
       lazy val arrayCloneMethod       = getMemberMethod(ScalaRunTimeModule, nme.array_clone)
-      lazy val ensureAccessibleMethod = getMemberMethod(ScalaRunTimeModule, nme.ensureAccessible)
+      lazy val lookupStructuralMethod = getMemberMethod(ScalaRunTimeModule, nme.lookupStructuralMethod)
       lazy val arrayClassMethod       = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
       lazy val traversableDropMethod  = getMemberMethod(ScalaRunTimeModule, nme.drop)
 

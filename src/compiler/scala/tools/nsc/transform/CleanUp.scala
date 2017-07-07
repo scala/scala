@@ -108,7 +108,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               if (method ne null)
                 return method
               else {
-                method = ScalaRunTime.ensureAccessible(forReceiver.getMethod("xyz", methodCache.parameterTypes()))
+                method = ScalaRunTime.lookupStructuralMethod(forReceiver, "xyz", methodCache.parameterTypes())
                 methodCache.add(forReceiver, method)
                 return method
               }
@@ -129,10 +129,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               IF (REF(methodSym) OBJ_NE NULL) .
                 THEN (Return(REF(methodSym)))
               ELSE {
-                def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), (REF(methodCache) DOT StructuralCallSite_getParameterTypes)()))
-                def cacheAdd      = ((REF(methodCache) DOT StructuralCallSite_add)(REF(forReceiverSym), REF(methodSym)))
+                val lookupMeth = REF(currentRun.runDefinitions.lookupStructuralMethod) APPLY (REF(forReceiverSym), LIT(method), (REF(methodCache) DOT StructuralCallSite_getParameterTypes)())
+                val cacheAdd   = REF(methodCache) DOT StructuralCallSite_add APPLY (REF(forReceiverSym), REF(methodSym))
                 BLOCK(
-                  REF(methodSym)        === (REF(currentRun.runDefinitions.ensureAccessibleMethod) APPLY (methodSymRHS)),
+                  REF(methodSym) === lookupMeth,
                   cacheAdd,
                   Return(REF(methodSym))
                 )
