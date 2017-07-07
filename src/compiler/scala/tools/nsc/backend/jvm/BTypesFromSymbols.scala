@@ -582,7 +582,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     def keepMember(sym: Symbol) = sym.isMethod && !scalaPrimitives.isPrimitive(sym)
     val classMethods = classSym.info.decls.iterator.filter(keepMember)
     val methods = if (!classSym.isJavaDefined) classMethods else {
-      val staticMethods = classSym.companionModule.info.decls.iterator.filter(m => !m.isConstructor && keepMember(m))
+      // Phase travel important for nested classes (scala-dev#402). When a java class symbol A$B
+      // is compiled from source, this ensures that `companionModule` doesn't return the `A$B`
+      // symbol created for the `A$B.class` file on the classpath, which might be different.
+      val companion = exitingPickler(classSym.companionModule)
+      val staticMethods = companion.info.decls.iterator.filter(m => !m.isConstructor && keepMember(m))
       staticMethods ++ classMethods
     }
 
