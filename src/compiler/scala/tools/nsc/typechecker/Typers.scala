@@ -4886,8 +4886,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
 
-        if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
-          qual setType tree.symbol.owner.tpe
+        // This special-case complements the logic in `adaptMember` in erasure, it handles selections
+        // from `Super`. In `adaptMember`, if the erased type of a qualifier doesn't conform to the
+        // owner of the selected member, a cast is inserted, e.g., (foo: Option[String]).get.trim).
+        // Similarly, for `super.m`, typing `super` during erasure assigns the superclass. If `m`
+        // is defined in a trait, this is incorrect, we need to assign a type to `super` that conforms
+        // to the owner of `m`. Adding a cast (as in `adaptMember`) would not work, `super.asInstanceOf`
+        // is not a valid tree.
+        if (phase.erasedTypes && qual.isInstanceOf[Super]) {
+          //  See the comment in `preErase` why we use the attachment (scala/bug#7936)
+          val qualSym = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
+            case Some(a) => a.sym
+            case None => sym.owner
+          }
+          qual.setType(qualSym.tpe)
+        }
 
         if (!reallyExists(sym)) {
           def handleMissing: Tree = {

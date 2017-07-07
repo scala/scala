@@ -1161,9 +1161,16 @@ trait Trees extends api.Trees {
   def Super(sym: Symbol, mix: TypeName): Tree =
     Super(This(sym), mix)
 
-  /** Selection of a method in an arbitrary ancestor */
-  def SuperSelect(clazz: Symbol, sym: Symbol): Tree =
-    Select(Super(clazz, tpnme.EMPTY), sym)
+  /**
+   * Creates a tree that selects a specific member `sym` without having to qualify the `super`.
+   * For example, given traits `B <:< A`, a class `C <:< B` needs to invoke `A.$init$`. If `A` is
+   * not a direct parent, a tree `super[A].$init$` would not type check ("does not name a parent").
+   * So we generate `super.$init$` and pre-assign the correct symbol. A special-case in
+   * `typedSelectInternal` assigns the correct type `A` to the `super` qualifier.
+   */
+  def SuperSelect(clazz: Symbol, sym: Symbol): Tree = {
+    Select(Super(clazz, tpnme.EMPTY), sym).updateAttachment(new QualTypeSymAttachment(sym.owner))
+  }
 
   def This(sym: Symbol): Tree =
     This(sym.name.toTypeName) setSymbol sym
