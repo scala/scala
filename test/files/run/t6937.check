@@ -1,12 +1,12 @@
 
 scala> import scala.reflect.runtime.{universe => ru}
-import scala.reflect.runtime.{universe=>ru}
+import scala.reflect.runtime.{universe => ru}
 
 scala>     import scala.reflect.runtime.{currentMirror => cm}
-import scala.reflect.runtime.{currentMirror=>cm}
+import scala.reflect.runtime.{currentMirror => cm}
 
 scala>     import scala.reflect.api.{Universe => ApiUniverse}
-import scala.reflect.api.{Universe=>ApiUniverse}
+import scala.reflect.api.{Universe => ApiUniverse}
 
 scala>     class A
 defined class A

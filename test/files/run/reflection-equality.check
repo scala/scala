@@ -10,7 +10,7 @@ scala> import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe._
 
 scala> import scala.reflect.runtime.{ currentMirror => cm }
-import scala.reflect.runtime.{currentMirror=>cm}
+import scala.reflect.runtime.{currentMirror => cm}
 
 scala> def im: InstanceMirror = cm.reflect(new X)
 im: reflect.runtime.universe.InstanceMirror

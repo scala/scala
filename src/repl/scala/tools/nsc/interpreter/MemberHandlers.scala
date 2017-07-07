@@ -151,7 +151,7 @@ trait MemberHandlers {
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
     override def resultExtractionCode(req: Request) = {
-      val nameString = colorName(name)
+      val nameString = colorName(prettyName)
       val typeString = colorType(req typeOf name)
       if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
     }
@@ -191,7 +191,7 @@ trait MemberHandlers {
     override def definesTerm = Some(name.toTermName)
     override def definesValue = true
 
-    override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
+    override def resultExtractionCode(req: Request) = codegenln("defined object ", prettyName)
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
@@ -200,7 +200,7 @@ trait MemberHandlers {
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
 
     override def resultExtractionCode(req: Request) =
-      codegenln("defined %s %s".format(keyword, name))
+      codegenln(s"defined $keyword $prettyName")
   }
 
   class TypeAliasHandler(member: TypeDef) extends MemberDefHandler(member) {
@@ -208,7 +208,7 @@ trait MemberHandlers {
     override def definesType = Some(name.toTypeName) filter (_ => isAlias)
 
     override def resultExtractionCode(req: Request) =
-      codegenln("defined type alias ", name) + "\n"
+      codegenln("defined type alias ", prettyName) + "\n"
   }
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
@@ -252,7 +252,30 @@ trait MemberHandlers {
     override lazy val importedNames: List[Name] = wildcardNames ++ individualNames
     lazy val importsSymbolNamed: Set[String] = importedNames map (_.toString) toSet
 
-    def importString = imp.toString
+    def importString = { // duplicated from scala.reflect.internal.Printers#TreePrinter.printImport
+      val Import(expr, selectors) = imp
+      // Is this selector renaming a name (i.e, {name1 => name2})
+      def isNotRename(s: ImportSelector): Boolean =
+        s.name == nme.WILDCARD || s.name == s.rename
+
+      def selectorToString(s: ImportSelector): String = {
+        val from = quotedName(s.name, true)
+        if (isNotRename(s)) from
+        else s"$from => ${quotedName(s.rename, true)}"
+      }
+      
+      val selectorString = selectors match {
+        case List(s) =>
+          // If there is just one selector and it is not renaming a name, no braces are needed
+          if (isNotRename(s)) selectorToString(s)
+          else s"{${selectorToString(s)}}"
+        // If there is more than one selector braces are always needed
+        case many =>
+          many.map(selectorToString).mkString("{", ", ", "}")
+      }
+      
+      s"import ${decodedBackquotedPath(expr)}.$selectorString"
+    }
     override def resultExtractionCode(req: Request) = codegenln(importString) + "\n"
   }
 }

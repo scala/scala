@@ -3,7 +3,7 @@ scala> import scala.annotation.showAsInfix
 import scala.annotation.showAsInfix
 
 scala> class &&[T,U]
-defined class $amp$amp
+defined class &&
 
 scala> def foo: Int && Boolean = ???
 foo: Int && Boolean
@@ -21,13 +21,13 @@ scala> def foo: Int Mappy (Boolean && String) = ???
 foo: Int Mappy (Boolean && String)
 
 scala> @showAsInfix(false) class ||[T,U]
-defined class $bar$bar
+defined class ||
 
 scala> def foo: Int || Boolean = ???
 foo: ||[Int,Boolean]
 
 scala> class &:[L, R]
-defined class $amp$colon
+defined class &:
 
 scala> def foo: Int &: String = ???
 foo: Int &: String

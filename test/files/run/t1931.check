@@ -6,7 +6,7 @@ scala> x + " works"
 res0: String = 42 works
 
 scala> import Predef.{ any2stringadd => _, _ }
-import Predef.{any2stringadd=>_, _}
+import Predef.{any2stringadd => _, _}
 
 scala> x + " works"
 <console>:14: error: value + is not a member of Any
