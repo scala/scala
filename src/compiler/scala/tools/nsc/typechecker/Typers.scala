@@ -3368,50 +3368,80 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
               else args.map(_ => Nil) // will type under argPt == WildcardType
 
-            val (args1, argTpes) = context.savingUndeterminedTypeParams() {
+            def typedSingleArg(arg: Tree, argPtAlts: List[(Type, Symbol)], amode: Mode, matchAsPartial: Boolean): (Tree, Type, Boolean) = {
+              def typedArg0(tree: Tree) = {
+                // if we have an overloaded HOF such as `(f: Int => Int)Int <and> (f: Char => Char)Char`,
+                // and we're typing a function like `x => x` for the argument, try to collapse
+                // the overloaded type into a single function type from which `typedFunction`
+                // can derive the argument type for `x` in the function literal above
+                val (argPt, maybeRetype) =
+                  if (argPtAlts.isEmpty) (WildcardType, false)
+                  else if (treeInfo.isFunctionMissingParamType(tree)) (functionProto(argPtAlts), false)
+                  else if (treeInfo.isPartialFunctionMissingParamType(tree)) {
+                    if(matchAsPartial) {
+                      val (pfAlts, nonPfAlts) = argPtAlts.partition(ts => isPartialFunctionType(ts._1))
+                      if (pfAlts.nonEmpty && nonPfAlts.nonEmpty) (partialFunctionProto(argPtAlts), true)
+                      else if (pfAlts.nonEmpty) (partialFunctionProto(argPtAlts), false)
+                      else (functionProto(argPtAlts), false)
+                    } else (functionProto(argPtAlts), false)
+                  } else (WildcardType, false)
+                val tree2 = if (maybeRetype) duplicateAndKeepPositions(tree) else tree
+                val argTyped = typedArg(tree2, amode, BYVALmode, argPt)
+                (argTyped, argTyped.tpe.deconst, maybeRetype)
+              }
+
+              arg match {
+                // scala/bug#8197/scala/bug#4592 call for checking whether this named argument could be interpreted as an assign
+                // infer.checkNames must not use UnitType: it may not be a valid assignment, or the setter may return another type from Unit
+                // TODO: just make it an error to refer to a non-existent named arg, as it's far more likely to be
+                //       a typo than an assignment passed as an argument
+                case AssignOrNamedArg(lhs@Ident(name), rhs) =>
+                  // named args: only type the righthand sides ("unknown identifier" errors otherwise)
+                  // the assign is untyped; that's ok because we call doTypedApply
+                  typedArg0(rhs) match {
+                    case (rhsTyped, tp, partial) => (treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped), NamedType(name, tp), partial)
+                  }
+                case treeInfo.WildcardStarArg(_) =>
+                  typedArg0(arg) match {
+                    case (argTyped, tp, partial) => (argTyped, RepeatedType(tp), partial)
+                  }
+                case _ =>
+                  typedArg0(arg)
+              }
+            }
+
+            val (args1, argTpes, maybeRetypeArgs) = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
-
-              map2(args, altArgPts) { (arg, argPtAlts) =>
-                def typedArg0(tree: Tree) = {
-                  // if we have an overloaded HOF such as `(f: Int => Int)Int <and> (f: Char => Char)Char`,
-                  // and we're typing a function like `x => x` for the argument, try to collapse
-                  // the overloaded type into a single function type from which `typedFunction`
-                  // can derive the argument type for `x` in the function literal above
-                  val argPt =
-                    if (argPtAlts.isEmpty) WildcardType
-                    else if (treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
-                    else if (treeInfo.isPartialFunctionMissingParamType(tree)) partialFunctionProto(argPtAlts)
-                    else WildcardType
-
-                  val argTyped = typedArg(tree, amode, BYVALmode, argPt)
-                  (argTyped, argTyped.tpe.deconst)
-                }
-
-                arg match {
-                  // scala/bug#8197/scala/bug#4592 call for checking whether this named argument could be interpreted as an assign
-                  // infer.checkNames must not use UnitType: it may not be a valid assignment, or the setter may return another type from Unit
-                  // TODO: just make it an error to refer to a non-existent named arg, as it's far more likely to be
-                  //       a typo than an assignment passed as an argument
-                  case AssignOrNamedArg(lhs@Ident(name), rhs) =>
-                    // named args: only type the righthand sides ("unknown identifier" errors otherwise)
-                    // the assign is untyped; that's ok because we call doTypedApply
-                    typedArg0(rhs) match {
-                      case (rhsTyped, tp) => (treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
-                    }
-                  case treeInfo.WildcardStarArg(_) =>
-                    typedArg0(arg) match {
-                      case (argTyped, tp) => (argTyped, RepeatedType(tp))
-                    }
-                  case _ =>
-                    typedArg0(arg)
-                }
-              }.unzip
+              map2(args, altArgPts) { (arg, argPtAlts) => typedSingleArg(arg, argPtAlts, amode, matchAsPartial = true) }.unzip3
             }
             if (context.reporter.hasErrors)
               setError(tree)
             else {
               inferMethodAlternative(fun, undetparams, argTpes, pt)
-              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
+              val args2 = if(maybeRetypeArgs contains true) {
+                // There were pattern-matching anonymous functions in the argument list which got typed as PartialFunction
+                // but if the inferred alternative does not actually need a PartialFunction we retype it as Function1.
+                def paramTypes(tpe: Type): List[Type] = tpe match {
+                  case ExistentialType(_, qtpe) => paramTypes(qtpe)
+                  case MethodType(syms, _) => syms.map(_.tpe)
+                  case TypeRef(_, _, tpes) => tpes.init
+                  case _ => Nil
+                }
+                val selectedParams = paramTypes(normalize(fun.tpe))
+                if(selectedParams.nonEmpty) {
+                  context.savingUndeterminedTypeParams() {
+                    val amode = forArgMode(fun, mode)
+                    val keepTypes = map3(selectedParams, maybeRetypeArgs, args1) { (param, maybeRetype, arg1) =>
+                      if (maybeRetype && !isPartialFunctionType(param)) None else Some(arg1)
+                    }
+                    map3(args, altArgPts, keepTypes) {
+                      case (_, _, Some(keep)) => keep
+                      case (arg, argPtAlts, None) => typedSingleArg(arg, argPtAlts, amode, matchAsPartial = false)._1
+                    }
+                  }
+                } else args1
+              } else args1
+              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args2, mode, pt)
             }
           }
           handleOverloaded
