@@ -308,30 +308,37 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
        |
        |    -v      Displays verbose info.
        |
-       |Kind is a system to describe types and type constructors, which are themselves also types.
-       |`Int`, `Option[Int]` and every other types that you can make a value out of are called
-       |a "proper type" and denoted as `A` using Scala notion, or as * symbol.
+       |"Kind" is a word used to classify types and type constructors
+       |according to their level of abstractness.
+       |
+       |Concrete, fully specified types such as `Int` and `Option[Int]`
+       |are called "proper types" and denoted as `A` using Scala
+       |notation, or with the `*` symbol.
        |
        |    scala> :kind Option[Int]
        |    Option[Int]'s kind is A
        |
-       |In the above `Option` is an example of a first-order type constructor, which is denoted as
-       |`F[A]` using Scala notation, or * -> * using the star notation. Because of variance,
-       |it's actually `F[+A]`.
+       |In the above, `Option` is an example of a first-order type
+       |constructor, which is denoted as `F[A]` using Scala notation, or
+       |* -> * using the star notation. `:kind` also includes variance
+       |information in its output, so if we ask for the kind of `Option`,
+       |we actually see `F[+A]`:
        |
        |    scala> :k -v Option
        |    Option's kind is F[+A]
        |    * -(+)-> *
        |    This is a type constructor: a 1st-order-kinded type.
        |
-       |When you have more complicated type parameters, :kind command can be used to find out
-       |what you need to pass in.
+       |When you have more complicated types, `:kind` can be used to find
+       |out what you need to pass in.
        |
        |    scala> trait ~>[-F1[_], +F2[_]] {}
        |    scala> :kind ~>
        |    ~>'s kind is X[-F1[A1],+F2[A2]]
        |
-       |This shows that `~>` accepts something of `F[A]` kind such as `List` and `Vector`.""".stripMargin
+       |This shows that `~>` accepts something of `F[A]` kind, such as
+       |`List` or `Vector`.
+       |""".stripMargin
 
   private def kindCommand(expr: String): Result = {
     expr.trim match {
