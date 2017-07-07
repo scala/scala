@@ -189,7 +189,7 @@ class ScalaCompilerForUnitTesting {
       override def toString = s"SingleOutput($getOutputDirectory)"
     }
     val weakLog = new WeakLog(ConsoleLogger(), ConsoleReporter)
-    val cachedCompiler = new CachedCompiler0(args, output, weakLog, false)
+    val cachedCompiler = new CachedCompiler0(args, output, weakLog)
     val settings = cachedCompiler.settings
     settings.classpath.value = classpath
     settings.usejavacp.value = true

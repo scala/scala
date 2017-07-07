@@ -19,9 +19,8 @@ final class CompilerInterface {
   def newCompiler(options: Array[String],
                   output: Output,
                   initialLog: Logger,
-                  initialDelegate: Reporter,
-                  resident: Boolean): CachedCompiler =
-    new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate), resident)
+                  initialDelegate: Reporter): CachedCompiler =
+    new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
 
   def run(sources: Array[File],
           changes: DependencyChanges,
@@ -54,10 +53,7 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
   }
 }
 
-private final class CachedCompiler0(args: Array[String],
-                                    output: Output,
-                                    initialLog: WeakLog,
-                                    resident: Boolean)
+private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
     extends CachedCompiler
     with CachedCompilerCompat {
 
