@@ -21,6 +21,7 @@ import scala.tools.nsc.util.ClassPath
 class AggregateClassPathTest {
 
   private abstract class TestClassPathBase extends ClassPath {
+    override private[nsc] def hasPackage(pkg: String) = true
     override def packages(inPackage: String): Seq[PackageEntry] = unsupported
     override def sources(inPackage: String): Seq[SourceFileEntry] = unsupported
     override def classes(inPackage: String): Seq[ClassFileEntry] = unsupported
