@@ -281,7 +281,11 @@ trait Namers extends MethodSynthesis {
       }
       tree.symbol match {
         case NoSymbol => try dispatch() catch typeErrorHandler(tree, this.context)
-        case sym      => enterExistingSym(sym, tree)
+        case sym      =>
+          tree match {
+            case tree@Import(_, _) => enterExistingSym(sym, tree).make(tree)
+            case _ => enterExistingSym(sym, tree)
+          }
       }
     }
 
