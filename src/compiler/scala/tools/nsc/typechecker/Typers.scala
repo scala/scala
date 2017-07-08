@@ -5296,7 +5296,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Typed(expr, Function(Nil, EmptyTree)) =>
             typed1(suppressMacroExpansion(expr), mode, pt) match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
-              case methodValue                                       => typedEta(checkDead(methodValue), tree)
+              case methodValue                                       => typedEta(checkDead(methodValue), expr)
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first
