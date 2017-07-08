@@ -918,7 +918,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val skipEta = isNullaryPtEtaExpansion && settings.isScala213
           if (skipEta) emptyApplication
           else {
-            if (isNullaryPtEtaExpansion) currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
+            if (isNullaryPtEtaExpansion && settings.isScala212) currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
               s"Eta-expansion of zero-argument method values is deprecated. Did you intend to write ${Apply(tree, Nil)}?", "2.12.0")
 
             val tree0 = etaExpand(context.unit, tree, this)
