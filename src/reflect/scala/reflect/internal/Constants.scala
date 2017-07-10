@@ -202,7 +202,7 @@ trait Constants extends api.Constants {
       else if (tag == ClazzTag) signature(typeValue)
       else value.toString()
 
-    @switch def escapedChar(ch: Char): String = ch match {
+    def escapedChar(ch: Char): String = (ch: @switch) match {
       case '\b' => "\\b"
       case '\t' => "\\t"
       case '\n' => "\\n"

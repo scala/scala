@@ -8,8 +8,7 @@ import scala.reflect.runtime.universe._
 scala> 
 
 scala> reify
-<console>:16: error: too few argument lists for macro invocation
-       reify
        ^
+       error: too few argument lists for macro invocation
 
 scala> :quit

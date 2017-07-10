@@ -1,5 +1,4 @@
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter.shell
 
 //import org.junit.Assert._
 import org.junit.Test

@@ -7,7 +7,7 @@ import scala.tools.testing.AssertUtil.assertThrows
 @RunWith(classOf[JUnit4])
 class ScriptedTest {
   import javax.script._
-  import scala.tools.nsc.interpreter.Scripted
+  import scala.tools.nsc.interpreter.shell.Scripted
 
   def scripted: ScriptEngine with Compilable = Scripted()
     // same as by service discovery
@@ -96,7 +96,7 @@ class ScriptedTest {
   }
   @Test def `on compile error`(): Unit = {
     val engine = scripted
-    val err = "not found: value foo in def f = foo at line number 11 at column number 16"
+    val err = "not found: value foo in def f = foo at line number 1 at column number 9"
     assertThrows[ScriptException](engine.compile("def f = foo"), _ == err)
   }
 }

@@ -4258,7 +4258,7 @@ trait Types
     (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
       val symHiInfo = symHi.info
       if (symHi.isTerm && symHiInfo == WildcardType) {
-        // OPT fast path (avoiding tpLo.mmeberType) for wildcards which appear here frequently in the search for implicit views.
+        // OPT fast path (avoiding tpLo.memberType) for wildcards which appear here frequently in the search for implicit views.
         !symHi.isStable || symLo.isStable     // sub-member must remain stable
       } else {
         // only now that we know symHi is a viable candidate, do the expensive checks: ----V

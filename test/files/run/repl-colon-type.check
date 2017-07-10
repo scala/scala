@@ -1,8 +1,8 @@
 
 scala> :type List[1, 2, 3]
-<console>:1: error: identifier expected but integer literal found.
-List[1, 2, 3]
-     ^
+            ^
+       error: identifier expected but integer literal found.
+
 
 scala> :type List(1, 2, 3)
 List[Int]
@@ -34,12 +34,16 @@ scala> :type lazy val f = 5
 Int
 
 scala> :type protected lazy val f = 5
-<console>:5: error: lazy value f cannot be accessed in object $iw
- Access to protected lazy value f not permitted because
- enclosing object $eval in package $line13 is not a subclass of
- object $iw where target is defined
-  lazy val $result = f
-                                           ^
+
+         lazy val $result = $line13.$read.$iw.$iw.f
+                                                  ^
+<synthetic>:5: error: lazy value f cannot be accessed in object $iw
+        Access to protected lazy value f not permitted because
+        enclosing object $eval in package $line13 is not a subclass of
+        object $iw where target is defined
+
+(To diagnose errors in synthetic code, try adding `// show` to the end of your input.)
+
 
 scala> :type def f = 5
 => Int

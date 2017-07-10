@@ -580,7 +580,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with Delambdafy
 
-  // phaseName = "bcode"
+  // phaseName = "jvm"
   object genBCode extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("cleanup")
@@ -1404,11 +1404,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       units match {
         case Nil => checkDeprecations()   // nothing to compile, report deprecated options
-        case _   => compileUnits(units, firstPhase)
+        case _   => compileUnits(units)
       }
     }
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit =
       compileUnitsInternal(units, fromPhase)
 
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {

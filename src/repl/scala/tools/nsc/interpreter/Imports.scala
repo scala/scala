@@ -11,8 +11,9 @@ import scala.collection.mutable
 trait Imports {
   self: IMain =>
 
-  import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import global.{Type, Tree, Import, ImportSelector, Select, Ident, newTermName, Symbol, TermSymbol, NoType, Name, enteringPickler}
+  import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+  import global.definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
@@ -96,7 +97,7 @@ trait Imports {
    */
   case class ComputedImports(header: String, prepend: String, append: String, access: String)
 
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], request: Request, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
     val header, code, trailingBraces, accessPath = new StringBuilder
     val currentImps = mutable.HashSet[Name]()
     var predefEscapes = false      // only emit predef import header if name not resolved in history, loosely
@@ -142,9 +143,8 @@ trait Imports {
 
     // add code for a new object to hold some imports
     def addWrapper() {
-      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
-      code append (wrapper.prewrap format iw)
-      trailingBraces append wrapper.postwrap
+      code append (request.wrapperDef(iw) + " {\n")
+      trailingBraces append "}\n"+ request.postwrap +"\n"
       accessPath append s".$iw"
       currentImps.clear()
     }
@@ -165,8 +165,7 @@ trait Imports {
       val tempValLines = mutable.Set[Int]()
       for (ReqAndHandler(req, handler) <- reqsToUse) {
         val objName = req.lineRep.readPathInstance
-        if (isReplTrace)
-          code.append(ss"// $objName definedNames ${handler.definedNames}, curImps $currentImps\n")
+//        if (isReplTrace) code.append(ss"// $objName definedNames ${handler.definedNames}, curImps $currentImps\n")
         handler match {
           case h: ImportHandler if checkHeader(h) =>
             header.clear()

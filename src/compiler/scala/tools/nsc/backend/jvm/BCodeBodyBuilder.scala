@@ -528,8 +528,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             else if (l.isPrimitive) {
               bc drop l
               if (cast) {
+                devWarning(s"Tried to emit impossible cast from primitive type $l to $r (at ${app.pos})")
                 mnode.visitTypeInsn(asm.Opcodes.NEW, jlClassCastExceptionRef.internalName)
                 bc dup ObjectRef
+                mnode.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, jlClassCastExceptionRef.internalName, INSTANCE_CONSTRUCTOR_NAME, "()V", true)
                 emit(asm.Opcodes.ATHROW)
               } else {
                 bc boolconst false

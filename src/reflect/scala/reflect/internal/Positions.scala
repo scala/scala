@@ -2,6 +2,7 @@ package scala
 package reflect
 package internal
 
+import scala.collection.mutable
 import util._
 import scala.collection.mutable.ListBuffer
 
@@ -37,9 +38,11 @@ trait Positions extends api.Positions { self: SymbolTable =>
   def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, focus = true)
   def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = {
     if (useOffsetPositions) default else {
-      val ranged = trees filter (_.pos.isRange)
+      val trav = new CollectTreeTraverser[Position]({ case t if t.pos.isRange => t.pos })
+      trav.traverseTrees(trees)
+      val ranged = trav.results
       if (ranged.isEmpty) if (focus) default.focus else default
-      else Position.range(default.source, (ranged map (_.pos.start)).min, default.point, (ranged map (_.pos.end)).max)
+      else Position.range(default.source, (ranged map (_.start)).min, default.point, (ranged map (_.end)).max)
     }
   }
 

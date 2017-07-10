@@ -9,14 +9,12 @@ scala> - { 42 }
 res0: Int = -42
 
 scala> - if (true) 1 else 2
-<console>:1: error: illegal start of simple expression
-- if (true) 1 else 2
-  ^
+         ^
+       error: illegal start of simple expression
 
 scala> - - 1
-<console>:1: error: ';' expected but integer literal found.
-- - 1
-    ^
+           ^
+       error: ';' expected but integer literal found.
 
 scala> -.-(1)
 res1: Int = 41

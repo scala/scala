@@ -3,8 +3,9 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
+package scala.tools.nsc.interpreter
+
+import scala.reflect.internal.MissingRequirementError
 
 class AbstractOrMissingHandler[T](onError: String => Unit, value: T) extends PartialFunction[Throwable, T] {
   def isDefinedAt(t: Throwable) = t match {

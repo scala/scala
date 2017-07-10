@@ -6,42 +6,36 @@ scala> var y = 11
 y: Int = 11
 
 scala> x = 12
-x: Int = 12
+mutated x
 
 scala> y = 13
-y: Int = 13
+mutated y
 
 scala> val z = x * y
 z: Int = 156
 
 scala> 2 ; 3
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       2 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res0: Int = 3
 
 scala> { 2 ; 3 }
-<console>:12: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-       { 2 ; 3 }
          ^
+       warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
 res1: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
   1 +
   2 +
   3 } ; bippy+88+11
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
            ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                   ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 defined object Cow
 defined class Moo
 bippy: Int
@@ -55,7 +49,7 @@ defined class Ruminant
 res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
+mutated Bovine.x
 
 scala> Bovine.x
 res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
@@ -81,12 +75,10 @@ scala>   (  (2 + 2 )  )
 res10: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res11: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
@@ -101,18 +93,15 @@ res14: String = 4423
 scala> 
 
 scala> 55 ; ((2 + 2)) ; (1, 2, 3)
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:13: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; (x: Int) => x + 1 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res16: () => Int = <function0>
 
 scala> 
@@ -121,9 +110,8 @@ scala> () => 5
 res17: () => Int = <function0>
 
 scala> 55 ; () => 5
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res18: () => Int = <function0>
 
 scala> () => { class X ; new X }
@@ -209,23 +197,19 @@ Forgetting all expression results and named terms: $intp, BippyBungus, Bovine, C
 Forgetting defined types: BippyBungus, Moo, Ruminant
 
 scala> x1 + x2 + x3
-<console>:12: error: not found: value x1
-       x1 + x2 + x3
        ^
-<console>:12: error: not found: value x2
-       x1 + x2 + x3
+       error: not found: value x1
             ^
-<console>:12: error: not found: value x3
-       x1 + x2 + x3
+       error: not found: value x2
                  ^
+       error: not found: value x3
 
 scala> val x1 = 4
 x1: Int = 4
 
 scala> new BippyBungus
-<console>:12: error: not found: type BippyBungus
-       new BippyBungus
            ^
+       error: not found: type BippyBungus
 
 scala> class BippyBungus() { def f = 5 }
 defined class BippyBungus
@@ -246,40 +230,56 @@ scala> case class Bingo()
 defined class Bingo
 
 scala> List(BippyBups(), PuppyPups(), Bingo()) // show
-sealed class $read extends _root_.java.io.Serializable {
-  def <init>() = {
-    super.<init>;
-    ()
-  };
-  sealed class $iw extends _root_.java.io.Serializable {
+package $line10 {
+  sealed class $read extends _root_.scala.Serializable {
     def <init>() = {
       super.<init>;
       ()
     };
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
     sealed class $iw extends _root_.java.io.Serializable {
       def <init>() = {
         super.<init>;
         ()
       };
-      val res3 = List(BippyBups, PuppyPups, Bingo)
+      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
+      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
+      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
+      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
+      sealed class $iw extends _root_.java.io.Serializable {
+        def <init>() = {
+          super.<init>;
+          ()
+        };
+        val res3 = List(BippyBups, PuppyPups, Bingo)
+      };
+      val $iw = new $iw.<init>
     };
     val $iw = new $iw.<init>
   };
-  val $iw = new $iw.<init>
+  object $read extends scala.AnyRef {
+    def <init>() = {
+      super.<init>;
+      ()
+    };
+    val INSTANCE = new $read.<init>
+  }
 }
-object $read extends scala.AnyRef {
-  def <init>() = {
-    super.<init>;
-    ()
-  };
-  val INSTANCE = new $read.<init>
+package $line10
+
+
+object $eval {
+  lazy val $result = $line10.$read.INSTANCE.$iw.$iw.res3
+  lazy val $print: _root_.java.lang.String =  {
+    $line10.$read.INSTANCE.$iw.$iw
+    ( ""
+ + "res3: List[Product with Serializable] = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
+
+    )
+  }
 }
+
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)
@@ -300,6 +300,6 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> intp.lastRequest
-res5: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
+res5: $r.intp.Request = Request(line=def $ires15 = treedsl.CODE, 1 trees)
 
 scala> :quit

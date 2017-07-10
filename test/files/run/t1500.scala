@@ -1,4 +1,5 @@
 import scala.tools.nsc._
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 object Test {
   
@@ -20,7 +21,7 @@ object Test {
     
     val settings = new Settings()
     settings.classpath.value = System.getProperty("java.class.path")
-    val tool = interpreter.IMain(settings)
+    val tool = new interpreter.IMain(settings, new ReplReporterImpl(settings))
     val global = tool.global
 
     import global._

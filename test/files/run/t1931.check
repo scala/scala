@@ -9,9 +9,8 @@ scala> import Predef.{ any2stringadd => _, _ }
 import Predef.{any2stringadd=>_, _}
 
 scala> x + " works"
-<console>:14: error: value + is not a member of Any
-       x + " works"
          ^
+       error: value + is not a member of Any
 
 scala> import Predef._
 import Predef._
@@ -26,9 +25,8 @@ scala> import Predef._
 import Predef._
 
 scala> f
-<console>:14: error: not found: value f
-       f
        ^
+       error: not found: value f
 
 scala> Predef.f
 res4: Int = 42

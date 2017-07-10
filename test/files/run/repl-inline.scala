@@ -1,4 +1,5 @@
 import scala.tools.nsc._
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 object Test {
   val testCode =
@@ -18,7 +19,7 @@ assert(h == "h", h)
       settings.processArgumentString("-opt:l:classpath")
       f(settings)
       settings.usejavacp.value = true
-      val repl = new interpreter.IMain(settings)
+      val repl = new interpreter.IMain(settings, new ReplReporterImpl(settings))
       testCode.linesIterator.foreach(repl.interpret(_))
     }
     test(_ => ())

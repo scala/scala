@@ -436,7 +436,7 @@ trait EntityPage extends HtmlPage {
           <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, inTpl, isSelf = true) }</div>
         </xml:group>
       case _ =>
-        // comment of non-class member or non-documentented inner class
+        // comment of non-class member or non-documented inner class
         val commentBody = memberToCommentBodyHtml(mbr, inTpl, isSelf = false)
         if (commentBody.isEmpty)
           NodeSeq.Empty
@@ -542,8 +542,8 @@ trait EntityPage extends HtmlPage {
           }
 
           // strip off the package object endings, they make things harder to follow
-          val conversionOwnerQualifiedNane = conv.convertorOwner.qualifiedName.stripSuffix(".package")
-          val conversionOwner = templateToHtml(conv.convertorOwner, conversionOwnerQualifiedNane)
+          val conversionOwnerQualifiedName = conv.convertorOwner.qualifiedName.stripSuffix(".package")
+          val conversionOwner = templateToHtml(conv.convertorOwner, conversionOwnerQualifiedName)
 
           val constraintText = conv.constraints match {
             case Nil =>

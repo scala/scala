@@ -444,8 +444,6 @@ trait Importers { to: SymbolTable =>
         LiteralAnnotArg(importConstant(constant))
       case from.ArrayAnnotArg(args) =>
         ArrayAnnotArg(args map importAnnotArg)
-      case from.ScalaSigBytes(bytes) =>
-        ScalaSigBytes(bytes)
       case from.NestedAnnotArg(annInfo) =>
         NestedAnnotArg(importAnnotationInfo(annInfo))
       case from.UnmappableAnnotArg =>

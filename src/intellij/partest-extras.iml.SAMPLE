@@ -14,6 +14,7 @@
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="scaladoc" />
     <orderEntry type="module" module-name="repl" />
+    <orderEntry type="module" module-name="repl-frontend" />
     <orderEntry type="library" name="starr" level="project" />
     <orderEntry type="library" name="partest-extras-deps" level="project" />
   </component>

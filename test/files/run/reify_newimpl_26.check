@@ -4,9 +4,9 @@ scala> def foo[T]{
   val tt = implicitly[WeakTypeTag[List[T]]]
   println(tt)
 }
-<console>:13: free type: Ident(TypeName("T")) defined by foo in <console>:11:16
          val tt = implicitly[WeakTypeTag[List[T]]]
                             ^
+On line 3: free type: Ident(TypeName("T")) defined by foo in <console>:1:9
 foo: [T]=> Unit
 
 scala> foo[Int]

@@ -22,14 +22,12 @@ scala> { import scala.Predef.ArrowAssoc; 1 → 2 }
 res6: (Int, Int) = (1,2)
 
 scala> 1 -> 2
-<console>:12: error: value -> is not a member of Int
-       1 -> 2
          ^
+       error: value -> is not a member of Int
 
 scala> 1 → 2
-<console>:12: error: value → is not a member of Int
-       1 → 2
          ^
+       error: value → is not a member of Int
 
 scala> 
 
@@ -40,9 +38,8 @@ scala> { import scala.StringContext; s"answer: $answer" }
 res9: String = answer: 42
 
 scala> s"answer: $answer"
-<console>:13: error: not found: value StringContext
-       s"answer: $answer"
        ^
+       error: not found: value StringContext
 
 scala> 
 
@@ -55,9 +52,8 @@ scala> { import scala.Predef.any2stringadd; true + "abc" }
 res12: String = trueabc
 
 scala> true + "abc"
-<console>:12: error: value + is not a member of Boolean
-       true + "abc"
             ^
+       error: value + is not a member of Boolean
 
 scala> 
 
@@ -68,23 +64,21 @@ scala> var y = 11
 y: Int = 11
 
 scala> x = 12
-x: Int = 12
+mutated x
 
 scala> y = 13
-y: Int = 13
+mutated y
 
 scala> 
 
 scala> 2 ; 3
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       2 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res14: Int = 3
 
 scala> { 2 ; 3 }
-<console>:12: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-       { 2 ; 3 }
          ^
+       warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
 res15: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
@@ -92,18 +86,14 @@ bippy = {
   1 +
   2 +
   3 } ; bippy+88+11
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
            ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                   ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 defined object Cow
 defined class Moo
 bippy: Int
@@ -117,7 +107,7 @@ defined class Ruminant
 res17: Int = 216
 
 scala> Bovine.x = scala.List(Ruminant(5), Cow, new Moo)
-Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
+mutated Bovine.x
 
 scala> Bovine.x
 res18: List[Any] = List(Ruminant(5), Cow, Moooooo)
@@ -143,12 +133,10 @@ scala>   (  (2 + 2 )  )
 res24: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       5 ;   (  (2 + 2 )  ) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res25: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
@@ -163,18 +151,15 @@ res28: String = 4423
 scala> 
 
 scala> 55 ; ((2 + 2)) ; (1, 2, 3)
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; ((2 + 2)) ;;
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res29: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
-<console>:12: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ; (x: scala.Int) => x + 1 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res30: () => Int = <function0>
 
 scala> 
@@ -183,9 +168,8 @@ scala> () => 5
 res31: () => Int = <function0>
 
 scala> 55 ; () => 5
-<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-       55 ;;
        ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res32: () => Int = <function0>
 
 scala> () => { class X ; new X }
@@ -333,23 +317,19 @@ Forgetting all expression results and named terms: $intp, BippyBungus, Bovine, C
 Forgetting defined types: BippyBungus, C, D, Dingus, Moo, Ruminant
 
 scala> x1 + x2 + x3
-<console>:12: error: not found: value x1
-       x1 + x2 + x3
        ^
-<console>:12: error: not found: value x2
-       x1 + x2 + x3
+       error: not found: value x1
             ^
-<console>:12: error: not found: value x3
-       x1 + x2 + x3
+       error: not found: value x2
                  ^
+       error: not found: value x3
 
 scala> val x1 = 4
 x1: Int = 4
 
 scala> new BippyBungus
-<console>:12: error: not found: type BippyBungus
-       new BippyBungus
            ^
+       error: not found: type BippyBungus
 
 scala> class BippyBungus() { def f = 5 }
 defined class BippyBungus

@@ -6,9 +6,9 @@ scala> var y = 11
 y: Int = 11
 
 scala> x = 12
-x: Int = 12
+mutated x
 
 scala> y = 13
-y: Int = 13
+mutated y
 
 scala> :quit

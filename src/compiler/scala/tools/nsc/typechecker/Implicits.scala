@@ -31,7 +31,7 @@ trait Implicits {
   import global._
   import definitions._
   import ImplicitsStats._
-  import typingStack.{ printTyping }
+  import typingStack.printTyping
   import typeDebug._
 
   // standard usage
