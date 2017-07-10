@@ -46,6 +46,7 @@ class InlineSourceMatcherTest extends BytecodeTesting {
       m.d("a/C")
       m.d("a.D")
       m.d("D")
+      assert(!m.allowFromSources)
     }
     {
       val m = check("!a.D", E("a/D", true, true))
@@ -168,6 +169,10 @@ class InlineSourceMatcherTest extends BytecodeTesting {
       m.a("C")
       m.d("a/C")
     }
+    {
+      val m = check("scala.**:<sources>:com.corp.**", E("scala/.*", false, true), E("com/corp/.*", false, true))
+      assert(m.allowFromSources)
+    }
   }
 
   @Test
@@ -224,6 +229,22 @@ class InlineSourceMatcherTest extends BytecodeTesting {
       val List(_, _, e) = compileClasses(code)
       assertNoInvoke(getMethod(e, "t1"))
       assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
+    }
+  }
+
+  @Test
+  def inlineFromSources(): Unit = {
+    val a = "class A { @inline final def f = 1 }"
+    val b = "class B { def t(a: A) = a.f }"
+    setInlineFrom("<sources>")
+
+    {
+      val List(_, cb) = compileClasses(s"$a\n$b")
+      assertNoInvoke(getMethod(cb, "t"))
+    }
+    {
+      val List(_, cb) = compileClassesSeparately(List(a, b))
+      assertInvoke(getMethod(cb, "t"), "A", "f")
     }
   }
 }

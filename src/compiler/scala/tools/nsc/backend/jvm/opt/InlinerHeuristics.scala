@@ -40,8 +40,10 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   }
 
   def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
-    compilerSettings.optLClasspath || (compilerSettings.optLProject && sourceFilePath.isDefined) ||
-     inlineSourceMatcher.allow(calleeDeclarationClass)
+    compilerSettings.optLClasspath ||
+      compilerSettings.optLProject && sourceFilePath.isDefined ||
+      inlineSourceMatcher.allowFromSources && sourceFilePath.isDefined ||
+      inlineSourceMatcher.allow(calleeDeclarationClass)
   }
 
   /**
@@ -367,7 +369,11 @@ object InlinerHeuristics {
     }
     private val patternStrings = inlineFromSetting.filterNot(_.isEmpty)
     val startAllow: Boolean = patternStrings.headOption.contains("**")
+    private[this] var _allowFromSources: Boolean = false
+
     val entries: List[Entry] = parse()
+
+    def allowFromSources = _allowFromSources
 
     def allow(internalName: InternalName): Boolean = {
       var answer = startAllow
@@ -395,54 +401,58 @@ object InlinerHeuristics {
         if (startAllow) it.take(patternStrings.length - 1) else it
       }
       for (p <- patternsRevIterator) {
-        val len = p.length
-        var index = 0
-        def current = if (index < len) p.charAt(index) else 0.toChar
-        def next() = index += 1
+        if (p == "<sources>") _allowFromSources = true
+        else {
+          val len = p.length
+          var index = 0
 
-        val negated = current == '!'
-        if (negated) next()
+          def current = if (index < len) p.charAt(index) else 0.toChar
 
-        val regex = new java.lang.StringBuilder
+          def next() = index += 1
 
-        while (index < len) {
-          if (current == '*') {
-            next()
+          val negated = current == '!'
+          if (negated) next()
+
+          val regex = new java.lang.StringBuilder
+
+          while (index < len) {
             if (current == '*') {
               next()
-              val starStarDot = current == '.'
-              if (starStarDot) {
+              if (current == '*') {
                 next()
-                // special case: "a.**.C" matches "a.C", and "**.C" matches "C"
-                val i = index - 4
-                val allowEmpty = i < 0 || (i == 0 && p.charAt(i) == '!') || p.charAt(i) == '.'
-                if (allowEmpty) regex.append("(?:.*/|)")
-                else regex.append(".*/")
-              } else
-                regex.append(".*")
-            } else {
-              regex.append("[^/]*")
-            }
-          } else if (current == '.') {
-            next()
-            regex.append('/')
-          } else {
-            val start = index
-            var needEscape = false
-            while (index < len && current != '.' && current != '*') {
-              needEscape = needEscape || "\\.[]{}()*+-?^$|".indexOf(current) != -1
+                val starStarDot = current == '.'
+                if (starStarDot) {
+                  next()
+                  // special case: "a.**.C" matches "a.C", and "**.C" matches "C"
+                  val i = index - 4
+                  val allowEmpty = i < 0 || (i == 0 && p.charAt(i) == '!') || p.charAt(i) == '.'
+                  if (allowEmpty) regex.append("(?:.*/|)")
+                  else regex.append(".*/")
+                } else
+                  regex.append(".*")
+              } else {
+                regex.append("[^/]*")
+              }
+            } else if (current == '.') {
               next()
+              regex.append('/')
+            } else {
+              val start = index
+              var needEscape = false
+              while (index < len && current != '.' && current != '*') {
+                needEscape = needEscape || "\\.[]{}()*+-?^$|".indexOf(current) != -1
+                next()
+              }
+              if (needEscape) regex.append("\\Q")
+              regex.append(p, start, index)
+              if (needEscape) regex.append("\\E")
             }
-            if (needEscape) regex.append("\\Q")
-            regex.append(p, start, index)
-            if (needEscape) regex.append("\\E")
           }
+
+          val isTerminal = result.isEmpty || result.head.terminal && result.head.negated == negated
+          result ::= Entry(Pattern.compile(regex.toString), negated, isTerminal)
         }
-
-        val isTerminal = result.isEmpty || result.head.terminal && result.head.negated == negated
-        result ::= Entry(Pattern.compile(regex.toString), negated, isTerminal)
       }
-
       result
     }
   }
