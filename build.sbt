@@ -9,7 +9,13 @@ val commonSettings = Seq(
   scalaVersion := "2.12.2-ebe1180-SNAPSHOT", // from https://github.com/scala/scala/pull/5742
   scalaBinaryVersion := { if (!scalaVersion.value.startsWith("2.12.")) scalaBinaryVersion.value else "2.12" },
   crossScalaVersions := scalaVersion.value :: "2.13.0-M1" :: dotty.value :: Nil,
-  scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-opt-warnings", "-Yno-imports", "-language:higherKinds"/*, "-opt:l:classpath"*/),
+  scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Yno-imports", "-language:higherKinds"/*, "-opt:l:classpath"*/),
+  scalacOptions ++= {
+    if (!isDotty.value)
+      Seq("-opt-warnings") // This option does not exist in Dotty
+    else
+      Seq()
+  },
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a"),
   fork in Test := true,
   parallelExecution in Test := false
