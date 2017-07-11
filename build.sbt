@@ -30,7 +30,6 @@ val collections =
         ("org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0").withDottyCompat(),
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
-      scalacOptions ++= { if (isDotty.value) Seq("-language:Scala2") else Nil },
       pomExtra :=
         <developers>
           <developer><id>ichoran</id><name>Rex Kerr</name></developer>
