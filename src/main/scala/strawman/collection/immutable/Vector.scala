@@ -196,8 +196,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
               v
             case n if this.size < (n >>> Log2ConcatFaster) && it.isInstanceOf[Vector[_]] =>
               var v = it.asInstanceOf[Vector[B]]
-              val ri = this.reverseIterator
-              while (ri.hasNext) v = ri.next +: v
+              val ri = this.reverseIterator()
+              while (ri.hasNext) v = ri.next() +: v
               v
             case _ => super.concat(that)
           }
