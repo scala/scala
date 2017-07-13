@@ -56,7 +56,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     private var itr: Iterator[C] = Iterator.empty
 
     def hasNext = len <= elms.size || itr.hasNext
-    def next = {
+    def next() = {
       if (!itr.hasNext) {
         if (len > elms.size) Iterator.empty.next()
         else {

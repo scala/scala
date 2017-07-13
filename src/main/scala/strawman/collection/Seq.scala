@@ -57,7 +57,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     val i = coll.iterator() drop offset
     val j = that.iterator()
     while (j.hasNext && i.hasNext)
-      if (i.next != j.next)
+      if (i.next() != j.next())
         return false
 
     !j.hasNext
@@ -72,7 +72,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     val i = coll.iterator().drop(length - that.length)
     val j = that.iterator()
     while (i.hasNext && j.hasNext)
-      if (i.next != j.next)
+      if (i.next() != j.next())
         return false
 
     !j.hasNext
@@ -575,7 +575,7 @@ object SeqOps {
         private[this] val Warr = new Array[AnyRef](n1-n0)
         private[this] val delta = if (forward) 1 else -1
         private[this] val done = if (forward) n1-n0 else -1
-        val wit = W.iterator.drop(n0)
+        val wit = W.iterator().drop(n0)
         var i = if (forward) 0 else (n1-n0-1)
         while (i != done) {
           Warr(i) = wit.next().asInstanceOf[AnyRef]

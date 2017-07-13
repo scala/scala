@@ -133,7 +133,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       // The order of terms in the following condition is important
       // here as self.hasNext could be blocking
       while (i < size && self.hasNext) {
-        buf += self.next
+        buf += self.next()
         i += 1
       }
       buf
@@ -190,7 +190,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     }
 
     def hasNext = filled || fill()
-    def next = {
+    def next() = {
       if (!filled)
         fill()
 
