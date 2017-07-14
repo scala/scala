@@ -173,10 +173,10 @@ class ExtractAPI[GlobalType <: Global](
 
   private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
   private def path(components: List[PathComponent]) =
-    new xsbti.api.Path(components.toArray[PathComponent])
+    xsbti.api.Path.of(components.toArray[PathComponent])
   private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] = {
     if (sym == NoSymbol || sym.isRoot || sym.isEmptyPackageClass || sym.isRootPackage) postfix
-    else pathComponents(sym.owner, new xsbti.api.Id(simpleName(sym)) :: postfix)
+    else pathComponents(sym.owner, xsbti.api.Id.of(simpleName(sym)) :: postfix)
   }
   private def types(in: Symbol, t: List[Type]): Array[xsbti.api.Type] =
     t.toArray[Type].map(processType(in, _))
@@ -191,24 +191,25 @@ class ExtractAPI[GlobalType <: Global](
         reference(sym)
       }
     } else if (sym.isRoot || sym.isRootPackage) Constants.emptyType
-    else new xsbti.api.Projection(processType(in, pre), simpleName(sym))
+    else xsbti.api.Projection.of(processType(in, pre), simpleName(sym))
   }
   private def reference(sym: Symbol): xsbti.api.ParameterRef =
-    new xsbti.api.ParameterRef(tparamID(sym))
+    xsbti.api.ParameterRef.of(tparamID(sym))
 
   // The compiler only pickles static annotations, so only include these in the API.
   // This way, the API is not sensitive to whether we compiled from source or loaded from classfile.
   // (When looking at the sources we see all annotations, but when loading from classes we only see the pickled (static) ones.)
   private def mkAnnotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] =
     staticAnnotations(as).toArray.map { a =>
-      new xsbti.api.Annotation(
+      xsbti.api.Annotation.of(
         processType(in, a.atp),
         if (a.assocs.isEmpty)
-          Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
+          Array(xsbti.api.AnnotationArgument.of("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
         else
           a.assocs
             .map {
-              case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString)
+              case (name, value) =>
+                xsbti.api.AnnotationArgument.of(name.toString, value.toString)
             }
             .toArray[xsbti.api.AnnotationArgument]
       )
@@ -234,7 +235,7 @@ class ExtractAPI[GlobalType <: Global](
               valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def = {
       def parameterList(syms: List[Symbol]): xsbti.api.ParameterList = {
         val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
-        new xsbti.api.ParameterList(syms.map(parameterS).toArray, isImplicitList)
+        xsbti.api.ParameterList.of(syms.map(parameterS).toArray, isImplicitList)
       }
       t match {
         case PolyType(typeParams0, base) =>
@@ -247,13 +248,13 @@ class ExtractAPI[GlobalType <: Global](
           build(resultType, typeParams, valueParameters)
         case returnType =>
           val retType = processType(in, dropConst(returnType))
-          new xsbti.api.Def(simpleName(s),
-                            getAccess(s),
-                            getModifiers(s),
-                            annotations(in, s),
-                            typeParams,
-                            valueParameters.reverse.toArray,
-                            retType)
+          xsbti.api.Def.of(simpleName(s),
+                           getAccess(s),
+                           getModifiers(s),
+                           annotations(in, s),
+                           typeParams,
+                           valueParameters.reverse.toArray,
+                           retType)
       }
     }
     def parameterS(s: Symbol): xsbti.api.MethodParameter = {
@@ -274,7 +275,7 @@ class ExtractAPI[GlobalType <: Global](
           (tpe.typeArgs.head, ByName)
         else
           (tpe, Plain)
-      new xsbti.api.MethodParameter(name, processType(in, t), hasDefault(paramSym), special)
+      xsbti.api.MethodParameter.of(name, processType(in, t), hasDefault(paramSym), special)
     }
     val t = viewer(in).memberInfo(s)
     build(t, Array(), Nil)
@@ -313,16 +314,16 @@ class ExtractAPI[GlobalType <: Global](
     val as = annotations(in, s)
 
     if (s.isAliasType)
-      new xsbti.api.TypeAlias(name, access, modifiers, as, typeParams, processType(in, tpe))
+      xsbti.api.TypeAlias.of(name, access, modifiers, as, typeParams, processType(in, tpe))
     else if (s.isAbstractType) {
       val bounds = tpe.bounds
-      new xsbti.api.TypeDeclaration(name,
-                                    access,
-                                    modifiers,
-                                    as,
-                                    typeParams,
-                                    processType(in, bounds.lo),
-                                    processType(in, bounds.hi))
+      xsbti.api.TypeDeclaration.of(name,
+                                   access,
+                                   modifiers,
+                                   as,
+                                   typeParams,
+                                   processType(in, bounds.lo),
+                                   processType(in, bounds.hi))
     } else
       error("Unknown type member" + s)
   }
@@ -375,9 +376,9 @@ class ExtractAPI[GlobalType <: Global](
                           bases: List[Type],
                           declared: List[Symbol],
                           inherited: List[Symbol]): xsbti.api.Structure = {
-    new xsbti.api.Structure(lzy(types(s, bases)),
-                            lzy(processDefinitions(s, declared)),
-                            lzy(processDefinitions(s, inherited)))
+    xsbti.api.Structure.of(lzy(types(s, bases)),
+                           lzy(processDefinitions(s, declared)),
+                           lzy(processDefinitions(s, inherited)))
   }
   private def processDefinitions(in: Symbol,
                                  defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
@@ -388,8 +389,8 @@ class ExtractAPI[GlobalType <: Global](
   }
 
   private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.ClassDefinition] = {
-    def mkVar = Some(fieldDef(in, sym, keepConst = false, new xsbti.api.Var(_, _, _, _, _)))
-    def mkVal = Some(fieldDef(in, sym, keepConst = true, new xsbti.api.Val(_, _, _, _, _)))
+    def mkVar = Some(fieldDef(in, sym, keepConst = false, xsbti.api.Var.of(_, _, _, _, _)))
+    def mkVal = Some(fieldDef(in, sym, keepConst = true, xsbti.api.Val.of(_, _, _, _, _)))
     if (isClass(sym))
       if (ignoreClass(sym)) None else Some(classLike(in, sym))
     else if (sym.isNonClassType)
@@ -438,9 +439,9 @@ class ExtractAPI[GlobalType <: Global](
       val within = c.privateWithin
       val qualifier =
         if (within == NoSymbol) Constants.unqualified
-        else new xsbti.api.IdQualifier(within.fullName)
-      if (c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
-      else new xsbti.api.Private(qualifier)
+        else xsbti.api.IdQualifier.of(within.fullName)
+      if (c.hasFlag(Flags.PROTECTED)) xsbti.api.Protected.of(qualifier)
+      else xsbti.api.Private.of(qualifier)
     }
   }
 
@@ -465,10 +466,10 @@ class ExtractAPI[GlobalType <: Global](
 
     dealiased match {
       case NoPrefix             => Constants.emptyType
-      case ThisType(sym)        => new xsbti.api.Singleton(thisPath(sym))
+      case ThisType(sym)        => xsbti.api.Singleton.of(thisPath(sym))
       case SingleType(pre, sym) => projectionType(in, pre, sym)
       case ConstantType(constant) =>
-        new xsbti.api.Constant(processType(in, constant.tpe), constant.stringValue)
+        xsbti.api.Constant.of(processType(in, constant.tpe), constant.stringValue)
 
       /* explaining the special-casing of references to refinement classes (https://support.typesafe.com/tickets/1882)
        *
@@ -509,7 +510,7 @@ class ExtractAPI[GlobalType <: Global](
           else
             base
         else
-          new xsbti.api.Parameterized(base, types(in, args))
+          xsbti.api.Parameterized.of(base, types(in, args))
       case SuperType(thistpe: Type, supertpe: Type) =>
         warning("sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe);
         Constants.emptyType
@@ -517,14 +518,14 @@ class ExtractAPI[GlobalType <: Global](
         at.annotations match {
           case Nil => processType(in, at.underlying)
           case annots =>
-            new xsbti.api.Annotated(processType(in, at.underlying), mkAnnotations(in, annots))
+            xsbti.api.Annotated.of(processType(in, at.underlying), mkAnnotations(in, annots))
         }
       case rt: CompoundType   => structure(rt, rt.typeSymbol)
       case t: ExistentialType => makeExistentialType(in, t)
       case NoType =>
         Constants.emptyType // this can happen when there is an error that will be reported by a later phase
       case PolyType(typeParams, resultType) =>
-        new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
+        xsbti.api.Polymorphic.of(processType(in, resultType), typeParameters(in, typeParams))
       case NullaryMethodType(_) =>
         warning("sbt-api: Unexpected nullary method type " + in + " in " + in.owner);
         Constants.emptyType
@@ -537,7 +538,7 @@ class ExtractAPI[GlobalType <: Global](
     try {
       val typeVariablesConverted = typeParameters(in, typeVariables)
       val qualifiedConverted = processType(in, qualified)
-      new xsbti.api.Existential(qualifiedConverted, typeVariablesConverted)
+      xsbti.api.Existential.of(qualifiedConverted, typeVariablesConverted)
     } finally {
       existentialRenamings.leaveExistentialTypeVariables(typeVariables)
     }
@@ -554,19 +555,19 @@ class ExtractAPI[GlobalType <: Global](
       if (varianceInt < 0) Contravariant else if (varianceInt > 0) Covariant else Invariant
     viewer(in).memberInfo(s) match {
       case TypeBounds(low, high) =>
-        new xsbti.api.TypeParameter(tparamID(s),
-                                    annots,
-                                    typeParameters(in, s),
-                                    variance,
-                                    processType(in, low),
-                                    processType(in, high))
+        xsbti.api.TypeParameter.of(tparamID(s),
+                                   annots,
+                                   typeParameters(in, s),
+                                   variance,
+                                   processType(in, low),
+                                   processType(in, high))
       case PolyType(typeParams, base) =>
-        new xsbti.api.TypeParameter(tparamID(s),
-                                    annots,
-                                    typeParameters(in, typeParams),
-                                    variance,
-                                    processType(in, base.bounds.lo),
-                                    processType(in, base.bounds.hi))
+        xsbti.api.TypeParameter.of(tparamID(s),
+                                   annots,
+                                   typeParameters(in, typeParams),
+                                   variance,
+                                   processType(in, base.bounds.lo),
+                                   processType(in, base.bounds.hi))
       case x => error("Unknown type parameter info: " + x.getClass)
     }
   }
@@ -629,7 +630,7 @@ class ExtractAPI[GlobalType <: Global](
     val tParams = typeParameters(in, sym) // look at class symbol
     val selfType = lzy(this.selfType(in, sym))
     def constructClass(structure: xsbti.api.Lazy[Structure]): ClassLike = {
-      new xsbti.api.ClassLike(
+      xsbti.api.ClassLike.of(
         name,
         acc,
         modifiers,
@@ -652,7 +653,7 @@ class ExtractAPI[GlobalType <: Global](
       _mainClasses += name
     }
 
-    val classDef = new xsbti.api.ClassLikeDef(
+    val classDef = xsbti.api.ClassLikeDef.of(
       name,
       acc,
       modifiers,
@@ -690,14 +691,14 @@ class ExtractAPI[GlobalType <: Global](
     }
   }
   private object Constants {
-    val local = new xsbti.api.ThisQualifier
-    val public = new xsbti.api.Public
-    val privateLocal = new xsbti.api.Private(local)
-    val protectedLocal = new xsbti.api.Protected(local)
-    val unqualified = new xsbti.api.Unqualified
-    val emptyPath = new xsbti.api.Path(Array())
-    val thisPath = new xsbti.api.This
-    val emptyType = new xsbti.api.EmptyType
+    val local = xsbti.api.ThisQualifier.of()
+    val public = xsbti.api.Public.of()
+    val privateLocal = xsbti.api.Private.of(local)
+    val protectedLocal = xsbti.api.Protected.of(local)
+    val unqualified = xsbti.api.Unqualified.of()
+    val emptyPath = xsbti.api.Path.of(Array())
+    val thisPath = xsbti.api.This.of()
+    val emptyType = xsbti.api.EmptyType.of()
   }
 
   private def simpleName(s: Symbol): String = {

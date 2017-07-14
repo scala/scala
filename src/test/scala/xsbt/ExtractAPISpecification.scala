@@ -196,7 +196,7 @@ class ExtractAPISpecification extends UnitSpec {
         List(srcX, srcY, srcC1, srcC2, srcC3, srcC4, srcC5, srcC6, srcC7, srcC8)
       )
       .map(_.head)
-    val emptyType = new EmptyType
+    val emptyType = EmptyType.of()
     def hasSelfType(c: ClassLike): Boolean =
       c.selfType != emptyType
     val (withSelfType, withoutSelfType) = apis.partition(hasSelfType)
