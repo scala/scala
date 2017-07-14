@@ -315,4 +315,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     last
   }
+
+  override /*TraversableLike*/
+  def tails: Iterator[Repr] = Iterator.iterate(repr)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newBuilder.result)
 }
