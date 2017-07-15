@@ -34,12 +34,10 @@ object Collectionstrawman_v0_Seq {
 
 object Collectionstrawman_v0_Map {
   val xs: Map[Int, String] = Map(1 -> "1", 2 -> "2", 3 -> "3")
-  import strawman.collection.immutable.HashMap
   val ys = HashMap.empty
 }
 
 object Collectionstrawman_v0_ArrayBuffer {
-  import strawman.collection.mutable.ArrayBuffer
   val xs: ArrayBuffer[Int] = ArrayBuffer(1, 2, 3)
 }
 
