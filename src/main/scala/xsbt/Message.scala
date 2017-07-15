@@ -7,6 +7,10 @@
 
 package xsbt
 
+import java.util.function.Supplier
+
 object Message {
-  def apply[T](s: => T) = new xsbti.F0[T] { def apply() = s }
+  def apply[T](s: => T): Supplier[T] = new Supplier[T] {
+    override def get(): T = s
+  }
 }
