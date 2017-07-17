@@ -19,9 +19,9 @@ package scala
  *  @version 1.1, 05/03/2004
  *  @since   2.0
  */
-final class MatchError(obj: Any) extends RuntimeException {
+final class MatchError(@transient obj: Any) extends RuntimeException {
   /** There's no reason we need to call toString eagerly,
-   *  so defer it until getMessage is called.
+   *  so defer it until getMessage is called or object is serialized
    */
   private lazy val objString = {
     def ofClass = "of class " + obj.getClass.getName
@@ -31,6 +31,12 @@ final class MatchError(obj: Any) extends RuntimeException {
     } catch {
       case _: Throwable => "an instance " + ofClass
     }
+  }
+
+  @throws[java.io.ObjectStreamException]
+  private def writeReplace(): Object = {
+    objString
+    this
   }
 
   override def getMessage() = objString

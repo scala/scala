@@ -127,10 +127,10 @@ trait StructuredTypeStrings extends DestructureTypes {
 
     def wrapEmpty                             = TypeEmpty
     def wrapSequence(nodes: List[TypeNode])   = new TypeList(nodes)
-    def wrapProduct(nodes: List[TypeNode])    = new TypeProduct(nodes)
+    def wrapProduct(nodes: List[TypeNode])    = TypeProduct(nodes)
     def wrapPoly(in: TypeNode, out: TypeNode) = new PolyFunction(in, out)
     def wrapMono(in: TypeNode, out: TypeNode) = if (in == wrapEmpty) new NullaryFunction(out) else new MonoFunction(in, out)
-    def wrapAtom[U](value: U)                 = new TypeAtom(value)
+    def wrapAtom[U](value: U)                 = TypeAtom(value)
   }
 
   def show(tp: Type): String = intoNodes(tp).show()

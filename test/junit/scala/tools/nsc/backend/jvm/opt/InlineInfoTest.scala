@@ -18,7 +18,7 @@ class InlineInfoTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.bTypes
 
-  override def compilerArgs = "-opt:l:classpath"
+  override def compilerArgs = "-opt:l:inline -opt-inline-from:**"
 
   compiler.keepPerRunCachesAfterRun(List(
     bTypes.classBTypeCacheFromSymbol,

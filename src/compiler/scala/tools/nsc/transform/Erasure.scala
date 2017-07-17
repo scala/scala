@@ -72,7 +72,9 @@ abstract class Erasure extends InfoTransform
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
   def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
-    NeedsSigCollector.collect(tp) || throwsArgs.exists(NeedsSigCollector.collect)
+    // scala/bug#10351: don't emit a signature if tp erases to a primitive
+    def needs(tp: Type) = NeedsSigCollector.collect(tp) && !erasure(tp.typeSymbol)(tp).typeSymbol.isPrimitiveValueClass
+    needs(tp) || throwsArgs.exists(needs)
   }
 
   // only refer to type params that will actually make it into the sig, this excludes:
@@ -216,7 +218,7 @@ abstract class Erasure extends InfoTransform
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
-  def javaSig(sym0: Symbol, info: Type): Option[String] = enteringErasure {
+  def javaSig(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = enteringErasure {
     val isTraitSignature = sym0.enclClass.isTrait
 
     def superSig(parents: List[Type]) = {
@@ -281,22 +283,28 @@ abstract class Erasure extends InfoTransform
                 boxedSig(tp)
             }
           def classSig = {
+            markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
-            dotCleanup(
-              (
-                if (needsJavaSig(preRebound, Nil)) {
-                  val s = jsig(preRebound, existentiallyBound)
-                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
-                  else fullNameInSig(sym)
-                }
-                else fullNameInSig(sym)
-              ) + (
-                if (args.isEmpty) "" else
-                "<"+(args map argSig).mkString+">"
-              ) + (
-                ";"
-              )
-            )
+            val sigCls = {
+              if (needsJavaSig(preRebound, Nil)) {
+                val s = jsig(preRebound, existentiallyBound)
+                if (s.charAt(0) == 'L') {
+                  val withoutSemi = s.substring(0, s.length - 1)
+                  // If the prefix is a module, drop the '$'. Classes (or modules) nested in modules
+                  // are separated by a single '$' in the filename: `object o { object i }` is o$i$.
+                  val withoutOwningModuleDollar =
+                    if (preRebound.typeSymbol.isModuleClass) withoutSemi.stripSuffix(nme.MODULE_SUFFIX_STRING)
+                    else withoutSemi
+                  withoutOwningModuleDollar + "." + sym.javaSimpleName
+                } else fullNameInSig(sym)
+              }
+              else fullNameInSig(sym)
+            }
+            val sigArgs = {
+              if (args.isEmpty) ""
+              else "<"+(args map argSig).mkString+">"
+            }
+            dotCleanup(sigCls + sigArgs + ";")
           }
 
           // If args isEmpty, Array is being used as a type constructor

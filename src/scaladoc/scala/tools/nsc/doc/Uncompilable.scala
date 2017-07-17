@@ -24,7 +24,7 @@ trait Uncompilable {
 
   def docSymbol(p: DocParser.Parsed) = p.nameChain.foldLeft(RootClass: Symbol)(_.tpe member _)
   def docDefs(code: String)          = new DocParser(settings, reporter) docDefs code
-  def docPairs(code: String)         = docDefs(code) map (p => (docSymbol(p), new DocComment(p.raw)))
+  def docPairs(code: String)         = docDefs(code) map (p => (docSymbol(p), DocComment(p.raw)))
 
   lazy val pairs = files flatMap { f =>
     val comments = docPairs(f.slurp())

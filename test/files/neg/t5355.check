@@ -1,0 +1,16 @@
+t5355.scala:2: error: illegal cyclic reference involving method a
+  type A = { def a(b: A): A }
+                          ^
+t5355.scala:3: error: illegal cyclic reference involving method a
+  type B = { def a: B }
+                    ^
+t5355.scala:4: error: illegal cyclic reference involving method a
+  type C = { def a(b: C): AnyRef }
+                      ^
+t5355.scala:5: error: illegal cyclic reference involving value a
+  type D = { val a: D }
+                    ^
+t5355.scala:6: error: illegal cyclic reference involving method a
+  val e: { def a: e.type }
+                  ^
+5 errors found

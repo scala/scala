@@ -1,1 +1,1 @@
--Ydelambdafy:method -opt:l:classpath -opt-warnings -Xfatal-warnings
+-Ydelambdafy:method -opt:l:inline -opt-inline-from:** -opt-warnings -Xfatal-warnings

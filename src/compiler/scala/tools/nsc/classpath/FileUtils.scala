@@ -38,7 +38,7 @@ object FileUtils {
   def stripSourceExtension(fileName: String): String = {
     if (endsScala(fileName)) stripClassExtension(fileName)
     else if (endsJava(fileName)) stripJavaExtension(fileName)
-    else throw new FatalError("Unexpected source file ending: " + fileName)
+    else throw FatalError("Unexpected source file ending: " + fileName)
   }
 
   def dirPath(forPackage: String) = forPackage.replace('.', '/')

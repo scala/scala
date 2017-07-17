@@ -1,1 +1,1 @@
--opt:l:project -opt-warnings -Xfatal-warnings
+-opt:l:inline -opt-inline-from:** -opt-warnings -Xfatal-warnings

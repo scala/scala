@@ -37,7 +37,7 @@ trait MemberLookup extends base.MemberLookupBase {
     case _ => link.toString
   }
 
-  override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = {
+  override def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
     val sym1 =
       if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
       else if (sym.hasPackageFlag)
@@ -60,8 +60,9 @@ trait MemberLookup extends base.MemberLookupBase {
       }
     }
     classpathEntryFor(sym1) flatMap { path =>
-      settings.extUrlMapping get path map { url =>
-        LinkToExternal(name, url + "#" + name)
+      settings.extUrlMapping get path map { url => {
+         LinkToExternalTpl(name, url, makeTemplate(sym1))
+        }
       }
     }
   }

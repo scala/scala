@@ -29,6 +29,13 @@ trait NamesDefaults { self: Analyzer =>
   // as an attachment in the companion module symbol
   class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer)
 
+  // Attached to the synthetic companion `apply` method symbol generated for case classes, holds
+  // the set contains all default getters for that method. If the synthetic `apply` is unlinked in
+  // its completer because there's a user-defined matching method (PR #5730), we have to unlink the
+  // default getters as well. For cleanliness, the attachment is removed at the end of the completer
+  // of the synthetic `apply`, as it's no longer needed.
+  class CaseApplyDefaultGetters(val defaultGetters: mutable.Set[Symbol] = mutable.Set.empty)
+
   // To attach the default getters of local (term-owned) methods to the method symbol.
   // Used in Namer.enterExistingSym: it needs to re-enter the method symbol and also
   // default getters, which could not be found otherwise.
