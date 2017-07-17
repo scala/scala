@@ -105,29 +105,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     try body
     finally if (!saved) settings.nowarn.value = false
   }
-  def withSuppressedSettings[A](body: => A): A = {
-    val ss = this.settings
-    import ss._
-    val wasWarning = !nowarn
-    val noisy = List(Xprint, Ytyperdebug, browse)
-    val current = (Xprint.value, Ytyperdebug.value, browse.value)
-    val noisesome = wasWarning || noisy.exists(!_.isDefault)
-    if (isReplDebug || !noisesome) body
-    else {
-      Xprint.value = List.empty
-      browse.value = List.empty
-      Ytyperdebug.value = false
-      if (wasWarning) nowarn.value = true
-      try body
-      finally {
-        Xprint.value       = current._1
-        Ytyperdebug.value  = current._2
-        browse.value       = current._3
-        if (wasWarning) nowarn.value = false
-        global.printTypings = current._2
-      }
-    }
-  }
   // Apply a temporary label for compilation (for example, script name)
   def withLabel[A](temp: String)(body: => A): A = {
     val saved = label
@@ -983,7 +960,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
         // compile the result-extraction object
         val handls = if (printResults) handlers else Nil
-        withSuppressedSettings(lineRep compile ResultObjectSourceCode(handls))
+        IMain.withSuppressedSettings(settings, global)(lineRep compile ResultObjectSourceCode(handls))
       }
     }
 
@@ -1266,6 +1243,33 @@ object IMain {
   private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
   def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
 
+  private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
+    import settings._
+    val wasWarning = !nowarn
+    val noisy = List(Xprint, Ytyperdebug, browse)
+    val current = (Xprint.value, Ytyperdebug.value, browse.value)
+    val noisesome = wasWarning || noisy.exists(!_.isDefault)
+    if (isReplDebug || !noisesome) body
+    else {
+      Xprint.value = List.empty
+      browse.value = List.empty
+      Ytyperdebug.value = false
+      if (wasWarning) nowarn.value = true
+      try body
+      finally {
+        Xprint.value       = current._1
+        Ytyperdebug.value  = current._2
+        browse.value       = current._3
+        if (wasWarning) nowarn.value = false
+        // ctl-D in repl can result in no compiler
+        val g = global
+        if (g != null) {
+          g.printTypings = current._2
+        }
+      }
+    }
+  }
+
   trait CodeAssembler[T] {
     def preamble: String
     def generate: T => String
@@ -1315,4 +1319,3 @@ object IMain {
   /** construct an interpreter that reports to Console */
   def apply(initialSettings: Settings = defaultSettings, out: JPrintWriter = defaultOut) = new IMain(initialSettings, out)
 }
-
