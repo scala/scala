@@ -557,7 +557,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           generatedType = genTypeApply()
 
-        case Apply(fun @ Select(Super(qual, _), _), args) =>
+        case Apply(fun @ Select(sup @ Super(superQual, _), _), args) =>
           def initModule() {
             // we initialize the MODULE$ field immediately after the super ctor
             if (!isModuleInitialized &&
@@ -576,9 +576,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           }
 
           // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not jsut ALOAD_0)
-          genLoad(qual)
+          genLoad(superQual)
           genLoadArguments(args, paramTKs(app))
-          generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos)
+          generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos, sup.tpe.typeSymbol)
           initModule()
 
         // 'new' constructor call: Note: since constructors are
@@ -1024,14 +1024,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     /**
      * Generate a method invocation. If `specificReceiver != null`, it is used as receiver in the
      * invocation instruction, otherwise `method.owner`. A specific receiver class is needed to
-     * prevent an IllegalAccessError, (aladdin bug 455).
+     * prevent an IllegalAccessError, (aladdin bug 455). Same for super calls, scala/bug#7936.
      */
     def genCallMethod(method: Symbol, style: InvokeStyle, pos: Position, specificReceiver: Symbol = null): BType = {
       val methodOwner = method.owner
       // the class used in the invocation's method descriptor in the classfile
       val receiverClass = {
         if (specificReceiver != null)
-          assert(style.isVirtual || specificReceiver == methodOwner, s"specificReceiver can only be specified for virtual calls. $method - $specificReceiver")
+          assert(style.isVirtual || style.isSuper || specificReceiver == methodOwner, s"specificReceiver can only be specified for virtual calls. $method - $specificReceiver")
 
         val useSpecificReceiver = specificReceiver != null && !specificReceiver.isBottomClass
         val receiver = if (useSpecificReceiver) specificReceiver else methodOwner
@@ -1070,8 +1070,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val isInterface = receiverBType.isInterface.get
       import InvokeStyle._
       if (style == Super) {
-        assert(receiverClass == methodOwner, s"for super call, expecting $receiverClass == $methodOwner")
-        if (receiverClass.isTrait && !receiverClass.isJavaDefined) {
+        if (receiverClass.isTrait && !method.isJavaDefined) {
           val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
           val staticName = traitSuperAccessorName(method).toString
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)

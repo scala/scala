@@ -319,6 +319,8 @@ trait ScalaSettings extends AbsScalaSettings
         |  a.**.*Util*    Classes in a and sub-packages with Util in their name (including a.Util)
         |  a.C$D          The nested class D defined in class a.C
         |  scala.Predef$  The scala.Predef object
+        |  <sources>      Classes defined in source files compiled in the current compilation, either
+        |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
         |The setting accepts a list of patterns: `-opt-inline-from:p1:p2`. The setting can be passed
         |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.

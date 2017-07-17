@@ -4761,7 +4761,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
 
-        def mkUpdate(table: Tree, indices: List[Tree]) =
+        def mkUpdate(table: Tree, indices: List[Tree], argss: List[List[Tree]]) =
           gen.evalOnceAll(table :: indices, context.owner, context.unit) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
@@ -4770,9 +4770,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   is.map(i => i()) ++ extraArgs
                 ) setPos tree.pos
               )
+              def mkApplies(core: Tree) = argss.foldLeft(core)((x, args) => Apply(x, args))
               mkCall(
                 nme.update,
-                Apply(Select(mkCall(nme.apply), prefix) setPos fun.pos, args) setPos tree.pos
+                Apply(Select(mkApplies(mkCall(nme.apply)), prefix) setPos fun.pos, args) setPos tree.pos
               )
             case _ => EmptyTree
           }
@@ -4787,9 +4788,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               mkAssign(Select(qq1, vname) setPos qual.pos)
             }
 
+          case Apply(fn, extra) if qual.isInstanceOf[ApplyToImplicitArgs] =>
+            fn match {
+              case treeInfo.Applied(Select(table, nme.apply), _, indices :: Nil) =>
+                // table(indices)(implicits)
+                mkUpdate(table, indices, extra :: Nil)
+              case _  => UnexpectedTreeAssignmentConversionError(qual)
+            }
+
           case Apply(fn, indices) =>
             fn match {
-              case treeInfo.Applied(Select(table, nme.apply), _, _) => mkUpdate(table, indices)
+              case treeInfo.Applied(Select(table, nme.apply), _, Nil) =>
+                mkUpdate(table, indices, Nil)
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }
@@ -4888,8 +4898,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
 
-        if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
-          qual setType tree.symbol.owner.tpe
+        // This special-case complements the logic in `adaptMember` in erasure, it handles selections
+        // from `Super`. In `adaptMember`, if the erased type of a qualifier doesn't conform to the
+        // owner of the selected member, a cast is inserted, e.g., (foo: Option[String]).get.trim).
+        // Similarly, for `super.m`, typing `super` during erasure assigns the superclass. If `m`
+        // is defined in a trait, this is incorrect, we need to assign a type to `super` that conforms
+        // to the owner of `m`. Adding a cast (as in `adaptMember`) would not work, `super.asInstanceOf`
+        // is not a valid tree.
+        if (phase.erasedTypes && qual.isInstanceOf[Super]) {
+          //  See the comment in `preErase` why we use the attachment (scala/bug#7936)
+          val qualSym = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
+            case Some(a) => a.sym
+            case None => sym.owner
+          }
+          qual.setType(qualSym.tpe)
+        }
 
         if (!reallyExists(sym)) {
           def handleMissing: Tree = {

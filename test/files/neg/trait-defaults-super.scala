@@ -12,10 +12,3 @@ trait T extends java.lang.Iterable[String] {
   def iterator(): java.util.Iterator[String] = java.util.Collections.emptyList().iterator()
 }
 class C extends T
-object Test {
-  def main(args: Array[String]): Unit = {
-    val t: T = new C
-    t.spliterator
-    t.foo
-  }
-}

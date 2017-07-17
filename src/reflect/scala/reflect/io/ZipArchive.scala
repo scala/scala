@@ -91,8 +91,8 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     override def isDirectory = true
     override def iterator: Iterator[Entry] = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
-      if (directory) entries(name + "/")
-      else entries(name)
+      if (directory) entries.get(name + "/").orNull
+      else entries.get(name).orNull
     }
   }
 

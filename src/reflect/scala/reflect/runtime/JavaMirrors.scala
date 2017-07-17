@@ -552,7 +552,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     }
 
     def javaClass(path: String): jClass[_] =
-      jClass.forName(path, true, classLoader)
+      jClass.forName(path, false, classLoader)
 
     /** Does `path` correspond to a Java class with that fully qualified name in the current class loader? */
     def tryJavaClass(path: String): Option[jClass[_]] = (
@@ -1218,7 +1218,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         // suggested in https://github.com/scala/bug/issues/4023#issuecomment-292387855
         var ownerClazz = classToJava(clazz.owner.asClass)
         if (childOfTopLevelObject)
-          ownerClazz = jClass.forName(ownerClazz.getName stripSuffix "$", true, ownerClazz.getClassLoader)
+          ownerClazz = jClass.forName(ownerClazz.getName stripSuffix "$", false, ownerClazz.getClassLoader)
 
         val ownerChildren = ownerClazz.getDeclaredClasses
 

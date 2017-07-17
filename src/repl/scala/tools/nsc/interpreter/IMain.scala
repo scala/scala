@@ -1188,42 +1188,49 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     )
   }
 
-  override def kindCommandInternal(expr: String, verbose: Boolean): String = {
+  override def kindCommandInternal(typeString: String, verbose: Boolean): String = {
     import scala.util.control.Exception.catching
     val catcher = catching(classOf[MissingRequirementError],
       classOf[ScalaReflectionException])
-    def typeFromTypeString: Option[ClassSymbol] = catcher opt {
-      exprTyper.typeOfTypeString(expr).typeSymbol.asClass
-    }
-    def typeFromNameTreatedAsTerm: Option[ClassSymbol] = catcher opt {
-      val moduleClass = exprTyper.typeOfExpression(expr).typeSymbol
-      moduleClass.linkedClassOfClass.asClass
-    }
-    def typeFromFullName: Option[ClassSymbol] = catcher opt {
-      rootMirror.staticClass(expr)
-    }
-    def typeOfTerm: Option[TypeSymbol] = getterToResultTp(symbolOfLine(expr)).typeSymbol match {
-      case sym: TypeSymbol => Some(sym)
-      case _ => None
-    }
-    (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) map { sym =>
-      val (kind, tpe) = exitingTyper {
-        val tpe = sym.tpeHK
-        (inferKind(NoPrefix)(tpe, sym.owner), tpe)
-      }
 
-      def typeString(tpe: Type): String = {
-        tpe match {
-          case TypeRef(_, sym, _) => typeString(sym.info)
-          case RefinedType(_, _)  => tpe.toString
-          case _                  => tpe.typeSymbol.fullName
-        }
-      }
-      val msg = exitingTyper(typeString(tpe)) + "'s kind is " + kind.scalaNotation
-
+    def kindMsg(tpe: Type, kind: Kind, verbose: Boolean): String = {
+      val msg = exitingTyper(tpe.toString) + "'s kind is " + kind.scalaNotation
       if (verbose) msg +"\n"+ kind.starNotation +"\n"+ kind.description
       else msg
-    } getOrElse("")
+    }
+
+    val tpe: Type = exprTyper.typeOfTypeString(typeString)
+    (tpe match {
+      case NoType =>
+        Some(s"<console>: error: type $typeString was not found")
+      // This is a special handling for type lambdas
+      case TypeRef(pre, sym, args) if args contains WildcardType =>
+        catcher opt {
+          val kind = exitingTyper {
+            val sym = tpe.typeSymbol.asClass
+            val owner = sym.owner
+            val kind0 = intp.global.inferKind(NoPrefix)(TypeRef(pre, sym, Nil), owner)
+            kind0 match {
+              case TypeConKind(bounds, kargs) if args.size == kargs.size =>
+                TypeConKind(bounds, (args.toList zip kargs.toList) flatMap {
+                  case (WildcardType, karg) => List(karg)
+                  case _ => Nil
+                })
+              case k => k
+            }
+          }
+          kindMsg(tpe, kind, verbose)
+        }
+      case _ =>
+        catcher opt {
+          val kind = exitingTyper {
+            val sym = tpe.typeSymbol.asClass
+            val owner = sym.owner
+            intp.global.inferKind(NoPrefix)(tpe, owner)
+          }
+          kindMsg(tpe, kind, verbose)
+        }
+    }).getOrElse("")
   }
 
   /** TODO -

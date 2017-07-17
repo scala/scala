@@ -14,9 +14,7 @@
 
 # Specifying the Scala version:
 #  - To build a release (this enables publishing to sonatype):
-#    - Either specify SCALA_VER_BASE. You may also specify SCALA_VER_SUFFIX, the Scala version is SCALA_VER=$SCALA_VER_BASE$SCALA_VER_SUFFIX.
-#    - Or have the current HEAD tagged as v$base$suffix
-#    - To prevent staging on sonatype (for testing), set publishToSonatype to anything but "yes"
+#    - Specify SCALA_VER_BASE. You may also specify SCALA_VER_SUFFIX, the Scala version is SCALA_VER=$SCALA_VER_BASE$SCALA_VER_SUFFIX.
 #    - Note: After building a release, the jenkins job provides an updated versions.properties file as artifact.
 #      Put this file in the Scala repo and create a pull request, also update `baseVersion in Global` in build.sbt.
 #
@@ -285,31 +283,11 @@ determineScalaVersion() {
   if [ -z "$SCALA_VER_BASE" ]; then
     echo "No SCALA_VER_BASE specified."
 
-    scalaTag=$(git describe --tag --exact-match ||:)
-
-    if [ -z "$scalaTag" ]
-    then
-      echo "No tag found, running an integration build."
-      $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
-      parseScalaProperties "buildcharacter.properties"
-      SCALA_VER_BASE="$maven_version_base"
-      SCALA_VER_SUFFIX="$maven_version_suffix"
-
-      # TODO: publish nightly snapshot using this script - currently it's a separate jenkins job still running at EPFL.
-      publishToSonatype="no"
-    else
-      echo "HEAD is tagged as $scalaTag."
-      # borrowed from https://github.com/cloudflare/semver_bash/blob/master/semver.sh
-      local RE='v*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)' # don't change this to make it more accurate, it's not worth it
-      SCALA_VER_BASE="$(echo $scalaTag | sed -e "s#$RE#\1.\2.\3#")"
-      SCALA_VER_SUFFIX="$(echo $scalaTag | sed -e "s#$RE#\4#")"
-
-      if [ "$SCALA_VER_BASE" == "$scalaTag" ]; then
-        echo "Could not parse version $scalaTag"
-        exit 1
-      fi
-      publishToSonatype=${publishToSonatype-"yes"} # unless forced previously, publish
-    fi
+    $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
+    parseScalaProperties "buildcharacter.properties"
+    SCALA_VER_BASE="$maven_version_base"
+    SCALA_VER_SUFFIX="$maven_version_suffix"
+    publishToSonatype="no"
   else
     publishToSonatype=${publishToSonatype-"yes"} # unless forced previously, publish
   fi

@@ -41,4 +41,11 @@ class BitSetTest {
     val last = (bs ++ (0 to 128)).last  // Just needs not to throw
     assert(last == 128)
   }
+
+  @Test def t10399(): Unit = {
+    val bsFromEmptyBitMask = BitSet.fromBitMask(Array.empty[Long])
+    assert(bsFromEmptyBitMask.add(0))
+    val bsFromEmptyBitMaskNoCopy = BitSet.fromBitMaskNoCopy(Array.empty[Long])
+    assert(bsFromEmptyBitMaskNoCopy.add(0))
+  }
 }
