@@ -60,8 +60,6 @@ val timeBenchmark =
     .enablePlugins(JmhPlugin)
     .settings(commonSettings: _*)
     .settings(
-      // FIXME: does not compile with dotty
-      crossScalaVersions := List(scalaVersion.value),
       charts := Def.inputTaskDyn {
         val benchmarks = Def.spaceDelimited().parsed
         val targetDir = crossTarget.value

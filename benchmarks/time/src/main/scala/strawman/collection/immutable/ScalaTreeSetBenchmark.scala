@@ -57,7 +57,8 @@ class ScalaTreeSetBenchmark {
   }
 
   @Benchmark
-  def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
+  // Note: the implicit CanBuildFrom parameter is explicitly passed because Dotty finds ambiguous candidates
+  def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1)(scala.collection.immutable.TreeSet.newCanBuildFrom[Long]))
 
   @Benchmark
   def groupBy(bh: Blackhole): Unit = {
