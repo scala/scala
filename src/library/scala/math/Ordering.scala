@@ -122,6 +122,49 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
     def compare(x: U, y: U) = outer.compare(f(x), f(y))
   }
 
+  /** Creates an Ordering[T] whose compare function returns the
+    * result of this Ordering's compare function, if it is non-zero,
+    * or else the result of `other`s compare function.
+    *
+    * @example
+    * {{{
+    * case class Pair(a: Int, b: Int)
+    *
+    * val pairOrdering = Ordering.by[Pair, Int](_.a)
+    *                            .orElse(Ordering.by[Pair, Int](_.b))
+    * }}}
+    *
+    * @param other an Ordering to use if this Ordering returns zero
+    */
+  def orElse(other: Ordering[T]): Ordering[T] = (x, y) => {
+    val res1 = outer.compare(x, y)
+    if (res1 != 0) res1 else other.compare(x, y)
+  }
+
+  /** Given f, a function from T into S, creates an Ordering[T] whose compare
+    * function returns the result of this Ordering's compare function,
+    * if it is non-zero, or else a result equivalent to:
+    *
+    * {{{
+    * Ordering[S].compare(f(x), f(y))
+    * }}}
+    *
+    * This function is equivalent to passing the result of `Ordering.by(f)`
+    * to `orElse`.
+    *
+    * @example
+    * {{{
+    * case class Pair(a: Int, b: Int)
+    *
+    * val pairOrdering = Ordering.by[Pair, Int](_.a)
+    *                            .orElseBy[Int](_.b)
+    * }}}
+    */
+  def orElseBy[S](f: T => S)(implicit ord: Ordering[S]): Ordering[T] = (x, y) => {
+    val res1 = outer.compare(x, y)
+    if (res1 != 0) res1 else ord.compare(f(x), f(y))
+  }
+
   /** This inner class defines comparison operators available for `T`. */
   class Ops(lhs: T) {
     def <(rhs: T) = lt(lhs, rhs)
