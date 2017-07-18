@@ -33,7 +33,7 @@ import scala.{Any, Boolean, Int, NoSuchElementException, SerialVersionUID, Seria
 sealed class ListSet[A]
   extends Set[A]
     with SetOps[A, ListSet, ListSet[A]]
-    with StrictOptimizedIterableOps[A, ListSet[A]]
+    with StrictOptimizedIterableOps[A, ListSet, ListSet[A]]
     with Serializable {
 
   override def size: Int = 0

@@ -24,7 +24,7 @@ import java.lang.String
 final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), HashMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {
 
   def mapFactory = HashMap

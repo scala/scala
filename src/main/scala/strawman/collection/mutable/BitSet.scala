@@ -28,7 +28,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
-    with StrictOptimizedIterableOps[Int, BitSet]
+    with StrictOptimizedIterableOps[Int, Set, BitSet]
     with Serializable {
 
   def this(initSize: Int) = this(new Array[Long](math.max((initSize + 63) >> 6, 1)))

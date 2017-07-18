@@ -11,7 +11,7 @@ class ArrayOps[A](val xs: Array[A])
   extends AnyVal
     with IterableOnce[A]
     with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
-    with StrictOptimizedIterableOps[A, Array[A]]
+    with StrictOptimizedIterableOps[A, Seq, Array[A]]
     with ArrayLike[A] {
 
   protected[this] def coll = ArrayView(xs)

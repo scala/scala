@@ -12,7 +12,7 @@ import scala.{Any, Boolean, Int, NoSuchElementException, Nothing, UnsupportedOpe
 sealed trait List[+A]
   extends LinearSeq[A]
      with LinearSeqOps[A, List, List[A]]
-     with StrictOptimizedIterableOps[A, List[A]] {
+     with StrictOptimizedSeqOps[A, List, List[A]] {
 
   def iterableFactory = List
 

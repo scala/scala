@@ -31,7 +31,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
 sealed trait HashMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), HashMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}

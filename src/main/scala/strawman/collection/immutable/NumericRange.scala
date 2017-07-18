@@ -40,7 +40,7 @@ final class NumericRange[T](
 )
   extends IndexedSeq[T]
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
-    with StrictOptimizedIterableOps[T, IndexedSeq[T]]
+    with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable {
 
   def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
