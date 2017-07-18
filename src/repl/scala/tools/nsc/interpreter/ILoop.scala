@@ -41,10 +41,7 @@ import Completion._
  *  @author  Lex Spoon
  *  @version 1.2
  */
-class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
-                extends AnyRef
-                   with LoopCommands
-{
+class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extends LoopCommands {
   def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
   def this() = this(None, new JPrintWriter(Console.out, true))
 
@@ -56,6 +53,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   var intp: IMain = _
 
   private var globalFuture: Future[Boolean] = _
+
+  // ignore silent sbt errors on init
+  protected def isSbt: Boolean = false
 
   /** Print a welcome message! */
   def printWelcome(): Unit = {
@@ -1048,8 +1048,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           //for (rs <- runnerSettings if rs.execute.isSetByUser) intp.printResults = false
         }
         intp.initializeSynchronous()
-        globalFuture = Future successful true
-        if (intp.reporter.hasErrors) {
+        globalFuture = Future.successful(true)
+        if (intp.reporter.hasErrors && (!isSbt || intp.reporter.hasReportableErrors)) {
           echo("Interpreter encountered errors during initialization!")
           null
         } else {
@@ -1076,9 +1076,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         true
     }
   }
-
-  @deprecated("use `process` instead", "2.9.0")
-  def main(settings: Settings): Unit = process(settings) //used by sbt
 }
 
 object ILoop {

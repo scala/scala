@@ -131,7 +131,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     catch AbstractOrMissingHandler()
   }
   private val logScope = scala.sys.props contains "scala.repl.scope"
-  private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
+  private def scopelog(msg: => String) = if (logScope) Console.err.println(msg)
 
   // argument is a thunk to execute after init is done
   def initialize(postInitSignal: => Unit) {
@@ -374,24 +374,25 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     None
   }
 
-  private def updateReplScope(sym: Symbol, isDefined: Boolean) {
-    def log(what: String) {
+  private def updateReplScope(sym: Symbol, isDefined: Boolean): Unit = {
+    def log(what: String) = scopelog {
       val mark = if (sym.isType) "t " else "v "
       val name = exitingTyper(sym.nameString)
       val info = cleanTypeAfterTyper(sym)
       val defn = sym defStringSeenAs info
 
-      scopelog(f"[$mark$what%6s] $name%-25s $defn%s")
+      f"[$mark$what%6s] $name%-25s $defn%s"
     }
-    if (ObjectClass isSubClass sym.owner) return
-    // unlink previous
-    replScope lookupAll sym.name foreach { sym =>
-      log("unlink")
-      replScope unlink sym
+    if (!ObjectClass.isSubClass(sym.owner)) {
+      // unlink previous
+      replScope.lookupAll(sym.name) foreach { sym =>
+        log("unlink")
+        replScope unlink sym
+      }
+      val what = if (isDefined) "define" else "import"
+      log(what)
+      replScope enter sym
     }
-    val what = if (isDefined) "define" else "import"
-    log(what)
-    replScope enter sym
   }
 
   def recordRequest(req: Request) {
