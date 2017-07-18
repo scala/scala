@@ -147,6 +147,7 @@ private[process] trait ProcessImpl {
           throw err
         }
       runInterruptible {
+        source.join()
         val exit1 = first.exitValue()
         val exit2 = second.exitValue()
         // Since file redirection (e.g. #>) is implemented as a piped process,
