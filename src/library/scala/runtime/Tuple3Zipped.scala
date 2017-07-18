@@ -127,7 +127,10 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 }
 
 object Tuple3Zipped {
-  final class Ops[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
+
+  final class InvertOps[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
+
+    // Why 'invert'? This is a canonical 'transpose'.
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], El3, CC3[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
@@ -143,11 +146,11 @@ object Tuple3Zipped {
 
         buf.result()
       }
-
-    def zipped[El1, Repr1, El2, Repr2, El3, Repr3]
-      (implicit w1: T1 => TraversableLike[El1, Repr1],
-                w2: T2 => IterableLike[El2, Repr2],
-                w3: T3 => IterableLike[El3, Repr3]
-      ): Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3] = new Tuple3Zipped((x._1, x._2, x._3))
   }
+
+  final class ZippedOps[El1, Repr1, El2, Repr2, El3, Repr3]
+  (private val x: (TraversableLike[El1, Repr1], IterableLike[El2, Repr2], IterableLike[El3, Repr3])) extends AnyVal {
+    def zipped: Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3] = new Tuple3Zipped(x)
+  }
+
 }

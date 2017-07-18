@@ -9,6 +9,7 @@
 
 package scala
 
+import scala.collection.{ TraversableLike, IterableLike }
 
 /** A tuple of 3 elements; the canonical representation of a [[scala.Product3]].
  *
@@ -22,4 +23,14 @@ final case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + ")"
   
+}
+
+object Tuple3 {
+  implicit def tuple3ToInvertOps[T1, T2, T3](x: (T1, T2, T3)): runtime.Tuple3Zipped.InvertOps[T1, T2, T3] = new runtime.Tuple3Zipped.InvertOps(x)
+
+  implicit def tuple3ToZippedOps[T1, T2, T3, El1, Repr1, El2, Repr2, El3, Repr3](x: (T1, T2, T3))
+     (implicit w1: T1 => TraversableLike[El1, Repr1],
+               w2: T2 => IterableLike[El2, Repr2],
+               w3: T3 => IterableLike[El3, Repr3]
+     ): runtime.Tuple3Zipped.ZippedOps[El1, Repr1, El2, Repr2, El3, Repr3] = new runtime.Tuple3Zipped.ZippedOps(w1(x._1), w2(x._2), w3(x._3))
 }

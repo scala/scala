@@ -411,9 +411,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // views --------------------------------------------------------------
 
-  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
-  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
-
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
     case x: Array[AnyRef]  => refArrayOps[AnyRef](x)
     case x: Array[Boolean] => booleanArrayOps(x)
