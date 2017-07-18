@@ -1045,8 +1045,7 @@ trait Implicits {
                   if (sym.isPackageClass) sym.packageObject.typeOfThis
                   else singleType(pre, companionSymbolOf(sym, context))
                 val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
-                if (infos.nonEmpty)
-                  infoMap += (sym -> infos)
+                infoMap += (sym -> infos)
               }
               val bts = tp.baseTypeSeq
               var i = 1
@@ -1115,6 +1114,8 @@ trait Implicits {
 
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
+      val emptyInfos = infoMap.iterator.filter(_._2.isEmpty).map(_._1).toSeq
+      emptyInfos.foreach(infoMap.remove)
       if (infoMap.nonEmpty)
         printTyping(tree, infoMap.size + " implicits in companion scope")
 
