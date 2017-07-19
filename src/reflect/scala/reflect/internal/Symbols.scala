@@ -3723,6 +3723,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     case _           => true
   }
 
+  private[scala] final def argsDependOnPrefix(sym: Symbol): Boolean = {
+    val tt = sym.owner.thisType
+
+    @annotation.tailrec
+    def loop(mt: Type): Boolean = {
+      mt match {
+        case MethodType(params, restpe) => params.exists(_.info.exists(_ == tt)) || loop(restpe)
+        case PolyType(tparams, restpe) => loop(restpe)
+        case _ => false
+      }
+    }
+
+    tt.isInstanceOf[SingletonType] && loop(sym.info)
+  }
+
 // -------------- Completion --------------------------------------------------------
 
   // is used to differentiate levels of thread-safety in `Symbol.isThreadsafe`

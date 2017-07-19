@@ -182,4 +182,6 @@ trait StdAttachments {
    * track of other adapted trees.
    */
   case class OriginalTreeAttachment(original: Tree)
+
+  case class StabilizingDefinition(vdef: ValDef)
 }
