@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Any, Boolean, IndexOutOfBoundsException, Int}
+import scala.{Any, Boolean, IndexOutOfBoundsException, Int, throws}
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.
@@ -57,6 +57,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
   /** `apply` is defined in terms of `drop`, which is in turn defined in
     *  terms of `tail`.
     */
+  @throws[IndexOutOfBoundsException]
   override def apply(n: Int): A = {
     if (n < 0) throw new IndexOutOfBoundsException(n.toString)
     val skipped = drop(n)

@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Any, Array, Boolean, Equals, `inline`, Int}
+import scala.{Any, Array, Boolean, Equals, Int, NoSuchElementException, `inline`, throws}
 import scala.Predef.intWrapper
 import scala.util.hashing.MurmurHash3
 
@@ -81,6 +81,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     idxs(len) = elms.size
 
     def hasNext = _hasNext
+    @throws[NoSuchElementException]
     def next(): C = {
       if (!hasNext) Iterator.empty.next()
 

@@ -3,7 +3,7 @@ package collection.immutable
 
 import collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
-import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized}
+import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws}
 import scala.Predef.augmentString
 import java.lang.String
 
@@ -150,6 +150,7 @@ final class Range(
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
   private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
 
+  @throws[IndexOutOfBoundsException]
   def apply(idx: Int): Int = {
     validateMaxLength()
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
@@ -453,7 +454,9 @@ private class RangeIterator(
   private var _hasNext: Boolean = !initiallyEmpty
   private var _next: Int = start
   def hasNext: Boolean = _hasNext
+  @throws[NoSuchElementException]
   def next(): Int = {
+    if (!_hasNext) Iterator.empty.next()
     val value = _next
     _hasNext = value != lastElement
     _next = value + step

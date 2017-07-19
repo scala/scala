@@ -2,7 +2,7 @@ package strawman.collection
 package mutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.{Any, Int, Unit, Boolean}
+import scala.{Any, Boolean, Int, Unit, throws}
 import scala.Int._
 import strawman.collection
 import strawman.collection.immutable.{List, Nil, ::}
@@ -29,6 +29,7 @@ class ListBuffer[A]
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
 
+  @throws[IndexOutOfBoundsException]
   def apply(i: Int) = first.apply(i)
 
   def length = len

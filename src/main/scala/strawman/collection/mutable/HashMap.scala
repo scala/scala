@@ -3,7 +3,7 @@ package collection.mutable
 
 import strawman.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 
-import scala.{Boolean, Int, None, Option, SerialVersionUID, Serializable, Some, Unit}
+import scala.{Boolean, Int, None, NoSuchElementException, Option, SerialVersionUID, Serializable, Some, Unit, throws}
 import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
@@ -68,6 +68,7 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
 
   override def contains(key: K): Boolean = table.findEntry(key) != null
 
+  @throws[NoSuchElementException]
   override def apply(key: K): V = {
     val e = table.findEntry(key)
     if (e eq null) default(key)

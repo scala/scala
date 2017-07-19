@@ -4,7 +4,7 @@ package collection.mutable
 import scala.annotation.tailrec
 import collection.Iterator
 
-import scala.{Boolean, `inline`, Int, None, NoSuchElementException, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit}
+import scala.{Boolean, `inline`, Int, None, NoSuchElementException, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit, throws}
 import java.lang.String
 
 /**
@@ -481,6 +481,7 @@ private[collection] object RedBlackTree {
 
     def hasNext: Boolean = nextNode ne null
 
+    @throws[NoSuchElementException]
     def next(): R = nextNode match {
       case null => throw new NoSuchElementException("next on empty iterator")
       case node =>

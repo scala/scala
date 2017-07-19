@@ -1,7 +1,7 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, math, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit}
+import scala.{Any, Array, Boolean, Int, math, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit, throws}
 import scala.Predef.{intWrapper, require}
 import strawman.collection.mutable.ArrayBuffer
 
@@ -13,6 +13,7 @@ import strawman.collection.mutable.ArrayBuffer
   */
 trait Iterator[+A] extends IterableOnce[A] { self =>
   def hasNext: Boolean
+  @throws[NoSuchElementException]
   def next(): A
   def iterator() = this
 
@@ -190,6 +191,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     }
 
     def hasNext = filled || fill()
+    @throws[NoSuchElementException]
     def next() = {
       if (!filled)
         fill()

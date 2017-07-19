@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Array, Char, Int, AnyVal}
+import scala.{Array, Char, Int, StringIndexOutOfBoundsException, AnyVal, throws}
 import scala.Predef.String
 import strawman.collection.mutable.StringBuilder
 
@@ -28,6 +28,8 @@ class StringOps(val s: String)
   protected[this] def newSpecificBuilder() = new StringBuilder
 
   def length = s.length
+
+  @throws[StringIndexOutOfBoundsException]
   def apply(i: Int) = s.charAt(i)
 
   override def knownSize = s.length
@@ -69,6 +71,7 @@ class StringOps(val s: String)
 
 case class StringView(s: String) extends IndexedView[Char] {
   def length = s.length
+  @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
   override def className = "StringView"
 }

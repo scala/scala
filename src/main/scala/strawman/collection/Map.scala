@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Some, `inline`}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Some, `inline`, throws}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
@@ -56,6 +56,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     *  @return     the value associated with the given key, or the result of the
     *              map's `default` method, if none exists.
     */
+  @throws[NoSuchElementException]
   def apply(key: K): V = get(key) match {
     case None => default(key)
     case Some(value) => value
@@ -69,6 +70,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     *  @param key the given key value for which a binding is missing.
     *  @throws NoSuchElementException
     */
+  @throws[NoSuchElementException]
   def default(key: K): V =
     throw new NoSuchElementException("key not found: " + key)
 

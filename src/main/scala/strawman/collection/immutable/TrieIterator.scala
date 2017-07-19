@@ -10,7 +10,7 @@ import strawman.collection.mutable.ArrayBuffer
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.annotation.tailrec
-import scala.{AnyRef, Array, Boolean, Int}
+import scala.{AnyRef, Array, Boolean, Int, NoSuchElementException, throws}
 import scala.Predef.intWrapper
 
 /** Abandons any pretense of type safety for speed.  You can't say I
@@ -91,6 +91,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     }
 
   def hasNext = (subIter ne null) || depth >= 0
+  @throws[NoSuchElementException]
   def next(): T = {
     if (subIter ne null) {
       val el = subIter.next()

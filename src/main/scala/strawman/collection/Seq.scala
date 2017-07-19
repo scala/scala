@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, Ordering, Unit, math}
+import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, NoSuchElementException, Ordering, Unit, math, throws}
 import scala.Predef.intWrapper
 import java.lang.Object
 
@@ -228,6 +228,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     private var _hasNext = true
 
     def hasNext = _hasNext
+    @throws[NoSuchElementException]
     def next(): C = {
       if (!hasNext)
         Iterator.empty.next()

@@ -14,7 +14,7 @@ import collection.Iterator
 import scala.annotation.tailrec
 import scala.annotation.meta.getter
 
-import scala.{Array, Boolean, `inline`, Int, None, NoSuchElementException, Option, Ordering, Serializable, Some, sys, Unit}
+import scala.{Array, Boolean, Int, None, NoSuchElementException, Option, Ordering, Serializable, Some, sys, Unit, `inline`, throws}
 import java.lang.{Integer, String}
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
@@ -472,6 +472,7 @@ private[collection] object RedBlackTree {
 
     override def hasNext: Boolean = lookahead ne null
 
+    @throws[NoSuchElementException]
     override def next(): R = lookahead match {
       case null =>
         throw new NoSuchElementException("next on empty iterator")
