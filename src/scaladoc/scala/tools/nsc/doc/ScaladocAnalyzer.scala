@@ -10,7 +10,7 @@ import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import typechecker.Analyzer
 import scala.reflect.internal.Chars._
 import scala.reflect.internal.util.{ BatchSourceFile, Position }
-import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo, LinkToExternal }
+import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo }
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -136,7 +136,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None
       override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption.orNull
       override def toString(link: LinkTo): String = "No link"
-      override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = None
+      override def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = None
       override def warnNoLink: Boolean = false
     }
 

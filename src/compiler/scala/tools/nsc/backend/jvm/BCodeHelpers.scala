@@ -749,7 +749,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     def getGenericSignature(sym: Symbol, owner: Symbol, memberTpe: Type): String = {
       if (!needsGenericSignature(sym)) { return null }
 
-      val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
+      // Make sure to build (and cache) a ClassBType for every type that is referenced in
+      // a generic signature. Otherwise, looking up the type later (when collecting nested
+      // classes, or when computing stack map frames) might fail.
+      def enterReferencedClass(sym: Symbol): Unit = enteringJVM(classBTypeFromSymbol(sym))
+
+      val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe, enterReferencedClass)
       if (jsOpt.isEmpty) { return null }
 
       val sig = jsOpt.get

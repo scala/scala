@@ -432,6 +432,7 @@ div#content-container > div#subpackage-spacer {
   margin: 1.1rem 0.5rem 0 0.5em;
   font-size: 0.8em;
   min-width: 8rem;
+  max-width: 16rem;
 }
 
 div#packages > h1 {

@@ -83,8 +83,8 @@ trait ModelFactoryTypeSupport {
               case Some(bTpl) if owner == bSym.owner =>
                 // (0) the owner's class is linked AND has a template - lovely
                 bTpl match {
-                  case dtpl: DocTemplateEntity => new LinkToTpl(dtpl)
-                  case _ => new Tooltip(bTpl.qualifiedName)
+                  case dtpl: DocTemplateEntity => LinkToTpl(dtpl)
+                  case _ => Tooltip(bTpl.qualifiedName)
                 }
               case _ =>
                 val oTpl = findTemplateMaybe(owner)

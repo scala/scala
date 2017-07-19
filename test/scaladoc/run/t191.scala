@@ -1,6 +1,7 @@
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.base._
 import scala.tools.nsc.doc.base.comment._
+import scala.tools.nsc.doc.html.Page
 import scala.tools.partest.ScaladocModelTest
 import java.net.{URI, URL}
 import java.io.File
@@ -49,7 +50,7 @@ object Test extends ScaladocModelTest {
 
     def check(memberDef: Def, expected: Int) {
       val externals = memberDef.valueParams(0)(0).resultType.refEntity collect {
-        case (_, (LinkToExternal(name, url), _)) => assert(url.contains(scalaURL)); name
+        case (_, (LinkToExternalTpl(name, url, _), _)) => assert(url.contains(scalaURL)); name
       }
       assert(externals.size == expected)
     }
@@ -60,18 +61,26 @@ object Test extends ScaladocModelTest {
     check(test._method("baz"), 0)
 
     val expectedUrls = collection.mutable.Set[String](
-                         "scala.collection.Map",
-                         "scala.collection.immutable.::",
-                         "scala.Int",
-                         "scala.Predef$",
-                         "scala.Int@toLong:Long",
-                         "scala.package",
-                         "scala.package@AbstractMethodError=AbstractMethodError",
-                         "scala.Predef$@String=String"
-                       ).map(scalaURL + "/index.html#" + _)
+                         "scala/collection/Map",
+                         "scala/collection/immutable/$colon$colon",
+                         "scala/Int",
+                         "scala/Predef$",
+                         "scala/Int#toLong:Long",
+                         "scala/index",
+                         "scala/index#AbstractMethodError=AbstractMethodError",
+                         "scala/Predef$#String=String"
+                      ).map( _.split("#").toSeq ).map({
+                        case Seq(one)      => scalaURL + "/" + one + ".html"
+                        case Seq(one, two) => scalaURL + "/" + one + ".html#" + two
+                      })
 
     def isExpectedExternalLink(l: EntityLink) = l.link match {
-      case LinkToExternal(name, url) => assert(expectedUrls contains url, url); true
+      case LinkToExternalTpl(name, baseUrlString, tpl: TemplateEntity) =>
+        val baseUrl = new URI(Page.makeUrl(baseUrlString, Page.templateToPath(tpl)))
+        val url = if (name.isEmpty) baseUrl
+                  else new URI(baseUrl.getScheme, baseUrl.getSchemeSpecificPart, name)
+        assert(expectedUrls contains url.toString, url.toString + " " + expectedUrls)
+        true
       case _ => false
     }
 

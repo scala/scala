@@ -1,1 +1,1 @@
--opt:l:project
+-opt:l:inline -opt-inline-from:**

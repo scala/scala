@@ -262,7 +262,21 @@ trait Implicits {
 
   /** A class which is used to track pending implicits to prevent infinite implicit searches.
    */
-  case class OpenImplicit(info: ImplicitInfo, pt: Type, tree: Tree)
+  case class OpenImplicit(info: ImplicitInfo, pt: Type, tree: Tree) {
+    // JZ: should be a case class parameter, but I have reason to believe macros/plugins peer into OpenImplicit
+    // so I'm avoiding a signature change
+    def isView: Boolean = _isView
+    private def isView_=(value: Boolean): Unit = _isView = value
+
+    private[this] var _isView: Boolean = false
+  }
+  object OpenImplicit {
+    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean): OpenImplicit = {
+      val result = new OpenImplicit(info, pt, tree)
+      result.isView = isView
+      result
+    }
+  }
 
   /** A sentinel indicating no implicit was found */
   val NoImplicitInfo = new ImplicitInfo(null, NoType, NoSymbol) {
@@ -468,24 +482,27 @@ trait Implicits {
       // otherwise, the macro writer could check `c.openMacros` and `c.openImplicits` and do `c.abort` when expansions are deemed to be divergent
       // upon receiving `c.abort` the typechecker will decide that the corresponding implicit search has failed
       // which will fail the entire stack of implicit searches, producing a nice error message provided by the programmer
-      (context.openImplicits find { case OpenImplicit(info, tp, tree1) => !info.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)}) match {
-         case Some(pending) =>
-           //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
-           DivergentSearchFailure
-         case None =>
-           try {
-             context.openImplicits = OpenImplicit(info, pt, tree) :: context.openImplicits
-             // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
-             val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
-             if (result.isDivergent) {
-               //println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
-               if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
-                 DivergingImplicitExpansionError(tree, pt, info.sym)(context)
-             }
-             result
-           } finally {
-             context.openImplicits = context.openImplicits.tail
+      val existsDominatedImplicit = tree != EmptyTree && context.openImplicits.exists {
+        case OpenImplicit(nfo, tp, tree1) => !nfo.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)
+      }
+
+        if(existsDominatedImplicit) {
+          //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
+          DivergentSearchFailure
+        } else {
+         try {
+           context.openImplicits = OpenImplicit(info, pt, tree, isView) :: context.openImplicits
+           // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
+           val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
+           if (result.isDivergent) {
+             //println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
+             if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
+               DivergingImplicitExpansionError(tree, pt, info.sym)(context)
            }
+           result
+         } finally {
+           context.openImplicits = context.openImplicits.tail
+         }
        }
     }
 

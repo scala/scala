@@ -21,32 +21,29 @@ import scala.tools.nsc.util.ClassRepresentation
  */
 case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def findClassFile(className: String): Option[AbstractFile] = {
-    @tailrec
-    def find(aggregates: Seq[ClassPath]): Option[AbstractFile] =
-      if (aggregates.nonEmpty) {
-        val classFile = aggregates.head.findClassFile(className)
-        if (classFile.isDefined) classFile
-        else find(aggregates.tail)
-      } else None
-
-    find(aggregates)
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    aggregatesForPackage(pkg).iterator.map(_.findClassFile(className)).collectFirst {
+      case Some(x) => x
+    }
+  }
+  private[this] val packageIndex: collection.mutable.Map[String, Seq[ClassPath]] = collection.mutable.Map()
+  private def aggregatesForPackage(pkg: String): Seq[ClassPath] = packageIndex.synchronized {
+    packageIndex.getOrElseUpdate(pkg, aggregates.filter(_.hasPackage(pkg)))
   }
 
+  // This method is performance sensitive as it is used by SBT's ExtractDependencies phase.
   override def findClass(className: String): Option[ClassRepresentation] = {
-    @tailrec
-    def findEntry(aggregates: Seq[ClassPath], isSource: Boolean): Option[ClassRepresentation] =
-      if (aggregates.nonEmpty) {
-        val entry = aggregates.head.findClass(className) match {
-          case s @ Some(_: SourceFileEntry) if isSource => s
-          case s @ Some(_: ClassFileEntry) if !isSource => s
-          case _ => None
-        }
-        if (entry.isDefined) entry
-        else findEntry(aggregates.tail, isSource)
-      } else None
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
-    val classEntry = findEntry(aggregates, isSource = false)
-    val sourceEntry = findEntry(aggregates, isSource = true)
+    def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
+      aggregatesForPackage(pkg).iterator.map(_.findClass(className)).collectFirst {
+        case Some(s: SourceFileEntry) if isSource => s
+        case Some(s: ClassFileEntry) if !isSource => s
+      }
+    }
+
+    val classEntry = findEntry(isSource = false)
+    val sourceEntry = findEntry(isSource = true)
 
     (classEntry, sourceEntry) match {
       case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
@@ -72,13 +69,14 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] =
     getDistinctEntries(_.sources(inPackage))
 
+  override private[nsc] def hasPackage(pkg: String) = aggregates.exists(_.hasPackage(pkg))
   override private[nsc] def list(inPackage: String): ClassPathEntries = {
     val (packages, classesAndSources) = aggregates.map { cp =>
       try {
         cp.list(inPackage)
       } catch {
         case ex: java.io.IOException =>
-          val e = new FatalError(ex.getMessage)
+          val e = FatalError(ex.getMessage)
           e.initCause(ex)
           throw e
       }

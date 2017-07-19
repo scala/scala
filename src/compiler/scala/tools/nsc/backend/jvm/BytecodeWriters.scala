@@ -124,7 +124,7 @@ trait BytecodeWriters {
       super.writeClass(label, jclassName, jclassBytes, outfile)
 
       val segments = jclassName.split("[./]")
-      val asmpFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "asmp" toFile;
+      val asmpFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "asmp" toFile
 
       asmpFile.parent.createDirectory()
       emitAsmp(jclassBytes, asmpFile)

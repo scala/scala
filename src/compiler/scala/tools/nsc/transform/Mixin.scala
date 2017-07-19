@@ -218,13 +218,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
             if (isMemberOfClazz) {
               def genForwarder(required: Boolean): Unit = {
                 val owner = member.owner
-                if (owner.isJavaDefined && owner.isInterface && !clazz.parentSymbols.contains(owner)) {
+                val isJavaInterface = owner.isJavaDefined && owner.isInterface
+                if (isJavaInterface && !clazz.parentSymbols.contains(owner)) {
                   if (required) {
                     val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
                     reporter.error(clazz.pos, text)
                   }
-                } else
+                } else {
+                  if (isJavaInterface)
+                    erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += owner
                   cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+                }
               }
 
               // `member` is a concrete method defined in `mixinClass`, which is a base class of
@@ -291,9 +295,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               reporter.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
                 mixinMember.alias, mixinClass))
             case alias1 =>
-              if (alias1.owner.isJavaDefined && alias1.owner.isInterface && !clazz.parentSymbols.contains(alias1.owner)) {
-                val suggestedParent = exitingTyper(clazz.info.baseType(alias1.owner))
-                reporter.error(clazz.pos, s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $suggestedParent is directly extended by $clazz.")
+              if (alias1.owner.isJavaDefined && alias1.owner.isInterface) {
+                if (!clazz.parentSymbols.contains(alias1.owner)) {
+                  val suggestedParent = exitingTyper(clazz.info.baseType(alias1.owner))
+                  reporter.error(clazz.pos, s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $suggestedParent is directly extended by $clazz.")
+                } else
+                  erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += alias1.owner
               }
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }

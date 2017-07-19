@@ -353,7 +353,7 @@ abstract class RefChecks extends Transform {
         }
         def emitOverrideError(fullmsg: String) {
           if (member.owner == clazz) reporter.error(member.pos, fullmsg)
-          else mixinOverrideErrors += new MixinOverrideError(member, fullmsg)
+          else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
         }
 
         def overrideError(msg: String) {

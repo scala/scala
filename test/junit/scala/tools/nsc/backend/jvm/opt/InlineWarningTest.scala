@@ -11,12 +11,12 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlineWarningTest extends BytecodeTesting {
-  def optCp = "-opt:l:classpath"
-  override def compilerArgs = s"$optCp -opt-warnings"
+  def optInline = "-opt:l:inline -opt-inline-from:**"
+  override def compilerArgs = s"$optInline -opt-warnings"
 
   import compiler._
 
-  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = s"$optCp -opt-warnings:_"))
+  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = s"$optInline -opt-warnings:_"))
 
   @Test
   def nonFinal(): Unit = {
@@ -87,10 +87,10 @@ class InlineWarningTest extends BytecodeTesting {
     assert(c == 1, c)
 
     // no warnings here
-    newCompiler(extraArgs = s"$optCp -opt-warnings:none").compileToBytes(scalaCode, List((javaCode, "A.java")))
+    newCompiler(extraArgs = s"$optInline -opt-warnings:none").compileToBytes(scalaCode, List((javaCode, "A.java")))
 
     c = 0
-    newCompiler(extraArgs = s"$optCp -opt-warnings:no-inline-mixed").compileToBytes(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
+    newCompiler(extraArgs = s"$optInline -opt-warnings:no-inline-mixed").compileToBytes(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
 

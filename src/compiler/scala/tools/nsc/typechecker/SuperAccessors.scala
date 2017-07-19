@@ -141,14 +141,17 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           reporter.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'")
-      } else if (mix == tpnme.EMPTY && !sym.owner.isTrait){
-        // scala/bug#4989 Check if an intermediate class between `clazz` and `sym.owner` redeclares the method as abstract.
-        val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
-        intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
-          absSym =>
-            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
-        }
       } else {
+        val owner = sym.owner
+        if (mix == tpnme.EMPTY && !owner.isTrait) {
+          // scala/bug#4989 Check if an intermediate class between `clazz` and `owner` redeclares the method as abstract.
+          val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != owner)
+          intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
+            absSym =>
+              reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
+          }
+        }
+
         // SD-143: a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
         //   - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
         //     would select an overriding method in the direct superclass, rather than A.m.
@@ -161,13 +164,17 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           else if (member.overridingSymbol(subclass) != NoSymbol) true
           else hasClassOverride(member, subclass.superClass)
         }
-        val owner = sym.owner
         if (mix != tpnme.EMPTY && !owner.isTrait && owner != clazz.superClass && hasClassOverride(sym, clazz.superClass)) {
           reporter.error(sel.pos,
             s"cannot emit super call: the selected $sym is declared in $owner, which is not the direct superclass of $clazz.\n" +
             s"An unqualified super call (super.${sym.name}) would be allowed.")
-        } else if (owner.isInterface && owner.isJavaDefined && !clazz.parentSymbols.contains(owner)) {
-          reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
+        } else if (owner.isInterface && owner.isJavaDefined) {
+          // There is no test left for this warning, as I have been unable to come up with an example that would trigger it.
+          // For a `super.m` selection, there must be a direct parent from which `m` can be selected. This parent will be used
+          // as receiver in the invokespecial call.
+          val receiverInBytecode = erasure.accessibleOwnerOrParentDefiningMember(sym, sup.tpe.typeSymbol.parentSymbols, localTyper.context).getOrElse(sym.owner)
+          if (!clazz.parentSymbols.contains(receiverInBytecode))
+            reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }
 

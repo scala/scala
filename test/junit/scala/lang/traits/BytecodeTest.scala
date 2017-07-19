@@ -273,9 +273,9 @@ class BytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val err = "unable to emit super call unless interface A (which declares method m) is directly extended by class C"
-    val cls = compileClasses(code, jCode, allowMessage = _.msg contains err)
-    assert(cls.isEmpty, cls.map(_.name))
+    val List(b, c, t) = compileClasses(code, jCode)
+    val ins = getInstructions(c, "m")
+    assert(ins contains Invoke(INVOKESPECIAL, "T", "m", "()I", true), ins.stringLines)
   }
 
   @Test
@@ -299,6 +299,21 @@ class BytecodeTest extends BytecodeTesting {
     assert(t2 contains invStat, t2.stringLines)
     val t3 = getInstructions(c, "t3")
     assert(t3 contains invStat, t3.stringLines)
+  }
+
+  @Test
+  def sd143d(): Unit = {
+    val jCode = List("interface T { default int f() { return 1; } }" -> "T.java")
+    val code =
+      """trait U1 extends T
+        |trait U2 extends T
+        |class C extends U1 with U2 { def t = super.f }
+      """.stripMargin
+    val List(c, u1, u2) = compileClasses(code, jCode)
+    val t = getInstructions(c, "t")
+    // super call to T.f in C is allowed even if T is not a direct parent, the compiler
+    // picks U1 as receiver in the invokespecial descriptor.
+    assert(t contains Invoke(INVOKESPECIAL, "U1", "f", "()I", true), t.stringLines)
   }
 
   @Test
@@ -374,9 +389,36 @@ class BytecodeTest extends BytecodeTesting {
       """trait U extends T
         |class C extends U { def t = super.f }
       """.stripMargin
-    val msg = "unable to emit super call unless interface T (which declares method f) is directly extended by class C"
-    val cls = compileClasses(code, jCode, allowMessage = _.msg contains msg)
-    assertEquals(cls, Nil)
+    val List(c, u) = compileClasses(code, jCode)
+    val ins = getMethod(c, "t").instructions
+    assert(ins contains Invoke(INVOKESPECIAL, "U", "f", "()I", true), ins.stringLines)
+  }
+
+  @Test
+  def noMinimizeJavaInterfaces(): Unit = {
+    val jCode = List("interface T { default int f() { return 1; } }" -> "T.java")
+    val code =
+      """trait U extends T { override def f() = 2 }
+        |class C extends T with U { def t = super[T].f }
+      """.stripMargin
+    val List(c, u) = compileClasses(code, jCode)
+    assertEquals(c.interfaces.asScala.toList.sorted, List("T", "U"))
+    val ins = getMethod(c, "t").instructions
+    assert(ins contains Invoke(INVOKESPECIAL, "T", "f", "()I", true), ins.stringLines)
+  }
+
+  @Test
+  def noMinimizeScalaTraitAccessingJavaMember(): Unit = {
+    val jCode = List("interface A { default int f() { return 1; } }" -> "A.java")
+    val code =
+      """trait U extends A
+        |trait V extends U
+        |class C extends U with V { def t = super.f() }
+      """.stripMargin
+    val List(c, u, v) = compileClasses(code, jCode)
+    assertEquals(c.interfaces.asScala.toList.sorted, List("U", "V"))
+    val ins = getMethod(c, "t").instructions
+    assert(ins contains Invoke(INVOKESPECIAL, "U", "f", "()I", true), ins.stringLines)
   }
 
   def ifs(c: ClassNode, expected: List[String]) = assertEquals(expected, c.interfaces.asScala.toList.sorted)
@@ -558,6 +600,22 @@ class BytecodeTest extends BytecodeTesting {
     ifs(c3, List("W3"))
     invSt(getMethod(c3, "W3$$super$f"), "U2")
     invSt(getMethod(c3, "f"), "W3")
+  }
+
+  @Test
+  def superReceiver(): Unit = {
+    val code =
+      """trait A {
+        |  def m = 1
+        |}
+        |trait B extends A
+        |class SK
+        |class C extends SK with B {
+        |  override def m = super.m + 1
+        |}
+      """.stripMargin
+    val List(a, b, c, sk) = compileClasses(code)
+    assertInvoke(getMethod(c, "m"), "A", "m$")
   }
 }
 

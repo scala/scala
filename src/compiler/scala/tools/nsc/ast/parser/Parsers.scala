@@ -807,10 +807,11 @@ self =>
     }
 
     private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
-      if (elems.lengthCompare(definitions.MaxTupleArity) > 0) {
-        syntaxError(offset, "too many elements for tuple: "+elems.length+", allowed: "+definitions.MaxTupleArity, skipIt = false)
+      elems.lengthCompare(definitions.MaxTupleArity) <= 0 || {
+        val msg = s"too many elements for tuple: ${elems.length}, allowed: ${definitions.MaxTupleArity}"
+        syntaxError(offset, msg, skipIt = false)
         false
-      } else true
+      }
 
     /** Strip the artificial `Parens` node to create a tuple term Tree. */
     def stripParens(t: Tree) = t match {
@@ -820,11 +821,16 @@ self =>
 
     /** Create tree representing (unencoded) binary operation expression or pattern. */
     def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
-      require(isExpr || targs.isEmpty || targs.exists(_.isErroneous), s"Incompatible args to makeBinop: !isExpr but targs=$targs")
+      require(isExpr || targs.isEmpty || targs.exists(_.isErroneous),
+        s"Incompatible args to makeBinop: !isExpr but targs=$targs")
 
       def mkSelection(t: Tree) = {
-        def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
-        if (targs.isEmpty) sel else atPos(left.pos)(TypeApply(sel, targs))
+        val pos = opPos union t.pos
+        val sel = atPos(pos)(Select(stripParens(t), op.encode))
+        if (targs.isEmpty) sel
+        else atPos(pos union targs.last.pos withPoint pos.point) {
+          TypeApply(sel, targs)
+        }
       }
       def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
       val arguments = right match {
