@@ -519,7 +519,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   def dropRight(n: Int): C = {
     val b = newSpecificBuilder()
-    if (n >= 0) b.sizeHint(coll, -n)
+    if (n >= 0) b.sizeHint(coll, delta = -n)
     val lead = coll.iterator() drop n
     val it = coll.iterator()
     while (lead.hasNext) {

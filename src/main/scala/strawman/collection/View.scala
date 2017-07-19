@@ -273,9 +273,8 @@ object IndexedView {
   }
 
   class TakeRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
-    private val normN = n max 0
-    private val delta = underlying.length - normN
-    def length = underlying.length min normN
+    private[this] val delta = (underlying.length - (n max 0)) max 0
+    def length = underlying.length - delta
     def apply(i: Int) = underlying.apply(i + delta)
   }
 
@@ -287,8 +286,8 @@ object IndexedView {
   }
 
   class DropRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
-    private val normN = n max 0
-    def length = (underlying.length - normN) max 0
+    private[this] val len = (underlying.length - (n max 0)) max 0
+    def length = len
     def apply(i: Int) = underlying.apply(i)
   }
 
