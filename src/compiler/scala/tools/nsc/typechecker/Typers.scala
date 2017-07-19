@@ -3380,8 +3380,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   val argPt =
                     if (argPtAlts.isEmpty) WildcardType
                     else if (treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
-                    else if (treeInfo.isPartialFunctionMissingParamType(tree)) partialFunctionProto(argPtAlts)
-                    else WildcardType
+                    else if (treeInfo.isPartialFunctionMissingParamType(tree)) {
+                      if (argPtAlts.exists(ts => isPartialFunctionType(ts._1))) partialFunctionProto(argPtAlts)
+                      else functionProto(argPtAlts)
+                    } else WildcardType
 
                   val argTyped = typedArg(tree, amode, BYVALmode, argPt)
                   (argTyped, argTyped.tpe.deconst)
