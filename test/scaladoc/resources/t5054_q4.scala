@@ -1,4 +1,4 @@
-abstract class SI_5054_q4 {
+abstract class t5054_q4 {
   /**
     * A simple comment
     * 
