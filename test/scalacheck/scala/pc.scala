@@ -38,9 +38,21 @@ class ParCollProperties extends Properties("Parallel collections") {
   val ectasks = new collection.parallel.ExecutionContextTaskSupport(ec)
   includeAllTestsWith(ectasks, "ectasks")
 
-  // no post test hooks in scalacheck, so cannot do:
-  // ec.shutdown()
+  // no post test hooks in scalacheck, so the best we can do is:
+  TestCleanup.register(ec.shutdown())
+}
 
+
+object TestCleanup extends Runnable {
+  private val cleanups = scala.collection.mutable.Buffer[() => Unit]()
+  def register(action: => Any) = synchronized {
+    cleanups += {() => action}
+  }
+  // called by the SBT build. Scalacheck doesn't have any native support for cleanup
+  override def run(): Unit = {
+    cleanups.foreach(_.apply())
+    cleanups.clear()
+  }
 }
 
 /*
