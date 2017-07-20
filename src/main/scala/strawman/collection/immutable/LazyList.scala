@@ -8,9 +8,8 @@ import scala.{Any, Int, None, Nothing, Option, Some, StringContext}
 import scala.annotation.tailrec
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
-  extends Seq[A]
-     with LinearSeq[A]
-     with SeqOps[A, LazyList, LazyList[A]] {
+  extends LinearSeq[A]
+     with LinearSeqOps[A, LazyList, LazyList[A]] {
 
   private[this] var evaluated = false
   private[this] var result: LazyList.Evaluated[A] = _
