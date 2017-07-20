@@ -1,12 +1,12 @@
 package strawman.collection
 
-import scala.{Ordering, `inline`}
+import scala.{Boolean, Ordering, `inline`}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
 trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]]
 
-trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
+trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSet[A]]
   extends SetOps[A, Set, C]
      with SortedOps[A, CC, C] {
 
@@ -14,6 +14,9 @@ trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
 
   def firstKey: A = head
   def lastKey: A = last
+
+  override def withFilter(p: A => Boolean): SortedWithFilter[A, Set, CC] =
+    new SortedWithFilter(View.Filter(coll, p), iterableFactory, sortedIterableFactory)
 
   /** Map */
   def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(View.Map(coll, f))

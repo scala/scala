@@ -12,7 +12,7 @@ trait SortedSet[A]
     with collection.SortedSet[A]
     with SortedSetOps[A, SortedSet, SortedSet[A]]
 
-trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
+trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSet[A]]
   extends SetOps[A, Set, C]
     with collection.SortedSetOps[A, CC, C]
 

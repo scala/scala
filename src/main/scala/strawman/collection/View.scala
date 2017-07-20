@@ -82,8 +82,16 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that filters an underlying collection. */
-  case class Filter[A](underlying: Iterable[A], p: A => Boolean) extends View[A] {
+  class Filter[A](val underlying: Iterable[A], val p: A => Boolean) extends View[A] {
     def iterator() = underlying.iterator().filter(p)
+  }
+
+  object Filter {
+    def apply[A](underlying: Iterable[A], p: A => Boolean): Filter[A] =
+      underlying match {
+        case filter: Filter[A] => new Filter(filter.underlying, a => filter.p(a) && p(a))
+        case _                 => new Filter(underlying, p)
+      }
   }
 
   /** A view that partitions an underlying collection into two views */
