@@ -34,7 +34,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
     len
   }
 
-  def length: Int = size
+  final def length: Int = size
 
   /** Optimized version of `drop` that avoids copying
     *  Note: `drop` is defined here, rather than in a trait like `LinearSeqMonoTransforms`,
