@@ -1,4 +1,4 @@
-class SI_4715 {
+class t4715 {
   type :+:[X,Y] = Map[X,Y]
   val withType: Int :+: Double = sys.error("")
 

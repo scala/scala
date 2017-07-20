@@ -579,8 +579,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    fork in Test := true,
+    fork in Test := false,
     javaOptions in Test += "-Xss1M",
+    testOptions += Tests.Cleanup { loader =>
+      ModuleUtilities.getObject("scala.TestCleanup", loader).asInstanceOf[Runnable].run()
+    },
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
