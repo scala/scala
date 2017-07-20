@@ -3422,12 +3422,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // There were pattern-matching anonymous functions in the argument list which got typed as PartialFunction
                 // but if the inferred alternative does not actually need a PartialFunction we retype it as Function1.
                 def paramTypes(tpe: Type): List[Type] = tpe match {
-                  case ExistentialType(_, qtpe) => paramTypes(qtpe)
+                  case PolyType(_, restpe) => paramTypes(restpe)
                   case MethodType(syms, _) => syms.map(_.tpe)
-                  case TypeRef(_, _, tpes) => tpes.init
                   case _ => Nil
                 }
-                val selectedParams = paramTypes(normalize(fun.tpe))
+                val selectedParams = paramTypes(fun.tpe)
                 if(selectedParams.nonEmpty) {
                   context.savingUndeterminedTypeParams() {
                     val amode = forArgMode(fun, mode)
