@@ -475,7 +475,18 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   def take(n: Int): C = fromSpecificIterable(View.Take(coll, n))
 
   /** A collection containing the last `n` elements of this collection. */
-  def takeRight(n: Int): C = fromSpecificIterable(View.TakeRight(coll, n))
+  def takeRight(n: Int): C = {
+    val b = newSpecificBuilder()
+    b.sizeHintBounded(n, coll)
+    val lead = coll.iterator() drop n
+    val it = coll.iterator()
+    while (lead.hasNext) {
+      lead.next()
+      it.next()
+    }
+    while (it.hasNext) b += it.next()
+    b.result()
+  }
 
   /** Takes longest prefix of elements that satisfy a predicate.
     *  $orderDependent
@@ -506,7 +517,17 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** The rest of the collection without its `n` last elements. For
     *  linear, immutable collections this should avoid making a copy.
     */
-  def dropRight(n: Int): C = fromSpecificIterable(View.DropRight(coll, n))
+  def dropRight(n: Int): C = {
+    val b = newSpecificBuilder()
+    if (n >= 0) b.sizeHint(coll, delta = -n)
+    val lead = coll.iterator() drop n
+    val it = coll.iterator()
+    while (lead.hasNext) {
+      b += it.next()
+      lead.next()
+    }
+    b.result()
+  }
 
   /** Skips longest sequence of elements of this iterator which satisfy given
     *  predicate `p`, and returns an iterator of the remaining elements.
