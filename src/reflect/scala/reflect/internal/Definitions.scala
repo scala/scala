@@ -691,11 +691,11 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
-    // the argument types expected by the function described by `tp` (a FunctionN or SAM type),
-    // or `Nil` if `tp` does not represent a function type or SAM (or if it happens to be Function0...)
-    def functionOrSamArgTypes(tp: Type): List[Type] = {
+    // the argument types expected by the function described by `tp` (a FunctionN or PartialFunction or SAM type),
+    // or `Nil` if `tp` does not represent a function type or PartialFunction or SAM (or if it happens to be Function0...)
+    def functionOrPfOrSamArgTypes(tp: Type): List[Type] = {
       val dealiased = tp.dealiasWiden
-      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.init
+      if (isFunctionTypeDirect(dealiased) || isPartialFunctionType(dealiased)) dealiased.typeArgs.init
       else samOf(tp) match {
         case samSym if samSym.exists => tp.memberInfo(samSym).paramTypes
         case _ => Nil
