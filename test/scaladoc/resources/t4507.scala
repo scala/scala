@@ -16,4 +16,4 @@
  *     - throws a TestFailedException when evaluating false or false
  * </pre>
  */
-class SI_4507
+class t4507

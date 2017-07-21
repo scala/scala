@@ -2,8 +2,9 @@ package scala.tools.nsc.scaladoc
 
 import org.scalacheck._
 import org.scalacheck.Prop._
-
 import java.net.{URLClassLoader, URLDecoder}
+import java.nio.file.{Files, Paths}
+
 import scala.collection.mutable
 import scala.xml.NodeSeq
 
@@ -32,22 +33,11 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   import scala.tools.nsc.doc.{DocFactory, Settings}
   import scala.tools.nsc.doc.html.HtmlFactory
 
-  def getClasspath = {
-    // these things can be tricky
-    // this test previously relied on the assumption that the current thread's classloader is an url classloader and contains all the classpaths
-    // does partest actually guarantee this? to quote Leonard Nimoy: The answer, of course, is no.
-    // this test _will_ fail again some time in the future.
-    // Footnote: java.lang.ClassCastException: org.apache.tools.ant.loader.AntClassLoader5 cannot be cast to java.net.URLClassLoader
-    val loader = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader]
-    val paths = loader.getURLs.map(u => URLDecoder.decode(u.getPath))
-    paths mkString java.io.File.pathSeparator
-  }
-
   def createFactory = {
     val settings = new Settings({Console.err.println(_)})
     settings.scaladocQuietRun = true
     settings.nowarn.value = true
-    settings.classpath.value = getClasspath
+    SettingsUtil.configureClassAndSourcePath(settings)
     settings.docAuthor.value = true
 
     val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
@@ -57,7 +47,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   def createTemplates(basename: String): collection.Map[String, NodeSeq] = {
     val result = mutable.Map[String, NodeSeq]()
 
-    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
+    val path: String = SettingsUtil.checkoutRoot.resolve(RESOURCES).resolve(basename).toAbsolutePath.toString
+    createFactory.makeUniverse(Left(List(path))) match {
       case Some(universe) => {
         new HtmlFactory(universe, new ScalaDocReporter(universe.settings)).writeTemplates((page) => {
           result += (page.absoluteLinkTo(page.path) -> page.body)
@@ -320,7 +311,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4421") = {
-    createTemplate("SI_4421.scala") match {
+    createTemplate("t4421.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
         html.contains(">Example:") && html.contains(">Note<")
@@ -330,7 +321,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4589") = {
-    createTemplate("SI_4589.scala") match {
+    createTemplate("t4589.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
         html.contains(">x0123456789: <") &&
@@ -341,7 +332,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4714: Should decode symbolic type alias name.") = {
-    createTemplate("SI_4715.scala") match {
+    createTemplate("t4715.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
         html.contains(">:+:<")
@@ -351,7 +342,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4287: Default arguments of synthesized constructor") = {
-    val files = createTemplates("SI_4287.scala")
+    val files = createTemplates("t4287.scala")
 
     files("ClassWithSugar.html") match {
       case node: scala.xml.Node => {
@@ -362,7 +353,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4507: Default arguments of synthesized constructor") = {
-    createTemplate("SI_4507.scala") match {
+    createTemplate("t4507.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains("<li>returns silently when evaluating true and true</li>")
       case _ => false
@@ -370,45 +361,45 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   }
 
   property("scala/bug#4898: Use cases and links should not crash scaladoc") = {
-    createTemplate("SI_4898.scala")
+    createTemplate("t4898.scala")
     true
   }
 
   property("scala/bug#5054: Use cases should override their original members") =
-     checkText("SI_5054_q1.scala")(
+     checkText("t5054_q1.scala")(
        (None,"""def test(): Int""", true)
        //Disabled because the full signature is now displayed
        //(None, """def test(implicit lost: Int): Int""", false)
      )
 
   property("scala/bug#5054: Use cases should keep their flags - final should not be lost") =
-    checkText("SI_5054_q2.scala")((None, """final def test(): Int""", true))
+    checkText("t5054_q2.scala")((None, """final def test(): Int""", true))
 
   property("scala/bug#5054: Use cases should keep their flags - implicit should not be lost") =
-    checkText("SI_5054_q3.scala")((None, """implicit def test(): Int""", true))
+    checkText("t5054_q3.scala")((None, """implicit def test(): Int""", true))
 
   property("scala/bug#5054: Use cases should keep their flags - real abstract should not be lost") =
-    checkText("SI_5054_q4.scala")((None, """abstract def test(): Int""", true))
+    checkText("t5054_q4.scala")((None, """abstract def test(): Int""", true))
 
   property("scala/bug#5054: Use cases should keep their flags - traits should not be affected") =
-    checkText("SI_5054_q5.scala")((None, """def test(): Int""", true))
+    checkText("t5054_q5.scala")((None, """def test(): Int""", true))
 
   property("scala/bug#5054: Use cases should keep their flags - traits should not be affected") =
-    checkText("SI_5054_q6.scala")((None, """abstract def test(): Int""", true))
+    checkText("t5054_q6.scala")((None, """abstract def test(): Int""", true))
 
   property("scala/bug#5054: Use case individual signature test") =
-    checkText("SI_5054_q7.scala")(
+    checkText("t5054_q7.scala")(
       (None, """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""", true),
       (None, """abstract def test1(): Int [use case] This takes the implicit value in scope.""", true)
     )
 
   property("scala/bug#5287: Display correct \"Definition classes\"") =
-    checkText("SI_5287.scala")(
+    checkText("t5287.scala")(
       (None,
           """def method(): Int
            [use case] The usecase explanation
            [use case] The usecase explanation
-           Definition Classes SI_5287 SI_5287_B SI_5287_A""", true)
+           Definition Classes t5287 t5287_B t5287_A""", true)
     )      // the explanation appears twice, as small comment and full comment
 
   property("Comment inheritance: Correct comment inheritance for overriding") =
@@ -578,31 +569,31 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   property("Comment inheritance: Correct explicit inheritance in corner cases") =
     checkText("inheritdoc-corner-cases.scala")(
       (Some("D"),
-       """def hello1: Int
+        """def hello1: Int
           Inherited: Hello 1 comment
           Inherited: Hello 1 comment
           Definition Classes D → A
        """, true),
       (Some("D"),
-       """def hello2: Int
+        """def hello2: Int
           Inherited: Hello 2 comment
           Inherited: Hello 2 comment
           Definition Classes D → B
        """, true),
       (Some("G"),
-       """def hello1: Int
+        """def hello1: Int
           Inherited: Hello 1 comment
           Inherited: Hello 1 comment
           Definition Classes G → D → A
        """, true),
       (Some("G"),
-       """def hello2: Int
+        """def hello2: Int
           Inherited: Hello 2 comment
           Inherited: Hello 2 comment
           Definition Classes G → D → B
        """, true),
       (Some("I"),
-       """def hello1(i: Int): Unit
+        """def hello1(i: Int): Unit
           [use case] Inherited: Hello 1 comment
           [use case] Inherited: Hello 1 comment
           Definition Classes I → G → D → A

@@ -1,4 +1,4 @@
-class SI_4898 {
+class t4898 {
 	
 	/**
 	 * A link to [[__root__

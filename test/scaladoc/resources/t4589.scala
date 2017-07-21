@@ -1,4 +1,4 @@
-class SI_4589 {
+class t4589 {
   /**
    * @param x012345678901234567890123456789 blah blah blah
    */

@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
+import org.junit.Assert.assertEquals
 
 // Each test normally ends in a moment, but for failure cases, waits two seconds.
 // scala/bug#7350, scala/bug#8768
@@ -92,6 +93,24 @@ class PipedProcessTest {
     assert(sink.releaseCount == 0)
     assert(a.destroyCount == 0)
     assert(b.destroyCount == 0)
+  }
+
+  @Test
+  def shouldSyncRunAndExitValue() {
+    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val source = new PipeSourceMock {
+      override def run(): Unit = {
+        Thread.sleep(5) //used to simulate the block
+      }
+    }
+    val sink = new PipeSinkMock
+    val a = new ProcessMock(error = false)
+    val b = new ProcessMock(error = false)
+    val p = new PipedProcesses(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false)
+
+    p.callRunAndExitValue(source, sink)
+
+    assertEquals(false, source.isAlive)
   }
 
   // PipedProcesses must release resources when b.run() failed
