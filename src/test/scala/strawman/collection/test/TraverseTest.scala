@@ -128,12 +128,16 @@ class TraverseTest {
     val xs3: immutable.List[String] = xs2
 
     val xs4 = immutable.TreeMap((1, "1"), (2, "2"))
-    val xs5 = flatCollect(xs4) { case (2, v) => immutable.List((v, v)) }
+    val xs5 = flatCollect(xs4) { case (2, v) => immutable.List((v, v)) }(immutable.TreeMap)
     val xs6: immutable.TreeMap[String, String] = xs5
 
     val xs7 = immutable.HashMap((1, "1"), (2, "2"))
     val xs8 = flatCollect(xs7) { case (2, v) => immutable.List((v, v)) }
     val xs9: immutable.HashMap[String, String] = xs8
+
+    val xs10 = immutable.TreeSet(1, 2, 3)
+    val xs11 = flatCollect(xs10) { case 2 => immutable.List("foo", "bar") }
+    val xs12: immutable.TreeSet[String] = xs11
   }
 
   @Test
@@ -144,7 +148,7 @@ class TraverseTest {
     val xs5: immutable.List[String] = xs3
 
     val xs6 = immutable.TreeMap((1, "1"), (2, "2"))
-    val (xs7, xs8) = mapSplit(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
+    val (xs7, xs8) = mapSplit(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }(immutable.TreeMap, immutable.TreeMap) // Forced because of ambiguity with SortedSet
     val xs9: immutable.TreeMap[String, Int] = xs7
     val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }
