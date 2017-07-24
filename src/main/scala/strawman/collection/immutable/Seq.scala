@@ -106,3 +106,13 @@ object IndexedSeq extends IterableFactory.Delegate[IndexedSeq](Vector)
 
 /** Base trait for immutable indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends SeqOps[A, CC, C] with collection.IndexedSeqOps[A, CC, C]
+
+/** Base trait for immutable linear sequences that have efficient `head` and `tail` */
+trait LinearSeq[+A]
+  extends Seq[A]
+    with collection.LinearSeq[A]
+    with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
+
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]]
+  extends SeqOps[A, CC, C]
+    with collection.LinearSeqOps[A, CC, C]
