@@ -49,7 +49,7 @@ final class Range(
 )
   extends IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
-    with StrictOptimizedIterableOps[Int, IndexedSeq[Int]]
+    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with Serializable { range =>
 
   def iterableFactory: IterableFactory[IndexedSeq] = IndexedSeq

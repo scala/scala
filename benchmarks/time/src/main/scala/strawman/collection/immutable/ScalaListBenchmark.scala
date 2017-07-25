@@ -6,7 +6,7 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
 import scala.{Any, AnyRef, Int, Long, Unit}
-import scala.Predef.intWrapper
+import scala.Predef.{intWrapper, $conforms}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -21,6 +21,7 @@ class ScalaListBenchmark {
 
   var xs: scala.List[Long] = _
   var xss: scala.Array[scala.List[Long]] = _
+  var zipped: scala.List[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
@@ -28,6 +29,7 @@ class ScalaListBenchmark {
     def freshCollection() = scala.List((1 to size).map(_.toLong): _*)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
+    zipped = xs.map(x => (x, x))
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
@@ -92,5 +94,26 @@ class ScalaListBenchmark {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
+
+  @Benchmark
+  @OperationsPerInvocation(100)
+  def span(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 100) {
+      val (xs1, xs2) = xs.span(x => x < randomIndices(i))
+      bh.consume(xs1)
+      bh.consume(xs2)
+      i += 1
+    }
+  }
+
+  @Benchmark
+  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
+
+  @Benchmark
+  def padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
+
+  @Benchmark
+  def append(bh: Blackhole): Unit = bh.consume(xs :+ 42)
 
 }

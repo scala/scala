@@ -22,7 +22,7 @@ import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, Unit}
 final class HashSet[A](contents: FlatHashTable.Contents[A])
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet[A]]
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
     with Serializable {
 
   private[this] val table = new FlatHashTable[A]

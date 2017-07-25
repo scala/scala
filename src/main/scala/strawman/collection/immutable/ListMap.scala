@@ -46,7 +46,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
 sealed class ListMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), ListMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
     with Serializable {
 
   def iterableFactory = List

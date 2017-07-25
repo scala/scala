@@ -22,7 +22,7 @@ sealed abstract class BitSet
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
-    with StrictOptimizedIterableOps[Int, BitSet]
+    with StrictOptimizedIterableOps[Int, Set, BitSet]
     with Serializable {
 
   def empty: BitSet = BitSet.empty

@@ -21,6 +21,7 @@ class VectorBenchmark {
 
   var xs: Vector[Long] = _
   var xss: scala.Array[Vector[Long]] = _
+  var zipped: Vector[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
 
   @Setup(Level.Trial)
@@ -28,6 +29,7 @@ class VectorBenchmark {
     def freshCollection() = Vector((1 to size).map(_.toLong): _*)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
+    zipped = xs.map(x => (x, x))
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
@@ -75,5 +77,23 @@ class VectorBenchmark {
 
   @Benchmark
   def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
+
+  @Benchmark
+  @OperationsPerInvocation(100)
+  def span(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 100) {
+      val (xs1, xs2) = xs.span(x => x < randomIndices(i))
+      bh.consume(xs1)
+      bh.consume(xs2)
+      i += 1
+    }
+  }
+
+  @Benchmark
+  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
+
+  @Benchmark
+  def padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
 
 }

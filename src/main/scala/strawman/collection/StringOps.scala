@@ -10,7 +10,7 @@ class StringOps(val s: String)
   extends AnyVal
     with IterableOnce[Char]
     with IndexedSeqOps[Char, immutable.IndexedSeq, String]
-    with StrictOptimizedIterableOps[Char, String]
+    with StrictOptimizedIterableOps[Char, immutable.IndexedSeq, String]
     with ArrayLike[Char] {
 
   protected[this] def coll = StringView(s)

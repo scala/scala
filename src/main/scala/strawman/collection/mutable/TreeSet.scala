@@ -25,7 +25,7 @@ import java.lang.String
 sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
-    with StrictOptimizedIterableOps[A, TreeSet[A]]
+    with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
     with Serializable {
 
   if (ordering eq null)

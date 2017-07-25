@@ -26,7 +26,7 @@ import java.lang.Integer
 sealed trait HashSet[A]
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet[A]]
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
     with Serializable {
 
   import HashSet.nullToEmpty

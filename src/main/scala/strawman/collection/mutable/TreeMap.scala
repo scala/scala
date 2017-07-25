@@ -25,7 +25,7 @@ import java.lang.String
 sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), TreeMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
     with Serializable {
 
   def mapFactory = Map
