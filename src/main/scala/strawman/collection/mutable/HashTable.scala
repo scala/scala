@@ -49,17 +49,17 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
 
   /** The actual hash table.
    */
-  @transient protected var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
+  @transient protected[collection] var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  @transient protected var tableSize: Int = 0
+  @transient protected[collection] var tableSize: Int = 0
 
   final def size: Int = tableSize
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  @transient protected var threshold: Int = initialThreshold(_loadFactor)
+  @transient protected[collection] var threshold: Int = initialThreshold(_loadFactor)
 
   /** The array keeping track of the number of elements in 32 element blocks.
    */
@@ -148,7 +148,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
   /** Add entry to table
    *  pre: no entry with same key exists
    */
-  protected final def addEntry(e: Entry): Unit = {
+  protected[collection] final def addEntry(e: Entry): Unit = {
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
@@ -159,6 +159,13 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     nnSizeMapAdd(h)
     if (tableSize > threshold)
       resize(2 * table.length)
+  }
+
+  protected[collection] def addEntry2(e: Entry, h: Int): Unit = {
+    e.next = table(h).asInstanceOf[Entry]
+    table(h) = e
+    tableSize += 1
+    nnSizeMapAdd(h)
   }
 
   /** Find entry with given key in table, or add new one if not found.
