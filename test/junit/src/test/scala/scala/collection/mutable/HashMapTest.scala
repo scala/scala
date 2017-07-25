@@ -1,4 +1,4 @@
-package scala.collection
+package strawman.collection
 package mutable
 
 import org.junit.Assert._
