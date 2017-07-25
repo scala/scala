@@ -1,9 +1,13 @@
 package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import scala.{Any, Array, Boolean, Int, math, None, NoSuchElementException, Nothing, Option, StringContext, Some, Unit, throws}
+
+import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, Some, StringContext, Unit, `inline`, math, throws}
 import scala.Predef.{intWrapper, require}
 import strawman.collection.mutable.ArrayBuffer
+
+import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 
 /** A core Iterator class
   *
@@ -16,6 +20,13 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   @throws[NoSuchElementException]
   def next(): A
   def iterator() = this
+
+  /** Tests whether this iterator is empty.
+    *
+    *  @return   `true` if hasNext is false, `false` otherwise.
+    *  @note     Reuse: $preservesIterator
+    */
+  def isEmpty: Boolean = !hasNext
 
   /** Tests whether a predicate holds for all values produced by this iterator.
     *  $mayNotTerminateInf
@@ -44,6 +55,16 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     while (!res && hasNext) res = p(next())
     res
   }
+
+  /** Tests whether this iterator contains a given value as an element.
+    *  $mayNotTerminateInf
+    *
+    *  @param elem  the element to test.
+    *  @return     `true` if this iterator produces some value that is
+    *               is equal (as determined by `==`) to `elem`, `false` otherwise.
+    *  @note        Reuse: $consumesIterator
+    */
+  def contains(elem: Any): Boolean = exists(_ == elem)    // Note--this seems faster than manual inlining!
 
   /** Counts the number of elements in the $coll which satisfy a predicate.
     *
@@ -303,7 +324,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def foreach[U](f: A => U): Unit =
     while (hasNext) f(next())
 
-  def indexWhere(p: A => Boolean, from: Int): Int = {
+  def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
     drop(from)
     while (hasNext) {
@@ -313,11 +334,49 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     -1
   }
 
-  def length = {
+  /** Returns the index of the first occurrence of the specified
+    *  object in this iterable object.
+    *  $mayNotTerminateInf
+    *
+    *  @param  elem  element to search for.
+    *  @return the index of the first occurrence of `elem` in the values produced by this iterator,
+    *          or -1 if such an element does not exist until the end of the iterator is reached.
+    *  @note   Reuse: $consumesIterator
+    */
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
+
+  /** Returns the index of the first occurrence of the specified object in this iterable object
+    *  after or at some start index.
+    *  $mayNotTerminateInf
+    *
+    *  @param elem element to search for.
+    *  @param from the start index
+    *  @return the index `>= from` of the first occurrence of `elem` in the values produced by this
+    *          iterator, or -1 if such an element does not exist until the end of the iterator is
+    *          reached.
+    *  @note   Reuse: $consumesIterator
+    */
+  def indexOf[B >: A](elem: B, from: Int): Int = {
+    var i = 0
+    while (i < from && hasNext) {
+      next()
+      i += 1
+    }
+
+    while (hasNext) {
+      if (next() == elem) return i
+      i += 1
+    }
+    -1
+  }
+
+  def length: Int = {
     var len = 0
     while (hasNext) { len += 1; next() }
     len
   }
+
+  final def size: Int = length
 
   def filter(p: A => Boolean): Iterator[A] = new Iterator[A] {
     private var hd: A = _
@@ -356,19 +415,9 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     def next() = current.next()
   }
 
-  def ++[B >: A](xs: IterableOnce[B]): Iterator[B] = new Iterator[B] {
-    private var myCurrent: Iterator[B] = self
-    private var first = true
-    private def current = {
-      if (!myCurrent.hasNext && first) {
-        myCurrent = xs.iterator()
-        first = false
-      }
-      myCurrent
-    }
-    def hasNext = current.hasNext
-    def next() = current.next()
-  }
+  def concat[B >: A](xs: => IterableOnce[B]): Iterator[B] = new Iterator.ConcatIterator[B](self).concat(xs)
+
+  @`inline` def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
   def take(n: Int): Iterator[A] = new Iterator[A] {
     private var i = 0
@@ -502,4 +551,150 @@ object Iterator {
     def apply(n: Int) = xs(n)
   }.iterator()
 
+  /** Creates an infinite-length iterator which returns successive values from some start value.
+
+    *  @param start the start value of the iterator
+    *  @return      the iterator producing the infinite sequence of values `start, start + 1, start + 2, ...`
+    */
+  def from(start: Int): Iterator[Int] = from(start, 1)
+
+  /** Creates an infinite-length iterator returning values equally spaced apart.
+    *
+    *  @param start the start value of the iterator
+    *  @param step  the increment between successive values
+    *  @return      the iterator producing the infinite sequence of values `start, start + 1 * step, start + 2 * step, ...`
+    */
+  def from(start: Int, step: Int): Iterator[Int] = new Iterator[Int] {
+    private var i = start
+    def hasNext: Boolean = true
+    def next(): Int = { val result = i; i += step; result }
+  }
+
+  /** Creates nn iterator returning successive values in some integer interval.
+    *
+    *  @param start the start value of the iterator
+    *  @param end   the end value of the iterator (the first value NOT returned)
+    *  @return      the iterator producing values `start, start + 1, ..., end - 1`
+    */
+  def range(start: Int, end: Int): Iterator[Int] = range(start, end, 1)
+
+  /** An iterator producing equally spaced values in some integer interval.
+    *
+    *  @param start the start value of the iterator
+    *  @param end   the end value of the iterator (the first value NOT returned)
+    *  @param step  the increment value of the iterator (must be positive or negative)
+    *  @return      the iterator producing values `start, start + step, ...` up to, but excluding `end`
+    */
+  def range(start: Int, end: Int, step: Int): Iterator[Int] = new Iterator[Int] {
+    if (step == 0) throw new IllegalArgumentException("zero step")
+    private var i = start
+    def hasNext: Boolean = (step <= 0 || i < end) && (step >= 0 || i > end)
+    def next(): Int =
+      if (hasNext) { val result = i; i += step; result }
+      else empty.next()
+  }
+
+  /** Creates an infinite iterator that repeatedly applies a given function to the previous result.
+    *
+    *  @param start the start value of the iterator
+    *  @param f     the function that's repeatedly applied
+    *  @return      the iterator producing the infinite sequence of values `start, f(start), f(f(start)), ...`
+    */
+  def iterate[T](start: T)(f: T => T): Iterator[T] = new Iterator[T] {
+    private[this] var first = true
+    private[this] var acc = start
+    def hasNext: Boolean = true
+    def next(): T = {
+      if (first) first = false
+      else acc = f(acc)
+
+      acc
+    }
+  }
+
+  /** Creates an infinite-length iterator returning the results of evaluating an expression.
+    *  The expression is recomputed for every element.
+    *
+    *  @param elem the element computation.
+    *  @return the iterator containing an infinite number of results of evaluating `elem`.
+    */
+  def continually[A](elem: => A): Iterator[A] = new Iterator[A] {
+    def hasNext = true
+    def next = elem
+  }
+
+  /** Creates an iterator to which other iterators can be appended efficiently.
+    *  Nested ConcatIterators are merged to avoid blowing the stack.
+    */
+  private final class ConcatIterator[+A](private var current: Iterator[A @uncheckedVariance]) extends Iterator[A] {
+    private var tail: ConcatIteratorCell[A @uncheckedVariance] = null
+    private var last: ConcatIteratorCell[A @uncheckedVariance] = null
+    private var currentHasNextChecked = false
+
+    // Advance current to the next non-empty iterator
+    // current is set to null when all iterators are exhausted
+    @tailrec
+    private[this] def advance(): Boolean = {
+      if (tail eq null) {
+        current = null
+        last = null
+        false
+      }
+      else {
+        current = tail.headIterator
+        tail = tail.tail
+        merge()
+        if (currentHasNextChecked) true
+        else if (current.hasNext) {
+          currentHasNextChecked = true
+          true
+        } else advance()
+      }
+    }
+
+    // If the current iterator is a ConcatIterator, merge it into this one
+    @tailrec
+    private[this] def merge(): Unit =
+    if (current.isInstanceOf[ConcatIterator[_]]) {
+      val c = current.asInstanceOf[ConcatIterator[A]]
+      current = c.current
+      currentHasNextChecked = c.currentHasNextChecked
+      if (c.tail ne null) {
+        c.last.tail = tail
+        tail = c.tail
+      }
+      merge()
+    }
+
+    def hasNext =
+      if (currentHasNextChecked) true
+      else if (current eq null) false
+      else if (current.hasNext) {
+        currentHasNextChecked = true
+        true
+      } else advance()
+
+    def next()  =
+      if (hasNext) {
+        currentHasNextChecked = false
+        current.next()
+      } else Iterator.empty.next()
+
+    override def concat[B >: A](that: => IterableOnce[B]): Iterator[B] = {
+      val c = new ConcatIteratorCell[B](that, null).asInstanceOf[ConcatIteratorCell[A]]
+      if(tail eq null) {
+        tail = c
+        last = c
+      } else {
+        last.tail = c
+        last = c
+      }
+      if(current eq null) current = Iterator.empty
+      this
+    }
+  }
+
+  private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A]) {
+    def headIterator: Iterator[A] = head.iterator()
+  }
 }
