@@ -8,7 +8,9 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]]
 
 trait SortedSetOps[A, +CC[X], +C <: SortedSet[A]]
   extends SetOps[A, Set, C]
-     with SortedOps[A, CC, C] {
+     with SortedOps[A, C] {
+
+  def sortedIterableFactory: SortedIterableFactory[CC]
 
   protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 

@@ -3,11 +3,9 @@ package strawman.collection
 import scala.{Ordering, Option, Some}
 
 /** Base trait for sorted collections */
-trait SortedOps[A, +CC[_], +C] {
+trait SortedOps[A, +C] {
 
   implicit def ordering: Ordering[A]
-
-  def sortedIterableFactory: SortedIterableFactory[CC]
 
   /** Returns the first key of the collection. */
   def firstKey: A

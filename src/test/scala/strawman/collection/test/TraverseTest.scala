@@ -19,7 +19,7 @@ class TraverseTest {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result())
-  def optionSequence1[CC[X] <: Iterable[X] with SortedOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
+  def optionSequence1[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
     xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.sortedIterableFactory.newBuilder[A]())) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
@@ -128,7 +128,7 @@ class TraverseTest {
     val xs3: immutable.List[String] = xs2
 
     val xs4 = immutable.TreeMap((1, "1"), (2, "2"))
-    val xs5 = flatCollect(xs4) { case (2, v) => immutable.List((v, v)) }(immutable.TreeMap)
+    val xs5 = flatCollect(xs4) { case (2, v) => immutable.List((v, v)) }
     val xs6: immutable.TreeMap[String, String] = xs5
 
     val xs7 = immutable.HashMap((1, "1"), (2, "2"))
@@ -148,7 +148,7 @@ class TraverseTest {
     val xs5: immutable.List[String] = xs3
 
     val xs6 = immutable.TreeMap((1, "1"), (2, "2"))
-    val (xs7, xs8) = mapSplit(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }(immutable.TreeMap, immutable.TreeMap) // Forced because of ambiguity with SortedSet
+    val (xs7, xs8) = mapSplit(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
     val xs9: immutable.TreeMap[String, Int] = xs7
     val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }
