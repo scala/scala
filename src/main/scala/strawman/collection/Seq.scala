@@ -23,9 +23,8 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with Equals {
 
   /**
-    * @return This collection as a `Seq[A]`. Note that this method might require the creation of a
-    *         copy of this collection (e.g. `String` can not be turned into a `Seq[Char]` without
-    *         creating a new collection). Consequently you should always use `iterable` rather than `seq`.
+    * @return This collection as a `Seq[A]`. Note that this method breaks laziness when used on a `View[A]`.
+    *         You should prefer using `iterable` instead.
     */
   protected[this] def seq: Seq[A]
 
@@ -153,6 +152,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *  @return  the first index `>= from` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
+  // TODO Should be implemented in a way that preserves laziness
   def indexOfSlice[B >: A](that: Seq[B], from: Int = 0): Int =
     if (this.knownSize >= 0 && that.knownSize >= 0) {
       val l = length
