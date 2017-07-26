@@ -4,3 +4,5 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaM
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.SymbolLoaders#TopClassCompleter.this")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.lateMap")
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$exists")

@@ -128,6 +128,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }
     override def info = gilSynchronizedIfNotThreadsafe { super.info }
     override def rawInfo: Type = gilSynchronizedIfNotThreadsafe { super.rawInfo }
+    override def exists: Boolean = gilSynchronizedIfNotThreadsafe(super.exists)
     override def typeSignature: Type = gilSynchronizedIfNotThreadsafe { super.typeSignature }
     override def typeSignatureIn(site: Type): Type = gilSynchronizedIfNotThreadsafe { super.typeSignatureIn(site) }
 
