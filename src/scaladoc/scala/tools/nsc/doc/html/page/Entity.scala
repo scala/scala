@@ -96,9 +96,7 @@ trait EntityPage extends HtmlPage {
                           }
                         }
                         <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}></a>
-                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}>
-                          {mbr.name}
-                        </a>
+                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}>{mbr.name}</a>
                       </li>
 
                   // Get path from root
@@ -897,9 +895,7 @@ trait EntityPage extends HtmlPage {
             }
           }
           if (!nameLink.isEmpty)
-            <a title={mbr.comment.fold("")(c => Page.inlineToStrForTitleTag(c.short))} href={nameLink}>
-              {nameHtml}
-            </a>
+            <a title={mbr.comment.fold("")(c => Page.inlineToStrForTitleTag(c.short))} href={nameLink}>{nameHtml}</a>
           else nameHtml
         }{
           def tparamsToHtml(mbr: Any): NodeSeq = mbr match {
