@@ -21,8 +21,9 @@ import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
  *  @version 1.0
  *
  */
-abstract class BCodeIdiomatic extends SubComponent {
-  val bTypes = new BTypesFromSymbols[global.type](global)
+abstract class BCodeIdiomatic {
+  val global: Global
+  val bTypes: BTypesFromSymbols[global.type]
 
   import global._
   import bTypes._

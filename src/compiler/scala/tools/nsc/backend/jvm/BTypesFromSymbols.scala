@@ -30,6 +30,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import global._
   import definitions._
   import genBCode._
+  import codeGen.CodeGenImpl._
 
   val backendUtils: BackendUtils[this.type] = new BackendUtils(this)
 

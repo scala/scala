@@ -4,17 +4,14 @@
  */
 
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 package backend
 package jvm
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -45,8 +42,15 @@ import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
  *  @version 1.0
  *
  */
-abstract class GenBCode extends BCodeSyncAndTry {
+abstract class GenBCode extends SubComponent {
   import global._
+
+  val bTypes = new BTypesFromSymbols[global.type](global)
+  val codeGen = new CodeGen[global.type](global) {
+    val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes
+  }
+
+  import codeGen.CodeGenImpl._
 
   import bTypes._
   import coreBTypes._
@@ -54,8 +58,6 @@ abstract class GenBCode extends BCodeSyncAndTry {
   val phaseName = "jvm"
 
   override def newPhase(prev: Phase) = new BCodePhase(prev)
-
-  final class PlainClassBuilder(cunit: CompilationUnit) extends SyncAndTryBuilder(cunit)
 
   class BCodePhase(prev: Phase) extends StdPhase(prev) {
 
@@ -186,7 +188,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           } else null
 
         // -------------- "plain" class --------------
-        val pcb = new PlainClassBuilder(cunit)
+        val pcb = new SyncAndTryBuilder(cunit)
         pcb.genPlainClass(cd)
         val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisBType.internalName, cunit) else null
         val plainC = pcb.cnode

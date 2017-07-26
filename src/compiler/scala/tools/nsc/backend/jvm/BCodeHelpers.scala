@@ -840,7 +840,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         }
       }
 
-      if ((settings.check containsName phaseName)) {
+      if (settings.check containsName genBCode.phaseName) {
         val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
