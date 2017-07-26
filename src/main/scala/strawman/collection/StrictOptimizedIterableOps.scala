@@ -17,14 +17,14 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   /** Optimized, push-based version of `partition`. */
   override def partition(p: A => Boolean): (C, C) = {
     val l, r = newSpecificBuilder()
-    coll.iterator().foreach(x => (if (p(x)) l else r) += x)
+    iterable.iterator().foreach(x => (if (p(x)) l else r) += x)
     (l.result(), r.result())
   }
 
   override def span(p: A => Boolean): (C, C) = {
     val first = newSpecificBuilder()
     val second = newSpecificBuilder()
-    val it = coll.iterator()
+    val it = iterable.iterator()
     var inFirst = true
     while (it.hasNext && inFirst) {
       val a = it.next()
@@ -44,7 +44,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   override def unzip[A1, A2](implicit asPair: A <:< (A1, A2)): (CC[A1], CC[A2]) = {
     val first = iterableFactory.newBuilder[A1]()
     val second = iterableFactory.newBuilder[A2]()
-    coll.foreach { a =>
+    iterable.foreach { a =>
       val (a1, a2) = asPair(a)
       first += a1
       second += a2

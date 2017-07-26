@@ -15,7 +15,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, CC[X, Y]], +C 
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
 
-  protected[this] def coll: C
+  protected[this] def iterable: CC[K, V]
 
   /** Removes a key from this map, returning a new map.
     *
@@ -34,7 +34,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, CC[X, Y]], +C 
     *  @return a new $coll that contains all elements of the current $coll
     *  except one less occurrence of each of the elements of `elems`.
     */
-  def removeAll(keys: IterableOnce[K]): C = fromSpecificIterable(keys.iterator().foldLeft[CC[K, V]](coll)(_ - _))
+  def removeAll(keys: IterableOnce[K]): C = fromSpecificIterable(keys.iterator().foldLeft[CC[K, V]](iterable)(_ - _))
 
   /** Alias for `removeAll` */
   @`inline` final def -- (keys: IterableOnce[K]): C = removeAll(keys)
@@ -60,7 +60,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, CC[X, Y]], +C 
   /*@`inline` final*/ def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
   override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
-    var result: CC[K, V1] = coll
+    var result: CC[K, V1] = iterable
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
     result

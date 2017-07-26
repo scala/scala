@@ -26,8 +26,8 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
         toRemove -= elem
       }
     }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    for (elem <- toRemove) iterable -= elem
+    for (elem <- toAdd) iterable += elem
     this
   }
 
@@ -39,17 +39,17 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
 
   def insert(elem: A): Boolean =
     !contains(elem) && {
-      coll += elem; true
+      iterable += elem; true
     }
 
   def remove(elem: A): Option[A] = {
     val res = get(elem)
-    coll -= elem
+    iterable -= elem
     res
   }
 
   def diff(that: collection.Set[A]): C =
-    coll.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
+    iterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()
@@ -60,8 +60,8 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
           toAdd += mapped
           toRemove -= elem
         }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    for (elem <- toRemove) iterable -= elem
+    for (elem <- toAdd) iterable += elem
     this
   }
 
@@ -70,11 +70,11 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     for (elem <- this)
       if (!p(elem)) toRemove += elem
     for (elem <- toRemove)
-      coll -= elem
+      iterable -= elem
     this
   }
 
-  override def clone(): C = empty ++= coll
+  override def clone(): C = empty ++= iterable
 
 }
 

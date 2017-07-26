@@ -32,7 +32,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
     */
-  def distinct: C = fromSpecificIterable(new View.Distinct(coll))
+  def distinct: C = fromSpecificIterable(new View.Distinct(iterable))
 
   /** Returns new $coll with elements in reversed order.
    *
@@ -63,7 +63,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *         index `offset`, otherwise `false`.
     */
   def startsWith[B >: A](that: Seq[B], offset: Int = 0): Boolean = {
-    val i = coll.iterator() drop offset
+    val i = iterable.iterator() drop offset
     val j = that.iterator()
     while (j.hasNext && i.hasNext)
       if (i.next() != j.next())
@@ -78,7 +78,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
   def endsWith[B >: A](that: Seq[B]): Boolean = {
-    val i = coll.iterator().drop(length - that.length)
+    val i = iterable.iterator().drop(length - that.length)
     val j = that.iterator()
     while (i.hasNext && j.hasNext)
       if (i.next() != j.next())
@@ -96,7 +96,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
-  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(View.PadTo(coll, len, elem))
+  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(View.PadTo(iterable, len, elem))
 
   /** Finds index of the first element satisfying some predicate after or at some start index.
     *
@@ -107,7 +107,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def indexWhere(p: A => Boolean, from: Int = 0): Int = coll.iterator().indexWhere(p, from)
+  def indexWhere(p: A => Boolean, from: Int = 0): Int = iterable.iterator().indexWhere(p, from)
 
   /** Finds index of first occurrence of some value in this $coll after or at some start index.
     *
@@ -364,7 +364,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   def sorted[B >: A](implicit ord: Ordering[B]): C = {
     val len = this.length
     val b = newSpecificBuilder()
-    if (len == 1) b ++= coll
+    if (len == 1) b ++= iterable
     else if (len > 1) {
       b.sizeHint(len)
       val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
@@ -433,7 +433,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     * as those of `that`?
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =
-    coll.iterator().sameElements(that)
+    iterable.iterator().sameElements(that)
 
   /** Method called from equality methods, so that user-defined subclasses can
     *  refuse to be equal to other collections of the same kind.
@@ -449,7 +449,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
       case _ => false
     }
 
-  override def hashCode(): Int = stableIterableHash(coll)
+  override def hashCode(): Int = stableIterableHash(iterable)
 
   // Temporary: TODO move to MurmurHash3.scala
   private def stableIterableHash(xs: Iterable[_]): Int = {

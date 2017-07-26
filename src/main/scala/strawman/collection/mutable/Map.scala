@@ -18,7 +18,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     with collection.MapOps[K, V, CC, C]
     with Shrinkable[K] {
 
-  protected[this] def coll: Map[K, V]
+  protected[this] def iterable: Map[K, V]
 
   def iterableFactory = Iterable
 
@@ -45,7 +45,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     *  @param key    The key to update
     *  @param value  The new value
     */
-  def update(key: K, value: V): Unit = { coll += ((key, value)) }
+  def update(key: K, value: V): Unit = { iterable += ((key, value)) }
 
   /** If given key is already in this map, returns associated value.
    *
@@ -67,7 +67,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
       case None => val d = op; this(key) = d; d
     }
 
-  override def clone(): C = empty ++= coll
+  override def clone(): C = empty ++= iterable
 
   def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
     val toAdd = Map[K, V]()
@@ -79,8 +79,8 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
         toRemove -= elem._1
       }
     }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    for (elem <- toRemove) iterable -= elem
+    for (elem <- toAdd) iterable += elem
     this
   }
 
@@ -93,8 +93,8 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
           toAdd += mapped
           toRemove -= elem._1
         }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    for (elem <- toRemove) iterable -= elem
+    for (elem <- toAdd) iterable += elem
     this
   }
 
@@ -103,7 +103,7 @@ trait MapOps[K, V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     for (elem <- this)
       if (!p(elem)) toRemove += elem._1
     for (elem <- toRemove)
-      coll -= elem
+      iterable -= elem
     this
   }
 

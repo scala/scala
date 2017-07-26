@@ -13,9 +13,9 @@ class StringOps(val s: String)
     with StrictOptimizedIterableOps[Char, immutable.IndexedSeq, String]
     with ArrayLike[Char] {
 
-  protected[this] def coll = StringView(s)
+  protected[this] def iterable = StringView(s)
   protected[this] def c: String = s
-  protected[this] def seq: Seq[Char] = iterableFactory.fromIterable(coll)
+  protected[this] def seq: Seq[Char] = iterableFactory.fromIterable(iterable)
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
@@ -36,7 +36,7 @@ class StringOps(val s: String)
 
   override def className = "String"
 
-  def iterator(): Iterator[Char] = coll.iterator()
+  def iterator(): Iterator[Char] = iterable.iterator()
 
   /** Overloaded version of `map` that gives back a string, where the inherited
     *  version gives back a sequence.

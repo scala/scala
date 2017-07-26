@@ -36,7 +36,7 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
    *    @return a new $coll consisting of `value` followed
    *            by all elements of this $coll.
    */
-  def prepend[B >: A](elem: B): CC[B] = fromIterable(View.Prepend(elem, coll))
+  def prepend[B >: A](elem: B): CC[B] = fromIterable(View.Prepend(elem, iterable))
 
   /** Alias for `prepend`.
     *
@@ -71,7 +71,7 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
    *    @return a new $coll consisting of
    *            all elements of this $coll followed by `value`.
    */
-  def append[B >: A](elem: B): CC[B] = fromIterable(View.Append(coll, elem))
+  def append[B >: A](elem: B): CC[B] = fromIterable(View.Append(iterable, elem))
 
   /** Alias for `append`
     *
@@ -91,7 +91,7 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     *
     *    @return a copy of this $coll with the element at position `index` replaced by `elem`.
     */
-  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(coll, index, elem))
+  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(iterable, index, elem))
 
   /** Produces a new $coll where a slice of elements in this $coll is replaced by another sequence.
     *
@@ -107,7 +107,8 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     *                   except that `replaced` elements starting from `from` are replaced
     *                   by all the elements of `other`.
     */
-  def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] = fromIterable(new View.Patched(coll, from, other, replaced))
+  def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
+    fromIterable(new View.Patched(iterable, from, other, replaced))
 
 }
 
