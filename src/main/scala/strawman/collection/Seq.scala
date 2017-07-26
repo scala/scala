@@ -12,8 +12,8 @@ import scala.util.hashing.MurmurHash3
 
 /** Base trait for sequence collections */
 trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]] {
-  protected[this] def c: this.type = this
-  protected[this] def seq: this.type = this
+  final protected[this] def coll: this.type = this
+  final protected[this] def seq: this.type = this
 }
 
 /** Base trait for Seq operations */
@@ -22,7 +22,11 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with ArrayLike[A]
   with Equals {
 
-  protected[this] def c: C
+  /**
+    * @return This collection as a `Seq[A]`. Note that this method might require the creation of a
+    *         copy of this collection (e.g. `String` can not be turned into a `Seq[Char]` without
+    *         creating a new collection). Consequently you should always use `iterable` rather than `seq`.
+    */
   protected[this] def seq: Seq[A]
 
   // Refine the factory member to be a `SeqFactory`
@@ -212,7 +216,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
   def permutations: Iterator[C] =
-    if (isEmpty) Iterator(c)
+    if (isEmpty) Iterator(coll)
     else new PermutationsItr
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of

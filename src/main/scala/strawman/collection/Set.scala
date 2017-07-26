@@ -8,15 +8,17 @@ import java.lang.String
 
 /** Base trait for set collections.
   */
-trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]]
+trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]] {
+  final protected[this] def coll: this.type = this
+}
 
 /** Base trait for set operations */
-trait SetOps[A, +CC[X], +C <: Set[A]]
+trait SetOps[A, +CC[_], +C <: Set[A]]
   extends IterableOps[A, CC, C]
      with (A => Boolean)
      with Equals {
 
-  protected[this] def iterable: C
+  protected[this] def iterable: Set[A]
 
   def contains(elem: A): Boolean
 

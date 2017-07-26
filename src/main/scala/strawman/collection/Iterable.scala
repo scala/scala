@@ -27,6 +27,11 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   *  the child class and the variance of the `C` parameter passed to `IterableOps`
   *  are the same. We cannot express this since we lack variance polymorphism. That's
   *  why we have to resort at some places to write `C[A @uncheckedVariance]`.
+  *
+  *  @tparam CC type constructor of the collection (e.g. `List`, `Set`). Operations returning a collection
+  *             with a different type of element `B` (e.g. `map`) return a `CC[B]`.
+  *  @tparam C  type of the collection (e.g. `List[Int]`, `String`, `BitSet`). Operations returning a collection
+  *             with the same type of element (e.g. `drop`, `filter`) return a `C`.
   */
 trait IterableOps[+A, +CC[X], +C] extends Any {
 
@@ -34,6 +39,11 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     * @return This collection as an `Iterable[A]`.
     */
   protected[this] def iterable: Iterable[A]
+
+  /**
+    * @return This collection as a `C`.
+    */
+  protected[this] def coll: C
 
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
 

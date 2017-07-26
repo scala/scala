@@ -8,10 +8,12 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
-trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]]
+trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]] {
+  final protected[this] def coll: this.type = this
+}
 
 /** Base Map implementation type */
-trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
+trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
   extends IterableOps[(K, V), Iterable, C]
     with PartialFunction[K, V]
     with Equals {

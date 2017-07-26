@@ -15,7 +15,7 @@ class ArrayOps[A](val xs: Array[A])
     with ArrayLike[A] {
 
   protected[this] def iterable = ArrayView(xs)
-  protected[this] def c: Array[A] = xs
+  protected[this] def coll: Array[A] = xs
   protected[this] def seq: Seq[A] = iterableFactory.fromIterable(iterable)
 
   def length = xs.length

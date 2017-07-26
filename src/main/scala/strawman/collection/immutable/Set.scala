@@ -11,8 +11,6 @@ trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[
 trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   extends collection.SetOps[A, CC, C] {
 
-  protected[this] def iterable: C
-
   /** Creates a new set with an additional element, unless the element is
     *  already present.
     *
@@ -37,7 +35,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   @`inline` final def - (elem: A): C = excl(elem)
 
   override def concat(that: collection.Iterable[A]): C = {
-    var result: C = iterable
+    var result: C = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()
     result
