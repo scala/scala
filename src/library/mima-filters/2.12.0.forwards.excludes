@@ -15,4 +15,4 @@ ProblemFilters.exclude[MissingClassProblem]("scala.annotation.showAsInfix$")
 ProblemFilters.exclude[MissingClassProblem]("scala.annotation.showAsInfix")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.PropertiesTrait.coloredOutputEnabled")
-ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.coloredOutputEnabled")
+# ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.coloredOutputEnabled")
