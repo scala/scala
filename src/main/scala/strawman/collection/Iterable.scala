@@ -462,14 +462,14 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *             All these operations apply to those elements of this $coll
     *             which satisfy the predicate `p`.
     */
-  def withFilter(p: A => Boolean): WithFilter = new WithFilter(View.Filter(coll, p))
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
   /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
     *  of trait `Iterable`.
-    *
-    * @param filtered The (lazily) filtered collection
     */
-  class WithFilter(filtered: View[A @uncheckedVariance]) {
+  class WithFilter(p: A => Boolean) {
+
+    protected[this] def filtered = View.Filter(coll, p)
 
     /** Builds a new collection by applying a function to all elements of the
       * `filtered` outer $coll.
@@ -507,13 +507,13 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
     /** Further refines the filter for this `filtered` $coll.
       *
-      *  @param p   the predicate used to test elements.
+      *  @param q   the predicate used to test elements.
       *  @return    an object of class `WithFilter`, which supports
       *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
-      *             All these operations apply to those elements of this `filtered` $coll which
-      *             also satisfy the predicate `p`.
+      *             All these operations apply to those elements of this $coll which
+      *             also satisfy both `p` and `q` predicates.
       */
-    def withFilter(p: A => Boolean): WithFilter = new WithFilter(filtered.filter(p))
+    def withFilter(q: A => Boolean): WithFilter = new WithFilter(a => p(a) && q(a))
 
   }
 

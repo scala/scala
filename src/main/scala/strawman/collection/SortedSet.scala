@@ -15,18 +15,17 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSet[A]]
   def firstKey: A = head
   def lastKey: A = last
 
-  override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(View.Filter(coll, p))
+  override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
 
   /** Specialize `WithFilter` for sorted collections
     */
-  class SortedWithFilter(filtered: View[A @uncheckedVariance]) extends WithFilter(filtered) {
+  class SortedWithFilter(p: A => Boolean) extends WithFilter(p) {
 
     def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.sortedFromIterable(View.Map(filtered, f))
 
     def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.sortedFromIterable(View.FlatMap(filtered, f))
 
-    override def withFilter(p: A => Boolean): SortedWithFilter =
-      new SortedWithFilter(filtered.filter(p))
+    override def withFilter(q: A => Boolean): SortedWithFilter = new SortedWithFilter(a => p(a) && q(a))
 
   }
 
