@@ -462,8 +462,60 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *             All these operations apply to those elements of this $coll
     *             which satisfy the predicate `p`.
     */
-  def withFilter(p: A => Boolean): WithFilter[A, CC] =
-    new WithFilter(View.Filter(coll, p), iterableFactory)
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(View.Filter(coll, p))
+
+  /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
+    *  of trait `Iterable`.
+    *
+    * @param filtered The (lazily) filtered collection
+    */
+  class WithFilter(filtered: View[A]) {
+
+    /** Builds a new collection by applying a function to all elements of the
+      * `filtered` outer $coll.
+      *
+      *  @param f      the function to apply to each element.
+      *  @tparam B     the element type of the returned collection.
+      *  @return       a new $coll resulting from applying
+      *                the given function `f` to each element of the filtered outer $coll
+      *                and collecting the results.
+      */
+    def map[B](f: A => B): CC[B] = iterableFactory.fromIterable(View.Map(filtered, f))
+
+    /** Builds a new collection by applying a function to all elements of the
+      * `filtered` outer $coll containing this `WithFilter` instance that satisfy
+      *
+      *  @param f      the function to apply to each element.
+      *  @tparam B     the element type of the returned collection.
+      *  @return       a new $coll resulting from applying
+      *                the given collection-valued function `f` to each element
+      *                of the filtered outer $coll and
+      *                concatenating the results.
+      */
+    def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.fromIterable(View.FlatMap(filtered, f))
+
+    /** Applies a function `f` to all elements of the `filtered` outer $coll.
+      *
+      *  @param  f   the function that is applied for its side-effect to every element.
+      *              The result of function `f` is discarded.
+      *
+      *  @tparam  U  the type parameter describing the result of function `f`.
+      *              This result will always be ignored. Typically `U` is `Unit`,
+      *              but this is not necessary.
+      */
+    def foreach[U](f: A => U): Unit = filtered.foreach(f)
+
+    /** Further refines the filter for this `filtered` $coll.
+      *
+      *  @param p   the predicate used to test elements.
+      *  @return    an object of class `WithFilter`, which supports
+      *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
+      *             All these operations apply to those elements of this `filtered` $coll which
+      *             also satisfy the predicate `p`.
+      */
+    def withFilter(p: A => Boolean): WithFilter = new WithFilter(filtered.filter(p))
+
+  }
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.

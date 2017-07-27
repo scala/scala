@@ -23,8 +23,20 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
   def firstKey: K = head._1
   def lastKey: K = last._1
 
-  override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter[K, V, Iterable, Map, CC] =
-    new SortedMapWithFilter(View.Filter(coll, p), iterableFactory, mapFactory, sortedMapFactory)
+  override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(View.Filter(coll, p))
+
+  /** Specializes `MapWithFilter` for sorted Map collections */
+  class SortedMapWithFilter(filtered: View[(K, V)]) extends MapWithFilter(filtered) {
+
+    def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
+      sortedMapFactory.sortedFromIterable(View.Map(filtered, f))
+
+    def flatMap[K2 : Ordering, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
+      sortedMapFactory.sortedFromIterable(View.FlatMap(filtered, f))
+
+    override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(filtered.filter(p))
+
+  }
 
   // And finally, we add new overloads taking an ordering
   def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit ordering: Ordering[K2]): CC[K2, V2] =

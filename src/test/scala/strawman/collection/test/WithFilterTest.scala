@@ -30,6 +30,14 @@ class WithFilterTest {
       } yield (v, k)
     val xs1t: Map[Char, Int] = xs1
     assert(xs1 == Map('b' -> 2))
+
+    val xs2 =
+      for {
+        (k, v) <- Map(1 -> 'a', 2 -> 'b', 3 -> 'c')
+        if k % 2 == 0
+      } yield v
+    val xs2t: Iterable[Char] = xs2
+    assert(List('b') == xs2)
   }
 
   @Test
