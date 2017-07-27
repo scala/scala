@@ -620,7 +620,7 @@ object Iterator {
     */
   def continually[A](elem: => A): Iterator[A] = new Iterator[A] {
     def hasNext = true
-    def next = elem
+    def next() = elem
   }
 
   /** Creates an iterator to which other iterators can be appended efficiently.
