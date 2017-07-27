@@ -219,6 +219,13 @@ trait Implicits {
       tpeCache
     }
 
+    def dependsOnPrefix: Boolean = pre match {
+      case SingleType(pre0, _) => tpe.exists(_ =:= pre0)
+      case _ => false
+    }
+
+    def isSearchedPrefix: Boolean = name == null && sym == NoSymbol
+
     def isCyclicOrErroneous: Boolean =
       if(sym.hasFlag(LOCKED)) true
       else {
@@ -292,6 +299,8 @@ trait Implicits {
     override def equals(other: Any) = other match { case that: AnyRef => that eq this  case _ => false }
     override def hashCode = 1
   }
+
+  def SearchedPrefixImplicitInfo(pre: Type) = new ImplicitInfo(null, pre, NoSymbol)
 
   /** A constructor for types ?{ def/type name: tp }, used in infer view to member
    *  searches.
@@ -1057,28 +1066,37 @@ trait Implicits {
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
-          infoMap get sym match {
-            case Some(infos1) =>
-              if (infos1.nonEmpty && !(pre =:= infos1.head.pre.prefix)) {
-                log(s"Ignoring implicit members of $pre#$sym as it is also visible via another prefix: ${infos1.head.pre.prefix}")
-                infoMap(sym) = List() // ambiguous prefix - ignore implicit members
-              }
-            case None =>
-              if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-                val pre1 =
-                  if (sym.isPackageClass) sym.packageObject.typeOfThis
-                  else singleType(pre, companionSymbolOf(sym, context))
-                val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
-                infoMap += (sym -> infos)
-              }
-              val bts = tp.baseTypeSeq
-              var i = 1
-              while (i < bts.length) {
-                getParts(bts(i))
-                i += 1
-              }
-              getParts(pre)
+          val infos1 = infoMap.get(sym).getOrElse(Nil)
+          if(!infos1.exists(pre =:= _.pre.prefix)) {
+            if (infos1.exists(_.isSearchedPrefix))
+              infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: infos1
+            else if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
+              val pre1 =
+                if (sym.isPackageClass) sym.packageObject.typeOfThis
+                else singleType(pre, companionSymbolOf(sym, context))
+              val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
+              val mergedInfos =
+                if(infos1.isEmpty) infos
+                else {
+                  val nonDependentInfos = infos1.filterNot(_.dependsOnPrefix)
+                  if(nonDependentInfos.nonEmpty)
+                    log(s"Implicit members ${nonDependentInfos.mkString("(", ", ", ")")} of $pre#$sym which are also visible via another prefix: ${infos1.head.pre.prefix}")
+                  infos1.filter(_.dependsOnPrefix) ++ infos.filter(_.dependsOnPrefix)
+                }
+              if(mergedInfos.isEmpty)
+                infoMap += (sym -> List(SearchedPrefixImplicitInfo(pre)))
+              else
+                infoMap += (sym -> mergedInfos)
             }
+            // Only strip annotations on the infrequent path
+            val bts = (if(infos1.isEmpty) tp else tp.map(_.withoutAnnotations)).baseTypeSeq
+            var i = 1
+            while (i < bts.length) {
+              getParts(bts(i))
+              i += 1
+            }
+            getParts(pre)
+          }
       }
 
       /* Populate implicit info map by traversing all parts of type `tp`.
@@ -1148,7 +1166,7 @@ trait Implicits {
 
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
-      val emptyInfos = infoMap.iterator.filter(_._2.isEmpty).map(_._1).toSeq
+      val emptyInfos = infoMap.iterator.filter(_._2.exists(_.isSearchedPrefix)).map(_._1).toSeq
       emptyInfos.foreach(infoMap.remove)
       if (infoMap.nonEmpty)
         printTyping(tree, infoMap.size + " implicits in companion scope")
