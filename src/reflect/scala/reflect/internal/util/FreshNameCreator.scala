@@ -20,8 +20,9 @@ class FreshNameCreator(creatorPrefix: String = "") {
    */
   def newName(prefix: String): String = {
     val safePrefix = NameTransformer.encode(prefix)
-    counters.putIfAbsent(safePrefix, new AtomicLong(0))
-    val idx = counters.get(safePrefix).incrementAndGet()
-    s"$creatorPrefix$safePrefix$idx"
+    val counter = counters.computeIfAbsent(safePrefix, (s: String) => new AtomicLong(0))
+    val idx = counter.incrementAndGet()
+    creatorPrefix + safePrefix + idx
   }
+
 }
