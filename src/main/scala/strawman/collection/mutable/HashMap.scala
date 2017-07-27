@@ -89,12 +89,14 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
     val entry = table.findEntry0(key, i)
     if (entry != null) entry.value
     else {
-      val table0 = table
+      val table0 = table.table
       val default = defaultValue
       // Avoid recomputing index if the `defaultValue()` hasn't triggered
       // a table resize.
-      val newEntryIndex = if (table0 eq table) i else table.index(hash)
-      table.addEntry0(table.createNewEntry(key, default), newEntryIndex)
+      val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
+      val e = table.createNewEntry(key, default)
+      if (table.tableSize >= table.threshold) table.addEntry(e)
+      else table.addEntry2(e, newEntryIndex)
       default
     }
   }
