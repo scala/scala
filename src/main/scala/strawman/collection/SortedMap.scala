@@ -3,7 +3,8 @@ package collection
 
 import strawman.collection.immutable.TreeMap
 
-import scala.{`inline`, Ordering, PartialFunction}
+import scala.annotation.unchecked.uncheckedVariance
+import scala.{Boolean, Ordering, PartialFunction, `inline`}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -20,6 +21,21 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
 
   def firstKey: K = head._1
   def lastKey: K = last._1
+
+  override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
+
+  /** Specializes `MapWithFilter` for sorted Map collections */
+  class SortedMapWithFilter(p: ((K, V)) => Boolean) extends MapWithFilter(p) {
+
+    def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
+      sortedMapFactory.sortedFromIterable(View.Map(filtered, f))
+
+    def flatMap[K2 : Ordering, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
+      sortedMapFactory.sortedFromIterable(View.FlatMap(filtered, f))
+
+    override def withFilter(q: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(kv => p(kv) && q(kv))
+
+  }
 
   // And finally, we add new overloads taking an ordering
   def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit ordering: Ordering[K2]): CC[K2, V2] =

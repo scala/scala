@@ -23,7 +23,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   def incl(elem: A): C
 
   /** Alias for `incl` */
-  @`inline` final def + (elem: A): C = incl(elem)
+  /*@`inline`*/ final def + (elem: A): C = incl(elem)
 
   /** Creates a new set with a given element removed from this set.
     *
