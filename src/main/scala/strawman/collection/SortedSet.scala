@@ -19,7 +19,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSet[A]]
 
   /** Specialize `WithFilter` for sorted collections
     */
-  class SortedWithFilter(filtered: View[A]) extends WithFilter(filtered) {
+  class SortedWithFilter(filtered: View[A @uncheckedVariance]) extends WithFilter(filtered) {
 
     def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.sortedFromIterable(View.Map(filtered, f))
 

@@ -3,7 +3,8 @@ package collection
 
 import strawman.collection.immutable.TreeMap
 
-import scala.{Boolean, `inline`, Ordering, PartialFunction}
+import scala.annotation.unchecked.uncheckedVariance
+import scala.{Boolean, Ordering, PartialFunction, `inline`}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -26,7 +27,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
   override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(View.Filter(coll, p))
 
   /** Specializes `MapWithFilter` for sorted Map collections */
-  class SortedMapWithFilter(filtered: View[(K, V)]) extends MapWithFilter(filtered) {
+  class SortedMapWithFilter(filtered: View[(K, V @uncheckedVariance)]) extends MapWithFilter(filtered) {
 
     def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
       sortedMapFactory.sortedFromIterable(View.Map(filtered, f))

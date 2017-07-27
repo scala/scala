@@ -99,7 +99,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   override def withFilter(p: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(View.Filter(coll, p))
 
   /** Specializes `WithFilter` for Map collection types */
-  class MapWithFilter(filtered: View[(K, V)]) extends WithFilter(filtered) {
+  class MapWithFilter(filtered: View[(K, V @uncheckedVariance)]) extends WithFilter(filtered) {
 
     def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.fromIterable(View.Map(filtered, f))
 

@@ -469,7 +469,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *
     * @param filtered The (lazily) filtered collection
     */
-  class WithFilter(filtered: View[A]) {
+  class WithFilter(filtered: View[A @uncheckedVariance]) {
 
     /** Builds a new collection by applying a function to all elements of the
       * `filtered` outer $coll.
