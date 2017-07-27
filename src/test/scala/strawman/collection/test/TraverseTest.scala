@@ -19,7 +19,7 @@ class TraverseTest {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result())
-  def optionSequence1[CC[X] <: Iterable[X] with SortedOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
+  def optionSequence1[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
     xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.sortedIterableFactory.newBuilder[A]())) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
@@ -134,6 +134,10 @@ class TraverseTest {
     val xs7 = immutable.HashMap((1, "1"), (2, "2"))
     val xs8 = flatCollect(xs7) { case (2, v) => immutable.List((v, v)) }
     val xs9: immutable.HashMap[String, String] = xs8
+
+    val xs10 = immutable.TreeSet(1, 2, 3)
+    val xs11 = flatCollect(xs10) { case 2 => immutable.List("foo", "bar") }
+    val xs12: immutable.TreeSet[String] = xs11
   }
 
   @Test

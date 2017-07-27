@@ -251,7 +251,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[C1](f: FromSpecificIterable[A, C1]): C1 = f.fromSpecificIterable(coll)
+  def to[C1](f: CanBuild[A, C1]): C1 = f.fromSpecificIterable(coll)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =

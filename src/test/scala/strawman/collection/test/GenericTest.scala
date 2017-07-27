@@ -30,10 +30,9 @@ object Parse {
     }
   }
 
-  def parseCollection[A, C](bf: FromSpecificIterable[A, C])
-                           (implicit parseA: Parse[A]): Parse[C] = { (s: String) =>
+  def parseCollection[A, C](implicit parseA: Parse[A], cb: CanBuild[A, C]): Parse[C] = { (s: String) =>
     val parts = s.split("\\|")
-    parts.foldLeft[Option[Builder[A, C]]](Some(bf.newBuilder())) { (maybeBuilder, s) =>
+    parts.foldLeft[Option[Builder[A, C]]](Some(cb.newBuilder())) { (maybeBuilder, s) =>
       (maybeBuilder, parseA.parse(s)) match {
         case (Some(builder), Some(a)) =>
           Some(builder += a)
@@ -48,10 +47,8 @@ class GenericTest {
 
   @Test
   def genericTest: Unit = {
-    assert(Parse.parseCollection[Int, immutable.List[Int]](immutable.List).parse("1|2|3").contains(1 :: 2 :: 3 :: immutable.Nil))
-
-    // TODO wrap with assert when HashMap’s equality is correctly implemented
-    Parse.parseCollection[(Int, Int), immutable.HashMap[Int, Int]](immutable.HashMap).parse("1-2|3-4").contains(immutable.HashMap((1, 2), (3, 4)))
+    assert(Parse.parseCollection[Int, immutable.List[Int]].parse("1|2|3").contains(1 :: 2 :: 3 :: immutable.Nil))
+    assert(Parse.parseCollection[(Int, Int), immutable.HashMap[Int, Int]].parse("1-2|3-4").contains(immutable.HashMap((1, 2), (3, 4))))
   }
 
 }
