@@ -46,24 +46,3 @@ You need the following:
     ~~~
     > timeBenchmark/charts Array
     ~~~
-
-## Roadmap
-
-1. Q2 2017: release a v0.2.0 targeting Scala 2.13 and Dotty.
-    - Implement most of the current collections types
-    - Implement most of the current collections operations
-    - Alternative to `CanBuildFrom` to get implicit builders
-    - Include tests for correctness (taken from the current collections
-      and from scala-collections-laws)
-    - Provide a rewriting tool that migrates a code base from the current
-      collections to the strawman
-2. Q3 2017: add features and tune for performance
-    - Decisions will be made on the basis of benchmarks
-    - Add Scala.js support
-    - Consider the inclusion of new collection types (such as `Spandex`, `Steque`
-      or `ArrayDeque`)
-    - Consider the introduction of new operations (such as database-like joins,
-      variants of groupBy, etc.)
-    - Java interoperability
-    - Separate project for parallel collections
-3. Q4 2017: move to `scala/scala` repository

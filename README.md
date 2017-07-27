@@ -8,15 +8,25 @@ Prototype improvements for Scala collections.
 - [Dotty Issue](https://github.com/lampepfl/dotty/issues/818)
 - [Scala Center Proposal](https://github.com/scalacenter/advisoryboard/blob/master/proposals/007-collections.md)
 
+## Current status
+
+The strawman is available as a regular external library (see below usage
+instructions). The collections live in the `strawman.collection` namespace
+(instead of `scala.collection`).
+
+Almost all operations and collection types of the current standard collections
+are available. If you see something missing, please
+[create an issue](https://github.com/scala/collection-strawman/issues/new).
+
 ## Use it in your project
 
 Add the following dependency to your project:
 
 ~~~ scala
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.2.0"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.3.0"
 ~~~
 
-The 0.2.0 version is compatible with Scala 2.13 and Dotty. Scala 2.12 is also supported
+The 0.3.0 version is compatible with Scala 2.13 and Dotty 0.2. Scala 2.12 is also supported
 but you might encounter type inference issues with it.
 
 We also automatically publish snapshots on Sonatype:
@@ -24,12 +34,36 @@ We also automatically publish snapshots on Sonatype:
 ~~~ scala
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.3.0-SNAPSHOT"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.4.0-SNAPSHOT"
 ~~~
+
+## Roadmap
+
+1. September 2017: release targeting Scala 2.13 and Dotty.
+    - Implement most of the current collections types
+    - Implement most of the current collections operations
+    - Alternative to `CanBuildFrom` to get implicit builders
+    - Include tests for correctness (taken from the current collections
+      and from scala-collections-laws)
+    - Provide a rewriting tool that migrates a code base from the current
+      collections to the strawman
+2. November 2017: move to the `scala` namespace
+    - Create a branch of Scala 2.13 with the strawman instead of the current
+      collections
+3. January 2018: new features and performance improvements
+    - Add Scala.js support
+    - Consider the inclusion of new collection types (such as `Spandex`, `Steque`
+      or `ArrayDeque`)
+    - Consider the introduction of new operations (such as database-like joins,
+      variants of groupBy, etc.)
+    - Java interoperability
+    - Separate project for parallel collections
 
 ## Contributing
 
-See the [CONTRIBUTING](CONTRIBUTING.md) file.
+We welcome contributions!
+
+For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 ## Implemented collection types
 
