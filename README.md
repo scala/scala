@@ -124,6 +124,7 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `prepend`
 - [x] `append`
 - [x] `++` / `concat` / `union`
+- [x] `++:` / `prependAll`
 - [x] `flatMap`
 - [x] `grouped`
 - [x] `map`

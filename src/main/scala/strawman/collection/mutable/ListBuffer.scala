@@ -52,6 +52,19 @@ class ListBuffer[A]
     first
   }
 
+  /** Prepends the elements of this buffer to a given list
+    *
+    *  @param xs   the list to which elements are prepended
+    */
+  def prependToList(xs: List[A]): List[A] = {
+    if (isEmpty) xs
+    else {
+      ensureUnaliased()
+      last0.next = xs
+      toList
+    }
+  }
+
   def clear(): Unit = {
     first = Nil
   }
