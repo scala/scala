@@ -4,7 +4,7 @@ dotty in ThisBuild := "0.2.0-RC1"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
-  version := "0.3.0",
+  version := "0.4.0-SNAPSHOT",
   resolvers += "scala-pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots",
   scalaVersion := "2.12.2-ebe1180-SNAPSHOT", // from https://github.com/scala/scala/pull/5742
   scalaBinaryVersion := { if (!scalaVersion.value.startsWith("2.12.")) scalaBinaryVersion.value else "2.12" },
