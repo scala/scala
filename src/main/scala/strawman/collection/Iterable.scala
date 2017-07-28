@@ -517,6 +517,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   }
 
+  /** Selects all the elements of this $coll ignoring the duplicates.
+    *
+    * @return a new $coll consisting of all the elements of this $coll without duplicates.
+    */
+  def distinct: C = fromSpecificIterable(new View.Distinct(coll))
+
   /** A pair of, first, all elements that satisfy prediacte `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.
     *

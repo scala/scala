@@ -526,6 +526,13 @@ class StrawmanTest {
   }
 
   @Test
+  def seqDistinct(): Unit = {
+    assert(List().distinct.equals(List()))
+    assert(List(1,1,1,1).distinct.equals(List(1)))
+    assert(List(1,2,3,1).distinct.equals(List(1,2,3)))
+  }
+
+  @Test
   def linearSeqSize(): Unit = {
     val list = 1 :: 2 :: 3 :: Nil
     assert(list.length == list.size && list.size == 3)
@@ -558,6 +565,7 @@ class StrawmanTest {
     immutableArrayOps(intsArr)
     lazyListOps(intsLzy)
     equality()
+    seqDistinct()
     linearSeqSize()
   }
 }

@@ -57,6 +57,9 @@ class TreeSetBenchmark {
   }
 
   @Benchmark
+  def distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
+
+  @Benchmark
   def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
   @Benchmark

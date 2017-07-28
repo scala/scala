@@ -57,6 +57,9 @@ class LazyListBenchmark {
   }
 
   @Benchmark
+  def distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
+
+  @Benchmark
   @OperationsPerInvocation(1000)
   def lookupLast(bh: Blackhole): Unit = {
     var i = 0

@@ -94,6 +94,11 @@ object View extends IterableFactory[View] {
       }
   }
 
+  /** A view that removes the duplicated elements **/
+  class Distinct[A](val underlying: Iterable[A]) extends View[A] {
+    def iterator(): Iterator[A] = underlying.iterator().distinct
+  }
+
   /** A view that partitions an underlying collection into two views */
   case class Partition[A](underlying: Iterable[A], p: A => Boolean) {
 
