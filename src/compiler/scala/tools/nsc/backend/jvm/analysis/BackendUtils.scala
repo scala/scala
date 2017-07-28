@@ -7,6 +7,7 @@ import java.lang.invoke.LambdaMetafactory
 import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
@@ -310,6 +311,29 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     c.innerClasses.toList
   }
 
+  /*
+   * Populates the InnerClasses JVM attribute with `refedInnerClasses`. See also the doc on inner
+   * classes in BTypes.scala.
+   *
+   * `refedInnerClasses` may contain duplicates, need not contain the enclosing inner classes of
+   * each inner class it lists (those are looked up and included).
+   *
+   * This method serializes in the InnerClasses JVM attribute in an appropriate order, not
+   * necessarily that given by `refedInnerClasses`.
+   *
+   * can-multi-thread
+   */
+  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
+    val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
+
+    // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
+    for (nestedClass <- allNestedClasses.sortBy(_.internalName.toString)) {
+      // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
+      val Some(e) = nestedClass.innerClassAttributeEntry.get
+      jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
+    }
+  }
+
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
    * framework only computes these values during bytecode generation.
@@ -449,6 +473,18 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       maxLocalsMaxStackComputed += method
     }
   }
+
+  val classfileVersion: Int = compilerSettings.target.value match {
+    case "jvm-1.8" => asm.Opcodes.V1_8
+  }
+
+  val majorVersion: Int = classfileVersion & 0xFF
+  val emitStackMapFrame = majorVersion >= 50
+
+  val extraProc: Int = GenBCode.mkFlags(
+    asm.ClassWriter.COMPUTE_MAXS,
+    if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
+  )
 }
 
 object BackendUtils {

@@ -29,18 +29,6 @@ abstract class BCodeIdiomatic {
   import bTypes._
   import coreBTypes._
 
-  val classfileVersion: Int = settings.target.value match {
-    case "jvm-1.8"     => asm.Opcodes.V1_8
-  }
-
-  val majorVersion: Int = (classfileVersion & 0xFF)
-  val emitStackMapFrame = (majorVersion >= 50)
-
-  val extraProc: Int = GenBCode.mkFlags(
-    asm.ClassWriter.COMPUTE_MAXS,
-    if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
-  )
-
   lazy val JavaStringBuilderClassName = jlStringBuilderRef.internalName
 
   val EMPTY_STRING_ARRAY   = Array.empty[String]

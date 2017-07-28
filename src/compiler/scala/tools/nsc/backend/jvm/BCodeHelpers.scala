@@ -239,56 +239,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   }
 
 
-  /*
-   * must-single-thread
-   */
-  def getFileForClassfile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    getFile(base, clsName, suffix)
-  }
-
-  /*
-   * must-single-thread
-   */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile =
-    _root_.scala.util.Try {
-      outputDirectory(csym)
-    }.recover {
-      case ex: Throwable =>
-        reporter.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
-        null
-    }.get
-
   var pickledBytes = 0 // statistics
-
-  // -----------------------------------------------------------------------------------------
-  // finding the least upper bound in agreement with the bytecode verifier (given two internal names handed by ASM)
-  // Background:
-  //  http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
-  //  http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-  //  https://github.com/scala/bug/issues/3872
-  // -----------------------------------------------------------------------------------------
-
-  /*  An `asm.ClassWriter` that uses `jvmWiseLUB()`
-   *  The internal name of the least common ancestor of the types given by inameA and inameB.
-   *  It's what ASM needs to know in order to compute stack map frames, http://asm.ow2.org/doc/developer-guide.html#controlflow
-   */
-  final class CClassWriter(flags: Int) extends asm.ClassWriter(flags) {
-
-    /**
-     * This method is used by asm when computing stack map frames. It is thread-safe: it depends
-     * only on the BTypes component, which does not depend on global.
-     * TODO @lry move to a different place where no global is in scope, on bTypes.
-     */
-    override def getCommonSuperClass(inameA: String, inameB: String): String = {
-      // All types that appear in a class node need to have their ClassBType cached, see [[cachedClassBType]].
-      val a = cachedClassBType(inameA).get
-      val b = cachedClassBType(inameB).get
-      val lub = a.jvmWiseLUB(b).get
-      val lubName = lub.internalName
-      assert(lubName != "scala/Any")
-      lubName // ASM caches the answer during the lifetime of a ClassWriter. We outlive that. Not sure whether caching on our side would improve things.
-    }
-  }
 
   /*
    * must-single-thread
@@ -404,29 +355,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    */
   def serialVUID(csym: Symbol): Option[Long] = csym getAnnotation definitions.SerialVersionUIDAttr collect {
     case AnnotationInfo(_, _, (_, LiteralAnnotArg(const)) :: Nil) => const.longValue
-  }
-
-  /*
-   * Populates the InnerClasses JVM attribute with `refedInnerClasses`. See also the doc on inner
-   * classes in BTypes.scala.
-   *
-   * `refedInnerClasses` may contain duplicates, need not contain the enclosing inner classes of
-   * each inner class it lists (those are looked up and included).
-   *
-   * This method serializes in the InnerClasses JVM attribute in an appropriate order, not
-   * necessarily that given by `refedInnerClasses`.
-   *
-   * can-multi-thread
-   */
-  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
-    val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
-
-    // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
-    for (nestedClass <- allNestedClasses.sortBy(_.internalName.toString)) {
-      // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
-      val Some(e) = nestedClass.innerClassAttributeEntry.get
-      jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
-    }
   }
 
   /*
@@ -1058,7 +986,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       val bType = mirrorClassClassBType(moduleClass)
       val mirrorClass = new asm.tree.ClassNode
       mirrorClass.visit(
-        classfileVersion,
+        backendUtils.classfileVersion,
         bType.info.get.flags,
         bType.internalName,
         null /* no java-generic-signature */,
@@ -1102,7 +1030,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       val beanInfoClass = new asm.tree.ClassNode
       beanInfoClass.visit(
-        classfileVersion,
+        backendUtils.classfileVersion,
         beanInfoType.info.get.flags,
         beanInfoType.internalName,
         null, // no java-generic-signature

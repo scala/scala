@@ -13,6 +13,8 @@ import scala.util.control.ControlThrowable
  */
 sealed abstract class BackendReporting {
   def inlinerWarning(pos: Position, message: String): Unit
+
+  def error(pos: Position, message: String): Unit
 }
 
 final class BackendReportingImpl(val global: Global) extends BackendReporting {
@@ -21,6 +23,8 @@ final class BackendReportingImpl(val global: Global) extends BackendReporting {
   def inlinerWarning(pos: Position, message: String): Unit = {
     currentRun.reporting.inlinerWarning(pos, message)
   }
+
+  def error(pos: Position, message: String): Unit = reporter.error(pos, message)
 }
 
 /**
