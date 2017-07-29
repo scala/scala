@@ -156,8 +156,7 @@ private[scala] trait PropertiesTrait {
 
   private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
     case "auto" => System.console() != null && !isWin
-    case a if a.toLowerCase() == "true" => true
-    case _ => false
+    case s      => s == "" || "true".equalsIgnoreCase(s)
   }
 
   // This is looking for javac, tools.jar, etc.
