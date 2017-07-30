@@ -336,6 +336,16 @@ trait Definitions extends api.StandardDefinitions {
       def Class_getMethod               = getMemberMethod(ClassClass, nme.getMethod_)
     lazy val DynamicClass               = requiredClass[Dynamic]
 
+    // embeddings
+    lazy val EmbeddedControlsClass  = getRequiredClass("scala.EmbeddedControls")
+      lazy val EmbeddedControls_ifThenElse = getMember(EmbeddedControlsClass, nme._ifThenElse)
+      lazy val EmbeddedControls_whileDo = getMember(EmbeddedControlsClass, nme._whileDo)
+      lazy val EmbeddedControls_doWhile = getMember(EmbeddedControlsClass, nme._doWhile)
+      lazy val EmbeddedControls_newVar = getMember(EmbeddedControlsClass, nme._newVar)
+      lazy val EmbeddedControls_assign = getMember(EmbeddedControlsClass, nme._assign)
+      lazy val EmbeddedControls_return = getMember(EmbeddedControlsClass, nme._return)
+      lazy val EmbeddedControls_equal = getMember(EmbeddedControlsClass, nme._equal)
+
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")
       def Sys_error    = getMemberMethod(SysPackage, nme.error)

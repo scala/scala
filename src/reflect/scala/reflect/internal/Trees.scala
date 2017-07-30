@@ -441,6 +441,14 @@ trait Trees extends api.Trees {
        extends TermTree with AssignApi
   object Assign extends AssignExtractor
 
+  object LiftedAssign {
+    def unapply(t: Tree): Option[(Tree, Tree)] = t match {
+      case Assign(lhs, rhs) => Some((lhs, rhs))
+      case Apply(Ident(nme._assign), List(lhs, rhs)) if settings.Yvirtualize.value => Some((lhs, rhs))
+      case _ => None
+    }
+  }
+
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
        extends TermTree with AssignOrNamedArgApi
   object AssignOrNamedArg extends AssignOrNamedArgExtractor

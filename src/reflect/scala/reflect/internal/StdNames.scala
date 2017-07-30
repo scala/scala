@@ -853,6 +853,16 @@ trait StdNames {
     val SyntacticValFrom: NameType          = "SyntacticValFrom"
     val SyntacticVarDef: NameType           = "SyntacticVarDef"
 
+    // embedding information
+    val _doWhile = newTermName("__doWhile")
+    val _equal = newTermName("__equal")
+    val _ifThenElse = newTermName("__ifThenElse")
+    val _newVar = newTermName("__newVar")
+    val _assign = newTermName("__assign")
+    val _return = newTermName("__return")
+    val _whileDo = newTermName("__whileDo")
+    val result: NameType               = "result"
+
     // unencoded operators
     object raw {
       final val BANG : NameType  = "!"

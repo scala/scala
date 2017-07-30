@@ -4368,14 +4368,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else fail()
       }
 
-      def typedIf(tree: If): If = {
-        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanTpe))
-        // One-legged ifs don't need a lot of analysis
-        if (tree.elsep.isEmpty)
-          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
+      def typedIf(tree: If) : If = {
+        val cond = tree.cond
+        val thenp = tree.thenp
+        val elsep = tree.elsep
+        typedIfParts(tree, cond, thenp, elsep)
+      }
 
-        val thenp1 = typed(tree.thenp, pt)
-        val elsep1 = typed(tree.elsep, pt)
+      def typedIfParts(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) : If = {
+        val cond1 = checkDead(typedByValueExpr(cond, BooleanTpe))
+        // One-legged ifs don't need a lot of analysis
+        if (elsep.isEmpty)
+          return treeCopy.If(tree, cond1, typed(thenp, UnitTpe), elsep) setType UnitTpe
+
+        val thenp1 = typed(thenp, pt)
+        val elsep1 = typed(elsep, pt)
 
         // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
         // in the special (though common) case where the types are equal, it pays to pack before comparing
@@ -4436,6 +4443,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedReturn(tree: Return) = {
         val expr = tree.expr
+        typedReturnParts(tree: Tree, expr)
+      }
+
+      def typedReturnParts(tree: Tree, expr: Tree) = {
         val enclMethod = context.enclMethod
         if (enclMethod == NoContext ||
             enclMethod.owner.isConstructor ||
@@ -4635,7 +4646,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
+      def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) : Tree = {
         // TODO: replace `fun.symbol.isStable` by `treeInfo.isStableIdentifierPattern(fun)`
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
         val funpt = if (mode.inPatternMode) pt else WildcardType
@@ -4702,6 +4713,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case SilentResultValue(fun1) =>
             val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
             if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
+            val unvirt = unvirtualize(tree.pos, fun.pos, fun2.symbol, fun2.tpe, args)
+            if (unvirt ne EmptyTree)
+              return unvirt
+            def isImplicitMethod(tpe: Type) = tpe match {
+              case mt: MethodType => mt.isImplicit
+              case _ => false
+            }
             val noSecondTry = (
                  isPastTyper
               || context.inSecondTry
@@ -4719,6 +4737,64 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case err: SilentTypeError => onError(err)
         }
       }
+
+      def unvirtualize(pos: Position, funpos: Position, funsym: Symbol, funTp: Type, origArgs: List[Tree]): Tree = if (settings.Yvirtualize) {
+        /** TODO:
+         - need to do overload resolution to be sure whether we resolve to EmbeddedControls_XXX or not
+         - overload resolution is done in full by doTypedApply, but it is enough we pick the same symbol here
+           (since that determines whether we un-virtualize or not)
+         - not all virtualized control structs type check as their corresponding method calls (the lub action in if-then-else generates incompatible types, but typedIf just assumes that type as its result, it doesn't check against expected types, typing method applications is more strict)
+           --> can't have doTypedApply resolve overloading for us, must find symbol here...
+           (that's why topic/virt_new factors out applicableOverloads)
+        */
+        // println("unvirt funsym: "+(fun1.symbol.ownerChain, resCheckInit.symbol.ownerChain))
+        // if we resolve to the methods in EmbeddedControls, undo rewrite (if we're not past typer yet)
+        // we do this after type checking the whole application to make sure the symbol we get is consistent with overload resolution etc.
+        // the symbol in fun1.symbol might be overloaded, in which case it is useless until after overload resolution (by xxxTypedApply)
+
+        // HACK: so that we generate the same code as the non-virtualizing compiler for non-virtualized ifs
+        // def dropUnit(x: Tree): Tree = x match {
+        //   case Block(List(stat), Literal(Constant(()))) => stat
+        //   case Block(stats, Literal(Constant(())))      => Block(stats: _*)
+        //   case _ => x
+        // }
+        def removeFunUndets() = context.undetparams = context.undetparams filterNot (_.owner eq funsym)
+        funsym match {
+          case EmbeddedControls_ifThenElse =>
+            removeFunUndets()
+            val List(cond, t, e) = origArgs
+            // println("if -- orig= "+(pt, cond, cond.tpe, t, t.tpe, e, e.tpe))
+            //TR FIXME
+            // fail ---> new EmbeddedControls { def __ifThenElse[T](cond: Option[Boolean], thenp: Option[T], elsep: Option[T]): Option[T] = thenp; if (7 < 8) println("yo") }
+            //println("-- calling typedIf with:")
+            //println(cond.tpe + "//" + cond.getClass.getName + "//" + cond)
+            typedIfParts(tree, cond, t, e) // TODO: drop the unit that adapt tacks on here -- real ifs don't do that (same goes for __while)
+          case EmbeddedControls_newVar =>
+            removeFunUndets()
+            val List(init) = origArgs
+            typed1(init, mode, pt)
+          case EmbeddedControls_return =>
+            // TODO: methods called __return but not identical to the one in EmbeddedControls
+            // also need to check conformance to enclosing method's result type.
+            val List(expr) = origArgs
+            typedReturnParts(tree, expr)
+          case EmbeddedControls_assign =>
+            val List(lhs, rhs) = origArgs
+            typedAssign(lhs, rhs)
+          case EmbeddedControls_equal =>
+            val lhs = origArgs.head
+            // a == (b, c) is legal too, ya know -- we don't tuple when building the tree,
+            // as we can't (easily) undo the tupling when it turns out there was a valid == method (see t3736 in pos/ and neg/)
+            val rhs = origArgs.tail
+            // I once thought that without resetAllAttrs for lhs and rhs, the compiler fails in lambdalift for code like `(List(1) map {case x => x}) == null`
+            // this however no longer seems to be the case, and instead the reset is causing pattern-matcher generated code to fail
+            // resetting symbols of its temporary variables makes it impossible to resolve them afterwards
+            atPos(pos)(typed(Apply(Select(lhs, nme.EQ) setPos funpos, rhs)))
+          case _ =>
+            EmptyTree
+        }
+      } else EmptyTree
+
 
       // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
       // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)

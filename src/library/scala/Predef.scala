@@ -109,7 +109,7 @@ import scala.io.StdIn
  * @groupprio conversions-array-to-wrapped-array 110
  * @groupdesc conversions-array-to-wrapped-array Conversions from Arrays to WrappedArrays.
  */
-object Predef extends LowPriorityImplicits with DeprecatedPredef {
+object Predef extends LowPriorityImplicits with DeprecatedPredef with EmbeddedControls {
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.
@@ -639,4 +639,57 @@ private[scala] abstract class LowPriorityImplicits {
       def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
       def apply() = immutable.IndexedSeq.newBuilder[T]
     }
+}
+
+
+
+
+
+
+
+
+
+
+/** The <code>EmbeddedControls</code> object provides method definitions
+  *  where calls to the methods are treated by the compiler in a special way.
+  *  The reason to express these calls as methods is to give embedded DSLs a chance
+  *  to provide their own definitions and thereby override the standard
+  *  interpretation of the compiler.
+  *
+  *  Example: When faces with an `if` construct, the parser will generate
+  *
+  *  a method call: __ifThenElse(cond, thenp, elsep)
+  *
+  *  This method call will be bound to an implementation based on normal rules of scoping.
+  *  If it binds to the standard one in this trait, the type checker will
+  *  replace it by an `If` tree node. If not, the call will be left as it is
+  *  and a staging or interpreting DSL can take over.
+  *
+  * @NOTE: This is experimental.
+  *        None of the above will happen unless you compile with -Yvirtualize.
+  */
+trait EmbeddedControls {
+  /** Note why types are by-value
+    */
+  def __whileDo(cond: Boolean, body: Unit): Unit =
+    throw new UnsupportedOperationException("__whileDo")
+
+  def __doWhile(body: Unit, cond: Boolean): Unit =
+    throw new UnsupportedOperationException("__doWhile")
+
+  def __ifThenElse[T](cond: => Boolean, thenp: => T, elsep: => T): T =
+    throw new UnsupportedOperationException("__ifThenElse")
+
+  def __newVar[T](init: T): T =
+    throw new UnsupportedOperationException("__newVar")
+
+  def __assign[T](lhs: T, rhs: T): Unit =
+    throw new UnsupportedOperationException("__assign")
+
+  def __return(expr: Any): Nothing =
+    throw new UnsupportedOperationException("__return")
+
+  def __equal(expr1: Any, expr2: Any): Boolean =
+    throw new UnsupportedOperationException("__equal")
+
 }

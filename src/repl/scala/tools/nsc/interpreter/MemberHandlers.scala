@@ -66,7 +66,7 @@ trait MemberHandlers {
     case member: ModuleDef                     => new ModuleHandler(member)
     case member: ClassDef                      => new ClassHandler(member)
     case member: TypeDef                       => new TypeAliasHandler(member)
-    case member: Assign                        => new AssignHandler(member)
+    case member@LiftedAssign(lhs, rhs)         => new AssignHandler(member, lhs, rhs)
     case member: Import                        => new ImportHandler(member)
     case DocDef(_, documented)                 => chooseHandler(documented)
     case member                                => new GenericHandler(member)
@@ -170,8 +170,7 @@ trait MemberHandlers {
     def notification(req: Request) = s"defined term macro $name: ${req.typeOf(name)}"
   }
 
-  class AssignHandler(member: Assign) extends MemberHandler(member) {
-    val Assign(lhs, rhs) = member
+  class AssignHandler(member: Tree, lhs: Tree, rhs: Tree) extends MemberHandler(member) {
     override lazy val name = newTermName(freshInternalVarName())
 
     override def definesTerm = Some(name)
