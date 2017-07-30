@@ -408,26 +408,31 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def distinct: Iterator[A] = new Iterator[A] {
 
     private val traversedValues = mutable.HashSet.empty[A]
-    private var hdDefined: Boolean = false
+    private var nextElementDefined: Boolean = false
     private var nextElement: A = _
 
     def hasNext: Boolean = {
-      hdDefined || {
-        while (self.hasNext) {
+      @tailrec
+      def loop(): Boolean = {
+        if (!self.hasNext) false
+        else {
           nextElement = self.next()
-          if (!traversedValues.contains(nextElement)) {
+          if (traversedValues.contains(nextElement)) {
+            loop()
+          } else {
             traversedValues += nextElement
-            hdDefined = true
-            return true
+            nextElementDefined = true
+            true
           }
         }
-        false
       }
+
+      nextElementDefined || loop()
     }
 
     def next(): A =
       if (hasNext) {
-        hdDefined = false
+        nextElementDefined = false
         nextElement
       } else {
         Iterator.empty.next()
