@@ -115,7 +115,9 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
           val thatQueue: Queue[B] = that.asInstanceOf[Queue[B]]
           thatQueue.in ++ (thatQueue.out reverse_::: this.in)
         } else {
-          (new ListBuffer[B] ++= that.seq).prependToList(this.in)
+          val lb = new ListBuffer[B]
+          that.seq.foreach(_ +=: lb)
+          lb.prependToList(this.in)
         }
       new Queue[B](newIn, this.out).asInstanceOf[That]
     } else {
