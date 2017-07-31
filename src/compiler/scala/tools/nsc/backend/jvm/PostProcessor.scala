@@ -2,7 +2,6 @@ package scala.tools.nsc.backend.jvm
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.NoPosition
-import scala.tools.asm
 import scala.tools.asm.ClassWriter
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -12,12 +11,18 @@ import scala.tools.nsc.io.AbstractFile
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
  * optimizations, post-processing and classfile serialization and writing.
  */
-class PostProcessor[BT <: BTypes](val bTypes: BT) {
+class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[String]) {
   import bTypes._
+
+  var classfileWriter: ClassfileWriter[bTypes.type] = _
 
   val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
 
-  def postProcessAndSendToDisk(classWriter: ClassWriterForPostProcessor): Unit = {
+  def initialize(): Unit = {
+    classfileWriter = new ClassfileWriter[bTypes.type](bTypes, backendReporting, getEntryPoints)
+  }
+
+  def postProcessAndSendToDisk(): Unit = {
     runGlobalOptimizations()
 
     for (GeneratedClass(classNode, sourceFile, isArtifact) <- generatedClasses) {
@@ -45,9 +50,11 @@ class PostProcessor[BT <: BTypes](val bTypes: BT) {
         if (AsmUtils.traceSerializedClassEnabled && classNode.name.contains(AsmUtils.traceSerializedClassPattern))
           AsmUtils.traceClass(bytes)
 
-        classWriter.write(bytes, classNode.name, sourceFile)
+        classfileWriter.write(classNode.name, bytes, sourceFile)
       }
     }
+
+    classfileWriter.close()
   }
 
   def runGlobalOptimizations(): Unit = {

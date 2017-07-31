@@ -17,7 +17,7 @@ class BTypesTest extends BytecodeTesting {
   locally {
     new global.Run() // initializes some of the compiler
     global.exitingDelambdafy(global.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
-    global.exitingDelambdafy(global.genBCode.bTypes.initializeCoreBTypes())
+    global.exitingDelambdafy(global.genBCode.bTypes.initialize())
   }
   import global.genBCode.bTypes._
 

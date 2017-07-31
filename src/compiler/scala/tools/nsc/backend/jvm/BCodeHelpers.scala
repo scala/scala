@@ -21,7 +21,7 @@ import scala.tools.nsc.reporters.NoReporter
  *  @version 1.0
  *
  */
-abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
+abstract class BCodeHelpers extends BCodeIdiomatic {
   import global._
   import definitions._
   import bTypes._
@@ -305,33 +305,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       }
     }
 
-  }
-
-  /*
-   * must-single-thread
-   */
-  def initBytecodeWriter(entryPoints: List[Symbol]): BytecodeWriter = {
-    settings.outputDirs.getSingleOutput match {
-      case Some(f) if f hasExtension "jar" =>
-        // If no main class was specified, see if there's only one
-        // entry point among the classes going into the jar.
-        if (settings.mainClass.isDefault) {
-          entryPoints map (_.fullName('.')) match {
-            case Nil      =>
-              log("No Main-Class designated or discovered.")
-            case name :: Nil =>
-              log(s"Unique entry point: setting Main-Class to $name")
-              settings.mainClass.value = name
-            case names =>
-              log(s"No Main-Class due to multiple entry points:\n  ${names.mkString("\n  ")}")
-          }
-        }
-        else log(s"Main-Class was specified: ${settings.mainClass.value}")
-
-        new DirectToJarfileWriter(f.file)
-
-      case _ => factoryNonJarBytecodeWriter()
-    }
   }
 
   /*

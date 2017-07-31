@@ -15,8 +15,11 @@ sealed abstract class BackendReporting {
   def inlinerWarning(pos: Position, message: String): Unit
 
   def error(pos: Position, message: String): Unit
+
+  def log(message: String): Unit
 }
 
+// TODO: synchronize!
 final class BackendReportingImpl(val global: Global) extends BackendReporting {
   import global._
 
@@ -25,6 +28,8 @@ final class BackendReportingImpl(val global: Global) extends BackendReporting {
   }
 
   def error(pos: Position, message: String): Unit = reporter.error(pos, message)
+
+  def log(message: String): Unit = global.log(message)
 }
 
 /**

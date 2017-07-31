@@ -26,7 +26,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
 
   val run = new global.Run() // initializes some of the compiler
   duringBackend(global.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
-  duringBackend(bTypes.initializeCoreBTypes())
+  duringBackend(bTypes.initialize())
 
   def clearCache() = {
     bTypes.classBTypeCacheFromSymbol.clear()

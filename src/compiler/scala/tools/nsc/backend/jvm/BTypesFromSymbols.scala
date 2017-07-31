@@ -52,8 +52,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   val backendReporting: BackendReporting = new BackendReportingImpl(global)
 
-  final def initializeCoreBTypes(): Unit = {
+  final def initialize(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
+    javaDefinedClasses ++= currentRun.symSource collect {
+      case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
+    }
   }
 
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)

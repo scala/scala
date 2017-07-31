@@ -21,8 +21,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   val phaseName: String = "cleanup"
 
   /* used in GenBCode: collects ClassDef symbols owning a main(Array[String]) method */
-  private var entryPoints: List[Symbol] = Nil
-  def getEntryPoints: List[Symbol] = entryPoints sortBy ("" + _.fullName) // For predictably ordered error messages.
+  private val entryPoints = perRunCaches.newSet[Symbol]() // : List[Symbol] = Nil
+  def getEntryPoints: List[String] = entryPoints.toList.map(_.fullName('.')).sorted
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new CleanUpTransformer(unit)
@@ -373,7 +373,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case _: ClassDef if genBCode.codeGen.CodeGenImpl.isJavaEntryPoint(tree.symbol, currentUnit) =>
         // collecting symbols for entry points here (as opposed to GenBCode where they are used)
         // has the advantage of saving an additional pass over all ClassDefs.
-        entryPoints ::= tree.symbol
+        entryPoints += tree.symbol
         super.transform(tree)
 
       /* Transforms dynamic calls (i.e. calls to methods that are undefined
