@@ -11,4 +11,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUn
 
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LazyEntry")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.closeZipFile")
-ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LeakyEntry")
+# ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LeakyEntry")

@@ -269,7 +269,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
     import generic.CanBuildFrom
 
     /** The empty value set */
-    val empty = new ValueSet(immutable.BitSet.empty)
+    /* backwards incompatible change */ final val empty = new ValueSet(immutable.BitSet.empty)
+    /* forwards incompatible change */ def forwardsIncompatible = 1
     /** A value set consisting of given elements */
     def apply(elems: Value*): ValueSet = (newBuilder ++= elems).result()
     /** A value set containing all the values for the zero-adjusted ids

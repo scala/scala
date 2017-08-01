@@ -36,7 +36,9 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
 
 
   type TreeCopier = InternalTreeCopierOps
-  implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
+  /* backwards incompatible change */ final implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
+  /* forwards incompatible change */ def forwardsIncompatible = 1
+  
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
