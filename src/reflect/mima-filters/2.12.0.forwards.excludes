@@ -1,0 +1,14 @@
+ProblemFilters.exclude[Problem]("scala.reflect.internal.*")
+
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.unpickleClass")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.SymbolLoaders#TopClassCompleter.this")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.Yvirtpatmat")
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.PlainNioFile")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps.newMappedBaseTypeSeq")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.newMappedBaseTypeSeq")
+
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LazyEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.closeZipFile")
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LeakyEntry")
