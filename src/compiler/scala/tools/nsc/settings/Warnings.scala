@@ -26,8 +26,9 @@ trait Warnings {
     val PatVars   = Choice("patvars",   "Warn if a variable bound in a pattern is unused.")
     val Privates  = Choice("privates",  "Warn if a private member is unused.")
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
-    val Params    = Choice("params",    "Warn if a value parameter is unused.")
+    val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+    val Params    = Choice("params",    "Warn if a value parameter is unused.", expandsTo = List(Explicits, Implicits))
     val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
   }
 
@@ -44,14 +45,15 @@ trait Warnings {
   def warnUnusedPatVars   = warnUnused contains UnusedWarnings.PatVars
   def warnUnusedPrivates  = warnUnused contains UnusedWarnings.Privates
   def warnUnusedLocals    = warnUnused contains UnusedWarnings.Locals
-  def warnUnusedParams    = warnUnused contains UnusedWarnings.Params
+  def warnUnusedParams    = warnUnusedExplicits || warnUnusedImplicits
+  def warnUnusedExplicits = warnUnused contains UnusedWarnings.Explicits
   def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
 
   BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
     warnUnused.add(s"${if (s) "" else "-"}imports")
   } //withDeprecationMessage s"Enable -Ywarn-unused:imports"
 
-  val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
+  val warnExtraImplicit   = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
