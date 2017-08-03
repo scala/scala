@@ -507,9 +507,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     val b = newBuilder
     val seen = mutable.HashSet[A]()
     for (x <- this) {
-      if (!seen(x)) {
+      if (seen.add(x)) {
         b += x
-        seen += x
       }
     }
     b.result()
