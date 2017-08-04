@@ -268,7 +268,7 @@ class Flags extends ModifierFlags {
    *  PRIVATE, LOCAL.
    */
   final val FieldFlags =
-    MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
+    MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY | DEFAULTINIT
 
   /** Masks for getters and setters, where the flags are derived from those
    *  on the field's modifiers.  Both getters and setters get the ACCESSOR flag.
