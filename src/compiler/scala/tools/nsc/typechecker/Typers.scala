@@ -1174,7 +1174,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else tree.tpe match {
         case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
-        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
+        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode | PATTERNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
+          /* We don't adapt in PATTERNmode because patmat checks for duplicated
+           * alternatives later on in MatchOptimizations, so that this desugars
+           * to a single check. Moreover, as we don't adaptConstant now, we are
+           * able to issue a "duplicated alternative" warning at the same time;
+           * see scala/bug#7290 for context. Theoretically I could warn earlier
+           * in typedAlternative, but there are other checks done in patmat, so
+           * it's easier just to wait until then.
+           */
           adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
@@ -5224,9 +5232,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedAlternative(alt: Alternative) = {
-        context withinPatAlternative (
-          treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt))) setType pt
-        )
+        context withinPatAlternative {
+          val trees1 = alt.trees mapConserve (alt => typed(alt, mode, pt))
+          val tpe = if (settings.isScala213) weakLub(trees1 map (_.tpe)) else pt
+          treeCopy.Alternative(tree, trees1) setType tpe
+        }
       }
       def typedStar(tree: Star) = {
         if (!context.starPatterns && !isPastTyper)
