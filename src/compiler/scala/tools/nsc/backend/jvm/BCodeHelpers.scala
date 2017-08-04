@@ -199,7 +199,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     if (isAnonymousOrLocalClass(classSym) && !considerAsTopLevelImplementationArtifact(classSym)) {
       val enclosingClass = enclosingClassForEnclosingMethodAttribute(classSym)
       val methodOpt = enclosingMethodForEnclosingMethodAttribute(classSym)
-      for (m <- methodOpt) assert(m.owner == enclosingClass, s"the owner of the enclosing method ${m.locationString} should be the same as the enclosing class $enclosingClass")
       Some(EnclosingMethodEntry(
         classDesc(enclosingClass),
         methodOpt.map(_.javaSimpleName.toString).orNull,
