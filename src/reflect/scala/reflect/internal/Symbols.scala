@@ -1397,15 +1397,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def newTypeSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol =
       newNonClassSymbol(name, pos, newFlags)
 
-    /** The class or term up to which this symbol is accessible,
-     *  or RootClass if it is public.  As java protected statics are
-     *  otherwise completely inaccessible in scala, they are treated
-     *  as public.
+    /**
+     * The class or term up to which this symbol is accessible, or RootClass if it is public. As
+     * Java protected statics are otherwise completely inaccessible in Scala, they are treated as
+     * public (scala/bug#1806).
      */
     def accessBoundary(base: Symbol): Symbol = {
       if (hasFlag(PRIVATE) || isLocalToBlock) owner
       else if (hasAllFlags(PROTECTED | STATIC | JAVA)) enclosingRootClass
-      else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
+      else if (hasAccessBoundary && !phase.erasedTypes) privateWithin // Phase check needed? See comment in Context.isAccessible.
       else if (hasFlag(PROTECTED)) base
       else enclosingRootClass
     }
