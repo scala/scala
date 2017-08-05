@@ -93,4 +93,15 @@ class ImmutableArrayBenchmark {
     bh.consume(result)
   }
 
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def randomPatch(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      val from = randomIndices(i)
+      val patch = scala.util.Random.nextInt(size)
+      bh.consume(xs.patch(from, xss(i).take(from), scala.util.Random.nextInt(xs.length)))
+      i = i + 1
+    }
+  }
 }

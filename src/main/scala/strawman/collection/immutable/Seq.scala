@@ -93,6 +93,7 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(coll, index, elem))
 
+  def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int = 0): CC[B] = fromIterable(View.Patched(coll, from, other, replaced))
 }
 
 object Seq extends IterableFactory.Delegate[Seq](List)
