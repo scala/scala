@@ -184,8 +184,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
-  // concat (suboptimal but avoids worst performance gotchas)
-  override def concat[B >: A](that: IterableOnce[B]): Vector[B] =
+  // appendAll (suboptimal but avoids worst performance gotchas)
+  override def appendAll[B >: A](that: IterableOnce[B]): Vector[B] =
     that match {
       case it: Iterable[B] =>
         import Vector.{Log2ConcatFaster, TinyAppendFaster}
@@ -202,11 +202,13 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
               val ri = this.reverseIterator()
               while (ri.hasNext) v = ri.next() +: v
               v
-            case _ => super.concat(that)
+            case _ => super.appendAll(that)
           }
         }
-      case _ => super.concat(that)
+      case _ => super.appendAll(that)
     }
+
+  // TODO: ODD 2017-08-05: Add optimized implementation of `prependAll` analogous to `appendAll` above.
 
   // semi-private api
 

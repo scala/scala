@@ -130,16 +130,16 @@ sealed trait List[+A]
 
   override def prepend[B >: A](elem: B): List[B] = elem :: this
 
-  override def prependAll[B >: A](prefix: collection.Iterable[B]): List[B] =
-    prefix match {
-      case xs: List[B] => xs ::: this
-      case _ => super.prependAll(prefix)
-    }
+  // When calling prependAll with another list `prefix`, avoid copying `this`
+  override def prependAll[B >: A](prefix: IterableOnce[B]): List[B] = prefix match {
+    case xs: List[B] => xs ::: this
+    case _ => super.prependAll(prefix)
+  }
 
-  // When concatenating with another list `xs`, avoid copying `xs`
-  override def concat[B >: A](suffix: IterableOnce[B]): List[B] = suffix match {
+  // When calling appendAll with another list `suffix`, avoid copying `suffix`
+  override def appendAll[B >: A](suffix: IterableOnce[B]): List[B] = suffix match {
     case xs: List[B] => this ::: xs
-    case _ => super.concat(suffix)
+    case _ => super.appendAll(suffix)
   }
 
   override def take(n: Int): List[A] = if (isEmpty || n <= 0) Nil else {

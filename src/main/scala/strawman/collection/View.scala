@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, Boolean, Equals, NoSuchElementException, IndexOutOfBoundsException, Int, Nothing, annotation, throws}
+import scala.{Any, Boolean, Equals, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
 import scala.Predef.{<:<, intWrapper}
 
 /** Concrete collection type: View */
@@ -171,14 +171,14 @@ object View extends IterableFactory[View] {
     def iterator() = underlying.iterator().flatMap(f)
   }
 
-  /** A view that concatenates elements of the underlying collection with the elements
-   *  of another collection or iterator.
+  /** A view that concatenates elements of the prefix collection or iterator with the elements
+   *  of the suffix collection or iterator.
    */
-  case class Concat[A](underlying: Iterable[A], other: IterableOnce[A]) extends View[A] {
-    def iterator() = underlying.iterator() ++ other
-    override def knownSize = other match {
-      case other: Iterable[_] if underlying.knownSize >= 0 && other.knownSize >= 0 =>
-        underlying.knownSize + other.knownSize
+  case class Concat[A](prefix: IterableOnce[A], suffix: IterableOnce[A]) extends View[A] {
+    def iterator() = prefix.iterator() ++ suffix.iterator()
+    override def knownSize = (prefix, suffix) match {
+      case (px: Iterable[_], sx: Iterable[_]) if px.knownSize >= 0 && sx.knownSize >= 0 =>
+        px.knownSize + sx.knownSize
       case _ =>
         -1
     }
