@@ -132,6 +132,15 @@ object BytecodeUtils {
 
   def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
 
+  /** Find the nearest preceding node to `insn` which is executable (i.e., not a label / line number)
+    * and which is not selected by `stopBefore`. */
+  @tailrec def previousExecutableInstruction(insn: AbstractInsnNode, stopBefore: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
+    val prev = insn.getPrevious
+    if (prev == null || stopBefore(insn)) None
+    else if (isExecutable(prev)) Some(prev)
+    else previousExecutableInstruction(prev, stopBefore)
+  }
+
   @tailrec def nextExecutableInstruction(insn: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     val next = insn.getNext
     if (next == null || isExecutable(next) || alsoKeep(next)) Option(next)
@@ -162,7 +171,7 @@ object BytecodeUtils {
       instructions.insert(jump, getPop(1))
     } else {
       // we can't remove JSR: its execution does not only jump, it also adds a return address to the stack
-      assert(jump.getOpcode == GOTO)
+      assert(jump.getOpcode == GOTO, s"Cannot remove JSR instruction in ${method.name} (at ${method.instructions.indexOf(jump)}")
     }
     instructions.remove(jump)
   }

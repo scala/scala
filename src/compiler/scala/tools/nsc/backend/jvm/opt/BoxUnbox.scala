@@ -650,6 +650,15 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
       else Type.getReturnType(mi.desc).getInternalName
     }
 
+    private val primBoxSupertypes: Map[InternalName, Set[InternalName]] = {
+      def transitiveSupertypes(clsbt: ClassBType): Set[ClassBType] =
+        (clsbt.info.get.superClass ++ clsbt.info.get.interfaces).flatMap(transitiveSupertypes).toSet + clsbt
+
+      coreBTypes.boxedClasses.map { bc =>
+        bc.internalName -> (transitiveSupertypes(bc).map(_.internalName) + bc.internalName)
+      }.toMap
+    }
+
     def checkPrimitiveBox(insn: AbstractInsnNode, expectedKind: Option[PrimitiveBox], prodCons: ProdConsAnalyzer): Option[(BoxCreation, PrimitiveBox)] = {
       // mi is either a box factory or a box constructor invocation
       def checkKind(mi: MethodInsnNode) = expectedKind match {
@@ -681,6 +690,10 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
           else if (isPredefAutoUnbox(mi) && typeOK(mi)) BoxKind.checkReceiverPredefLoad(mi, prodCons).map(ModuleGetter(_, mi))
           else None
 
+        case ti: TypeInsnNode if insn.getOpcode == INSTANCEOF =>
+          val success = primBoxSupertypes(kind.boxClass).contains(ti.desc)
+          Some(BoxedPrimitiveTypeCheck(ti, success))
+
         case _ => None
       }
     }
@@ -699,6 +712,9 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
     private def boxedType(mi: MethodInsnNode): Type = runtimeRefClassBoxedType(mi.owner)
     private def refClass(mi: MethodInsnNode): InternalName = mi.owner
     private def loadZeroValue(refZeroCall: MethodInsnNode): List[AbstractInsnNode] = List(loadZeroForTypeSort(runtimeRefClassBoxedType(refZeroCall.owner).getSort))
+
+    private val refSupertypes =
+      Set(coreBTypes.jiSerializableRef, coreBTypes.ObjectRef).map(_.internalName)
 
     def checkRefCreation(insn: AbstractInsnNode, expectedKind: Option[Ref], prodCons: ProdConsAnalyzer): Option[(BoxCreation, Ref)] = {
       def checkKind(mi: MethodInsnNode): Option[Ref] = expectedKind match {
@@ -725,6 +741,9 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
         if (fi.getOpcode == GETFIELD) Some(StaticGetterOrInstanceRead(fi))
         else if (fi.getOpcode == PUTFIELD) Some(StaticSetterOrInstanceWrite(fi))
         else None
+
+      case ti: TypeInsnNode if ti.getOpcode == INSTANCEOF =>
+        Some(BoxedPrimitiveTypeCheck(ti, ti.desc == kind.refClass || refSupertypes.contains(ti.desc)))
 
       case _ => None
     }
@@ -888,6 +907,10 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
     def postExtractionAdaptationOps(typeOfExtractedValue: Type): List[AbstractInsnNode] = this match {
       case PrimitiveBoxingGetter(_) => List(getScalaBox(typeOfExtractedValue))
       case PrimitiveUnboxingGetter(_, unboxedPrimitive) => List(getScalaUnbox(unboxedPrimitive))
+      case BoxedPrimitiveTypeCheck(_, success) =>
+        getPop(typeOfExtractedValue.getSize) ::
+          new InsnNode(if (success) ICONST_1 else ICONST_0) ::
+          Nil
       case _ => Nil
     }
   }
@@ -902,6 +925,8 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
   case class ModuleGetter(moduleLoad: AbstractInsnNode, consumer: MethodInsnNode) extends BoxConsumer
   /** PUTFIELD or setter invocation */
   case class StaticSetterOrInstanceWrite(consumer: AbstractInsnNode) extends BoxConsumer
+  /** `.$isInstanceOf[T]` (can be statically proven true or false) */
+  case class BoxedPrimitiveTypeCheck(consumer: AbstractInsnNode, success: Boolean) extends BoxConsumer
   /** An unknown box consumer */
   case class EscapingConsumer(consumer: AbstractInsnNode) extends BoxConsumer
 }
