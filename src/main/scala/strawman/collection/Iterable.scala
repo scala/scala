@@ -770,8 +770,8 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
       else View.Empty
     }
 
-  /** Alias for `prependAll` */
-  def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendAll(suffix)
+  /** Alias for `appendAll` */
+  @`inline` final def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendAll(suffix)
 
   /** Alias for `concat` */
   @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
@@ -790,10 +790,10 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** Alias for `appendAll` */
   @`inline` final def :++ [B >: A](suffix: IterableOnce[B]): CC[B] = appendAll(suffix)
 
-  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
+  /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.
     *
-    *  It differs from `++` in that the right operand determines the type of
+    *  It differs from `:++` in that the right operand determines the type of
     *  the resulting collection rather than the left one.
     *  Mnemonic: the COLon is on the side of the new COLlection type.
     *
