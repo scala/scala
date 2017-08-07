@@ -3,21 +3,15 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 package jvm
 
-import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.Statistics
 import scala.tools.asm
-import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.io.AbstractFile
 
 abstract class GenBCode extends SubComponent {
-
   import global._
-
 
   val bTypes = new BTypesFromSymbols[global.type](global)
   val codeGen = new CodeGen[global.type](global) {
@@ -25,9 +19,6 @@ abstract class GenBCode extends SubComponent {
   }
 
   val postProcessor = new PostProcessor[bTypes.type](bTypes, () => cleanup.getEntryPoints)
-
-  import codeGen.CodeGenImpl._
-  import bTypes._
 
   val phaseName = "jvm"
 

@@ -1,13 +1,12 @@
 package scala.tools.nsc.backend.jvm
 
-import java.io.{DataOutputStream, IOException, PrintWriter, StringWriter}
+import java.io.{DataOutputStream, IOException}
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.jar.Attributes.Name
 
 import scala.reflect.internal.util.{NoPosition, Statistics}
 import scala.reflect.io._
-import scala.tools.asm.ClassReader
-import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.{AbstractFile, Jar, JarWriter}
 
@@ -73,7 +72,7 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
     new PlainNioFile(directory.resolve(simpleName + suffix))
   }
 
-  private def writeClassfile(outFile: AbstractFile, bytes: Array[Byte]): Unit = {
+  private def writeBytes(outFile: AbstractFile, bytes: Array[Byte]): Unit = {
     if (outFile.file != null) {
       val outPath = outFile.file.toPath
       try Files.write(outPath, bytes)
@@ -89,24 +88,12 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
     }
   }
 
-  private def writeAsmp(asmpFile: AbstractFile, bytes: Array[Byte]): Unit = {
-    val pw = new PrintWriter(asmpFile.bufferedOutput)
-    try {
-      val cnode = new ClassNode()
-      val cr = new ClassReader(bytes)
-      cr.accept(cnode, 0)
-      val trace = new scala.tools.asm.util.TraceClassVisitor(new PrintWriter(new StringWriter()))
-      cnode.accept(trace)
-      trace.p.print(pw)
-    } finally pw.close()
-  }
-
   def write(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = try {
     val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
     if (jarWriter == null) {
       val outFolder = compilerSettings.outdir.outputDirs.outputDirFor(sourceFile)
       val outFile = getFile(outFolder, className, ".class")
-      writeClassfile(outFile, bytes)
+      writeBytes(outFile, bytes)
     } else {
       val path = className + ".class"
       val out = jarWriter.newOutputStream(path)
@@ -117,12 +104,13 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
 
     if (asmOutputDir != null) {
       val asmpFile = getFile(asmOutputDir, className, ".asmp")
-      writeAsmp(asmpFile, bytes)
+      val asmpString = AsmUtils.textify(AsmUtils.readClass(bytes))
+      writeBytes(asmpFile, asmpString.getBytes(StandardCharsets.UTF_8))
     }
 
     if (dumpOutputDir != null) {
       val dumpFile = getFile(dumpOutputDir, className, ".class")
-      writeClassfile(dumpFile, bytes)
+      writeBytes(dumpFile, bytes)
     }
   } catch {
     case e: FileConflictException =>
@@ -135,15 +123,6 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
 
   def close(): Unit = {
     if (jarWriter != null) jarWriter.close()
-  }
-
-  abstract class ClassfileWriter {
-    final def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit = {
-
-    }
-
-    def writeClassFile(): Unit
-    def close(): Unit
   }
 }
 

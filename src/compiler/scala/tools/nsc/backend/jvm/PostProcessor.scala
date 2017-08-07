@@ -14,6 +14,7 @@ import scala.tools.nsc.io.AbstractFile
 class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[String]) {
   import bTypes._
 
+  // re-initialized per run because it reads compiler settings that might change
   var classfileWriter: ClassfileWriter[bTypes.type] = _
 
   val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
@@ -83,30 +84,21 @@ class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[Str
   }
 
   def serializeClass(classNode: ClassNode): Array[Byte] = {
-    val cw = new CClassWriter(backendUtils.extraProc)
+    val cw = new ClassWriterWithBTypeLub(backendUtils.extraProc)
     classNode.accept(cw)
     cw.toByteArray
   }
 
-
-  // -----------------------------------------------------------------------------------------
-  // finding the least upper bound in agreement with the bytecode verifier (given two internal names handed by ASM)
-  // Background:
-  //  http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
-  //  http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-  //  https://github.com/scala/bug/issues/3872
-  // -----------------------------------------------------------------------------------------
-
-  /*  An `asm.ClassWriter` that uses `jvmWiseLUB()`
-   *  The internal name of the least common ancestor of the types given by inameA and inameB.
-   *  It's what ASM needs to know in order to compute stack map frames, http://asm.ow2.org/doc/developer-guide.html#controlflow
+  /**
+   * An asm ClassWriter that uses ClassBType.jvmWiseLUB to compute the common superclass of class
+   * types. This operation is used for computing statck map frames.
    */
-  final class CClassWriter(flags: Int) extends ClassWriter(flags) {
-
+  final class ClassWriterWithBTypeLub(flags: Int) extends ClassWriter(flags) {
     /**
-     * This method is used by asm when computing stack map frames. It is thread-safe: it depends
-     * only on the BTypes component, which does not depend on global.
-     * TODO @lry move to a different place where no global is in scope, on bTypes.
+     * This method is invoked by asm during classfile writing when computing stack map frames.
+     *
+     * TODO: it might make sense to cache results per compiler run. The ClassWriter caches
+     * internally, but we create a new writer for each class. scala/scala-dev#322.
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
       // All types that appear in a class node need to have their ClassBType cached, see [[cachedClassBType]].
@@ -115,7 +107,7 @@ class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[Str
       val lub = a.jvmWiseLUB(b).get
       val lubName = lub.internalName
       assert(lubName != "scala/Any")
-      lubName // ASM caches the answer during the lifetime of a ClassWriter. We outlive that. Not sure whether caching on our side would improve things.
+      lubName
     }
   }
 }
