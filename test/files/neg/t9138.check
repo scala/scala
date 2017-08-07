@@ -1,0 +1,11 @@
+t9138.scala:9: error: class D needs to be abstract, since method f in class C of type (t: B)(s: String)B is not defined
+class D extends C[B] {
+      ^
+t9138.scala:19: error: object creation impossible, since method foo in trait Base of type (a: String)(b: Int)Nothing is not defined
+object Derived extends Base[String] {
+       ^
+t9138.scala:29: error: class DDD needs to be abstract, since method f in class CCC of type (t: B, s: String)B is not defined
+(Note that T does not match Int)
+class DDD extends CCC[B] {
+      ^
+three errors found

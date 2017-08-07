@@ -674,11 +674,14 @@ abstract class RefChecks extends Transform {
               // If there is a concrete method whose name matches the unimplemented
               // abstract method, and a cursory examination of the difference reveals
               // something obvious to us, let's make it more obvious to them.
-              val abstractParams   = underlying.tpe.paramTypes
-              val matchingName     = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
-              val matchingArity    = matchingName filter { m =>
+              val abstractParams     = underlying.tpe.paramTypes
+              val abstractParamLists = underlying.paramLists
+              val matchingName       = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
+              val matchingArity      = matchingName filter { m =>
                 !m.isDeferred &&
                 (m.name == underlying.name) &&
+                (m.paramLists.length == abstractParamLists.length) &&
+                (m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum) &&
                 (m.tpe.paramTypes.size == underlying.tpe.paramTypes.size) &&
                 (m.tpe.typeParams.size == underlying.tpe.typeParams.size)
               }
@@ -686,7 +689,7 @@ abstract class RefChecks extends Transform {
               matchingArity match {
                 // So far so good: only one candidate method
                 case Scope(concrete)   =>
-                  val mismatches  = abstractParams zip concrete.tpe.paramTypes filterNot { case (x, y) => x =:= y }
+                  val mismatches  = abstractParamLists.flatten.map(_.tpe) zip concrete.paramLists.flatten.map(_.tpe) filterNot { case (x, y) => x =:= y }
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
