@@ -14,18 +14,17 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   extends Any
     with IterableOps[A, CC, C] {
 
-  /** Optimized version of 'distinct' */
+  /** Optimized version of 'distinct' for strict collections */
   override def distinct: C = {
     val builder = newSpecificBuilder()
     val seen = mutable.HashSet.empty[A]
-    coll.foreach(
-      elem => {
-        if (!seen.contains(elem)) {
-          seen += elem
-          builder += elem
-        }
+
+    for (x <- coll) {
+      if (!seen.contains(x)) {
+        seen += x
+        builder += x
       }
-    )
+    }
     builder.result()
   }
 
