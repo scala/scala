@@ -14,20 +14,6 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   extends Any
     with IterableOps[A, CC, C] {
 
-  /** Optimized version of 'distinct' for strict collections */
-  override def distinct: C = {
-    val builder = newSpecificBuilder()
-    val seen = mutable.HashSet.empty[A]
-
-    for (x <- coll) {
-      if (!seen.contains(x)) {
-        seen += x
-        builder += x
-      }
-    }
-    builder.result()
-  }
-
   /** Optimized, push-based version of `partition`. */
   override def partition(p: A => Boolean): (C, C) = {
     val l, r = newSpecificBuilder()

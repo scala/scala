@@ -526,7 +526,13 @@ class StrawmanTest {
   }
 
   @Test
-  def seqDistinct(): Unit = {
+  def distinct(): Unit = {
+    // Lazy collections distinct
+    assert(LazyList[Int]().distinct.isEmpty)
+    assert(LazyList(1,1,1,1).distinct.equals(LazyList(1)))
+    assert(LazyList(1,2,3,1).distinct.equals(LazyList(1,2,3)))
+
+    // Strict collections distinct
     assert(List().distinct.equals(List()))
     assert(List(1,1,1,1).distinct.equals(List(1)))
     assert(List(1,2,3,1).distinct.equals(List(1,2,3)))
@@ -565,7 +571,7 @@ class StrawmanTest {
     immutableArrayOps(intsArr)
     lazyListOps(intsLzy)
     equality()
-    seqDistinct()
+    distinct()
     linearSeqSize()
   }
 }
