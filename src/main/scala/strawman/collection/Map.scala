@@ -106,13 +106,13 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
-    case that: Map[b, _] =>
+    case that: Map[K, _] =>
       (this eq that) ||
       (that canEqual this) &&
       (this.size == that.size) && {
         try {
           this forall {
-            case (k, v) => that.get(k.asInstanceOf[b]) match {
+            case (k, v) => that.get(k) match {
               case Some(`v`) =>
                 true
               case _ => false
