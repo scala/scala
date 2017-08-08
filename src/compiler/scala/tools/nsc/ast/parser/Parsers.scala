@@ -1651,9 +1651,11 @@ self =>
       if (isUnaryOp) {
         atPos(in.offset) {
           if (lookingAhead(isSimpleExprIntro)) {
+            val namePos = in.offset
             val uname = nme.toUnaryName(rawIdent().toTermName)
             if (uname == nme.UNARY_- && isNumericLit)
-              simpleExprRest(literal(isNegated = true), canApply = true)
+              /* start at the -, not the number */
+              simpleExprRest(literal(isNegated = true, start = namePos), canApply = true)
             else
               Select(stripParens(simpleExpr()), uname)
           }
