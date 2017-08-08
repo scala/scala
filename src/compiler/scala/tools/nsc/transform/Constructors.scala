@@ -764,7 +764,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
           primaryConstrBody.expr)
       })
 
-      if (omittableAccessor.exists(_.isOuterField) && !constructorStats.exists(_.exists { case i: Ident if i.symbol.isOuterParam => true; case _ => false}))
+      if ((exitingPickler(clazz.isAnonymousClass) || clazz.originalOwner.isTerm) && omittableAccessor.exists(_.isOuterField) && !constructorStats.exists(_.exists { case i: Ident if i.symbol.isOuterParam => true; case _ => false}))
         primaryConstructor.symbol.updateAttachment(OuterArgCanBeElided)
 
       val constructors = primaryConstructor :: auxConstructors
