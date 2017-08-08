@@ -1890,6 +1890,14 @@ trait Types
       super.invalidateTypeRefCaches()
       narrowedCache = null
     }
+    override def forceDirectSuperclasses: Unit =
+      sym0.rawInfo.decls.foreach { decl =>
+        decl match {
+          case _: ModuleSymbol => decl.rawInfo.forceDirectSuperclasses
+          case _: TermSymbol =>
+          case _ => decl.rawInfo.forceDirectSuperclasses
+        }
+      }
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
