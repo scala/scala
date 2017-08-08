@@ -26,6 +26,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
   import definitions._
   import bTypes._
   import coreBTypes._
+  import genBCode.postProcessor.backendUtils
   import BTypes.{InternalName, InlineInfo, MethodInlineInfo}
 
   /**
@@ -238,9 +239,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     try fn finally reporter = currentReporter
   }
 
-
-  var pickledBytes = 0 // statistics
-
   /*
    * must-single-thread
    */
@@ -406,7 +404,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
             AnnotationInfo(sigBytes.sigAnnot, Nil, (nme.bytes, sigBytes) :: Nil)
           }
-          pickledBytes += pickle.writeIndex
           currentRun.symData -= sym
           currentRun.symData -= sym.companionSymbol
           Some(scalaAnnot)

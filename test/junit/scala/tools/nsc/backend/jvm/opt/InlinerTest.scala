@@ -8,11 +8,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -24,16 +22,17 @@ class InlinerTest extends BytecodeTesting {
   val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-opt:inline -opt-inline-from:**"))
 
   import compiler._
-  import global.genBCode.bTypes
+  import global.genBCode.{bTypes, postProcessor}
+
 
   compiler.keepPerRunCachesAfterRun(List(
     bTypes.classBTypeCacheFromSymbol,
     bTypes.classBTypeCacheFromClassfile,
-    bTypes.byteCodeRepository.compilingClasses,
-    bTypes.byteCodeRepository.parsedClasses,
-    bTypes.callGraph.callsites))
+    postProcessor.byteCodeRepository.compilingClasses,
+    postProcessor.byteCodeRepository.parsedClasses,
+    postProcessor.callGraph.callsites))
 
-  import global.genBCode.bTypes.{byteCodeRepository, callGraph, inliner, inlinerHeuristics}
+  import global.genBCode.postProcessor.{byteCodeRepository, callGraph, inliner, inlinerHeuristics}
   import inlinerHeuristics._
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
@@ -124,7 +123,7 @@ class InlinerTest extends BytecodeTesting {
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)
 
-    global.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
+    global.genBCode.postProcessor.localOpt.methodOptimizations(g, "C")
     assertSameCode(convertMethod(g), invokeQQQ :+ Op(ATHROW))
   }
 

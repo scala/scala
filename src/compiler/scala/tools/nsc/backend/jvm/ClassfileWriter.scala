@@ -10,37 +10,38 @@ import scala.reflect.io._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.{AbstractFile, Jar, JarWriter}
 
-class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendReporting, getEntryPoints: () => List[String]) {
-  import bTypes._
+class ClassfileWriter(frontendAccess: PostProcessorFrontendAccess) {
+  import frontendAccess.{backendReporting, compilerSettings}
 
   // if non-null, asm text files are written to this directory
-  private val asmOutputDir: AbstractFile = getDirectoryOrNull(compilerSettings.Ygenasmp.valueSetByUser)
+  private val asmOutputDir: AbstractFile = getDirectoryOrNull(compilerSettings.genAsmpDirectory)
 
   // if non-null, classfiles are additionally written to this directory
-  private val dumpOutputDir: AbstractFile = getDirectoryOrNull(compilerSettings.Ydumpclasses.valueSetByUser)
+  private val dumpOutputDir: AbstractFile = getDirectoryOrNull(compilerSettings.dumpClassesDirectory)
 
   // if non-null, classfiles are written to a jar instead of the output directory
-  private val jarWriter: JarWriter = compilerSettings.outdir.outputDirs.getSingleOutput match {
+  private val jarWriter: JarWriter = compilerSettings.singleOutputDirectory match {
     case Some(f) if f hasExtension "jar" =>
       // If no main class was specified, see if there's only one
       // entry point among the classes going into the jar.
-      if (compilerSettings.mainClass.isDefault) {
-        getEntryPoints() match {
-          case Nil      =>
+      val mainClass = compilerSettings.mainClass match {
+        case c @ Some(m) =>
+          backendReporting.log(s"Main-Class was specified: $m")
+          c
+
+        case None => frontendAccess.getEntryPoints match {
+          case Nil =>
             backendReporting.log("No Main-Class designated or discovered.")
+            None
           case name :: Nil =>
             backendReporting.log(s"Unique entry point: setting Main-Class to $name")
-            compilerSettings.mainClass.value = name
+            Some(name)
           case names =>
             backendReporting.log(s"No Main-Class due to multiple entry points:\n  ${names.mkString("\n  ")}")
+            None
         }
       }
-      else backendReporting.log(s"Main-Class was specified: ${compilerSettings.mainClass.value}")
-
-      val jarMainAttrs =
-        if (compilerSettings.mainClass.isDefault) Nil
-        else List(Name.MAIN_CLASS -> compilerSettings.mainClass.value)
-
+      val jarMainAttrs = mainClass.map(c => Name.MAIN_CLASS -> c).toList
       new Jar(f.file).jarWriter(jarMainAttrs: _*)
 
     case _ => null
@@ -91,7 +92,7 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
   def write(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = try {
     val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
     if (jarWriter == null) {
-      val outFolder = compilerSettings.outdir.outputDirs.outputDirFor(sourceFile)
+      val outFolder = compilerSettings.outputDirectoryFor(sourceFile)
       val outFile = getFile(outFolder, className, ".class")
       writeBytes(outFile, bytes)
     } else {
@@ -116,7 +117,7 @@ class ClassfileWriter[BT <: BTypes](val bTypes: BT, backendReporting: BackendRep
     case e: FileConflictException =>
       backendReporting.error(NoPosition, s"error writing $className: ${e.getMessage}")
     case e: java.nio.file.FileSystemException =>
-      if (compilerSettings.debug.value)
+      if (compilerSettings.debug)
         e.printStackTrace()
       backendReporting.error(NoPosition, s"error writing $className: ${e.getClass.getName} ${e.getMessage}")
   }

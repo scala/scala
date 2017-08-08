@@ -8,16 +8,18 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
-import scala.tools.asm.Type
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
+import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
-class BoxUnbox[BT <: BTypes](val btypes: BT) {
-  import btypes._
+abstract class BoxUnbox {
+  val postProcessor: PostProcessor
+
+  import postProcessor.{backendUtils, callGraph}
   import backendUtils._
 
   /**

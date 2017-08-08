@@ -19,9 +19,9 @@ import scala.tools.testing.BytecodeTesting._
 class NullnessAnalyzerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._
-  import global.genBCode.bTypes.backendUtils._
+  import global.genBCode.postProcessor.backendUtils._
 
-  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer(global.genBCode.bTypes, methodNode))
+  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer(isNonNullMethodInvocation, methodNode))
 
   def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
     for (i <- findInstrs(method, query)) {

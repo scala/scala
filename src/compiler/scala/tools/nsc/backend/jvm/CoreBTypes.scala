@@ -351,14 +351,11 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
 /**
  * See comment in class [[CoreBTypes]].
  */
-final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) extends CoreBTypesProxyGlobalIndependent[BTFS] {
+final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) extends CoreBTypesProxyGlobalIndependent[BTFS] with PerRunLazy {
   import bTypes._
   import global._
 
-  private[this] var _coreBTypes: CoreBTypes[bTypes.type] = _
-  def setBTypes(coreBTypes: CoreBTypes[BTFS]): Unit = {
-    _coreBTypes = coreBTypes.asInstanceOf[CoreBTypes[bTypes.type]]
-  }
+  private[this] val _coreBTypes: LazyVar[CoreBTypes[bTypes.type]] = perRunLazy(new CoreBTypes[bTypes.type](bTypes))
 
   def primitiveTypeToBType: Map[Symbol, PrimitiveBType] = _coreBTypes.primitiveTypeToBType
 

@@ -25,11 +25,45 @@ import scala.util.control.{NoStackTrace, NonFatal}
  * One example is the AsmAnalyzer class, which runs `computeMaxLocalsMaxStack` on the methodNode to
  * be analyzed. This method in turn lives inside the BTypes assembly because it queries the per-run
  * cache `maxLocalsMaxStackComputed` defined in there.
+ *
+ * TODO: move out of `analysis` package?
  */
-class BackendUtils[BT <: BTypes](val btypes: BT) {
-  import btypes._
-  import btypes.coreBTypes._
+abstract class BackendUtils extends PerRunLazy {
+  val postProcessor: PostProcessor
+
+  import postProcessor.{bTypes, bTypesFromClassfile, callGraph, frontendAccess}
+  import bTypes._
   import callGraph.ClosureInstantiation
+  import coreBTypes._
+  import frontendAccess.compilerSettings
+
+  // unused objects created by these constructors are eliminated by pushPop
+  private val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy {
+    val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
+    primitiveBoxConstructors.map(ownerDesc).toSet ++
+      srRefConstructors.map(ownerDesc) ++
+      tupleClassConstructors.map(ownerDesc) ++ Set(
+      (ObjectRef.internalName, MethodBType(Nil, UNIT).descriptor),
+      (StringRef.internalName, MethodBType(Nil, UNIT).descriptor),
+      (StringRef.internalName, MethodBType(List(StringRef), UNIT).descriptor),
+      (StringRef.internalName, MethodBType(List(ArrayBType(CHAR)), UNIT).descriptor))
+  }
+
+  private val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(sideEffectFreeConstructors.map(_._1))
+
+  val classfileVersion: LazyVar[Int] = perRunLazy(compilerSettings.target match {
+    case "jvm-1.8" => asm.Opcodes.V1_8
+  })
+
+
+  val majorVersion: LazyVar[Int] = perRunLazy(classfileVersion & 0xFF)
+
+  val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(majorVersion >= 50)
+
+  val extraProc: LazyVar[Int] = perRunLazy(GenBCode.mkFlags(
+    asm.ClassWriter.COMPUTE_MAXS,
+    if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
+  ))
 
   /**
    * A wrapper to make ASM's Analyzer a bit easier to use.
@@ -257,23 +291,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
   def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
   def isTupleConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, tupleClassConstructors)
 
-  // unused objects created by these constructors are eliminated by pushPop
-  private lazy val sideEffectFreeConstructors: Set[(String, String)] = {
-    val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
-    primitiveBoxConstructors.map(ownerDesc).toSet ++
-      srRefConstructors.map(ownerDesc) ++
-      tupleClassConstructors.map(ownerDesc) ++ Set(
-        (ObjectRef.internalName, MethodBType(Nil, UNIT).descriptor),
-        (StringRef.internalName, MethodBType(Nil, UNIT).descriptor),
-        (StringRef.internalName, MethodBType(List(StringRef), UNIT).descriptor),
-        (StringRef.internalName, MethodBType(List(ArrayBType(CHAR)), UNIT).descriptor))
-  }
 
   def isSideEffectFreeConstructorCall(insn: MethodInsnNode): Boolean = {
     insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors((insn.owner, insn.desc))
   }
-
-  private lazy val classesOfSideEffectFreeConstructors = sideEffectFreeConstructors.map(_._1)
 
   def isNewForSideEffectFreeConstructor(insn: AbstractInsnNode) = {
     insn.getOpcode == NEW && {
@@ -291,10 +312,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   private class Collector extends NestedClassesCollector[ClassBType] {
     def declaredNestedClasses(internalName: InternalName): List[ClassBType] =
-      classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
+      bTypesFromClassfile.classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
 
     def getClassIfNested(internalName: InternalName): Option[ClassBType] = {
-      val c = classBTypeFromParsedClassfile(internalName)
+      val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
       if (c.isNestedClass.get) Some(c) else None
     }
 
@@ -473,18 +494,6 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       maxLocalsMaxStackComputed += method
     }
   }
-
-  val classfileVersion: Int = compilerSettings.target.value match {
-    case "jvm-1.8" => asm.Opcodes.V1_8
-  }
-
-  val majorVersion: Int = classfileVersion & 0xFF
-  val emitStackMapFrame = majorVersion >= 50
-
-  val extraProc: Int = GenBCode.mkFlags(
-    asm.ClassWriter.COMPUTE_MAXS,
-    if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
-  )
 }
 
 object BackendUtils {

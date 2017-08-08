@@ -3,7 +3,7 @@ package backend.jvm
 
 import scala.tools.asm.tree.ClassNode
 
-abstract class CodeGen[G <: Global](val global: G) {
+abstract class CodeGen[G <: Global](val global: G) extends PerRunLazy {
   val bTypes: BTypesFromSymbols[global.type]
 
   import global._
@@ -11,8 +11,10 @@ abstract class CodeGen[G <: Global](val global: G) {
 
   private val caseInsensitively = perRunCaches.newMap[String, Symbol]()
 
-  private var mirrorCodeGen   : CodeGenImpl.JMirrorBuilder   = null
-  private var beanInfoCodeGen : CodeGenImpl.JBeanInfoBuilder = null
+  // TODO: do we really need a new instance per run? Is there state that depends on the compiler frontend (symbols, types, settings)?
+  private val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(new CodeGenImpl.JMirrorBuilder())
+
+  private val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(new CodeGenImpl.JBeanInfoBuilder())
 
   def genUnit(unit: CompilationUnit): Unit = {
     import genBCode.postProcessor.generatedClasses
@@ -47,6 +49,7 @@ abstract class CodeGen[G <: Global](val global: G) {
   def genClass(cd: ClassDef, unit: CompilationUnit): ClassNode = {
     warnCaseInsensitiveOverwrite(cd)
     addSbtIClassShim(cd)
+    // TODO: do we need a new builder for each class? could we use one per run? or one per Global compiler instance?
     val b = new CodeGenImpl.SyncAndTryBuilder(unit)
     b.genPlainClass(cd)
     b.cnode
@@ -82,11 +85,6 @@ abstract class CodeGen[G <: Global](val global: G) {
     // TODO put this closer to classfile writing once we have closure elimination
     // TODO create a nicer public API to find out the correspondence between sourcefile and ultimate classfiles
     currentUnit.icode += new icodes.IClass(cd.symbol)
-  }
-
-  def initialize(): Unit = {
-    mirrorCodeGen = new CodeGenImpl.JMirrorBuilder()
-    beanInfoCodeGen = new CodeGenImpl.JBeanInfoBuilder()
   }
 
   object CodeGenImpl extends {

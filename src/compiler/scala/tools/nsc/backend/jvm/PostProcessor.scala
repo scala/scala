@@ -1,26 +1,43 @@
 package scala.tools.nsc.backend.jvm
 
+import scala.collection.generic.Clearable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.NoPosition
+import scala.reflect.internal.util.{NoPosition, Position}
+import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.Global
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
+import scala.tools.nsc.backend.jvm.opt._
 
 /**
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
  * optimizations, post-processing and classfile serialization and writing.
  */
-class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[String]) {
+abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) extends PerRunLazy {
+  val bTypes: BTypes
+
   import bTypes._
+  import frontendAccess.{backendReporting, compilerSettings, recordPerRunCache}
+
+  val backendUtils        = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BackendUtils
+  val byteCodeRepository  = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with ByteCodeRepository
+  val localOpt            = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with LocalOpt
+  val inliner             = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with Inliner
+  val inlinerHeuristics   = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with InlinerHeuristics
+  val closureOptimizer    = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with ClosureOptimizer
+  val callGraph           = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with CallGraph
+  val bTypesFromClassfile = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BTypesFromClassfile
 
   // re-initialized per run because it reads compiler settings that might change
-  var classfileWriter: ClassfileWriter[bTypes.type] = _
+  val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(new ClassfileWriter(frontendAccess))
 
   val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
 
-  def initialize(): Unit = {
-    classfileWriter = new ClassfileWriter[bTypes.type](bTypes, backendReporting, getEntryPoints)
+  override def initialize(): Unit = {
+    super.initialize()
+    backendUtils.initialize()
+    inlinerHeuristics.initialize()
   }
 
   def postProcessAndSendToDisk(): Unit = {
@@ -117,7 +134,152 @@ class PostProcessor[BT <: BTypes](val bTypes: BT, getEntryPoints: () => List[Str
  */
 case class GeneratedClass(classNode: ClassNode, sourceFile: AbstractFile, isArtifact: Boolean)
 
-// Temporary class, will be refactored in a future commit
-trait ClassWriterForPostProcessor {
-  def write(bytes: Array[Byte], className: InternalName, sourceFile: AbstractFile)
+/**
+ * Functionality needed in the post-processor whose implementation depends on the compiler
+ * frontend. All methods are synchronized.
+ */
+sealed abstract class PostProcessorFrontendAccess {
+  import PostProcessorFrontendAccess._
+
+  def initialize(): Unit
+
+  final val frontendLock: AnyRef = new Object()
+  @inline final def frontendSynch[T](x: => T): T = frontendLock.synchronized(x)
+
+  def compilerSettings: CompilerSettings
+
+  def backendReporting: BackendReporting
+
+  def backendClassPath: BackendClassPath
+
+  def getEntryPoints: List[String]
+
+  def recordPerRunCache[T <: Clearable](cache: T): T
+}
+
+object PostProcessorFrontendAccess {
+  sealed trait CompilerSettings {
+    def debug: Boolean
+
+    def target: String
+
+    def genAsmpDirectory: Option[String]
+    def dumpClassesDirectory: Option[String]
+
+    def singleOutputDirectory: Option[AbstractFile]
+    def outputDirectoryFor(src: AbstractFile): AbstractFile
+
+    def mainClass: Option[String]
+
+    def optAddToBytecodeRepository: Boolean
+    def optBuildCallGraph: Boolean
+
+    def optNone: Boolean
+    def optLClasspath: Boolean
+    def optLProject: Boolean
+
+    def optUnreachableCode: Boolean
+    def optNullnessTracking: Boolean
+    def optBoxUnbox: Boolean
+    def optCopyPropagation: Boolean
+    def optRedundantCasts: Boolean
+    def optSimplifyJumps: Boolean
+    def optCompactLocals: Boolean
+    def optClosureInvocations: Boolean
+
+    def optInlinerEnabled: Boolean
+    def optInlineFrom: List[String]
+    def optInlineHeuristics: String
+
+    def optWarningNoInlineMixed: Boolean
+    def optWarningNoInlineMissingBytecode: Boolean
+    def optWarningNoInlineMissingScalaInlineInfoAttr: Boolean
+    def optWarningEmitAtInlineFailed: Boolean
+    def optWarningEmitAnyInlineFailed: Boolean
+
+    def optLogInline: Option[String]
+    def optTrace: Option[String]
+  }
+
+  sealed trait BackendReporting {
+    def inlinerWarning(pos: Position, message: String): Unit
+    def error(pos: Position, message: String): Unit
+    def log(message: String): Unit
+  }
+
+  sealed trait BackendClassPath {
+    def findClassFile(className: String): Option[AbstractFile]
+  }
+
+  class PostProcessorFrontendAccessImpl(global: Global) extends PostProcessorFrontendAccess with PerRunLazy {
+    import global._
+
+    private[this] val _compilerSettings: LazyVar[CompilerSettings] = perRunLazy(buildCompilerSettings())
+
+    def compilerSettings: CompilerSettings = _compilerSettings
+
+    private def buildCompilerSettings(): CompilerSettings = new CompilerSettings {
+      import global.{settings => s}
+
+      val debug: Boolean = s.debug
+
+      val target: String = s.target.value
+
+      val genAsmpDirectory: Option[String] = s.Ygenasmp.valueSetByUser
+      val dumpClassesDirectory: Option[String] = s.Ydumpclasses.valueSetByUser
+
+      val singleOutputDirectory: Option[AbstractFile] = s.outputDirs.getSingleOutput
+      def outputDirectoryFor(src: AbstractFile): AbstractFile = frontendSynch(s.outputDirs.outputDirFor(src))
+
+      val mainClass: Option[String] = s.mainClass.valueSetByUser
+
+      val optAddToBytecodeRepository: Boolean = s.optAddToBytecodeRepository
+      val optBuildCallGraph: Boolean = s.optBuildCallGraph
+
+      val optNone: Boolean = s.optNone
+      val optLClasspath: Boolean = s.optLClasspath
+      val optLProject: Boolean = s.optLProject
+
+      val optUnreachableCode: Boolean = s.optUnreachableCode
+      val optNullnessTracking: Boolean = s.optNullnessTracking
+      val optBoxUnbox: Boolean = s.optBoxUnbox
+      val optCopyPropagation: Boolean = s.optCopyPropagation
+      val optRedundantCasts: Boolean = s.optRedundantCasts
+      val optSimplifyJumps: Boolean = s.optSimplifyJumps
+      val optCompactLocals: Boolean = s.optCompactLocals
+      val optClosureInvocations: Boolean = s.optClosureInvocations
+
+      val optInlinerEnabled: Boolean = s.optInlinerEnabled
+      val optInlineFrom: List[String] = s.optInlineFrom.value
+      val optInlineHeuristics: String = s.YoptInlineHeuristics.value
+
+      val optWarningNoInlineMixed: Boolean = s.optWarningNoInlineMixed
+      val optWarningNoInlineMissingBytecode: Boolean = s.optWarningNoInlineMissingBytecode
+      val optWarningNoInlineMissingScalaInlineInfoAttr: Boolean = s.optWarningNoInlineMissingScalaInlineInfoAttr
+      val optWarningEmitAtInlineFailed: Boolean = s.optWarningEmitAtInlineFailed
+      val optWarningEmitAnyInlineFailed: Boolean = {
+        val z = s // need a stable path, the argument type of `contains` is path-dependent
+        z.optWarnings.contains(z.optWarningsChoices.anyInlineFailed)
+      }
+
+      val optLogInline: Option[String] = s.YoptLogInline.valueSetByUser
+      val optTrace: Option[String] = s.YoptTrace.valueSetByUser
+    }
+
+    object backendReporting extends BackendReporting {
+      def inlinerWarning(pos: Position, message: String): Unit = frontendSynch {
+        currentRun.reporting.inlinerWarning(pos, message)
+      }
+      def error(pos: Position, message: String): Unit = frontendSynch(reporter.error(pos, message))
+      def log(message: String): Unit = frontendSynch(global.log(message))
+    }
+
+    object backendClassPath extends BackendClassPath {
+      def findClassFile(className: String): Option[AbstractFile] = frontendSynch(optimizerClassPath(classPath).findClassFile(className))
+    }
+
+    def getEntryPoints: List[String] = frontendSynch(cleanup.getEntryPoints)
+
+    def recordPerRunCache[T <: Clearable](cache: T): T = frontendSynch(perRunCaches.recordCache(cache))
+  }
 }

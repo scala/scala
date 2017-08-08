@@ -6,13 +6,10 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm
-import scala.tools.nsc.backend.jvm.analysis.BackendUtils
-import scala.tools.nsc.backend.jvm.opt._
-import scala.tools.nsc.backend.jvm.BTypes._
-import BackendReporting._
-import scala.tools.nsc.settings.ScalaSettings
 import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
+import scala.tools.asm
+import scala.tools.nsc.backend.jvm.BTypes._
+import scala.tools.nsc.backend.jvm.BackendReporting._
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -26,42 +23,23 @@ import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
  * of the core btypes. They are declared in BTypes as abstract members. Note that BTypes does
  * not have access to the compiler instance.
  */
-class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
+class BTypesFromSymbols[G <: Global](val global: G, val postProcessorFrontendAccess: PostProcessorFrontendAccess) extends BTypes {
   import global._
   import definitions._
   import genBCode._
   import codeGen.CodeGenImpl._
-
-  val backendUtils: BackendUtils[this.type] = new BackendUtils(this)
+  import postProcessor.{bTypesFromClassfile, byteCodeRepository}
 
   // Why the proxy, see documentation of class [[CoreBTypes]].
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val byteCodeRepository: ByteCodeRepository[this.type] = new ByteCodeRepository(global.optimizerClassPath(global.classPath), this)
-
-  val localOpt: LocalOpt[this.type] = new LocalOpt(this)
-
-  val inliner: Inliner[this.type] = new Inliner(this)
-
-  val inlinerHeuristics: InlinerHeuristics[this.type] = new InlinerHeuristics(this)
-
-  val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
-
-  val callGraph: CallGraph[this.type] = new CallGraph(this)
-
-  val backendReporting: BackendReporting = new BackendReportingImpl(global)
-
   final def initialize(): Unit = {
-    coreBTypes.setBTypes(new CoreBTypes[this.type](this))
+    coreBTypes.initialize()
     javaDefinedClasses ++= currentRun.symSource collect {
       case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
     }
   }
-
-  def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)
-
-  def compilerSettings: ScalaSettings = settings
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
@@ -537,13 +515,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * classfile attribute.
    */
   private def buildInlineInfo(classSym: Symbol, internalName: InternalName): InlineInfo = {
-    def buildFromSymbol = buildInlineInfoFromClassSymbol(classSym)
-
     // phase travel required, see implementation of `compiles`. for nested classes, it checks if the
     // enclosingTopLevelClass is being compiled. after flatten, all classes are considered top-level,
     // so `compiles` would return `false`.
-    if (exitingPickler(currentRun.compiles(classSym))) buildFromSymbol    // InlineInfo required for classes being compiled, we have to create the classfile attribute
-    else if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo // For other classes, we need the InlineInfo only inf the inliner is enabled.
+    if (exitingPickler(currentRun.compiles(classSym))) buildInlineInfoFromClassSymbol(classSym) // InlineInfo required for classes being compiled, we have to create the classfile attribute
+    else if (!settings.optInlinerEnabled) BTypes.EmptyInlineInfo // For other classes, we need the InlineInfo only if the inliner is enabled
     else {
       // For classes not being compiled, the InlineInfo is read from the classfile attribute. This
       // fixes an issue with mixed-in methods: the mixin phase enters mixin methods only to class
@@ -551,7 +527,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // for those mixin members, which prevents inlining.
       byteCodeRepository.classNode(internalName) match {
         case Right(classNode) =>
-          inlineInfoFromClassfile(classNode)
+          bTypesFromClassfile.inlineInfoFromClassfile(classNode)
         case Left(missingClass) =>
           EmptyInlineInfo.copy(warning = Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
       }

@@ -7,20 +7,25 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.collection.immutable.IntMap
-import scala.reflect.internal.util.{NoPosition, Position}
-import scala.tools.asm.{Handle, Opcodes, Type}
-import scala.tools.asm.tree._
-import scala.collection.{concurrent, mutable}
 import scala.collection.JavaConverters._
-import scala.tools.nsc.backend.jvm.BTypes.{InternalName, MethodInlineInfo}
+import scala.collection.immutable.IntMap
+import scala.collection.{concurrent, mutable}
+import scala.reflect.internal.util.{NoPosition, Position}
+import scala.tools.asm.tree._
+import scala.tools.asm.{Handle, Opcodes, Type}
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis._
-import BytecodeUtils._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
-class CallGraph[BT <: BTypes](val btypes: BT) {
-  import btypes._
+abstract class CallGraph {
+  val postProcessor: PostProcessor
+
+  import postProcessor._
+  import bTypes._
+  import bTypesFromClassfile._
   import backendUtils._
+  import frontendAccess.{compilerSettings, recordPerRunCache}
 
   /**
    * The call graph contains the callsites in the program being compiled.
@@ -103,7 +108,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
       val analyzer = {
         if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(btypes, methodNode)))
+          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, methodNode)))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName))
         } else None
@@ -380,10 +385,10 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
-  final case class Callee(callee: MethodNode, calleeDeclarationClass: btypes.ClassBType,
+  final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
                           isStaticallyResolved: Boolean, sourceFilePath: Option[String],
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
-                          samParamTypes: IntMap[btypes.ClassBType],
+                          samParamTypes: IntMap[ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
 

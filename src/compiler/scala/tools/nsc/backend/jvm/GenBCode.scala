@@ -8,17 +8,22 @@ package backend
 package jvm
 
 import scala.reflect.internal.util.Statistics
-import scala.tools.asm
+import scala.tools.asm.Opcodes
 
 abstract class GenBCode extends SubComponent {
   import global._
 
-  val bTypes = new BTypesFromSymbols[global.type](global)
+  val postProcessorFrontendAccess: PostProcessorFrontendAccess = new PostProcessorFrontendAccess.PostProcessorFrontendAccessImpl(global)
+
+  val bTypes = new BTypesFromSymbols[global.type](global, postProcessorFrontendAccess)
+
   val codeGen = new CodeGen[global.type](global) {
     val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes
   }
 
-  val postProcessor = new PostProcessor[bTypes.type](bTypes, () => cleanup.getEntryPoints)
+  val postProcessor = new PostProcessor(postProcessorFrontendAccess) {
+    val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes
+  }
 
   val phaseName = "jvm"
 
@@ -54,6 +59,7 @@ abstract class GenBCode extends SubComponent {
       scalaPrimitives.init()
       bTypes.initialize()
       codeGen.initialize()
+      postProcessorFrontendAccess.initialize()
       postProcessor.initialize()
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
     }
@@ -63,8 +69,8 @@ abstract class GenBCode extends SubComponent {
 object GenBCode {
   def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
 
-  final val PublicStatic = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
-  final val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
+  final val PublicStatic = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
+  final val PublicStaticFinal = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
 
   val CLASS_CONSTRUCTOR_NAME = "<clinit>"
   val INSTANCE_CONSTRUCTOR_NAME = "<init>"

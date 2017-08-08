@@ -17,6 +17,8 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
 
   import compiler._
+  import global.genBCode.postProcessor.{bTypesFromClassfile, byteCodeRepository, inliner}
+  import bTypesFromClassfile._
   import global.genBCode.bTypes._
 
   def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, None)

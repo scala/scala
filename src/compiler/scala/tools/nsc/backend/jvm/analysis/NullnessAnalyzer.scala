@@ -5,11 +5,11 @@ package analysis
 import java.util
 
 import scala.annotation.switch
-import scala.tools.asm.{Opcodes, Type}
-import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.asm.tree.analysis._
+import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
+import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
-import BytecodeUtils._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
  * See the package object `analysis` for details on the ASM analysis framework.
@@ -63,7 +63,7 @@ object NullnessValue {
   def unknown(insn: AbstractInsnNode) = if (BytecodeUtils.instructionResultSize(insn) == 2) UnknownValue2 else UnknownValue1
 }
 
-final class NullnessInterpreter(bTypes: BTypes, method: MethodNode) extends Interpreter[NullnessValue](Opcodes.ASM5) {
+final class NullnessInterpreter(knownNonNullInvocation: MethodInsnNode => Boolean, method: MethodNode) extends Interpreter[NullnessValue](Opcodes.ASM5) {
   def newValue(tp: Type): NullnessValue = {
     // ASM loves giving semantics to null. The behavior here is the same as in SourceInterpreter,
     // which is provided by the framework.
@@ -120,7 +120,7 @@ final class NullnessInterpreter(bTypes: BTypes, method: MethodNode) extends Inte
   def ternaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue, value3: NullnessValue): NullnessValue = UnknownValue1
 
   def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = insn match {
-    case mi: MethodInsnNode if bTypes.backendUtils.isNonNullMethodInvocation(mi) =>
+    case mi: MethodInsnNode if knownNonNullInvocation(mi) =>
       NotNullValue
 
     case _ =>
@@ -203,7 +203,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
  * This class is required to override the `newFrame` methods, which makes makes sure the analyzer
  * uses NullnessFrames.
  */
-class NullnessAnalyzer(bTypes: BTypes, method: MethodNode) extends Analyzer[NullnessValue](new NullnessInterpreter(bTypes, method)) {
+class NullnessAnalyzer(knownNonNullInvocation: MethodInsnNode => Boolean, method: MethodNode) extends Analyzer[NullnessValue](new NullnessInterpreter(knownNonNullInvocation, method)) {
   override def newFrame(nLocals: Int, nStack: Int): NullnessFrame = new NullnessFrame(nLocals, nStack)
   override def newFrame(src: Frame[_ <: NullnessValue]): NullnessFrame = new NullnessFrame(src)
 }
