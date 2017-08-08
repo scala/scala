@@ -14,7 +14,7 @@ import scala.Predef.{assert, intWrapper}
 class ListBuffer[A]
   extends GrowableSeq[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
-     with StrictOptimizedIterableOps[A, ListBuffer, ListBuffer[A]] {
+     with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]] {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null

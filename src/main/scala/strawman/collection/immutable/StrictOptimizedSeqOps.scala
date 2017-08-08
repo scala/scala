@@ -9,20 +9,7 @@ import scala.{Any, IndexOutOfBoundsException, Int}
   */
 trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   extends SeqOps[A, CC, C]
-    with StrictOptimizedIterableOps[A, CC, C] {
-
-  override def distinct: C = {
-    val builder = newSpecificBuilder()
-    val seen = mutable.HashSet.empty[A]
-
-    for (x <- coll) {
-      if (!seen.contains(x)) {
-        seen += x
-        builder += x
-      }
-    }
-    builder.result()
-  }
+    with collection.StrictOptimizedSeqOps[A, CC, C] {
 
   override def prepend[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]()

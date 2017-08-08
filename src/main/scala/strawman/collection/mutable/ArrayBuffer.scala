@@ -12,7 +12,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with IndexedOptimizedGrowableSeq[A]
-    with StrictOptimizedIterableOps[A, ArrayBuffer, ArrayBuffer[A]] {
+    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 
