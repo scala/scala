@@ -26,7 +26,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     *  @param elem the element to test for membership.
     *  @return  `true` if `elem` is contained in this set, `false` otherwise.
     */
-  /*@`inline`*/ final def apply(elem: A): Boolean = this.contains(elem)
+  @`inline` final def apply(elem: A): Boolean = this.contains(elem)
 
   /** Tests whether this set is a subset of another set.
     *
