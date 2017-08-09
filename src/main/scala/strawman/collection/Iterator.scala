@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, Some, StringContext, Unit, `inline`, math, throws}
 import scala.Predef.{intWrapper, require}
-import strawman.collection.mutable.ArrayBuffer
+import strawman.collection.mutable.{ArrayBuffer, HashMap}
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -397,6 +397,46 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         hd
       }
       else Iterator.empty.next()
+  }
+
+  /**
+    *  Builds a new iterator from this one without any duplicated elements on it.
+    *  @return iterator with intermediate results
+    *
+    *  @note   Reuse: $consumesIterator
+    */
+  def distinct: Iterator[A] = new Iterator[A] {
+
+    private val traversedValues = mutable.HashSet.empty[A]
+    private var nextElementDefined: Boolean = false
+    private var nextElement: A = _
+
+    def hasNext: Boolean = {
+      @tailrec
+      def loop(): Boolean = {
+        if (!self.hasNext) false
+        else {
+          nextElement = self.next()
+          if (traversedValues.contains(nextElement)) {
+            loop()
+          } else {
+            traversedValues += nextElement
+            nextElementDefined = true
+            true
+          }
+        }
+      }
+
+      nextElementDefined || loop()
+    }
+
+    def next(): A =
+      if (hasNext) {
+        nextElementDefined = false
+        nextElement
+      } else {
+        Iterator.empty.next()
+      }
   }
 
   def map[B](f: A => B): Iterator[B] = new Iterator[B] {

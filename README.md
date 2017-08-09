@@ -133,6 +133,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 ### Transformations to collections having the same element type
 
 - [x] `diff`
+- [x] `distinct`
 - [x] `drop` / `dropRight` / `dropWhile`
 - [x] `empty`
 - [x] `filter` / `filterNot`

@@ -57,6 +57,9 @@ class ScalaListBenchmark {
   def foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
 
   @Benchmark
+  def distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
+
+  @Benchmark
   //  @OperationsPerInvocation(size)
   def foreach_while(bh: Blackhole): Unit = {
     var ys = xs
