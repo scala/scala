@@ -4,7 +4,7 @@ package collection.immutable
 import strawman.collection.mutable.{ArrayBuffer, Builder, GrowableBuilder}
 import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
 
-import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, throws}
+import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, throws, UnsupportedOperationException}
 import scala.runtime.ScalaRunTime
 import scala.Predef.{???, intWrapper}
 
@@ -97,7 +97,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
       val dest = scala.Array.ofDim[Any](length - 1)
       java.lang.System.arraycopy(elements, 1, dest, 0, length - 1)
       new ImmutableArray(dest)
-    } else ???
+    } else throw new UnsupportedOperationException("tail of empty array")
 
   override def reverse: ImmutableArray[A] = ImmutableArray.tabulate(length)(i => apply(length - 1 - i))
 
@@ -113,7 +113,17 @@ object ImmutableArray extends IterableFactory[ImmutableArray] {
     new ImmutableArray[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
 
   def fromIterable[A](it: strawman.collection.Iterable[A]): ImmutableArray[A] =
-    fromArrayBuffer(ArrayBuffer.fromIterable(it))
+    if (it.knownSize > -1) {
+      val n = it.knownSize
+      val elements = scala.Array.ofDim[Any](n)
+      val iterator = it.iterator()
+      var i = 0
+      while (i < n) {
+        ScalaRunTime.array_update(elements, i, iterator.next())
+        i = i + 1
+      }
+      new ImmutableArray(elements)
+    } else fromArrayBuffer(ArrayBuffer.fromIterable(it))
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
     ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)
