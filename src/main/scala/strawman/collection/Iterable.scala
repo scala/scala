@@ -866,3 +866,5 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   }
 
 }
+
+object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)

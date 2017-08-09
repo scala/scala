@@ -11,11 +11,11 @@ trait Map[K, +V]
      with MapOps[K, V, Map, Map[K, V]]
 
 /** Base trait of immutable Maps implementations */
-trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[K, V]]
+trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, CC[X, Y]], +C <: CC[K, V]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
 
-  protected[this] def coll: CC[K, V]
+  protected[this] def coll: C
 
   /** Removes a key from this map, returning a new map.
     *
@@ -26,6 +26,18 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, _], +C <: Map[
 
   /** Alias for `remove` */
   @`inline` final def - (key: K): C = remove(key)
+
+  /** Creates a new $coll from this $coll by removing all elements of another
+    *  collection.
+    *
+    *  @param keys   the collection containing the removed elements.
+    *  @return a new $coll that contains all elements of the current $coll
+    *  except one less occurrence of each of the elements of `elems`.
+    */
+  def removeAll(keys: IterableOnce[K]): C = fromSpecificIterable(keys.iterator().foldLeft[CC[K, V]](coll)(_ - _))
+
+  /** Alias for `removeAll` */
+  @`inline` final def -- (keys: IterableOnce[K]): C = removeAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key

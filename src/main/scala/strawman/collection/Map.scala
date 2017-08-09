@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Some, `inline`, throws}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, `inline`, throws}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
@@ -61,6 +61,73 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C <: Map[K, V]]
     case None => default(key)
     case Some(value) => value
   }
+
+  override /*PartialFunction*/ def applyOrElse[K1 <: K, V1 >: V](x: K1, default: K1 => V1): V1 = getOrElse(x, default(x))
+
+  /** Collects all keys of this map in a set.
+    * @return  a set containing all keys of this map.
+    */
+  def keySet: Set[K] = new DefaultKeySet
+
+  /** The implementation class of the set returned by `keySet`.
+    */
+  protected class DefaultKeySet extends Set[K] with Serializable {
+    def contains(key: K) = MapOps.this.coll.contains(key)
+    def iterator() = keysIterator()
+    override def size = coll.size
+    override def foreach[U](f: K => U) = keysIterator() foreach f
+    def iterableFactory: IterableFactory[Set] = Set
+    def empty: Set[K] = iterableFactory.empty
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(iterableFactory.fromIterable(coll).diff(that))
+    protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = iterableFactory.fromIterable(coll)
+    protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
+  }
+
+  /** Collects all keys of this map in an iterable collection.
+    *
+    *  @return the keys of this map as an iterable.
+    */
+  def keys: Iterable[K] = keySet
+
+  /** Collects all values of this map in an iterable collection.
+    *
+    *  @return the values of this map as an iterable.
+    */
+  def values: Iterable[V] = View.fromIterator(valuesIterator())
+
+  /** Creates an iterator for all keys.
+    *
+    *  @return an iterator over all keys.
+    */
+  def keysIterator(): Iterator[K] = new Iterator[K] {
+    val iter = coll.iterator()
+    def hasNext = iter.hasNext
+    def next() = iter.next()._1
+  }
+
+  /** Creates an iterator for all values in this map.
+    *
+    *  @return an iterator over all values that are associated with some key in this map.
+    */
+  def valuesIterator(): Iterator[V] = new Iterator[V] {
+    val iter = coll.iterator()
+    def hasNext = iter.hasNext
+    def next() = iter.next()._2
+  }
+
+  /** Filters this map by retaining only keys satisfying a predicate.
+    *  @param  p   the predicate used to test keys
+    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
+    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
+    */
+  def filterKeys(p: K => Boolean): View[(K, V)] = View.FilterKeys(coll, p)
+
+  /** Transforms this map by applying a function to every retrieved value.
+    *  @param  f   the function used to transform values of this map.
+    *  @return a map view which maps every key of this map
+    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
+    */
+  def mapValues[W](f: V => W): View[(K, W)] = View.MapValues(coll, f)
 
   /** Defines the default value computation for the map,
     *  returned when a key is not found

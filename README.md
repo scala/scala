@@ -136,7 +136,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `distinct`
 - [x] `drop` / `dropRight` / `dropWhile`
 - [x] `empty`
-- [x] `filter` / `filterNot`
+- [x] `filter` / `filterNot` / `filterKeys`
 - [x] `groupBy`
 - [x] `init`
 - [x] `intersect`
@@ -162,13 +162,15 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `++:` / `prependAll`
 - [x] `flatMap`
 - [x] `grouped`
-- [x] `map`
+- [x] `keys` / `keySet` / `keysIterator`
+- [x] `map` / `mapValues`
 - [x] `merged`
 - [x] `padTo`
 - [x] `permutations`
 - [x] `scan` / `scanLeft` / `scanRight`
 - [x] `sliding`
 - [x] `unzip`
+- [x] `values` / `valuesIterator`
 - [x] `zip` / `zipWithIndex`
 
 ### In-place mutating operations
