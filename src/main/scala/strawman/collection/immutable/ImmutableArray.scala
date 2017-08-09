@@ -120,7 +120,7 @@ object ImmutableArray extends IterableFactory[ImmutableArray] {
 
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 
-  def tabulate[A](n: Int)(f: Int => A): ImmutableArray[A] = {
+  override def tabulate[A](n: Int)(f: Int => A): ImmutableArray[A] = {
     val elements = scala.Array.ofDim[Any](n)
     var i = 0
     while (i < n) {
