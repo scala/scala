@@ -98,7 +98,7 @@ object CachedClassPath {
       if (retry) revalidateNow()
     }
 
-    def mappings: List[BaseCachedLazyMapping[_]] = packagesCache :: listCache :: Nil
+    def mappings: List[CachedLazyMapping[_]] = packagesCache :: listCache :: Nil
 
     protected def stats = s"stats packages${packagesCache.stats} list${listCache.stats}"
 
@@ -145,7 +145,7 @@ object CachedClassPath {
 
     override def findClassFile(className: String): Option[AbstractFile] = underlying.findClassFile(className)
 
-    override def mappings: List[BaseCachedLazyMapping[_]] = classesCache :: super.mappings
+    override def mappings: List[CachedLazyMapping[_]] = classesCache :: super.mappings
 
     override protected def stats = s"${super.stats} classes${classesCache.stats}"
   }
@@ -156,7 +156,7 @@ object CachedClassPath {
 
     override lazy val asSourcePathString: String = underlying.asSourcePathString
 
-    override def mappings: List[BaseCachedLazyMapping[_]] = sourcesCache :: super.mappings
+    override def mappings: List[CachedLazyMapping[_]] = sourcesCache :: super.mappings
 
     override protected def stats = s"${super.stats} sources${sourcesCache.stats}"
   }
@@ -167,28 +167,28 @@ object CachedClassPath {
   * a Cached implementation of a mapping. This has to be threadsafe as a classpath may be cached and reused in a JVM
   * @tparam V
   */
-abstract class BaseCachedLazyMapping[V <: AnyRef] {
+final class CachedLazyMapping[V <: AnyRef] (miss : (String => V), defaultValue: V ) {
+  @volatile private var complete = false
 
-  @volatile protected var complete = false
-  protected val cache: ConcurrentHashMap[String,_]
+  private val hits = new AtomicInteger
+  private val misses = new AtomicInteger
+  private val defaulted = new AtomicInteger
 
-  protected val hits = new AtomicInteger
-  protected val misses = new AtomicInteger
-  protected val defaulted = new AtomicInteger
+  private val cache =  new ConcurrentHashMap[String,V]
 
-  def apply(key:String): V
   def markComplete(): Unit = {
     this.complete = true
   }
-  def optimise()
   def stats = s"H$hits M$misses D$defaulted"
+
+  /**
+    * this should never be called concurrntly with apply
+    * the classpath chnaging while being used will provide indeterminate and undefined behaviour
+    */
   def reset() :Unit = {
-    cache.clear()
     complete = false
+    cache.clear()
   }
-}
-class CachedLazyMapping[V <: AnyRef] (miss : (String => V), defaultValue: V ) extends BaseCachedLazyMapping[V] {
-  override protected val cache =  new ConcurrentHashMap[String,V]
 
   def apply(key:String): V = {
     //note - order dependent. Must be before we check the cache
@@ -207,7 +207,12 @@ class CachedLazyMapping[V <: AnyRef] (miss : (String => V), defaultValue: V ) ex
       if (existing ne null) existing else missed
     }
   }
-  override def optimise : Unit = {
+
+  /**
+    * after we are complete we can remove defaulted entries.
+    * It will not make a lot of difference ususally, but its a bit kinder to memory
+    */
+  def optimise() : Unit = {
     //remove the default values
     //cant use cache.values.remove(All), they only remove a single instance
     val it = cache.entrySet().iterator()
