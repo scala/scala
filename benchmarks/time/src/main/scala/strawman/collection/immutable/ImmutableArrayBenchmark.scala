@@ -22,6 +22,8 @@ class ImmutableArrayBenchmark {
   var xs: ImmutableArray[Long] = _
   var xss: scala.Array[ImmutableArray[Long]] = _
   var randomIndices: scala.Array[Int] = _
+  var randomIndices2: scala.Array[Int] = _
+  var randomXss: scala.Array[ImmutableArray[Long]] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
@@ -30,6 +32,8 @@ class ImmutableArrayBenchmark {
     xss = scala.Array.fill(1000)(freshCollection())
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomIndices2 = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomXss = scala.Array.fill(1000)(freshCollection().take(scala.util.Random.nextInt(size)))
     }
   }
 
@@ -99,8 +103,8 @@ class ImmutableArrayBenchmark {
     var i = 0
     while (i < 1000) {
       val from = randomIndices(i)
-      val patch = scala.util.Random.nextInt(size)
-      bh.consume(xs.patch(from, xss(i).take(from), scala.util.Random.nextInt(xs.length)))
+      val replaced = randomIndices2(i)
+      bh.consume(xs.patch(from, randomXss(i), replaced))
       i = i + 1
     }
   }
