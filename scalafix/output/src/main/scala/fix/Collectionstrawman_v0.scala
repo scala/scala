@@ -1,6 +1,6 @@
 package fix
 
-import scala.{ Vector => _, #:: => _, :: => _, Seq => _, List => _ }
+import scala.{ #:: => _, :: => _, List => _, Seq => _, Vector => _ }
 import scala.Predef.{ Map => _ }
 import strawman.collection.immutable.{ HashMap, LazyList, List, Map, Nil, Vector }
 import strawman.collection.immutable.LazyList.#::

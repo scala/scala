@@ -6,7 +6,7 @@ import scalafix.syntax._
 import scalafix.internal.util.SymbolOps
 import scala.meta._
 
-case class Collectionstrawman_v0(mirror: Mirror) extends SemanticRewrite(mirror) {
+case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mirror) {
   val immutableListSymbol = Symbol("_root_.scala.collection.immutable.List.")
   val unimports = Set(
     Symbol("_root_.scala.List."),
@@ -31,9 +31,9 @@ case class Collectionstrawman_v0(mirror: Mirror) extends SemanticRewrite(mirror)
 
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
     val toUnimport = ctx.mirror.database.names.flatMap { r =>
-        val norm = normalize(r.sym)
-        if (unimports.contains(norm)) norm :: Nil
-        else Nil
+      val norm = normalize(r.sym)
+      if (unimports.contains(norm)) norm :: Nil
+      else Nil
     }
     val unimportss = toUnimport.toList.distinct.flatMap { sym =>
       SymbolOps.toImporter(sym).toList.collect {
@@ -49,19 +49,26 @@ case class Collectionstrawman_v0(mirror: Mirror) extends SemanticRewrite(mirror)
     grouped.map(ctx.addGlobalImport(_)).asPatch
   }
 
-//  def isSymbol(tree: Tree, symbol: Symbol): Boolean = {
-//    mirror.database.names.get(tree.pos).exists(normalize(_) == symbol)
-//  }
-
-  def rangePatch(ctx: RewriteCtx): Patch = {
-//    ctx.tree.collect {
-//      case q"$lhs $op $rhs" if isSymbol(op, Symbol()) =>
-//        op
-//    }
-    Patch.empty
-  }
-
   def rewrite(ctx: RewriteCtx): Patch = {
-    ifSymbolFound(ctx)
+    ifSymbolFound(ctx) + ctx.replaceSymbols(
+      "scala.collection.immutable.HashMap" ->
+        "strawman.collection.immutable.HashMap",
+      "scala.collection.immutable.Map" ->
+        "strawman.collection.immutable.Map",
+      "scala.Predef.Map" ->
+        "strawman.collection.immutable.Map",
+      "scala.collection.immutable.List" ->
+        "strawman.collection.immutable.List",
+      "scala.collection.immutable.Nil" ->
+        "strawman.collection.immutable.Nil",
+      "scala.package.Stream" ->
+        "strawman.collection.immutable.LazyList",
+      "scala.package.`#::`" ->
+        "strawman.collection.immutable.LazyList.`#::`",
+      "scala.package.Vector" ->
+        "strawman.collection.immutable.Vector",
+      "scala.collection.mutable.ArrayBuffer" ->
+        "strawman.collection.mutable.ArrayBuffer"
+    )
   }
 }

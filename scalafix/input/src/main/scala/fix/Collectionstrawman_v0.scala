@@ -1,24 +1,6 @@
 /* ONLY
 rewrite = "scala:fix.Collectionstrawman_v0"
 patches.replaceSymbols = [
-  { from = "scala.collection.immutable.HashMap",
-    to   = "strawman.collection.immutable.HashMap" }
-  { from = "scala.collection.immutable.Map",
-    to   = "strawman.collection.immutable.Map" }
-  { from = "scala.Predef.Map",
-    to   = "strawman.collection.immutable.Map" }
-  { from = "scala.collection.immutable.List",
-    to   = "strawman.collection.immutable.List" }
-  { from = "scala.collection.immutable.Nil",
-    to   = "strawman.collection.immutable.Nil" }
-  { from = "scala.package.Stream",
-    to   = "strawman.collection.immutable.LazyList" }
-  { from = "scala.package.`#::`",
-    to   = "strawman.collection.immutable.LazyList.`#::`" }
-  { from = "scala.package.Vector",
-    to   = "strawman.collection.immutable.Vector" }
-  { from = "scala.collection.mutable.ArrayBuffer",
-    to   = "strawman.collection.mutable.ArrayBuffer" }
 ]
 */
 package fix
