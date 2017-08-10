@@ -5,7 +5,7 @@
       [106][106][106]Case3.super.<init>();
       [13]()
     };
-    [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]scala.Some.apply[[52]Int]([58]-1);
+    [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]scala.Some.apply[[52]Int]([57]-1);
     [64]{
       [64]case <synthetic> val x1: [64]String = [64]"";
       [64]case5()[84]{
