@@ -15,8 +15,7 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
     Symbol("_root_.scala.`::`."),
     Symbol("_root_.scala.`#::`."),
     Symbol("_root_.scala.Predef.Map."),
-    Symbol("_root_.scala.Predef.intArrayOps."),
-    Symbol("_root_.scala.Predef.augmentString."),
+    Symbol("_root_.scala.Predef.augmentStrugming."),
     Symbol("_root_.scala.Predef.intArrayOps.")
   )
 
@@ -41,25 +40,28 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
   }
 
   def rewrite(ctx: RewriteCtx): Patch = {
-    ifSymbolFound(ctx) + ctx.replaceSymbols(
-      "scala.collection.immutable.HashMap" ->
-        "strawman.collection.immutable.HashMap",
-      "scala.collection.immutable.Map" ->
-        "strawman.collection.immutable.Map",
-      "scala.Predef.Map" ->
-        "strawman.collection.immutable.Map",
-      "scala.collection.immutable.List" ->
-        "strawman.collection.immutable.List",
-      "scala.collection.immutable.Nil" ->
-        "strawman.collection.immutable.Nil",
-      "scala.package.Stream" ->
-        "strawman.collection.immutable.LazyList",
-      "scala.package.`#::`" ->
-        "strawman.collection.immutable.LazyList.`#::`",
-      "scala.package.Vector" ->
-        "strawman.collection.immutable.Vector",
-      "scala.collection.mutable.ArrayBuffer" ->
-        "strawman.collection.mutable.ArrayBuffer"
+    def p(name: String) =
+      s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
+    def s(name: String) =
+      s"scala.$name" -> s"strawman.collection.immutable.$name"
+    def i(name: String) =
+      s"scala.collection.immutable.$name" -> s"strawman.collection.immutable.$name"
+    def m(name: String) =
+      s"scala.collection.mutable.$name" -> s"strawman.collection.mutable.$name"
+//    ifSymbolFound(ctx) +
+    ctx.replaceSymbols(
+      i("HashMap"),
+      i("Map"),
+      p("Map"),
+      s("List"),
+      i("List"),
+      s("Nil"),
+      i("Nil"),
+      s("Stream"),
+      s("`#::`"),
+      s("Vector"),
+      i("Vector"),
+      m("ArrayBuffer")
     )
   }
 }

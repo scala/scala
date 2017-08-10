@@ -1,7 +1,5 @@
-/* ONLY
+/*
 rewrite = "scala:fix.Collectionstrawman_v0"
-patches.replaceSymbols = [
-]
 */
 package fix
 
