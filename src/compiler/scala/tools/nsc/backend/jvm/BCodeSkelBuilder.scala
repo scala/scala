@@ -129,7 +129,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val flags = javaFlags(claszSymbol)
 
       val thisSignature = getGenericSignature(claszSymbol, claszSymbol.owner)
-      cnode.visit(backendUtils.classfileVersion, flags,
+      cnode.visit(backendUtils.classfileVersion.get, flags,
                   thisBType.internalName, thisSignature,
                   superClass, interfaceNames.toArray)
 

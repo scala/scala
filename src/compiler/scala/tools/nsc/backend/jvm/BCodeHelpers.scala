@@ -956,7 +956,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       val bType = mirrorClassClassBType(moduleClass)
       val mirrorClass = new asm.tree.ClassNode
       mirrorClass.visit(
-        backendUtils.classfileVersion,
+        backendUtils.classfileVersion.get,
         bType.info.get.flags,
         bType.internalName,
         null /* no java-generic-signature */,
@@ -1000,7 +1000,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       val beanInfoClass = new asm.tree.ClassNode
       beanInfoClass.visit(
-        backendUtils.classfileVersion,
+        backendUtils.classfileVersion.get,
         beanInfoType.info.get.flags,
         beanInfoType.internalName,
         null, // no java-generic-signature

@@ -30,9 +30,9 @@ abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) ex
   val bTypesFromClassfile = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BTypesFromClassfile
 
   // re-initialized per run because it reads compiler settings that might change
-  val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(new ClassfileWriter(frontendAccess))
+  lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(new ClassfileWriter(frontendAccess))
 
-  val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
+  lazy val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
 
   override def initialize(): Unit = {
     super.initialize()
@@ -68,11 +68,11 @@ abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) ex
         if (AsmUtils.traceSerializedClassEnabled && classNode.name.contains(AsmUtils.traceSerializedClassPattern))
           AsmUtils.traceClass(bytes)
 
-        classfileWriter.write(classNode.name, bytes, sourceFile)
+        classfileWriter.get.write(classNode.name, bytes, sourceFile)
       }
     }
 
-    classfileWriter.close()
+    classfileWriter.get.close()
   }
 
   def runGlobalOptimizations(): Unit = {
@@ -101,7 +101,7 @@ abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) ex
   }
 
   def serializeClass(classNode: ClassNode): Array[Byte] = {
-    val cw = new ClassWriterWithBTypeLub(backendUtils.extraProc)
+    val cw = new ClassWriterWithBTypeLub(backendUtils.extraProc.get)
     classNode.accept(cw)
     cw.toByteArray
   }
@@ -214,9 +214,9 @@ object PostProcessorFrontendAccess {
   class PostProcessorFrontendAccessImpl(global: Global) extends PostProcessorFrontendAccess with PerRunLazy {
     import global._
 
-    private[this] val _compilerSettings: LazyVar[CompilerSettings] = perRunLazy(buildCompilerSettings())
+    private[this] lazy val _compilerSettings: LazyVar[CompilerSettings] = perRunLazy(buildCompilerSettings())
 
-    def compilerSettings: CompilerSettings = _compilerSettings
+    def compilerSettings: CompilerSettings = _compilerSettings.get
 
     private def buildCompilerSettings(): CompilerSettings = new CompilerSettings {
       import global.{settings => s}

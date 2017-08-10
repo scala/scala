@@ -20,7 +20,7 @@ trait PerRunLazy {
     r
   }
 
-  def initialize(): Unit = ls.foreach(_.reInit())
+  def initialize(): Unit = ls.foreach(_.reInitialize())
 }
 
 /**
@@ -30,7 +30,7 @@ class LazyVar[T](init: () => T) {
   @volatile private[this] var isInit: Boolean = false
   private[this] var v: T = _
 
-  def get = {
+  def get: T = {
     if (isInit) v
     else synchronized {
       if (!isInit) v = init()
@@ -39,10 +39,5 @@ class LazyVar[T](init: () => T) {
     }
   }
 
-  def reInit(): Unit = synchronized(isInit = false)
-}
-
-object LazyVar {
-  import language.implicitConversions
-  implicit def lGet[T](l: LazyVar[T]): T = l.get
+  def reInitialize(): Unit = synchronized(isInit = false)
 }

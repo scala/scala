@@ -12,9 +12,9 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunLazy {
   private val caseInsensitively = perRunCaches.newMap[String, Symbol]()
 
   // TODO: do we really need a new instance per run? Is there state that depends on the compiler frontend (symbols, types, settings)?
-  private val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(new CodeGenImpl.JMirrorBuilder())
+  private[this] lazy val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(new CodeGenImpl.JMirrorBuilder())
 
-  private val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(new CodeGenImpl.JBeanInfoBuilder())
+  private[this] lazy val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(new CodeGenImpl.JBeanInfoBuilder())
 
   def genUnit(unit: CompilationUnit): Unit = {
     import genBCode.postProcessor.generatedClasses
@@ -56,12 +56,12 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunLazy {
   }
 
   def genMirrorClass(classSym: Symbol, unit: CompilationUnit): ClassNode = {
-    mirrorCodeGen.genMirrorClass(classSym, unit)
+    mirrorCodeGen.get.genMirrorClass(classSym, unit)
   }
 
   def genBeanInfoClass(cd: ClassDef, unit: CompilationUnit): ClassNode = {
     val sym = cd.symbol
-    beanInfoCodeGen.genBeanInfoClass(sym, unit, CodeGenImpl.fieldSymbols(sym), CodeGenImpl.methodSymbols(cd))
+    beanInfoCodeGen.get.genBeanInfoClass(sym, unit, CodeGenImpl.fieldSymbols(sym), CodeGenImpl.methodSymbols(cd))
   }
 
   private def warnCaseInsensitiveOverwrite(cd: ClassDef): Unit = {

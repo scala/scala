@@ -26,7 +26,7 @@ abstract class InlinerHeuristics extends PerRunLazy {
   import callGraph._
   import frontendAccess.{backendReporting, compilerSettings}
 
-  val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(new InlineSourceMatcher(compilerSettings.optInlineFrom))
+  lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
   final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite
@@ -36,8 +36,8 @@ abstract class InlinerHeuristics extends PerRunLazy {
   def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
     compilerSettings.optLClasspath ||
       compilerSettings.optLProject && sourceFilePath.isDefined ||
-      inlineSourceMatcher.allowFromSources && sourceFilePath.isDefined ||
-      inlineSourceMatcher.allow(calleeDeclarationClass)
+      inlineSourceMatcher.get.allowFromSources && sourceFilePath.isDefined ||
+      inlineSourceMatcher.get.allow(calleeDeclarationClass)
   }
 
   /**

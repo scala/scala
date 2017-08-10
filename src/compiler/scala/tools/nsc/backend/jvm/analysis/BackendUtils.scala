@@ -38,7 +38,7 @@ abstract class BackendUtils extends PerRunLazy {
   import frontendAccess.compilerSettings
 
   // unused objects created by these constructors are eliminated by pushPop
-  private val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy {
+  private[this] lazy val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy {
     val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
     primitiveBoxConstructors.map(ownerDesc).toSet ++
       srRefConstructors.map(ownerDesc) ++
@@ -49,20 +49,20 @@ abstract class BackendUtils extends PerRunLazy {
       (StringRef.internalName, MethodBType(List(ArrayBType(CHAR)), UNIT).descriptor))
   }
 
-  private val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(sideEffectFreeConstructors.map(_._1))
+  private[this] lazy val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(sideEffectFreeConstructors.get.map(_._1))
 
-  val classfileVersion: LazyVar[Int] = perRunLazy(compilerSettings.target match {
+  lazy val classfileVersion: LazyVar[Int] = perRunLazy(compilerSettings.target match {
     case "jvm-1.8" => asm.Opcodes.V1_8
   })
 
 
-  val majorVersion: LazyVar[Int] = perRunLazy(classfileVersion & 0xFF)
+  lazy val majorVersion: LazyVar[Int] = perRunLazy(classfileVersion.get & 0xFF)
 
-  val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(majorVersion >= 50)
+  lazy val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(majorVersion.get >= 50)
 
-  val extraProc: LazyVar[Int] = perRunLazy(GenBCode.mkFlags(
+  lazy val extraProc: LazyVar[Int] = perRunLazy(GenBCode.mkFlags(
     asm.ClassWriter.COMPUTE_MAXS,
-    if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
+    if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0
   ))
 
   /**
@@ -293,13 +293,13 @@ abstract class BackendUtils extends PerRunLazy {
 
 
   def isSideEffectFreeConstructorCall(insn: MethodInsnNode): Boolean = {
-    insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors((insn.owner, insn.desc))
+    insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors.get((insn.owner, insn.desc))
   }
 
   def isNewForSideEffectFreeConstructor(insn: AbstractInsnNode) = {
     insn.getOpcode == NEW && {
       val ti = insn.asInstanceOf[TypeInsnNode]
-      classesOfSideEffectFreeConstructors.contains(ti.desc)
+      classesOfSideEffectFreeConstructors.get.contains(ti.desc)
     }
   }
 

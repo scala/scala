@@ -30,8 +30,9 @@ class BTypesFromSymbols[G <: Global](val global: G, val postProcessorFrontendAcc
   import codeGen.CodeGenImpl._
   import postProcessor.{bTypesFromClassfile, byteCodeRepository}
 
-  // Why the proxy, see documentation of class [[CoreBTypes]].
-  val coreBTypes = new CoreBTypesProxy[this.type](this)
+  val coreBTypes = new CoreBTypesFromSymbols[G] {
+    val bTypes: BTypesFromSymbols.this.type = BTypesFromSymbols.this
+  }
   import coreBTypes._
 
   final def initialize(): Unit = {

@@ -28,10 +28,7 @@ abstract class BTypes {
   val postProcessorFrontendAccess: PostProcessorFrontendAccess
   import postProcessorFrontendAccess.{frontendSynch, recordPerRunCache}
 
-  // Some core BTypes are required here, in class BType, where no Global instance is available.
-  // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
-  // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
-  val coreBTypes: CoreBTypesProxyGlobalIndependent[this.type]
+  val coreBTypes: CoreBTypes { val bTypes: BTypes.this.type }
   import coreBTypes._
 
   /**

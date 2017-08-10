@@ -188,7 +188,7 @@ abstract class BCodeIdiomatic {
      * can-multi-thread
      */
     def genConcat(elemType: BType, pos: Position): Unit = {
-      val paramType = elemType match {
+      val paramType: BType = elemType match {
         case ct: ClassBType if ct.isSubtypeOf(StringRef).get          => StringRef
         case ct: ClassBType if ct.isSubtypeOf(jlStringBufferRef).get  => jlStringBufferRef
         case ct: ClassBType if ct.isSubtypeOf(jlCharSequenceRef).get  => jlCharSequenceRef
