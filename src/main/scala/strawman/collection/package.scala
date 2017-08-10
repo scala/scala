@@ -83,7 +83,7 @@ package object collection extends LowPriority {
     /** Splits a sequence into head :+ tail.
       * @return Some((head, tail)) if sequence is non-empty. None otherwise.
       */
-    def unapply[A](t: Seq[A]): Option[(A, Seq[A])] =
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(A, C)] =
       if(t.isEmpty) None
       else Some(t.head -> t.tail)
   }
@@ -93,7 +93,7 @@ package object collection extends LowPriority {
     /** Splits a sequence into init :+ last.
       * @return Some((init, last)) if sequence is non-empty. None otherwise.
       */
-    def unapply[A](t: Seq[A]): Option[(Seq[A], A)] =
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(C, A)] =
       if(t.isEmpty) None
       else Some(t.init -> t.last)
   }
