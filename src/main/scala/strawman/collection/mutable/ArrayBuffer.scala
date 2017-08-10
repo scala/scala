@@ -11,7 +11,7 @@ import scala.Predef.intWrapper
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with IndexedOptimizedGrowableSeq[A]
+    with IndexedOptimizedSeq[A]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
@@ -61,6 +61,12 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     ensureSize(end + 1)
     this(end) = elem
     end += 1
+    this
+  }
+
+  def subtract(elem: A): this.type = {
+    val i = indexOf(elem)
+    if (i != -1) remove(i)
     this
   }
 
@@ -123,6 +129,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     }
 
   override def className = "ArrayBuffer"
+
 }
 
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {

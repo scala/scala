@@ -12,7 +12,7 @@ import scala.Predef.{assert, intWrapper}
 
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
-  extends GrowableSeq[A]
+  extends Seq[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]] {
 
@@ -69,13 +69,45 @@ class ListBuffer[A]
     first = Nil
   }
 
-  def add(elem: A) = {
+  def add(elem: A): this.type = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
     if (len == 0) first = last1 else last0.next = last1
     last0 = last1
     len += 1
     this
+  }
+
+  def subtract(elem: A): ListBuffer.this.type = {
+    ensureUnaliased()
+    if (isEmpty) {}
+    else if (first.head == elem) {
+      first = first.tail
+      reduceLengthBy(1)
+    }
+    else {
+      var cursor = first
+      while (!cursor.tail.isEmpty && cursor.tail.head != elem) {
+        cursor = cursor.tail
+      }
+      if (!cursor.tail.isEmpty) {
+        val z = cursor.asInstanceOf[::[A]]
+        if (z.next == last0)
+          last0 = z
+        z.next = cursor.tail.tail
+        reduceLengthBy(1)
+      }
+    }
+    this
+  }
+
+  /** Reduce the length of the buffer, and null out last0
+    *  if this reduces the length to 0.
+    */
+  private def reduceLengthBy(num: Int): Unit = {
+    len -= num
+    if (len <= 0)   // obviously shouldn't be < 0, but still better not to leak
+      last0 = null
   }
 
   private def locate(i: Int): Predecessor[A] =
@@ -209,6 +241,7 @@ class ListBuffer[A]
   }
 
   override def className = "ListBuffer"
+
 }
 
 object ListBuffer extends SeqFactory[ListBuffer] {

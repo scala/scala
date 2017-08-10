@@ -10,16 +10,12 @@ trait Seq[A]
     with collection.Seq[A]
     with SeqOps[A, Seq, Seq[A]]
 
-trait SeqOps[A, +CC[A] <: Seq[A], +C] extends collection.SeqOps[A, CC, C] {
+trait SeqOps[A, +CC[X] <: Seq[X], +C]
+  extends IterableOps[A, CC, C]
+    with collection.SeqOps[A, CC, C]
+    with Shrinkable[A] {
 
   def update(idx: Int, elem: A): Unit
-
-}
-
-trait GrowableSeq[A]
-  extends GrowableIterable[A]
-    with Seq[A] {
-
   def insert(idx: Int, elem: A): Unit
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit
   def remove(idx: Int): A
@@ -54,15 +50,14 @@ trait GrowableSeq[A]
 }
 
 trait IndexedOptimizedSeq[A] extends Seq[A] {
+
   def mapInPlace(f: A => A): this.type = {
     var i = 0
     val siz = size
     while (i < siz) { this(i) = f(this(i)); i += 1 }
     this
   }
-}
 
-trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with GrowableSeq[A] {
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     // There's scope for a better implementation which copies elements in place.
     var i = 0
@@ -73,6 +68,7 @@ trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with Growabl
     while (i < size) { ++=(newElemss(i)); i += 1 }
     this
   }
+
   def filterInPlace(p: A => Boolean): this.type = {
     var i = 0
     while (i < size && p(apply(i))) i += 1
@@ -86,6 +82,7 @@ trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with Growabl
     }
     takeInPlace(j)
   }
+
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
     val n = patch.length min replaced
     var i = 0

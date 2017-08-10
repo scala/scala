@@ -7,14 +7,14 @@ import scala.{Boolean, Int, None, Option, Some, Unit, `inline`}
 
 /** Base trait for mutable sets */
 trait Set[A]
-  extends GrowableIterable[A]
+  extends Iterable[A]
     with collection.Set[A]
     with SetOps[A, Set, Set[A]]
-    with Shrinkable[A]
 
 trait SetOps[A, +CC[X], +C <: Set[A]]
   extends IterableOps[A, CC, C]
-    with collection.SetOps[A, CC, C] {
+    with collection.SetOps[A, CC, C]
+    with Shrinkable[A] {
 
   def mapInPlace(f: A => A): this.type = {
     val toAdd = Set[A]()
