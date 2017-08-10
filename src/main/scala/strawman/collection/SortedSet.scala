@@ -38,8 +38,8 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSet[A]]
   def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(View.FlatMap(coll, f))
 
   /** Zip. Interesting because it requires to align to source collections. */
-  def zip[B](xs: IterableOnce[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = sortedFromIterable(View.Zip(coll, xs))
-  // sound bcs of VarianceNote
+  def zip[B](xs: Iterable[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = // sound bcs of VarianceNote
+    sortedFromIterable(View.Zip(coll, xs))
 
   def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
     if (pf.isDefinedAt(a)) View.Single(pf(a))

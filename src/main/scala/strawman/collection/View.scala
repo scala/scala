@@ -174,7 +174,7 @@ object View extends IterableFactory[View] {
   /** A view that concatenates elements of the prefix collection or iterator with the elements
    *  of the suffix collection or iterator.
    */
-  case class Concat[A](prefix: IterableOnce[A], suffix: IterableOnce[A]) extends View[A] {
+  case class Concat[A](prefix: Iterable[A], suffix: Iterable[A]) extends View[A] {
     def iterator() = prefix.iterator() ++ suffix.iterator()
     override def knownSize = (prefix, suffix) match {
       case (px: Iterable[_], sx: Iterable[_]) if px.knownSize >= 0 && sx.knownSize >= 0 =>
@@ -187,7 +187,7 @@ object View extends IterableFactory[View] {
   /** A view that zips elements of the underlying collection with the elements
    *  of another collection or iterator.
    */
-  case class Zip[A, B](underlying: Iterable[A], other: IterableOnce[B]) extends View[(A, B)] {
+  case class Zip[A, B](underlying: Iterable[A], other: Iterable[B]) extends View[(A, B)] {
     def iterator() = underlying.iterator().zip(other)
     override def knownSize = other match {
       case other: Iterable[_] => underlying.knownSize min other.knownSize
@@ -197,13 +197,13 @@ object View extends IterableFactory[View] {
 
   /** A view that appends an element to its elements */
   case class Append[A](underlying: Iterable[A], elem: A) extends View[A] {
-    def iterator(): Iterator[A] = Concat(underlying, View.Single(elem)).iterator()
+    def iterator(): Iterator[A] = new Concat(underlying, View.Single(elem)).iterator()
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
   /** A view that prepends an element to its elements */
   case class Prepend[A](elem: A, underlying: Iterable[A]) extends View[A] {
-    def iterator(): Iterator[A] = Concat(View.Single(elem), underlying).iterator()
+    def iterator(): Iterator[A] = new Concat(View.Single(elem), underlying).iterator()
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 

@@ -771,10 +771,10 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     }
 
   /** Alias for `appendAll` */
-  @`inline` final def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendAll(suffix)
+  @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
 
   /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
+  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -785,10 +785,10 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def appendAll[B >: A](suffix: IterableOnce[B]): CC[B] = fromIterable(View.Concat(coll, suffix))
+  def appendAll[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(View.Concat(coll, suffix))
 
   /** Alias for `appendAll` */
-  @`inline` final def :++ [B >: A](suffix: IterableOnce[B]): CC[B] = appendAll(suffix)
+  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
 
   /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.
@@ -820,10 +820,10 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *    @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
-  def prependAll[B >: A](prefix: IterableOnce[B]): CC[B] = fromIterable(View.Concat(prefix, coll))
+  def prependAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(View.Concat(prefix, coll))
 
   /** Alias for `prependAll` */
-  @`inline` final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependAll(prefix)
+  @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependAll(prefix)
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.
@@ -835,7 +835,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *                 corresponding elements of this $coll and `that`. The length
     *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
     */
-  def zip[B](xs: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
+  def zip[B](xs: Iterable[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 
   /** Zips this $coll with its indices.

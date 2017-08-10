@@ -155,10 +155,10 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.IterableOnce[A]): C = fromSpecificIterable(View.Concat(coll, that))
+  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(View.Concat(coll, that))
 
   /** Alias for `concat` */
-  @`inline` final def ++ (that: collection.IterableOnce[A]): C = concat(that)
+  @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)
 
   /** Computes the union between of set and another set.
     *
@@ -166,10 +166,10 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  @`inline` final def union(that: collection.IterableOnce[A]): C = concat(that)
+  @`inline` final def union(that: collection.Iterable[A]): C = concat(that)
 
   /** Alias for `union` */
-  @`inline` final def | (that: collection.IterableOnce[A]): C = concat(that)
+  @`inline` final def | (that: collection.Iterable[A]): C = concat(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.

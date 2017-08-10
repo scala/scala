@@ -185,29 +185,25 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
   // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendAll[B >: A](that: IterableOnce[B]): Vector[B] =
-    that match {
-      case it: Iterable[B] =>
-        import Vector.{Log2ConcatFaster, TinyAppendFaster}
-        if (it.isEmpty) this
-        else {
-          it.size match {
-            // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
-            case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
-              var v: Vector[B] = this
-              for (x <- it) v = v :+ x
-              v
-            case n if this.size < (n >>> Log2ConcatFaster) && it.isInstanceOf[Vector[_]] =>
-              var v = it.asInstanceOf[Vector[B]]
-              val ri = this.reverseIterator()
-              while (ri.hasNext) v = ri.next() +: v
-              v
-            case _ => super.appendAll(that)
-          }
-        }
-      case _ => super.appendAll(that)
+  override def appendAll[B >: A](that: collection.Iterable[B]): Vector[B] = {
+    import Vector.{Log2ConcatFaster, TinyAppendFaster}
+    if (that.isEmpty) this
+    else {
+      that.size match {
+        // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+          var v: Vector[B] = this
+          for (x <- that) v = v :+ x
+          v
+        case n if this.size < (n >>> Log2ConcatFaster) && that.isInstanceOf[Vector[_]] =>
+          var v = that.asInstanceOf[Vector[B]]
+          val ri = this.reverseIterator()
+          while (ri.hasNext) v = ri.next() +: v
+          v
+        case _ => super.appendAll(that)
+      }
     }
-
+  }
   // TODO: ODD 2017-08-05: Add optimized implementation of `prependAll` analogous to `appendAll` above.
 
   // semi-private api

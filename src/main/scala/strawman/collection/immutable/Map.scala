@@ -59,7 +59,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with MapOps[X, Y, CC, CC[X, Y]], +C 
     */
   /*@`inline` final*/ def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
-  override def concat [V1 >: V](that: collection.IterableOnce[(K, V1)]): CC[K, V1] = {
+  override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
     var result: CC[K, V1] = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()

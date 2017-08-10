@@ -49,14 +49,14 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
     new ImmutableArray(dest)
   }
 
-  override def append [B >: A](elem: B): ImmutableArray[B] = {
+  override def append[B >: A](elem: B): ImmutableArray[B] = {
     val dest = scala.Array.ofDim[Any](length + 1)
     java.lang.System.arraycopy(elements, 0, dest, 0, length)
     dest(length) = elem
     new ImmutableArray(dest)
   }
 
-  override def appendAll[B >: A](xs: IterableOnce[B]): ImmutableArray[B] =
+  override def appendAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
     xs match {
       case bs: ImmutableArray[B] =>
         val dest = scala.Array.ofDim[Any](length + bs.length)
@@ -67,7 +67,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         ImmutableArray.fromIterable(View.Concat(coll, xs))
     }
 
-  override def prependAll[B >: A](xs: collection.IterableOnce[B]): ImmutableArray[B] =
+  override def prependAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
     xs match {
       case bs: ImmutableArray[B] =>
         val dest = scala.Array.ofDim[Any](length + bs.length)
@@ -78,7 +78,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         ImmutableArray.fromIterable(View.Concat(xs, coll))
     }
 
-  override def zip[B](xs: IterableOnce[B]): ImmutableArray[(A, B)] =
+  override def zip[B](xs: collection.Iterable[B]): ImmutableArray[(A, B)] =
     xs match {
       case bs: ImmutableArray[B] =>
         ImmutableArray.tabulate(length min bs.length) { i =>
