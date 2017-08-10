@@ -254,7 +254,7 @@ abstract class UnPickler {
                     |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
               val stubName = if (tag == EXTref) name else name.toTypeName
               // The position of the error message is set by `newStubSymbol`
-              NoSymbol.newStubSymbol(stubName, missingMessage)
+              owner.newStubSymbol(stubName, missingMessage)
             }
           }
         }
