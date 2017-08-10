@@ -20,18 +20,9 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
     Symbol("_root_.scala.Predef.intArrayOps.")
   )
 
-  def normalize(symbol: Symbol): Symbol = {
-    def loop(symbol: Symbol): Symbol = symbol match {
-      case Symbol.Global(qual, Signature.Term("package")) => loop(qual)
-      case Symbol.Global(qual, name)                      => Symbol.Global(loop(qual), name)
-      case x                                              => x
-    }
-    loop(symbol.normalized)
-  }
-
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
     val toUnimport = ctx.mirror.database.names.flatMap { r =>
-      val norm = normalize(r.sym)
+      val norm = r.sym.normalized
       if (unimports.contains(norm)) norm :: Nil
       else Nil
     }
