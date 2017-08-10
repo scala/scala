@@ -38,7 +38,7 @@ trait Trees extends api.Trees {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
+    if (Statistics.hotEnabled) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
     final override def pos: Position = rawatt.pos
 

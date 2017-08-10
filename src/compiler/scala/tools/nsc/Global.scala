@@ -1213,6 +1213,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
       checkPhaseSettings(including = false, exclusions map (_.value): _*)
 
+      // Report the overhead of statistics measurements per every run
+      import scala.reflect.internal.util.Statistics
+      if (Statistics.canEnable)
+        Statistics.reportStatisticsOverhead(reporter)
+
       phase = first   //parserPhase
       first
     }

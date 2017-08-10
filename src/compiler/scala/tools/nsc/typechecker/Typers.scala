@@ -5562,10 +5562,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else
           typedInternal(tree, mode, pt)
       )
-      val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
-      if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
+      val startByType = if (Statistics.hotEnabled) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
+      if (Statistics.hotEnabled) Statistics.incCounter(visitsByType, tree.getClass)
       try body
-      finally if (Statistics.canEnable) Statistics.popTimer(byTypeStack, startByType)
+      finally if (Statistics.hotEnabled) Statistics.popTimer(byTypeStack, startByType)
     }
 
     private def typedInternal(tree: Tree, mode: Mode, pt: Type): Tree = {
