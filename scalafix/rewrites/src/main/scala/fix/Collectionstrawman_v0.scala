@@ -1,14 +1,11 @@
 package fix
-// scalafmt: { maxColumn = 120 }
 
-import scala.collection.JavaConverters._
 import scalafix._
 import scalafix.syntax._
-import scalafix.internal.util.SymbolOps
 import scala.meta._
-import org.scalameta.logger
 
-case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mirror) {
+case class Collectionstrawman_v0(mirror: SemanticCtx)
+    extends SemanticRewrite(mirror) {
   val immutableListSymbol = Symbol("_root_.scala.collection.immutable.List.")
   val unimports = Map(
     Symbol("_root_.scala.Predef.augmentString.") ->
@@ -18,14 +15,8 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
   )
 
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
-    logger.elem(ctx.mirror.names)
     val toImport = ctx.mirror.names
-      .flatMap(r =>
-        unimports.get {
-          val x = r.sym.normalized
-          logger.elem(x)
-          x
-      })
+      .flatMap(r => unimports.get(r.sym.normalized))
       .map(ctx.addGlobalImport)
     toImport.asPatch
   }
@@ -35,8 +26,9 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =
       s"scala.$name" -> s"strawman.collection.immutable.${rename.getOrElse(name)}"
-    def i(name: String) =
-      s"scala.collection.immutable.$name" -> s"strawman.collection.immutable.$name"
+    def i(name: String, rename: Option[String] = None) =
+      s"scala.collection.immutable.$name" ->
+        s"strawman.collection.immutable.${rename.getOrElse(name)}"
     def m(name: String) =
       s"scala.collection.mutable.$name" -> s"strawman.collection.mutable.$name"
     ifSymbolFound(ctx) +
@@ -54,6 +46,7 @@ case class Collectionstrawman_v0(mirror: SemanticCtx) extends SemanticRewrite(mi
         i("`+:`"),
         s("`:+`"),
         i("`:+`"),
+        i("Stream", Some("LazyList")),
         s("Stream", Some("LazyList")),
         s("`#::`"),
         s("`#::`"),
