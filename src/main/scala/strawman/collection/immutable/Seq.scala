@@ -93,6 +93,18 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(coll, index, elem))
 
+  /** Produces a new $coll where a slice of elements in this $coll is replaced by another sequence.
+    *
+    *  @param  from     the index of the first replaced element
+    *  @param  other    the replacement sequence
+    *  @param  replaced the number of elements to drop in the original $coll
+    *  @tparam B        the element type of the returned $coll.
+    *  @return          a new $coll consisting of all elements of this $coll
+    *                   except that `replaced` elements starting from `from` are replaced
+    *                   by `other`.
+    */
+  def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] = fromIterable(new View.Patched(coll, from, other, replaced))
+
 }
 
 object Seq extends IterableFactory.Delegate[Seq](List)

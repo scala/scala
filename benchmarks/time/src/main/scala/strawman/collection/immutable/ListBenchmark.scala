@@ -23,6 +23,8 @@ class ListBenchmark {
   var xss: scala.Array[List[Long]] = _
   var zipped: List[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
+  var randomIndices2: scala.Array[Int] = _
+  var randomXss: scala.Array[List[Long]] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
@@ -32,6 +34,8 @@ class ListBenchmark {
     zipped = xs.map(x => (x, x))
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomIndices2 = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomXss = scala.Array.fill(1000)(freshCollection().take(scala.util.Random.nextInt(size)))
     }
   }
 
@@ -119,4 +123,15 @@ class ListBenchmark {
   @Benchmark
   def append(bh: Blackhole): Unit = bh.consume(xs.append(42))
 
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def randomPatch(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      val from = randomIndices(i)
+      val replaced = randomIndices2(i)
+      bh.consume(xs.patch(from, randomXss(i), replaced))
+      i = i + 1
+    }
+  }
 }

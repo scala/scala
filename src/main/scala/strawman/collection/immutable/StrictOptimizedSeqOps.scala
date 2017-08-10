@@ -50,4 +50,22 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
     b.result()
   }
 
+  override def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] = {
+    val b = iterableFactory.newBuilder[B]()
+    var i = 0
+    val it = coll.iterator()
+    while (i < from && it.hasNext) {
+      b += it.next()
+      i += 1
+    }
+    b ++= other
+    i = replaced
+    while (i > 0 && it.hasNext) {
+      it.next()
+      i -= 1
+    }
+    while (it.hasNext) b += it.next()
+    b.result()
+  }
+
 }

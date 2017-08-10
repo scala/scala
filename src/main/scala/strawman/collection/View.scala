@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, Boolean, Equals, IndexOutOfBoundsException, Int, Nothing, annotation, throws}
+import scala.{Any, Boolean, Equals, NoSuchElementException, IndexOutOfBoundsException, Int, Nothing, annotation, throws}
 import scala.Predef.{<:<, intWrapper}
 
 /** Concrete collection type: View */
@@ -216,6 +216,11 @@ object View extends IterableFactory[View] {
         }
         def hasNext: Boolean = it.hasNext
       }
+  }
+
+  private[collection] class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
+    if (from < 0 || from > size) throw new IndexOutOfBoundsException(from.toString)
+    def iterator(): Iterator[A] = underlying.iterator().patch(from, other.iterator(), replaced)
   }
 
   case class ZipWithIndex[A](underlying: Iterable[A]) extends View[(A, Int)] {
