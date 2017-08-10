@@ -1,9 +1,7 @@
 package fix
 
-import scala.{ #:: => _, :: => _, List => _, Seq => _, Vector => _ }
-import scala.Predef.{ Map => _ }
-import strawman.collection.immutable.{ HashMap, LazyList, List, Map, Nil, Vector }
-import strawman.collection.immutable.LazyList.#::
+import strawman.collection.{ arrayToArrayOps, stringToStringOps }
+import strawman.collection.immutable.{ #::, ::, HashMap, LazyList, List, Map, Nil, Vector }
 import strawman.collection.mutable.ArrayBuffer
 object Collectionstrawman_v0_List {
   List(1, 2, 3)

@@ -1,4 +1,4 @@
-/*
+/* ONLY
 rewrite = "scala:fix.Collectionstrawman_v0"
 */
 package fix
