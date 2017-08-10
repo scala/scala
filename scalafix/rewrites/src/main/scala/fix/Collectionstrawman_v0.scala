@@ -22,6 +22,7 @@ case class Collectionstrawman_v0(mirror: SemanticCtx)
   }
 
   def rewrite(ctx: RewriteCtx): Patch = {
+    ctx.debugMirror()
     def p(name: String) =
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =

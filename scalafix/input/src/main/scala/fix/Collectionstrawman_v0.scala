@@ -1,6 +1,6 @@
 /* ONLY
 rewrite = "scala:fix.Collectionstrawman_v0"
-*/
+ */
 package fix
 
 object Collectionstrawman_v0_List {
@@ -48,5 +48,6 @@ object Collectionstrawman_v0_ArrayAndString {
 }
 
 object Collectionstrawman_v0_Range {
-  for (i <- 1 to 10; j <- 0 until 10) yield (i, j)
+  (1 to 10).map(_ + 2)
+  (0 until 10).map(_ + 3)
 }

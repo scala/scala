@@ -46,5 +46,6 @@ object Collectionstrawman_v0_ArrayAndString {
 }
 
 object Collectionstrawman_v0_Range {
-  for (i <- Range.inclusive(1, 10); j <- Range(0, 10)) yield (i, j)
+  Range.inclusive(1, 10).map(_ +  1)
+  Range(1, 10).map(_ +  1)
 }
