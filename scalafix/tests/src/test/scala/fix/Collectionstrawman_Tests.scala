@@ -2,10 +2,11 @@ package fix
 
 import scala.meta._
 import scalafix.testkit._
+import scalafix._
 
 class Collectionstrawman_Tests
   extends SemanticRewriteSuite(
-    Database.load(Classpath(AbsolutePath(BuildInfo.inputClassdirectory))),
+    SemanticCtx.load(Classpath(AbsolutePath(BuildInfo.inputClassdirectory))),
     AbsolutePath(BuildInfo.inputSourceroot),
     Seq(AbsolutePath(BuildInfo.outputSourceroot))
   ) {

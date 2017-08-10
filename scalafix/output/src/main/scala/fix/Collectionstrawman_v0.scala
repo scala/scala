@@ -1,11 +1,10 @@
 package fix
 
-import scala.{ List => _, Nil => _, Seq => _, Vector => _, :: => _, #:: => _ }
-import scala.Predef.{ Map => _, augmentString => _, intArrayOps => _, ArrowAssoc, charWrapper}
-import strawman.collection.{ stringToStringOps, arrayToArrayOps }
-import strawman.collection.immutable.{ LazyList, List, Map, Nil, Range, Seq, :: }
+import scala.{ Vector => _, #:: => _, :: => _, Seq => _, List => _ }
+import scala.Predef.{ Map => _ }
+import strawman.collection.immutable.{ HashMap, LazyList, List, Map, Nil, Vector }
 import strawman.collection.immutable.LazyList.#::
-
+import strawman.collection.mutable.ArrayBuffer
 object Collectionstrawman_v0_List {
   List(1, 2, 3)
   1 :: 2 :: 3 :: Nil

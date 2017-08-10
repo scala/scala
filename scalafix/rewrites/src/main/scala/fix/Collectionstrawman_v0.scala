@@ -30,9 +30,8 @@ case class Collectionstrawman_v0(mirror: Mirror) extends SemanticRewrite(mirror)
   }
 
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
-    val toUnimport = ctx.mirror.database.names.flatMap {
-      case (_, sym) =>
-        val norm = normalize(sym)
+    val toUnimport = ctx.mirror.database.names.flatMap { r =>
+        val norm = normalize(r.sym)
         if (unimports.contains(norm)) norm :: Nil
         else Nil
     }
@@ -63,7 +62,6 @@ case class Collectionstrawman_v0(mirror: Mirror) extends SemanticRewrite(mirror)
   }
 
   def rewrite(ctx: RewriteCtx): Patch = {
-    ctx.debugMirror()
     ifSymbolFound(ctx)
   }
 }

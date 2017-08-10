@@ -1,6 +1,6 @@
 /* ONLY
 rewrite = "scala:fix.Collectionstrawman_v0"
-patches.moveSymbols = [
+patches.replaceSymbols = [
   { from = "scala.collection.immutable.HashMap",
     to   = "strawman.collection.immutable.HashMap" }
   { from = "scala.collection.immutable.Map",

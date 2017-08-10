@@ -1,6 +1,9 @@
 def scalafixVersion = _root_.scalafix.Versions.version
-// Use a scala version supported by scalafix.
-scalaVersion in ThisBuild := org.scalameta.BuildInfo.supportedScalaVersions.last
+inScope(Global)(
+  List(
+    scalaVersion := _root_.scalafix.Versions.scala212
+  )
+)
 
 lazy val root = project
   .in(file("."))
@@ -11,7 +14,7 @@ lazy val rewrites = project.settings(
 )
 
 lazy val input = project.settings(
-  scalametaSourceroot := sourceDirectory.in(Compile).value
+  scalafixSourceroot := sourceDirectory.in(Compile).value
 )
 
 val collections = ProjectRef(file(".."), "collections")
@@ -24,7 +27,6 @@ lazy val output = project
     scalaBinaryVersion := scalaBinaryVersion.in(collections).value
   )
   .dependsOn(collections) // collections/publishLocal is still necessary.
-  .disablePlugins(ScalahostSbtPlugin)
 
 lazy val tests = project
   .settings(
