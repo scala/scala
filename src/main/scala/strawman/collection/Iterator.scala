@@ -538,43 +538,43 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     * If more values are replaced than actually exist, the excess is ignored.
     *
     *  @param from       The start index from which to patch
-    *  @param other      The iterator of patch values
+    *  @param patchElems The iterator of patch values
     *  @param replaced   The number of values in the original iterator that are replaced by the patch.
     *  @note           Reuse: $consumesTwoAndProducesOneIterator
     */
-  def patch[B >: A](from: Int, other: Iterator[B], replaced: Int): Iterator[B] =
+  def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] =
     new Iterator[B] {
-      private[this] var i = 0
-      private[this] var isCurrent = false
-      private[this] var current: B = _
-      def hasNext: Boolean = isCurrent || {
-        if (i < from && self.hasNext) {
-          i += 1
-          current = self.next()
-          isCurrent = true
-          true
-        } else {
-          if (i == from) self.drop(replaced)
-          i += 1
-          if (other.hasNext) {
-            current = other.next()
-            isCurrent = true
-            true
-          } else if (self.hasNext) {
-            current = self.next()
-            isCurrent = true
-            true
-          } else false
+      private var origElems = self
+      private var i = if (from > 0) from else 0 // Counts down, switch to patch on 0, -1 means use patch first
+      def hasNext: Boolean = {
+        if (i == 0) {
+          origElems = origElems drop replaced
+          i = -1
+        }
+        origElems.hasNext || patchElems.hasNext
+      }
+
+      def next(): B = {
+        if (i == 0) {
+          origElems = origElems drop replaced
+          i = -1
+        }
+        if (i < 0) {
+          if (patchElems.hasNext) patchElems.next()
+          else origElems.next()
+        }
+        else {
+          if (origElems.hasNext) {
+            i -= 1
+            origElems.next()
+          }
+          else {
+            i = -1
+            patchElems.next()
+          }
         }
       }
-      def next(): B = {
-        if (hasNext) {
-          isCurrent = false
-          current
-        } else throw new NoSuchElementException
-      }
     }
-
 }
 
 object Iterator {
