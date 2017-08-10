@@ -21,8 +21,25 @@ case class Collectionstrawman_v0(mirror: SemanticCtx)
     toImport.asPatch
   }
 
+  val rangeImport = Symbol("_root_.strawman.collection.immutable.Range.")
+  val inclusiveRange = Symbol(
+    "_root_.scala.runtime.RichInt#to(I)Lscala/collection/immutable/Range/Inclusive;.")
+  val rangeSymbol = Symbol(
+    "_root_.scala.runtime.RichInt#until(I)Lscala/collection/immutable/Range;.")
+  def range(ctx: RewriteCtx): Patch = {
+    ctx.tree.collect {
+      case tree @ Term.ApplyInfix(lhs, op, targs, arg :: Nil)
+          if op.symbol.contains(inclusiveRange) =>
+        ctx.replaceTree(tree, q"Range.inclusive($lhs, $arg)".syntax) +
+          ctx.addGlobalImport(rangeImport)
+      case tree @ Term.ApplyInfix(lhs, op, targs, arg :: Nil)
+          if op.symbol.contains(rangeSymbol) =>
+        ctx.replaceTree(tree, q"Range($lhs, $arg)".syntax) +
+          ctx.addGlobalImport(rangeImport)
+    }
+  }.asPatch
+
   def rewrite(ctx: RewriteCtx): Patch = {
-    ctx.debugMirror()
     def p(name: String) =
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =
@@ -32,28 +49,28 @@ case class Collectionstrawman_v0(mirror: SemanticCtx)
         s"strawman.collection.immutable.${rename.getOrElse(name)}"
     def m(name: String) =
       s"scala.collection.mutable.$name" -> s"strawman.collection.mutable.$name"
-    ifSymbolFound(ctx) +
-      ctx.replaceSymbols(
-        i("HashMap"),
-        i("Map"),
-        p("Map"),
-        s("List"),
-        i("List"),
-        s("Nil"),
-        i("Nil"),
-        s("`::`"),
-        i("`::`"),
-        s("`+:`"),
-        i("`+:`"),
-        s("`:+`"),
-        i("`:+`"),
-        i("Stream", Some("LazyList")),
-        s("Stream", Some("LazyList")),
-        s("`#::`"),
-        s("`#::`"),
-        s("Vector"),
-        i("Vector"),
-        m("ArrayBuffer")
-      )
+    ctx.replaceSymbols(
+      i("HashMap"),
+      i("Map"),
+      p("Map"),
+      s("List"),
+      i("List"),
+      s("Nil"),
+      i("Nil"),
+      s("`::`"),
+      i("`::`"),
+      s("`+:`"),
+      i("`+:`"),
+      s("`:+`"),
+      i("`:+`"),
+      i("Stream", Some("LazyList")),
+      s("Stream", Some("LazyList")),
+      s("`#::`"),
+      s("Vector"),
+      i("Vector"),
+      m("ArrayBuffer")
+    ) +
+      ifSymbolFound(ctx) +
+      range(ctx)
   }
 }

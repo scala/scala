@@ -1,7 +1,7 @@
 package fix
 
 import strawman.collection.{ arrayToArrayOps, stringToStringOps }
-import strawman.collection.immutable.{ #::, ::, HashMap, LazyList, List, Map, Nil, Vector }
+import strawman.collection.immutable.{ #::, ::, HashMap, LazyList, List, Map, Nil, Range, Vector }
 import strawman.collection.mutable.ArrayBuffer
 object Collectionstrawman_v0_List {
   List(1, 2, 3)
@@ -46,6 +46,6 @@ object Collectionstrawman_v0_ArrayAndString {
 }
 
 object Collectionstrawman_v0_Range {
-  Range.inclusive(1, 10).map(_ +  1)
-  Range(1, 10).map(_ +  1)
+  Range.inclusive(1, 10).map(_ + 2)
+  Range(0, 10).map(_ + 3)
 }
