@@ -205,27 +205,6 @@ object View extends IterableFactory[View] {
       }
   }
 
-  /*
-    // Implementated as bellow in scala.collection.SeqLike
-    def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-      val b = bf(repr)
-      var i = 0
-      val it = this.iterator
-      while (i < from && it.hasNext) {
-        b += it.next()
-        i += 1
-      }
-      b ++= patch.seq
-      i = replaced
-      while (i > 0 && it.hasNext) {
-        it.next()
-        i -= 1
-      }
-      while (it.hasNext) b += it.next()
-      b.result()
-    }
-   */
-
   private[collection] class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
     if (from < 0 || from > size) throw new IndexOutOfBoundsException(from.toString)
     def iterator(): Iterator[A] = underlying.iterator().patch(from, other.iterator(), replaced)
