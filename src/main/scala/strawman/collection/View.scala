@@ -226,42 +226,9 @@ object View extends IterableFactory[View] {
     }
    */
 
-  case class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
+  private[collection] class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
     if (from < 0 || from > size) throw new IndexOutOfBoundsException(from.toString)
-    def iterator(): Iterator[A] =
-      new Iterator[A] {
-        private[this] var uit = underlying.iterator()
-        private[this] var oit = other.iterator()
-        private[this] var i = 0
-        private[this] var isCurrent = false
-        private[this] var current: A = _
-        def hasNext: Boolean = isCurrent || {
-          if (i < from && uit.hasNext) {
-            i += 1
-            current = uit.next()
-            isCurrent = true
-            true
-          } else {
-            if (i == from) uit.drop(replaced)
-            i += 1
-            if (oit.hasNext) {
-              current = oit.next()
-              isCurrent = true
-              true
-            } else if (uit.hasNext) {
-              current = uit.next()
-              isCurrent = true
-              true
-            } else false
-          }
-        }
-        def next(): A = {
-          if (hasNext) {
-            isCurrent = false
-            current
-          } else throw new NoSuchElementException
-        }
-      }
+    def iterator(): Iterator[A] = underlying.iterator().patch(from, other.iterator(), replaced)
   }
 
   case class ZipWithIndex[A](underlying: Iterable[A]) extends View[(A, Int)] {

@@ -531,6 +531,50 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     // If *both* of them have no elements then the collections are the same
     hasNext == those.hasNext
   }
+
+  /** Returns this iterator with patched values.
+    * Patching at negative indices is the same as patching starting at 0.
+    * Patching at indices at or larger than the length of the original iterator appends the patch to the end.
+    * If more values are replaced than actually exist, the excess is ignored.
+    *
+    *  @param from       The start index from which to patch
+    *  @param other      The iterator of patch values
+    *  @param replaced   The number of values in the original iterator that are replaced by the patch.
+    *  @note           Reuse: $consumesTwoAndProducesOneIterator
+    */
+  def patch[B >: A](from: Int, other: Iterator[B], replaced: Int): Iterator[B] =
+    new Iterator[B] {
+      private[this] var i = 0
+      private[this] var isCurrent = false
+      private[this] var current: B = _
+      def hasNext: Boolean = isCurrent || {
+        if (i < from && self.hasNext) {
+          i += 1
+          current = self.next()
+          isCurrent = true
+          true
+        } else {
+          if (i == from) self.drop(replaced)
+          i += 1
+          if (other.hasNext) {
+            current = other.next()
+            isCurrent = true
+            true
+          } else if (self.hasNext) {
+            current = self.next()
+            isCurrent = true
+            true
+          } else false
+        }
+      }
+      def next(): B = {
+        if (hasNext) {
+          isCurrent = false
+          current
+        } else throw new NoSuchElementException
+      }
+    }
+
 }
 
 object Iterator {
