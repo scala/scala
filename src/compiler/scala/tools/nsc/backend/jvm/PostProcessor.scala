@@ -1,4 +1,5 @@
-package scala.tools.nsc.backend.jvm
+package scala.tools.nsc
+package backend.jvm
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.NoPosition
@@ -35,6 +36,7 @@ abstract class PostProcessor extends PerRunInit {
   override def initialize(): Unit = {
     super.initialize()
     backendUtils.initialize()
+    byteCodeRepository.initialize()
     inlinerHeuristics.initialize()
   }
 
@@ -45,7 +47,7 @@ abstract class PostProcessor extends PerRunInit {
       val bytes = try {
         if (!isArtifact) {
           localOptimizations(classNode)
-          val lambdaImplMethods = getIndyLambdaImplMethods(classNode.name)
+          val lambdaImplMethods = backendUtils.getIndyLambdaImplMethods(classNode.name)
           if (lambdaImplMethods.nonEmpty)
             backendUtils.addLambdaDeserialize(classNode, lambdaImplMethods)
         }

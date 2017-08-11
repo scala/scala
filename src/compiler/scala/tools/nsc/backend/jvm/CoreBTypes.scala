@@ -56,9 +56,14 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   import bTypes._
   import global._
-  import rootMirror.{requiredClass, getRequiredClass, getClassIfDefined}
   import definitions._
+  import rootMirror.{getClassIfDefined, getRequiredClass, requiredClass}
 
+  /**
+   * This method is used to lazily initialize the core BTypes. The computation is synchronized on
+   * the frontendLock, as it reads Symbols. The BTypes are re-initialized in each compiler run as
+   * the information in symbols may change.
+   */
   private def runLazy[T](init: => T): LazyVar[T] = perRunLazy(this)(init)
 
   /**

@@ -138,6 +138,20 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class LocalOpt {
   val postProcessor: PostProcessor
 
+  import postProcessor.bTypes.frontendAccess.recordPerRunCache
+
+  /**
+   * Cache, contains methods whose unreachable instructions are eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This cache allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._

@@ -1,9 +1,10 @@
-package scala.tools.nsc.backend.jvm
+package scala.tools.nsc
+package backend.jvm
 
 import scala.collection.generic.Clearable
 import scala.reflect.internal.util.Position
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.Global
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 /**
  * Functionality needed in the post-processor whose implementation depends on the compiler
@@ -24,6 +25,8 @@ sealed abstract class PostProcessorFrontendAccess {
   def backendClassPath: BackendClassPath
 
   def getEntryPoints: List[String]
+
+  def javaDefinedClasses: Set[InternalName]
 
   def recordPerRunCache[T <: Clearable](cache: T): T
 }
@@ -151,6 +154,13 @@ object PostProcessorFrontendAccess {
     }
 
     def getEntryPoints: List[String] = frontendSynch(cleanup.getEntryPoints)
+
+    def javaDefinedClasses: Set[InternalName] = frontendSynch {
+      currentRun.symSource.collect({
+        case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
+      }).toSet
+    }
+
 
     def recordPerRunCache[T <: Clearable](cache: T): T = frontendSynch(perRunCaches.recordCache(cache))
   }

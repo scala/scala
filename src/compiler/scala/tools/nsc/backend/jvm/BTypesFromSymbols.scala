@@ -15,13 +15,6 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
  * information from a symbol and its type to create the corresponding ClassBType. It requires
  * access to the compiler (global parameter).
- *
- * The mixin CoreBTypes defines core BTypes that are used in the backend. Building these BTypes
- * uses classBTypeFromSymbol, hence requires access to the compiler (global).
- *
- * BTypesFromSymbols extends BTypes because the implementation of BTypes requires access to some
- * of the core btypes. They are declared in BTypes as abstract members. Note that BTypes does
- * not have access to the compiler instance.
  */
 abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val frontendAccess: PostProcessorFrontendAccess
@@ -39,9 +32,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   final def initialize(): Unit = {
     coreBTypes.initialize()
-    javaDefinedClasses ++= currentRun.symSource collect {
-      case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
-    }
   }
 
   // helpers that need access to global.

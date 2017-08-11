@@ -578,7 +578,7 @@ abstract class Inliner {
     undo { callGraph.addCallsite(callsite) }
 
     // Inlining a method body can render some code unreachable, see example above in this method.
-    unreachableCodeEliminated -= callsiteMethod
+    localOpt.unreachableCodeEliminated -= callsiteMethod
   }
 
   /**

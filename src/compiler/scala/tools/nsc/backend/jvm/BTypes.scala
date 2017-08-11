@@ -8,10 +8,8 @@ package backend.jvm
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.{concurrent, mutable}
-import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt._
@@ -45,86 +43,6 @@ abstract class BTypes {
   // might run on multiple classes concurrently.
   val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
   val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
-
-  /**
-   * Store the position of every MethodInsnNode during code generation. This allows each callsite
-   * in the call graph to remember its source position, which is required for inliner warnings.
-   */
-  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
-
-  /**
-   * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
-   * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
-   * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
-   */
-  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
-  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Contains the internal names of all classes that are defined in Java source files of the current
-   * compilation run (mixed compilation). Used for more detailed error reporting.
-   */
-  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Cache, contains methods whose unreachable instructions are eliminated.
-   *
-   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
-   * Transformations that use an analyzer (including inlining) therefore require unreachable code
-   * to be eliminated.
-   *
-   * This cache allows running dead code elimination whenever an analyzer is used. If the method
-   * is already optimized, DCE can return early.
-   */
-  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
-   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
-   * computation only when necessary.
-   */
-  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
-   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
-   * method has been generated. It is used during ordinary code generation, as well as during
-   * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
-   * has the method.
-   */
-  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
-
-  /**
-    * add methods
-    * @return the added methods. Note the order is undefined
-    */
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
-    if (handle.isEmpty) Nil else {
-      val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
-      if (set.isEmpty) {
-        set ++= handle
-        handle
-      } else {
-        var added = List.empty[asm.Handle]
-        handle foreach { h => if (set.add(h)) added ::= h}
-        added
-      }
-    }
-  }
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: asm.Handle): Boolean = {
-    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()).add(handle)
-  }
-  def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
-    if (handle.nonEmpty)
-      indyLambdaImplMethods.get(hostClass).foreach(_ --= handle)
-  }
-
-  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
-    indyLambdaImplMethods.getOrNull(hostClass) match {
-      case null => Nil
-      case xs => xs
-    }
-  }
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType

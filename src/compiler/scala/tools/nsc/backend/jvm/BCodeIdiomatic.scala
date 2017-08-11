@@ -3,16 +3,15 @@
  * @author  Martin Odersky
  */
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm
 import scala.annotation.switch
 import scala.collection.mutable
-import GenBCode._
+import scala.tools.asm
 import scala.tools.asm.tree.MethodInsnNode
 import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
+import scala.tools.nsc.backend.jvm.GenBCode._
 
 /*
  *  A high-level facade to the ASM API for bytecode generation.
@@ -28,6 +27,7 @@ abstract class BCodeIdiomatic {
   import global._
   import bTypes._
   import coreBTypes._
+  import genBCode.postProcessor.callGraph.callsitePositions
 
   lazy val JavaStringBuilderClassName = jlStringBuilderRef.internalName
 
@@ -116,7 +116,7 @@ abstract class BCodeIdiomatic {
      */
     final def genPrimitiveLogical(op: /* LogicalOp */ Int, kind: BType) {
 
-      import scalaPrimitives.{ AND, OR, XOR }
+      import scalaPrimitives.{AND, OR, XOR}
 
       ((op, kind): @unchecked) match {
         case (AND, LONG) => emit(Opcodes.LAND)
@@ -145,7 +145,7 @@ abstract class BCodeIdiomatic {
      */
     final def genPrimitiveShift(op: /* ShiftOp */ Int, kind: BType) {
 
-      import scalaPrimitives.{ LSL, ASR, LSR }
+      import scalaPrimitives.{ASR, LSL, LSR}
 
       ((op, kind): @unchecked) match {
         case (LSL, LONG) => emit(Opcodes.LSHL)
@@ -253,7 +253,7 @@ abstract class BCodeIdiomatic {
         case INT   => pickOne(JCodeMethodN.fromIntT2T)
 
         case FLOAT  =>
-          import asm.Opcodes.{ F2L, F2D, F2I }
+          import asm.Opcodes.{F2D, F2I, F2L}
           to match {
             case LONG    => emit(F2L)
             case DOUBLE  => emit(F2D)
@@ -261,7 +261,7 @@ abstract class BCodeIdiomatic {
           }
 
         case LONG   =>
-          import asm.Opcodes.{ L2F, L2D, L2I }
+          import asm.Opcodes.{L2D, L2F, L2I}
           to match {
             case FLOAT   => emit(L2F)
             case DOUBLE  => emit(L2D)
@@ -269,7 +269,7 @@ abstract class BCodeIdiomatic {
           }
 
         case DOUBLE =>
-          import asm.Opcodes.{ D2L, D2F, D2I }
+          import asm.Opcodes.{D2F, D2I, D2L}
           to match {
             case FLOAT   => emit(D2F)
             case LONG    => emit(D2L)

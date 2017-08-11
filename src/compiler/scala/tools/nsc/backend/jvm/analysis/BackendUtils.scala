@@ -35,7 +35,23 @@ abstract class BackendUtils extends PerRunInit {
   import bTypes._
   import callGraph.ClosureInstantiation
   import coreBTypes._
-  import frontendAccess.compilerSettings
+  import frontendAccess.{compilerSettings, recordPerRunCache}
+
+  /**
+   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
+   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
+   * computation only when necessary.
+   */
+  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  /**
+   * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
+   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
+   * method has been generated. It is used during ordinary code generation, as well as during
+   * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
+   * has the method.
+   */
+  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
 
   // unused objects created by these constructors are eliminated by pushPop
   private[this] lazy val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy(this) {
@@ -352,6 +368,40 @@ abstract class BackendUtils extends PerRunInit {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
       val Some(e) = nestedClass.innerClassAttributeEntry.get
       jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
+    }
+  }
+
+  /**
+   * add methods
+   * @return the added methods. Note the order is undefined
+   */
+  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
+    if (handle.isEmpty) Nil else {
+      val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
+      if (set.isEmpty) {
+        set ++= handle
+        handle
+      } else {
+        var added = List.empty[asm.Handle]
+        handle foreach { h => if (set.add(h)) added ::= h}
+        added
+      }
+    }
+  }
+
+  def addIndyLambdaImplMethod(hostClass: InternalName, handle: asm.Handle): Boolean = {
+    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()).add(handle)
+  }
+
+  def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
+    if (handle.nonEmpty)
+      indyLambdaImplMethods.get(hostClass).foreach(_ --= handle)
+  }
+
+  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
+    indyLambdaImplMethods.getOrNull(hostClass) match {
+      case null => Nil
+      case xs => xs
     }
   }
 

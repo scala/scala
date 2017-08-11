@@ -8,6 +8,7 @@ package backend.jvm
 package opt
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.IntMap
 import scala.collection.{concurrent, mutable}
 import scala.reflect.internal.util.{NoPosition, Position}
@@ -57,6 +58,20 @@ abstract class CallGraph {
    * the method. Here the closure instantiations are already grouped by method.
    */
   val closureInstantiations: mutable.Map[MethodNode, Map[InvokeDynamicInsnNode, ClosureInstantiation]] = recordPerRunCache(concurrent.TrieMap.empty withDefaultValue Map.empty)
+
+  /**
+   * Store the position of every MethodInsnNode during code generation. This allows each callsite
+   * in the call graph to remember its source position, which is required for inliner warnings.
+   */
+  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+
+  /**
+   * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
+   * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
+   * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
+   */
+  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
     val methodCallsites = callsites(methodNode)

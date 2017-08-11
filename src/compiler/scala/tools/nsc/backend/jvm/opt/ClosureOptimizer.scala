@@ -13,8 +13,8 @@ import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
 import scala.tools.asm.tree._
-import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -396,7 +396,7 @@ abstract class ClosureOptimizer {
 
     // Rewriting a closure invocation may render code unreachable. For example, the body method of
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
-    unreachableCodeEliminated -= ownerMethod
+    localOpt.unreachableCodeEliminated -= ownerMethod
 
     if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
       inliner.inlineCallsite(bodyMethodCallsite)

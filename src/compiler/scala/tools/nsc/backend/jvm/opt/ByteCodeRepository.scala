@@ -44,8 +44,18 @@ abstract class ByteCodeRepository {
    */
   val parsedClasses: concurrent.Map[InternalName, Either[ClassNotFound, (ClassNode, Long)]] = recordPerRunCache(concurrent.TrieMap.empty)
 
+  /**
+   * Contains the internal names of all classes that are defined in Java source files of the current
+   * compilation run (mixed compilation). Used for more detailed error reporting.
+   */
+  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
+
   private val maxCacheSize = 1500
   private val targetSize   = 500
+
+  def initialize(): Unit = {
+    javaDefinedClasses ++= frontendAccess.javaDefinedClasses
+  }
 
   private object lruCounter extends AtomicLong(0l) with collection.generic.Clearable {
     def clear(): Unit = { this.set(0l) }
