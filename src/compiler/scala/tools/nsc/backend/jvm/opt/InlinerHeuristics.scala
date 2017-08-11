@@ -11,14 +11,13 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
 import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
 
-abstract class InlinerHeuristics extends PerRunLazy {
+abstract class InlinerHeuristics extends PerRunInit {
   val postProcessor: PostProcessor
 
   import postProcessor._
@@ -26,7 +25,7 @@ abstract class InlinerHeuristics extends PerRunLazy {
   import callGraph._
   import frontendAccess.{backendReporting, compilerSettings}
 
-  lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(new InlineSourceMatcher(compilerSettings.optInlineFrom))
+  lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
   final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite

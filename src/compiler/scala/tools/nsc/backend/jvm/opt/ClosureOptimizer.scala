@@ -22,7 +22,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class ClosureOptimizer {
   val postProcessor: PostProcessor
 
-  import postProcessor.{bTypes, bTypesFromClassfile, callGraph, byteCodeRepository, localOpt, inliner, frontendAccess, backendUtils}
+  import postProcessor.{bTypes, bTypesFromClassfile, callGraph, byteCodeRepository, localOpt, inliner, backendUtils}
   import bTypes._
   import bTypesFromClassfile._
   import backendUtils._

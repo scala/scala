@@ -12,7 +12,7 @@ import scala.tools.nsc.backend.jvm.opt._
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
  * optimizations, post-processing and classfile serialization and writing.
  */
-abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) extends PerRunLazy {
+abstract class PostProcessor extends PerRunInit {
   val bTypes: BTypes
 
   import bTypes._
@@ -28,7 +28,7 @@ abstract class PostProcessor(val frontendAccess: PostProcessorFrontendAccess) ex
   val bTypesFromClassfile = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BTypesFromClassfile
 
   // re-initialized per run because it reads compiler settings that might change
-  lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(new ClassfileWriter(frontendAccess))
+  lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(this)(new ClassfileWriter(frontendAccess))
 
   lazy val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
 

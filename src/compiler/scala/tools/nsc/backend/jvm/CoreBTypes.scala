@@ -4,7 +4,7 @@ package backend.jvm
 import scala.tools.asm.{Handle, Opcodes}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
-abstract class CoreBTypes extends PerRunLazy {
+abstract class CoreBTypes extends PerRunInit {
   val bTypes: BTypes
   import bTypes._
 
@@ -59,12 +59,14 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   import rootMirror.{requiredClass, getRequiredClass, getClassIfDefined}
   import definitions._
 
+  private def runLazy[T](init: => T): LazyVar[T] = perRunLazy(this)(init)
+
   /**
    * Maps primitive types to their corresponding PrimitiveBType. The map is defined lexically above
    * the first use of `classBTypeFromSymbol` because that method looks at the map.
    */
   def primitiveTypeToBType: Map[Symbol, PrimitiveBType] = _primitiveTypeToBType.get
-  private[this] lazy val _primitiveTypeToBType: LazyVar[Map[Symbol, PrimitiveBType]] = perRunLazy {
+  private[this] lazy val _primitiveTypeToBType: LazyVar[Map[Symbol, PrimitiveBType]] = runLazy {
     Map(
       UnitClass    -> UNIT,
       BooleanClass -> BOOL,
@@ -82,7 +84,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
    * operand stack (ldc instruction taking a class literal), see genConstant.
    */
   def boxedClassOfPrimitive: Map[PrimitiveBType, ClassBType] = _boxedClassOfPrimitive.get
-  private[this] lazy val _boxedClassOfPrimitive: LazyVar[Map[PrimitiveBType, ClassBType]] = perRunLazy {
+  private[this] lazy val _boxedClassOfPrimitive: LazyVar[Map[PrimitiveBType, ClassBType]] = runLazy {
     Map(
       UNIT   -> classBTypeFromSymbol(requiredClass[java.lang.Void]),
       BOOL   -> classBTypeFromSymbol(BoxedBooleanClass),
@@ -96,14 +98,14 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   def boxedClasses: Set[ClassBType] = _boxedClasses.get
-  private[this] lazy val _boxedClasses: LazyVar[Set[ClassBType]] = perRunLazy(boxedClassOfPrimitive.values.toSet)
+  private[this] lazy val _boxedClasses: LazyVar[Set[ClassBType]] = runLazy(boxedClassOfPrimitive.values.toSet)
 
   /**
    * Maps the method symbol for a box method to the boxed type of the result. For example, the
    * method symbol for `Byte.box()` is mapped to the ClassBType `java/lang/Byte`.
    */
   def boxResultType: Map[Symbol, ClassBType] = _boxResultType.get
-  private[this] lazy val _boxResultType: LazyVar[Map[Symbol, ClassBType]] = perRunLazy {
+  private[this] lazy val _boxResultType: LazyVar[Map[Symbol, ClassBType]] = runLazy {
     for ((valueClassSym, boxMethodSym) <- currentRun.runDefinitions.boxMethod)
     yield boxMethodSym -> boxedClassOfPrimitive(primitiveTypeToBType(valueClassSym))
   }
@@ -112,7 +114,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
    * Maps the method symbol for an unbox method to the primitive type of the result.
    * For example, the method symbol for `Byte.unbox()`) is mapped to the PrimitiveBType BYTE. */
   def unboxResultType: Map[Symbol, PrimitiveBType] = _unboxResultType.get
-  private[this] lazy val _unboxResultType: LazyVar[Map[Symbol, PrimitiveBType]] = perRunLazy {
+  private[this] lazy val _unboxResultType: LazyVar[Map[Symbol, PrimitiveBType]] = runLazy {
     for ((valueClassSym, unboxMethodSym) <- currentRun.runDefinitions.unboxMethod)
     yield unboxMethodSym -> primitiveTypeToBType(valueClassSym)
   }
@@ -126,88 +128,88 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
    * names of NothingClass and NullClass can't be emitted as-is.
    */
   def                     srNothingRef              : ClassBType = _srNothingRef.get
-  private[this] lazy val _srNothingRef              : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.Nothing$]))
+  private[this] lazy val _srNothingRef              : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.Nothing$]))
 
   def                     srNullRef                 : ClassBType = _srNullRef.get
-  private[this] lazy val _srNullRef                 : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.Null$]))
+  private[this] lazy val _srNullRef                 : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.Null$]))
 
   def                     ObjectRef                 : ClassBType = _ObjectRef.get
-  private[this] lazy val _ObjectRef                 : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(ObjectClass))
+  private[this] lazy val _ObjectRef                 : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ObjectClass))
 
   def                     StringRef                 : ClassBType = _StringRef.get
-  private[this] lazy val _StringRef                 : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(StringClass))
+  private[this] lazy val _StringRef                 : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(StringClass))
 
   def                     PredefRef                 : ClassBType = _PredefRef.get
-  private[this] lazy val _PredefRef                 : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(PredefModule.moduleClass))
+  private[this] lazy val _PredefRef                 : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(PredefModule.moduleClass))
 
   def                     jlStringBuilderRef        : ClassBType = _jlStringBuilderRef.get
-  private[this] lazy val _jlStringBuilderRef        : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaStringBuilderClass))
+  private[this] lazy val _jlStringBuilderRef        : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaStringBuilderClass))
 
   def                     jlStringBufferRef         : ClassBType = _jlStringBufferRef.get
-  private[this] lazy val _jlStringBufferRef         : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaStringBufferClass))
+  private[this] lazy val _jlStringBufferRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaStringBufferClass))
 
   def                     jlCharSequenceRef         : ClassBType = _jlCharSequenceRef.get
-  private[this] lazy val _jlCharSequenceRef         : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaCharSequenceClass))
+  private[this] lazy val _jlCharSequenceRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaCharSequenceClass))
 
   def                     jlThrowableRef            : ClassBType = _jlThrowableRef.get
-  private[this] lazy val _jlThrowableRef            : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(ThrowableClass))
+  private[this] lazy val _jlThrowableRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ThrowableClass))
 
   def                     jlCloneableRef            : ClassBType = _jlCloneableRef.get
-  private[this] lazy val _jlCloneableRef            : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaCloneableClass))        // java/lang/Cloneable
+  private[this] lazy val _jlCloneableRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaCloneableClass))        // java/lang/Cloneable
 
   def                     jiSerializableRef         : ClassBType = _jiSerializableRef.get
-  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaSerializableClass))     // java/io/Serializable
+  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaSerializableClass))     // java/io/Serializable
 
   def                     jlClassCastExceptionRef   : ClassBType = _jlClassCastExceptionRef.get
-  private[this] lazy val _jlClassCastExceptionRef   : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(ClassCastExceptionClass))   // java/lang/ClassCastException
+  private[this] lazy val _jlClassCastExceptionRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ClassCastExceptionClass))   // java/lang/ClassCastException
 
   def                     jlIllegalArgExceptionRef  : ClassBType = _jlIllegalArgExceptionRef.get
-  private[this] lazy val _jlIllegalArgExceptionRef  : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(IllegalArgExceptionClass))  // java/lang/IllegalArgumentException
+  private[this] lazy val _jlIllegalArgExceptionRef  : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(IllegalArgExceptionClass))  // java/lang/IllegalArgumentException
 
   def                     juMapRef                  : ClassBType = _juMapRef.get
-  private[this] lazy val _juMapRef                  : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaUtilMap))               // java/util/Map
+  private[this] lazy val _juMapRef                  : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaUtilMap))               // java/util/Map
 
   def                     juHashMapRef              : ClassBType = _juHashMapRef.get
-  private[this] lazy val _juHashMapRef              : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(JavaUtilHashMap))           // java/util/HashMap
+  private[this] lazy val _juHashMapRef              : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaUtilHashMap))           // java/util/HashMap
 
   def                     sbScalaBeanInfoRef        : ClassBType = _sbScalaBeanInfoRef.get
-  private[this] lazy val _sbScalaBeanInfoRef        : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.beans.ScalaBeanInfo]))
+  private[this] lazy val _sbScalaBeanInfoRef        : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.beans.ScalaBeanInfo]))
 
   def                     jliSerializedLambdaRef    : ClassBType = _jliSerializedLambdaRef.get
-  private[this] lazy val _jliSerializedLambdaRef    : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.SerializedLambda]))
+  private[this] lazy val _jliSerializedLambdaRef    : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.SerializedLambda]))
 
   def                     jliMethodHandleRef        : ClassBType = _jliMethodHandleRef.get
-  private[this] lazy val _jliMethodHandleRef        : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandle]))
+  private[this] lazy val _jliMethodHandleRef        : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandle]))
 
   def                     jliMethodHandlesRef       : ClassBType = _jliMethodHandlesRef.get
-  private[this] lazy val _jliMethodHandlesRef       : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles]))
+  private[this] lazy val _jliMethodHandlesRef       : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles]))
 
   def                     jliMethodHandlesLookupRef : ClassBType = _jliMethodHandlesLookupRef.get
-  private[this] lazy val _jliMethodHandlesLookupRef : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup")))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
+  private[this] lazy val _jliMethodHandlesLookupRef : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup")))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
 
   def                     jliMethodTypeRef          : ClassBType = _jliMethodTypeRef.get
-  private[this] lazy val _jliMethodTypeRef          : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType]))
+  private[this] lazy val _jliMethodTypeRef          : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType]))
 
   def                     jliCallSiteRef            : ClassBType = _jliCallSiteRef.get
-  private[this] lazy val _jliCallSiteRef            : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.CallSite]))
+  private[this] lazy val _jliCallSiteRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.CallSite]))
 
   def                     jliLambdaMetafactoryRef   : ClassBType = _jliLambdaMetafactoryRef.get
-  private[this] lazy val _jliLambdaMetafactoryRef   : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.LambdaMetafactory]))
+  private[this] lazy val _jliLambdaMetafactoryRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.LambdaMetafactory]))
 
   def                     srBoxesRunTimeRef         : ClassBType = _srBoxesRunTimeRef.get
-  private[this] lazy val _srBoxesRunTimeRef         : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime]))
+  private[this] lazy val _srBoxesRunTimeRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime]))
 
   def                     srSymbolLiteral           : ClassBType = _srSymbolLiteral.get
-  private[this] lazy val _srSymbolLiteral           : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.SymbolLiteral]))
+  private[this] lazy val _srSymbolLiteral           : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.SymbolLiteral]))
 
   def                     srStructuralCallSite      : ClassBType = _srStructuralCallSite.get
-  private[this] lazy val _srStructuralCallSite      : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.StructuralCallSite]))
+  private[this] lazy val _srStructuralCallSite      : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.StructuralCallSite]))
 
   def                     srLambdaDeserialize       : ClassBType = _srLambdaDeserialize.get
-  private[this] lazy val _srLambdaDeserialize       : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.LambdaDeserialize]))
+  private[this] lazy val _srLambdaDeserialize       : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.LambdaDeserialize]))
 
   def                     srBoxedUnitRef            : ClassBType = _srBoxedUnitRef.get
-  private[this] lazy val _srBoxedUnitRef            : LazyVar[ClassBType] = perRunLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit]))
+  private[this] lazy val _srBoxedUnitRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit]))
 
   private def methodNameAndType(cls: Symbol, name: Name, static: Boolean = false, filterOverload: Symbol => Boolean = _ => true): MethodNameAndType = {
     val holder = if (static) cls.companionModule.moduleClass else cls
@@ -226,11 +228,11 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // Z -> MethodNameAndType(boxToBoolean,(Z)Ljava/lang/Boolean;)
   def srBoxesRuntimeBoxToMethods: Map[BType, MethodNameAndType] = _srBoxesRuntimeBoxToMethods.get
-  private[this] lazy val _srBoxesRuntimeBoxToMethods: LazyVar[Map[BType, MethodNameAndType]] = perRunLazy(srBoxesRuntimeMethods((primitive, boxed) => "boxTo" + boxed))
+  private[this] lazy val _srBoxesRuntimeBoxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((primitive, boxed) => "boxTo" + boxed))
 
   // Z -> MethodNameAndType(unboxToBoolean,(Ljava/lang/Object;)Z)
   def srBoxesRuntimeUnboxToMethods: Map[BType, MethodNameAndType] = _srBoxesRuntimeUnboxToMethods.get
-  private[this] lazy val _srBoxesRuntimeUnboxToMethods: LazyVar[Map[BType, MethodNameAndType]] = perRunLazy(srBoxesRuntimeMethods((primitive, boxed) => "unboxTo" + primitive))
+  private[this] lazy val _srBoxesRuntimeUnboxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((primitive, boxed) => "unboxTo" + primitive))
 
   private def singleParamOfClass(cls: Symbol) = (s: Symbol) => s.paramss match {
     case List(List(param)) => param.info.typeSymbol == cls
@@ -239,7 +241,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // java/lang/Boolean -> MethodNameAndType(valueOf,(Z)Ljava/lang/Boolean;)
   def javaBoxMethods: Map[InternalName, MethodNameAndType] = _javaBoxMethods.get
-  private[this] lazy val _javaBoxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy {
+  private[this] lazy val _javaBoxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
     ScalaValueClassesNoUnit.map(primitive => {
       val boxed = boxedClass(primitive)
       val method = methodNameAndType(boxed, newTermName("valueOf"), static = true, filterOverload = singleParamOfClass(primitive))
@@ -249,7 +251,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // java/lang/Boolean -> MethodNameAndType(booleanValue,()Z)
   def javaUnboxMethods: Map[InternalName, MethodNameAndType] = _javaUnboxMethods.get
-  private[this] lazy val _javaUnboxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy {
+  private[this] lazy val _javaUnboxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
     ScalaValueClassesNoUnit.map(primitive => {
       val boxed = boxedClass(primitive)
       val name = primitive.name.toString.toLowerCase + "Value"
@@ -267,11 +269,11 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // boolean2Boolean -> (Z)Ljava/lang/Boolean;
   def predefAutoBoxMethods: Map[String, MethodBType] = _predefAutoBoxMethods.get
-  private[this] lazy val _predefAutoBoxMethods: LazyVar[Map[String, MethodBType]] = perRunLazy(predefBoxingMethods((primitive, boxed) => primitive.toLowerCase + "2" + boxed))
+  private[this] lazy val _predefAutoBoxMethods: LazyVar[Map[String, MethodBType]] = runLazy(predefBoxingMethods((primitive, boxed) => primitive.toLowerCase + "2" + boxed))
 
   // Boolean2boolean -> (Ljava/lang/Boolean;)Z
   def predefAutoUnboxMethods: Map[String, MethodBType] = _predefAutoUnboxMethods.get
-  private[this] lazy val _predefAutoUnboxMethods: LazyVar[Map[String, MethodBType]] = perRunLazy(predefBoxingMethods((primitive, boxed) => boxed + "2" + primitive.toLowerCase))
+  private[this] lazy val _predefAutoUnboxMethods: LazyVar[Map[String, MethodBType]] = runLazy(predefBoxingMethods((primitive, boxed) => boxed + "2" + primitive.toLowerCase))
 
   private def staticRefMethods(name: Name): Map[InternalName, MethodNameAndType] = {
     allRefClasses.map(refClass =>
@@ -280,15 +282,15 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // scala/runtime/BooleanRef -> MethodNameAndType(create,(Z)Lscala/runtime/BooleanRef;)
   def srRefCreateMethods: Map[InternalName, MethodNameAndType] = _srRefCreateMethods.get
-  private[this] lazy val _srRefCreateMethods: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy(staticRefMethods(nme.create))
+  private[this] lazy val _srRefCreateMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy(staticRefMethods(nme.create))
 
   // scala/runtime/BooleanRef -> MethodNameAndType(zero,()Lscala/runtime/BooleanRef;)
   def srRefZeroMethods: Map[InternalName, MethodNameAndType] = _srRefZeroMethods.get
-  private[this] lazy val _srRefZeroMethods: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy(staticRefMethods(nme.zero))
+  private[this] lazy val _srRefZeroMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy(staticRefMethods(nme.zero))
 
   // java/lang/Boolean -> MethodNameAndType(<init>,(Z)V)
   def primitiveBoxConstructors: Map[InternalName, MethodNameAndType] = _primitiveBoxConstructors.get
-  private[this] lazy val _primitiveBoxConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy {
+  private[this] lazy val _primitiveBoxConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
     ScalaValueClassesNoUnit.map(primitive => {
       val boxed = boxedClass(primitive)
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, nme.CONSTRUCTOR, filterOverload = singleParamOfClass(primitive)))
@@ -301,7 +303,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // scala/runtime/BooleanRef -> MethodNameAndType(<init>,(Z)V)
   def srRefConstructors: Map[InternalName, MethodNameAndType] = _srRefConstructors.get
-  private[this] lazy val _srRefConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy(nonOverloadedConstructors(allRefClasses))
+  private[this] lazy val _srRefConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy(nonOverloadedConstructors(allRefClasses))
 
   private def specializedSubclasses(cls: Symbol): List[Symbol] = {
     exitingSpecialize(cls.info) // the `transformInfo` method of specialization adds specialized subclasses to the `specializedClass` map
@@ -313,13 +315,13 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   // scala/Tuple3 -> MethodNameAndType(<init>,(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V)
   // scala/Tuple2$mcZC$sp -> MethodNameAndType(<init>,(ZC)V)
   def tupleClassConstructors: Map[InternalName, MethodNameAndType] = _tupleClassConstructors.get
-  private[this] lazy val _tupleClassConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = perRunLazy {
+  private[this] lazy val _tupleClassConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
     val tupleClassSymbols = TupleClass.seq ++ specializedSubclasses(TupleClass(1)) ++ specializedSubclasses(TupleClass(2))
     nonOverloadedConstructors(tupleClassSymbols)
   }
 
   def typeOfArrayOp: Map[Int, BType] = _typeOfArrayOp.get
-  private[this] lazy val _typeOfArrayOp: LazyVar[Map[Int, BType]] = perRunLazy {
+  private[this] lazy val _typeOfArrayOp: LazyVar[Map[Int, BType]] = runLazy {
     import scalaPrimitives._
     Map(
       (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL))   ++
@@ -335,21 +337,21 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   def hashMethodSym: Symbol = _hashMethodSym.get
-  private[this] lazy val _hashMethodSym: LazyVar[Symbol] = perRunLazy(getMember(RuntimeStaticsModule, nme.anyHash))
+  private[this] lazy val _hashMethodSym: LazyVar[Symbol] = runLazy(getMember(RuntimeStaticsModule, nme.anyHash))
 
   // TODO @lry avoiding going through through missingHook for every line in the REPL: https://github.com/scala/scala/commit/8d962ed4ddd310cc784121c426a2e3f56a112540
   def AndroidParcelableInterface: Symbol = _AndroidParcelableInterface.get
-  private[this] lazy val _AndroidParcelableInterface: LazyVar[Symbol] = perRunLazy(getClassIfDefined("android.os.Parcelable"))
+  private[this] lazy val _AndroidParcelableInterface: LazyVar[Symbol] = runLazy(getClassIfDefined("android.os.Parcelable"))
 
   def AndroidCreatorClass: Symbol = _AndroidCreatorClass.get
-  private[this] lazy val _AndroidCreatorClass: LazyVar[Symbol] = perRunLazy(getClassIfDefined("android.os.Parcelable$Creator"))
+  private[this] lazy val _AndroidCreatorClass: LazyVar[Symbol] = runLazy(getClassIfDefined("android.os.Parcelable$Creator"))
 
   def BeanInfoAttr: Symbol = _BeanInfoAttr.get
-  private[this] lazy val _BeanInfoAttr: LazyVar[Symbol] = perRunLazy(requiredClass[scala.beans.BeanInfo])
+  private[this] lazy val _BeanInfoAttr: LazyVar[Symbol] = runLazy(requiredClass[scala.beans.BeanInfo])
 
   /* The Object => String overload. */
   def String_valueOf: Symbol = _String_valueOf.get
-  private[this] lazy val _String_valueOf: LazyVar[Symbol] = perRunLazy {
+  private[this] lazy val _String_valueOf: LazyVar[Symbol] = runLazy {
     getMember(StringModule, nme.valueOf) filter (sym => sym.info.paramTypes match {
       case List(pt) => pt.typeSymbol == ObjectClass
       case _        => false
@@ -357,7 +359,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   def lambdaMetaFactoryMetafactoryHandle: Handle = _lambdaMetaFactoryMetafactoryHandle.get
-  private[this] lazy val _lambdaMetaFactoryMetafactoryHandle: LazyVar[Handle] = perRunLazy {
+  private[this] lazy val _lambdaMetaFactoryMetafactoryHandle: LazyVar[Handle] = runLazy {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.jliLambdaMetafactoryRef.internalName, sn.Metafactory.toString,
       MethodBType(
@@ -374,7 +376,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   def lambdaMetaFactoryAltMetafactoryHandle: Handle = _lambdaMetaFactoryAltMetafactoryHandle.get
-  private[this] lazy val _lambdaMetaFactoryAltMetafactoryHandle: LazyVar[Handle] = perRunLazy {
+  private[this] lazy val _lambdaMetaFactoryAltMetafactoryHandle: LazyVar[Handle] = runLazy {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.jliLambdaMetafactoryRef.internalName, sn.AltMetafactory.toString,
       MethodBType(
@@ -389,7 +391,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   def lambdaDeserializeBootstrapHandle: Handle = _lambdaDeserializeBootstrapHandle.get
-  private[this] lazy val _lambdaDeserializeBootstrapHandle: LazyVar[Handle] = perRunLazy {
+  private[this] lazy val _lambdaDeserializeBootstrapHandle: LazyVar[Handle] = runLazy {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.srLambdaDeserialize.internalName, sn.Bootstrap.toString,
       MethodBType(

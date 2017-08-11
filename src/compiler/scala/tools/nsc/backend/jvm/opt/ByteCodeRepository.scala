@@ -25,7 +25,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class ByteCodeRepository {
   val postProcessor: PostProcessor
 
-  import postProcessor.{bTypes, bTypesFromClassfile, frontendAccess}
+  import postProcessor.{bTypes, bTypesFromClassfile}
   import bTypes._
   import frontendAccess.{backendClassPath, recordPerRunCache}
 

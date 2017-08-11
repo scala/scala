@@ -23,7 +23,9 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
  * of the core btypes. They are declared in BTypes as abstract members. Note that BTypes does
  * not have access to the compiler instance.
  */
-class BTypesFromSymbols[G <: Global](val global: G, val postProcessorFrontendAccess: PostProcessorFrontendAccess) extends BTypes {
+abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
+  val frontendAccess: PostProcessorFrontendAccess
+
   import global._
   import definitions._
   import genBCode._

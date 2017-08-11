@@ -25,8 +25,8 @@ import scala.tools.nsc.backend.jvm.opt._
  * be queried by concurrent threads.
  */
 abstract class BTypes {
-  val postProcessorFrontendAccess: PostProcessorFrontendAccess
-  import postProcessorFrontendAccess.{frontendSynch, recordPerRunCache}
+  val frontendAccess: PostProcessorFrontendAccess
+  import frontendAccess.{frontendSynch, recordPerRunCache}
 
   val coreBTypes: CoreBTypes { val bTypes: BTypes.this.type }
   import coreBTypes._
@@ -907,46 +907,6 @@ abstract class BTypes {
                              nestedClasses: Lazy[List[ClassBType]], nestedInfo: Lazy[Option[NestedInfo]],
                              inlineInfo: InlineInfo)
 
-  object Lazy {
-    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
-  }
-
-  final class Lazy[T <: AnyRef](t: () => T) {
-    private var value: T = null.asInstanceOf[T]
-
-    private var function = {
-      val tt = t // prevent allocating a field for t
-      () => { value = tt() }
-    }
-
-    override def toString = if (value == null) "<?>" else value.toString
-
-    def onForce(f: T => Unit): Unit = {
-      if (value != null) f(value)
-      else frontendSynch {
-        if (value != null) f(value)
-        else {
-          val prev = function
-          function = () => {
-            prev()
-            f(value)
-          }
-        }
-      }
-    }
-
-    def force: T = {
-      if (value != null) value
-      else frontendSynch {
-        if (value == null) {
-          function()
-          function = null
-        }
-        value
-      }
-    }
-  }
-
   /**
    * Information required to add a class to an InnerClass table.
    * The spec summary above explains what information is required for the InnerClass entry.
@@ -1011,6 +971,89 @@ abstract class BTypes {
    * Used only in assertions. Abstract here because its implementation depends on global.
    */
   def isCompilingPrimitive: Boolean
+
+  // The [[Lazy]] and [[LazyVar]] classes would conceptually be better placed within
+  // PostProcessorFrontendAccess (they access the `frontendLock` defined in that class). However,
+  // for every component in which we define nested classes, we need to make sure that the compiler
+  // knows that all component instances (val frontendAccess) in various classes are all the same,
+  // otherwise the prefixes don't match and we get type mismatch errors.
+  // Since we already do this dance (val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes)
+  // for BTypes, it's easier to add those nested classes to BTypes.
+
+  object Lazy {
+    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
+  }
+
+  /**
+   * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
+   * to be executed when it's forced.
+   */
+  final class Lazy[T <: AnyRef](t: () => T) {
+    @volatile private var value: T = _
+
+    private var initFunction = {
+      val tt = t // prevent allocating a field for t
+      () => { value = tt() }
+    }
+
+    override def toString = if (value == null) "<?>" else value.toString
+
+    def onForce(f: T => Unit): Unit = {
+      if (value != null) f(value)
+      else frontendSynch {
+        if (value != null) f(value)
+        else {
+          val prev = initFunction
+          initFunction = () => {
+            prev()
+            f(value)
+          }
+        }
+      }
+    }
+
+    def force: T = {
+      if (value != null) value
+      else frontendSynch {
+        if (value == null) {
+          initFunction()
+          initFunction = null
+        }
+        value
+      }
+    }
+  }
+
+  /**
+   * Create state that lazily evaluated (to work around / not worry about initialization ordering
+   * issues). The state is re-initialized in each compiler run when the component is initialized.
+   */
+  def perRunLazy[T](component: PerRunInit)(init: => T): LazyVar[T] = {
+    val r = new LazyVar(() => init)
+    component.perRunInit(r.reInitialize())
+    r
+  }
+
+  /**
+   * This implements a lazy value that can be reset and re-initialized.
+   * It synchronizes on `frontendLock` so that lazy state created through this utility can
+   * be safely initialized in the post-processor.
+   */
+  class LazyVar[T](init: () => T) {
+    @volatile private[this] var isInit: Boolean = false
+    private[this] var v: T = _
+
+    def get: T = {
+      if (isInit) v
+      else frontendSynch {
+        if (!isInit) v = init()
+        isInit = true
+        v
+      }
+    }
+
+    def reInitialize(): Unit = frontendSynch(isInit = false)
+  }
 }
 
 object BTypes {

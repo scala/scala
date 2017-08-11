@@ -82,10 +82,11 @@ object PostProcessorFrontendAccess {
     def findClassFile(className: String): Option[AbstractFile]
   }
 
-  class PostProcessorFrontendAccessImpl(global: Global) extends PostProcessorFrontendAccess with PerRunLazy {
+  class PostProcessorFrontendAccessImpl(val global: Global) extends PostProcessorFrontendAccess with PerRunInit {
     import global._
+    import genBCode.bTypes.{LazyVar, perRunLazy}
 
-    private[this] lazy val _compilerSettings: LazyVar[CompilerSettings] = perRunLazy(buildCompilerSettings())
+    private[this] lazy val _compilerSettings: LazyVar[CompilerSettings] = perRunLazy(this)(buildCompilerSettings())
 
     def compilerSettings: CompilerSettings = _compilerSettings.get
 

@@ -28,17 +28,17 @@ import scala.util.control.{NoStackTrace, NonFatal}
  *
  * TODO: move out of `analysis` package?
  */
-abstract class BackendUtils extends PerRunLazy {
+abstract class BackendUtils extends PerRunInit {
   val postProcessor: PostProcessor
 
-  import postProcessor.{bTypes, bTypesFromClassfile, callGraph, frontendAccess}
+  import postProcessor.{bTypes, bTypesFromClassfile, callGraph}
   import bTypes._
   import callGraph.ClosureInstantiation
   import coreBTypes._
   import frontendAccess.compilerSettings
 
   // unused objects created by these constructors are eliminated by pushPop
-  private[this] lazy val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy {
+  private[this] lazy val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy(this) {
     val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
     primitiveBoxConstructors.map(ownerDesc).toSet ++
       srRefConstructors.map(ownerDesc) ++
@@ -49,18 +49,18 @@ abstract class BackendUtils extends PerRunLazy {
       (StringRef.internalName, MethodBType(List(ArrayBType(CHAR)), UNIT).descriptor))
   }
 
-  private[this] lazy val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(sideEffectFreeConstructors.get.map(_._1))
+  private[this] lazy val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(this)(sideEffectFreeConstructors.get.map(_._1))
 
-  lazy val classfileVersion: LazyVar[Int] = perRunLazy(compilerSettings.target match {
+  lazy val classfileVersion: LazyVar[Int] = perRunLazy(this)(compilerSettings.target match {
     case "jvm-1.8" => asm.Opcodes.V1_8
   })
 
 
-  lazy val majorVersion: LazyVar[Int] = perRunLazy(classfileVersion.get & 0xFF)
+  lazy val majorVersion: LazyVar[Int] = perRunLazy(this)(classfileVersion.get & 0xFF)
 
-  lazy val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(majorVersion.get >= 50)
+  lazy val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(this)(majorVersion.get >= 50)
 
-  lazy val extraProc: LazyVar[Int] = perRunLazy(GenBCode.mkFlags(
+  lazy val extraProc: LazyVar[Int] = perRunLazy(this)(GenBCode.mkFlags(
     asm.ClassWriter.COMPUTE_MAXS,
     if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0
   ))

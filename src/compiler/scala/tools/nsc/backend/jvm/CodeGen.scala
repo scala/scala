@@ -3,7 +3,7 @@ package backend.jvm
 
 import scala.tools.asm.tree.ClassNode
 
-abstract class CodeGen[G <: Global](val global: G) extends PerRunLazy {
+abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
   val bTypes: BTypesFromSymbols[global.type]
 
   import global._
@@ -12,9 +12,9 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunLazy {
   private val caseInsensitively = perRunCaches.newMap[String, Symbol]()
 
   // TODO: do we really need a new instance per run? Is there state that depends on the compiler frontend (symbols, types, settings)?
-  private[this] lazy val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(new CodeGenImpl.JMirrorBuilder())
+  private[this] lazy val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(this)(new CodeGenImpl.JMirrorBuilder())
 
-  private[this] lazy val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(new CodeGenImpl.JBeanInfoBuilder())
+  private[this] lazy val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(this)(new CodeGenImpl.JBeanInfoBuilder())
 
   def genUnit(unit: CompilationUnit): Unit = {
     import genBCode.postProcessor.generatedClasses

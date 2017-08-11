@@ -11,10 +11,10 @@ import scala.tools.nsc.backend.jvm.opt.{BytecodeUtils, InlineInfoAttribute}
 abstract class BTypesFromClassfile {
   val postProcessor: PostProcessor
 
-  import postProcessor.frontendAccess.compilerSettings
   import postProcessor.{bTypes, byteCodeRepository, inlinerHeuristics}
   import bTypes._
   import coreBTypes._
+  import frontendAccess.compilerSettings
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType

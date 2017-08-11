@@ -15,15 +15,11 @@ abstract class GenBCode extends SubComponent {
 
   val postProcessorFrontendAccess: PostProcessorFrontendAccess = new PostProcessorFrontendAccess.PostProcessorFrontendAccessImpl(global)
 
-  val bTypes = new BTypesFromSymbols[global.type](global, postProcessorFrontendAccess)
+  val bTypes = new { val frontendAccess = postProcessorFrontendAccess } with BTypesFromSymbols[global.type](global)
 
-  val codeGen = new CodeGen[global.type](global) {
-    val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes
-  }
+  val codeGen = new { val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes } with CodeGen[global.type](global)
 
-  val postProcessor = new PostProcessor(postProcessorFrontendAccess) {
-    val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes
-  }
+  val postProcessor = new { val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes } with PostProcessor
 
   val phaseName = "jvm"
 
