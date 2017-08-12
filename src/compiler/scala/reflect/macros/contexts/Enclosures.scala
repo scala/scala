@@ -13,7 +13,7 @@ trait Enclosures {
   private lazy val enclPoses  = enclosingMacros map (_.macroApplication.pos) filterNot (_ eq NoPosition)
 
   private def lenientEnclosure[T <: Tree : ClassTag]: Tree = enclTrees collectFirst { case x: T => x } getOrElse EmptyTree
-  private def strictEnclosure[T <: Tree : ClassTag]: T = enclTrees collectFirst { case x: T => x } getOrElse (throw new EnclosureException(classTag[T].runtimeClass, enclTrees))
+  private def strictEnclosure[T <: Tree : ClassTag]: T = enclTrees collectFirst { case x: T => x } getOrElse (throw EnclosureException(classTag[T].runtimeClass, enclTrees))
 
   // vals are eager to simplify debugging
   // after all we wouldn't save that much time by making them lazy

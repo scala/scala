@@ -1,4 +1,4 @@
-t5856.scala:10: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
+t5856.scala:10: error: invalid string interpolation $", expected: $$, $identifier or ${expression}
   val s9 = s"$"
              ^
 t5856.scala:10: error: unclosed string literal

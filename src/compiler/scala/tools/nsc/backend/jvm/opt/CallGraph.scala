@@ -387,7 +387,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
 
-    def canInlineFromSource = inlinerHeuristics.canInlineFromSource(sourceFilePath)
+    def canInlineFromSource = inlinerHeuristics.canInlineFromSource(sourceFilePath, calleeDeclarationClass.internalName)
     def isAbstract = isAbstractMethod(callee)
     def isSpecialMethod = isConstructor(callee) || isNativeMethod(callee) || hasCallerSensitiveAnnotation(callee)
 

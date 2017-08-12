@@ -26,7 +26,7 @@ trait FrontEnd {
 
   /** Handles incoming info */
   def log(pos: Position, msg: String, severity: Severity) {
-    infos += new Info(pos, msg, severity)
+    infos += Info(pos, msg, severity)
     severity.count += 1
     display(infos.last)
   }

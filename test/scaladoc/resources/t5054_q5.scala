@@ -1,4 +1,4 @@
-trait SI_5054_q5 {
+trait t5054_q5 {
   /**
     * A simple comment
     * 

@@ -4,4 +4,22 @@ badtok-1.scala:2: error: unclosed character literal
 badtok-1.scala:2: error: unclosed character literal
 '42'
    ^
-two errors found
+badtok-1.scala:6: error: empty character literal (use '\'' for single quote)
+'''
+^
+badtok-1.scala:6: error: unclosed character literal
+'''
+  ^
+badtok-1.scala:8: error: empty character literal
+'';
+^
+badtok-1.scala:11: error: unclosed character literal (or use " for string literal "''abc")
+'abc'
+    ^
+badtok-1.scala:13: error: unclosed character literal
+'
+^
+badtok-1.scala:11: error: expected class or object definition
+'abc'
+^
+8 errors found

@@ -353,12 +353,13 @@ lazy val library = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
-    pomDependencyExclusions += ((organization.value, "forkjoin"))
+    pomDependencyExclusions += ((organization.value, "forkjoin")),
+    mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
+    mimaCheckDirection := "both"
   )
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
                                            regexFileFilter(".*/runtime/StringAdd\\.scala"))))
-  .settings(MiMa.settings)
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
@@ -380,9 +381,10 @@ lazy val reflect = configureAsSubproject(project)
       "/project/name" -> <name>Scala Compiler</name>,
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
-    )
+    ),
+    mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
+    mimaCheckDirection := "both"
   )
-  .settings(MiMa.settings)
   .dependsOn(library)
 
 lazy val compiler = configureAsSubproject(project)
@@ -542,7 +544,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    fork in Test := true,
+    fork in Test := false,
     javaOptions in Test += "-Xss1M",
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
@@ -701,10 +703,10 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       val fixedManOut = (resourceManaged in Compile).value / "man"
       IO.createDirectory(htmlOut)
       IO.createDirectory(manOut / "man1")
-      toError(runner.value.run("scala.tools.docutil.ManMaker",
+      runner.value.run("scala.tools.docutil.ManMaker",
         (fullClasspath in Compile in manual).value.files,
         Seq(command, htmlOut.getAbsolutePath, manOut.getAbsolutePath),
-        streams.value.log))
+        streams.value.log).foreach(sys.error)
       (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
         // Generated manpages should always use LF only. There doesn't seem to be a good reason
         // for generating them with the platform EOL first and then converting them but that's
@@ -764,8 +766,8 @@ lazy val root: Project = (project in file("."))
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
         (Keys.test in Test in osgiTestFelix).result,
         (Keys.test in Test in osgiTestEclipse).result,
-        (MiMa.mima in library).result,
-        (MiMa.mima in reflect).result,
+        (mimaReportBinaryIssues in library).result,
+        (mimaReportBinaryIssues in reflect).result,
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
           doc in Compile in reflect,
@@ -783,8 +785,8 @@ lazy val root: Project = (project in file("."))
         "partest --srcpath scaladoc",
         "osgiTestFelix/test",
         "osgiTestEclipse/test",
-        "library/mima",
-        "reflect/mima",
+        "library/mimaReportBinaryIssues",
+        "reflect/mimaReportBinaryIssues",
         "doc"
       )
       val failed = results.map(_.toEither).zip(descriptions).collect { case (Left(i: Incomplete), d) => (i, d) }

@@ -1078,6 +1078,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val shouldTypeQualifier = tree0.tpe match {
       case null           => true
       case mt: MethodType => mt.isImplicit
+      case pt: PolyType   => isImplicitMethodType(pt.resultType)
       case _              => false
     }
 

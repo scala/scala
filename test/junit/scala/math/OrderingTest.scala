@@ -57,5 +57,24 @@ class OrderingTest {
     checkAll[Iterable[Int]](Nil, List(1), List(1, 2))
     checkAll[(Int, Int)]((1, 2), (1, 3), (4, 5))
   }
+
+  @Test
+  def testComposedOrdering(): Unit = {
+    case class Pair(a: Int, b: Int)
+
+    def check(ord1: Ordering[Pair], ord2: Ordering[Pair]): Unit = {
+      val pairs = List(Pair(0, 0), Pair(0, 1), Pair(1, 1))
+      for (p1 <- pairs; p2 <- pairs) {
+        assertEquals(signum(ord1.compare(p1, p2)), signum(ord2.compare(p1, p2)))
+      }
+    }
+
+    val o1 = Ordering.by[Pair, (Int, Int)]((p: Pair) => (p.a, p.b))
+    val o2 = Ordering.by[Pair, Int](_.a).orElseBy[Int](_.b)
+    val o3 = Ordering.by[Pair, Int](_.a).orElse(Ordering.by[Pair, Int](_.b))
+
+    check(o1, o2)
+    check(o1, o3)
+  }
 }
 

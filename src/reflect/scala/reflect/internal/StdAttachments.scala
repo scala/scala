@@ -14,6 +14,11 @@ trait StdAttachments {
     def setAttachments(attachments: scala.reflect.macros.Attachments { type Pos = Position }): this.type = { rawatt = attachments; this }
     def updateAttachment[T: ClassTag](attachment: T): this.type = { rawatt = rawatt.update(attachment); this }
     def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
+    def getAndRemoveAttachment[T: ClassTag]: Option[T] = {
+      val r = attachments.get[T]
+      if (r.nonEmpty) removeAttachment[T]
+      r
+    }
     def hasAttachment[T: ClassTag]: Boolean = rawatt.contains[T]
 
     // cannot be final due to SynchronizedSymbols
@@ -93,4 +98,6 @@ trait StdAttachments {
     * error to indicate that the earlier observation was incomplete.
     */
   case object KnownDirectSubclassesCalled extends PlainAttachment
+
+  class QualTypeSymAttachment(val sym: Symbol)
 }

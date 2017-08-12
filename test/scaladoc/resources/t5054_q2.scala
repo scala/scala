@@ -1,4 +1,4 @@
-class SI_5054_q2 {
+class t5054_q2 {
   /**
     * A simple comment
     * 

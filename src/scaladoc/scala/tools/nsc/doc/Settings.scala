@@ -253,13 +253,13 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
   }
 
-  def appendIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/index.html"
+  def stripIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/"
 
   lazy val extUrlMapping: Map[String, String] = docExternalDoc.value flatMap { s =>
     val idx = s.indexOf("#")
     if (idx > 0) {
       val (first, last) = s.splitAt(idx)
-      Some(new File(first).getCanonicalPath -> appendIndex(last.substring(1)))
+      Some(new File(first).getCanonicalPath -> stripIndex(last.substring(1)))
     } else {
       error(s"Illegal -doc-external-doc option; expected a pair with '#' separator, found: '$s'")
       None

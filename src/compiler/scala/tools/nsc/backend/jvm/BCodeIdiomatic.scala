@@ -106,7 +106,7 @@ abstract class BCodeIdiomatic extends SubComponent {
 
     def jmethod: asm.tree.MethodNode
 
-    import asm.Opcodes;
+    import asm.Opcodes
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
@@ -479,7 +479,7 @@ abstract class BCodeIdiomatic extends SubComponent {
         var oldPos = 0
         var i = 0
         while (i < keyRange) {
-          val key = keyMin + i;
+          val key = keyMin + i
           if (keys(oldPos) == key) {
             newBranches(i) = branches(oldPos)
             oldPos += 1

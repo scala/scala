@@ -25,6 +25,7 @@ object Test extends App {
 
     // Members declared in scala.math.Numeric
     def fromInt(x: Int): scala.concurrent.duration.FiniteDuration = Duration(x, Seconds)
+    def parseString(str: String): Option[scala.concurrent.duration.FiniteDuration] = ???
     def minus(x: scala.concurrent.duration.FiniteDuration,y: scala.concurrent.duration.FiniteDuration): scala.concurrent.duration.FiniteDuration = ???
     def negate(x: scala.concurrent.duration.FiniteDuration): scala.concurrent.duration.FiniteDuration = ???
     def plus(x: scala.concurrent.duration.FiniteDuration,y: scala.concurrent.duration.FiniteDuration): scala.concurrent.duration.FiniteDuration = ???

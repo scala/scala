@@ -130,17 +130,30 @@ abstract class BTypes {
    * has the method.
    */
   val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
+
+  /**
+    * add methods
+    * @return the added methods. Note the order is undefined
+    */
   def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
     if (handle.isEmpty) Nil else {
       val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
-      val added = handle.filterNot(set)
-      set ++= handle
-      added
+      if (set isEmpty) {
+        set ++= handle
+        handle
+      } else {
+        var added = List.empty[asm.Handle]
+        handle foreach { h => if (set.add(h)) added ::= h}
+        added
+      }
     }
+  }
+  def addIndyLambdaImplMethod(hostClass: InternalName, handle: asm.Handle): Boolean = {
+    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()).add(handle)
   }
   def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
     if (handle.nonEmpty)
-      indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) --= handle
+      indyLambdaImplMethods.get(hostClass).foreach(_ --= handle)
   }
 
   def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
@@ -265,7 +278,7 @@ abstract class BTypes {
   def inlineInfoFromClassfile(classNode: ClassNode): InlineInfo = {
     def fromClassfileAttribute: Option[InlineInfo] = {
       if (classNode.attrs == null) None
-      else classNode.attrs.asScala.collect({ case a: InlineInfoAttribute => a}).headOption.map(_.inlineInfo)
+      else classNode.attrs.asScala.collectFirst{ case a: InlineInfoAttribute => a.inlineInfo}
     }
 
     def fromClassfileWithoutAttribute = {
@@ -279,13 +292,13 @@ abstract class BTypes {
       // require special handling. Excluding is OK because they are never inlined.
       // Here we are parsing from a classfile and we don't need to do anything special. Many of these
       // primitives don't even exist, for example Any.isInstanceOf.
-      val methodInfos = classNode.methods.asScala.map(methodNode => {
+      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         (methodNode.name + methodNode.desc, info)
-      }).toMap
+      })(scala.collection.breakOut)
       InlineInfo(
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),
@@ -914,11 +927,6 @@ abstract class BTypes {
         assert(cs.forall(c => ifInit(c)(_.isNestedClass.get)), cs)
       }
     }
-
-    /**
-     * @return The class name without the package prefix
-     */
-    def simpleName: String = internalName.split("/").last
 
     def isInterface: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_INTERFACE) != 0)
 

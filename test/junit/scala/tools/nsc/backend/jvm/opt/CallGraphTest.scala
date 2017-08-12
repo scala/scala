@@ -18,7 +18,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class CallGraphTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:inline-global -opt-warnings"
+  override def compilerArgs = "-opt:inline -opt-inline-from:** -opt-warnings"
   import compiler._
   import global.genBCode.bTypes
 

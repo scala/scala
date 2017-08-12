@@ -873,7 +873,7 @@ An import clause has the form `import $p$.$I$` where $p$ is a
 [stable identifier](03-types.html#paths) and $I$ is an import expression.
 The import expression determines a set of names of importable members of $p$
 which are made available without qualification.  A member $m$ of $p$ is
-_importable_ if it is not [object-private](05-classes-and-objects.html#modifiers).
+_importable_ if it is [accessible](05-classes-and-objects.html#modifiers).
 The most general form of an import expression is a list of _import selectors_
 
 ```scala

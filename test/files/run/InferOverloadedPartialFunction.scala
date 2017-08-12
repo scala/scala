@@ -44,4 +44,30 @@ object Test extends App {
   def h[R](pf: Function2[Int, String, R]): Int = 1
   def h[R](pf: PartialFunction[(Double, Double), R]): Int = 2
   assert(h { case (a: Double, b: Double) => 42: Int } == 2)
+
+  val xs = new SortedMap
+  assert(xs.collectF { kv => 1 } == 0)
+  assert(xs.collectF { case (k, v) => 1 } == 0)
+  assert(xs.collectF { case (k, v) => (1, 1) } == 2)
+  assert(xs.collect { case (k, v) => 1 } == 0)
+  assert(xs.collect { case (k, v) => (1, 1) } == 1)
+
+  val ys = new SortedMapMixed
+  assert(ys.collect { kv => 1 } == 0)
+  assert(ys.collect { kv => (1, 1) } == 0)
+  assert(ys.collect { case (k, v) => 1 } == 1) // could be 0 with the extra work in https://github.com/scala/scala/pull/5975/commits/3c95dac0dcbb0c8eb4686264026ad9c86b2022de
+  assert(ys.collect { case (k, v) => (1, 1) } == 2)
+}
+
+class SortedMap {
+  def collect[B](pf: PartialFunction[(String, Int), B]): Int = 0
+  def collect[K2 : Ordering, V2](pf: PartialFunction[(String, Int), (K2, V2)]): Int = 1
+  def collectF[B](pf: Function1[(String, Int), B]): Int = if(pf.isInstanceOf[PartialFunction[_, _]]) 1 else 0
+  def collectF[K2 : Ordering, V2](pf: Function1[(String, Int), (K2, V2)]): Int = if(pf.isInstanceOf[PartialFunction[_, _]]) 3 else 2
+}
+
+class SortedMapMixed {
+  type PF[-A, +B] = PartialFunction[A, B]
+  def collect[B](pf: Function1[(String, Int), B]): Int = if(pf.isInstanceOf[PartialFunction[_, _]]) 1 else 0
+  def collect[K2 : Ordering, V2](pf: PF[(String, Int), (K2, V2)]): Int = 2
 }

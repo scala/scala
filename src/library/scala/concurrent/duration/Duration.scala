@@ -55,7 +55,7 @@ object Duration {
       case "Inf" | "PlusInf" | "+Inf" => Inf
       case "MinusInf" | "-Inf"        => MinusInf
       case _                          =>
-        val unitName = s1.reverse.takeWhile(_.isLetter).reverse;
+        val unitName = s1.reverse.takeWhile(_.isLetter).reverse
         timeUnit get unitName match {
           case Some(unit) =>
             val valueStr = s1 dropRight unitName.length
@@ -125,7 +125,7 @@ object Duration {
     else if (nanos > Long.MaxValue || nanos < Long.MinValue)
       throw new IllegalArgumentException("trying to construct too large duration with " + nanos + "ns")
     else
-      fromNanos((nanos + 0.5).toLong)
+      fromNanos(nanos.round)
   }
 
   private[this] final val  µs_per_ns = 1000L

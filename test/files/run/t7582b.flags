@@ -1,1 +1,1 @@
--opt:l:classpath -opt-warnings
+-opt:l:inline -opt-inline-from:** -opt-warnings

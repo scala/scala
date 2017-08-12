@@ -139,7 +139,7 @@ abstract class Reifier extends States
       case ex: UnexpectedReificationException =>
         throw ex
       case ex: Throwable =>
-        throw new UnexpectedReificationException(defaultErrorPosition, "reification crashed", ex)
+        throw UnexpectedReificationException(defaultErrorPosition, "reification crashed", ex)
     }
   }
 }

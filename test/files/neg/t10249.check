@@ -1,0 +1,4 @@
+Test_1.scala:11: error: Unable to emit reference to method m in class A, class A is not accessible in object Test
+    w.m()
+      ^
+one error found
