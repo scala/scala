@@ -29,7 +29,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   def prependLazy[B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 
-  def iterableFactory = LazyList
+  def iterableFactory: SeqFactory[LazyList] = LazyList
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): LazyList[A] = fromIterable(coll)
 
@@ -53,7 +53,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
     else "LazyList(?)"
 }
 
-object LazyList extends IterableFactory[LazyList] {
+object LazyList extends SeqFactory[LazyList] {
 
   type Evaluated[+A] = Option[(A, LazyList[A])]
 

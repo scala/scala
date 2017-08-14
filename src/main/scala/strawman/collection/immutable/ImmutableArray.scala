@@ -1,10 +1,10 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.mutable.{ArrayBuffer, Builder, GrowableBuilder}
-import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
+import strawman.collection.mutable.{ArrayBuffer, Builder}
+import strawman.collection.{IterableOnce, Iterator, SeqFactory, View}
 
-import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, throws, UnsupportedOperationException}
+import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws}
 import scala.runtime.ScalaRunTime
 import scala.Predef.{???, intWrapper}
 
@@ -18,7 +18,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
     with IndexedSeqOps[A, ImmutableArray, ImmutableArray[A]]
     with StrictOptimizedSeqOps[A, ImmutableArray, ImmutableArray[A]] {
 
-  def iterableFactory: IterableFactory[ImmutableArray] = ImmutableArray
+  def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
 
@@ -103,7 +103,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
 }
 
-object ImmutableArray extends IterableFactory[ImmutableArray] {
+object ImmutableArray extends SeqFactory[ImmutableArray] {
 
   private[this] lazy val emptyImpl = new ImmutableArray[Nothing](new scala.Array[Any](0))
 

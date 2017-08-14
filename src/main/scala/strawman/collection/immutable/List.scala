@@ -78,7 +78,7 @@ sealed trait List[+A]
     with StrictOptimizedSeqOps[A, List, List[A]]
     with Serializable {
 
-  def iterableFactory = List
+  def iterableFactory: SeqFactory[List] = List
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
@@ -346,7 +346,7 @@ case object Nil extends List[Nothing] {
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
 }
 
-object List extends IterableFactory[List] {
+object List extends SeqFactory[List] {
 
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll

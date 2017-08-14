@@ -25,7 +25,7 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  def iterableFactory = ListBuffer
+  def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
 
@@ -211,7 +211,7 @@ class ListBuffer[A]
   override def className = "ListBuffer"
 }
 
-object ListBuffer extends IterableFactory[ListBuffer] {
+object ListBuffer extends SeqFactory[ListBuffer] {
 
   def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 

@@ -49,6 +49,57 @@ trait IterableFactory[+CC[_]] {
   def empty[A]: CC[A]
   def apply[A](xs: A*): CC[A] = fromIterable(View.Elems(xs: _*))
 
+  /** Produces a $coll containing repeated applications of a function to a start value.
+    *
+    *  @param start the start value of the $coll
+    *  @param len   the number of elements contained in the $coll
+    *  @param f     the function that's repeatedly applied
+    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
+    */
+  def iterate[A](start: A, len: Int)(f: A => A): CC[A] = fromIterable(new View.Iterate(start, len)(f))
+
+  /** Produces a $coll containing a sequence of increasing of integers.
+    *
+    *  @param start the first element of the $coll
+    *  @param end   the end value of the $coll (the first value NOT contained)
+    *  @return  a $coll with values `start, start + 1, ..., end - 1`
+    */
+  def range[A : Integral](start: A, end: A): CC[A] = fromIterable(NumericRange(start, end, implicitly[Integral[A]].one))
+
+  /** Produces a $coll containing equally spaced values in some integer interval.
+    *  @param start the start value of the $coll
+    *  @param end   the end value of the $coll (the first value NOT contained)
+    *  @param step  the difference between successive elements of the $coll (must be positive or negative)
+    *  @return      a $coll with values `start, start + step, ...` up to, but excluding `end`
+    */
+  def range[A : Integral](start: A, end: A, step: A): CC[A] = fromIterable(NumericRange(start, end, step))
+
+  def newBuilder[A](): Builder[A, CC[A]]
+
+  implicit def canBuildIterable[A]: CanBuild[A, CC[A]] = IterableFactory.toCanBuild(this)
+
+}
+
+object IterableFactory {
+  implicit def toCanBuild[A, CC[_]](factory: IterableFactory[CC]): CanBuild[A, CC[A]] =
+    new CanBuild[A, CC[A]] {
+      def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.fromIterable[A](it)
+      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
+    }
+
+  class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
+    def empty[A]: CC[A] = delegate.empty
+    def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
+    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+  }
+}
+
+/**
+  * Introduces factory methods `fill` and `tabulate`.
+  * @tparam CC Collection type constructor (e.g. `List`)
+  */
+trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
+
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.
     *  @param   elem the element computation
@@ -149,45 +200,10 @@ trait IterableFactory[+CC[_]] {
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
-  /** Produces a $coll containing repeated applications of a function to a start value.
-    *
-    *  @param start the start value of the $coll
-    *  @param len   the number of elements contained in the $coll
-    *  @param f     the function that's repeatedly applied
-    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
-    */
-  def iterate[A](start: A, len: Int)(f: A => A): CC[A] = fromIterable(new View.Iterate(start, len)(f))
-
-  /** Produces a $coll containing a sequence of increasing of integers.
-    *
-    *  @param start the first element of the $coll
-    *  @param end   the end value of the $coll (the first value NOT contained)
-    *  @return  a $coll with values `start, start + 1, ..., end - 1`
-    */
-  def range[A : Integral](start: A, end: A): CC[A] = fromIterable(NumericRange(start, end, implicitly[Integral[A]].one))
-
-  /** Produces a $coll containing equally spaced values in some integer interval.
-    *  @param start the start value of the $coll
-    *  @param end   the end value of the $coll (the first value NOT contained)
-    *  @param step  the difference between successive elements of the $coll (must be positive or negative)
-    *  @return      a $coll with values `start, start + step, ...` up to, but excluding `end`
-    */
-  def range[A : Integral](start: A, end: A, step: A): CC[A] = fromIterable(NumericRange(start, end, step))
-
-  def newBuilder[A](): Builder[A, CC[A]]
-
-  implicit def canBuildIterable[A]: CanBuild[A, CC[A]] = IterableFactory.toCanBuild(this)
-
 }
 
-object IterableFactory {
-  implicit def toCanBuild[A, CC[_]](factory: IterableFactory[CC]): CanBuild[A, CC[A]] =
-    new CanBuild[A, CC[A]] {
-      def fromSpecificIterable(it: Iterable[A]): CC[A] = factory.fromIterable[A](it)
-      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
-    }
-
-  class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
+object SeqFactory {
+  class Delegate[CC[_]](delegate: SeqFactory[CC]) extends SeqFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def fromIterable[E](it: Iterable[E]): CC[E] = delegate.fromIterable(it)
     def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()

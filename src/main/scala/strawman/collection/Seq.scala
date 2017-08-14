@@ -25,6 +25,9 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   protected[this] def c: C
   protected[this] def seq: Seq[A]
 
+  // Refine the factory member to be a `SeqFactory`
+  def iterableFactory: SeqFactory[CC]
+
   /** Selects all the elements of this $coll ignoring the duplicates.
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
