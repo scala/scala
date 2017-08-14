@@ -185,26 +185,46 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
   // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendAll[B >: A](that: collection.Iterable[B]): Vector[B] = {
+  override def appendAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
-    if (that.isEmpty) this
+    if (suffix.isEmpty) this
     else {
-      that.size match {
+      suffix.size match {
         // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
         case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
           var v: Vector[B] = this
-          for (x <- that) v = v :+ x
+          for (x <- suffix) v = v :+ x
           v
-        case n if this.size < (n >>> Log2ConcatFaster) && that.isInstanceOf[Vector[_]] =>
-          var v = that.asInstanceOf[Vector[B]]
+        case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
+          var v = suffix.asInstanceOf[Vector[B]]
           val ri = this.reverseIterator()
           while (ri.hasNext) v = ri.next() +: v
           v
-        case _ => super.appendAll(that)
+        case _ => super.appendAll(suffix)
       }
     }
   }
-  // TODO: ODD 2017-08-05: Add optimized implementation of `prependAll` analogous to `appendAll` above.
+
+  override def prependAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
+    // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
+    // has a small number of elements compared to the other, then we add them using `:+` or `+:` in a loop
+    import Vector.{Log2ConcatFaster, TinyAppendFaster}
+    if (prefix.isEmpty) this
+    else {
+      prefix.size match {
+        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+          var v: Vector[B] = this
+          for (b <- prefix) v = b +: v
+          v
+        case n if this.size < (n >>> Log2ConcatFaster) && prefix.isInstanceOf[Vector[_]] =>
+          var v = prefix.asInstanceOf[Vector[B]]
+          val it = this.iterator()
+          while (it.hasNext) v = v :+ it.next()
+          v
+        case _ => super.prependAll(prefix)
+      }
+    }
+  }
 
   // semi-private api
 
