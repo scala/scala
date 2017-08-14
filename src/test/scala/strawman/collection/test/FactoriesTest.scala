@@ -62,12 +62,12 @@ class FactoriesTest {
         immutable.LazyList,
         immutable.Vector,
         immutable.ImmutableArray,
-        mutable.ListBuffer,
-        mutable.ArrayBuffer,
+        mutable.ListBuffer: SeqFactory[mutable.ListBuffer], // type ascription needed by dotty
+        mutable.ArrayBuffer: SeqFactory[mutable.ArrayBuffer] // type ascription needed by dotty
       )
 
     val iterableFactories: List[IterableFactory[Iterable]] =
-      immutable.HashSet ::
+      (immutable.HashSet: IterableFactory[immutable.HashSet]) :: // type ascription needed by dotty
       mutable.HashSet ::
       (seqFactories: List[IterableFactory[Iterable]])
 
