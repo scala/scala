@@ -21,48 +21,121 @@ class TreeSetBenchmark {
 
   var xs: TreeSet[Long] = _
   var xss: scala.Array[TreeSet[Long]] = _
+  var zipped: TreeSet[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
+  var randomIndices2: scala.Array[Int] = _
+  var randomXss: scala.Array[TreeSet[Long]] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
     def freshCollection() = TreeSet((1 to size).map(_.toLong): _*)
     xs = freshCollection()
-//    xss = scala.Array.fill(1000)(freshCollection())
-//    if (size > 0) {
-//      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
-//    }
+    xss = scala.Array.fill(1000)(freshCollection())
+    zipped = xs.map(x => (x, x))
+    if (size > 0) {
+      randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomIndices2 = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
+      randomXss = scala.Array.fill(1000)(freshCollection().take(scala.util.Random.nextInt(size)))
+    }
   }
 
   @Benchmark
-//  @OperationsPerInvocation(size)
-  def cons(bh: Blackhole): Unit = {
+  def incl(bh: Blackhole): Unit = {
     var ys = TreeSet.empty[Long]
     var i = 0L
     while (i < size) {
-      ys = ys + i // Note: In the case of TreeSet, always inserting elements that are already ordered creates a bias
-      i = i + 1
+      ys = ys + i
+      i += 1
     }
     bh.consume(ys)
   }
 
   @Benchmark
-  def uncons(bh: Blackhole): Unit = bh.consume(xs.tail)
-
-  @Benchmark
   def concat(bh: Blackhole): Unit = bh.consume(xs ++ xs)
 
   @Benchmark
-  def foreach(bh: Blackhole): Unit = {
-    xs.foreach(x => bh.consume(x))
+  def tail(bh: Blackhole): Unit = bh.consume(xs.tail)
+
+  @Benchmark
+  def init(bh: Blackhole): Unit = bh.consume(xs.init)
+
+  @Benchmark
+  def loop_foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
+
+  @Benchmark
+  def loop_headTail(bh: Blackhole): Unit = {
+    var ys = xs
+    while (ys.nonEmpty) {
+      bh.consume(ys.head)
+      ys = ys.tail
+    }
+  }
+
+  @Benchmark
+  def loop_initLast(bh: Blackhole): Unit = {
+    var ys = xs
+    while (ys.nonEmpty) {
+      bh.consume(ys.last)
+      ys = ys.init
+    }
+  }
+
+  @Benchmark
+  def loop_iterator(bh: Blackhole): Any = {
+    var n = 0
+    val it = xs.iterator()
+    while (it.hasNext) {
+      bh.consume(it.next())
+      n += 1
+    }
+    bh.consume(n)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def contains(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xss(i)(i))
+      i = i + 1
+    }
   }
 
   @Benchmark
   def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
   @Benchmark
+  @OperationsPerInvocation(100)
+  def span(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 100) {
+      val (xs1, xs2) = xs.span(x => x < randomIndices(i))
+      bh.consume(xs1)
+      bh.consume(xs2)
+      i += 1
+    }
+  }
+
+  @Benchmark
+  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
+
+  @Benchmark
+  def foldLeft(bh: Blackhole): Any = bh.consume(xs.foldLeft(0) {
+    case (acc, n) =>
+      bh.consume(n)
+      acc + 1
+  })
+
+  @Benchmark
+  def foldRight(bh: Blackhole): Any = bh.consume(xs.foldRight(0) {
+    case (n, acc) =>
+      bh.consume(n)
+      acc - 1
+  })
+
+  @Benchmark
   def groupBy(bh: Blackhole): Unit = {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
-
 }

@@ -1,12 +1,14 @@
-package strawman.collection.immutable
+package strawman.collection.mutable
 
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Unit}
-import scala.Predef.intWrapper
+import scala.{Any, AnyRef, Int, Long, Unit, math}
+import scala.Predef.{intWrapper, longArrayOps, wrapLongArray, wrapRefArray}
+
+import scala.Predef.{intWrapper, longArrayOps}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -14,21 +16,21 @@ import scala.Predef.intWrapper
 @Warmup(iterations = 12)
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
-class ImmutableArrayBenchmark {
+class ScalaArrayBenchmark {
 
-  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
+  @Param(scala.Array(/*"0", */"1"/*, "2", "3", "4", "7"*/, "8"/*, "15", "16"*/, "17"/*, "39"*/, "282", "4096", "31980"/*, "73121", "120000"*/))
   var size: Int = _
 
-  var xs: ImmutableArray[Long] = _
-  var xss: scala.Array[ImmutableArray[Long]] = _
-  var zipped: ImmutableArray[(Long, Long)] = _
+  var xs: scala.Array[Long] = _
+  var xss: scala.Array[scala.Array[Long]] = _
+  var zipped: scala.Array[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
   var randomIndices2: scala.Array[Int] = _
-  var randomXss: scala.Array[ImmutableArray[Long]] = _
+  var randomXss: scala.Array[scala.Array[Long]] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    def freshCollection() = ImmutableArray((1 to size).map(_.toLong): _*)
+    def freshCollection() = scala.Array((1 to size).map(_.toLong): _*)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
     zipped = xs.map(x => (x, x))
@@ -41,7 +43,7 @@ class ImmutableArrayBenchmark {
 
   @Benchmark
   def prepend(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
+    var ys = scala.Array.empty[Long]
     var i = 0L
     while (i < size) {
       ys = i +: ys
@@ -52,7 +54,7 @@ class ImmutableArrayBenchmark {
 
   @Benchmark
   def append(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
+    var ys = scala.Array.empty[Long]
     var i = 0L
     while (i < size) {
       ys = ys :+ i
@@ -63,7 +65,7 @@ class ImmutableArrayBenchmark {
 
   @Benchmark
   def prependAppend(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
+    var ys = scala.Array.empty[Long]
     var i = 0L
     while (i < size) {
       if ((i & 1) == 1) ys = ys :+ i
@@ -77,15 +79,15 @@ class ImmutableArrayBenchmark {
   def prependAll(bh: Blackhole): Unit = bh.consume(xs ++: xs)
 
   @Benchmark
-  def appendAll(bh: Blackhole): Unit = bh.consume(xs ++ xs) // TODO: Switch to :++ once #184 is merged
+  def appendAll(bh: Blackhole): Unit = bh.consume(xs ++ xs)
 
   @Benchmark
   def prependAllAppendAll(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
+    var ys = scala.Array.empty[Long]
     val ys2 = xss(0).take(3)
     var i = 0L
     while (i < size) {
-      if ((i & 1) == 1) ys = ys ++ ys2 // TODO: Switch to :++ once #184 is merged
+      if ((i & 1) == 1) ys = ys ++ ys2
       else ys = ys2 ++: ys
       i = i + 1
     }
@@ -122,7 +124,7 @@ class ImmutableArrayBenchmark {
   @Benchmark
   def loop_iterator(bh: Blackhole): Any = {
     var n = 0
-    val it = xs.iterator()
+    val it = xs.iterator
     while (it.hasNext) {
       bh.consume(it.next())
       n += 1
@@ -163,7 +165,7 @@ class ImmutableArrayBenchmark {
     while (i < 1000) {
       val from = randomIndices(i)
       val replaced = randomIndices2(i)
-      bh.consume(xs.patch(from, randomXss(i), replaced))
+      bh.consume(xs.patch(from, randomXss.apply(i), replaced))
       i = i + 1
     }
   }
@@ -181,7 +183,7 @@ class ImmutableArrayBenchmark {
   }
 
   @Benchmark
-  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
+  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip(t => (t._1, t._2)))
 
   @Benchmark
   def padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
