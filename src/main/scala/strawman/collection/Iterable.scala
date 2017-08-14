@@ -773,8 +773,8 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** Alias for `appendAll` */
   @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
 
-  /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
+  /** Alias for `appendAll` */
+  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
