@@ -290,6 +290,12 @@ class StrawmanTest {
     val ys9: Seq[Int] = xs9
     val xs10 = xs.patch(xs.length, List(1, 2, 3), 0)
     val ys10: Seq[Int] = xs10
+    val x11 +: xs11 = xs
+    val y11: Int = x11
+    val ys11: Seq[Int] = xs11
+    val xs12 :+ x12 = xs
+    val y12: Int = x12
+    val ys12: Seq[Int] = xs12
   }
 
   def immutableArrayOps(xs: immutable.ImmutableArray[Int]): Unit = {
