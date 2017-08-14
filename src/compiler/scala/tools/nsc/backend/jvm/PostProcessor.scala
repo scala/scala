@@ -14,19 +14,20 @@ import scala.tools.nsc.backend.jvm.opt._
  * optimizations, post-processing and classfile serialization and writing.
  */
 abstract class PostProcessor extends PerRunInit {
+  self =>
   val bTypes: BTypes
 
   import bTypes._
   import frontendAccess.{backendReporting, compilerSettings, recordPerRunCache}
 
-  val backendUtils        = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BackendUtils
-  val byteCodeRepository  = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with ByteCodeRepository
-  val localOpt            = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with LocalOpt
-  val inliner             = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with Inliner
-  val inlinerHeuristics   = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with InlinerHeuristics
-  val closureOptimizer    = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with ClosureOptimizer
-  val callGraph           = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with CallGraph
-  val bTypesFromClassfile = new { val postProcessor: PostProcessor.this.type = PostProcessor.this } with BTypesFromClassfile
+  val backendUtils        : BackendUtils { val postProcessor: self.type }        = new { val postProcessor: self.type = self } with BackendUtils
+  val byteCodeRepository  : ByteCodeRepository { val postProcessor: self.type }  = new { val postProcessor: self.type = self } with ByteCodeRepository
+  val localOpt            : LocalOpt { val postProcessor: self.type }            = new { val postProcessor: self.type = self } with LocalOpt
+  val inliner             : Inliner { val postProcessor: self.type }             = new { val postProcessor: self.type = self } with Inliner
+  val inlinerHeuristics   : InlinerHeuristics { val postProcessor: self.type }   = new { val postProcessor: self.type = self } with InlinerHeuristics
+  val closureOptimizer    : ClosureOptimizer { val postProcessor: self.type }    = new { val postProcessor: self.type = self } with ClosureOptimizer
+  val callGraph           : CallGraph { val postProcessor: self.type }           = new { val postProcessor: self.type = self } with CallGraph
+  val bTypesFromClassfile : BTypesFromClassfile { val postProcessor: self.type } = new { val postProcessor: self.type = self } with BTypesFromClassfile
 
   // re-initialized per run because it reads compiler settings that might change
   lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(this)(new ClassfileWriter(frontendAccess))

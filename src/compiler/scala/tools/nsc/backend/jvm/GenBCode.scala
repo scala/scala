@@ -11,15 +11,16 @@ import scala.reflect.internal.util.Statistics
 import scala.tools.asm.Opcodes
 
 abstract class GenBCode extends SubComponent {
+  self =>
   import global._
 
   val postProcessorFrontendAccess: PostProcessorFrontendAccess = new PostProcessorFrontendAccess.PostProcessorFrontendAccessImpl(global)
 
-  val bTypes = new { val frontendAccess = postProcessorFrontendAccess } with BTypesFromSymbols[global.type](global)
+  val bTypes: BTypesFromSymbols[global.type] = new { val frontendAccess = postProcessorFrontendAccess } with BTypesFromSymbols[global.type](global)
 
-  val codeGen = new { val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes } with CodeGen[global.type](global)
+  val codeGen: CodeGen[global.type] = new { val bTypes: self.bTypes.type = self.bTypes } with CodeGen[global.type](global)
 
-  val postProcessor = new { val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes } with PostProcessor
+  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new { val bTypes: self.bTypes.type = self.bTypes } with PostProcessor
 
   val phaseName = "jvm"
 
