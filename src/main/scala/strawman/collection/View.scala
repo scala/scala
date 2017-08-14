@@ -70,7 +70,7 @@ object View extends IterableFactory[View] {
   /** A view filled with `n` identical elements */
   case class Fill[A](n: Int)(elem: => A) extends View[A] {
     def iterator() = Iterator.fill(n)(elem)
-    override def knownSize: Int = n
+    override def knownSize: Int = 0 max n
   }
 
   /** A view containing values of a given function over a range of integer values starting from 0. */

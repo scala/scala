@@ -62,7 +62,7 @@ trait IterableFactory[+CC[_]] {
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2` evaluations of `elem`.
     */
-  def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A] @uncheckedVariance] = tabulate(n1)(_ => fill(n2)(elem))
+  def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A] @uncheckedVariance] = fill(n1)(fill(n2)(elem))
 
   /** Produces a three-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
@@ -71,7 +71,7 @@ trait IterableFactory[+CC[_]] {
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2 x n3` evaluations of `elem`.
     */
-  def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]] @uncheckedVariance] = tabulate(n1)(_ => fill(n2, n3)(elem))
+  def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]] @uncheckedVariance] = fill(n1)(fill(n2, n3)(elem))
 
   /** Produces a four-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
@@ -82,7 +82,7 @@ trait IterableFactory[+CC[_]] {
     *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4` evaluations of `elem`.
     */
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): CC[CC[CC[CC[A]]] @uncheckedVariance] =
-    tabulate(n1)(_ => fill(n2, n3, n4)(elem))
+    fill(n1)(fill(n2, n3, n4)(elem))
 
   /** Produces a five-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
@@ -94,7 +94,7 @@ trait IterableFactory[+CC[_]] {
     *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4 x n5` evaluations of `elem`.
     */
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
-    tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
+    fill(n1)(fill(n2, n3, n4, n5)(elem))
 
   /** Produces a $coll containing values of a given function over a range of integer values starting from 0.
     *  @param  n   The number of elements in the $coll
