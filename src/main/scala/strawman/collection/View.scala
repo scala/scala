@@ -276,7 +276,7 @@ trait ArrayLike[+A] extends Any {
 /** View defined in terms of indexing a range */
 trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, IndexedView[A]] { self =>
 
-  final protected[this] def seq: Seq[A] = to(IndexedSeq)
+  final def toSeq: Seq[A] = to(IndexedSeq)
 
   override protected[this] def fromSpecificIterable(it: Iterable[A]): IndexedView[A] =
     it match {

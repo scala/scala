@@ -13,7 +13,7 @@ import scala.util.hashing.MurmurHash3
 /** Base trait for sequence collections */
 trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]] {
   final protected[this] def coll: this.type = this
-  final protected[this] def seq: this.type = this
+  final def toSeq: this.type = this
 }
 
 /** Base trait for Seq operations */
@@ -23,10 +23,9 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with Equals {
 
   /**
-    * @return This collection as a `Seq[A]`. Note that this method breaks laziness when used on a `View[A]`.
-    *         You should prefer using `iterable` instead.
+    * @return This collection as a `Seq[A]`. This equivalent to `to(Seq)` but might be faster.
     */
-  protected[this] def seq: Seq[A]
+  def toSeq: Seq[A]
 
   // Refine the factory member to be a `SeqFactory`
   def iterableFactory: SeqFactory[CC]
@@ -161,11 +160,11 @@ trait SeqOps[+A, +CC[X], +C] extends Any
       if (from > l) -1
       else if (tl < 1) clippedFrom
       else if (l < tl) -1
-      else SeqOps.kmpSearch(seq, clippedFrom, l, that, 0, tl, forward = true)
+      else SeqOps.kmpSearch(toSeq, clippedFrom, l, that, 0, tl, forward = true)
     }
     else {
       var i = from
-      var s: Seq[A] = seq drop i
+      var s: Seq[A] = toSeq drop i
       while (!s.isEmpty) {
         if (s startsWith that)
           return i
@@ -190,7 +189,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     if (end < 0) -1
     else if (tl < 1) clippedL
     else if (l < tl) -1
-    else SeqOps.kmpSearch(seq, 0, clippedL+tl, that, 0, tl, forward = false)
+    else SeqOps.kmpSearch(toSeq, 0, clippedL+tl, that, 0, tl, forward = false)
   }
 
   /** Tests whether this $coll contains a given sequence as a slice.
@@ -279,7 +278,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
     private[this] def init() = {
       val m = mutable.HashMap[A, Int]()
-      val (es, is) = (seq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
 
       (es.to(mutable.ArrayBuffer), is.toArray)
     }
@@ -340,7 +339,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
       val m = mutable.HashMap[A, Int]()
 
       // e => (e, weight(e))
-      val (es, is) = (seq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
       val cs = new Array[Int](m.size)
       is foreach (i => cs(i) += 1)
       val ns = new Array[Int](cs.length)
