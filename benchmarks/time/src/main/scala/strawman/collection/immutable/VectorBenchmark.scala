@@ -45,7 +45,7 @@ class VectorBenchmark {
     var i = 0L
     while (i < size) {
       ys = i +: ys
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -68,7 +68,7 @@ class VectorBenchmark {
     while (i < size) {
       if ((i & 1) == 1) ys = ys :+ i
       else ys = i +: ys
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -87,7 +87,7 @@ class VectorBenchmark {
     while (i < size) {
       if ((i & 1) == 1) ys = ys ++ ys2 // TODO: Switch to :++ once #184 is merged
       else ys = ys2 ++: ys
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -120,14 +120,11 @@ class VectorBenchmark {
   }
 
   @Benchmark
-  def loop_iterator(bh: Blackhole): Any = {
-    var n = 0
+  def loop_iterator(bh: Blackhole): Unit = {
     val it = xs.iterator()
     while (it.hasNext) {
       bh.consume(it.next())
-      n += 1
     }
-    bh.consume(n)
   }
 
   @Benchmark
@@ -139,7 +136,7 @@ class VectorBenchmark {
     var i = 0
     while (i < 1000) {
       bh.consume(xss(i)(size - 1))
-      i = i + 1
+      i += 1
     }
   }
 
@@ -149,7 +146,27 @@ class VectorBenchmark {
     var i = 0
     while (i < 1000) {
       bh.consume(xs(randomIndices(i)))
-      i = i + 1
+      i += 1
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def updated_last(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xs.updated(size - 1, i))
+      i += 1
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def updated_random(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xs.updated(randomIndices(i), i))
+      i += 1
     }
   }
 
@@ -164,7 +181,7 @@ class VectorBenchmark {
       val from = randomIndices(i)
       val replaced = randomIndices2(i)
       bh.consume(xs.patch(from, randomXss(i), replaced))
-      i = i + 1
+      i += 1
     }
   }
 
@@ -207,15 +224,5 @@ class VectorBenchmark {
   def groupBy(bh: Blackhole): Unit = {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def updated(bh: Blackhole): Unit = {
-    var i = 0
-    while (i < 1000) {
-      bh.consume(xs.updated(randomIndices(i), i))
-      i = i + 1
-    }
   }
 }

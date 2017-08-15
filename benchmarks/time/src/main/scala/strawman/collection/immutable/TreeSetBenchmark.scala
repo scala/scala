@@ -44,7 +44,7 @@ class TreeSetBenchmark {
     var ys = TreeSet.empty[Long]
     var i = 0L
     while (i < size) {
-      ys = ys + i
+      ys += i
       i += 1
     }
     bh.consume(ys)
@@ -81,14 +81,11 @@ class TreeSetBenchmark {
   }
 
   @Benchmark
-  def loop_iterator(bh: Blackhole): Any = {
-    var n = 0
+  def loop_iterator(bh: Blackhole): Unit = {
     val it = xs.iterator()
     while (it.hasNext) {
       bh.consume(it.next())
-      n += 1
     }
-    bh.consume(n)
   }
 
   @Benchmark
@@ -96,8 +93,8 @@ class TreeSetBenchmark {
   def contains(bh: Blackhole): Unit = {
     var i = 0
     while (i < 1000) {
-      bh.consume(xss(i)(i))
-      i = i + 1
+      bh.consume(xss(i).contains(i))
+      i += 1
     }
   }
 

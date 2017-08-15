@@ -45,7 +45,7 @@ class ListBufferBenchmark {
     var i = 0L
     while (i < size) {
       ys.insert(0, i)
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -68,7 +68,7 @@ class ListBufferBenchmark {
     while (i < size) {
       if ((i & 1) == 1) ys.add(i)
       else ys.insert(0, i)
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -87,7 +87,7 @@ class ListBufferBenchmark {
     while (i < size) {
       if ((i & 1) == 1) ys.addAll(ys2)
       else ys.insertAll(0, ys2)
-      i = i + 1
+      i += 1
     }
     bh.consume(ys)
   }
@@ -120,14 +120,11 @@ class ListBufferBenchmark {
   }
 
   @Benchmark
-  def loop_iterator(bh: Blackhole): Any = {
-    var n = 0
+  def loop_iterator(bh: Blackhole): Unit = {
     val it = xs.iterator()
     while (it.hasNext) {
       bh.consume(it.next())
-      n += 1
     }
-    bh.consume(n)
   }
 
   @Benchmark
@@ -139,7 +136,7 @@ class ListBufferBenchmark {
     var i = 0
     while (i < 1000) {
       bh.consume(xss(i)(size - 1))
-      i = i + 1
+      i += 1
     }
   }
 
@@ -149,7 +146,27 @@ class ListBufferBenchmark {
     var i = 0
     while (i < 1000) {
       bh.consume(xs(randomIndices(i)))
-      i = i + 1
+      i += 1
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def update_last(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xs.update(size - 1, i))
+      i += 1
+    }
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def update_random(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 1000) {
+      bh.consume(xs.update(randomIndices(i), i))
+      i += 1
     }
   }
 
@@ -164,7 +181,7 @@ class ListBufferBenchmark {
       val from = randomIndices(i)
       val replaced = randomIndices2(i)
       bh.consume(xs.patchInPlace(from, randomXss(i), replaced))
-      i = i + 1
+      i += 1
     }
   }
 
@@ -215,7 +232,7 @@ class ListBufferBenchmark {
     var i = 0
     while (i < 1000) {
       bh.consume(xs.update(randomIndices(i), i))
-      i = i + 1
+      i += 1
     }
   }
 }
