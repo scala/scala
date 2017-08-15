@@ -225,14 +225,4 @@ class ListBufferBenchmark {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
-
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def updated(bh: Blackhole): Unit = {
-    var i = 0
-    while (i < 1000) {
-      bh.consume(xs.update(randomIndices(i), i))
-      i += 1
-    }
-  }
 }
