@@ -14,6 +14,7 @@ import scala.util.hashing.MurmurHash3
 trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]] {
   final protected[this] def coll: this.type = this
   final def toSeq: this.type = this
+  def iterableFactory: SeqFactory[Seq]
 }
 
 /** Base trait for Seq operations */
@@ -26,9 +27,6 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     * @return This collection as a `Seq[A]`. This equivalent to `to(Seq)` but might be faster.
     */
   def toSeq: Seq[A]
-
-  // Refine the factory member to be a `SeqFactory`
-  def iterableFactory: SeqFactory[CC]
 
   /** Selects all the elements of this $coll ignoring the duplicates.
     *
