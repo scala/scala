@@ -58,6 +58,9 @@ class ListBenchmark {
   def concat(bh: Blackhole): Unit = bh.consume(xs ++ xs)
 
   @Benchmark
+  def prependAll(bh: Blackhole): Unit = bh.consume(xs.prependAll(xs))
+
+  @Benchmark
   def foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
 
   @Benchmark
