@@ -1,10 +1,10 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.mutable.{ArrayBuffer, Builder, GrowableBuilder}
-import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, View}
+import strawman.collection.mutable.{ArrayBuffer, Builder}
+import strawman.collection.{IterableOnce, Iterator, SeqFactory, View}
 
-import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, throws}
+import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws}
 import scala.runtime.ScalaRunTime
 import scala.Predef.{???, intWrapper}
 
@@ -18,7 +18,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
     with IndexedSeqOps[A, ImmutableArray, ImmutableArray[A]]
     with StrictOptimizedSeqOps[A, ImmutableArray, ImmutableArray[A]] {
 
-  def iterableFactory: IterableFactory[ImmutableArray] = ImmutableArray
+  def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
 
@@ -49,14 +49,14 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
     new ImmutableArray(dest)
   }
 
-  override def append [B >: A](elem: B): ImmutableArray[B] = {
+  override def append[B >: A](elem: B): ImmutableArray[B] = {
     val dest = scala.Array.ofDim[Any](length + 1)
     java.lang.System.arraycopy(elements, 0, dest, 0, length)
     dest(length) = elem
     new ImmutableArray(dest)
   }
 
-  override def concat[B >: A](xs: IterableOnce[B]): ImmutableArray[B] =
+  override def appendAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
     xs match {
       case bs: ImmutableArray[B] =>
         val dest = scala.Array.ofDim[Any](length + bs.length)
@@ -67,7 +67,18 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         ImmutableArray.fromIterable(View.Concat(coll, xs))
     }
 
-  override def zip[B](xs: IterableOnce[B]): ImmutableArray[(A, B)] =
+  override def prependAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
+    xs match {
+      case bs: ImmutableArray[B] =>
+        val dest = scala.Array.ofDim[Any](length + bs.length)
+        java.lang.System.arraycopy(bs.elements, 0, dest, 0, bs.length)
+        java.lang.System.arraycopy(elements, 0, dest, bs.length, length)
+        new ImmutableArray(dest)
+      case _ =>
+        ImmutableArray.fromIterable(View.Concat(xs, coll))
+    }
+
+  override def zip[B](xs: collection.Iterable[B]): ImmutableArray[(A, B)] =
     xs match {
       case bs: ImmutableArray[B] =>
         ImmutableArray.tabulate(length min bs.length) { i =>
@@ -97,13 +108,13 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
       val dest = scala.Array.ofDim[Any](length - 1)
       java.lang.System.arraycopy(elements, 1, dest, 0, length - 1)
       new ImmutableArray(dest)
-    } else ???
+    } else throw new UnsupportedOperationException("tail of empty array")
 
   override def reverse: ImmutableArray[A] = ImmutableArray.tabulate(length)(i => apply(length - 1 - i))
 
 }
 
-object ImmutableArray extends IterableFactory[ImmutableArray] {
+object ImmutableArray extends SeqFactory[ImmutableArray] {
 
   private[this] lazy val emptyImpl = new ImmutableArray[Nothing](new scala.Array[Any](0))
 
@@ -113,14 +124,24 @@ object ImmutableArray extends IterableFactory[ImmutableArray] {
     new ImmutableArray[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
 
   def fromIterable[A](it: strawman.collection.Iterable[A]): ImmutableArray[A] =
-    fromArrayBuffer(ArrayBuffer.fromIterable(it))
+    if (it.knownSize > -1) {
+      val n = it.knownSize
+      val elements = scala.Array.ofDim[Any](n)
+      val iterator = it.iterator()
+      var i = 0
+      while (i < n) {
+        ScalaRunTime.array_update(elements, i, iterator.next())
+        i = i + 1
+      }
+      new ImmutableArray(elements)
+    } else fromArrayBuffer(ArrayBuffer.fromIterable(it))
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
     ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)
 
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 
-  def tabulate[A](n: Int)(f: Int => A): ImmutableArray[A] = {
+  override def tabulate[A](n: Int)(f: Int => A): ImmutableArray[A] = {
     val elements = scala.Array.ofDim[Any](n)
     var i = 0
     while (i < n) {

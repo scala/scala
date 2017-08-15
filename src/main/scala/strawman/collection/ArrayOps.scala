@@ -40,8 +40,8 @@ class ArrayOps[A](val xs: Array[A])
   def iterator(): Iterator[A] = coll.iterator()
   def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(coll, f))
   def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(View.FlatMap(coll, f))
-  def ++[B >: A : ClassTag](xs: IterableOnce[B]): Array[B] = fromTaggedIterable(View.Concat(coll, xs))
-  def zip[B: ClassTag](xs: IterableOnce[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(coll, xs))
+  def ++[B >: A : ClassTag](xs: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(coll, xs))
+  def zip[B: ClassTag](xs: Iterable[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(coll, xs))
 }
 
 case class ArrayView[A](xs: Array[A]) extends IndexedView[A] {

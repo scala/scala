@@ -111,14 +111,14 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
 
 }
 
-object Seq extends IterableFactory.Delegate[Seq](List)
+object Seq extends SeqFactory.Delegate[Seq](List)
 
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A]
                         with collection.IndexedSeq[A]
                         with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
-object IndexedSeq extends IterableFactory.Delegate[IndexedSeq](Vector)
+object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
 
 /** Base trait for immutable indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends SeqOps[A, CC, C] with collection.IndexedSeqOps[A, CC, C]

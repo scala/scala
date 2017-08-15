@@ -6,7 +6,7 @@ import scala.{Any, Int}
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
-object IndexedSeq extends IterableFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
+object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 
 /** Base trait for indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>

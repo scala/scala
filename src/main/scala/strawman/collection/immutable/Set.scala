@@ -36,7 +36,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   /** Alias for `excl` */
   @`inline` final def - (elem: A): C = excl(elem)
 
-  override def concat(that: collection.IterableOnce[A]): C = {
+  override def concat(that: collection.Iterable[A]): C = {
     var result: C = coll
     val it = that.iterator()
     while (it.hasNext) result = result + it.next()

@@ -78,7 +78,7 @@ sealed trait List[+A]
     with StrictOptimizedSeqOps[A, List, List[A]]
     with Serializable {
 
-  def iterableFactory = List
+  def iterableFactory: SeqFactory[List] = List
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
 
@@ -130,16 +130,16 @@ sealed trait List[+A]
 
   override def prepend[B >: A](elem: B): List[B] = elem :: this
 
-  override def prependAll[B >: A](prefix: collection.Iterable[B]): List[B] =
-    prefix match {
-      case xs: List[B] => xs ::: this
-      case _ => super.prependAll(prefix)
-    }
+  // When calling prependAll with another list `prefix`, avoid copying `this`
+  override def prependAll[B >: A](prefix: collection.Iterable[B]): List[B] = prefix match {
+    case xs: List[B] => xs ::: this
+    case _ => super.prependAll(prefix)
+  }
 
-  // When concatenating with another list `xs`, avoid copying `xs`
-  override def concat[B >: A](suffix: IterableOnce[B]): List[B] = suffix match {
+  // When calling appendAll with another list `suffix`, avoid copying `suffix`
+  override def appendAll[B >: A](suffix: collection.Iterable[B]): List[B] = suffix match {
     case xs: List[B] => this ::: xs
-    case _ => super.concat(suffix)
+    case _ => super.appendAll(suffix)
   }
 
   override def take(n: Int): List[A] = if (isEmpty || n <= 0) Nil else {
@@ -346,7 +346,7 @@ case object Nil extends List[Nothing] {
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
 }
 
-object List extends IterableFactory[List] {
+object List extends SeqFactory[List] {
 
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll

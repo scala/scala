@@ -770,6 +770,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
       else View.Empty
     }
 
+  /** Alias for `appendAll` */
+  @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
+
+  /** Alias for `appendAll` */
+  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
+
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
@@ -779,15 +785,15 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[B >: A](suffix: IterableOnce[B]): CC[B] = fromIterable(View.Concat(coll, suffix))
+  def appendAll[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(View.Concat(coll, suffix))
 
-  /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
+  /** Alias for `appendAll` */
+  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
 
-  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
+  /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.
     *
-    *  It differs from `++` in that the right operand determines the type of
+    *  It differs from `:++` in that the right operand determines the type of
     *  the resulting collection rather than the left one.
     *  Mnemonic: the COLon is on the side of the new COLlection type.
     *
@@ -829,7 +835,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *                 corresponding elements of this $coll and `that`. The length
     *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
     */
-  def zip[B](xs: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
+  def zip[B](xs: Iterable[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 
   /** Zips this $coll with its indices.

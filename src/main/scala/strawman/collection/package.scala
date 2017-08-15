@@ -1,7 +1,7 @@
 package strawman
 
-import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException}
-import scala.Predef.String
+import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException, PartialFunction, Option, None, Some}
+import scala.Predef.{String, ArrowAssoc}
 import scala.reflect.ClassTag
 
 package object collection extends LowPriority {
@@ -78,6 +78,25 @@ package object collection extends LowPriority {
        def hasNext: Boolean = _hasNext
      }
 
+  /** An extractor used to head/tail deconstruct sequences. */
+  object +: {
+    /** Splits a sequence into head :+ tail.
+      * @return Some((head, tail)) if sequence is non-empty. None otherwise.
+      */
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(A, C)] =
+      if(t.isEmpty) None
+      else Some(t.head -> t.tail)
+  }
+
+  /** An extractor used to init/last deconstruct sequences. */
+  object :+ {
+    /** Splits a sequence into init :+ last.
+      * @return Some((init, last)) if sequence is non-empty. None otherwise.
+      */
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(C, A)] =
+      if(t.isEmpty) None
+      else Some(t.init -> t.last)
+  }
 }
 
 class LowPriority {
