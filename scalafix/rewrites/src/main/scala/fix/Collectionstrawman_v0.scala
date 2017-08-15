@@ -4,8 +4,8 @@ import scalafix._
 import scalafix.syntax._
 import scala.meta._
 
-case class Collectionstrawman_v0(mirror: SemanticCtx)
-    extends SemanticRewrite(mirror) {
+case class Collectionstrawman_v0(sctx: SemanticCtx)
+    extends SemanticRewrite(sctx) {
   val immutableListSymbol = Symbol("_root_.scala.collection.immutable.List.")
   val unimports = Map(
     Symbol("_root_.scala.Predef.augmentString.") ->
@@ -15,7 +15,7 @@ case class Collectionstrawman_v0(mirror: SemanticCtx)
   )
 
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
-    val toImport = ctx.mirror.names
+    val toImport = ctx.semanticCtx.names
       .flatMap(r => unimports.get(r.sym.normalized))
       .map(ctx.addGlobalImport)
     toImport.asPatch
