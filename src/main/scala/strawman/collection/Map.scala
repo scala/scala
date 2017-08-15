@@ -13,12 +13,10 @@ trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]] {
 }
 
 /** Base Map implementation type */
-trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
+trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with PartialFunction[K, V]
     with Equals {
-
-  protected[this] def iterable: Map[K, V]
 
   /** Similar to fromIterable, but returns a Map collection type */
   protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
@@ -74,13 +72,13 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class DefaultKeySet extends Set[K] with Serializable {
-    def contains(key: K) = MapOps.this.iterable.contains(key)
+    def contains(key: K) = MapOps.this.coll.contains(key)
     def iterator() = keysIterator()
-    override def size = iterable.size
+    override def size = toIterable.size
     override def foreach[U](f: K => U) = keysIterator() foreach f
     def iterableFactory: IterableFactory[Set] = Set
     def empty: Set[K] = iterableFactory.empty
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(iterableFactory.fromIterable(iterable).diff(that))
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(iterableFactory.fromIterable(toIterable).diff(that))
     protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = iterableFactory.fromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
   }
@@ -102,7 +100,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
     *  @return an iterator over all keys.
     */
   def keysIterator(): Iterator[K] = new Iterator[K] {
-    val iter = iterable.iterator()
+    val iter = toIterable.iterator()
     def hasNext = iter.hasNext
     def next() = iter.next()._1
   }
@@ -112,7 +110,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
     *  @return an iterator over all values that are associated with some key in this map.
     */
   def valuesIterator(): Iterator[V] = new Iterator[V] {
-    val iter = iterable.iterator()
+    val iter = toIterable.iterator()
     def hasNext = iter.hasNext
     def next() = iter.next()._2
   }
@@ -122,14 +120,14 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
     *          the predicate `p`. The resulting map wraps the original map without copying any elements.
     */
-  def filterKeys(p: K => Boolean): View[(K, V)] = View.FilterKeys(iterable, p)
+  def filterKeys(p: K => Boolean): View[(K, V)] = View.FilterKeys(toIterable, p)
 
   /** Transforms this map by applying a function to every retrieved value.
     *  @param  f   the function used to transform values of this map.
     *  @return a map view which maps every key of this map
     *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
     */
-  def mapValues[W](f: V => W): View[(K, W)] = View.MapValues(iterable, f)
+  def mapValues[W](f: V => W): View[(K, W)] = View.MapValues(toIterable, f)
 
   /** Defines the default value computation for the map,
     *  returned when a key is not found
@@ -178,11 +176,11 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
 
   }
 
-  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(iterable, f))
+  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(toIterable, f))
 
-  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(iterable, f))
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(toIterable, f))
 
-  def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(iterable, xs))
+  def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(toIterable, xs))
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
@@ -210,7 +208,7 @@ trait MapOps[K, +V, +CC[X, Y] <: Map[X, Y], +C]
       false
   }
 
-  override def hashCode(): Int = Set.unorderedHash(iterable, "Map".##)
+  override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
 
 }
 

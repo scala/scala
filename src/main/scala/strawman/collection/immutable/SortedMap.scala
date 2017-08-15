@@ -9,11 +9,11 @@ trait SortedMap[K, +V]
      with collection.SortedMap[K, V]
      with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
 
-trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: CC[K, V]]
+trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] {
 
-    protected[this] def iterable: CC[K, V]
+    protected[this] def coll: C with CC[K, V]
 
     protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
       Map.fromIterable(it)
@@ -23,7 +23,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, 
     override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
     override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = {
-        var result: CC[K, V2] = iterable
+        var result: CC[K, V2] = coll
         val it = xs.iterator()
         while (it.hasNext) result = result + it.next()
         result

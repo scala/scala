@@ -8,7 +8,7 @@ import scala.{Any, `inline`}
 trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for immutable set operations */
-trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
+trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends collection.SetOps[A, CC, C] {
 
   /** Creates a new set with an additional element, unless the element is
@@ -42,7 +42,7 @@ trait SetOps[A, +CC[X], +C <: Set[A] with SetOps[A, Set, C]]
   }
 
   def diff(that: collection.Set[A]): C =
-    iterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
+    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
 
 }
 

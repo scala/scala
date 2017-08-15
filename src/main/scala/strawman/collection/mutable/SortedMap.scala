@@ -9,7 +9,7 @@ trait SortedMap[K, V]
     with Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
 
-trait SortedMapOps[K, V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMap[K, V]]
+trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends collection.SortedMapOps[K, V, CC, C]
     with MapOps[K, V, Map, C] {
 

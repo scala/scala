@@ -13,12 +13,10 @@ trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]] {
 }
 
 /** Base trait for set operations */
-trait SetOps[A, +CC[_], +C <: Set[A]]
+trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
      with (A => Boolean)
      with Equals {
-
-  protected[this] def iterable: Set[A]
 
   def contains(elem: A): Boolean
 
@@ -46,7 +44,7 @@ trait SetOps[A, +CC[_], +C <: Set[A]]
     */
   def subsets(len: Int): Iterator[C] = {
     if (len < 0 || len > size) Iterator.empty
-    else new SubsetsItr(iterable.to(IndexedSeq), len)
+    else new SubsetsItr(toIterable.to(IndexedSeq), len)
   }
 
   /** An iterator over all subsets of this set.
@@ -54,7 +52,7 @@ trait SetOps[A, +CC[_], +C <: Set[A]]
     *  @return     the iterator.
     */
   def subsets(): Iterator[C] = new Iterator[C] {
-    private val elms = iterable.to(IndexedSeq)
+    private val elms = toIterable.to(IndexedSeq)
     private var len = 0
     private var itr: Iterator[C] = Iterator.empty
 
@@ -113,12 +111,12 @@ trait SetOps[A, +CC[_], +C <: Set[A]]
       case set: Set[A] =>
         (this eq set) ||
           (set canEqual this) &&
-            (iterable.size == set.size) &&
+            (toIterable.size == set.size) &&
             (this subsetOf set)
       case _ => false
     }
 
-  override def hashCode(): Int = Set.setHash(iterable)
+  override def hashCode(): Int = Set.setHash(toIterable)
 
   override def toString(): String = super[IterableOps].toString() // Because `Function1` overrides `toString` too
 
@@ -157,7 +155,7 @@ trait SetOps[A, +CC[_], +C <: Set[A]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(View.Concat(iterable, that))
+  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(View.Concat(toIterable, that))
 
   /** Alias for `concat` */
   @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)
@@ -182,7 +180,7 @@ trait SetOps[A, +CC[_], +C <: Set[A]]
 object Set extends IterableFactory.Delegate[Set](immutable.Set) {
 
   // Temporary, TODO move to MurmurHash3
-  def setHash(xs: Set[_]): Int = unorderedHash(xs, "Set".##)
+  def setHash(xs: Iterable[_]): Int = unorderedHash(xs, "Set".##)
 
   final def unorderedHash(xs: Iterable[_], seed: Int): Int = {
     var a, b, n = 0

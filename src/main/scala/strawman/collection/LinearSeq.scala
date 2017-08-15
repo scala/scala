@@ -19,13 +19,13 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
 
   /** `iterator` is implemented in terms of `head` and `tail` */
   def iterator() = new Iterator[A] {
-    private[this] var current: Iterable[A] = iterable
+    private[this] var current: Iterable[A] = toIterable
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
   }
 
   override def size: Int = {
-    var these = iterable
+    var these = toIterable
     var len = 0
     while (!these.isEmpty) {
       len += 1
@@ -51,7 +51,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
       // it's surprisingly tricky/ugly to turn this into actual types, so we
       // leave this contract implicit.
       else loop(n - 1, s.tail)
-    loop(n, iterable)
+    loop(n, toIterable)
   }
 
   /** `apply` is defined in terms of `drop`, which is in turn defined in

@@ -11,7 +11,7 @@ trait Set[A]
     with collection.Set[A]
     with SetOps[A, Set, Set[A]]
 
-trait SetOps[A, +CC[X], +C <: Set[A]]
+trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
     with collection.SetOps[A, CC, C]
     with Shrinkable[A] {
@@ -49,7 +49,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
   }
 
   def diff(that: collection.Set[A]): C =
-    iterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
+    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()
@@ -74,7 +74,7 @@ trait SetOps[A, +CC[X], +C <: Set[A]]
     this
   }
 
-  override def clone(): C = empty ++= iterable
+  override def clone(): C = empty ++= toIterable
 
 }
 

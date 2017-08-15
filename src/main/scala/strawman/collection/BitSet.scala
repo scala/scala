@@ -12,8 +12,6 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   extends SortedSetOps[Int, SortedSet, C] {
   import BitSetOps._
 
-  protected[this] def iterable: C
-
   final def ordering: Ordering[Int] = Ordering.Int
 
   /** The number of words (each with 64 bits) making up the set */
@@ -88,7 +86,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   }
 
   def rangeImpl(from: Option[Int], until: Option[Int]): C = {
-    val a = iterable.toBitMask
+    val a = coll.toBitMask
     val len = a.length
     if (from.isDefined) {
       var f = from.get
@@ -111,7 +109,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       }
       if (w < len) a(w) &= (1L << b)-1
     }
-    iterable.fromBitMaskNoCopy(a)
+    coll.fromBitMaskNoCopy(a)
   }
 
   /** Computes the symmetric difference of this bitset and another bitset by performing
@@ -122,11 +120,11 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     *              bitset or the other bitset that are not contained in both bitsets.
     */
   def xor(other: BitSet): C = {
-    val len = iterable.nwords max other.nwords
+    val len = coll.nwords max other.nwords
     val words = new Array[Long](len)
     for (idx <- 0 until len)
-      words(idx) = iterable.word(idx) ^ other.word(idx)
-    iterable.fromBitMaskNoCopy(words)
+      words(idx) = coll.word(idx) ^ other.word(idx)
+    coll.fromBitMaskNoCopy(words)
   }
 
   @`inline` final def ^ (other: BitSet): C = xor(other)
@@ -137,9 +135,9 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     * @return a new bitset resulting from applying the given function ''f'' to
     *         each element of this bitset and collecting the results
     */
-  def map(f: Int => Int): C = fromSpecificIterable(View.Map(iterable, f))
+  def map(f: Int => Int): C = fromSpecificIterable(View.Map(toIterable, f))
 
-  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(iterable, f))
+  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(toIterable, f))
 
 }
 
