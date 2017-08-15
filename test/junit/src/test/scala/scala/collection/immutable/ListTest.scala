@@ -1,4 +1,6 @@
-package scala.collection.immutable
+package strawman.collection.immutable
+
+import strawman.collection.Iterator
 
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
@@ -21,7 +23,7 @@ class ListTest {
       val list = List.fill(10000)(num)
       val ref = WeakReference(list)
 
-      val i = list.iterator
+      val i = list.iterator()
 
       while (i.hasNext) i.next()
 
