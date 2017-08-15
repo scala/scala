@@ -1,4 +1,6 @@
-package scala.collection.immutable
+package strawman.collection.immutable
+
+import strawman.collection.Hashing
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -9,7 +11,7 @@ import org.junit.runners.JUnit4
 class HashMapTest {
 
   private val computeHashF = {
-    HashMap.empty.computeHash _
+    Hashing.computeHash _
   }
 
   @Test

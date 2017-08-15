@@ -1,4 +1,4 @@
-package scala.collection.immutable
+package strawman.collection.immutable
 
 import org.junit.Assert._
 import org.junit.Test
@@ -17,7 +17,7 @@ class ListMapTest {
   @Test
   def hasCorrectBuilder(): Unit = {
     val m = ListMap("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "2.2", "d" -> "4")
-    assertEquals(List("a" -> "1", "c" -> "3", "b" -> "2.2", "d" -> "4"), m.toList)
+    assertEquals(List("a" -> "1", "c" -> "3", "b" -> "2.2", "d" -> "4"), m.to(List))
   }
 
   @Test
@@ -43,6 +43,6 @@ class ListMapTest {
   @Test
   def hasCorrectIterator(): Unit = {
     val m = ListMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
-    assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator.toList)
+    assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator().to(List))
   }
 }
