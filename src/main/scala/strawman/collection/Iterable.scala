@@ -682,7 +682,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *           of this $coll.
     */
   def slice(from: Int, until: Int): C =
-    fromSpecificIterable(View.Take(View.Drop(toIterable, from), until - from))
+    fromSpecificIterable(View.Drop(View.Take(toIterable, until), from))
 
   /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
     *
