@@ -10,7 +10,7 @@ import scala.Predef.intWrapper
 
 /** Companion object to the Vector class
  */
-object Vector extends IterableFactory[Vector] {
+object Vector extends SeqFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL
 
@@ -68,7 +68,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     with VectorPointer[A @uncheckedVariance]
     with Serializable { self =>
 
-  def iterableFactory: IterableFactory[Vector] = Vector
+  def iterableFactory: SeqFactory[Vector] = Vector
 
   protected[this] def fromSpecificIterable(it: collection.Iterable[A]): Vector[A] = fromIterable(it)
 

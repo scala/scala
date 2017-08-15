@@ -635,6 +635,34 @@ object Iterator {
     def apply(n: Int) = xs(n)
   }.iterator()
 
+  /** Creates iterator that produces the results of some element computation a number of times.
+    *
+    *  @param   len  the number of elements returned by the iterator.
+    *  @param   elem the element computation
+    *  @return  An iterator that produces the results of `n` evaluations of `elem`.
+    */
+  def fill[A](len: Int)(elem: => A): Iterator[A] = new Iterator[A] {
+    private var i = 0
+    def hasNext: Boolean = i < len
+    def next(): A =
+      if (hasNext) { i += 1; elem }
+      else empty.next()
+  }
+
+  /** Creates an iterator producing the values of a given function over a range of integer values starting from 0.
+    *
+    *  @param  end The number of elements returned by the iterator
+    *  @param  f   The function computing element values
+    *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
+    */
+  def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new Iterator[A] {
+    private var i = 0
+    def hasNext: Boolean = i < end
+    def next(): A =
+      if (hasNext) { val result = f(i); i += 1; result }
+      else empty.next()
+  }
+
   /** Creates an infinite-length iterator which returns successive values from some start value.
 
     *  @param start the start value of the iterator

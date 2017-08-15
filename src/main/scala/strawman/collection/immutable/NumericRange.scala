@@ -1,7 +1,7 @@
 package strawman.collection.immutable
 
 import strawman.collection
-import strawman.collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
+import strawman.collection.{IterableOnce, Iterator, SeqFactory, StrictOptimizedIterableOps}
 
 import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, NoSuchElementException, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized, throws}
 import scala.Predef.ArrowAssoc
@@ -45,7 +45,7 @@ final class NumericRange[T](
 
   def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
 
-  def iterableFactory: IterableFactory[IndexedSeq] = IndexedSeq
+  def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 
   protected[this] def fromSpecificIterable(it: collection.Iterable[T]): IndexedSeq[T] = fromIterable(it)
 

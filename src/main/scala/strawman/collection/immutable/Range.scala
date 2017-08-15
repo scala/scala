@@ -1,7 +1,7 @@
 package strawman
 package collection.immutable
 
-import collection.{IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
+import collection.{Iterator, SeqFactory}
 
 import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws}
 import scala.Predef.augmentString
@@ -52,7 +52,7 @@ final class Range(
     with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with Serializable { range =>
 
-  def iterableFactory: IterableFactory[IndexedSeq] = IndexedSeq
+  def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): IndexedSeq[Int] =
     fromIterable(coll)

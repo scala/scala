@@ -69,16 +69,20 @@ object View extends IterableFactory[View] {
 
   /** A view filled with `n` identical elements */
   case class Fill[A](n: Int)(elem: => A) extends View[A] {
-    def iterator() =
-      new Iterator[A] {
-        private var i = 0
-        def hasNext: Boolean = i < n
-        def next(): A = {
-          i = i + 1
-          if (i <= n) elem else Iterator.empty.next()
-        }
-      }
-    override def knownSize: Int = n
+    def iterator() = Iterator.fill(n)(elem)
+    override def knownSize: Int = 0 max n
+  }
+
+  /** A view containing values of a given function over a range of integer values starting from 0. */
+  class Tabulate[A](n: Int)(f: Int => A) extends View[A] {
+    def iterator(): Iterator[A] = Iterator.tabulate(n)(f)
+    override def knownSize: Int = 0 max n
+  }
+
+  /** A view containing repeated applications of a function to a start value */
+  class Iterate[A](start: A, len: Int)(f: A => A) extends View[A] {
+    def iterator(): Iterator[A] = Iterator.iterate(start)(f).take(len)
+    override def knownSize: Int = 0 max len
   }
 
   /** A view that filters an underlying collection. */
