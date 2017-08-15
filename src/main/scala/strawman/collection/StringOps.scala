@@ -15,7 +15,7 @@ class StringOps(val s: String)
 
   def toIterable = StringView(s)
   protected[this] def coll: String = s
-  def toSeq: Seq[Char] = iterableFactory.fromIterable(toIterable)
+  def toSeq: Seq[Char] = fromIterable(toIterable)
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder

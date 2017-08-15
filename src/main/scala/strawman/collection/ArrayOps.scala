@@ -16,7 +16,7 @@ class ArrayOps[A](val xs: Array[A])
 
   def toIterable = ArrayView(xs)
   protected[this] def coll: Array[A] = xs
-  def toSeq: Seq[A] = iterableFactory.fromIterable(toIterable)
+  def toSeq: Seq[A] = fromIterable(toIterable)
 
   def length = xs.length
   @throws[ArrayIndexOutOfBoundsException]

@@ -24,7 +24,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   with Equals {
 
   /**
-    * @return This collection as a `Seq[A]`. This equivalent to `to(Seq)` but might be faster.
+    * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
     */
   def toSeq: Seq[A]
 
