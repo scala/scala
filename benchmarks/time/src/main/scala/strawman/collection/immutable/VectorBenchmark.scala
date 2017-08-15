@@ -77,7 +77,7 @@ class VectorBenchmark {
   def prependAll(bh: Blackhole): Unit = bh.consume(xs ++: xs)
 
   @Benchmark
-  def appendAll(bh: Blackhole): Unit = bh.consume(xs ++ xs) // TODO: Switch to :++ once #184 is merged
+  def appendAll(bh: Blackhole): Unit = bh.consume(xs :++ xs)
 
   @Benchmark
   def prependAllAppendAll(bh: Blackhole): Unit = {
@@ -85,7 +85,7 @@ class VectorBenchmark {
     val ys2 = xss(0).take(3)
     var i = 0L
     while (i < size) {
-      if ((i & 1) == 1) ys = ys ++ ys2 // TODO: Switch to :++ once #184 is merged
+      if ((i & 1) == 1) ys = ys :++ ys2
       else ys = ys2 ++: ys
       i += 1
     }

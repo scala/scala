@@ -40,7 +40,7 @@ class NumericRangeBenchmark {
   def prependAll(bh: Blackhole): Unit = bh.consume(xs ++: xs)
 
   @Benchmark
-  def appendAll(bh: Blackhole): Unit = bh.consume(xs ++ xs) // TODO: Switch to :++ once #184 is merged
+  def appendAll(bh: Blackhole): Unit = bh.consume(xs :++ xs)
 
   @Benchmark
   def tail(bh: Blackhole): Unit = bh.consume(xs.tail)
