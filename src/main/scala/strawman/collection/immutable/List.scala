@@ -6,9 +6,9 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import mutable.{Builder, ListBuffer}
+import mutable.{Builder, ListBuffer, ReusableBuilder}
 
-import scala.{Any, AnyRef, Boolean, Function1, `inline`, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, transient, Unit, UnsupportedOperationException}
+import scala.{Any, AnyRef, Boolean, Function1, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient}
 
 
 /** A class for immutable linked lists representing ordered collections
@@ -353,7 +353,13 @@ object List extends SeqFactory[List] {
     case _ => ListBuffer.fromIterable(coll).toList
   }
 
-  override def newBuilder[A](): Builder[A, List[A]] = ListBuffer.newBuilder[A]().mapResult(_.toList)
+  def newBuilder[A](): Builder[A, List[A]] =
+    new ReusableBuilder[A, List[A]] {
+      private[this] val buffer = ListBuffer.empty[A]
+      override def clear(): Unit = buffer.clear()
+      override def result(): List[A] = buffer.toList
+      def add(elem: A): this.type = { buffer += elem; this }
+    }
 
   def empty[A]: List[A] = Nil
 
