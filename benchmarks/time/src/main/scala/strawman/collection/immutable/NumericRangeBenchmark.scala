@@ -5,8 +5,7 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Unit}
-import scala.Predef.intWrapper
+import scala.{Any, AnyRef, Int, Unit}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -14,24 +13,22 @@ import scala.Predef.intWrapper
 @Warmup(iterations = 12)
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
-class ImmutableArrayBenchmark {
+class NumericRangeBenchmark {
 
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
   var size: Int = _
 
-  var xs: ImmutableArray[Long] = _
-  var xss: scala.Array[ImmutableArray[Long]] = _
-  var zipped: ImmutableArray[(Long, Long)] = _
+  var xs: NumericRange[Int] = _
+  var xss: scala.Array[NumericRange[Int]] = _
   var randomIndices: scala.Array[Int] = _
   var randomIndices2: scala.Array[Int] = _
-  var randomXss: scala.Array[ImmutableArray[Long]] = _
+  var randomXss: scala.Array[NumericRange[Int]] = _
 
   @Setup(Level.Trial)
   def initData(): Unit = {
-    def freshCollection() = ImmutableArray((1 to size).map(_.toLong): _*)
+    def freshCollection() = NumericRange.inclusive(1, size, 1)
     xs = freshCollection()
     xss = scala.Array.fill(1000)(freshCollection())
-    zipped = xs.map(x => (x, x))
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
       randomIndices2 = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
@@ -40,57 +37,10 @@ class ImmutableArrayBenchmark {
   }
 
   @Benchmark
-  def prepend(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
-    var i = 0L
-    while (i < size) {
-      ys = i +: ys
-      i += 1
-    }
-    bh.consume(ys)
-  }
-
-  @Benchmark
-  def append(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
-    var i = 0L
-    while (i < size) {
-      ys = ys :+ i
-      i += 1
-    }
-    bh.consume(ys)
-  }
-
-  @Benchmark
-  def prependAppend(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
-    var i = 0L
-    while (i < size) {
-      if ((i & 1) == 1) ys = ys :+ i
-      else ys = i +: ys
-      i += 1
-    }
-    bh.consume(ys)
-  }
-
-  @Benchmark
   def prependAll(bh: Blackhole): Unit = bh.consume(xs ++: xs)
 
   @Benchmark
   def appendAll(bh: Blackhole): Unit = bh.consume(xs :++ xs)
-
-  @Benchmark
-  def prependAllAppendAll(bh: Blackhole): Unit = {
-    var ys = ImmutableArray.empty[Long]
-    val ys2 = xss(0).take(3)
-    var i = 0L
-    while (i < size) {
-      if ((i & 1) == 1) ys = ys :++ ys2
-      else ys = ys2 ++: ys
-      i += 1
-    }
-    bh.consume(ys)
-  }
 
   @Benchmark
   def tail(bh: Blackhole): Unit = bh.consume(xs.tail)
@@ -107,15 +57,6 @@ class ImmutableArrayBenchmark {
     while (ys.nonEmpty) {
       bh.consume(ys.head)
       ys = ys.tail
-    }
-  }
-
-  @Benchmark
-  def loop_initLast(bh: Blackhole): Unit = {
-    var ys = xs
-    while (ys.nonEmpty) {
-      bh.consume(ys.last)
-      ys = ys.init
     }
   }
 
@@ -196,9 +137,6 @@ class ImmutableArrayBenchmark {
       i += 1
     }
   }
-
-  @Benchmark
-  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
 
   @Benchmark
   def padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
