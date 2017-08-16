@@ -10,6 +10,7 @@ package scala
 
 import java.lang.{ StringBuilder => JLSBuilder }
 import scala.annotation.tailrec
+import scala.language.experimental.macros
 
 /** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users
@@ -92,7 +93,12 @@ case class StringContext(parts: String*) {
    *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
-  def s(args: Any*): String = standardInterpolator(treatEscapes, args)
+  // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_s`
+  // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
+  // and is logically the same as [[standardInterpolator(treatEscapes, args)]]
+  def sNew[A >: Any](args: A*): String = macro ???
+  def s[A >: Any](args: A*): String = standardInterpolator(treatEscapes, args)
+  private def sInternal(args: Any*): String = standardInterpolator(treatEscapes, args)
 
   /** The raw string interpolator.
    *
@@ -114,7 +120,11 @@ case class StringContext(parts: String*) {
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
    */
-  def raw(args: Any*): String = standardInterpolator(identity, args)
+  // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_raw`
+  // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
+  // and is logically the same as [[standardInterpolator(identity, args)]]
+  def rawNew[A >: Any](args: A*): String = macro ???
+  def raw[A >: Any](args: A*): String =  standardInterpolator(identity, args)
 
   def standardInterpolator(process: String => String, args: Seq[Any]): String = {
     checkLengths(args)
@@ -176,10 +186,10 @@ object StringContext {
    *  @param  index   The index of the offending backslash character in `str`.
    */
   class InvalidEscapeException(str: String, @deprecatedName('idx) val index: Int) extends IllegalArgumentException(
-    s"""invalid escape ${
+    sInternal"""invalid escape ${
       require(index >= 0 && index < str.length)
       val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
-      if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of $ok at"
+      if (index == str.length - 1) "at terminal" else sInternal"'\\${str(index + 1)}' not one of $ok at"
     } index $index in "$str". Use \\\\ for literal \\."""
   )
 
