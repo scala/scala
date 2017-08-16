@@ -1430,26 +1430,33 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
+    private final val GlobalPhaseName = "global (synthetic)"
+    protected final val totalCompileTime = statistics.newTimer("#total compile time", GlobalPhaseName)
+
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =  compileUnitsInternal(units,fromPhase)
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
-      def currentTime = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
-
       units foreach addUnit
-      val startTime = currentTime
-
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
+      val timePhases = StatisticsStatics.areSomeColdStatsEnabled || settings.verbose
+      val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
+
       while (globalPhase.hasNext && !reporter.hasErrors) {
-        val startTime = currentTime
         phase = globalPhase
+        val phaseTimer = if (timePhases) statistics.newSubTimer(s"  ${phase.name}", totalCompileTime) else null
+        val startPhase = if (timePhases) statistics.startTimer(phaseTimer) else null
+
         val profileBefore=profiler.beforePhase(phase)
-        globalPhase.run()
+        try globalPhase.run()
+        finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
+        if (timePhases)
+          informTime(globalPhase.description, phaseTimer.nanos)
+
         // progress update
-        informTime(globalPhase.description, startTime)
         if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
@@ -1502,7 +1509,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       symSource.keys foreach (x => resetPackageClass(x.owner))
 
-      informTime("total", startTime)
+      if (timePhases) {
+        statistics.stopTimer(totalCompileTime, startTotal)
+        informTime("total", totalCompileTime.nanos)
+        inform("*** Cumulative timers for phases")
+        for (q <- statistics.allQuantities if q.phases == List(GlobalPhaseName))
+          inform(q.line)
+      }
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
