@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 class HashMapTest {
 
   @Test
-  def getOrElseUpdate_mutationInCallback() {
+  def getOrElseUpdate_mutationInCallback(): Unit = {
     val hm = new mutable.HashMap[String, String]()
     // add enough elements to resize the hash table in the callback
     def add() = 1 to 100000 foreach (i => hm(i.toString) = "callback")

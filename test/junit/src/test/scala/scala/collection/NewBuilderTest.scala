@@ -14,7 +14,7 @@ import org.junit.Assert._
 class NewBuilderTest {
 
   @Test
-  def mapPreservesCollectionType() {
+  def mapPreservesCollectionType(): Unit = {
     def test[T: ClassTag](mapped: Any): Unit = {
       val expected = reflect.classTag[T].runtimeClass
       val isInstance = reflect.classTag[T].runtimeClass.isInstance(mapped)

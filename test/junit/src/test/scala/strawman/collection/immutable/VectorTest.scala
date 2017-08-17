@@ -9,7 +9,7 @@ import org.junit.Test
 class VectorTest {
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     val v = Vector(0) ++ Vector(1 to 64: _*)
 
     assertEquals(Vector(0, 1), v take 2)

@@ -11,13 +11,13 @@ import org.junit.runners.JUnit4
 class IndexedSeqOptimizedTest {
 
   @Test
-  def notThrowsAnExceptionInLastIndexOf() {
+  def notThrowsAnExceptionInLastIndexOf(): Unit = {
     assertEquals(0, Array(2).lastIndexWhere(_ => true, 1))
     assertEquals(2, "abc123".lastIndexWhere(_.isLetter, 6))
   }
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     assertEquals("", "abc" take Int.MinValue)
     assertEquals("", "abc" takeRight Int.MinValue)
     assertEquals("abc", "abc" drop Int.MinValue)

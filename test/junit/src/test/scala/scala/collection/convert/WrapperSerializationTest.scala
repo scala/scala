@@ -19,7 +19,7 @@ class WrapperSerializationTest {
   def serdes(a: AnyRef): Boolean = a == des(ser(a))
 
   @Test
-  def test_SI8911() {
+  def test_SI8911(): Unit = {
     import scala.collection.JavaConverters._
     assert( serdes(scala.collection.mutable.ArrayBuffer(1,2).asJava) )
     assert( serdes(Seq(1,2).asJava) )

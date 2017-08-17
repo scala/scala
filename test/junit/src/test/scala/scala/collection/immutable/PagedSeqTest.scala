@@ -22,7 +22,7 @@ class PagedSeqTest {
 
   // Slices shouldn't read outside where they belong
   @Test
-  def test_SI6519 {
+  def test_SI6519: Unit = {
     var readAttempt = 0
     val sideEffectingIterator = new Iterator[Int] {
       def hasNext = readAttempt < 65536

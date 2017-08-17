@@ -12,7 +12,7 @@ import strawman.collection.immutable.List
 class TreeMapTest {
 
   @Test
-  def rangeMkString() {
+  def rangeMkString(): Unit = {
 
     val map = mutable.TreeMap[String, String]()
 

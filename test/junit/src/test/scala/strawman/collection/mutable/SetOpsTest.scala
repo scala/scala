@@ -25,7 +25,7 @@ class SetOpsTest {
   }
 
   @Test
-  def hasCorrectClear() {
+  def hasCorrectClear(): Unit = {
     val s = new MySet(Set("EXPOSEDNODE", "CONNECTABLE"))
     s.clear()
     assertEquals(new MySet(Set()), s)

@@ -23,7 +23,7 @@ class TraversableLikeTest {
   }
 
   @Test
-  def test_SI9019 {
+  def test_SI9019: Unit = {
     object Foo {
       def mkBar = () => {
         class Bar extends FakeIndexedSeq[Int]

@@ -12,7 +12,7 @@ import org.junit.Test
 class ReusableBuildersTest {
   // GrowingBuilders are NOT reusable but can clear themselves
   @Test
-  def test_SI8648() {
+  def test_SI8648(): Unit = {
     val b = mutable.HashSet.newBuilder[Int]()
     b += 3
     b.clear()
@@ -23,7 +23,7 @@ class ReusableBuildersTest {
 
   // ArrayBuilders ARE reusable, regardless of whether they returned their internal array or not
   @Test
-  def test_SI9564() {
+  def test_SI9564(): Unit = {
     val b = Array.newBuilder[Float]
     b += 3f
     val three = b.result
@@ -40,7 +40,7 @@ class ReusableBuildersTest {
   }
 
   @Test
-  def test_reusability() {
+  def test_reusability(): Unit = {
     val bl = List.newBuilder[String]()
     val bv = Vector.newBuilder[String]()
     val ba = mutable.ArrayBuffer.newBuilder[String]()

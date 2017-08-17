@@ -226,7 +226,7 @@ abstract class IndexedTest[T, E] {
     }
   }
 
-  protected def intercept[EX <: Exception : Manifest](fn: => Any) {
+  protected def intercept[EX <: Exception : Manifest](fn: => Any): Unit = {
     try {
       val res = fn
       fail(s"expected exception was not thrown: $res")

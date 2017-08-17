@@ -13,7 +13,7 @@ class TraversableOnceTest {
 
   // Basic emptiness check
   @Test
-  def checkEmpty {
+  def checkEmpty: Unit = {
     def hasException(code: => Any): Boolean = try {
       code
       false

@@ -10,7 +10,7 @@ class MapWrapperTest {
 
   /* Test for scala/bug#7883 */
   @Test
-  def testContains() {
+  def testContains(): Unit = {
     import scala.collection.JavaConverters.mapAsJavaMapConverter
     import scala.language.reflectiveCalls  // for accessing containsCounter
 
@@ -49,7 +49,7 @@ class MapWrapperTest {
 
   // test for scala/bug#8504
   @Test
-  def testHashCode() {
+  def testHashCode(): Unit = {
     import scala.collection.JavaConverters._
     val javaMap = Map(1 -> null).asJava
 

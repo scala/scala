@@ -14,19 +14,19 @@ class PriorityQueueTest {
   priorityQueue.enqueue(elements :_*)
 
   @Test
-  def orderingReverseReverse() {
+  def orderingReverseReverse(): Unit = {
     val pq = new mutable.PriorityQueue[Nothing]()((_,_)=>42)
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
   
   @Test
-  def canSerialize() {
+  def canSerialize(): Unit = {
     val outputStream = new ByteArrayOutputStream()
     new ObjectOutputStream(outputStream).writeObject(priorityQueue)
   }
 
   @Test
-  def maintainsStateWhenDeserialized() {
+  def maintainsStateWhenDeserialized(): Unit = {
     val outputStream = new ByteArrayOutputStream()
     new ObjectOutputStream(outputStream).writeObject(priorityQueue)
     val bytes = outputStream.toByteArray

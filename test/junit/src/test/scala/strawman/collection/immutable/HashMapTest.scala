@@ -15,14 +15,14 @@ class HashMapTest {
   }
 
   @Test
-  def canMergeIdenticalHashMap1sWithNullKvs() {
+  def canMergeIdenticalHashMap1sWithNullKvs(): Unit = {
     def m = new HashMap.HashMap1(1, computeHashF(1), 1, null)
     val merged = m.merged(m)(null)
     assertEquals(m, merged)
   }
 
   @Test
-  def canMergeIdenticalHashMap1sWithNullKvsCustomMerge() {
+  def canMergeIdenticalHashMap1sWithNullKvsCustomMerge(): Unit = {
     def m = new HashMap.HashMap1(1, computeHashF(1), 1, null)
     val merged = m.merged(m) {
       case ((k1, v1), (k2, v2)) =>
@@ -32,7 +32,7 @@ class HashMapTest {
   }
 
   @Test
-  def canMergeHashMap1sWithNullKvsHashCollision() {
+  def canMergeHashMap1sWithNullKvsHashCollision(): Unit = {
     val key1 = 1000L * 1000 * 1000 * 10
     val key2 = key1.##.toLong
     assert(key1.## == key2.##)
