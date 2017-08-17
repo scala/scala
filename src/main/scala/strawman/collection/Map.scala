@@ -3,7 +3,8 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, `inline`, throws}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, StringContext, `inline`, throws}
+import scala.Predef.String
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
@@ -212,6 +213,9 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   }
 
   override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
+
+  override def mkString(start: String, sep: String, end: String): String =
+    View.fromIterator(toIterable.iterator().map { case (k, v) => s"$k -> $v" }).mkString
 
 }
 

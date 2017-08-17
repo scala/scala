@@ -1,11 +1,11 @@
-package scala.collection.mutable
+package strawman.collection.mutable
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.mutable
+import strawman.collection.mutable
 
 
 @RunWith(classOf[JUnit4])
