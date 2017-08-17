@@ -64,7 +64,7 @@ sealed abstract class LazyList[+A]
     *  unless the `f` throws an exception.
     */
   @tailrec
-  override final def foreach[U](f: A => U) {
+  override final def foreach[U](f: A => U): Unit = {
     if (!this.isEmpty) {
       f(head)
       tail.foreach(f)
@@ -244,7 +244,12 @@ object LazyList extends SeqFactory[LazyList] {
   }
 
   def fromIterator[A](it: Iterator[A]): LazyList[A] =
-    if (it.hasNext) new LazyList.Cons(it.next(), fromIterator(it)) else LazyList.Empty
+    if (it.hasNext) {
+      // Be sure that `it.next()` is called even when the `head`
+      // of our constructed lazy list is not evaluated (e.g. when one calls `drop`).
+      lazy val evaluatedElem = it.next()
+      new LazyList.Cons(evaluatedElem, { evaluatedElem; fromIterator(it) })
+    } else LazyList.Empty
 
   def empty[A]: LazyList[A] = Empty
 
