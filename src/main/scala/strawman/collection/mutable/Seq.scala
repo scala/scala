@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{Int, Long, Unit, Boolean, Array}
+import scala.{Int, Long, Unit, Boolean, Array, throws, IndexOutOfBoundsException, IllegalArgumentException}
 import strawman.collection
 import strawman.collection.{IterableOnce, toNewSeq, toOldSeq}
 import scala.Predef.intWrapper
@@ -10,16 +10,61 @@ trait Seq[A]
     with collection.Seq[A]
     with SeqOps[A, Seq, Seq[A]]
 
-trait SeqOps[A, +CC[X] <: Seq[X], +C]
+trait SeqOps[A, +CC[X] <: Seq[X], +C <: Seq[A]]
   extends IterableOps[A, CC, C]
     with collection.SeqOps[A, CC, C]
     with Shrinkable[A] {
 
+  override def clone(): C = {
+    val b = newSpecificBuilder()
+    b ++= coll
+    b.result()
+  }
+
+  /** Replaces element at given index with a new value.
+    *
+    *  @param idx      the index of the element to replace.
+    *  @param elem     the new value.
+    *  @throws   IndexOutOfBoundsException if the index is not valid.
+    */
+  @throws[IndexOutOfBoundsException]
   def update(idx: Int, elem: A): Unit
+
+  @throws[IndexOutOfBoundsException]
   def insert(idx: Int, elem: A): Unit
+
+  /** Inserts new elements at the index `idx`. Opposed to method
+    *  `update`, this method will not replace an element with a new
+    *  one. Instead, it will insert a new element at index `idx`.
+    *
+    *  @param idx     the index where a new element will be inserted.
+    *  @param elems   the iterable object providing all elements to insert.
+    *  @throws IndexOutOfBoundsException if `idx` is out of bounds.
+    */
+  @throws[IndexOutOfBoundsException]
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit
+
+  /** Removes the element at a given index position.
+    *
+    *  @param idx  the index which refers to the element to delete.
+    *  @return   the element that was formerly at index `idx`.
+    */
+  @throws[IndexOutOfBoundsException]
   def remove(idx: Int): A
-  def remove(from: Int, n: Int): Unit
+
+  /** Removes the element on a given index position. It takes time linear in
+    *  the buffer size.
+    *
+    *  @param idx       the index which refers to the first element to remove.
+    *  @param count   the number of elements to remove.
+    *  @throws   IndexOutOfBoundsException if the index `idx` is not in the valid range
+    *            `0 <= idx <= length - count` (with `count > 0`).
+    *  @throws   IllegalArgumentException if `count < 0`.
+    */
+  @throws[IndexOutOfBoundsException]
+  @throws[IllegalArgumentException]
+  def remove(idx: Int, count: Int): Unit
+
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type
 
   // +=, ++=, clear inherited from Growable

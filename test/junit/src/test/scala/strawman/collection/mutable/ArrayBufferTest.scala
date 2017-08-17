@@ -1,4 +1,6 @@
-package scala.collection.mutable
+package strawman.collection.mutable
+
+import strawman.collection.immutable.List
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
