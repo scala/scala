@@ -2,7 +2,9 @@ package strawman
 package collection
 package immutable
 
-import scala.Ordering
+import strawman.collection.mutable.Builder
+
+import scala.{Boolean, Int, Option, Ordering, Serializable}
 
 trait SortedMap[K, +V]
   extends Map[K, V]
@@ -11,9 +13,27 @@ trait SortedMap[K, +V]
 
 trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
-     with collection.SortedMapOps[K, V, CC, C] {
+     with collection.SortedMapOps[K, V, CC, C] { self =>
 
     protected[this] def coll: C with CC[K, V]
+
+    override def keySet: SortedSet[K] = new ImmutableKeySortedSet
+
+    /** The implementation class of the set returned by `keySet` */
+    protected class ImmutableKeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
+      def iterableFactory: IterableFactory[Set] = Set
+      def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
+      protected[this] def sortedFromIterable[B: Ordering](it: collection.Iterable[B]): SortedSet[B] = sortedIterableFactory.sortedFromIterable(it)
+      protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): SortedSet[K] = sortedIterableFactory.sortedFromIterable(coll)
+      protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
+      def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
+        val map = self.rangeImpl(from, until)
+        new map.ImmutableKeySortedSet
+      }
+      def empty: SortedSet[K] = sortedIterableFactory.empty
+      def incl(elem: K): SortedSet[K] = fromSpecificIterable(this).incl(elem)
+      def excl(elem: K): SortedSet[K] = fromSpecificIterable(this).excl(elem)
+    }
 
     protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
       Map.fromIterable(it)
@@ -31,3 +51,4 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
 }
 
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap)

@@ -2,7 +2,9 @@ package strawman
 package collection
 package immutable
 
-import scala.`inline`
+import strawman.collection.mutable.Builder
+
+import scala.{Boolean, `inline`, Int, Serializable}
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -65,6 +67,19 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     while (it.hasNext) result = result + it.next()
     result
   }
+
+  override def keySet: Set[K] = new ImmutableKeySet
+
+  /** The implementation class of the set returned by `keySet` */
+  protected class ImmutableKeySet extends Set[K] with GenKeySet {
+    def iterableFactory: IterableFactory[Set] = Set
+    protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): Set[K] = fromIterable(coll)
+    protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
+    def empty: Set[K] = iterableFactory.empty
+    def incl(elem: K): Set[K] = fromSpecificIterable(this).incl(elem)
+    def excl(elem: K): Set[K] = fromSpecificIterable(this).excl(elem)
+  }
+
 }
 
 // TODO Special case small maps

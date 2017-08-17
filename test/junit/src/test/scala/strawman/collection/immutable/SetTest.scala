@@ -1,4 +1,4 @@
-package scala.collection.immutable
+package strawman.collection.immutable
 
 import org.junit.Assert._
 import org.junit.Test
@@ -12,7 +12,7 @@ class SetTest {
     val any2stringadd = "Disabled string conversions so as not to get confused!"
     
     def any[A](set: Set[A]): Set[Any] = {
-      val anyset = set.toSet[Any]
+      val anyset = set.to[Set[Any]](Set)
       assert((anyset + "fish") contains "fish")
       anyset
     }
@@ -20,7 +20,7 @@ class SetTest {
     // Make sure default immutable Set does not rebuild itself on widening with toSet
     // Need to cover 0, 1, 2, 3, 4 elements as special cases
     var si = Set.empty[Int]
-    assert(si eq si.toSet[Any])
+    assert(si eq si.to[Set[Int]](Set))
     for (i <- 1 to 5) {
       val s1 = Set(Array.range(1, i+1): _*)
       val s2 = si + i
@@ -50,7 +50,8 @@ class SetTest {
     // (Covers Node also, since it subclasses ListSet)
     val listset = ListSet(1, 3, 5, 7)
     val listseta = any(listset)
-    assert(listset eq listseta)
+// The following line is commented because this feature is not supported by the strawman
+//    assert(listset eq listseta)
 
     // Make sure SortedSets correctly rebuild themselves on widening with toSet
     // Covers TreeSet and keySet of SortedMap also
@@ -64,18 +65,20 @@ class SetTest {
       assertEquals(set, seta)
     }
 
-    // Make sure ValueSets correctly rebuild themselves on widening with toSet
-    object WeekDay extends Enumeration {
-      type WeekDay = Value
-      val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
-    }
-    val valuesa = any(WeekDay.values)
-    assert(WeekDay.values ne valuesa)
-    assertEquals(WeekDay.values, valuesa)
+// The following lines are commented because we first need to migrate the strawman to the scala namespace
+//    // Make sure ValueSets correctly rebuild themselves on widening with toSet
+//    object WeekDay extends Enumeration {
+//      type WeekDay = Value
+//      val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+//    }
+//    val valuesa = any(WeekDay.values)
+//    assert(WeekDay.values ne valuesa)
+//    assertEquals(WeekDay.values, valuesa)
 
     // Make sure regular Map keySets do not rebuild themselves on widening with toSet
     val mapset = Map(1 -> "cod", 2 -> "herring").keySet
     val mapseta = any(mapset)
-    assert(mapset eq mapseta)
+// The following line is commented because this feature is not supported by the strawman
+//    assert(mapset eq mapseta)
   }
 }
