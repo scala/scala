@@ -264,7 +264,7 @@ abstract class IndexedTest[T, E] {
 
   //helpers
   //delegate equals check for support arrays
-  def doAssertEquals(txt: String, expected: T, actual: T)
+  def doAssertEquals(txt: String, expected: T, actual: T): Unit
 
 }
 package IndexedTestImpl {
