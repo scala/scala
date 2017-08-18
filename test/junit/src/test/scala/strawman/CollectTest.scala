@@ -1,9 +1,10 @@
-package scala
+package strawman
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
-
-import scala.collection.mutable.ArrayBuffer
+import strawman.collection.{Iterator, View}
+import strawman.collection.mutable.ArrayBuffer
+import strawman.collection.immutable.{LazyList, List, Seq}
 
 // based on run/t6448.scala partest
 
@@ -44,19 +45,19 @@ class CollectTest {
 
   @Test
   def testStreamCollect: Unit =
-    testing(Seq(1, 2), List(1))((Stream(1, 2).collect { case x if f(x) && x < 2 => x}).toList)
+    testing(Seq(1, 2), List(1))((LazyList(1, 2).collect { case x if f(x) && x < 2 => x}).to(List))
 
   @Test
   def testStreamCollectFirst: Unit =
-    testing(Seq(1), Some(1))(Stream.continually(1) collectFirst { case x if f(x) && x < 2 => x})
+    testing(Seq(1), Some(1))(LazyList.continually(1) collectFirst { case x if f(x) && x < 2 => x})
 
   @Ignore @Test
   def testIteratorCollect: Unit =
-    testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
+    testing(???)(List.fromIterable(View.fromIterator(Iterator(1, 2) collect { case x if f(x) && x < 2 => x})))
 
   @Ignore @Test
   def testListViewCollect: Unit =
-    testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
+    testing(???)(List.fromIterable(View.fromIterator(Iterator(1, 2) collect { case x if f(x) && x < 2 => x})))
 
   @Ignore @Test
   def testFutureCollect: Unit = {

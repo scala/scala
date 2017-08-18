@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit}
+import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 
@@ -746,6 +746,29 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
       if (pf.isDefinedAt(a)) View.Single(pf(a))
       else View.Empty
     }
+
+  /** Finds the first element of the $coll for which the given partial
+    *  function is defined, and applies the partial function to it.
+    *
+    *  $mayNotTerminateInf
+    *  $orderDependent
+    *
+    *  @param pf   the partial function
+    *  @return     an option value containing pf applied to the first
+    *              value for which it is defined, or `None` if none exists.
+    *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
+    */
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
+    val i: Iterator[A] = toIterable.iterator()
+    // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
+    // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
+    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
+    while (i.hasNext) {
+      val x = pf.applyOrElse(i.next(), sentinel)
+      if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
+    }
+    None
+  }
 
   /** Alias for `appendAll` */
   @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)

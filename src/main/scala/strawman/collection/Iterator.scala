@@ -2,7 +2,7 @@ package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, Some, StringContext, Unit, `inline`, math, throws}
+import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, PartialFunction, Some, StringContext, Unit, `inline`, math, throws}
 import scala.Predef.{intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
@@ -397,6 +397,60 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         hd
       }
       else Iterator.empty.next()
+  }
+
+  /** Creates an iterator over all the elements of this iterator that
+    *  satisfy the predicate `p`. The order of the elements
+    *  is preserved.
+    *
+    *  '''Note:''' `withFilter` is the same as `filter` on iterators. It exists so that
+    *  for-expressions with filters work over iterators.
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an iterator which produces those values of this iterator which satisfy the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def withFilter(p: A => Boolean): Iterator[A] = filter(p)
+
+  /** Creates an iterator over all the elements of this iterator which
+    *  do not satisfy a predicate p.
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an iterator which produces those values of this iterator which do not satisfy the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def filterNot(p: A => Boolean): Iterator[A] = filter(!p(_))
+
+  /** Creates an iterator by transforming values
+    *  produced by this iterator with a partial function, dropping those
+    *  values for which the partial function is not defined.
+    *
+    *  @param pf the partial function which filters and maps the iterator.
+    *  @return   a new iterator which yields each value `x` produced by this iterator for
+    *  which `pf` is defined the image `pf(x)`.
+    *  @note     Reuse: $consumesAndProducesIterator
+    */
+  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new Iterator[B] {
+    // Manually buffer to avoid extra layer of wrapping with buffered
+    private[this] var hd: A = _
+
+    // Little state machine to keep track of where we are
+    // Seek = 0; Found = 1; Empty = -1
+    // Not in vals because scalac won't make them static (@inline def only works with -optimize)
+    // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
+    private[this] var status = 0/*Seek*/
+
+    def hasNext = {
+      while (status == 0/*Seek*/) {
+        if (self.hasNext) {
+          hd = self.next()
+          if (pf.isDefinedAt(hd)) status = 1/*Found*/
+        }
+        else status = -1/*Empty*/
+      }
+      status == 1/*Found*/
+    }
+    def next() = if (hasNext) { status = 0/*Seek*/; pf(hd) } else Iterator.empty.next()
   }
 
   /**
