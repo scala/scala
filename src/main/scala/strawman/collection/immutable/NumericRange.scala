@@ -63,6 +63,9 @@ sealed class NumericRange[T](
   override def last: T =
     if (length == 0) Nil.head
     else locationAfterN(length - 1)
+  override def init: NumericRange[T] =
+    if (isEmpty) Nil.init
+    else new NumericRange(start, end - step, step, isInclusive)
 
   override def head: T = if (isEmpty) Nil.head else start
   override def tail: NumericRange[T] =
