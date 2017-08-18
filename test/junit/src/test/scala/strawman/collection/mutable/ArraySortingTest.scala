@@ -1,4 +1,7 @@
-package scala.collection.mutable
+package strawman.collection.mutable
+
+import scala.Predef.{genericArrayOps => _, classOf, assert, intWrapper}
+import strawman.collection.arrayToArrayOps
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -24,6 +27,6 @@ class ArraySortingTest {
     java.util.Arrays.sort(test)
     scala.util.Sorting.quickSort(cant)(CanOrder)
     assert( test(6) == 1 )
-    assert( (test,cant).zipped.forall(_ == _.i) )
+    assert( (test zip cant).forall { case (i, csm) => i == csm.i } )
   }
 }
