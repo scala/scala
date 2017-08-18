@@ -109,7 +109,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
             }
         }
       case _ =>
-        insertAll(idx, elems.iterator().to[ArrayBuffer[A]](ArrayBuffer))
+        insertAll(idx, ArrayBuffer.fromIterable(View.fromIterator(elems.iterator())))
     }
   }
 

@@ -1,10 +1,10 @@
 package strawman.collection.mutable
 
-import strawman.collection.immutable.{Vector, List}
-
+import strawman.collection.immutable.{List, Vector}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+import strawman.collection.View
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#8014 and ++ in general  */
@@ -32,13 +32,6 @@ class VectorTest {
   @Test
   def vectorCat(): Unit = {
     val cats = vecs.map(a => vecs.map(a ++ _))
-    assert( cats == ans )
-  }
-
-  @Test
-  def iteratorCat(): Unit = {
-    def its = vecs.map(_.to(List).iterator())
-    val cats = vecs.map(a => its.map(a ++ _.to(Iterable)))
     assert( cats == ans )
   }
 

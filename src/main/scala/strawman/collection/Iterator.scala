@@ -616,14 +616,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       }
     }
 
-  /** Converts this Iterable into another by copying all elements.
-   *  @return a new collection containing all elements of this Iterable.
-   *  @tparam C The collection type to build.
-    * @param canBuild Builder factory to use
-    */
-  def to[C](canBuild: CanBuild[A, C]): C =
-    canBuild.fromSpecificIterable(View.fromIterator(self))
-
 }
 
 object Iterator {

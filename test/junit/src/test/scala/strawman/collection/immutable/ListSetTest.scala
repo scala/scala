@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import strawman.collection.View
 
 @RunWith(classOf[JUnit4])
 class ListSetTest {
@@ -48,6 +49,6 @@ class ListSetTest {
   @Test
   def hasCorrectIterator(): Unit = {
     val s = ListSet(1, 2, 3, 5, 4)
-    assertEquals(List(1, 2, 3, 5, 4), s.iterator().to(List))
+    assertEquals(List(1, 2, 3, 5, 4), List.fromIterable(View.fromIterator(s.iterator())))
   }
 }
