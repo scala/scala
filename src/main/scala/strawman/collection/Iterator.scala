@@ -3,8 +3,8 @@ package strawman.collection
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, Some, StringContext, Unit, `inline`, math, throws}
-import scala.Predef.{intWrapper, require}
-import strawman.collection.mutable.{ArrayBuffer, HashMap}
+import scala.Predef.{intWrapper, require, String}
+import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -615,6 +615,56 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         }
       }
     }
+
+  def mkString(start: String, sep: String, end: String): String =
+    addString(new StringBuilder(), start, sep, end).toString
+
+  def mkString(sep: String): String = mkString("", sep, "")
+
+  def mkString: String = mkString("")
+
+  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
+    *  The written text begins with the string `start` and ends with the string `end`.
+    *  Inside, the string representations (w.r.t. the method `toString`)
+    *  of all elements of this $coll are separated by the string `sep`.
+    *
+    * Example:
+    *
+    * {{{
+    *      scala> val a = List(1,2,3,4)
+    *      a: List[Int] = List(1, 2, 3, 4)
+    *
+    *      scala> val b = new StringBuilder()
+    *      b: StringBuilder =
+    *
+    *      scala> a.addString(b , "List(" , ", " , ")")
+    *      res5: StringBuilder = List(1, 2, 3, 4)
+    * }}}
+    *
+    *  @param  b    the string builder to which elements are appended.
+    *  @param start the starting string.
+    *  @param sep   the separator string.
+    *  @param end   the ending string.
+    *  @return      the string builder `b` to which elements were appended.
+    */
+  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    var first = true
+
+    b addAll start
+    for (x <- self) {
+      if (first) {
+        b addAll x.toString
+        first = false
+      }
+      else {
+        b addAll sep
+        b addAll x.toString
+      }
+    }
+    b addAll end
+
+    b
+  }
 
 }
 
