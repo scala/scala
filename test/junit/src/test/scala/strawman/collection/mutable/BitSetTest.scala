@@ -1,4 +1,6 @@
-package scala.collection.mutable
+package strawman.collection.mutable
+
+import strawman.collection.immutable.Range
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,16 +31,9 @@ class BitSetTest {
     assert(littleBitSet.toBitMask.length < bigBitSet.toBitMask.length, "Needlessly extended the size of bitset on &=")
   }
 
-  @Test def test_SI8647(): Unit = {
-    val bs = BitSet()
-    bs.map(_ + 1)    // Just needs to compile
-    val xs = bs: SortedSet[Int]
-    xs.map(_ + 1)    // Also should compile (did before)
-  }
-
   @Test def t10164(): Unit = {
     val bs = BitSet()
-    val last = (bs ++ (0 to 128)).last  // Just needs not to throw
+    val last = (bs ++ Range.inclusive(0, 128)).last  // Just needs not to throw
     assert(last == 128)
   }
 }
