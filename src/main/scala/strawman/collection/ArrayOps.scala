@@ -37,8 +37,6 @@ class ArrayOps[A](val xs: Array[A])
 
   override def className = "Array"
 
-  def iterator(): Iterator[A] = toIterable.iterator()
-
   def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(toIterable, f))
 
   def mapInPlace(f: A => A): Array[A] = {

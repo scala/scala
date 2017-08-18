@@ -1,4 +1,6 @@
-package scala.collection
+package strawman.collection
+
+import strawman.collection.immutable.List
 
 import org.junit.Assert._
 import org.junit.Test

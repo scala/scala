@@ -59,7 +59,7 @@ final class Range(
 
   protected[this] def newSpecificBuilder(): Builder[Int, IndexedSeq[Int]] = IndexedSeq.newBuilder()
 
-  def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
+  override def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
   private def gap           = end.toLong - start.toLong
   private def isExact       = gap % step == 0

@@ -31,8 +31,6 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A = ScalaRunTime.array_apply(elements, i).asInstanceOf[A]
 
-  def iterator(): Iterator[A] = view.iterator()
-
   override def updated[B >: A](index: Int, elem: B): ImmutableArray[B] = {
     val dest = scala.Array.ofDim[Any](length)
     java.lang.System.arraycopy(elements, 0, dest, 0, length)

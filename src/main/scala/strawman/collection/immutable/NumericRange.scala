@@ -43,7 +43,7 @@ sealed class NumericRange[T](
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable {
 
-  def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
+  override def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
 
   def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 

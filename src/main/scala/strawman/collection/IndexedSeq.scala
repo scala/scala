@@ -11,6 +11,8 @@ object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 /** Base trait for indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
 
+  def iterator(): Iterator[A] = view.iterator()
+
   override def view: IndexedView[A] = new IndexedView[A] {
     def length: Int = self.length
     def apply(i: Int): A = self(i)
