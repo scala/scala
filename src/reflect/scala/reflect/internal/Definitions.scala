@@ -527,6 +527,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
+    lazy val StringContextModule          = requiredModule[scala.StringContext.type]
 
     // scala/bug#8392 a reflection universe on classpath may not have
     // quasiquotes, if e.g. crosstyping with -Xsource on
@@ -1451,6 +1452,9 @@ trait Definitions extends api.StandardDefinitions {
       def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
 
       lazy val StringContext_f = getMemberMethod(StringContextClass, nme.f)
+      lazy val StringContext_s = getMemberMethod(StringContextClass, nme.s)
+      lazy val StringContext_raw = getMemberMethod(StringContextClass, nme.raw_)
+      lazy val StringContext_apply = getMemberMethod(StringContextModule, nme.apply)
 
       lazy val ArrowAssocClass = getMemberClass(PredefModule, TypeName("ArrowAssoc")) // scala/bug#5731
       def isArrowAssoc(sym: Symbol) = sym.owner == ArrowAssocClass

@@ -1,0 +1,5 @@
+string-context-refchecked.scala:3: error: overriding method foo in class C of type => Int;
+ method foo cannot override final member
+  s"foo${class D extends C { def foo = 2 }; new D}bar"
+                                 ^
+one error found

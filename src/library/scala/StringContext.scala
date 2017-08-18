@@ -91,6 +91,8 @@ case class StringContext(parts: String*) {
    *  @throws StringContext.InvalidEscapeException
    *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
+   *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
+   *          use of a StringBuilder.
    */
   def s(args: Any*): String = standardInterpolator(treatEscapes, args)
 
@@ -113,6 +115,8 @@ case class StringContext(parts: String*) {
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
+   *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
+   *          use of a StringBuilder.
    */
   def raw(args: Any*): String = standardInterpolator(identity, args)
 

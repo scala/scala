@@ -48,6 +48,36 @@ class StringConcatTest extends BytecodeTesting {
         |         sbuf: java.lang.StringBuffer,
         |         chsq: java.lang.CharSequence,
         |         chrs: Array[Char]) = this + str + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
+        |
+        |  def t3(
+        |         v: Unit,
+        |         z: Boolean,
+        |         c: Char,
+        |         b: Byte,
+        |         s: Short,
+        |         i: Int,
+        |         l: Long,
+        |         f: Float,
+        |         d: Double,
+        |         str: String,
+        |         sbuf: java.lang.StringBuffer,
+        |         chsq: java.lang.CharSequence,
+        |         chrs: Array[Char]) = s"$str$this$v$z$c$b$s$i$f$l$d$sbuf$chsq$chrs"
+        |  def t4(
+        |         v: Unit,
+        |         z: Boolean,
+        |         c: Char,
+        |         b: Byte,
+        |         s: Short,
+        |         i: Int,
+        |         l: Long,
+        |         f: Float,
+        |         d: Double,
+        |         str: String,
+        |         sbuf: java.lang.StringBuffer,
+        |         chsq: java.lang.CharSequence,
+        |         chrs: Array[Char]) = raw"$str$this$v$z$c$b$s$i$f$l$d$sbuf$chsq$chrs"
+        |
         |}
       """.stripMargin
     val c = compileClass(code)
@@ -55,8 +85,8 @@ class StringConcatTest extends BytecodeTesting {
     def invokeNameDesc(m: String): List[String] = getInstructions(c, m) collect {
       case Invoke(_, _, name, desc, _) => name + desc
     }
-    assertEquals(invokeNameDesc("t1"), List(
-      "<init>()V",
+    val t1Expected = List(
+      "<init>(I)V",
       "append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
       "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
       "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
@@ -71,10 +101,11 @@ class StringConcatTest extends BytecodeTesting {
       "append(Ljava/lang/StringBuffer;)Ljava/lang/StringBuilder;",
       "append(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
       "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;", // test that we're not using the [C overload
-      "toString()Ljava/lang/String;"))
+      "toString()Ljava/lang/String;")
+    assertEquals(invokeNameDesc("t1"), t1Expected)
 
     assertEquals(invokeNameDesc("t2"), List(
-      "<init>()V",
+      "<init>(I)V",
       "any2stringadd(Ljava/lang/Object;)Ljava/lang/Object;",
       "$plus$extension(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;",
       "append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
@@ -91,6 +122,10 @@ class StringConcatTest extends BytecodeTesting {
       "append(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
       "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;", // test that we're not using the [C overload
       "toString()Ljava/lang/String;"))
+
+    // intrinsics for StringContext.{raw,s}
+    assertEquals(invokeNameDesc("t3"), t1Expected)
+    assertEquals(invokeNameDesc("t4"), t1Expected)
   }
 
   @Test
