@@ -894,7 +894,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def cantAdapt =
           if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
-          else setError(tree)
+          else if (mode.inQualMode) UnstableTreeError(tree)
+          else setError(tree) // scala/bug#10474 implies that not issuing an
+                              // error here might be harmful... can we get here
+                              // with implicits disabled and not in QUALmode?
 
         // constructors do not eta-expand
         if (meth.isConstructor) cantAdapt

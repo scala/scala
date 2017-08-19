@@ -1,0 +1,10 @@
+t10474.scala:9: error: stable identifier required, but Test.this.Foo found.
+    case Foo.Bar ⇒ true
+         ^
+t10474.scala:13: error: stable identifier required, but Test.this.Foo found.
+  type Crash = Foo.type
+               ^
+t10474.scala:17: error: stable identifier required, but Test.this.bingo found.
+  val `bingo`.Fuzz = 1
+      ^
+three errors found
