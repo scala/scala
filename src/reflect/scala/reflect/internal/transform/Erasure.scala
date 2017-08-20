@@ -111,7 +111,7 @@ trait Erasure {
 
     protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
-    def apply(tp: Type): Type = tp.dealias match {
+    def apply(tp: Type): Type = tp match {
       case ConstantType(ct) =>
         // erase classOf[List[_]] to classOf[List]. special case for classOf[Unit], avoid erasing to classOf[BoxedUnit].
         if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != UnitClass) ConstantType(Constant(apply(ct.typeValue)))
@@ -130,7 +130,11 @@ trait Erasure {
         else if (sym.isRefinementClass) apply(mergeParents(tp.normalize.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(tref)
-        else apply(sym.info asSeenFrom (pre, sym.owner)) // alias type or abstract type
+        else {
+          val tp1 = if (sym.isAliasType) tp.dealias else tp
+          if (tp1 ne tp) apply(tp1)
+          else apply(sym.info asSeenFrom (pre, sym.owner))
+        } // alias type or abstract type
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>
@@ -143,7 +147,7 @@ trait Erasure {
           // by the type `p.tpe` of the actual argument p (p in params)
           else apply(mt.resultType(mt.paramTypes)))
       case rt : RefinedType =>
-        apply(mergeParents(rt.normalize.parents))
+        apply(mergeParents(rt.normalize.parents)) // RefinedType#normalize
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
