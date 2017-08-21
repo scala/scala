@@ -580,6 +580,7 @@ abstract class Inliner {
 
     // Inlining a method body can render some code unreachable, see example above in this method.
     BackendUtils.clearDceDone(callsiteMethod)
+    BackendUtils.clearDceNeeded(callsiteMethod)
   }
 
   /**

@@ -14,6 +14,7 @@ import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.GenBCode._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 
 /*
  *
@@ -35,7 +36,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   abstract class PlainBodyBuilder(cunit: CompilationUnit) extends PlainSkelBuilder(cunit) {
     /* ---------------- helper utils for generating methods and code ---------------- */
 
-    def emit(opc: Int) { mnode.visitInsn(opc) }
+    def emit(opc: Int) {
+      if (opc == asm.Opcodes.ATHROW) BackendUtils.setDceNeeded(mnode)  // throw, enable DCE irrespective of -opt setting
+      mnode.visitInsn(opc)
+    }
 
     def emitZeroOf(tk: BType) {
       tk match {
@@ -88,7 +92,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(jlThrowableRef).get)
       genLoad(expr, thrownKind)
       lineNumber(expr)
-      emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
+
+      // ICode used to switch into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
+      emit(asm.Opcodes.ATHROW)
 
       srNothingRef // always returns the same, the invoker should know :)
     }
@@ -648,6 +654,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           if (sym.isLabel) { // jump to a label
             genLoadLabelArguments(args, labelDef(sym), app.pos)
+            if (jumpDest.contains(sym))
+              BackendUtils.setDceNeeded(mnode) // backward jump, enable DCE irrespective of -opt setting
             bc goTo programPoint(sym)
           } else if (isPrimitive(sym)) { // primitive method call
             generatedType = genPrimitiveOp(app, expectedType)
@@ -868,8 +876,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          * emitted instruction was an ATHROW. As explained above, it is OK to emit a second ATHROW,
          * the verifiers will be happy.
          */
-        if (lastInsn.getOpcode != asm.Opcodes.ATHROW)
+        if (lastInsn.getOpcode != asm.Opcodes.ATHROW) {
           emit(asm.Opcodes.ATHROW)
+        }
       } else if (from.isNullType) {
         /* After loading an expression of type `scala.runtime.Null$`, introduce POP; ACONST_NULL.
          * This is required to pass the verifier: in Scala's type system, Null conforms to any

@@ -398,6 +398,7 @@ abstract class ClosureOptimizer {
     // Rewriting a closure invocation may render code unreachable. For example, the body method of
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
     BackendUtils.clearDceDone(ownerMethod)
+    BackendUtils.clearDceNeeded(ownerMethod)
 
     if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
       inliner.inlineCallsite(bodyMethodCallsite)

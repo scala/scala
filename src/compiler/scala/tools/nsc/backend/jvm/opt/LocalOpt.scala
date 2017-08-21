@@ -255,6 +255,7 @@ abstract class LocalOpt {
       }
       currentTrace = after
     }
+    val optUnreachableCode = compilerSettings.optUnreachableCode || BackendUtils.isDceNeeded(method)
 
     /**
      * Runs the optimizations that depend on each other in a loop until reaching a fixpoint. See
@@ -283,7 +284,7 @@ abstract class LocalOpt {
       // UNREACHABLE CODE
       // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores,
       // boxUnboxElimination) require not having unreachable instructions (null frames).
-      val runDCE = (compilerSettings.optUnreachableCode && (requestDCE || nullnessOptChanged)) ||
+      val runDCE = ((optUnreachableCode) && (requestDCE || nullnessOptChanged)) ||
         compilerSettings.optBoxUnbox ||
         compilerSettings.optCopyPropagation
       val codeRemoved = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else false
@@ -371,7 +372,7 @@ abstract class LocalOpt {
         requestPushPop = true,
         requestStoreLoad = true,
         firstIteration = true)
-      if (compilerSettings.optUnreachableCode) BackendUtils.setDceDone(method)
+      if (optUnreachableCode) BackendUtils.setDceDone(method)
       r
     } else (false, false)
 
@@ -385,7 +386,7 @@ abstract class LocalOpt {
     // The asm.MethodWriter writes redundant line numbers 1:1 to the classfile, so we filter them out
     // Note that this traversal also cleans up `LABEL_REACHABLE_STATUS` flags that were added to Label's
     // `stats` fields during `removeUnreachableCodeImpl` (both are guarded by `optUnreachableCode`).
-    val lineNumbersRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLineNumbers(method) else false
+    val lineNumbersRemoved = if (optUnreachableCode) removeEmptyLineNumbers(method) else false
     traceIfChanged("lineNumbers")
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
@@ -396,6 +397,7 @@ abstract class LocalOpt {
 
     BackendUtils.clearMaxsComputed(method)
     BackendUtils.clearDceDone(method)
+    BackendUtils.clearDceNeeded(method)
 
     nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved
   }

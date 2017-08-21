@@ -574,6 +574,11 @@ object BackendUtils {
   def setDceDone(method: MethodNode) = method.access |= ACC_DCE_DONE
   def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
 
+  private val ACC_DCE_NEEDED = 0x4000000
+  def isDceNeeded(method: MethodNode) = (method.access & ACC_DCE_NEEDED) != 0
+  def setDceNeeded(method: MethodNode) = method.access |= ACC_DCE_NEEDED
+  def clearDceNeeded(method: MethodNode) = method.access &= ~ACC_DCE_NEEDED
+
   private val LABEL_REACHABLE_STATUS = 0x1000000
   def isLabelReachable(label: LabelNode) = LabelAccess.isLabelFlagSet(label.getLabel, LABEL_REACHABLE_STATUS)
   def setLabelReachable(label: LabelNode) = LabelAccess.setLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
