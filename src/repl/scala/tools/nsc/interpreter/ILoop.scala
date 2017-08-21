@@ -1061,6 +1061,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
           }
           line
         }
+      } catch {
+        case t: Throwable => t.printStackTrace() ; scala.sys.exit(1)
       } finally splash.stop()
     }
     this.settings = settings
