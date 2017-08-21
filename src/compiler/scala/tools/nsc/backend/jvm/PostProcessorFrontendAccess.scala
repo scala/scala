@@ -4,6 +4,7 @@ package backend.jvm
 import scala.collection.generic.Clearable
 import scala.reflect.internal.util.Position
 import scala.reflect.io.AbstractFile
+import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 /**
@@ -28,7 +29,15 @@ sealed abstract class PostProcessorFrontendAccess {
 
   def javaDefinedClasses: Set[InternalName]
 
+  def methodRequiresDCE(method: MethodNode): Boolean
+
   def recordPerRunCache[T <: Clearable](cache: T): T
+  final def recordPerRunCache[T, V](cache: java.util.Map[T, V]): java.util.Map[T, V] = {
+    recordPerRunCache(new Clearable {
+      override def clear(): Unit = cache.clear()
+    })
+    cache
+  }
 }
 
 object PostProcessorFrontendAccess {
@@ -163,5 +172,7 @@ object PostProcessorFrontendAccess {
 
 
     def recordPerRunCache[T <: Clearable](cache: T): T = frontendSynch(perRunCaches.recordCache(cache))
+
+    def methodRequiresDCE(method: MethodNode): Boolean = genBCode.postProcessor.methodRequiringDCE.containsKey(method)
   }
 }

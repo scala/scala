@@ -88,7 +88,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(jlThrowableRef).get)
       genLoad(expr, thrownKind)
       lineNumber(expr)
-      emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
+
+      // ICode used to switch into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
+      genBCode.postProcessor.markMethodForDCE(mnode)
+      emit(asm.Opcodes.ATHROW)
 
       srNothingRef // always returns the same, the invoker should know :)
     }
@@ -868,8 +871,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          * emitted instruction was an ATHROW. As explained above, it is OK to emit a second ATHROW,
          * the verifiers will be happy.
          */
-        if (lastInsn.getOpcode != asm.Opcodes.ATHROW)
+        if (lastInsn.getOpcode != asm.Opcodes.ATHROW) {
+          genBCode.postProcessor.markMethodForDCE(mnode)
           emit(asm.Opcodes.ATHROW)
+        }
       } else if (from.isNullType) {
         /* After loading an expression of type `scala.runtime.Null$`, introduce POP; ACONST_NULL.
          * This is required to pass the verifier: in Scala's type system, Null conforms to any

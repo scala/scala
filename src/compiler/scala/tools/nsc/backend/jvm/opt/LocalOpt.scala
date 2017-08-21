@@ -295,7 +295,8 @@ abstract class LocalOpt {
       // boxUnboxElimination) require not having unreachable instructions (null frames).
       val runDCE = (compilerSettings.optUnreachableCode && (requestDCE || nullnessOptChanged)) ||
         compilerSettings.optBoxUnbox ||
-        compilerSettings.optCopyPropagation
+        compilerSettings.optCopyPropagation ||
+        frontendAccess.methodRequiresDCE(method)
       val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
       traceIfChanged("dce")
 

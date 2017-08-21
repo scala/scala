@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
-import scala.tools.asm.tree.ClassNode
+import scala.tools.asm.tree.{ClassNode, MethodNode}
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 
@@ -32,6 +32,8 @@ abstract class PostProcessor extends PerRunInit {
   lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(this)(new ClassfileWriter(frontendAccess))
 
   lazy val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
+  lazy val methodRequiringDCE = recordPerRunCache(new java.util.concurrent.ConcurrentHashMap[MethodNode, Unit])
+  final def markMethodForDCE(node: MethodNode) = methodRequiringDCE.put(node, ())
 
   override def initialize(): Unit = {
     super.initialize()

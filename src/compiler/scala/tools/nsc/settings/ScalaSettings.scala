@@ -240,7 +240,7 @@ trait ScalaSettings extends AbsScalaSettings
     val lNone = Choice("l:none",
       "Disable optimizations. Takes precedence: `-opt:l:none,+box-unbox` / `-opt:l:none -opt:box-unbox` don't enable box-unbox.")
 
-    private val defaultChoices = List(unreachableCode)
+    private val defaultChoices = List()
     val lDefault = Choice(
       "l:default",
       "Enable default optimizations: " + defaultChoices.mkString("", ",", "."),
