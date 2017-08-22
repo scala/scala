@@ -4542,6 +4542,7 @@ trait Types
     case SingleType(pre, sym)  => !(sym hasFlag PACKAGE) && isEligibleForPrefixUnification(pre)
     case tv@TypeVar(_, constr) => !tv.instValid || isEligibleForPrefixUnification(constr.inst)
     case RefinedType(_, _)     => true
+    case ThisType(sym)         => sym.hasSelfType
     case _                     => false
   }
 
