@@ -380,8 +380,7 @@ class ExtractAPI[GlobalType <: Global](
                            lzy(processDefinitions(s, declared)),
                            lzy(processDefinitions(s, inherited)))
   }
-  private def processDefinitions(in: Symbol,
-                                 defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
+  private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
     sort(defs.toArray).flatMap((d: Symbol) => definition(in, d))
   private[this] def sort(defs: Array[Symbol]): Array[Symbol] = {
     Arrays.sort(defs, sortClasses)

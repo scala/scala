@@ -167,7 +167,11 @@ object Compat {
 }
 
 private trait CachedCompilerCompat { self: CachedCompiler0 =>
-  def newCompiler(settings: Settings, reporter: DelegatingReporter, output: Output): ZincCompiler = {
+  def newCompiler(
+      settings: Settings,
+      reporter: DelegatingReporter,
+      output: Output
+  ): ZincCompiler = {
     // Mixin RangePositions manually if we're in 2.10.x -- unnecessary as of 2.11.x
     if (settings.Yrangepos.value) new ZincCompilerRangePos(settings, reporter, output)
     else new ZincCompiler(settings, reporter, output)
