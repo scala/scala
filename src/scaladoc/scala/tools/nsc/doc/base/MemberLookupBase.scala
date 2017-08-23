@@ -54,7 +54,7 @@ trait MemberLookupBase {
     // (2) Or recursively go into each containing template.
     val fromParents = Stream.iterate(site)(_.owner) takeWhile (!isRoot(_)) map (lookupInTemplate(pos, members, _))
 
-    val syms = (fromRoot +: fromParents) find (!_.isEmpty) getOrElse Nil
+    val syms = (fromRoot +: fromParents) find (_.nonEmpty) getOrElse Nil
 
     val links = syms flatMap { case (sym, site) => internalLink(sym, site) } match {
       case Nil =>
@@ -184,7 +184,7 @@ trait MemberLookupBase {
         val member = query.substring(last_index, index).replaceAll("\\\\([#\\.])", "$1")
         // we want to allow javadoc-style links [[#member]] -- which requires us to remove empty members from the first
         // element in the list
-        if ((member != "") || (!members.isEmpty))
+        if ((member != "") || members.nonEmpty)
           members ::= member
         last_index = index + 1
       }

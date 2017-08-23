@@ -255,7 +255,7 @@ trait EntityPage extends HtmlPage {
           </div>
           { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
             {
-              if (!tpl.linearizationTemplates.isEmpty)
+              if (tpl.linearizationTemplates.nonEmpty)
                 <div class="ancestors">
                   <span class="filtertype">Inherited<br/>
                   </span>
@@ -265,7 +265,7 @@ trait EntityPage extends HtmlPage {
                 </div>
               else NodeSeq.Empty
             } ++ {
-              if (!tpl.conversions.isEmpty)
+              if (tpl.conversions.nonEmpty)
                 <div class="ancestors">
                   <span class="filtertype">Implicitly<br/>
                   </span>
@@ -633,7 +633,7 @@ trait EntityPage extends HtmlPage {
     }
 
     val selfType: NodeSeq = mbr match {
-      case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
+      case dtpl: DocTemplateEntity if (isSelf && dtpl.selfType.isDefined && !isReduced) =>
         <dt>Self Type</dt>
         <dd>{ typeToHtml(dtpl.selfType.get, hasLinks = true) }</dd>
       case _ => NodeSeq.Empty
@@ -646,7 +646,7 @@ trait EntityPage extends HtmlPage {
       def showArguments(annotation: Annotation) =
         !(annotationsWithHiddenArguments.contains(annotation.qualifiedName))
 
-      if (!mbr.annotations.isEmpty) {
+      if (mbr.annotations.nonEmpty) {
         <dt>Annotations</dt>
         <dd>{
             mbr.annotations.map { annot =>
@@ -963,7 +963,7 @@ trait EntityPage extends HtmlPage {
             case alt: MemberEntity with AliasType =>
               <span class="result alias"> = { typeToHtml(alt.alias, hasLinks) }</span>
 
-            case tpl: MemberTemplateEntity if !tpl.parentTypes.isEmpty =>
+            case tpl: MemberTemplateEntity if tpl.parentTypes.nonEmpty =>
               <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>
 
             case _ => NodeSeq.Empty
