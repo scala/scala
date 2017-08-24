@@ -127,10 +127,14 @@ trait Erasure {
           else typeRef(apply(pre), sym, args map applyInArray)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ObjectTpe
         else if (sym == UnitClass) BoxedUnitTpe
-        else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
+        else if (sym.isRefinementClass) apply(mergeParents(tp.normalize.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(tref)
-        else apply(sym.info asSeenFrom (pre, sym.owner)) // alias type or abstract type
+        else {
+          val tp1 = if (sym.isAliasType) tp.dealias else tp
+          if (tp1 ne tp) apply(tp1)
+          else apply(sym.info asSeenFrom (pre, sym.owner))
+        } // alias type or abstract type
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>
@@ -142,8 +146,8 @@ trait Erasure {
           // this replaces each typeref that refers to an argument
           // by the type `p.tpe` of the actual argument p (p in params)
           else apply(mt.resultType(mt.paramTypes)))
-      case RefinedType(parents, decls) =>
-        apply(mergeParents(parents))
+      case rt : RefinedType =>
+        apply(mergeParents(rt.normalize.parents)) // RefinedType#normalize
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
@@ -332,7 +336,7 @@ trait Erasure {
         // treat arrays specially
         arrayType(
           intersectionDominator(
-            parents filter (_.typeSymbol == ArrayClass) map (_.typeArgs.head)))
+            parents filter (_.typeSymbol == ArrayClass) map (_.baseType(ArrayClass).typeArgs.head)))
       } else {
         // implement new spec for erasure of refined types.
         def isUnshadowed(psym: Symbol) =

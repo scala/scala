@@ -53,7 +53,8 @@ abstract class Erasure extends InfoTransform
           case st: SubType =>
             traverse(st.supertype)
           case TypeRef(pre, sym, args) =>
-            if (sym == ArrayClass) args foreach traverse
+            if (sym.isAliasType) traverse(tp.dealias)
+            else if (sym == ArrayClass) args foreach traverse
             else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound || !args.isEmpty) result = true
             else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
             else if (!sym.isTopLevel) traverse(pre)
@@ -979,7 +980,7 @@ abstract class Erasure extends InfoTransform
                     Select(q(), Object_isInstanceOf) setPos sel.pos,
                     List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
                   List()) setPos tree.pos
-              targ.tpe match {
+              targ.tpe.normalize match {
                 case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
                   val cmpOp = if (targ.tpe <:< AnyValTpe) Any_equals else Object_eq
                   atPos(tree.pos) {
@@ -1049,7 +1050,7 @@ abstract class Erasure extends InfoTransform
             val args = tree.args
             if (fn.symbol.owner == ArrayClass) {
               // Have to also catch calls to abstract types which are bounded by Array.
-              if (unboundedGenericArrayLevel(qual.tpe.widen) == 1 || qual.tpe.typeSymbol.isAbstractType) {
+              if (unboundedGenericArrayLevel(qual.tpe.baseType(ArrayClass)) == 1 || qual.tpe.typeSymbol.isAbstractType) {
                 // convert calls to apply/update/length on generic arrays to
                 // calls of ScalaRunTime.array_xxx method calls
                 global.typer.typedPos(tree.pos) {
