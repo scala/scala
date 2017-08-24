@@ -60,4 +60,23 @@ class GenericSignaturesTest extends BytecodeTesting {
     assertEquals(List(("MODULE$", null), ("key", null)),
       cM.fields.asScala.toList.map(f => (f.name, f.signature)).sorted)
   }
+
+  @Test
+  def alias(): Unit = {
+    val code =
+      """
+        |import scala.language._
+        |class T[M[_]]
+        |class C {
+        |  type A = String => String
+        |  type B[X] = List[X]
+        |  private[this] val a: A = null
+        |  private[this] val b: T[B] = null
+        |}
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    assertEquals(List(("a", "Lscala/Function1<Ljava/lang/String;Ljava/lang/String;>;"), ("b", "LT<Lscala/collection/immutable/List;>;")),
+      c.fields.asScala.toList.map(f => (f.name, f.signature)).sorted)
+
+  }
 }
