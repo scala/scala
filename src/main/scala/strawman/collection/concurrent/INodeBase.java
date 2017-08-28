@@ -14,9 +14,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class INodeBase<K, V> extends BasicNode {
 
-    @SuppressWarnings("rawtypes")
-    public static final AtomicReferenceFieldUpdater<INodeBase, MainNode> updater =
-            AtomicReferenceFieldUpdater.newUpdater(INodeBase.class, MainNode.class, "mainnode");
+    @SuppressWarnings("unchecked")
+    public static final AtomicReferenceFieldUpdater<INodeBase<?, ?>, MainNode<?, ?>> updater =
+            AtomicReferenceFieldUpdater.newUpdater((Class<INodeBase<?, ?>>) (Class<?>) INodeBase.class, (Class<MainNode<?, ?>>) (Class<?>) MainNode.class, "mainnode");
 
     public static final Object RESTART = new Object();
 
