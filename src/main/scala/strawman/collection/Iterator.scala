@@ -378,7 +378,24 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 
   final def size: Int = length
 
-  def filter(p: A => Boolean): Iterator[A] = new Iterator[A] {
+  /** Selects all elements of this iterator which satisfy a predicate.
+    *
+    *  @param p     the predicate used to test elements.
+    *  @return      a new iterator consisting of all elements of this $coll that satisfy the given
+    *               predicate `p`. The order of the elements is preserved.
+    */
+  def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
+
+  /** Creates an iterator over all the elements of this iterator which
+    *  do not satisfy a predicate p.
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an iterator which produces those values of this iterator which do not satisfy the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
+
+  private[this] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new Iterator[A] {
     private var hd: A = _
     private var hdDefined: Boolean = false
 
@@ -386,7 +403,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       do {
         if (!self.hasNext) return false
         hd = self.next()
-      } while (!p(hd))
+      } while (p(hd) == isFlipped)
       hdDefined = true
       true
     }
@@ -411,15 +428,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def withFilter(p: A => Boolean): Iterator[A] = filter(p)
-
-  /** Creates an iterator over all the elements of this iterator which
-    *  do not satisfy a predicate p.
-    *
-    *  @param p the predicate used to test values.
-    *  @return  an iterator which produces those values of this iterator which do not satisfy the predicate `p`.
-    *  @note    Reuse: $consumesAndProducesIterator
-    */
-  def filterNot(p: A => Boolean): Iterator[A] = filter(!p(_))
 
   /** Creates an iterator by transforming values
     *  produced by this iterator with a partial function, dropping those
