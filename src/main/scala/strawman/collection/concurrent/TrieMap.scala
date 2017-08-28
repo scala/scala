@@ -308,7 +308,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
 
           if (res == None || (res eq null)) res
           else {
-            @tailrec def cleanParent(nonlive: AnyRef) {
+            @tailrec def cleanParent(nonlive: AnyRef): Unit = {
               val pm = parent.GCAS_READ(ct)
               pm match {
                 case cn: CNode[K, V] =>
@@ -356,7 +356,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     }
   }
 
-  private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int) {
+  private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int): Unit = {
     val m = nd.GCAS_READ(ct)
     m match {
       case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
@@ -441,7 +441,7 @@ private[collection] final class LNode[K, V](final val listmap: immutable.ListMap
     val updmap = listmap - k
     if (updmap.size > 1) new LNode(updmap)
     else {
-      val (k, v) = updmap.iterator.next()
+      val (k, v) = updmap.iterator().next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }
@@ -573,17 +573,17 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
 
   /* quiescently consistent - don't call concurrently to anything involving a GCAS!! */
   private def collectElems: Seq[(K, V)] = array flatMap {
-    case sn: SNode[K, V] => Some(sn.kvPair)
+    case sn: SNode[K, V] => Some(sn.kvPair): IterableOnce[(K, V)]
     case in: INode[K, V] => in.mainnode match {
-      case tn: TNode[K, V] => Some(tn.kvPair)
+      case tn: TNode[K, V] => Some(tn.kvPair): IterableOnce[(K, V)]
       case ln: LNode[K, V] => ln.listmap.to(immutable.List)
       case cn: CNode[K, V] => cn.collectElems
     }
   }
 
   private def collectLocalElems: Seq[String] = array flatMap {
-    case sn: SNode[K, V] => Some(sn.kvPair._2.toString)
-    case in: INode[K, V] => Some(augmentString(in.toString).drop(14) + "(" + in.gen + ")")
+    case sn: SNode[K, V] => Some(sn.kvPair._2.toString): IterableOnce[String]
+    case in: INode[K, V] => Some(augmentString(in.toString).drop(14) + "(" + in.gen + ")"): IterableOnce[String]
   }
 
   override def toString = {
@@ -661,11 +661,11 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   /* internal methods */
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     out.writeObject(hashingobj)
     out.writeObject(equalityobj)
 
-    val it = iterator
+    val it = iterator()
     while (it.hasNext) {
       val (k, v) = it.next()
       out.writeObject(k)
@@ -674,7 +674,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     out.writeObject(TrieMapSerializationEnd)
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     root = INode.newRootNode
     rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
 
@@ -736,7 +736,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     } else false
   }
 
-  @tailrec private def inserthc(k: K, hc: Int, v: V) {
+  @tailrec private def inserthc(k: K, hc: Int, v: V): Unit = {
     val r = RDCSS_READ_ROOT()
     if (!r.rec_insert(k, v, hc, 0, null, r.gen, this)) inserthc(k, hc, v)
   }
@@ -821,7 +821,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     else readOnlySnapshot()
   }
 
-  @tailrec override def clear() {
+  @tailrec override def clear(): Unit = {
     val r = RDCSS_READ_ROOT()
     if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V])) clear()
   }
@@ -1023,7 +1023,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     case tn: TNode[K, V] =>
       current = tn
     case ln: LNode[K, V] =>
-      subiter = ln.listmap.iterator
+      subiter = ln.listmap.iterator()
       checkSubiter()
     case null =>
       current = null
@@ -1034,7 +1034,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     advance()
   }
 
-  private def initialize() {
+  private def initialize(): Unit = {
     assert(ct.isReadOnly)
 
     val r = ct.RDCSS_READ_ROOT()
@@ -1133,13 +1133,13 @@ private[concurrent] object Debug {
 
   def log(s: AnyRef) = logbuffer.add(s)
 
-  def flush() {
+  def flush(): Unit = {
     val it = logbuffer.iterator()
     while (it.hasNext) Console.out.println(it.next().toString)
     logbuffer.clear()
   }
 
-  def clear() {
+  def clear(): Unit = {
     logbuffer.clear()
   }
 

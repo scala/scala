@@ -10,8 +10,6 @@ package strawman.collection.concurrent;
 
 import java.lang.Object;
 
-import scala.collection.concurrent.BasicNode;
-
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class INodeBase<K, V> extends BasicNode {
