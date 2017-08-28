@@ -86,8 +86,6 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         ImmutableArray.fromIterable(View.Zip(toIterable, xs))
     }
 
-  override def filter(p: A => Boolean): ImmutableArray[A] = ImmutableArray.fromIterable(View.Filter(toIterable, p))
-
   override def partition(p: A => Boolean): (ImmutableArray[A], ImmutableArray[A]) = {
     val pn = View.Partition(toIterable, p)
     (ImmutableArray.fromIterable(pn.first), ImmutableArray.fromIterable(pn.second))

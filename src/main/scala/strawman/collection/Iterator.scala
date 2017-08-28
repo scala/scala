@@ -395,7 +395,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     */
   def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
 
-  private[this] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new Iterator[A] {
+  private[collection] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new Iterator[A] {
     private var hd: A = _
     private var hdDefined: Boolean = false
 

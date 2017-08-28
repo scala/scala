@@ -451,7 +451,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  def filter(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred))
+  def filter(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred, isFlipped = false))
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
     *
@@ -459,7 +459,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  def filterNot(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, (a: A) => !pred(a)))
+  def filterNot(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred, isFlipped = true))
 
   /** Creates a non-strict filter of this $coll.
     *
@@ -482,7 +482,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   class WithFilter(p: A => Boolean) extends collection.WithFilter[A, CC] {
 
-    protected[this] def filtered = View.Filter(toIterable, p)
+    protected[this] def filtered = View.Filter(toIterable, p, isFlipped = false)
 
     def map[B](f: A => B): CC[B] = iterableFactory.fromIterable(View.Map(filtered, f))
 
