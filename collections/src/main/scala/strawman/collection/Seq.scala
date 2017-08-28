@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, NoSuchElementException, Ordering, Unit, math, throws}
+import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, `inline`, Int, NoSuchElementException, Ordering, Unit, math, throws}
 import scala.Predef.{identity, intWrapper}
 import java.lang.Object
 
@@ -29,6 +29,126 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
     */
   def toSeq: Seq[A]
+
+  /** A copy of the $coll with an element prepended.
+    *
+    *  @param  elem   the prepended element
+    *  @tparam B      the element type of the returned $coll.
+    *  @return a new collection of type `$Coll[B]` as this $coll consisting of `value` followed
+    *          by all elements of this $coll.
+    *
+    *    @inheritdoc
+    *
+    *    Also, the original $coll is not modified, so you will want to capture the result.
+    *
+    *    Example:
+    *    {{{
+    *      scala> val x = List(1)
+    *      x: List[Int] = List(1)
+    *
+    *      scala> val y = 2 +: x
+    *      y: List[Int] = List(2, 1)
+    *
+    *      scala> println(x)
+    *      List(1)
+    *    }}}
+    *
+    *    @return a new $coll consisting of `value` followed
+    *            by all elements of this $coll.
+    */
+  def prepend[B >: A](elem: B): CC[B] = fromIterable(View.Prepend(elem, toIterable))
+
+  /** Alias for `prepend`.
+    *
+    * Note that :-ending operators are right associative (see example).
+    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+    */
+  @`inline` final def +: [B >: A](elem: B): CC[B] = prepend(elem)
+
+  /** A copy of this $coll with an element appended.
+    *
+    *  @param  elem   the appended element
+    *  @tparam B      the element type of the returned $coll.
+    *  @return a new collection of type `$Coll[B]` consisting of
+    *          all elements of this $coll followed by `value`.
+    *
+    *    @inheritdoc
+    *
+    *    $willNotTerminateInf
+    *
+    *    Example:
+    *    {{{
+    *       scala> val a = List(1)
+    *       a: List[Int] = List(1)
+    *
+    *       scala> val b = a :+ 2
+    *       b: List[Int] = List(1, 2)
+    *
+    *       scala> println(a)
+    *       List(1)
+    *    }}}
+    *
+    *    @return a new $coll consisting of
+    *            all elements of this $coll followed by `value`.
+    */
+  def append[B >: A](elem: B): CC[B] = fromIterable(View.Append(toIterable, elem))
+
+  /** Alias for `append`
+    *
+    * Note that :-ending operators are right associative (see example).
+    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+    */
+  @`inline` final def :+ [B >: A](elem: B): CC[B] = append(elem)
+
+  /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
+    *  elements from the right operand.
+    *
+    *  It differs from `:++` in that the right operand determines the type of
+    *  the resulting collection rather than the left one.
+    *  Mnemonic: the COLon is on the side of the new COLlection type.
+    *
+    *  @param prefix   the traversable to prepend.
+    *  @tparam B     the element type of the returned collection.
+    *  @return       a new collection which contains all elements
+    *                of `prefix` followed by all the elements of this $coll.
+    *
+    *  @usecase def prependAll[B](that: Iterable[B]): $Coll[B]
+    *    @inheritdoc
+    *
+    *    Example:
+    *    {{{
+    *      scala> val x = List(1)
+    *      x: List[Int] = List(1)
+    *
+    *      scala> val y = Vector(2)
+    *      y: scala.collection.immutable.Vector[Int] = Vector(2)
+    *
+    *      scala> val z = x ++: y
+    *      z: scala.collection.immutable.Vector[Int] = Vector(1, 2)
+    *    }}}
+    *
+    *    @return       a new $coll which contains all elements of `prefix` followed
+    *                  by all the elements of this $coll.
+    */
+  def prependAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(View.Concat(prefix, toIterable))
+
+  /** Alias for `prependAll` */
+  @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependAll(prefix)
+
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+    *  the element types of the two operands.
+    *
+    *  @param suffix the traversable to append.
+    *  @tparam B     the element type of the returned collection.
+    *  @return       a new collection of type `CC[B]` which contains all elements
+    *                of this $coll followed by all elements of `suffix`.
+    */
+  def appendAll[B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
+
+  /** Alias for `appendAll` */
+  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)
+
 
   /** Selects all the elements of this $coll ignoring the duplicates.
     *

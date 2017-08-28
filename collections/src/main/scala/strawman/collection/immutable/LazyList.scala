@@ -130,7 +130,7 @@ sealed abstract class LazyList[+A]
   override final def withFilter(p: A => Boolean): collection.WithFilter[A, LazyList] =
     new LazyList.WithFilter(this, p)
 
-  override final def prepend[B >: A](elem: B): LazyList[B] = LazyList.cons(elem, this)
+  override final def prepended[B >: A](elem: B): LazyList[B] = LazyList.cons(elem, this)
 
   override final def map[B](f: A => B): LazyList[B] =
     if (isEmpty) LazyList.empty

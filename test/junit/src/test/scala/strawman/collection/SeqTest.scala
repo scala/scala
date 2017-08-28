@@ -8,11 +8,12 @@ import org.junit.Test
 @RunWith(classOf[JUnit4])
 class SeqTest {
 
-  @Test
-  def test_SI8691(): Unit = {
-    // Really just testing to make sure ++: doesn't throw an exception
-    assert( (Seq(1,2) ++: Seq(3,4).view).to(Seq) == Seq(1,2,3,4) )
-  }
+// Commented because `++:` is no defined on `View`. We might re-enable this test if we introduce a `SeqView`
+//  @Test
+//  def test_SI8691(): Unit = {
+//    // Really just testing to make sure ++: doesn't throw an exception
+//    assert( (Seq(1,2) ++: Seq(3,4).view).to(Seq) == Seq(1,2,3,4) )
+//  }
 
   @Test
   def hasCorrectDistinct: Unit = {
