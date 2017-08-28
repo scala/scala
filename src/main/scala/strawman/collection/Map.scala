@@ -76,7 +76,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     def iterableFactory: IterableFactory[Set] = Set
     protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = fromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(this).diff(that)
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
     def empty: Set[K] = iterableFactory.empty
   }
 

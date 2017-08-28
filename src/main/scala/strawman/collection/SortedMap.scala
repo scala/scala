@@ -32,7 +32,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     protected[this] def fromSpecificIterable(coll: Iterable[K]): SortedSet[K] = sortedFromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
     protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): SortedSet[B] = sortedFromIterable(it)
-    def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(this).diff(that)
+    def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(view.filterNot(that))
     def empty: SortedSet[K] = sortedIterableFactory.empty
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
       val map = SortedMapOps.this.rangeImpl(from, until)
