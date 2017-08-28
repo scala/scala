@@ -3,6 +3,7 @@ package fix
 import strawman.collection.{ arrayToArrayOps, stringToStringOps }
 import strawman.collection.immutable.{ #::, ::, HashMap, LazyList, List, Map, Nil, Range, Vector }
 import strawman.collection.mutable.ArrayBuffer
+
 object Collectionstrawman_v0_List {
   List(1, 2, 3)
   1 :: 2 :: 3 :: Nil
@@ -48,4 +49,17 @@ object Collectionstrawman_v0_ArrayAndString {
 object Collectionstrawman_v0_Range {
   Range.inclusive(1, 10).map(_ + 2)
   Range(0, 10).map(_ + 3)
+}
+
+object Collectionstrawman_v0_Traversable {
+  def foo(xs: Iterable[(Int, String)], ys: List[Int]): Unit = {
+    xs.to(List)
+    xs.to(Set)
+    ys.toSeq
+    xs.to(List)
+    xs.to(strawman.collection.immutable.Set)
+    xs.to(strawman.collection.Map)
+    xs.iterator()
+    ys.iterator()
+  }
 }
