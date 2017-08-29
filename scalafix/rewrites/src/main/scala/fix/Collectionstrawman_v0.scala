@@ -40,7 +40,6 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
   }.asPatch
 
   def rewrite(ctx: RewriteCtx): Patch = {
-    ctx.debugSemanticCtx()
     def p(name: String) =
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =
@@ -69,7 +68,8 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       s("Stream", Some("LazyList")),
       s("Traversable", Some("Iterable")),
       "scala.Iterable" -> "strawman.collection.Iterable",
-      s("`#::`"),
+      "scala.Traversable" -> "strawman.collection.Iterable",
+      "scala.`#::`" -> "strawman.collection.immutable.LazyList.`#::`",
       s("Vector"),
       i("Vector"),
       m("ArrayBuffer")
