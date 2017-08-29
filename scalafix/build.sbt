@@ -22,11 +22,11 @@ val collections = ProjectRef(file(".."), "collections")
 lazy val output = project
   .settings(
    resolvers := resolvers.in(collections).value,
-   libraryDependencies := libraryDependencies.in(collections).value,
+   libraryDependencies ++= libraryDependencies.in(collections).value,
    scalaVersion := scalaVersion.in(collections).value,
    scalaBinaryVersion := scalaBinaryVersion.in(collections).value
   )
- .dependsOn(collections) // collections/publishLocal is still necessary.
+  .dependsOn(collections) // collections/publishLocal is still necessary.
 
 lazy val tests = project
   .settings(
