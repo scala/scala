@@ -17,17 +17,18 @@ import scala.Predef.{ArrowAssoc, assert, augmentString, classOf}
 import java.util.concurrent.atomic._
 
 import strawman.collection.mutable.{Builder, GrowableBuilder}
+import strawman.collection.immutable.{List, Nil}
 
 import scala.util.hashing.Hashing
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 
-private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INodeBase[K, V](g) {
+private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
   import INodeBase._
 
   WRITE(bn)
 
-  def this(g: Gen) = this(null, g)
+  def this(g: Gen, equiv: Equiv[K]) = this(null, g, equiv)
 
   def WRITE(nval: MainNode[K, V]) = INodeBase.updater.set(this, nval)
 
@@ -85,13 +86,13 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   private def equal(k1: K, k2: K, ct: TrieMap[K, V]) = ct.equality.equiv(k1, k2)
 
   private def inode(cn: MainNode[K, V]) = {
-    val nin = new INode[K, V](gen)
+    val nin = new INode[K, V](gen, equiv)
     nin.WRITE(cn)
     nin
   }
 
   def copyToGen(ngen: Gen, ct: TrieMap[K, V]) = {
-    val nin = new INode[K, V](ngen)
+    val nin = new INode[K, V](ngen, equiv)
     val main = GCAS_READ(ct)
     nin.WRITE(main)
     nin
@@ -124,7 +125,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
               if (sn.hc == hc && equal(sn.k, k, ct)) GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)
               else {
                 val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
-                val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen)), gen)
+                val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
                 GCAS(cn, nn, ct)
               }
           }
@@ -172,7 +173,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else {
                   val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
-                  val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen)), gen)
+                  val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
                   if (GCAS(cn, nn, ct)) None
                   else null
                 }
@@ -180,7 +181,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
                 if (sn.hc == hc && equal(sn.k, k, ct)) Some(sn.v)
                 else {
                   val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
-                  val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen)), gen)
+                  val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
                   if (GCAS(cn, nn, ct)) None
                   else null
                 }
@@ -387,10 +388,10 @@ private[concurrent] object INode {
   val KEY_PRESENT = new AnyRef
   val KEY_ABSENT = new AnyRef
 
-  def newRootNode[K, V] = {
+  def newRootNode[K, V](equiv: Equiv[K]) = {
     val gen = new Gen
     val cn = new CNode[K, V](0, new Array(0), gen)
-    new INode[K, V](cn, gen)
+    new INode[K, V](cn, gen, equiv)
   }
 }
 
@@ -432,22 +433,31 @@ private[collection] final class TNode[K, V](final val k: K, final val v: V, fina
 }
 
 
-private[collection] final class LNode[K, V](final val listmap: immutable.ListMap[K, V])
+private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Equiv[K])
   extends MainNode[K, V] {
-  def this(k: K, v: V) = this(immutable.ListMap(k -> v))
-  def this(k1: K, v1: V, k2: K, v2: V) = this(immutable.ListMap(k1 -> v1, k2 -> v2))
-  def inserted(k: K, v: V) = new LNode(listmap + ((k, v)))
+
+  def this(k: K, v: V, equiv: Equiv[K]) = this((k -> v) :: Nil, equiv)
+
+  def this(k1: K, v1: V, k2: K, v2: V, equiv: Equiv[K]) =
+    this(if (equiv.equiv(k1, k2)) (k2 -> v2) :: Nil else (k1 -> v1) :: (k2 -> v2) :: Nil, equiv)
+
+  def inserted(k: K, v: V) = new LNode((k -> v) :: entries.filterNot(entry => equiv.equiv(entry._1, k)), equiv)
+
   def removed(k: K, ct: TrieMap[K, V]): MainNode[K, V] = {
-    val updmap = listmap - k
-    if (updmap.size > 1) new LNode(updmap)
+    val updmap = entries.filterNot(entry => equiv.equiv(entry._1, k))
+    if (updmap.size > 1) new LNode(updmap, equiv)
     else {
       val (k, v) = updmap.iterator().next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }
-  def get(k: K) = listmap.get(k)
-  def cachedSize(ct: AnyRef): Int = listmap.size
-  def string(lev: Int) = (" " * lev) + "LNode(%s)".format(listmap.mkString(", "))
+
+  def get(k: K): Option[V] = entries.find(entry => equiv.equiv(entry._1, k)).map(_._2)
+
+  def cachedSize(ct: AnyRef): Int = entries.size
+
+  def string(lev: Int) = (" " * lev) + "LNode(%s)".format(entries.mkString(", "))
+
 }
 
 
@@ -576,7 +586,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
     case sn: SNode[K, V] => Some(sn.kvPair): IterableOnce[(K, V)]
     case in: INode[K, V] => in.mainnode match {
       case tn: TNode[K, V] => Some(tn.kvPair): IterableOnce[(K, V)]
-      case ln: LNode[K, V] => ln.listmap.to(immutable.List)
+      case ln: LNode[K, V] => ln.entries.to(immutable.List)
       case cn: CNode[K, V] => cn.collectElems
     }
   }
@@ -595,20 +605,20 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
 
 private[concurrent] object CNode {
 
-  def dual[K, V](x: SNode[K, V], xhc: Int, y: SNode[K, V], yhc: Int, lev: Int, gen: Gen): MainNode[K, V] = if (lev < 35) {
+  def dual[K, V](x: SNode[K, V], xhc: Int, y: SNode[K, V], yhc: Int, lev: Int, gen: Gen, equiv: Equiv[K]): MainNode[K, V] = if (lev < 35) {
     val xidx = (xhc >>> lev) & 0x1f
     val yidx = (yhc >>> lev) & 0x1f
     val bmp = (1 << xidx) | (1 << yidx)
     if (xidx == yidx) {
-      val subinode = new INode[K, V](gen)//(TrieMap.inodeupdater)
-      subinode.mainnode = dual(x, xhc, y, yhc, lev + 5, gen)
+      val subinode = new INode[K, V](gen, equiv)//(TrieMap.inodeupdater)
+      subinode.mainnode = dual(x, xhc, y, yhc, lev + 5, gen, equiv)
       new CNode(bmp, Array(subinode), gen)
     } else {
       if (xidx < yidx) new CNode(bmp, Array(x, y), gen)
       else new CNode(bmp, Array(y, x), gen)
     }
   } else {
-    new LNode(x.k, x.v, y.k, y.v)
+    new LNode(x.k, x.v, y.k, y.v, equiv)
   }
 
 }
@@ -646,7 +656,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   @volatile private var root = r
 
   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
-    INode.newRootNode,
+    INode.newRootNode(ef),
     AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
     hashf,
     ef
@@ -675,7 +685,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
-    root = INode.newRootNode
+    root = INode.newRootNode(equality)
     rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
 
     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
@@ -823,7 +833,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   @tailrec override def clear(): Unit = {
     val r = RDCSS_READ_ROOT()
-    if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V])) clear()
+    if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V](equality))) clear()
   }
 
 
@@ -1023,7 +1033,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     case tn: TNode[K, V] =>
       current = tn
     case ln: LNode[K, V] =>
-      subiter = ln.listmap.iterator()
+      subiter = ln.entries.iterator()
       checkSubiter()
     case null =>
       current = null
