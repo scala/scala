@@ -7,6 +7,13 @@ import scala.meta._
 case class Collectionstrawman_v0(sctx: SemanticCtx)
     extends SemanticRewrite(sctx) {
   val immutableListSymbol = Symbol("_root_.scala.collection.immutable.List.")
+  implicit class XtensionSymbolCollection(symbol: Symbol) {
+    def name = symbol match {
+      case Symbol.Global(_, sig) => sig.name
+      case _                     => symbol.syntax
+    }
+  }
+
   val unimports = Map(
     Symbol("_root_.scala.Predef.augmentString.") ->
       Symbol("_root_.strawman.collection.stringToStringOps."),
@@ -15,10 +22,19 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
   )
 
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
-    val toImport = ctx.semanticCtx.names
-      .flatMap(r => unimports.get(r.sym.normalized))
-      .map(ctx.addGlobalImport)
-    toImport.asPatch
+    val toImport = for {
+      r <- ctx.semanticCtx.names
+      in = r.sym.normalized
+      out <- unimports.get(in).toList
+    } yield {
+      ctx.addGlobalImport(out) +
+        ctx.addGlobalImport(
+          Importer(q"scala.Predef", Importee.Unimport(Name(in.name)) :: Nil))
+    }
+    val predefUnderscore =
+      if (toImport.isEmpty) Patch.empty
+      else ctx.addGlobalImport(importer"scala.Predef._")
+    toImport.asPatch + predefUnderscore
   }
 
   val rangeImport = Symbol("_root_.strawman.collection.immutable.Range.")

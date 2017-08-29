@@ -1,6 +1,6 @@
 package fix
 
-import scala.Predef.{augmentString => _, wrapString => _, _}
+import scala.Predef.{augmentString => _, intArrayOps => _, wrapString => _, _}
 import strawman.collection.{ Iterable, Set, arrayToArrayOps, stringToStringOps }
 import strawman.collection.immutable.{ ::, HashMap, LazyList, List, Map, Nil, Range, Vector }
 import strawman.collection.immutable.LazyList.#::
