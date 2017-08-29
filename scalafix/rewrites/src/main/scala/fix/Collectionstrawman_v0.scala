@@ -26,7 +26,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     "wrapString" -> "augmentString"
   )
 
-  def ifSymbolFound(ctx: RewriteCtx): Patch = {
+  def replaceExtensionMethods(ctx: RewriteCtx): Patch = {
     val toImport = for {
       r <- ctx.semanticCtx.names
       in = r.sym.normalized
@@ -51,7 +51,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     "_root_.scala.runtime.RichInt#to(I)Lscala/collection/immutable/Range/Inclusive;.")
   val rangeSymbol = Symbol(
     "_root_.scala.runtime.RichInt#until(I)Lscala/collection/immutable/Range;.")
-  def range(ctx: RewriteCtx): Patch = {
+  def replaceRange(ctx: RewriteCtx): Patch = {
     ctx.tree.collect {
       case tree @ Term.ApplyInfix(lhs, op, targs, arg :: Nil)
           if op.symbol.contains(inclusiveRange) =>
@@ -64,7 +64,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     }
   }.asPatch
 
-  def rewrite(ctx: RewriteCtx): Patch = {
+  def replaceSymbols(ctx: RewriteCtx): Patch = {
     def p(name: String) =
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =
@@ -94,12 +94,62 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       s("Traversable", Some("Iterable")),
       "scala.Iterable" -> "strawman.collection.Iterable",
       "scala.Traversable" -> "strawman.collection.Iterable",
+      "scala.collection.TraversableLike.toIterator" -> "iterator",
       "scala.`#::`" -> "strawman.collection.immutable.LazyList.`#::`",
       s("Vector"),
       i("Vector"),
       m("ArrayBuffer")
-    ) +
-      ifSymbolFound(ctx) +
-      range(ctx)
+    )
+  }
+
+  case class SymbolMatcher(symbols: Symbol*) {
+    def unapply(arg: Tree): Option[(Tree, Symbol)] =
+      sctx.symbol(arg.pos).flatMap { sym =>
+        if (symbols.exists(_.isSameNormalized(sym))) Some(arg -> sym)
+        else None
+      }
+  }
+
+  object WithSymbol {
+    def unapply(arg: Tree): Option[(Tree, Symbol)] =
+      sctx.symbol(arg.pos).map(x => arg -> x)
+  }
+
+  val toX = SymbolMatcher(
+    Symbol("_root_.scala.collection.TraversableOnce.toMap."),
+    Symbol("_root_.scala.collection.TraversableOnce.toList."),
+    Symbol("_root_.scala.collection.TraversableOnce.toSet.")
+  )
+  val toTpe = SymbolMatcher(
+    Symbol("_root_.scala.collection.TraversableLike.to.")
+  )
+  val iterator = SymbolMatcher(
+    Symbol("_root_.scala.collection.LinearSeqLike.iterator.")
+  )
+
+  def replaceToList(ctx: RewriteCtx) =
+    ctx.tree.collect {
+      case iterator(n: Name, _) =>
+        ctx.addRight(n.tokens.last, "()")
+      case toX(n: Name, s) =>
+        ctx.replaceTree(n, s"to(${s.name.stripPrefix("to")})")
+      case toTpe(n: Name, _) =>
+        ctx.debug(n)
+        (for {
+          name <- n.tokens.lastOption
+          _ = ctx.debug(name)
+          open <- ctx.tokenList.find(name)(t => t.is[Token.LeftBracket])
+          _ = ctx.debug(open)
+          close <- ctx.matching.close(open.asInstanceOf[Token.LeftBracket])
+        } yield
+          ctx.replaceToken(open, "(") +
+            ctx.replaceToken(close, ")")).getOrElse(Patch.empty)
+    }.asPatch
+
+  def rewrite(ctx: RewriteCtx): Patch = {
+    replaceToList(ctx) +
+      replaceSymbols(ctx) +
+      replaceExtensionMethods(ctx) +
+      replaceRange(ctx)
   }
 }

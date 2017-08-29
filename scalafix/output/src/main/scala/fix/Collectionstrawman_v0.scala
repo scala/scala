@@ -1,7 +1,7 @@
 package fix
 
 import scala.Predef.{ augmentString => _, intArrayOps => _, wrapString => _, _ }
-import strawman.collection.{ Iterable, Set, arrayToArrayOps, stringToStringOps }
+import strawman.collection.{ arrayToArrayOps, stringToStringOps }
 import strawman.collection.immutable.{ ::, HashMap, LazyList, List, Map, Nil, Range, Vector }
 import strawman.collection.immutable.LazyList.#::
 import strawman.collection.mutable.ArrayBuffer
@@ -52,15 +52,3 @@ object Collectionstrawman_v0_Range {
   Range(0, 10).map(_ + 3)
 }
 
-object Collectionstrawman_v0_Traversable {
-  def foo(xs: Iterable[(Int, String)], ys: List[Int]): Unit = {
-    xs.to(List)
-    xs.to(Set)
-    ys.toSeq
-    xs.to(List)
-    xs.to(strawman.collection.immutable.Set)
-    xs.to(strawman.collection.Map)
-    xs.iterator()
-    ys.iterator()
-  }
-}
