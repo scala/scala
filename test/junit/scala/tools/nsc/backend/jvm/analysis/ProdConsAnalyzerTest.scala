@@ -18,7 +18,7 @@ import scala.tools.testing.BytecodeTesting._
 class ProdConsAnalyzerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._
-  import global.genBCode.bTypes.backendUtils._
+  import global.genBCode.postProcessor.backendUtils._
 
   def prodToString(producer: AbstractInsnNode) = producer match {
     case p: InitialProducer => p.toString

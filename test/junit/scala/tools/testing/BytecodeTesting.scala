@@ -51,7 +51,7 @@ class Compiler(val global: Global) {
    * NOTE: This method only works if `global.genBCode.bTypes.byteCodeRepository.compilingClasses`
    * was passed to [[keepPerRunCachesAfterRun]].
    */
-  def compiledClassesFromCache = global.genBCode.bTypes.byteCodeRepository.compilingClasses.valuesIterator.map(_._1).toList.sortBy(_.name)
+  def compiledClassesFromCache = global.genBCode.postProcessor.byteCodeRepository.compilingClasses.valuesIterator.map(_._1).toList.sortBy(_.name)
 
   def resetOutput(): Unit = {
     global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))

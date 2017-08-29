@@ -26,7 +26,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
   /*
    * Functionality to lower `synchronized` and `try` expressions.
    */
-  abstract class SyncAndTryBuilder(cunit: CompilationUnit) extends PlainBodyBuilder(cunit) {
+  class SyncAndTryBuilder(cunit: CompilationUnit) extends PlainBodyBuilder(cunit) {
 
     def genSynchronized(tree: Apply, expectedType: BType): BType = {
       val Apply(fun, args) = tree
