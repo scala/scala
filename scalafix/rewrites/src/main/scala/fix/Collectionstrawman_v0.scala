@@ -21,15 +21,24 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       Symbol("_root_.strawman.collection.arrayToArrayOps.")
   )
 
+  val additionalUnimports = Map(
+    "augmentString" -> "wrapString",
+    "wrapString" -> "augmentString"
+  )
+
   def ifSymbolFound(ctx: RewriteCtx): Patch = {
     val toImport = for {
       r <- ctx.semanticCtx.names
       in = r.sym.normalized
       out <- unimports.get(in).toList
     } yield {
+      val name = in.name
+      val names = name :: additionalUnimports
+        .get(name)
+        .fold(List.empty[String])(_ :: Nil)
       ctx.addGlobalImport(out) +
         ctx.addGlobalImport(
-          Importer(q"scala.Predef", Importee.Unimport(Name(in.name)) :: Nil))
+          Importer(q"scala.Predef", names.map(n => Importee.Unimport(Name(n)))))
     }
     val predefUnderscore =
       if (toImport.isEmpty) Patch.empty
