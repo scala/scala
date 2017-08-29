@@ -53,7 +53,6 @@ object Collectionstrawman_v0_Range {
 }
 
 object Collectionstrawman_v0_Traversable {
-  val x: Iterable[String] = ???
   def foo(xs: Traversable[(Int, String)], ys: List[Int]): Unit = {
     xs.toList
     xs.toSet
