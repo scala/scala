@@ -1,8 +1,9 @@
 package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
+import strawman.collection.immutable.ImmutableArray
 
-import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
+import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws, AnyRef, Array, deprecated, `inline`}
 import scala.Predef.{<:<, intWrapper}
 
 /** Views are collections whose transformation operations are non strict: the resulting elements
@@ -24,6 +25,9 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def toString = "View(?)"
 
   override def className = "View"
+
+  @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
+  @`inline` def force: IndexedSeq[A] = toIndexedSeq
 }
 
 /** This object reifies operations on views as case classes
@@ -206,16 +210,31 @@ object View extends IterableFactoryLike[View] {
   case class Concat[A](prefix: Iterable[A], suffix: Iterable[A]) extends View[A] {
     def iterator() = prefix.iterator() ++ suffix.iterator()
     override def knownSize =
-      if (prefix.knownSize >= 0 && suffix.knownSize >= 0) prefix.knownSize + prefix.knownSize
+      if (prefix.knownSize >= 0 && suffix.knownSize >= 0) prefix.knownSize + suffix.knownSize
       else -1
   }
 
   /** A view that zips elements of the underlying collection with the elements
-   *  of another collection or iterator.
-   */
+    *  of another collection.
+    */
   case class Zip[A, B](underlying: Iterable[A], other: Iterable[B]) extends View[(A, B)] {
     def iterator() = underlying.iterator().zip(other)
     override def knownSize = underlying.knownSize min other.knownSize
+  }
+
+  /** A view that zips elements of the underlying collection with the elements
+    *  of another collection. If one of the two collections is shorter than the other,
+    *  placeholder elements are used to extend the shorter collection to the length of the longer.
+    */
+  case class ZipAll[A, B](underlying: Iterable[A], other: Iterable[B], thisElem: A, thatElem: B) extends View[(A, B)] {
+    def iterator() = underlying.iterator().zipAll(other, thisElem, thatElem)
+    override def knownSize = {
+      val s1 = underlying.knownSize
+      if(s1 == -1) -1 else {
+        val s2 = other.knownSize
+        if(s2 == -1) -1 else s1 max s2
+      }
+    }
   }
 
   /** A view that appends an element to its elements */
@@ -254,15 +273,15 @@ object View extends IterableFactoryLike[View] {
     override def knownSize: Int = underlying.knownSize
   }
 
-  case class Unzip[A, A1, A2](underlying: Iterable[A])(implicit asPair: A <:< (A1, A2)) {
+  case class Unzip[A, A1, A2](underlying: Iterable[A])(implicit asPair: A => (A1, A2)) {
     val first: View[A1] =
       new View[A1] {
-        def iterator(): Iterator[A1] = underlying.iterator().map(_._1)
+        def iterator(): Iterator[A1] = underlying.iterator().map(xs => asPair(xs)._1)
         override def knownSize: Int = underlying.knownSize
       }
     val second: View[A2] =
       new View[A2] {
-        def iterator(): Iterator[A2] = underlying.iterator().map(_._2)
+        def iterator(): Iterator[A2] = underlying.iterator().map(xs => asPair(xs)._2)
         override def knownSize: Int = underlying.knownSize
       }
   }
@@ -287,7 +306,7 @@ object View extends IterableFactoryLike[View] {
 }
 
 /** A trait representing indexable collections with finite length */
-trait ArrayLike[+A] extends Any {
+trait ArrayLike[+A] extends Any { self =>
   def length: Int
   @throws[IndexOutOfBoundsException]
   def apply(i: Int): A

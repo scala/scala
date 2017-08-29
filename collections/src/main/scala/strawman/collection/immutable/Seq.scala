@@ -25,24 +25,6 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(toIterable, index, elem))
-
-  /** Produces a new $coll where a slice of elements in this $coll is replaced by another sequence.
-    *
-    * Patching at negative indices is the same as patching starting at 0.
-    * Patching at indices at or larger than the length of the original $coll appends the patch to the end.
-    * If more values are replaced than actually exist, the excess is ignored.
-    *
-    *  @param  from     the index of the first replaced element
-    *  @param  other    the replacement sequence
-    *  @param  replaced the number of elements to drop in the original $coll
-    *  @tparam B        the element type of the returned $coll.
-    *  @return          a new $coll consisting of all elements of this $coll
-    *                   except that `replaced` elements starting from `from` are replaced
-    *                   by all the elements of `other`.
-    */
-  def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
-    fromIterable(new View.Patched(toIterable, from, other, replaced))
-
 }
 
 /**

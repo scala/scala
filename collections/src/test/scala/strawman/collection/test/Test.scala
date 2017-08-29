@@ -4,11 +4,12 @@ package collection.test
 import java.lang.String
 
 import scala.{Any, Array, Boolean, Char, Either, Int, Left, Nothing, Option, StringContext, Unit}
-import scala.Predef.{assert, charWrapper, identity, println}
+import scala.Predef.{assert, charWrapper, identity, println, $conforms}
 import collection._
 import collection.immutable.{ImmutableArray, LazyList, List, Nil, Range, Vector}
 import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
+import org.junit.Assert._
 
 class StrawmanTest {
 
@@ -267,6 +268,9 @@ class StrawmanTest {
     println(xs15.view)
     println(xs16.view)
     println(xs17.view)
+    val a1 = Array[String]("a", "b", "c")
+    val a2 = a1.filter(_ != "b").map(s => s(0))
+    val a2t: Array[Char] = a2
   }
 
   def immutableSeqOps(xs: immutable.Seq[Int]): Unit = {
@@ -548,6 +552,21 @@ class StrawmanTest {
     assert(list.length == list.size && list.size == 3)
     val lazyList = 1 #:: 2 #:: 3 #:: LazyList.Empty
     assert(lazyList.length == lazyList.size && lazyList.size == 3)
+  }
+
+  @Test
+  def testSeqExtractors(): Unit = {
+    val l: List[Int] = 1 :: 2 :: 3 :: Nil
+    val x +: xs = l
+    val xt: Int = x
+    val xst: List[Int] = xs
+    assertEquals(1, x)
+    assertEquals(List(2, 3), xs)
+    val ys :+ y = l
+    val yt: Int = y
+    val yst: List[Int] = ys
+    assertEquals(3, y)
+    assertEquals(List(1, 2), ys)
   }
 
   @Test

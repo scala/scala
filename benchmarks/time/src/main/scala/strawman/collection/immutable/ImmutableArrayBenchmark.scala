@@ -6,7 +6,7 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
 import scala.{Any, AnyRef, Int, Long, Unit, math}
-import scala.Predef.intWrapper
+import scala.Predef.{intWrapper, $conforms}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

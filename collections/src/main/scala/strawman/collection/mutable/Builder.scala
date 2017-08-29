@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{Boolean, Any, Char, Int, Unit, Array, Byte, Float, Double, Long, Short, `inline`, deprecated}
+import scala.{Boolean, Any, Char, Int, Unit, Array, Byte, Float, Double, Long, Short, `inline`, deprecated, Serializable}
 import java.lang.String
 
 import strawman.collection.IterableOnce
@@ -73,8 +73,24 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
 }
 
-class StringBuilder extends Builder[Char, String] {
-  private val sb = new java.lang.StringBuilder
+class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Char, String]
+  with IndexedSeq[Char]
+  with IndexedOptimizedSeq[Char]
+  with Serializable {
+
+  def this() = this(new java.lang.StringBuilder)
+
+  def this(length: Int) = this(new java.lang.StringBuilder(length))
+
+  def this(s: String) = this(new java.lang.StringBuilder(s))
+
+  // Methods required to make this an IndexedSeq:
+  def apply(i: Int): Char = sb.charAt(i)
+  def iterableFactory: strawman.collection.SeqFactory[IndexedSeq] = IndexedSeq
+  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[Char]): IndexedSeq[Char] =
+    iterableFactory.from(coll)
+  protected[this] def newSpecificBuilder(): strawman.collection.mutable.Builder[Char, IndexedSeq[Char]] =
+    iterableFactory.newBuilder()
 
   //TODO In the old collections, StringBuilder extends Seq -- should it do the same here to get this method?
   def length: Int = sb.length()
@@ -177,4 +193,119 @@ class StringBuilder extends Builder[Char, String] {
   def append(x: Float): StringBuilder = { sb append x ; this }
   def append(x: Double): StringBuilder = { sb append x ; this }
   def append(x: Char): StringBuilder = { sb append x ; this }
+
+  /** Remove a subsequence of Chars from this sequence, starting at the
+    *  given start index (inclusive) and extending to the end index (exclusive)
+    *  or to the end of the String, whichever comes first.
+    *
+    *  @param  start  The beginning index, inclusive.
+    *  @param  end    The ending index, exclusive.
+    *  @return        This StringBuilder.
+    *  @throws StringIndexOutOfBoundsException   if start < 0 || start > end
+    */
+  def delete(start: Int, end: Int): StringBuilder = {
+    sb.delete(start, end)
+    this
+  }
+
+  /** Replaces a subsequence of Chars with the given String.  The semantics
+    *  are as in delete, with the String argument then inserted at index 'start'.
+    *
+    *  @param  start  The beginning index, inclusive.
+    *  @param  end    The ending index, exclusive.
+    *  @param  str    The String to be inserted at the start index.
+    *  @return        This StringBuilder.
+    *  @throws StringIndexOutOfBoundsException if start < 0, start > length, or start > end
+    */
+  def replace(start: Int, end: Int, str: String): StringBuilder = {
+    sb.replace(start, end, str)
+    this
+  }
+
+  /** Inserts a subarray of the given Array[Char] at the given index
+    *  of this sequence.
+    *
+    * @param  index   index at which to insert the subarray.
+    * @param  str     the Array from which Chars will be taken.
+    * @param  offset  the index of the first Char to insert.
+    * @param  len     the number of Chars from 'str' to insert.
+    * @return         This StringBuilder.
+    *
+    * @throws StringIndexOutOfBoundsException  if index < 0, index > length,
+    *         offset < 0, len < 0, or (offset + len) > str.length.
+    */
+  def insertAll(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
+    sb.insert(index, str, offset, len)
+    this
+  }
+
+  /** Inserts the String representation (via String.valueOf) of the given
+    *  argument into this sequence at the given index.
+    *
+    *  @param  index   the index at which to insert.
+    *  @param  x       a value.
+    *  @return         this StringBuilder.
+    *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
+    */
+  def insert(index: Int, x: Any): StringBuilder = insert(index, String.valueOf(x))
+
+  /** Inserts the String into this character sequence.
+    *
+    *  @param  index the index at which to insert.
+    *  @param  x     a String.
+    *  @return       this StringBuilder.
+    *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
+    */
+  def insert(index: Int, x: String): StringBuilder = {
+    sb.insert(index, x)
+    this
+  }
+
+  /** Inserts the given Seq[Char] into this sequence at the given index.
+    *
+    *  @param  index the index at which to insert.
+    *  @param  xs    the Seq[Char].
+    *  @return       this StringBuilder.
+    *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
+    */
+  def insertAll(index: Int, xs: IterableOnce[Char]): StringBuilder = insertAll(index, xs.toArray)
+
+  /** Inserts the given Array[Char] into this sequence at the given index.
+    *
+    *  @param  index the index at which to insert.
+    *  @param  xs    the Array[Char].
+    *  @return       this StringBuilder.
+    *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
+    */
+  def insertAll(index: Int, xs: Array[Char]): StringBuilder = {
+    sb.insert(index, xs)
+    this
+  }
+
+  /** Calls String.valueOf on the given primitive value, and inserts the
+    *  String at the given index.
+    *
+    *  @param  index the offset position.
+    *  @param  x     a primitive value.
+    *  @return       this StringBuilder.
+    */
+  def insert(index: Int, x: Boolean): StringBuilder = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Byte): StringBuilder    = insert(index, x.toInt)
+  def insert(index: Int, x: Short): StringBuilder   = insert(index, x.toInt)
+  def insert(index: Int, x: Int): StringBuilder     = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Long): StringBuilder    = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Float): StringBuilder   = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Double): StringBuilder  = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Char): StringBuilder    = insert(index, String.valueOf(x))
+
+  /** Sets the length of the character sequence.  If the current sequence
+    *  is shorter than the given length, it is padded with nulls; if it is
+    *  longer, it is truncated.
+    *
+    *  @param  len  the new length
+    *  @throws IndexOutOfBoundsException if the argument is negative.
+    */
+  def setLength(len: Int): Unit = sb.setLength(len)
+
+  def update(idx: Int, elem: Char): Unit = sb.setCharAt(idx, elem)
 }

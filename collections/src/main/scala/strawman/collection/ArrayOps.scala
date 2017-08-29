@@ -73,4 +73,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
   def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(toIterable, suffix))
   @`inline` final def :++ [B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
   @`inline` final def concat[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
+
+  def patch[B >: A : ClassTag](from: Int, other: Iterable[B], replaced: Int): Array[B] =
+    fromTaggedIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
 }

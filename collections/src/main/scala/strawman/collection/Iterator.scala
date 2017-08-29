@@ -2,7 +2,7 @@ package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.{Any, Array, Boolean, Either, IllegalArgumentException, Int, Left, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Right, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
+import scala.{Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
 import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
@@ -62,7 +62,14 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     *  @note     Reuse: $preservesIterator
     */
   def isEmpty: Boolean = !hasNext
-  
+
+  /** Tests whether this iterator is not empty, same as `hasNext`.
+    *
+    *  @return   `true` if hasNext is true, `false` otherwise.
+    *  @note     Reuse: $preservesIterator
+    */
+  @`inline` final def nonEmpty: Boolean = hasNext
+
   /** Wraps the value of `next()` in an option.
     *
     * @return `Some(next)` if a next element exists, `None` otherwise.
@@ -131,6 +138,28 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     while (hasNext) {
       val a = next()
       if (p(a)) return Some(a)
+    }
+    None
+  }
+
+  /** Finds the first element of the iterator for which the given partial
+    *  function is defined, and applies the partial function to it.
+    *
+    *  $mayNotTerminateInf
+    *  $orderDependent
+    *
+    *  @param pf   the partial function
+    *  @return     an option value containing pf applied to the first
+    *              value for which it is defined, or `None` if none exists.
+    *  @example    `Seq("a", 1, 5L).iterator().collectFirst({ case x: Int => x*10 }) = Some(10)`
+    */
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
+    // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
+    // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
+    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
+    while (hasNext) {
+      val x = pf.applyOrElse(next(), sentinel)
+      if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
     }
     None
   }
@@ -845,6 +874,9 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     def next() = current.next()
   }
 
+  def flatten[B](implicit ev: A => IterableOnce[B]): Iterator[B] =
+    flatMap[B](ev)
+
   def concat[B >: A](xs: => IterableOnce[B]): Iterator[B] = new Iterator.ConcatIterator[B](self).concat(xs)
 
   @`inline` def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
@@ -956,6 +988,17 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     val thatIterator = that.iterator()
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
+  }
+
+  def zipAll[A1 >: A, B](that: IterableOnce[B], thisElem: A1, thatElem: B): Iterator[(A1, B)] = new Iterator[(A1, B)] {
+    val thatIterator = that.iterator()
+    def hasNext = self.hasNext || thatIterator.hasNext
+    def next(): (A1, B) = {
+      val next1 = self.hasNext
+      val next2 = thatIterator.hasNext
+      if(!(next1 || next2)) throw new NoSuchElementException
+      (if(next1) self.next() else thisElem, if(next2) thatIterator.next() else thatElem)
+    }
   }
 
   /** Creates an iterator that pairs each element produced by this iterator

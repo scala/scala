@@ -3,7 +3,7 @@ package strawman.collection.mutable
 import strawman.collection
 import strawman.collection.{IterableFactory, IterableOnce}
 
-import scala.{Boolean, Int, None, Option, Some, Unit, `inline`}
+import scala.{Boolean, Int, None, Option, Some, Unit, `inline`, deprecated}
 
 /** Base trait for mutable sets */
 trait Set[A]
@@ -96,6 +96,14 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
       coll -= elem
     this
   }
+
+  /** Retains only those elements for which the predicate
+    *  `p` returns `true`.
+    *
+    * @param p  The test predicate
+    */
+  @deprecated("Use .filterInPlace instead of .retain", "2.13.0")
+  @`inline` final def retain(p: A => Boolean): this.type = filterInPlace(p)
 
   override def clone(): C = empty ++= toIterable
 
