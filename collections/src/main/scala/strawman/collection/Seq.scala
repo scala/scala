@@ -676,7 +676,6 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   override def isEmpty: Boolean = lengthCompare(0) == 0
-  override def nonEmpty: Boolean = lengthCompare(0) != 0
 
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?

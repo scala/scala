@@ -3,6 +3,7 @@ package collection
 package mutable
 
 import scala.{AnyRef, Any, Nothing, Array, Int, Boolean, Some, None, Option, SerialVersionUID, Serializable, NoSuchElementException, Unit, deprecated}
+import scala.Predef.<:<
 import scala.math
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
@@ -94,13 +95,14 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     (_size + _vacant) > 0.5*mask || _vacant > _size
 
   private def hashOf(key: K): Int = {
+    // Note: this method must not return 0 or Int.MinValue, as these indicate no element
     if (key eq null) 0x41081989
     else {
       val h = key.hashCode
       // Part of the MurmurHash3 32 bit finalizer
       val i = (h ^ (h >>> 16)) * 0x85EBCA6B
-      val j = (i ^ (i >>> 13))
-      if (j==0) 0x41081989 else j & 0x7FFFFFFF
+      val j = (i ^ (i >>> 13)) & 0x7FFFFFFF
+      if (j==0) 0x41081989 else j
     }
   }
 
@@ -421,6 +423,13 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
 
   //TODO Replace this default implementation that used to be in MapLike
   def clear(): Unit = keysIterator() foreach -=
+
+  // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
+  // TODO: Remove the unnecessary implicit in Scala 2.13; Dotty requires it for disambiguation
+  def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2))(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    AnyRefMap.from(View.Map(toIterable, f))
+  def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    AnyRefMap.from(View.FlatMap(toIterable, f))
 }
 
 object AnyRefMap {

@@ -4,7 +4,7 @@ package collection
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.{Any, AnyRef, Array, Boolean, Either, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1}
+import scala.{Any, AnyRef, Array, Boolean, Either, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, deprecatedOverriding}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 
@@ -288,7 +288,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *
     *  @return    `true` if the $coll contains at least one element, `false` otherwise.
     */
-  def nonEmpty: Boolean = iterator().hasNext
+  @deprecatedOverriding("nonEmpty is defined as !isEmpty; override isEmpty instead", "2.13.0")
+  def nonEmpty: Boolean = !isEmpty
 
   /** Selects the first element of this $coll.
     *  $orderDependent
@@ -371,8 +372,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
-  @deprecated("Use LazyList.from(it) instead of it.toStream", "2.13.0")
-  @`inline` final def toStream: immutable.LazyList[A] = immutable.LazyList.from(this)
+  @deprecated("Use Stream.from(it) instead of it.toStream", "2.13.0")
+  @`inline` final def toStream: immutable.Stream[A] = immutable.Stream.from(this)
 
   @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
   @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(this)
@@ -396,22 +397,75 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     xs
   }
 
-  /** The class name of this collection. To be used for converting to string.
-    *  Collections generally print like this:
-    *
-    *       <className>(elem_1, ..., elem_n)
+  /** Defines the prefix of this object's `toString` representation.
     *
     *  @return  a string representation which starts the result of `toString`
     *           applied to this $coll. By default the string prefix is the
     *           simple name of the collection class $coll.
     */
   def className: String = {
-    var string = toIterable.getClass.getName
-    val idx1 = string.lastIndexOf('.' : Int)
-    if (idx1 != -1) string = string.substring(idx1 + 1)
-    val idx2 = string.indexOf('$')
-    if (idx2 != -1) string = string.substring(0, idx2)
-    string
+    /* This method is written in a style that avoids calling `String.split()`
+     * as well as methods of java.lang.Character that require the Unicode
+     * database information. This is mostly important for Scala.js, so that
+     * using the collection library does automatically bring java.util.regex.*
+     * and the Unicode database in the generated code.
+     *
+     * This algorithm has the additional benefit that it won't allocate
+     * anything except the result String in the common case, where the class
+     * is not an inner class (i.e., when the result contains no '.').
+     */
+    val fqn = toIterable.getClass.getName
+    var pos: Int = fqn.length - 1
+
+    // Skip trailing $'s
+    while (pos != -1 && fqn.charAt(pos) == '$') {
+      pos -= 1
+    }
+    if (pos == -1 || fqn.charAt(pos) == '.') {
+      return ""
+    }
+
+    var result: String = ""
+    while (true) {
+      // Invariant: if we enter the loop, there is a non-empty part
+
+      // Look for the beginning of the part, remembering where was the last non-digit
+      val partEnd = pos + 1
+      while (pos != -1 && fqn.charAt(pos) <= '9' && fqn.charAt(pos) >= '0') {
+        pos -= 1
+      }
+      val lastNonDigit = pos
+      while (pos != -1 && fqn.charAt(pos) != '$' && fqn.charAt(pos) != '.') {
+        pos -= 1
+      }
+      val partStart = pos + 1
+
+      // A non-last part which contains only digits marks a method-local part -> drop the prefix
+      if (pos == lastNonDigit && partEnd != fqn.length) {
+        return result
+      }
+
+      // Skip to the next part, and determine whether we are the end
+      while (pos != -1 && fqn.charAt(pos) == '$') {
+        pos -= 1
+      }
+      val atEnd = pos == -1 || fqn.charAt(pos) == '.'
+
+      // Handle the actual content of the part (we ignore parts that are likely synthetic)
+      def isPartLikelySynthetic = {
+        val firstChar = fqn.charAt(partStart)
+        (firstChar > 'Z' && firstChar < 0x7f) || (firstChar < 'A')
+      }
+      if (atEnd || !isPartLikelySynthetic) {
+        val part = fqn.substring(partStart, partEnd)
+        result = if (result.isEmpty) part else part + '.' + result
+        if (atEnd)
+          return result
+      }
+    }
+
+    // dead code
+    result
   }
 
   @deprecated("Use className instead of stringPrefix", "2.13.0")
@@ -464,6 +518,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def mkString: String = mkString("")
 
+  /** Converts this $coll to a string.
+    *
+    *  @return   a string representation of this collection. By default this
+    *            string consists of the `className` of this $coll, followed
+    *            by all elements separated by commas and enclosed in parentheses.
+    */
   override def toString = mkString(className + "(", ", ", ")")
 
   //TODO Can there be a useful lazy implementation of this method? Otherwise mark it as being always strict

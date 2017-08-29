@@ -14,4 +14,7 @@ package object mutable {
 
   @deprecated("mutable.LinearSeq has been removed; use LinearSeq with mutable.Seq instead", "2.13.0")
   type LinearSeq[X] = Seq[X] with strawman.collection.LinearSeq[X]
+
+  @deprecated("GrowingBuilder has been renamed to GrowableBuilder", "2.13.0")
+  type GrowingBuilder[Elem, To <: Growable[Elem]] = GrowableBuilder[Elem, To]
 }

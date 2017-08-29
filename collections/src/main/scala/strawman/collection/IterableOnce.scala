@@ -42,6 +42,9 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
     case _ => it.iterator().foreach(f)
   }
 
+  @deprecated("Use factory.from(it) instead of it.to(factory) for IterableOnce", "2.13.0")
+  def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(it)
+
   @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
   def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(it)
 
@@ -60,8 +63,8 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use Seq.from(it) instead of it.toSeq", "2.13.0")
   @`inline` def toSeq: immutable.Seq[A] = immutable.Seq.from(it)
 
-  @deprecated("Use LazyList.from(it) instead of it.toStream", "2.13.0")
-  @`inline` def toStream: immutable.LazyList[A] = immutable.LazyList.from(it)
+  @deprecated("Use Stream.from(it) instead of it.toStream", "2.13.0")
+  @`inline` def toStream: immutable.Stream[A] = immutable.Stream.from(it)
 
   @deprecated("Use Vector.from(it) instead of it.toVector on IterableOnce", "2.13.0")
   @`inline` def toVector: immutable.Vector[A] = immutable.Vector.from(it)
@@ -123,6 +126,9 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
     case it: Iterable[A] => it.asInstanceOf[Iterable[A]].flatMap(f)
     case _ => it.iterator().flatMap(f)
   }
+
+  @deprecated("Use .iterator().sameElements for sameElements on Iterable or IterableOnce", "2.13.0")
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = it.iterator().sameElements(that)
 }
 
 object IterableOnce {

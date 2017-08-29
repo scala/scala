@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, Some, StringContext, `inline`, throws}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, StringContext, `inline`, throws, deprecated, SerialVersionUID}
 import scala.Predef.String
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.implicitConversions
@@ -268,6 +268,8 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
   override def mkString(start: String, sep: String, end: String): String =
     iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
+  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFromIterable(View.Append(toIterable, kv))
 }
 
 /**

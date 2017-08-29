@@ -10,6 +10,8 @@ import scala.annotation.tailrec
   */
 trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 
+object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.List)
+
 /** Base trait for linear Seq operations */
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
 

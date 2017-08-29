@@ -111,7 +111,7 @@ private[mutable] class MutableList[A]
     e
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     var these = first0
     while (these.nonEmpty) {
       if(these.elem == elem) {
