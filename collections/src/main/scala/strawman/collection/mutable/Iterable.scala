@@ -14,15 +14,9 @@ trait Iterable[A]
   * @define Coll `mutable.Iterable`
   */
 trait IterableOps[A, +CC[X], +C]
-  extends collection.IterableOps[A, CC, C]
-    with Growable[A] {
+  extends collection.IterableOps[A, CC, C] {
 
   def mapInPlace(f: A => A): this.type
-
-  def flatMapInPlace(f: A => IterableOnce[A]): this.type
-
-  def filterInPlace(p: A => Boolean): this.type
-
 }
 
 /**

@@ -103,8 +103,8 @@ class LowPriority {
   import scala.language.implicitConversions
   import strawman.collection._
 
-  /** Convert array to iterable via view. Lower priority than ArrayOps */
-  implicit def arrayToView[T](xs: Array[T]): ArrayView[T] = ArrayView[T](xs)
+  /** Convert array to WrappedArray. Lower priority than ArrayOps */
+  implicit def arrayToWrappedArray[T](xs: Array[T]): mutable.IndexedSeq[T] = mutable.WrappedArray.make[T](xs)
 
   /** Convert string to iterable via view. Lower priority than StringOps */
   implicit def stringToView(s: String): immutable.StringView = new immutable.StringView(s)

@@ -1,0 +1,537 @@
+package strawman.collection
+package mutable
+
+import scala.{Array, Serializable, Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit, AnyRef, Any}
+import scala.Predef.implicitly
+import scala.reflect.ClassTag
+import strawman.collection.immutable.ImmutableArray
+
+/** A builder class for arrays.
+ *
+ *  @since 2.8
+ *
+ *  @tparam T    the type of the elements for the builder.
+ */
+sealed abstract class ArrayBuilder[T] extends ReusableBuilder[T, Array[T]] with Serializable {
+  protected[this] var capacity: Int = 0
+  protected var size: Int = 0
+
+  protected[this] final def ensureSize(size: Int): Unit = {
+    if (capacity < size || capacity == 0) {
+      var newsize = if (capacity == 0) 16 else capacity * 2
+      while (newsize < size) newsize *= 2
+      resize(newsize)
+    }
+  }
+
+  override final def sizeHint(size: Int): Unit =
+    if (capacity < size) resize(size)
+
+  final def clear(): Unit = size = 0
+
+  protected[this] def resize(size: Int): Unit
+}
+
+/** A companion object for array builders.
+ *
+ *  @since 2.8
+ */
+object ArrayBuilder {
+
+  /** Creates a new arraybuilder of type `T`.
+   *
+   *  @tparam T     type of the elements for the array builder, with a `ClassTag` context bound.
+   *  @return       a new empty array builder.
+   */
+  def make[T: ClassTag](): ArrayBuilder[T] = {
+    val tag = implicitly[ClassTag[T]]
+    tag.runtimeClass match {
+      case java.lang.Byte.TYPE      => new ArrayBuilder.ofByte().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Short.TYPE     => new ArrayBuilder.ofShort().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Character.TYPE => new ArrayBuilder.ofChar().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Integer.TYPE   => new ArrayBuilder.ofInt().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Long.TYPE      => new ArrayBuilder.ofLong().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Float.TYPE     => new ArrayBuilder.ofFloat().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Double.TYPE    => new ArrayBuilder.ofDouble().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Boolean.TYPE   => new ArrayBuilder.ofBoolean().asInstanceOf[ArrayBuilder[T]]
+      case java.lang.Void.TYPE      => new ArrayBuilder.ofUnit().asInstanceOf[ArrayBuilder[T]]
+      case _                        => new ArrayBuilder.ofRef[T with AnyRef]()(tag.asInstanceOf[ClassTag[T with AnyRef]]).asInstanceOf[ArrayBuilder[T]]
+    }
+  }
+
+  /** A class for array builders for arrays of reference types.
+   *
+   *  This builder can be reused.
+   *
+   *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassTag` context bound.
+   */
+  final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
+
+    private var elems: Array[T] = _
+
+    private def mkArray(size: Int): Array[T] = {
+      val newelems = new Array[T](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: T): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
+      case xs: ImmutableArray.ofRef[_] =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofRef[_] => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofRef"
+  }
+
+  /** A class for array builders for arrays of `byte`s. It can be reused. */
+  final class ofByte extends ArrayBuilder[Byte] {
+
+    private var elems: Array[Byte] = _
+
+    private def mkArray(size: Int): Array[Byte] = {
+      val newelems = new Array[Byte](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Byte): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Byte]): this.type = xs match {
+      case xs: ImmutableArray.ofByte =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofByte => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofByte"
+  }
+
+  /** A class for array builders for arrays of `short`s. It can be reused. */
+  final class ofShort extends ArrayBuilder[Short] {
+
+    private var elems: Array[Short] = _
+
+    private def mkArray(size: Int): Array[Short] = {
+      val newelems = new Array[Short](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Short): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Short]): this.type = xs match {
+      case xs: ImmutableArray.ofShort =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofShort => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofShort"
+  }
+
+  /** A class for array builders for arrays of `char`s. It can be reused. */
+  final class ofChar extends ArrayBuilder[Char] {
+
+    private var elems: Array[Char] = _
+
+    private def mkArray(size: Int): Array[Char] = {
+      val newelems = new Array[Char](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Char): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Char]): this.type = xs match {
+      case xs: ImmutableArray.ofChar =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofChar => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofChar"
+  }
+
+  /** A class for array builders for arrays of `int`s. It can be reused. */
+  final class ofInt extends ArrayBuilder[Int] {
+
+    private var elems: Array[Int] = _
+
+    private def mkArray(size: Int): Array[Int] = {
+      val newelems = new Array[Int](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Int): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Int]): this.type = xs match {
+      case xs: ImmutableArray.ofInt =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofInt => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofInt"
+  }
+
+  /** A class for array builders for arrays of `long`s. It can be reused. */
+  final class ofLong extends ArrayBuilder[Long] {
+
+    private var elems: Array[Long] = _
+
+    private def mkArray(size: Int): Array[Long] = {
+      val newelems = new Array[Long](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Long): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Long]): this.type = xs match {
+      case xs: ImmutableArray.ofLong =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofLong => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofLong"
+  }
+
+  /** A class for array builders for arrays of `float`s. It can be reused. */
+  final class ofFloat extends ArrayBuilder[Float] {
+
+    private var elems: Array[Float] = _
+
+    private def mkArray(size: Int): Array[Float] = {
+      val newelems = new Array[Float](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Float): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Float]): this.type = xs match {
+      case xs: ImmutableArray.ofFloat =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofFloat => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofFloat"
+  }
+
+  /** A class for array builders for arrays of `double`s. It can be reused. */
+  final class ofDouble extends ArrayBuilder[Double] {
+
+    private var elems: Array[Double] = _
+
+    private def mkArray(size: Int): Array[Double] = {
+      val newelems = new Array[Double](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Double): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Double]): this.type = xs match {
+      case xs: ImmutableArray.ofDouble =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofDouble => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofDouble"
+  }
+
+  /** A class for array builders for arrays of `boolean`s. It can be reused. */
+  class ofBoolean extends ArrayBuilder[Boolean] {
+
+    private var elems: Array[Boolean] = _
+
+    private def mkArray(size: Int): Array[Boolean] = {
+      val newelems = new Array[Boolean](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
+
+    protected[this] def resize(size: Int): Unit = {
+      elems = mkArray(size)
+      capacity = size
+    }
+
+    def add(elem: Boolean): this.type = {
+      ensureSize(size + 1)
+      elems(size) = elem
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Boolean]): this.type = xs match {
+      case xs: ImmutableArray.ofBoolean =>
+        ensureSize(this.size + xs.length)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
+        size += xs.length
+        this
+      case _ =>
+        super.addAll(xs)
+    }
+
+    def result() = {
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
+      else mkArray(size)
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofBoolean => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofBoolean"
+  }
+
+  /** A class for array builders for arrays of `Unit` type. It can be reused. */
+  final class ofUnit extends ArrayBuilder[Unit] {
+
+    def add(elem: Unit): this.type = {
+      size += 1
+      this
+    }
+
+    override def addAll(xs: IterableOnce[Unit]): this.type = {
+      size += xs.iterator().size
+      this
+    }
+
+    def result() = {
+      val ans = new Array[Unit](size)
+      var i = 0
+      while (i < size) { ans(i) = (); i += 1 }
+      ans
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofUnit => (size == x.size)
+      case _ => false
+    }
+
+    protected[this] def resize(size: Int): Unit = ()
+
+    override def toString = "ArrayBuilder.ofUnit"
+  }
+}

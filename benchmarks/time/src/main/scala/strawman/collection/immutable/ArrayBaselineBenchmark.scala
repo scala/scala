@@ -4,7 +4,6 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
-import strawman.collection.{ArrayView, View}
 import scala.{Any, AnyRef, Int, Long, Unit, Array}
 import scala.Predef.intWrapper
 
