@@ -73,7 +73,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     */
   def remove(key: K): Option[V] = {
     val r = get(key)
-    this -= key
+    if (r.isDefined) this -= key
     r
   }
 
