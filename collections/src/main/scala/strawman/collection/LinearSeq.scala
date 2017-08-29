@@ -2,6 +2,7 @@ package strawman
 package collection
 
 import scala.{Any, Boolean, IndexOutOfBoundsException, Int, throws}
+import scala.annotation.tailrec
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.
@@ -35,6 +36,19 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
   }
 
   final def length: Int = size
+
+  override def lengthCompare(len: Int): Int = {
+    @tailrec def loop(i: Int, xs: LinearSeq[A]): Int = {
+      if (i == len)
+        if (xs.isEmpty) 0 else 1
+      else if (xs.isEmpty)
+        -1
+      else
+        loop(i + 1, xs.tail)
+    }
+    if (len < 0) 1
+    else loop(0, coll)
+  }
 
   /** Optimized version of `drop` that avoids copying
     *  Note: `drop` is defined here, rather than in a trait like `LinearSeqMonoTransforms`,

@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit}
+import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, AnyRef}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 
@@ -11,10 +11,13 @@ import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
 
 /** Base trait for generic collections */
-trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
+trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] with Traversable[A] {
 
   /** The collection itself */
   final def toIterable: this.type = this
+
+  //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
+  protected[this] def coll: this.type = this
 
 }
 
@@ -33,7 +36,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   *  @tparam C  type of the collection (e.g. `List[Int]`, `String`, `BitSet`). Operations returning a collection
   *             with the same type of element (e.g. `drop`, `filter`) return a `C`.
   */
-trait IterableOps[+A, +CC[X], +C] extends Any {
+trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
@@ -116,6 +119,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   /** Fold right */
   def foldRight[B](z: B)(op: (A, B) => B): B = toIterable.iterator().foldRight(z)(op)
+
+  @deprecated("Use foldLeft instead of /:", "2.13.0")
+  @`inline` final def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
+
+  @deprecated("Use foldRight instead of :\\", "2.13.0")
+  @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.
    *
@@ -225,6 +234,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   /** The first element of the collection. */
   def head: A = toIterable.iterator().next()
 
+  /** The first element of the collection. */
+  def headOption: Option[A] = {
+    val it = toIterable.iterator()
+    if(it.hasNext) Some(it.next()) else None
+  }
+
   /** Selects the last element.
     * $orderDependent
     * @return The last element of this $coll.
@@ -249,6 +264,9 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     */
   def knownSize: Int = -1
 
+  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
+  @`inline` final def hasDefiniteSize = knownSize >= 0
+
   /** The number of elements in this collection. Does not terminate for
     *  infinite collections.
     */
@@ -265,6 +283,19 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
   def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(toIterable)
+
+  def toList: immutable.List[A] = immutable.List.from(toIterable)
+
+  def toVector: immutable.Vector[A] = immutable.Vector.from(toIterable)
+
+  def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
+    immutable.Map.from(toIterable.asInstanceOf[Iterable[(K, V)]])
+
+  def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(toIterable)
+
+  def toSeq: immutable.Seq[A] = immutable.Seq.from(toIterable)
+
+  def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(toIterable)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
@@ -286,8 +317,22 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  Collections generally print like this:
     *
     *       <className>(elem_1, ..., elem_n)
+    *
+    *  @return  a string representation which starts the result of `toString`
+    *           applied to this $coll. By default the string prefix is the
+    *           simple name of the collection class $coll.
     */
-  def className = getClass.getName
+  def className: String = {
+    var string = toIterable.getClass.getName
+    val idx1 = string.lastIndexOf('.' : Int)
+    if (idx1 != -1) string = string.substring(idx1 + 1)
+    val idx2 = string.indexOf('$')
+    if (idx2 != -1) string = string.substring(0, idx2)
+    string
+  }
+
+  @deprecated("Use className instead of stringPrefix", "2.13.0")
+  @`inline` final def stringPrefix: String = className
 
   /** A string showing all elements of this collection, separated by string `sep`. */
   def mkString(start: String, sep: String, end: String): String = {
@@ -307,8 +352,61 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   def mkString: String = mkString("")
 
-  override def toString = s"$className(${mkString(", ")})"
+  override def toString = mkString(className + "(", ", ", ")")
 
+  //TODO Can there be a useful lazy implementation of this method? Otherwise mark it as being always strict
+  /** Transposes this $coll of iterable collections into
+    *  a $coll of ${coll}s.
+    *
+    *    The resulting collection's type will be guided by the
+    *    static type of $coll. For example:
+    *
+    *    {{{
+    *    val xs = List(
+    *               Set(1, 2, 3),
+    *               Set(4, 5, 6)).transpose
+    *    // xs == List(
+    *    //         List(1, 4),
+    *    //         List(2, 5),
+    *    //         List(3, 6))
+    *
+    *    val ys = Vector(
+    *               List(1, 2, 3),
+    *               List(4, 5, 6)).transpose
+    *    // ys == Vector(
+    *    //         Vector(1, 4),
+    *    //         Vector(2, 5),
+    *    //         Vector(3, 6))
+    *    }}}
+    *
+    *  @tparam B the type of the elements of each iterable collection.
+    *  @param  asIterable an implicit conversion which asserts that the
+    *          element type of this $coll is an `Iterable`.
+    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
+    *          the ''n''th column of this $coll.
+    *  @throws IllegalArgumentException if all collections in this $coll
+    *          are not of the same size.
+    */
+  def transpose[B](implicit asIterable: A => /*<:<!!!*/ Iterable[B]): CC[CC[B] @uncheckedVariance] = {
+    if (isEmpty)
+      return iterableFactory.empty[CC[B]]
+
+    def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
+
+    val headSize = asIterable(head).size
+    val bs: strawman.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = strawman.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B]())
+    for (xs <- iterator()) {
+      var i = 0
+      for (x <- asIterable(xs)) {
+        if (i >= headSize) fail
+        bs(i) += x
+        i += 1
+      }
+      if (i != headSize)
+        fail
+    }
+    fromIterable(bs.map(_.result()))
+  }
 
   /** Sums up the elements of this collection.
     *
@@ -882,3 +980,5 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 }
 
 object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)
+
+abstract class AbstractIterable[+A] extends Iterable[A]

@@ -21,8 +21,8 @@ import java.lang.String
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(1L)
-final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
-  extends Map[K, V]
+class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
+  extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {

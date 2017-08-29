@@ -8,7 +8,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer, ReusableBuilder}
 
-import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient}
+import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient, Some, None}
 
 
 /** A class for immutable linked lists representing ordered collections
@@ -345,13 +345,68 @@ sealed trait List[+A]
   protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
 
   override def className = "List"
+
+  /** Builds a new list by applying a function to all elements of this list.
+    *  Like `xs map f`, but returns `xs` unchanged if function
+    *  `f` maps all elements to themselves (as determined by `eq`).
+    *
+    *  @param f      the function to apply to each element.
+    *  @tparam B     the element type of the returned collection.
+    *  @return       a list resulting from applying the given function
+    *                `f` to each element of this list and collecting the results.
+    *
+    *  @usecase def mapConserve(f: A => A): List[A]
+    *    @inheritdoc
+    */
+  @`inline` final def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
+    // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
+    // If any successful optimization attempts or other changes are made, please rehash them there too.
+    //@tailrec
+    def loop(mappedHead: List[B] = Nil, mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] = {
+      if (pending.isEmpty) {
+        if (mappedHead eq null) unchanged
+        else {
+          mappedLast.next = (unchanged: List[B])
+          mappedHead
+        }
+      }
+      else {
+        val head0 = pending.head
+        val head1 = f(head0)
+
+        if (head1 eq head0.asInstanceOf[AnyRef])
+          loop(mappedHead, mappedLast, unchanged, pending.tail)
+        else {
+          var xc = unchanged
+          var mappedHead1: List[B] = mappedHead
+          var mappedLast1: ::[B] = mappedLast
+          while (xc ne pending) {
+            val next = new ::[B](xc.head, Nil)
+            if (mappedHead1 eq null) mappedHead1 = next
+            if (mappedLast1 ne null) mappedLast1.next = next
+            mappedLast1 = next
+            xc = xc.tail
+          }
+          val next = new ::(head1, Nil)
+          if (mappedHead1 eq null) mappedHead1 = next
+          if (mappedLast1 ne null) mappedLast1.next = next
+          mappedLast1 = next
+          val tail0 = pending.tail
+          loop(mappedHead1, mappedLast1, tail0, tail0)
+
+        }
+      }
+    }
+    loop(null, null, this, this)
+  }
 }
 
-case class :: [+A](x: A, private[collection] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
+case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
   override def nonEmpty: Boolean = true
   override def head: A = x
+  override def headOption: Some[A] = Some(x)
   override def tail: List[A] = next
 }
 
@@ -359,6 +414,7 @@ case object Nil extends List[Nothing] {
   override def isEmpty: Boolean = true
   override def nonEmpty: Boolean = false
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
+  override def headOption: None.type = None
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
   override def last: Nothing = throw new NoSuchElementException("last of empty list")
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")

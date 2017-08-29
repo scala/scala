@@ -13,7 +13,7 @@ package concurrent
 import scala.{AnyRef, Array, Boolean, Console, Equiv, Int, NoSuchElementException, None, NullPointerException, Option, SerialVersionUID, Serializable, Some, Unit, UnsupportedOperationException, volatile}
 import java.lang.{Integer, Object, String}
 
-import scala.Predef.{ArrowAssoc, assert, augmentString, classOf}
+import scala.Predef.{ArrowAssoc, assert, classOf}
 import java.util.concurrent.atomic._
 
 import strawman.collection.mutable.{Builder, GrowableBuilder}
@@ -593,7 +593,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
 
   private def collectLocalElems: Seq[String] = array flatMap {
     case sn: SNode[K, V] => Some(sn.kvPair._2.toString): IterableOnce[String]
-    case in: INode[K, V] => Some(augmentString(in.toString).drop(14) + "(" + in.gen + ")"): IterableOnce[String]
+    case in: INode[K, V] => Some(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")"): IterableOnce[String]
   }
 
   override def toString = {

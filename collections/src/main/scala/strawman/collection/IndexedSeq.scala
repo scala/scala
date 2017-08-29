@@ -27,4 +27,6 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
     * linear, immutable collections this should avoid making a copy. */
   override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
 
+  override def lengthCompare(len: Int): Int = length - len
+
 }

@@ -42,6 +42,19 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
       coll += elem; true
     }
 
+  /** Updates the presence of a single element in this set.
+    *
+    * This method allows one to add or remove an element `elem`
+    *  from this set depending on the value of parameter `included`.
+    *  Typically, one would use the following syntax:
+    *  {{{
+    *     set(elem) = true  // adds element
+    *     set(elem) = false // removes element
+    *  }}}
+    *
+    *  @param elem     the element to be added or removed
+    *  @param included a flag indicating whether element should be included or excluded.
+    */
   def update(elem: A, included: Boolean): Unit = {
     if (included) insert(elem)
     else remove(elem)
@@ -84,3 +97,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 }
 
 object Set extends IterableFactory.Delegate[Set](HashSet)
+
+/** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
+abstract class AbstractSet[A] extends AbstractIterable[A] with Set[A]

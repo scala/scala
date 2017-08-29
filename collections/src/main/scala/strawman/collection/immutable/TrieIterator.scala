@@ -74,7 +74,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   }
 
   private[this] def iteratorWithSize(arr: Array[Iterable[T]]): (Iterator[T], Int) =
-    (newIterator(arr), (arr.map(_.size): strawman.collection.IterableOps[Int, Iterable, _]).sum)
+    (newIterator(arr), ((arr.map(_.size): Array[Int]): strawman.collection.IterableOps[Int, Iterable, _]).sum)
 
   private[this] def arrayToIterators(arr: Array[Iterable[T]]): SplitIterators = {
     val (fst, snd) = arr.splitAt(arr.length / 2)

@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Any, Ordering}
+import scala.{Any, Ordering, deprecated, `inline`}
 
 import strawman.collection.mutable.Builder
 
@@ -17,6 +17,9 @@ trait BuildFrom[-From, -A, +C] extends Any {
   /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
     * Building collections with `fromSpecificIterable` is preferred because it can be lazy for lazy collections. */
   def newBuilder(from: From): Builder[A, C]
+
+  @deprecated("Use newBuilder() instead of apply()", "2.13.0")
+  @`inline` def apply(from: From): Builder[A, C] = newBuilder(from)
 }
 
 object BuildFrom extends BuildFromLowPriority {

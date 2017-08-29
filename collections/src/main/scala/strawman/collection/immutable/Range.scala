@@ -3,7 +3,7 @@ package collection.immutable
 
 import collection.{Iterator, SeqFactory}
 
-import scala.{Any, AnyVal, BigDecimal, BigInt, Boolean, Double, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws}
+import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws, AnyVal, Double, BigDecimal, BigInt}
 import scala.Predef.augmentString
 import java.lang.String
 
@@ -41,11 +41,10 @@ import strawman.collection.mutable.Builder
   *  @param isInclusive whether the end of the range is included or not
   */
 @SerialVersionUID(7618862778670199309L)
-final class Range(
+sealed abstract class Range(
   val start: Int,
   val end: Int,
-  val step: Int,
-  val isInclusive: Boolean
+  val step: Int
 )
   extends IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
@@ -65,6 +64,8 @@ final class Range(
   private def isExact       = gap % step == 0
   private def hasStub       = isInclusive || !isExact
   private def longLength    = gap / step + ( if (hasStub) 1 else 0 )
+
+  def isInclusive: Boolean
 
   override val isEmpty: Boolean = (
     (start > end && step > 0)
@@ -122,11 +123,12 @@ final class Range(
     if (isEmpty)
       Nil.tail
     if (length == 1) newEmptyRange(end)
-    else new Range(start + step, end, step, isInclusive)
+    else if(isInclusive) new Range.Inclusive(start + step, end, step)
+    else new Range.Exclusive(start + step, end, step)
   }
 
   protected def copy(start: Int = start, end: Int = end, step: Int = step, isInclusive: Boolean = isInclusive): Range =
-    new Range(start, end, step, isInclusive)
+    if(isInclusive) new Range.Inclusive(start, end, step) else new Range.Exclusive(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
     *  a new `step`.
@@ -181,7 +183,7 @@ final class Range(
     else {
       // May have more than Int.MaxValue elements in range (numRangeElements < 0)
       // but the logic is the same either way: take the first n
-      new Range(start, locationAfterN(n - 1), step, isInclusive = true)
+      new Range.Inclusive(start, locationAfterN(n - 1), step)
     }
 
   /** Creates a new range containing all the elements of this range except the first `n` elements.
@@ -299,19 +301,19 @@ final class Range(
   // like "end + 1" or "end - 1" because ranges involving Int.{ MinValue, MaxValue }
   // will overflow.  This creates an exclusive range where start == end
   // based on the given value.
-  private def newEmptyRange(value: Int) = new Range(value, value, step, isInclusive = false)
+  private def newEmptyRange(value: Int) = new Range.Exclusive(value, value, step)
 
   /** Returns the reverse of this range.
     */
   override def reverse: Range =
     if (isEmpty) this
-    else new Range(last, start, -step, isInclusive = true)
+    else new Range.Inclusive(last, start, -step)
 
   /** Make range inclusive.
     */
   def inclusive: Range =
     if (isInclusive) this
-    else new Range(start, end, step, isInclusive = true)
+    else new Range.Inclusive(start, end, step)
 
   def contains(x: Int) = {
     if (x == end && !isInclusive) false
@@ -422,20 +424,28 @@ object Range {
   /** Make a range from `start` until `end` (exclusive) with given step value.
     * @note step != 0
     */
-  def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step, isInclusive = false)
+  def apply(start: Int, end: Int, step: Int): Range.Exclusive = new Range.Exclusive(start, end, step)
 
   /** Make a range from `start` until `end` (exclusive) with step value 1.
     */
-  def apply(start: Int, end: Int): Range = new Range(start, end, 1, isInclusive = false)
+  def apply(start: Int, end: Int): Range.Exclusive = new Range.Exclusive(start, end, 1)
 
   /** Make an inclusive range from `start` to `end` with given step value.
     * @note step != 0
     */
-  def inclusive(start: Int, end: Int, step: Int): Range = new Range(start, end, step, isInclusive = true)
+  def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Range.Inclusive(start, end, step)
 
   /** Make an inclusive range from `start` to `end` with step value 1.
     */
-  def inclusive(start: Int, end: Int): Range = new Range(start, end, 1, isInclusive = true)
+  def inclusive(start: Int, end: Int): Range.Inclusive = new Range.Inclusive(start, end, 1)
+
+  final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+    def isInclusive = true
+  }
+
+  final class Exclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+    def isInclusive = false
+  }
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {

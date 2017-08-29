@@ -13,8 +13,6 @@ trait Set[A]
     with SetOps[A, Set, Set[A]]
     with Equals {
 
-  final protected[this] def coll: this.type = this
-
   def canEqual(that: Any) = true
 
   override def equals(that: Any): Boolean =

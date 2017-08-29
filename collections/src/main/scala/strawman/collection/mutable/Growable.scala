@@ -1,16 +1,16 @@
 package strawman
-package collection.mutable
+package collection
+package mutable
 
 import strawman.collection.IterableOnce
-import scala.{`inline`, Unit}
+import scala.{`inline`, Unit, deprecated}
 import scala.annotation.tailrec
-import strawman.collection.{toOldSeq, toNewSeq}
 
 /** This trait forms part of collections that can be augmented
  *  using a `+=` operator and that can be cleared of all elements using
  *  a `clear` method.
  */
-trait Growable[-A] {
+trait Growable[-A] extends Clearable {
 
   /** ${Add}s a single element to this $coll.
    *
@@ -21,6 +21,10 @@ trait Growable[-A] {
 
   /** Alias for `add` */
   @`inline` final def += (elem: A): this.type = add(elem)
+
+  //TODO This causes a conflict in StringBuilder; looks like a compiler bug
+  //@deprecated("Use add or += instead of append", "2.13.0")
+  //@`inline` final def append(elem: A): Unit = add(elem)
 
   /** ${Add}s two or more elements to this $coll.
    *
@@ -54,11 +58,6 @@ trait Growable[-A] {
 
   /** Alias for `addAllInPlace` */
   @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
-
-  /** Clears the $coll's contents. After this operation, the
-   *  $coll is empty.
-   */
-  def clear(): Unit
 }
 
 object Growable {
@@ -72,4 +71,14 @@ object Growable {
     */
   def from[A](empty: Growable[A], it: collection.IterableOnce[A]): empty.type = empty ++= it
 
+}
+
+/** This trait forms part of collections that can be cleared
+  *  with a clear() call.
+  */
+trait Clearable {
+  /** Clears the $coll's contents. After this operation, the
+    *  $coll is empty.
+    */
+  def clear(): Unit
 }

@@ -4,13 +4,25 @@ package mutable
 
 import strawman.collection.{IterableOnce, MapFactory}
 
-import scala.{Boolean, None, Option, Some, Unit, `inline`}
+import scala.{Boolean, None, Option, Some, Unit, `inline`, deprecated}
 
 /** Base type of mutable Maps */
 trait Map[K, V]
   extends Iterable[(K, V)]
     with collection.Map[K, V]
     with MapOps[K, V, Map, Map[K, V]]
+    with Shrinkable[K] {
+
+  /*
+  //TODO consider keeping `remove` because it returns the removed entry
+  @deprecated("Use subtract or -= instead of remove", "2.13.0")
+  def remove(key: K): Option[V] = {
+    val old = get(key)
+    if(old.isDefined) subtract(key)
+    old
+  }
+  */
+}
 
 /** Base trait of mutable Maps implementations */
 trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
@@ -120,3 +132,6 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 }
 
 object Map extends MapFactory.Delegate[Map](HashMap)
+
+/** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+abstract class AbstractMap[A, B] extends strawman.collection.AbstractMap[A, B] with Map[A, B]

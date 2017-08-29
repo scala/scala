@@ -102,6 +102,34 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     None
   }
 
+  /** Creates a buffered iterator from this iterator.
+    *
+    *  @see [[scala.collection.BufferedIterator]]
+    *  @return  a buffered iterator producing the same values as this iterator.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def buffered: BufferedIterator[A] = new AbstractIterator[A] with BufferedIterator[A] {
+    private var hd: A = _
+    private var hdDefined: Boolean = false
+
+    def head: A = {
+      if (!hdDefined) {
+        hd = next()
+        hdDefined = true
+      }
+      hd
+    }
+
+    def hasNext =
+      hdDefined || self.hasNext
+
+    def next() =
+      if (hdDefined) {
+        hdDefined = false
+        hd
+      } else self.next()
+  }
+
   /** A flexible iterator for transforming an `Iterator[A]` into an
    *  Iterator[Seq[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
@@ -294,7 +322,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def foldRight[B](z: B)(op: (A, B) => B): B =
     if (hasNext) op(next(), foldRight(z)(op)) else z
 
-/** Produces a collection containing cumulative results of applying the
+  /** Produces a collection containing cumulative results of applying the
    *  operator going left to right.
    *
    *  $willNotTerminateInf
@@ -783,7 +811,7 @@ object Iterator {
     *  @param   elem the element computation
     *  @return  An iterator that produces the results of `n` evaluations of `elem`.
     */
-  def fill[A](len: Int)(elem: => A): Iterator[A] = new Iterator[A] {
+  def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = i < len
     def next(): A =
@@ -797,7 +825,7 @@ object Iterator {
     *  @param  f   The function computing element values
     *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
     */
-  def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new Iterator[A] {
+  def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = i < end
     def next(): A =
@@ -952,3 +980,6 @@ object Iterator {
     def headIterator: Iterator[A] = head.iterator()
   }
 }
+
+/** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
+abstract class AbstractIterator[+A] extends Iterator[A]
