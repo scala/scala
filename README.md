@@ -210,6 +210,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `tail`
 - [x] `take` / `takeRight` / `takeWhile`
 - [x] `updated`
+- [x] `withDefault` / `withDefaultValue`
 
 ### Transformations to collections that can have a different element type
 
