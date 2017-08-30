@@ -6,7 +6,7 @@ import scala.meta._
 
 case class Collectionstrawman_v0(sctx: SemanticCtx)
     extends SemanticRewrite(sctx) {
-  val immutableListSymbol = Symbol("_root_.scala.collection.immutable.List.")
+
   implicit class XtensionSymbolCollection(symbol: Symbol) {
     def name = symbol match {
       case Symbol.Global(_, sig) => sig.name
@@ -75,7 +75,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     def m(name: String) =
       s"scala.collection.mutable.$name" -> s"strawman.collection.mutable.$name"
     ctx.replaceSymbols(
-      s("Set"),
+      p("Set"),
       i("HashMap"),
       i("Map"),
       p("Map"),
@@ -115,8 +115,10 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       sctx.symbol(arg.pos).map(x => arg -> x)
   }
 
-  val toX = SymbolMatcher(
-    Symbol("_root_.scala.collection.TraversableOnce.toMap."),
+  val toGenericX = SymbolMatcher(
+    Symbol("_root_.scala.collection.TraversableOnce.toMap.")
+  )
+  val toImmutableX = SymbolMatcher(
     Symbol("_root_.scala.collection.TraversableOnce.toList."),
     Symbol("_root_.scala.collection.TraversableOnce.toSet.")
   )
@@ -131,8 +133,10 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     ctx.tree.collect {
       case iterator(n: Name, _) =>
         ctx.addRight(n.tokens.last, "()")
-      case toX(n: Name, s) =>
-        ctx.replaceTree(n, s"to(${s.name.stripPrefix("to")})")
+      case toImmutableX(n: Name, s) =>
+        ctx.replaceTree(n, s"to(strawman.collection.immutable.${s.name.stripPrefix("to")})")
+      case toGenericX(n: Name, s) =>
+        ctx.replaceTree(n, s"to(strawman.collection.${s.name.stripPrefix("to")})")
       case toTpe(n: Name, _) =>
         ctx.debug(n)
         (for {
@@ -141,6 +145,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
           open <- ctx.tokenList.find(name)(t => t.is[Token.LeftBracket])
           _ = ctx.debug(open)
           close <- ctx.matching.close(open.asInstanceOf[Token.LeftBracket])
+          replacedTokens = ctx.tokenList.slice(open, close)
         } yield
           ctx.replaceToken(open, "(") +
             ctx.replaceToken(close, ")")).getOrElse(Patch.empty)
