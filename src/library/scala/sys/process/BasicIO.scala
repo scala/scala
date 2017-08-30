@@ -42,8 +42,8 @@ object BasicIO {
   )
 
   private[process] object Streamed {
-    def apply[T](nonzeroException: Boolean): Streamed[T] = {
-      val q = new LinkedBlockingQueue[Either[Int, T]]
+    def apply[T](nonzeroException: Boolean, capacity: Integer): Streamed[T] = {
+      val q = new LinkedBlockingQueue[Either[Int, T]](capacity)
       def next(): Stream[T] = q.take match {
         case Left(0)    => Stream.empty
         case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty

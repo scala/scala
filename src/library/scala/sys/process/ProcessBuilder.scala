@@ -173,6 +173,17 @@ trait ProcessBuilder extends Source with Sink {
     */
   def lineStream: Stream[String]
 
+  /** Starts the process represented by this builder.  The output is returned as
+   * a Stream that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the console.  If the process exits
+   * with a non-zero value, the Stream will provide all lines up to termination
+   * and then throw an exception.
+   */
+  def lineStream(capacity: Integer): Stream[String]
+
   /** Deprecated (renamed). Use `lineStream` instead. */
   @deprecated("use lineStream instead", "2.11.0")
   def lines: Stream[String] = lineStream
@@ -184,6 +195,17 @@ trait ProcessBuilder extends Source with Sink {
     * to termination and then throw an exception.
     */
   def lineStream(log: ProcessLogger): Stream[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a Stream that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the provided ProcessLogger.  If the
+   * process exits with a non-zero value, the Stream will provide all lines up
+   * to termination and then throw an exception.
+   */
+  def lineStream(log: ProcessLogger, capacity: Integer): Stream[String]
 
   /** Deprecated (renamed).  Use `lineStream(log: ProcessLogger)` instead. */
   @deprecated("use lineStream instead", "2.11.0")
@@ -197,6 +219,17 @@ trait ProcessBuilder extends Source with Sink {
     */
   def lineStream_! : Stream[String]
 
+  /** Starts the process represented by this builder.  The output is returned as
+   * a Stream that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the console. If the process exits
+   * with a non-zero value, the Stream will provide all lines up to termination
+   * but will not throw an exception.
+   */
+  def lineStream_!(capacity: Integer): Stream[String]
+
   /** Deprecated (renamed).  Use `lineStream_!` instead. */
   @deprecated("use lineStream_! instead", "2.11.0")
   def lines_! : Stream[String] = lineStream_!
@@ -208,6 +241,17 @@ trait ProcessBuilder extends Source with Sink {
     * to termination but will not throw an exception.
     */
   def lineStream_!(log: ProcessLogger): Stream[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a Stream that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the provided ProcessLogger. If the
+   * process exits with a non-zero value, the Stream will provide all lines up
+   * to termination but will not throw an exception.
+   */
+  def lineStream_!(log: ProcessLogger, capacity: Integer): Stream[String]
 
   /** Deprecated (renamed).  Use `lineStream_!(log: ProcessLogger)` instead. */
   @deprecated("use lineStream_! instead", "2.11.0")
