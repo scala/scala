@@ -3,9 +3,21 @@ package reflect.internal.util
 
 import scala.collection.mutable
 
+import scala.reflect.internal.SymbolTable
+import scala.reflect.internal.settings.MutableSettings
 import java.lang.invoke.{SwitchPoint, MethodHandle, MethodHandles, MethodType}
 
-object Statistics {
+abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSettings) {
+
+  init()
+
+  def init(): Unit = {
+    // Turn on statistics on this class if settings say so
+    if (settings.YstatisticsEnabled)
+      enabled = true
+    if (settings.YhotStatisticsEnabled)
+      hotEnabled = true
+  }
 
   type TimerSnapshot = (Long, Long)
 
@@ -112,7 +124,7 @@ quant)
    *  Quantities with non-empty prefix are printed in the statistics info.
    */
   trait Quantity {
-    if (enabled && prefix.nonEmpty) {
+    if (canEnable && prefix.nonEmpty) {
       val key = s"${if (underlying != this) underlying.prefix else ""}/$prefix"
       qs(key) = this
     }
@@ -275,7 +287,7 @@ quant)
 
   import scala.reflect.internal.Reporter
   /** Reports the overhead of measuring statistics via the nanoseconds variation. */
-  def reportStatisticsOverhead(reporter: Reporter): Unit = {
+  final def reportStatisticsOverhead(reporter: Reporter): Unit = {
       val start = System.nanoTime()
       var total = 0L
       for (i <- 1 to 10000) {
@@ -285,5 +297,11 @@ quant)
       val total2 = System.nanoTime() - start
       val variation = s"${total/10000.0}ns to ${total2/10000.0}ns"
       reporter.echo(NoPosition, s"Enabling statistics, measuring overhead = $variation per timer")
+  }
+
+  /** Helper for measuring the overhead of a concrete thunk `body`. */
+  final def timed[T](timer: Timer)(body: => T): T = {
+    val start = startTimer(timer)
+    try body finally stopTimer(timer, start)
   }
 }

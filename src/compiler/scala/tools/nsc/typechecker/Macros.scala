@@ -6,6 +6,7 @@ import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
@@ -45,7 +46,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   import global._
   import definitions._
   import treeInfo.{isRepeatedParamType => _, _}
-  import MacrosStats._
 
   lazy val fastTrack = new FastTrack[self.type](self)
 
@@ -575,8 +575,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       linkExpandeeAndDesugared(expandee, desugared)
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
-      if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
+      val start = if (statistics.canEnable) statistics.startTimer(statistics.macroExpandNanos) else null
+      if (statistics.canEnable) statistics.incCounter(statistics.macroExpandCount)
       try {
         withInfoLevel(nodePrinters.InfoLevel.Quiet) { // verbose printing might cause recursive macro expansions
           if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
@@ -609,7 +609,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           }
         }
       } finally {
-        if (Statistics.canEnable) Statistics.stopTimer(macroExpandNanos, start)
+        if (statistics.canEnable) statistics.stopTimer(statistics.macroExpandNanos, start)
       }
     }
   }
@@ -911,10 +911,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     }.transform(expandee)
 }
 
-object MacrosStats {
-  import scala.reflect.internal.TypesStats.typerNanos
-  val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
-  val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
+trait MacrosStats {
+  self: TypesStats with Statistics =>
+  val macroExpandCount    = newCounter ("#macro expansions", "typer")
+  val macroExpandNanos    = newSubTimer("time spent in macroExpand", typerNanos)
 }
 
 class Fingerprint private[Fingerprint](val value: Int) extends AnyVal {

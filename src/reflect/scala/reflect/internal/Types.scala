@@ -86,7 +86,7 @@ trait Types
   with util.Collections { self: SymbolTable =>
 
   import definitions._
-  import TypesStats._
+  import statistics._
 
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
@@ -680,7 +680,7 @@ trait Types
      *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type = {
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, asSeenFromNanos)  else null
+      val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, asSeenFromNanos)  else null
       try {
         val trivial = (
              this.isTrivial
@@ -696,7 +696,7 @@ trait Types
           if (m.capturedSkolems.isEmpty) tp1
           else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
         }
-      } finally if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+      } finally if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
     }
 
     /** The info of `sym`, seen as a member of this type.
@@ -802,7 +802,7 @@ trait Types
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
-      if (Statistics.canEnable) stat_<:<(that)
+      if (statistics.canEnable) stat_<:<(that)
       else {
         (this eq that) ||
         (if (explainSwitch) explain("<:", isSubType(_: Type, _: Type), this, that)
@@ -834,26 +834,26 @@ trait Types
     })
 
     def stat_<:<(that: Type): Boolean = {
-      if (Statistics.canEnable) Statistics.incCounter(subtypeCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, subtypeNanos) else null
+      if (statistics.canEnable) statistics.incCounter(subtypeCount)
+      val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
       val result =
         (this eq that) ||
         (if (explainSwitch) explain("<:", isSubType(_: Type, _: Type), this, that)
          else isSubType(this, that))
-      if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+      if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
       result
     }
 
     /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
      */
     def weak_<:<(that: Type): Boolean = {
-      if (Statistics.canEnable) Statistics.incCounter(subtypeCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, subtypeNanos) else null
+      if (statistics.canEnable) statistics.incCounter(subtypeCount)
+      val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("weak_<:", isWeakSubType, this, that)
           else isWeakSubType(this, that)))
-      if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+      if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
       result
     }
 
@@ -1097,7 +1097,7 @@ trait Types
     override def isTrivial = false
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
-      if (Statistics.canEnable) Statistics.incCounter(singletonBaseTypeSeqCount)
+      if (statistics.canEnable) statistics.incCounter(singletonBaseTypeSeqCount)
       underlying.baseTypeSeq prepend this
     }
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
@@ -1500,8 +1500,8 @@ trait Types
           val bts = copyRefinedType(tpe.asInstanceOf[RefinedType], tpe.parents map varToParam, varToParam mapOver tpe.decls).baseTypeSeq
           tpe.baseTypeSeqCache = bts lateMap paramToVar
         } else {
-          if (Statistics.canEnable) Statistics.incCounter(compoundBaseTypeSeqCount)
-          val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
+          if (statistics.canEnable) statistics.incCounter(compoundBaseTypeSeqCount)
+          val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
           try {
             tpe.baseTypeSeqCache = undetBaseTypeSeq
             tpe.baseTypeSeqCache =
@@ -1510,7 +1510,7 @@ trait Types
               else
                 compoundBaseTypeSeq(tpe)
           } finally {
-            if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+            if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
           }
           // [Martin] suppressing memoization solves the problem with "same type after erasure" errors
           // when compiling with
@@ -1577,13 +1577,13 @@ trait Types
     else {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
+        val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
         try {
           tpe.baseClassesCache = null
           tpe.baseClassesCache = tpe.memo(computeBaseClasses(tpe))(tpe.typeSymbol :: _.baseClasses.tail)
         }
         finally {
-          if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+          if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
         }
       }
     }
@@ -2469,13 +2469,13 @@ trait Types
     if (period != currentPeriod) {
       tpe.baseTypeSeqPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        if (Statistics.canEnable) Statistics.incCounter(typerefBaseTypeSeqCount)
-        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
+        if (statistics.canEnable) statistics.incCounter(typerefBaseTypeSeqCount)
+        val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
         try {
           tpe.baseTypeSeqCache = undetBaseTypeSeq
           tpe.baseTypeSeqCache = tpe.baseTypeSeqImpl
         } finally {
-          if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+          if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
         }
       }
     }
@@ -3805,8 +3805,10 @@ trait Types
   private var uniques: util.WeakHashSet[Type] = _
   private var uniqueRunId = NoRunId
 
+  final def howManyUniqueTypes: Int = if (uniques == null) 0 else uniques.size
+
   protected def unique[T <: Type](tp: T): T =  {
-    if (Statistics.canEnable) Statistics.incCounter(rawTypeCount)
+    if (statistics.canEnable) statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
       // JZ: We used to register this as a perRunCache so it would be cleared eagerly at
@@ -4815,11 +4817,6 @@ trait Types
   implicit val TypeBoundsTag = ClassTag[TypeBounds](classOf[TypeBounds])
   implicit val TypeRefTag = ClassTag[TypeRef](classOf[TypeRef])
   implicit val TypeTagg = ClassTag[Type](classOf[Type])
-
-// -------------- Statistics --------------------------------------------------------
-
-  Statistics.newView("#unique types") { if (uniques == null) 0 else uniques.size }
-
 }
 
 object TypeConstants {
@@ -4828,35 +4825,28 @@ object TypeConstants {
   final val LogVolatileThreshold         = DefaultLogThreshhold
 }
 
-object TypesStats {
-  import BaseTypeSeqsStats._
-  val rawTypeCount        = Statistics.newCounter   ("#raw type creations")
-  val subtypeCount        = Statistics.newCounter   ("#subtype ops")
-  val sametypeCount       = Statistics.newCounter   ("#sametype ops")
-  val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")
-  val nestedLubCount      = Statistics.newCounter   ("#all lubs/glbs")
-  val findMemberCount     = Statistics.newCounter   ("#findMember ops")
-  val findMembersCount    = Statistics.newCounter   ("#findMembers ops")
-  val noMemberCount       = Statistics.newSubCounter("  of which not found", findMemberCount)
-  val multMemberCount     = Statistics.newSubCounter("  of which multiple overloaded", findMemberCount)
-  val typerNanos          = Statistics.newTimer     ("time spent typechecking", "typer")
-  val lubNanos            = Statistics.newStackableTimer("time spent in lubs", typerNanos)
-  val subtypeNanos        = Statistics.newStackableTimer("time spent in <:<", typerNanos)
-  val findMemberNanos     = Statistics.newStackableTimer("time spent in findmember", typerNanos)
-  val findMembersNanos    = Statistics.newStackableTimer("time spent in findmembers", typerNanos)
-  val asSeenFromNanos     = Statistics.newStackableTimer("time spent in asSeenFrom", typerNanos)
-  val baseTypeSeqNanos    = Statistics.newStackableTimer("time spent in baseTypeSeq", typerNanos)
-  val baseClassesNanos    = Statistics.newStackableTimer("time spent in baseClasses", typerNanos)
-  val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
-  val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
-  val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
-  val typeOpsStack = Statistics.newTimerStack()
-
-  /* Commented out, because right now this does not inline, so creates a closure which will distort statistics
-  @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
-    val start = Statistics.pushTimer(typeOpsStack, c)
-    try op
-    finally
-  }
-  */
+trait TypesStats {
+  self: BaseTypeSeqsStats with Statistics =>
+  val uniqueTypesView     = newView      ("#unique types")(symbolTable.howManyUniqueTypes)
+  val rawTypeCount        = newCounter   ("#raw type creations")
+  val subtypeCount        = newCounter   ("#subtype ops")
+  val sametypeCount       = newCounter   ("#sametype ops")
+  val lubCount            = newCounter   ("#toplevel lubs/glbs")
+  val nestedLubCount      = newCounter   ("#all lubs/glbs")
+  val findMemberCount     = newCounter   ("#findMember ops")
+  val findMembersCount    = newCounter   ("#findMembers ops")
+  val noMemberCount       = newSubCounter("  of which not found", findMemberCount)
+  val multMemberCount     = newSubCounter("  of which multiple overloaded", findMemberCount)
+  val typerNanos          = newTimer     ("time spent typechecking", "typer")
+  val lubNanos            = newStackableTimer("time spent in lubs", typerNanos)
+  val subtypeNanos        = newStackableTimer("time spent in <:<", typerNanos)
+  val findMemberNanos     = newStackableTimer("time spent in findmember", typerNanos)
+  val findMembersNanos    = newStackableTimer("time spent in findmembers", typerNanos)
+  val asSeenFromNanos     = newStackableTimer("time spent in asSeenFrom", typerNanos)
+  val baseTypeSeqNanos    = newStackableTimer("time spent in baseTypeSeq", typerNanos)
+  val baseClassesNanos    = newStackableTimer("time spent in baseClasses", typerNanos)
+  val compoundBaseTypeSeqCount = newSubCounter("  of which for compound types", baseTypeSeqCount)
+  val typerefBaseTypeSeqCount = newSubCounter("  of which for typerefs", baseTypeSeqCount)
+  val singletonBaseTypeSeqCount = newSubCounter("  of which for singletons", baseTypeSeqCount)
+  val typeOpsStack = newTimerStack()
 }

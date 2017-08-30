@@ -6,6 +6,7 @@ import scala.reflect.internal.{TreeInfo, SomePhase}
 import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
 import scala.reflect.api.{TypeCreator, Universe}
+import scala.reflect.internal.util.Statistics
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
@@ -18,6 +19,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   def erasurePhase = SomePhase
   lazy val settings = new Settings
 
+  override val statistics = new Statistics(JavaUniverse.this, settings) with ReflectStats
   private val isLogging = sys.props contains "scala.debug.reflect"
   def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 

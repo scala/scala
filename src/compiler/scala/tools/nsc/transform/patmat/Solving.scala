@@ -7,7 +7,6 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.internal.util.Statistics
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
@@ -33,8 +32,7 @@ object Lit {
 /** Solve pattern matcher exhaustivity problem via DPLL.
  */
 trait Solving extends Logic {
-
-  import PatternMatchingStats._
+  import global.statistics
 
   trait CNF extends PropositionalLogic {
 
@@ -473,7 +471,7 @@ trait Solving extends Logic {
 
       debug.patmat(s"DPLL\n${cnfString(clauses)}")
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaDPLL) else null
+      val start = if (statistics.canEnable) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
       val satisfiableWithModel: TseitinModel =
         if (clauses isEmpty) EmptyTseitinModel
@@ -509,7 +507,7 @@ trait Solving extends Logic {
             }
         }
 
-      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
+      if (statistics.canEnable) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
     }
 

@@ -28,7 +28,7 @@ import util.Statistics
 trait BaseTypeSeqs {
   this: SymbolTable =>
   import definitions._
-  import BaseTypeSeqsStats._
+  import statistics._
 
   protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     new BaseTypeSeq(parents, elems)
@@ -42,8 +42,8 @@ trait BaseTypeSeqs {
    */
   class BaseTypeSeq protected[reflect] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
-    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
-    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
+    if (statistics.canEnable) statistics.incCounter(baseTypeSeqCount)
+    if (statistics.canEnable) statistics.incCounter(baseTypeSeqLenTotal, elems.length)
     private[this] val typeSymbols = {
       val tmp = new Array[Int](elems.length)
       var i = 0
@@ -171,7 +171,7 @@ trait BaseTypeSeqs {
   /** A marker object for a base type sequence that's no yet computed.
    *  used to catch inheritance cycles
    */
-  val undetBaseTypeSeq: BaseTypeSeq = newBaseTypeSeq(List(), Array())
+  lazy val undetBaseTypeSeq: BaseTypeSeq = newBaseTypeSeq(List(), Array())
 
   /** Create a base type sequence consisting of a single type */
   def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = newBaseTypeSeq(List(), Array(tp))
@@ -265,7 +265,8 @@ trait BaseTypeSeqs {
   val CyclicInheritance = new Throwable
 }
 
-object BaseTypeSeqsStats {
-  val baseTypeSeqCount = Statistics.newCounter("#base type seqs")
-  val baseTypeSeqLenTotal = Statistics.newRelCounter("avg base type seq length", baseTypeSeqCount)
+trait BaseTypeSeqsStats {
+  self: Statistics =>
+  val baseTypeSeqCount = newCounter("#base type seqs")
+  val baseTypeSeqLenTotal = newRelCounter("avg base type seq length", baseTypeSeqCount)
 }

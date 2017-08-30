@@ -51,6 +51,15 @@ abstract class SymbolTable extends macros.Universe
 
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
+  trait ReflectStats extends BaseTypeSeqsStats
+                        with TypesStats
+                        with SymbolTableStats
+                        with TreesStats
+                        with SymbolsStats { self: Statistics => }
+
+  /** Some statistics (normally disabled) set with -Ystatistics */
+  val statistics: Statistics with ReflectStats
+
   def log(msg: => AnyRef): Unit
 
   protected def elapsedMessage(msg: String, start: Long) =
@@ -178,8 +187,8 @@ abstract class SymbolTable extends macros.Universe
 
   final def atPhaseStack: List[Phase] = List.tabulate(phStackIndex)(i => phStack(i))
   final def phase: Phase = {
-    if (Statistics.canEnable)
-      Statistics.incCounter(SymbolTableStats.phaseCounter)
+    if (statistics.canEnable)
+      statistics.incCounter(statistics.phaseCounter)
     ph
   }
 
@@ -432,6 +441,11 @@ abstract class SymbolTable extends macros.Universe
   implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
 }
 
-object SymbolTableStats {
-  val phaseCounter = Statistics.newCounter("#phase calls")
+trait SymbolTableStats {
+  self: TypesStats with Statistics =>
+
+  val phaseCounter = newCounter("#phase calls")
+  // Defined here because `SymbolLoaders` is defined in `scala.tools.nsc`
+  // and only has access to the `statistics` definition from `scala.reflect`.
+  val classReadNanos = newSubTimer("time classfilereading", typerNanos)
 }

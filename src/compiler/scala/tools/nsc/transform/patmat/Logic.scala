@@ -10,10 +10,10 @@ package tools.nsc.transform.patmat
 import scala.language.postfixOps
 
 import scala.collection.mutable
-import scala.reflect.internal.util.{NoPosition, Position, Statistics, HashSet}
+import scala.reflect.internal.util.{NoPosition, Position, HashSet}
 
 trait Logic extends Debugging  {
-  import PatternMatchingStats._
+  import global.statistics
 
   private def max(xs: Seq[Int]) = if (xs isEmpty) 0 else xs max
   private def alignedColumns(cols: Seq[Any]): Seq[String] = {
@@ -334,7 +334,7 @@ trait Logic extends Debugging  {
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     // may throw an AnalysisBudget.Exception
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
+      val start = if (statistics.canEnable) statistics.startTimer(statistics.patmatAnaVarEq) else null
 
       val vars = new mutable.HashSet[Var]
 
@@ -404,7 +404,7 @@ trait Logic extends Debugging  {
       debug.patmat(s"eqAxioms:\n${eqAxioms.mkString("\n")}")
       debug.patmat(s"pure:${pure.mkString("\n")}")
 
-      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
+      if (statistics.canEnable) statistics.stopTimer(statistics.patmatAnaVarEq, start)
 
       (And(eqAxioms: _*), pure)
     }
