@@ -20,6 +20,8 @@ are available. If you see something missing, please
 
 ## Use it in your project
 
+### Build setup
+
 Add the following dependency to your project:
 
 ~~~ scala
@@ -36,6 +38,30 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.4.0-SNAPSHOT"
 ~~~
+
+### Migrating from the standard collections to the strawman
+
+A tool is being developed to automatically migrate code that uses the standard
+collection to use the strawman.
+
+To use it, add the [scalafix](https://scalacenter.github.io/scalafix/) sbt plugin
+to your build, as explained in
+[its documentation](https://scalacenter.github.io/scalafix/#Installation).
+
+Then run the following sbt task on your project:
+
+~~~
+> scalafix github:scala/collection-strawman/v0
+~~~
+
+In essence, the migration tool changes the imports in your source code
+so that the strawman definitions are imported. It also rewrites
+expressions that use an API that is different in the strawman.
+
+The migration tool is not exhaustive and we will continue to improve
+it over time. If you encounter a use case that’s not supported, please
+report it as described in the
+[contributing documentation](CONTRIBUTING.md#migration-tool).
 
 ## Roadmap
 
