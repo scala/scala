@@ -4,7 +4,7 @@ package collection
 package immutable
 
 //import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
-import HashSet.{HashSet1, HashSetCollision1, HashTrieSet}
+import HashSet.{HashSet1, HashSet1Collision1, HashTrieSet}
 import collection.Iterator
 import strawman.collection.mutable.ArrayBuffer
 
@@ -42,7 +42,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
 
   private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {
 //    case x: HashMapCollision1[_, _] => x.kvs.map(x => HashMap(x)).toArray
-    case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
+    case x: HashSet1Collision1[_]    => x.ks.map(x => HashSet(x)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
@@ -84,7 +84,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   private[this] def splitArray(ad: Array[Iterable[T]]): SplitIterators =
     if (ad.length > 1) arrayToIterators(ad)
     else ad(0) match {
-      case /*_: HashMapCollision1[_, _] |*/ _: HashSetCollision1[_] =>
+      case /*_: HashMapCollision1[_, _] |*/ _: HashSet1Collision1[_] =>
         arrayToIterators(collisionToArray(ad(0)))
       case _ =>
         splitArray(getElems(ad(0)))

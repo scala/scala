@@ -88,20 +88,20 @@ object HashSet extends IterableFactory[HashSet] {
 
     protected def get0(elem: Any, hash: Int, level: Int) = false
 
-    protected def updated0(elem: Any, hash: Int, level: Int) = new HashSet1(elem, hash)
+    protected def updated0(elem: Any, hash: Int, level: Int) = new HashSet1(hash, elem)
 
     protected def removed0(key: Any, hash: Int, level: Int) = this
 
   }
 
   /**
-    * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
+    * Common superclass of HashSet1 and HashSet1Collision1, which are the two possible leaves of the Trie
     */
   private[HashSet] sealed abstract class LeafHashSet[A] extends HashSet[A] {
     private[HashSet] def hash:Int
   }
 
-  private[immutable] final class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
+  private[immutable] final class HashSet1[A](private[immutable] val hash: Int, private[immutable] val key: A) extends LeafHashSet[A] {
 
     def iterator(): Iterator[A] = Iterator.single(key)
 
@@ -122,21 +122,14 @@ object HashSet extends IterableFactory[HashSet] {
 
     protected def updated0(key: A, hash: Int, level: Int) =
       if (hash == this.hash && key == this.key) this
-      else {
-        if (hash != this.hash) {
-          makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
-        } else {
-          // 32-bit hash collision (rare, but not impossible)
-          new HashSetCollision1(hash, ListSet.empty + this.key + key)
-        }
-      }
+      else if (hash != this.hash) new HashSet2(this.hash, this.key, hash, key)
+      else new HashSet1Collision1(hash, ListSet.empty + this.key + key)
 
     protected def removed0(key: A, hash: Int, level: Int) =
       if (hash == this.hash && key == this.key) null else this
-
   }
 
-  private[immutable] final class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A]) extends LeafHashSet[A] {
+  private[immutable] final class HashSet1Collision1[A](private[immutable] val hash: Int, private[immutable] val ks: ListSet[A]) extends LeafHashSet[A] {
 
     override def size = ks.size
 
@@ -148,8 +141,8 @@ object HashSet extends IterableFactory[HashSet] {
       if (hash == this.hash) ks.contains(key) else false
 
     protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
-      if (hash == this.hash) new HashSetCollision1(hash, ks + key)
-      else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
+      if (hash == this.hash) if (ks.contains(key)) this else new HashSet1Collision1(hash, ks + key)
+      else new HashSet2Collision1[A](hash, key, this.hash, this.ks)
 
     protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) {
@@ -160,13 +153,13 @@ object HashSet extends IterableFactory[HashSet] {
             null
           case 1 =>
             // create a new HashSet1 with the hash we already know
-            new HashSet1(ks1.head, hash)
+            new HashSet1(hash, ks1.head)
           case size if size == ks.size =>
             // Should only have HSC1 if size > 1
             this
           case _ =>
             // create a new HashSetCollision with the hash we already know and the new keys
-            new HashSetCollision1(hash, ks1)
+            new HashSet1Collision1(hash, ks1)
         }
       } else this
 
@@ -186,8 +179,362 @@ object HashSet extends IterableFactory[HashSet] {
     }
 
   }
+  
+  private[immutable] final class HashSet2[A](private[immutable] val hash0: Int,
+                                             private[immutable] val key0: A,
+                                             private[immutable] val hash1: Int,
+                                             private[immutable] val key1: A) extends HashSet[A] {
+    // assert(hash0 != hash1)
+  
+    def iterator(): Iterator[A] = Iterator(key0, key1)
+  
+    override def foreach[U](f: A => U): Unit = { f(key0); f(key1) }
+  
+    override def head: A = key0
+  
+    override def tail: HashSet[A] = new HashSet1(hash1, key1)
+  
+    override def last: A = key1
+  
+    override def init: HashSet[A] = new HashSet1(hash0, key0)
+  
+    override def size: Int = 2
+  
+    protected def get0(key: A, hash: Int, level: Int) =
+      ((hash == this.hash0 && key == this.key0) || (hash == this.hash1 && key == this.key1))
+  
+    protected def updated0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0) {
+        if (key == this.key0) this
+        else new HashSet2Collision1[A](this.hash1, this.key1, this.hash0, ListSet.empty + this.key0 + key)
+      } else if (hash == this.hash1) {
+        if (key == this.key1) this
+        else new HashSet2Collision1[A](this.hash0, this.key0, this.hash1, ListSet.empty + this.key1 + key)
+      } else {
+        new HashSet3[A](this.hash0, this.key0, this.hash1, this.key1, hash, key)
+      }
+  
+    protected def removed0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0 && key == this.key0) new HashSet1(this.hash1, this.key1)
+      else if (hash == this.hash1 && key == this.key1) new HashSet1(this.hash0, this.key0)
+      else this
+  }
+  
+  private[immutable] final class HashSet2Collision1[A](private[immutable] val hash0: Int,
+                                                       private[immutable] val key0: A,
+                                                       private[immutable] val hash1: Int,
+                                                       private[immutable] val ks1: ListSet[A]) extends HashSet[A] {
+    
+    override def size = 1 + ks1.size
+    
+    def iterator(): Iterator[A] = (ks1 + key0).iterator
+    
+    override def foreach[U](f: A => U): Unit = { f(key0); ks1.foreach(f) }
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0 && key == this.key0) true
+      else if (hash == this.hash1) ks1.contains(key)
+      else false
+    
+    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        if (key == this.key0) this
+        else new HashSet2Collision2[A](this.hash0, ListSet.empty + this.key0 + key, this.hash1, this.ks1)
+      } else if (hash == this.hash1) {
+        if (this.ks1.contains(key)) this
+        else new HashSet2Collision1[A](this.hash0, this.key0, this.hash1, this.ks1 + key)
+      } else {
+        new HashSet3Collision1[A](this.hash0, this.key0, hash, key, this.hash1, this.ks1)
+      }
+    
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        new HashSet1Collision1[A](this.hash1, this.ks1)
+      } else if (hash == this.hash1) {
+        val newKs = this.ks1 - key
+        newKs.size match {
+          case 1 => new HashSet2[A](this.hash0, this.key0, this.hash1, newKs.head)
+          case size if (size == ks1.size) => this
+          case _ => new HashSet2Collision1[A](this.hash0, this.key0, this.hash1, newKs)
+        }
+      } else {
+        this
+      }
+    
+  }
+  
+  private[immutable] final class HashSet2Collision2[A](private[immutable] val hash0: Int,
+                                                       private[immutable] val ks0: ListSet[A],
+                                                       private[immutable] val hash1: Int,
+                                                       private[immutable] val ks1: ListSet[A]) extends HashSet[A] {
+    
+    override def size = ks0.size + ks1.size
+    
+    def iterator(): Iterator[A] = (ks0 ++ ks1).iterator
+    
+    override def foreach[U](f: A => U): Unit = { ks1.foreach(f); ks1.foreach(f) }
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0) ks0.contains(key)
+      else if (hash == this.hash1) ks1.contains(key)
+      else false
+    
+    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        if (this.ks0.contains(key)) this
+        else new HashSet2Collision2[A](this.hash0, this.ks0 + key, this.hash1, this.ks1)
+      } else if (hash == this.hash1) {
+        if (this.ks1.contains(key)) this
+        else new HashSet2Collision2[A](this.hash0, this.ks0, this.hash1, this.ks1 + key)
+      } else {
+        new HashSet3Collision2[A](hash, key, this.hash0, this.ks0, this.hash1, this.ks1)
+      }
+    
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        val newKs = this.ks0 - key
+        newKs.size match {
+          case 1 => new HashSet2Collision1[A](this.hash0, newKs.head, this.hash1, this.ks1)
+          case size if (size == ks0.size) => this
+          case _ => new HashSet2Collision2[A](this.hash0, newKs, this.hash1, this.ks1)
+        }
+      } else if (hash == this.hash1) {
+        val newKs = this.ks1 - key
+        newKs.size match {
+          case 1 => new HashSet2Collision1[A](this.hash1, newKs.head, this.hash0, this.ks0)
+          case size if (size == ks1.size) => this
+          case _ => new HashSet2Collision2[A](this.hash0, this.ks0, this.hash1, newKs)
+        }
+      } else {
+        this
+      }
+    
+  }
+  
+  private[immutable] final class HashSet3[A](private[immutable] val hash0: Int,
+                                             private[immutable] val key0: A,
+                                             private[immutable] val hash1: Int,
+                                             private[immutable] val key1: A,
+                                             private[immutable] val hash2: Int,
+                                             private[immutable] val key2: A) extends HashSet[A] {
+    // assert(hash0 != hash1 != hash2)
+    
+    def iterator(): Iterator[A] = Iterator(key0, key1, key2)
+    
+    override def foreach[U](f: A => U): Unit = { f(key0); f(key1); f(key2) }
+    
+    override def head: A = key0
+    
+    override def tail: HashSet[A] = new HashSet2(hash1, key1, hash2, key2)
+    
+    override def last: A = key2
+    
+    override def init: HashSet[A] = new HashSet2(hash0, key0, hash1, key1)
+    
+    override def size: Int = 3
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      (hash == this.hash0 && key == this.key0) ||
+        (hash == this.hash1 && key == this.key1) ||
+        (hash == this.hash2 && key == this.key2)
+    
+    protected def updated0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0) {
+        if (key == this.key0) this
+        else new HashSet3Collision1[A](this.hash1, this.key1, this.hash2, this.key2, this.hash0, ListSet.empty + this.key0 + key)
+      } else if (hash == this.hash1) {
+        if (key == this.key1) this
+        else new HashSet3Collision1[A](this.hash0, this.key0, this.hash2, this.key2, this.hash1, ListSet.empty + this.key1 + key)
+      } else if (hash == this.hash2) {
+        if (key == this.key2) this
+        else new HashSet3Collision1[A](this.hash0, this.key0, this.hash1, this.key1, this.hash2, ListSet.empty + this.key2 + key)
+      } else {
+        // TODO: be more efficient about this
+        makeHashTrieSet(this.hash0, new HashSet1[A](this.hash0, this.key0),
+          this.hash1, new HashSet1[A](this.hash1, this.key1), 0) + this.key2 + key
+      }
+    
+    protected def removed0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0 && key == this.key0) new HashSet2(this.hash1, this.key1, this.hash2, this.key2)
+      else if (hash == this.hash1 && key == this.key1) new HashSet2(this.hash0, this.key0, this.hash2, this.key2)
+      else if (hash == this.hash2 && key == this.key2) new HashSet2(this.hash0, this.key0, this.hash1, this.key1)
+      else this
+  }
+  
+  private[immutable] final class HashSet3Collision1[A](private[immutable] val hash0: Int,
+                                                       private[immutable] val key0: A,
+                                                       private[immutable] val hash1: Int,
+                                                       private[immutable] val key1: A,
+                                                       private[immutable] val hash2: Int,
+                                                       private[immutable] val ks2: ListSet[A]) extends HashSet[A] {
+    
+    override def size = 2 + ks2.size
+    
+    def iterator(): Iterator[A] = (ks2 + key0 + key1).iterator
+    
+    override def foreach[U](f: A => U): Unit = { f(key0); f(key1);  ks2.foreach(f) }
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0 && key == this.key0) true
+      else if (hash == this.hash1 && key == this.key1) true
+      else if (hash == this.hash2) ks2.contains(key)
+      else false
+    
+    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        if (key == this.key0) this
+        else new HashSet3Collision2[A](this.hash1, this.key1, this.hash2, this.ks2, this.hash0, ListSet.empty + this.key0 + key)
+      } else if (hash == this.hash1) {
+        if (key == this.key1) this
+        else new HashSet3Collision2[A](this.hash0, this.key0, this.hash2, this.ks2, this.hash1, ListSet.empty + this.key1 + key)
+      } else if (hash == this.hash2) {
+        if (this.ks2.contains(key)) this
+        else new HashSet3Collision1[A](this.hash0, this.key0, this.hash1, this.key1, this.hash2, this.ks2 + key)
+      } else {
+        // TODO: be more efficient about this
+        makeHashTrieSet(this.hash0, new HashSet1[A](this.hash0, this.key0),
+          this.hash2, new HashSet1Collision1[A](this.hash2, this.ks2), 0) + this.key1 + key
+      }
+    
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0 && key == this.key0)
+        new HashSet2Collision1[A](this.hash1, this.key1, this.hash2, this.ks2)
+      else if (hash == this.hash1 && key == this.key1)
+        new HashSet2Collision1[A](this.hash0, this.key0, this.hash2, this.ks2)
+      else if (hash == this.hash2) {
+        val newKs = this.ks2 - key
+        newKs.size match {
+          case 1 => new HashSet3[A](this.hash0, this.key0, this.hash1, this.key1, this.hash2, newKs.head)
+          case size if (size == ks2.size) => this
+          case _ => new HashSet3Collision1[A](this.hash0, this.key0, this.hash1, this.key1, this.hash2, newKs)
+        }
+      } else {
+        this
+      }
+    
+  }
+  
+  private[immutable] final class HashSet3Collision2[A](private[immutable] val hash0: Int,
+                                                       private[immutable] val key0: A,
+                                                       private[immutable] val hash1: Int,
+                                                       private[immutable] val ks1: ListSet[A],
+                                                       private[immutable] val hash2: Int,
+                                                       private[immutable] val ks2: ListSet[A]) extends HashSet[A] {
+    
+    override def size = 1 + ks1.size + ks2.size
+    
+    def iterator(): Iterator[A] = (ks1 ++ ks2 + key0).iterator
+    
+    override def foreach[U](f: A => U): Unit = { f(key0); ks1.foreach(f); ks2.foreach(f) }
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0 && key == this.key0) true
+      else if (hash == this.hash1) ks1.contains(key)
+      else if (hash == this.hash2) ks2.contains(key)
+      else false
+    
+    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        if (key == this.key0) this
+        else new HashSet3Collision3[A](this.hash1, this.ks1, this.hash2, this.ks2, this.hash0, ListSet.empty + this.key0 + key)
+      } else if (hash == this.hash1) {
+        if (this.ks1.contains(key)) this
+        else new HashSet3Collision2[A](this.hash0, this.key0, this.hash2, this.ks2, this.hash1, this.ks1 + key)
+      } else if (hash == this.hash2) {
+        if (this.ks2.contains(key)) this
+        else new HashSet3Collision2[A](this.hash0, this.key0, this.hash1, this.ks1, this.hash2, this.ks2 + key)
+      } else {
+        // TODO: be more efficient about this
+        makeHashTrieSet(this.hash1, new HashSet1Collision1[A](this.hash1, this.ks1),
+          this.hash2, new HashSet1Collision1[A](this.hash2, this.ks2), 0) + this.key0 + key
+      }
 
-
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) new HashSet2Collision2[A](this.hash1, this.ks1, this.hash2, this.ks2)
+      else if (hash == this.hash1) {
+        val newKs = this.ks1 - key
+        newKs.size match {
+          case 1 => new HashSet3Collision1[A](this.hash0, this.key0, this.hash1, newKs.head, this.hash2, this.ks2)
+          case size if (size == ks1.size) => this
+          case _ => new HashSet3Collision2[A](this.hash0, this.key0, this.hash1, newKs, this.hash2, this.ks2)
+        }
+      } else if (hash == this.hash2) {
+        val newKs = this.ks2 - key
+        newKs.size match {
+          case 1 => new HashSet3Collision1[A](this.hash0, this.key0, this.hash2, newKs.head, this.hash1, this.ks1)
+          case size if (size == ks2.size) => this
+          case _ => new HashSet3Collision2[A](this.hash0, this.key0, this.hash1, this.ks1, this.hash2, newKs)
+        }
+      } else {
+        this
+      }
+    
+  }
+  
+  private[immutable] final class HashSet3Collision3[A](private[immutable] val hash0: Int,
+                                                       private[immutable] val ks0: ListSet[A],
+                                                       private[immutable] val hash1: Int,
+                                                       private[immutable] val ks1: ListSet[A],
+                                                       private[immutable] val hash2: Int,
+                                                       private[immutable] val ks2: ListSet[A]) extends HashSet[A] {
+    
+    override def size = ks0.size + ks1.size + ks2.size
+    
+    def iterator(): Iterator[A] = (ks0 ++ ks1 ++ ks2).iterator
+    
+    override def foreach[U](f: A => U): Unit = { ks0.foreach(f); ks1.foreach(f); ks2.foreach(f) }
+    
+    protected def get0(key: A, hash: Int, level: Int) =
+      if (hash == this.hash0) ks0.contains(key)
+      else if (hash == this.hash1) ks1.contains(key)
+      else if (hash == this.hash2) ks2.contains(key)
+      else false
+    
+    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        if (this.ks0.contains(key)) this
+        else new HashSet3Collision3[A](this.hash1, this.ks1, this.hash2, this.ks2, this.hash0, this.ks0 + key)
+      } else if (hash == this.hash1) {
+        if (this.ks1.contains(key)) this
+        else new HashSet3Collision3[A](this.hash0, this.ks0, this.hash2, this.ks2, this.hash1, this.ks1 + key)
+      } else if (hash == this.hash2) {
+        if (this.ks2.contains(key)) this
+        else new HashSet3Collision3[A](this.hash0, this.ks0, this.hash1, this.ks1, this.hash2, this.ks2 + key)
+      } else {
+        // TODO: be more efficient about this
+        makeHashTrieSet(this.hash1, new HashSet1Collision1[A](this.hash1, this.ks1),
+          this.hash2, new HashSet1Collision1[A](this.hash2, this.ks2), 0) ++ this.ks0 + key
+      }
+    
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+      if (hash == this.hash0) {
+        val newKs = this.ks0 - key
+        newKs.size match {
+          case 1 => new HashSet3Collision2[A](this.hash0, newKs.head, this.hash1, this.ks1, this.hash2, this.ks2)
+          case size if (size == ks0.size) => this
+          case _ => new HashSet3Collision3[A](this.hash0, newKs, this.hash1, this.ks1, this.hash2, this.ks2)
+        }
+      }
+      else if (hash == this.hash1) {
+        val newKs = this.ks1 - key
+        newKs.size match {
+          case 1 => new HashSet3Collision2[A](this.hash1, newKs.head, this.hash0, this.ks0, this.hash2, this.ks2)
+          case size if (size == ks1.size) => this
+          case _ => new HashSet3Collision3[A](this.hash0, this.ks0, this.hash1, newKs, this.hash2, this.ks2)
+        }
+      } else if (hash == this.hash2) {
+        val newKs = this.ks2 - key
+        newKs.size match {
+          case 1 => new HashSet3Collision2[A](this.hash2, newKs.head, this.hash0, this.ks0, this.hash1, this.ks1)
+          case size if (size == ks2.size) => this
+          case _ => new HashSet3Collision3[A](this.hash0, this.ks0, this.hash1, this.ks1, this.hash2, newKs)
+        }
+      } else {
+        this
+      }
+    
+  }
+  
   /**
     * A branch node of the HashTrieSet with at least one and up to 32 children.
     *
@@ -272,7 +619,7 @@ object HashSet extends IterableFactory[HashSet] {
       } else {
         val elemsNew = new Array[HashSet[A]](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
-        elemsNew(offset) = new HashSet1(key, hash)
+        elemsNew(offset) = new HashSet1(hash, key)
         Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
         val bitmapNew = bitmap | mask
         new HashTrieSet(bitmapNew, elemsNew, size + 1)
@@ -295,7 +642,7 @@ object HashSet extends IterableFactory[HashSet] {
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
             // if we have only one child, which is not a HashTrieSet but a self-contained set like
-            // HashSet1 or HashSetCollision1, return the child instead
+            // HashSet1 or HashSet1Collision1, return the child instead
             if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieSet[_]])
               elemsNew(0)
             else
@@ -316,7 +663,7 @@ object HashSet extends IterableFactory[HashSet] {
     }
   }
 
-  // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
+  // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSet1Collision1) with non-colliding hash code)
   private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
     val index0 = (hash0 >>> level) & 0x1f
     val index1 = (hash1 >>> level) & 0x1f
@@ -339,6 +686,38 @@ object HashSet extends IterableFactory[HashSet] {
       new HashTrieSet[A](bitmap, elems, child.size)
     }
   }
+  
+//  private def makeHashTrieSet[A](level: Int, items: (Int, HashSet[A])*): HashTrieSet[A] = {
+//
+//    val itemsArray = items.toArray
+//    val numElements = itemsArray.length
+//
+//    def swapItems(i: Int, j: Int): Unit = {
+//      val tmp = itemsArray(i)
+//      itemsArray(i) = itemsArray(j)
+//      itemsArray(j) = tmp
+//    }
+//
+//    def selectionSort(index: Int): (Int, HashSet[A]) = {
+//      var minIndex = index
+//      for (j <- index + 1 until numElements if itemsArray(j)._1 < itemsArray(minIndex)._1) minIndex = j
+//      if (index != minIndex) swapItems(index, minIndex)
+//      itemsArray(index)
+//    }
+//
+//    var bitmap = 0
+//    var size = 0
+//    val elems = new Array[HashSet[A]](numElements)
+//
+//    for (i <- 0 until numElements) {
+//      val (h, e) = selectionSort(i)
+//      bitmap |= 1 << ((h >> level) & 0x1f)
+//      size += e.size
+//      elems(i) = e
+//    }
+//
+//    new HashTrieSet[A]()
+//  }
 
   /**
     * In many internal operations the empty set is represented as null for performance reasons. This method converts
