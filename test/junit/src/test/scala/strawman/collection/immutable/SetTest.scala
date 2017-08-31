@@ -50,8 +50,7 @@ class SetTest {
     // (Covers Node also, since it subclasses ListSet)
     val listset = ListSet(1, 3, 5, 7)
     val listseta = any(listset)
-// The following line is commented because this feature is not supported by the strawman
-//    assert(listset eq listseta)
+    assert(listset eq listseta)
 
     // Make sure SortedSets correctly rebuild themselves on widening with toSet
     // Covers TreeSet and keySet of SortedMap also
@@ -78,7 +77,6 @@ class SetTest {
     // Make sure regular Map keySets do not rebuild themselves on widening with toSet
     val mapset = Map(1 -> "cod", 2 -> "herring").keySet
     val mapseta = any(mapset)
-// The following line is commented because this feature is not supported by the strawman
-//    assert(mapset eq mapseta)
+    assert(mapset eq mapseta)
   }
 }

@@ -54,8 +54,11 @@ object Set extends IterableFactory[Set] {
 
   def fromIterable[E](it: collection.Iterable[E]): Set[E] =
     it match {
-      case s: Set[E] => s
-      case _ => empty ++ it
+      // We want `SortedSet` (and subclasses, such as `BitSet`) to
+      // rebuild themselves to avoid element type widening issues
+      case _: SortedSet[E] => empty ++ it
+      case s: Set[E]       => s
+      case _               => empty ++ it
     }
 
   def newBuilder[A](): Builder[A, Set[A]] = HashSet.newBuilder()

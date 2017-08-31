@@ -76,8 +76,8 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): Set[K] = fromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
     def empty: Set[K] = iterableFactory.empty
-    def incl(elem: K): Set[K] = fromSpecificIterable(this).incl(elem)
-    def excl(elem: K): Set[K] = fromSpecificIterable(this).excl(elem)
+    def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
+    def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
   }
 
 }
