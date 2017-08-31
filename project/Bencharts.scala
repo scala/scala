@@ -3,7 +3,7 @@ package strawman.collection
 import javax.imageio.ImageIO
 
 import org.jfree.chart.JFreeChart
-import org.jfree.chart.axis.{LogAxis, NumberAxis}
+import org.jfree.chart.axis.{LogAxis, LogarithmicAxis, NumberAxis}
 import org.jfree.chart.plot.XYPlot
 import org.jfree.chart.renderer.xy.XYErrorRenderer
 import org.jfree.data.xy.{YIntervalSeries, YIntervalSeriesCollection}
@@ -50,10 +50,10 @@ object Bencharts {
               ySeries
             }
 
-        val xAxis = new LogAxis("Size")
-        xAxis.setBase(2)
-        xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits())
-        val yAxis = new LogAxis(yAxisTitle)
+        val xAxis = new LogarithmicAxis("Size")
+        xAxis.setAllowNegativesFlag(true)
+        val yAxis = new LogarithmicAxis(yAxisTitle)
+        yAxis.setAllowNegativesFlag(true)
 
         val col = new YIntervalSeriesCollection()
         val renderer = new XYErrorRenderer
