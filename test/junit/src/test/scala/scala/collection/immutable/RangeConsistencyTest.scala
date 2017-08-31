@@ -153,6 +153,7 @@ class RangeConsistencyTest {
   def test_SI9388(): Unit =  {
     val possiblyNotDefaultNumeric = new scala.math.Numeric[Int] {
       def fromInt(x: Int) = x
+      def parseString(str: String): Option[Int] = Try(str.toInt).toOption
       def minus(x: Int, y: Int): Int = x - y
       def negate(x: Int): Int = -x
       def plus(x: Int, y: Int): Int = x + y
@@ -191,6 +192,7 @@ class RangeConsistencyTest {
     implicit object aIsIntegral extends scala.math.Integral[A] {
       def compare(x: A, y: A): Int = x.v.compare(y.v)
       def fromInt(x: Int): A = A(x)
+      def parseString(str: String): Option[A] = Try(A(str.toInt)).toOption
       def minus(x: A, y: A): A = A(x.v - y.v)
       def negate(x: A): A = A(-x.v)
       def plus(x: A, y: A): A = A(x.v + y.v)

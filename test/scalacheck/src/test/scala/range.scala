@@ -166,6 +166,7 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
         override def zero = 0
 
         def fromInt(x: Int): Int = ???
+        def parseString(str: String) = ???
         def minus(x: Int, y: Int): Int = ???
         def negate(x: Int): Int = ???
         def times(x: Int, y: Int): Int = ???
