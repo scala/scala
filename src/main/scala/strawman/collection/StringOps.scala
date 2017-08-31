@@ -14,6 +14,7 @@ class StringOps(val s: String)
     with ArrayLike[Char] {
 
   def toIterable = StringView(s)
+  override def view: StringView = StringView(s)
   protected[this] def coll: String = s
   def toSeq: Seq[Char] = fromIterable(toIterable)
 
@@ -35,8 +36,6 @@ class StringOps(val s: String)
   override def knownSize = s.length
 
   override def className = "String"
-
-  def iterator(): Iterator[Char] = toIterable.iterator()
 
   /** Overloaded version of `map` that gives back a string, where the inherited
     *  version gives back a sequence.

@@ -2,9 +2,10 @@ package strawman
 package collection
 
 import strawman.collection.immutable.TreeMap
+import strawman.collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.{Boolean, Ordering, PartialFunction, `inline`}
+import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, `inline`}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -21,6 +22,29 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   def firstKey: K = head._1
   def lastKey: K = last._1
+
+  override def keySet: SortedSet[K] = new KeySortedSet
+
+  /** The implementation class of the set returned by `keySet` */
+  protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
+    def iterableFactory: IterableFactory[Set] = Set
+    def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
+    protected[this] def fromSpecificIterable(coll: Iterable[K]): SortedSet[K] = sortedFromIterable(coll)
+    protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
+    protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): SortedSet[B] = sortedFromIterable(it)
+    def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(view.filterNot(that))
+    def empty: SortedSet[K] = sortedIterableFactory.empty
+    def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
+      val map = SortedMapOps.this.rangeImpl(from, until)
+      new map.KeySortedSet
+    }
+  }
+
+  /** A generic trait that is reused by sorted keyset implementations */
+  protected trait GenKeySortedSet extends GenKeySet { this: SortedSet[K] =>
+    implicit def ordering: Ordering[K] = SortedMapOps.this.ordering
+    def keysIteratorFrom(start: K): Iterator[K] = SortedMapOps.this.keysIteratorFrom(start)
+  }
 
   override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
 

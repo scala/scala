@@ -465,6 +465,8 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   }
 }
 
+object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
+
 object SeqOps {
   // KMP search utilities
 

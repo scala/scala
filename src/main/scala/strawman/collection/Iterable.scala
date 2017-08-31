@@ -3,7 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit}
+import scala.{Any, AnyRef, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 
@@ -451,7 +451,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  def filter(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred))
+  def filter(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred, isFlipped = false))
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
     *
@@ -459,7 +459,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
     *               predicate `pred`. Their order may not be preserved.
     */
-  def filterNot(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, (a: A) => !pred(a)))
+  def filterNot(pred: A => Boolean): C = fromSpecificIterable(View.Filter(toIterable, pred, isFlipped = true))
 
   /** Creates a non-strict filter of this $coll.
     *
@@ -475,57 +475,21 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *             All these operations apply to those elements of this $coll
     *             which satisfy the predicate `p`.
     */
-  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
+  def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new WithFilter(p)
 
   /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
     *  of trait `Iterable`.
     */
-  class WithFilter(p: A => Boolean) {
+  class WithFilter(p: A => Boolean) extends collection.WithFilter[A, CC] {
 
-    protected[this] def filtered = View.Filter(toIterable, p)
+    protected[this] def filtered = View.Filter(toIterable, p, isFlipped = false)
 
-    /** Builds a new collection by applying a function to all elements of the
-      * `filtered` outer $coll.
-      *
-      *  @param f      the function to apply to each element.
-      *  @tparam B     the element type of the returned collection.
-      *  @return       a new $coll resulting from applying
-      *                the given function `f` to each element of the filtered outer $coll
-      *                and collecting the results.
-      */
     def map[B](f: A => B): CC[B] = iterableFactory.fromIterable(View.Map(filtered, f))
 
-    /** Builds a new collection by applying a function to all elements of the
-      * `filtered` outer $coll containing this `WithFilter` instance that satisfy
-      *
-      *  @param f      the function to apply to each element.
-      *  @tparam B     the element type of the returned collection.
-      *  @return       a new $coll resulting from applying
-      *                the given collection-valued function `f` to each element
-      *                of the filtered outer $coll and
-      *                concatenating the results.
-      */
     def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.fromIterable(View.FlatMap(filtered, f))
 
-    /** Applies a function `f` to all elements of the `filtered` outer $coll.
-      *
-      *  @param  f   the function that is applied for its side-effect to every element.
-      *              The result of function `f` is discarded.
-      *
-      *  @tparam  U  the type parameter describing the result of function `f`.
-      *              This result will always be ignored. Typically `U` is `Unit`,
-      *              but this is not necessary.
-      */
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
 
-    /** Further refines the filter for this `filtered` $coll.
-      *
-      *  @param q   the predicate used to test elements.
-      *  @return    an object of class `WithFilter`, which supports
-      *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
-      *             All these operations apply to those elements of this $coll which
-      *             also satisfy both `p` and `q` predicates.
-      */
     def withFilter(q: A => Boolean): WithFilter = new WithFilter(a => p(a) && q(a))
 
   }
@@ -682,7 +646,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *           of this $coll.
     */
   def slice(from: Int, until: Int): C =
-    fromSpecificIterable(View.Take(View.Drop(toIterable, from), until - from))
+    fromSpecificIterable(View.Drop(View.Take(toIterable, until), from))
 
   /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
     *
@@ -782,6 +746,29 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
       if (pf.isDefinedAt(a)) View.Single(pf(a))
       else View.Empty
     }
+
+  /** Finds the first element of the $coll for which the given partial
+    *  function is defined, and applies the partial function to it.
+    *
+    *  $mayNotTerminateInf
+    *  $orderDependent
+    *
+    *  @param pf   the partial function
+    *  @return     an option value containing pf applied to the first
+    *              value for which it is defined, or `None` if none exists.
+    *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
+    */
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
+    val i: Iterator[A] = toIterable.iterator()
+    // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
+    // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
+    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
+    while (i.hasNext) {
+      val x = pf.applyOrElse(i.next(), sentinel)
+      if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
+    }
+    None
+  }
 
   /** Alias for `appendAll` */
   @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = appendAll(suffix)

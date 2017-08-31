@@ -42,6 +42,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
       coll += elem; true
     }
 
+  def update(elem: A, included: Boolean): Unit = {
+    if (included) insert(elem)
+    else remove(elem)
+  }
+
   def remove(elem: A): Option[A] = {
     val res = get(elem)
     coll -= elem
