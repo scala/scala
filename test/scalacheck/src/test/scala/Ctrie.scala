@@ -10,7 +10,6 @@ case class Wrap(i: Int) {
   override def hashCode = i // * 0x9e3775cd
 }
 
-
 /** A check mainly oriented towards checking snapshot correctness.
  */
 object CtrieTest extends Properties("concurrent.TrieMap") {
@@ -30,10 +29,10 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
   /* helpers */
 
   def inParallel[T](totalThreads: Int)(body: Int => T): Seq[T] = {
-    val threads = for (idx <- 0 until totalThreads) yield new Thread {
+    class ParThread(idx: Int) extends Thread {
       setName("ParThread-" + idx)
       private var res: T = _
-      override def run() {
+      override def run(): Unit = {
         res = body(idx)
       }
       def result = {
@@ -42,19 +41,23 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
       }
     }
 
+    val threads = for (idx <- 0 until totalThreads) yield new ParThread(idx)
+
     threads foreach (_.start())
     threads map (_.result)
   }
 
   def spawn[T](body: =>T): { def get: T } = {
-    val t = new Thread {
+    class SpawnThread extends Thread {
       setName("SpawnThread")
       private var res: T = _
-      override def run() {
+      override def run(): Unit = {
         res = body
       }
       def result = res
     }
+
+    val t = new SpawnThread
     t.start()
     new {
       def get: T = {
