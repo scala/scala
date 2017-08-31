@@ -178,12 +178,9 @@ object View extends IterableFactory[View] {
    */
   case class Concat[A](prefix: Iterable[A], suffix: Iterable[A]) extends View[A] {
     def iterator() = prefix.iterator() ++ suffix.iterator()
-    override def knownSize = (prefix, suffix) match {
-      case (px: Iterable[_], sx: Iterable[_]) if px.knownSize >= 0 && sx.knownSize >= 0 =>
-        px.knownSize + sx.knownSize
-      case _ =>
-        -1
-    }
+    override def knownSize =
+      if (prefix.knownSize >= 0 && suffix.knownSize >= 0) prefix.knownSize + prefix.knownSize
+      else -1
   }
 
   /** A view that zips elements of the underlying collection with the elements
@@ -191,41 +188,37 @@ object View extends IterableFactory[View] {
    */
   case class Zip[A, B](underlying: Iterable[A], other: Iterable[B]) extends View[(A, B)] {
     def iterator() = underlying.iterator().zip(other)
-    override def knownSize = other match {
-      case other: Iterable[_] => underlying.knownSize min other.knownSize
-      case _ => -1
-    }
+    override def knownSize = underlying.knownSize min other.knownSize
   }
 
   /** A view that appends an element to its elements */
   case class Append[A](underlying: Iterable[A], elem: A) extends View[A] {
-    def iterator(): Iterator[A] = new Concat(underlying, View.Single(elem)).iterator()
+    def iterator(): Iterator[A] = Concat(underlying, View.Single(elem)).iterator()
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
   /** A view that prepends an element to its elements */
   case class Prepend[A](elem: A, underlying: Iterable[A]) extends View[A] {
-    def iterator(): Iterator[A] = new Concat(View.Single(elem), underlying).iterator()
+    def iterator(): Iterator[A] = Concat(View.Single(elem), underlying).iterator()
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
   case class Updated[A](underlying: Iterable[A], index: Int, elem: A) extends View[A] {
-    def iterator(): Iterator[A] =
-      new Iterator[A] {
-        private val it = underlying.iterator()
-        private var i = 0
-        def next(): A = {
-          val value =
-            if (i == index) { it.next(); elem } else it.next()
-          i += 1
-          value
-        }
-        def hasNext: Boolean = it.hasNext
+    def iterator(): Iterator[A] = new Iterator[A] {
+      private val it = underlying.iterator()
+      private var i = 0
+      def next(): A = {
+        val value = if (i == index) { it.next(); elem } else it.next()
+        i += 1
+        value
       }
+      def hasNext: Boolean = it.hasNext
+    }
+    override def knownSize: Int = underlying.knownSize
   }
 
   private[collection] class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
-    if (from < 0 || from > size) throw new IndexOutOfBoundsException(from.toString)
+    if (from < 0 || (knownSize > -1 && from > knownSize)) throw new IndexOutOfBoundsException(from.toString)
     def iterator(): Iterator[A] = underlying.iterator().patch(from, other.iterator(), replaced)
   }
 
