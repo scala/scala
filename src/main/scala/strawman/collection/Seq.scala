@@ -17,6 +17,8 @@ trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]] {
   def iterableFactory: SeqFactory[Seq]
 }
 
+object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
+
 /** Base trait for Seq operations */
 trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
@@ -464,8 +466,6 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     MurmurHash3.finalizeHash(h, n)
   }
 }
-
-object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
 
 object SeqOps {
   // KMP search utilities

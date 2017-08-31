@@ -65,6 +65,18 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
       case None => val d = op; this(key) = d; d
     }
 
+  /** Removes a key from this map, returning the value associated previously
+    *  with that key as an option.
+    *  @param    key the key to be removed
+    *  @return   an option value containing the value associated previously with `key`,
+    *            or `None` if `key` was not defined in the map before.
+    */
+  def remove(key: K): Option[V] = {
+    val r = get(key)
+    if (r.isDefined) this -= key
+    r
+  }
+
   override def clone(): C = empty ++= toIterable
 
   def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
