@@ -956,6 +956,10 @@ abstract class BTypes {
    * This implements a lazy value that can be reset and re-initialized.
    * It synchronizes on `frontendLock` so that lazy state created through this utility can
    * be safely initialized in the post-processor.
+   *
+   * Note that values defined as `LazyVar`s are usually `lazy val`s themselves (created through the
+   * `perRunLazy` method). This ensures that re-initializing a component only re-initializes those
+   * `LazyVar`s that have actually been used in the previous compiler run.
    */
   class LazyVar[T](init: () => T) {
     @volatile private[this] var isInit: Boolean = false
