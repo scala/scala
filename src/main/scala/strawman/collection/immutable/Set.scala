@@ -184,7 +184,7 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def iterator: Iterator[A] =
+    def iterator(): Iterator[A] =
       Iterator(elem1, elem2, elem3, elem4)
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
