@@ -6,7 +6,7 @@ val commonSettings = Seq(
   organization := "ch.epfl.scala",
   version := "0.4.0-SNAPSHOT",
   scalaVersion := "2.12.3",
-  crossScalaVersions := scalaVersion.value :: "2.13.0-M1" :: dotty.value :: Nil,
+  crossScalaVersions := scalaVersion.value :: "2.13.0-M2" :: dotty.value :: Nil,
   scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-language:higherKinds"/*, "-opt:l:classpath"*/),
   scalacOptions ++= {
     if (!isDotty.value)
@@ -32,7 +32,6 @@ val collections =
     .settings(
       name := "collection-strawman",
       libraryDependencies ++= Seq(
-        ("org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0").withDottyCompat(),
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
       scalacOptions += "-Yno-imports",
