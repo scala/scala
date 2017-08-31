@@ -2,6 +2,7 @@ package strawman
 package collection
 package mutable
 
+import strawman.collection.immutable.Range
 import BitSetOps.{LogWL, MaxSize}
 
 import scala.{Array, Int, Long, math, None, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
@@ -97,6 +98,53 @@ class BitSet(protected[collection] final var elems: Array[Long])
   def unconstrained: collection.Set[Int] = this
 
   def empty: BitSet = BitSet.empty
+
+  /** Updates this bitset to the union with another bitset by performing a bitwise "or".
+    *
+    *  @param   other  the bitset to form the union with.
+    *  @return  the bitset itself.
+    */
+  def |= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords - 1)
+    for (i <- Range(0, other.nwords))
+      elems(i) = elems(i) | other.word(i)
+    this
+  }
+  /** Updates this bitset to the intersection with another bitset by performing a bitwise "and".
+    *
+    *  @param   other  the bitset to form the intersection with.
+    *  @return  the bitset itself.
+    */
+  def &= (other: BitSet): this.type = {
+    // Different from other operations: no need to ensure capacity because
+    // anything beyond the capacity is 0.  Since we use other.word which is 0
+    // off the end, we also don't need to make sure we stay in bounds there.
+    for (i <- Range(0, nwords))
+      elems(i) = elems(i) & other.word(i)
+    this
+  }
+  /** Updates this bitset to the symmetric difference with another bitset by performing a bitwise "xor".
+    *
+    *  @param   other  the bitset to form the symmetric difference with.
+    *  @return  the bitset itself.
+    */
+  def ^= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords - 1)
+    for (i <- Range(0, other.nwords))
+      elems(i) = elems(i) ^ other.word(i)
+    this
+  }
+  /** Updates this bitset to the difference with another bitset by performing a bitwise "and-not".
+    *
+    *  @param   other  the bitset to form the difference with.
+    *  @return  the bitset itself.
+    */
+  def &~= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords - 1)
+    for (i <- Range(0, other.nwords))
+      elems(i) = elems(i) & ~other.word(i)
+    this
+  }
 
   override def clone(): BitSet =
     new BitSet(java.util.Arrays.copyOf(elems, elems.length))

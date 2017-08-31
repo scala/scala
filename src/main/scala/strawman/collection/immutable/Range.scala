@@ -3,7 +3,7 @@ package collection.immutable
 
 import collection.{Iterator, SeqFactory}
 
-import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws}
+import scala.{Any, AnyVal, BigDecimal, BigInt, Boolean, Double, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws}
 import scala.Predef.augmentString
 import java.lang.String
 
@@ -59,7 +59,7 @@ final class Range(
 
   protected[this] def newSpecificBuilder(): Builder[Int, IndexedSeq[Int]] = IndexedSeq.newBuilder()
 
-  def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
+  override def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
   private def gap           = end.toLong - start.toLong
   private def isExact       = gap % step == 0
@@ -437,7 +437,64 @@ object Range {
     */
   def inclusive(start: Int, end: Int): Range = new Range(start, end, 1, isInclusive = true)
 
+  // BigInt and Long are straightforward generic ranges.
+  object BigInt {
+    def apply(start: BigInt, end: BigInt, step: BigInt) = NumericRange(start, end, step)
+    def inclusive(start: BigInt, end: BigInt, step: BigInt) = NumericRange.inclusive(start, end, step)
+  }
 
+  object Long {
+    def apply(start: Long, end: Long, step: Long) = NumericRange(start, end, step)
+    def inclusive(start: Long, end: Long, step: Long) = NumericRange.inclusive(start, end, step)
+  }
+
+  // BigDecimal uses an alternative implementation of Numeric in which
+  // it pretends to be Integral[T] instead of Fractional[T].  See Numeric for
+  // details.  The intention is for it to throw an exception anytime
+  // imprecision or surprises might result from anything, although this may
+  // not yet be fully implemented.
+  object BigDecimal {
+    implicit val bigDecAsIntegral: Numeric.BigDecimalAsIfIntegral = Numeric.BigDecimalAsIfIntegral
+
+    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      NumericRange(start, end, step)
+    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      NumericRange.inclusive(start, end, step)
+  }
+
+  // Double works by using a BigDecimal under the hood for precise
+  // stepping, but mapping the sequence values back to doubles with
+  // .doubleValue.  This constructs the BigDecimals by way of the
+  // String constructor (valueOf) instead of the Double one, which
+  // is necessary to keep 0.3d at 0.3 as opposed to
+  // 0.299999999999999988897769753748434595763683319091796875 or so.
+  object Double {
+    implicit val bigDecAsIntegral: Numeric.BigDecimalAsIfIntegral = Numeric.BigDecimalAsIfIntegral
+    implicit val doubleAsIntegral: Numeric.DoubleAsIfIntegral = Numeric.DoubleAsIfIntegral
+    def toBD(x: Double): BigDecimal = scala.math.BigDecimal valueOf x
+
+    def apply(start: Double, end: Double, step: Double) =
+      BigDecimal(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
+
+    def inclusive(start: Double, end: Double, step: Double) =
+      BigDecimal.inclusive(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
+  }
+
+  // As there is no appealing default step size for not-really-integral ranges,
+  // we offer a partially constructed object.
+  class Partial[T, U](private val f: T => U) extends AnyVal {
+    def by(x: T): U = f(x)
+    override def toString = "Range requires step"
+  }
+
+  // Illustrating genericity with Int Range, which should have the same behavior
+  // as the original Range class.  However we leave the original Range
+  // indefinitely, for performance and because the compiler seems to bootstrap
+  // off it and won't do so with our parameterized version without modifications.
+  object Int {
+    def apply(start: Int, end: Int, step: Int) = NumericRange(start, end, step)
+    def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
+  }
 
 }
 

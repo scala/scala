@@ -2,7 +2,7 @@ package strawman
 package collection
 package mutable
 
-import java.lang.IndexOutOfBoundsException
+import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 
 import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws}
 import scala.Predef.intWrapper
@@ -16,7 +16,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def this() = this(new Array[AnyRef](16), 0)
 
-  def this(initLength: Int) = this(new Array[AnyRef](initLength), initLength)
+  def this(initLength: Int) = this(new Array[AnyRef](initLength), 0)
 
   private var array: Array[AnyRef] = initElems
   private var end = initLength
@@ -45,8 +45,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def knownSize = length
 
   override def view: ArrayBufferView[A] = new ArrayBufferView(array, end)
-
-  def iterator() = view.iterator()
 
   def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
@@ -96,6 +94,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
         val elemsLength = elems.size
         ensureSize(length + elemsLength)
         Array.copy(array, idx, array, idx + elemsLength, end - idx)
+        end = end + elemsLength
         elems match {
           case elems: ArrayBuffer[_] =>
             Array.copy(elems.array, 0, array, idx, elemsLength)
@@ -108,8 +107,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
             }
         }
       case _ =>
-        val buf = new ArrayBuffer() ++= elems
-        insertAll(idx, buf)
+        insertAll(idx, ArrayBuffer.fromIterable(View.fromIterator(elems.iterator())))
     }
   }
 
@@ -121,11 +119,13 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     res
   }
 
-  def remove(from: Int, n: Int): Unit =
-    if (n > 0) {
-      checkWithinBounds(from, from + n)
-      Array.copy(array, from + n, array, from, end - (from + n))
-      reduceToSize(end - n)
+  def remove(idx: Int, count: Int): Unit =
+    if (count > 0) {
+      checkWithinBounds(idx, idx + count)
+      Array.copy(array, idx + count, array, idx, end - (idx + count))
+      reduceToSize(end - count)
+    } else if (count < 0) {
+      throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
     }
 
   override def className = "ArrayBuffer"

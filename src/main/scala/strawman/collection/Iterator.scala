@@ -2,9 +2,9 @@ package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, Some, StringContext, Unit, `inline`, math, throws}
-import scala.Predef.{intWrapper, require}
-import strawman.collection.mutable.{ArrayBuffer, HashMap}
+import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, PartialFunction, Some, StringContext, Unit, `inline`, math, throws}
+import scala.Predef.{intWrapper, require, String}
+import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -378,7 +378,24 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 
   final def size: Int = length
 
-  def filter(p: A => Boolean): Iterator[A] = new Iterator[A] {
+  /** Selects all elements of this iterator which satisfy a predicate.
+    *
+    *  @param p     the predicate used to test elements.
+    *  @return      a new iterator consisting of all elements of this $coll that satisfy the given
+    *               predicate `p`. The order of the elements is preserved.
+    */
+  def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
+
+  /** Creates an iterator over all the elements of this iterator which
+    *  do not satisfy a predicate p.
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an iterator which produces those values of this iterator which do not satisfy the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
+
+  private[collection] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new Iterator[A] {
     private var hd: A = _
     private var hdDefined: Boolean = false
 
@@ -386,7 +403,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       do {
         if (!self.hasNext) return false
         hd = self.next()
-      } while (!p(hd))
+      } while (p(hd) == isFlipped)
       hdDefined = true
       true
     }
@@ -397,6 +414,51 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         hd
       }
       else Iterator.empty.next()
+  }
+
+  /** Creates an iterator over all the elements of this iterator that
+    *  satisfy the predicate `p`. The order of the elements
+    *  is preserved.
+    *
+    *  '''Note:''' `withFilter` is the same as `filter` on iterators. It exists so that
+    *  for-expressions with filters work over iterators.
+    *
+    *  @param p the predicate used to test values.
+    *  @return  an iterator which produces those values of this iterator which satisfy the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
+  def withFilter(p: A => Boolean): Iterator[A] = filter(p)
+
+  /** Creates an iterator by transforming values
+    *  produced by this iterator with a partial function, dropping those
+    *  values for which the partial function is not defined.
+    *
+    *  @param pf the partial function which filters and maps the iterator.
+    *  @return   a new iterator which yields each value `x` produced by this iterator for
+    *  which `pf` is defined the image `pf(x)`.
+    *  @note     Reuse: $consumesAndProducesIterator
+    */
+  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new Iterator[B] {
+    // Manually buffer to avoid extra layer of wrapping with buffered
+    private[this] var hd: A = _
+
+    // Little state machine to keep track of where we are
+    // Seek = 0; Found = 1; Empty = -1
+    // Not in vals because scalac won't make them static (@inline def only works with -optimize)
+    // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
+    private[this] var status = 0/*Seek*/
+
+    def hasNext = {
+      while (status == 0/*Seek*/) {
+        if (self.hasNext) {
+          hd = self.next()
+          if (pf.isDefinedAt(hd)) status = 1/*Found*/
+        }
+        else status = -1/*Empty*/
+      }
+      status == 1/*Found*/
+    }
+    def next() = if (hasNext) { status = 0/*Seek*/; pf(hd) } else Iterator.empty.next()
   }
 
   /**
@@ -615,6 +677,57 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         }
       }
     }
+
+  def mkString(start: String, sep: String, end: String): String =
+    addString(new StringBuilder(), start, sep, end).toString
+
+  def mkString(sep: String): String = mkString("", sep, "")
+
+  def mkString: String = mkString("")
+
+  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
+    *  The written text begins with the string `start` and ends with the string `end`.
+    *  Inside, the string representations (w.r.t. the method `toString`)
+    *  of all elements of this $coll are separated by the string `sep`.
+    *
+    * Example:
+    *
+    * {{{
+    *      scala> val a = List(1,2,3,4)
+    *      a: List[Int] = List(1, 2, 3, 4)
+    *
+    *      scala> val b = new StringBuilder()
+    *      b: StringBuilder =
+    *
+    *      scala> a.addString(b , "List(" , ", " , ")")
+    *      res5: StringBuilder = List(1, 2, 3, 4)
+    * }}}
+    *
+    *  @param  b    the string builder to which elements are appended.
+    *  @param start the starting string.
+    *  @param sep   the separator string.
+    *  @param end   the ending string.
+    *  @return      the string builder `b` to which elements were appended.
+    */
+  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    var first = true
+
+    b addAll start
+    for (x <- self) {
+      if (first) {
+        b addAll x.toString
+        first = false
+      }
+      else {
+        b addAll sep
+        b addAll x.toString
+      }
+    }
+    b addAll end
+
+    b
+  }
+
 }
 
 object Iterator {

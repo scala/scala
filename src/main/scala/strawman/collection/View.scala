@@ -88,15 +88,15 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that filters an underlying collection. */
-  class Filter[A](val underlying: Iterable[A], val p: A => Boolean) extends View[A] {
-    def iterator() = underlying.iterator().filter(p)
+  class Filter[A](val underlying: Iterable[A], val p: A => Boolean, val isFlipped: Boolean) extends View[A] {
+    def iterator() = underlying.iterator().filterImpl(p, isFlipped)
   }
 
   object Filter {
-    def apply[A](underlying: Iterable[A], p: A => Boolean): Filter[A] =
+    def apply[A](underlying: Iterable[A], p: A => Boolean, isFlipped: Boolean): Filter[A] =
       underlying match {
-        case filter: Filter[A] => new Filter(filter.underlying, a => filter.p(a) && p(a))
-        case _                 => new Filter(underlying, p)
+        case filter: Filter[A] if filter.isFlipped == isFlipped => new Filter(filter.underlying, a => filter.p(a) && p(a), isFlipped)
+        case _ => new Filter(underlying, p, isFlipped)
       }
   }
 

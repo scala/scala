@@ -3,7 +3,8 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, `inline`, throws}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, StringContext, `inline`, throws}
+import scala.Predef.String
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
@@ -67,20 +68,23 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   /** Collects all keys of this map in a set.
     * @return  a set containing all keys of this map.
     */
-  def keySet: Set[K] = new DefaultKeySet
+  def keySet: Set[K] = new KeySet
 
   /** The implementation class of the set returned by `keySet`.
     */
-  protected class DefaultKeySet extends Set[K] with Serializable {
-    def contains(key: K) = MapOps.this.coll.contains(key)
-    def iterator() = keysIterator()
-    override def size = toIterable.size
-    override def foreach[U](f: K => U) = keysIterator() foreach f
+  protected class KeySet extends Set[K] with GenKeySet {
     def iterableFactory: IterableFactory[Set] = Set
-    def empty: Set[K] = iterableFactory.empty
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(iterableFactory.fromIterable(toIterable).diff(that))
-    protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = iterableFactory.fromIterable(coll)
+    protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = fromIterable(coll)
     protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
+    def empty: Set[K] = iterableFactory.empty
+  }
+
+  /** A generic trait that is reused by keyset implementations */
+  protected trait GenKeySet extends Serializable { this: Set[K] =>
+    def iterator(): Iterator[K] = MapOps.this.keysIterator()
+    def contains(key: K): Boolean = MapOps.this.contains(key)
+    override def size: Int = MapOps.this.size
   }
 
   /** Collects all keys of this map in an iterable collection.
@@ -209,6 +213,9 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   }
 
   override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
+
+  override def mkString(start: String, sep: String, end: String): String =
+    toIterable.iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
 }
 

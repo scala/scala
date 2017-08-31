@@ -30,7 +30,7 @@ import strawman.collection.mutable.Builder
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-final class NumericRange[T](
+sealed class NumericRange[T](
   val start: T,
   val end: T,
   val step: T,
@@ -43,7 +43,7 @@ final class NumericRange[T](
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable {
 
-  def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
+  override def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
 
   def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 
@@ -86,7 +86,7 @@ final class NumericRange[T](
     else locationAfterN(idx)
   }
 
-  @`inline` override def foreach[@specialized(Unit) U](f: T => U): Unit = {
+  override def foreach[@specialized(Unit) U](f: T => U): Unit = {
     var count = 0
     var current = start
     while (count < length) {
@@ -136,15 +136,20 @@ final class NumericRange[T](
   import NumericRange.defaultOrdering
 
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
-      if (num.signum(step) > 0) start
+  // We can take the fast path:
+  // - If the Integral of this NumericRange is also the requested Ordering
+  //   (Integral <: Ordering). This can happen for custom Integral types.
+  // - The Ordering is the default Ordering of a well-known Integral type.
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
+      if (num.signum(step) > 0) head
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
+  // See comment for fast path in min().
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
       if (num.signum(step) > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   // Motivated by the desire for Double ranges with BigDecimal precision,
@@ -169,25 +174,25 @@ final class NumericRange[T](
   //
   //   (0.1 to 0.3 by 0.1 contains 0.3) == true
   //
-//  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): NumericRange[A] = {
-//    val self = this
-//
-//    // XXX This may be incomplete.
-//    new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
-//
-//      private lazy val underlyingRange: NumericRange[T] = self
-//      override def foreach(f: A => Unit) { underlyingRange foreach (x => f(fm(x))) }
-//      override def isEmpty = underlyingRange.isEmpty
-//      override def apply(idx: Int): A = fm(underlyingRange(idx))
-//      override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
-//
-//      override def toString = {
-//        def simpleOf(x: Any): String = x.getClass.getName.split("\\.").last
-//        val stepped = simpleOf(underlyingRange.step)
-//        s"${super.toString} (using $underlyingRange of $stepped)"
-//      }
-//    }
-//  }
+  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): NumericRange[A] = {
+    val self = this
+
+    // XXX This may be incomplete.
+    new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
+
+      private lazy val underlyingRange: NumericRange[T] = self
+      override def foreach[@specialized(Unit) U](f: A => U): Unit = { underlyingRange foreach (x => f(fm(x))) }
+      override def isEmpty = underlyingRange.isEmpty
+      override def apply(idx: Int): A = fm(underlyingRange(idx))
+      override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
+
+      override def toString = {
+        def simpleOf(x: Any): String = collection.arrayToArrayOps(x.getClass.getName.split("\\.")).last
+        val stepped = simpleOf(underlyingRange.step)
+        s"${super.toString} (using $underlyingRange of $stepped)"
+      }
+    }
+  }
 
   // a well-typed contains method.
   def containsTyped(x: T): Boolean =

@@ -9,7 +9,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
 
 /** Base implementation type of bitsets */
 trait BitSetOps[+C <: BitSet with BitSetOps[C]]
-  extends SortedSetOps[Int, SortedSet, C] {
+  extends SortedSetOps[Int, SortedSet, C] { self =>
   import BitSetOps._
 
   final def ordering: Ordering[Int] = Ordering.Int
@@ -35,7 +35,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
-      while (current != end && !contains(current)) current += 1
+      while (current != end && !self.contains(current)) current += 1
       current != end
     }
     def next(): Int =
