@@ -52,7 +52,8 @@ object Bencharts {
 
         val xAxis = new LogarithmicAxis("Size")
         xAxis.setAllowNegativesFlag(true)
-        val yAxis = new LogAxis(yAxisTitle)
+        val yAxis = new LogarithmicAxis(yAxisTitle)
+        yAxis.setAllowNegativesFlag(true)
 
         val col = new YIntervalSeriesCollection()
         val renderer = new XYErrorRenderer
