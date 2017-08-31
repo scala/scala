@@ -1,20 +1,22 @@
-package scala.collection.concurrent
+package strawman.collection.concurrent
 
+import strawman.collection.{IterableOnce, View}
+import strawman.collection.immutable.{List, Nil}
 import org.junit.{Assert, Test}
 
 class TrieMapTest {
 
-  private def check[T](result2: List[Any])(f: TrieMap[String, String] => TraversableOnce[Any]) = {
+  private def check[T](result2: List[Any])(f: TrieMap[String, String] => IterableOnce[Any]) = {
     val m = TrieMap[String, String]()
     val values = f(m)
     m.put("k", "v")
-    Assert.assertEquals(Nil, values.toList)
-    Assert.assertEquals(result2, f(m).toList)
+    Assert.assertEquals(Nil, List.fromIterable(View.fromIterator(values.iterator())))
+    Assert.assertEquals(result2, List.fromIterable(View.fromIterator(f(m).iterator())))
   }
 
   @Test
   def iterator(): Unit = {
-    check(List(("k", "v")))(_.iterator)
+    check(List(("k", "v")))(_.iterator())
   }
 
   @Test
@@ -24,7 +26,7 @@ class TrieMapTest {
 
   @Test
   def valuesIterator(): Unit = {
-    check(List("v"))(_.valuesIterator)
+    check(List("v"))(_.valuesIterator())
   }
 
   @Test
@@ -34,7 +36,7 @@ class TrieMapTest {
 
   @Test
   def keysIterator(): Unit = {
-    check(List("k"))(_.keysIterator)
+    check(List("k"))(_.keysIterator())
   }
 
   @Test
