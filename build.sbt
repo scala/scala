@@ -1,6 +1,6 @@
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
-dotty in ThisBuild := "0.3.0-bin-20170808-a662424-NIGHTLY"
+dotty in ThisBuild := "0.3.0-RC1"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
@@ -24,6 +24,11 @@ val disablePublishing = Seq(
   // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
   publish := (),
   publishLocal := ()
+)
+
+// Disable cross-compilation with Dotty.
+val disableDotty = Seq(
+  crossScalaVersions ~= (_.filterNot(_.startsWith("0.")))
 )
 
 val collections =
@@ -63,6 +68,8 @@ val collections =
 val junit = project.in(file("test") / "junit")
   .dependsOn(collections)
   .settings(commonSettings ++ disablePublishing)
+   // Dotty 0.3.0-RC1 crashes when trying to compile this project
+  .settings(disableDotty)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",
@@ -78,10 +85,14 @@ val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(collections)
   .settings(commonSettings)
   .settings(disablePublishing)
+   // Dotty 0.3.0-RC1 crashes when trying to compile this project
+  .settings(disableDotty)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",
-    libraryDependencies ++= Seq("org.scalacheck" %% "scalacheck" % "1.13.5" % Test)
+    libraryDependencies ++= Seq(
+      ("org.scalacheck" %% "scalacheck" % "1.13.5" % Test).withDottyCompat()
+    )
   )
 
 val timeBenchmark =
@@ -89,6 +100,8 @@ val timeBenchmark =
     .dependsOn(collections)
     .enablePlugins(JmhPlugin)
     .settings(commonSettings ++ disablePublishing)
+     // Dotty 0.3.0-RC1 crashes when trying to compile this project
+    .settings(disableDotty)
     .settings(
       charts := Def.inputTaskDyn {
         val benchmarks = Def.spaceDelimited().parsed
