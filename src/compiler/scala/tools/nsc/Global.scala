@@ -1223,11 +1223,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
       checkPhaseSettings(including = false, exclusions map (_.value): _*)
 
-      // Enable statistics if settings are true
-      if (settings.YstatisticsEnabled)
-        statistics.enabled = true
-      if (settings.YhotStatisticsEnabled)
-        statistics.hotEnabled = true
+      // Enable or disable depending on the current setting -- useful for interactive behaviour
+      statistics.initFromSettings(settings)
 
       // Report the overhead of statistics measurements per every run
       if (statistics.canEnable)

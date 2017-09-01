@@ -9,14 +9,11 @@ import java.lang.invoke.{SwitchPoint, MethodHandle, MethodHandles, MethodType}
 
 abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSettings) {
 
-  init()
+  initFromSettings(settings)
 
-  def init(): Unit = {
-    // Turn on statistics on this class if settings say so
-    if (settings.YstatisticsEnabled)
-      enabled = true
-    if (settings.YhotStatisticsEnabled)
-      hotEnabled = true
+  def initFromSettings(currentSettings: MutableSettings): Unit = {
+    enabled = currentSettings.YstatisticsEnabled
+    hotEnabled = currentSettings.YhotStatisticsEnabled
   }
 
   type TimerSnapshot = (Long, Long)
