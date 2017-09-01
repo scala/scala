@@ -23,7 +23,7 @@ import java.lang.Integer
   *  @define coll immutable hash set
   */
 @SerialVersionUID(2L)
-sealed trait HashSet[A]
+sealed abstract class HashSet[A]
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
