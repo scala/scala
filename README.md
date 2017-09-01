@@ -1,7 +1,7 @@
 # Collection-Strawman
 
 [![Join the chat at https://gitter.im/scala/collection-strawman](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala/collection-strawman?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Waffle.io board](https://badge.waffle.io/scala/collection-strawman.svg?label=ready&title=Ready issues)](http://waffle.io/scala/collection-strawman)
+[![Waffle.io board](https://badge.waffle.io/scala/collection-strawman.svg?label=ready&title=Ready+issues)](http://waffle.io/scala/collection-strawman)
 
 Prototype improvements for Scala collections.
 
