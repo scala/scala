@@ -109,7 +109,7 @@ object View extends IterableFactoryLike[View] {
     def iterator(): Iterator[A] = Iterator.iterate(start)(f).take(len)
     override def knownSize: Int = 0 max len
   }
-
+  
   /** A view that filters an underlying collection. */
   class Filter[A](val underlying: Iterable[A], val p: A => Boolean, val isFlipped: Boolean) extends View[A] {
     def iterator() = underlying.iterator().filterImpl(p, isFlipped)

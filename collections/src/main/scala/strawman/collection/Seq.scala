@@ -228,7 +228,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *          that the resulting collection has a length of at least `len`.
    */
   def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(View.PadTo(toIterable, len, elem))
-
+  
   /** Finds index of the first element satisfying some predicate after or at some start index.
     *
     *  $mayNotTerminateInf

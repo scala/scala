@@ -385,7 +385,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   }
 
   final def size: Int = length
-
+  
   /** Selects all elements of this iterator which satisfy a predicate.
     *
     *  @param p     the predicate used to test elements.
