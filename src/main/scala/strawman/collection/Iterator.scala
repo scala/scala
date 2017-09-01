@@ -27,6 +27,12 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     *  @note     Reuse: $preservesIterator
     */
   def isEmpty: Boolean = !hasNext
+  
+  /** Wraps the value of `next()` in an option.
+    *
+    * @return `Some(next)` if a next element exists, `None` otherwise.
+    */
+  def nextOption(): Option[A] = if (hasNext) Some(next()) else None
 
   /** Tests whether a predicate holds for all values produced by this iterator.
     *  $mayNotTerminateInf
