@@ -1,6 +1,8 @@
 language: scala
 jdk: oraclejdk8
 script: sbt memoryBenchmark/compile timeBenchmark/compile +test ++2.13.0-M2 junit/test scalacheck/test
+before_script:
+  - ./checkCLA.sh
 after_succes:
 - '[[ $TRAVIS_BRANCH == "master" ]] && { sbt publish; }'
 env:
