@@ -119,7 +119,7 @@ object Map extends MapFactory[Map] {
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
       if (key == key1) Some(value1) else None
-    def iterator() = Iterator((key1, value1))
+    def iterator() = Iterator.single((key1, value1))
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
@@ -141,7 +141,7 @@ object Map extends MapFactory[Map] {
       if (key == key1) Some(value1)
       else if (key == key2) Some(value2)
       else None
-    def iterator() = Iterator((key1, value1), (key2, value2))
+    def iterator() = ((key1, value1) :: (key2, value2) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
@@ -168,7 +168,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) Some(value2)
       else if (key == key3) Some(value3)
       else None
-    def iterator() = Iterator((key1, value1), (key2, value2), (key3, value3))
+    def iterator() = ((key1, value1) :: (key2, value2) :: (key3, value3) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
@@ -199,7 +199,7 @@ object Map extends MapFactory[Map] {
       else if (key == key3) Some(value3)
       else if (key == key4) Some(value4)
       else None
-    def iterator() = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
+    def iterator() = ((key1, value1) :: (key2, value2) :: (key3, value3) :: (key4, value4) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)

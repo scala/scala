@@ -94,7 +94,7 @@ object Set extends IterableFactory[Set] {
     def excl(elem: A): Set[A] =
       if (elem == elem1) Set.empty
       else this
-    def iterator(): Iterator[A] = Iterator(elem1)
+    def iterator(): Iterator[A] = Iterator.single(elem1)
     override def foreach[U](f: A => U): Unit = f(elem1)
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
@@ -117,8 +117,7 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
-    def iterator(): Iterator[A] =
-      Iterator(elem1, elem2)
+    def iterator(): Iterator[A] = (elem1 :: elem2 :: Nil).iterator()
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
@@ -151,8 +150,7 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
       else this
-    def iterator(): Iterator[A] =
-      Iterator(elem1, elem2, elem3)
+    def iterator(): Iterator[A] = (elem1 :: elem2 :: elem3 :: Nil).iterator()
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -187,8 +185,7 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def iterator(): Iterator[A] =
-      Iterator(elem1, elem2, elem3, elem4)
+    def iterator(): Iterator[A] = (elem1 :: elem2 :: elem3 :: elem4 :: Nil).iterator()
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
