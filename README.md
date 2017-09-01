@@ -1,6 +1,7 @@
 # Collection-Strawman
 
 [![Join the chat at https://gitter.im/scala/collection-strawman](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala/collection-strawman?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Waffle.io board](https://badge.waffle.io/scala/collection-strawman.svg?label=ready&title=Ready issues)](http://waffle.io/scala/collection-strawman)
 
 Prototype improvements for Scala collections.
 
@@ -25,10 +26,10 @@ are available. If you see something missing, please
 Add the following dependency to your project:
 
 ~~~ scala
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.3.0"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.4.0"
 ~~~
 
-The 0.3.0 version is compatible with Scala 2.13 and Dotty 0.2. Scala 2.12 is also supported
+The 0.4.0 version is compatible with Scala 2.13 and Dotty 0.2. Scala 2.12 is also supported
 but you might encounter type inference issues with it.
 
 We also automatically publish snapshots on Sonatype:
@@ -36,7 +37,7 @@ We also automatically publish snapshots on Sonatype:
 ~~~ scala
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.4.0-SNAPSHOT"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.5.0-SNAPSHOT"
 ~~~
 
 ### Migrating from the standard collections to the strawman

@@ -18,12 +18,15 @@ You need the following:
 - You should perform your work in its own Git branch.
 - Then open a pull request on GitHub, with `master` as base branch.
 
+Have a look at the [Waffle.io board](https://waffle.io/scala/collection-strawman) to
+quickly know which issues are ready and which are already in progress.
+
 ### Build
 
 - Compile the collections and run the tests:
   
   ~~~
-  >; compile; test
+  >; compile; test; junit/test
   ~~~
 - Run the memory benchmark:
   
