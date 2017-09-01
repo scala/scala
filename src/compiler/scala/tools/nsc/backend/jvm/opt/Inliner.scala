@@ -8,21 +8,26 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
-import scala.tools.asm
-import asm.Opcodes._
-import asm.tree._
 import scala.collection.JavaConverters._
-import AsmUtils._
-import BytecodeUtils._
-import collection.mutable
-import BackendReporting._
+import scala.collection.mutable
+import scala.tools.asm
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.tree._
+import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
-class Inliner[BT <: BTypes](val btypes: BT) {
-  import btypes._
-  import callGraph._
-  import inlinerHeuristics._
+abstract class Inliner {
+  val postProcessor: PostProcessor
+
+  import postProcessor._
+  import bTypes._
+  import bTypesFromClassfile._
   import backendUtils._
+  import callGraph._
+  import frontendAccess.{backendReporting, compilerSettings}
+  import inlinerHeuristics._
 
   sealed trait InlineLog {
     def request: InlineRequest
@@ -34,17 +39,19 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   final case class InlineLogRollback(request: InlineRequest, warnings: List[CannotInlineWarning]) extends InlineLog
 
   object InlineLog {
-    private def shouldLog(request: InlineRequest): Boolean = {
-      def logEnabled = compilerSettings.YoptLogInline.isSetByUser
-      def matchesName = {
-        val prefix = compilerSettings.YoptLogInline.value match {
-          case "_" => ""
-          case p => p
+    private def shouldLog(request: InlineRequest): Boolean = compilerSettings.optLogInline match {
+      case Some(v) =>
+        def matchesName = {
+          val prefix = v match {
+            case "_" => ""
+            case p => p
+          }
+          val name: String = request.callsite.callsiteClass.internalName + "." + request.callsite.callsiteMethod.name
+          name startsWith prefix
         }
-        val name: String = request.callsite.callsiteClass.internalName + "." + request.callsite.callsiteMethod.name
-        name startsWith prefix
-      }
-      logEnabled && (upstream != null || (isTopLevel && matchesName))
+        upstream != null || (isTopLevel && matchesName)
+
+      case _ => false
     }
 
     // indexed by callsite method
@@ -102,7 +109,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    def print(): Unit = if (compilerSettings.YoptLogInline.isSetByUser) {
+    def print(): Unit = if (compilerSettings.optLogInline.isDefined) {
       val byClassAndMethod: List[(InternalName, mutable.Map[MethodNode, mutable.LinkedHashSet[InlineLog]])] = {
         logs.
           groupBy(_._2.head.request.callsite.callsiteClass.internalName).
@@ -282,7 +289,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   class UndoLog(active: Boolean = true) {
-    import java.util.{ ArrayList => JArrayList }
+    import java.util.{ArrayList => JArrayList}
 
     private var actions = List.empty[() => Unit]
     private var methodStateSaved = false
@@ -367,7 +374,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    *         instruction in the callsite method.
    */
   def inlineCallsite(callsite: Callsite, undo: UndoLog = NoUndoLogging): Unit = {
-    import callsite.{callsiteClass, callsiteMethod, callsiteInstruction, receiverKnownNotNull, callsiteStackHeight}
+    import callsite._
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
 
@@ -571,7 +578,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     undo { callGraph.addCallsite(callsite) }
 
     // Inlining a method body can render some code unreachable, see example above in this method.
-    unreachableCodeEliminated -= callsiteMethod
+    localOpt.unreachableCodeEliminated -= callsiteMethod
   }
 
   /**
@@ -585,7 +592,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * @return `Some(message)` if inlining cannot be performed, `None` otherwise
    */
   def earlyCanInlineCheck(callsite: Callsite): Option[CannotInlineWarning] = {
-    import callsite.{callsiteMethod, callsiteClass}
+    import callsite.{callsiteClass, callsiteMethod}
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass}
 
@@ -619,7 +626,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    *    cause an IllegalAccessError
    */
   def canInlineCallsite(callsite: Callsite): Option[(CannotInlineWarning, List[AbstractInsnNode])] = {
-    import callsite.{callsiteInstruction, callsiteMethod, callsiteClass, callsiteStackHeight}
+    import callsite.{callsiteClass, callsiteInstruction, callsiteMethod, callsiteStackHeight}
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass}
 

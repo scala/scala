@@ -3,21 +3,17 @@
  * @author  Martin Odersky
  */
 
-
-package scala
-package tools.nsc
-package backend
-package jvm
+package scala.tools.nsc
+package backend.jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
 import scala.tools.asm
-import GenBCode._
-import BackendReporting._
-import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.GenBCode._
 
 /*
  *
@@ -27,9 +23,11 @@ import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
  */
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   import global._
-  import definitions._
   import bTypes._
   import coreBTypes._
+  import definitions._
+  import genBCode.postProcessor.backendUtils.addIndyLambdaImplMethod
+  import genBCode.postProcessor.callGraph.{inlineAnnotatedCallsites, noInlineAnnotatedCallsites}
 
   /*
    * Functionality to build the body of ASM MethodNode, except for `synchronized` and `try` expressions.
@@ -213,7 +211,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val Apply(fun @ Select(receiver, _), _) = tree
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
-      import scalaPrimitives.{isArithmeticOp, isArrayOp, isLogicalOp, isComparisonOp}
+      import scalaPrimitives.{isArithmeticOp, isArrayOp, isComparisonOp, isLogicalOp}
 
       if (isArithmeticOp(code))                genArithmeticOp(tree, code)
       else if (code == scalaPrimitives.CONCAT) genStringConcat(tree)
@@ -1213,7 +1211,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       tree match {
 
         case Apply(fun, args) if isPrimitive(fun.symbol) =>
-          import scalaPrimitives.{ ZNOT, ZAND, ZOR, EQ, getPrimitive }
+          import scalaPrimitives._
 
           // lhs and rhs of test
           lazy val Select(lhs, _) = fun
@@ -1360,7 +1358,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
                                         implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type,
                                         serializable: Boolean, markerInterfaces: Seq[asm.Type]) = {
-    import java.lang.invoke.LambdaMetafactory.{FLAG_MARKERS, FLAG_SERIALIZABLE, FLAG_BRIDGES}
+    import java.lang.invoke.LambdaMetafactory.{FLAG_BRIDGES, FLAG_MARKERS, FLAG_SERIALIZABLE}
     // scala/bug#10334: make sure that a lambda object for `T => U` has a method `apply(T)U`, not only the `(Object)Object`
     // version. Using the lambda a structural type `{def apply(t: T): U}` causes a reflective lookup for this method.
     val needsBridge = samMethodType != instantiatedMethodType

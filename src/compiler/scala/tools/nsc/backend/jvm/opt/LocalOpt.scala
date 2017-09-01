@@ -7,14 +7,13 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{tailrec, switch}
-
-import scala.tools.asm.Type
-import scala.tools.asm.tree.analysis.Frame
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import scala.collection.mutable
+import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
+import scala.tools.asm.tree._
+import scala.tools.asm.tree.analysis.Frame
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -137,16 +136,36 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * Note on updating the call graph: whenever an optimization eliminates a callsite or a closure
  * instantiation, we eliminate the corresponding entry from the call graph.
  */
-class LocalOpt[BT <: BTypes](val btypes: BT) {
-  import LocalOptImpls._
-  import btypes._
-  import coreBTypes._
-  import backendUtils._
+abstract class LocalOpt {
+  val postProcessor: PostProcessor
 
-  val boxUnbox = new BoxUnbox(btypes)
+  import postProcessor.bTypes.frontendAccess.recordPerRunCache
+
+  /**
+   * Cache, contains methods whose unreachable instructions are eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This cache allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  import postProcessor._
+  import bTypes._
+  import bTypesFromClassfile._
+  import backendUtils._
+  import coreBTypes._
+  import frontendAccess.compilerSettings
+
+  import LocalOptImpls._
+
+  val boxUnbox = new BoxUnbox { val postProcessor: LocalOpt.this.postProcessor.type = LocalOpt.this.postProcessor }
   import boxUnbox._
 
-  val copyProp = new CopyProp(btypes)
+  val copyProp = new CopyProp { val postProcessor: LocalOpt.this.postProcessor.type = LocalOpt.this.postProcessor }
   import copyProp._
 
   /**
@@ -232,8 +251,13 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
     var currentTrace: String = null
-    val methodPrefix = {val p = compilerSettings.YoptTrace.value; if (p == "_") "" else p }
-    val doTrace = compilerSettings.YoptTrace.isSetByUser && s"$ownerClassName.${method.name}".startsWith(methodPrefix)
+    val doTrace = compilerSettings.optTrace match {
+      case Some(v) =>
+        val prefix = if (v == "_") "" else v
+        s"$ownerClassName.${method.name}".startsWith(prefix)
+
+      case _ => false
+    }
     def traceIfChanged(optName: String): Unit = if (doTrace) {
       val after = AsmUtils.textify(method)
       if (currentTrace != after) {
@@ -398,7 +422,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(btypes, method))
+      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, method))
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
