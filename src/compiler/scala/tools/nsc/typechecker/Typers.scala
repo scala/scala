@@ -4856,7 +4856,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // (tree is either Select or SelectFromTypeTree, and qual may be different from tree.qualifier because it has been type checked)
         val qualTp = qual.tpe
         if ((qualTp eq null) || qualTp.isError) setError(tree)
-        else if (name.isTypeName && qualTp.isVolatile)  // TODO: use same error message for volatileType#T and volatilePath.T?
+        else if (name.isTypeName && !context.inJavaTypeSelection && qualTp.isVolatile)  // TODO: use same error message for volatileType#T and volatilePath.T?
           if (tree.isInstanceOf[SelectFromTypeTree]) TypeSelectionFromVolatileTypeError(tree, qual)
           else UnstableTreeError(qual)
         else {
@@ -4967,8 +4967,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedTypeSelectionQualifier(tree: Tree, pt: Type = AnyRefTpe) =
-        context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
+      def typedTypeSelectionQualifier(tree: Tree, pt: Type = AnyRefTpe) = {
+        def typedQual = context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
+        tree match {
+          case id: Ident if context.unit.isJava => context.withinJavaTypeSelection { typedQual }
+          case _                                => typedQual
+        }
+      }
 
       def typedSelectOrSuperCall(tree: Select) = tree match {
         case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
@@ -5038,31 +5043,33 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
             inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
-              case sym      => typed1(tree setSymbol sym, mode, pt)
-                }
+              case NoSymbol =>
+                // scala/bug#10490: A java type selection could be done over a type too in mixed compilation.
+                // If selected class from Scala has a companion, it already works thanks to the fix of scala/bug#3120.
+                if (context.inJavaTypeSelection) typedType(treeCopy.Ident(tree, name.toTypeName))
+                else issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+              case sym => typed1(tree setSymbol sym, mode, pt)
+            }
           case LookupSucceeded(qual, sym)   =>
             (// this -> Foo.this
-            if (sym.isThisSym)
-              typed1(This(sym.owner) setPos tree.pos, mode, pt)
+            if (sym.isThisSym) typed1(This(sym.owner) setPos tree.pos, mode, pt)
             else if (isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
               // Inferring classOf type parameter from expected type.  Otherwise an
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
-            }
-          else {
+            } else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
               val tree1 = if (qual == EmptyTree) tree else {
                 val pos = tree.pos
                 Select(atPos(pos.focusStart)(qual), name).setPos(pos)
               }
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
-            // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
-            //         inference errors in pattern matching.
+              // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
+              //         inference errors in pattern matching.
               stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
             }) setAttachments tree.attachments
-          }
         }
+      }
 
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
