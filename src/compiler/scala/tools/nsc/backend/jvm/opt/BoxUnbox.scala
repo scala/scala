@@ -653,6 +653,7 @@ abstract class BoxUnbox {
     }
 
     private val primBoxSupertypes: Map[InternalName, Set[InternalName]] = {
+      import postProcessor.bTypes._
       def transitiveSupertypes(clsbt: ClassBType): Set[ClassBType] =
         (clsbt.info.get.superClass ++ clsbt.info.get.interfaces).flatMap(transitiveSupertypes).toSet + clsbt
 
@@ -715,8 +716,10 @@ abstract class BoxUnbox {
     private def refClass(mi: MethodInsnNode): InternalName = mi.owner
     private def loadZeroValue(refZeroCall: MethodInsnNode): List[AbstractInsnNode] = List(loadZeroForTypeSort(runtimeRefClassBoxedType(refZeroCall.owner).getSort))
 
-    private val refSupertypes =
+    private val refSupertypes = {
+      import postProcessor.bTypes._
       Set(coreBTypes.jiSerializableRef, coreBTypes.ObjectRef).map(_.internalName)
+    }
 
     def checkRefCreation(insn: AbstractInsnNode, expectedKind: Option[Ref], prodCons: ProdConsAnalyzer): Option[(BoxCreation, Ref)] = {
       def checkKind(mi: MethodInsnNode): Option[Ref] = expectedKind match {
