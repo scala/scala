@@ -3,7 +3,7 @@ stmt-expr-discard.scala:3: warning: a pure expression does nothing in statement 
     ^
 stmt-expr-discard.scala:4: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     - 4
-      ^
+    ^
 error: No warnings can be incurred under -Xfatal-warnings.
 two warnings found
 one error found

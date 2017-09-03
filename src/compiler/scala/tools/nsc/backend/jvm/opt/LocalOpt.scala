@@ -59,6 +59,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - redundant casts (`("a", "b")._1`: the generic `_1` method returns `Object`, a cast
  *       to String is added. The cast is redundant after eliminating the tuple.)
  *     - empty local variable descriptors (local variables that were holding the box may become unused)
+  *    - push-pop (due to artifacts of eliminating runtime type tests on primitives)
  *
  * copy propagation (replaces LOAD n to the LOAD m for the smallest m that is an alias of n)
  *   + enables downstream:
@@ -924,6 +925,51 @@ object LocalOptImpls {
       case _ => false
     })
 
+    /**
+      * Replace conditional jump instructions with GOTO or NOP if statically known to be true or false.
+      *
+      * {{{
+      *      ICONST_0; IFEQ l;
+      *   => ICONST_0; POP; GOTO l;
+      *
+      *      ICONST_1; IFEQ l;
+      *   => ICONST_1; POP;
+      * }}}
+      *
+      * Note that the LOAD/POP pairs will be removed later by `eliminatePushPop`, and the code between
+      * the GOTO and `l` will be removed by DCE (if it's not jumped into from somewhere else).
+      */
+    def simplifyConstantConditions(instruction: AbstractInsnNode): Boolean = {
+      def replace(jump: JumpInsnNode, success: Boolean): Boolean = {
+        if (success) method.instructions.insert(jump, new JumpInsnNode(GOTO, jump.label))
+        replaceJumpByPop(jump)
+        true
+      }
+
+      instruction match {
+        case ConditionalJump(jump) =>
+          previousExecutableInstruction(instruction, jumpTargets) match {
+            case Some(prev) =>
+              val prevOp = prev.getOpcode
+              val isIConst = prevOp >= ICONST_M1 && prevOp <= ICONST_5
+              (jump.getOpcode: @switch) match {
+                case IFNULL if prevOp == ACONST_NULL =>
+                  replace(jump, success = true)
+                case IFNONNULL if prevOp == ACONST_NULL =>
+                  replace(jump, success = false)
+                case IFEQ if isIConst =>
+                  replace(jump, success = prevOp == ICONST_0)
+                case IFNE if isIConst =>
+                  replace(jump, success = prevOp != ICONST_0)
+                /* TODO: we also have IFLE, IF_?CMP* and friends, but how likely are they to be profitably optimizeable? */
+                case _ => false
+              }
+            case _ => false
+          }
+        case _ => false
+      }
+    }
+
     def run(): Boolean = {
       var changed = false
 
@@ -938,6 +984,7 @@ object LocalOptImpls {
           if (!jumpRemoved) {
             changed = simplifyBranchOverGoto(jumpInsn, inTryBlock) || changed
             changed = simplifyGotoReturn(jumpInsn, inTryBlock) || changed
+            changed = simplifyConstantConditions(jumpInsn) || changed
           }
         }
 

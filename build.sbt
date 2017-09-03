@@ -337,8 +337,6 @@ lazy val library = configureAsSubproject(project)
         "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
       )
     },
-    // macros in library+reflect are hard-wired to implementations with `FastTrack`.
-    incOptions := incOptions.value.withRecompileOnMacroDef(false),
     includeFilter in unmanagedResources in Compile := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
     // Include *.txt files in source JAR:
     mappings in Compile in packageSrc ++= {
@@ -367,8 +365,6 @@ lazy val reflect = configureAsSubproject(project)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
-    // macros in library+reflect are hard-wired to implementations with `FastTrack`.
-    incOptions := incOptions.value.withRecompileOnMacroDef(false),
     Osgi.bundleName := "Scala Reflect",
     scalacOptions in Compile in doc ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
@@ -681,7 +677,8 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
-    javaOptions in IntegrationTest += "-Xmx2G",
+    javaOptions in IntegrationTest ++= "-Xmx2G" :: "-Dfile.encoding=UTF-8" :: Nil,
+    testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
@@ -886,7 +883,11 @@ lazy val root: Project = (project in file("."))
       }
     },
     antStyle := false,
-    incOptions := incOptions.value.withNameHashing(!antStyle.value).withAntStyle(antStyle.value)
+    incOptions := {
+      incOptions.value
+        .withNameHashing(!antStyle.value).withAntStyle(antStyle.value)
+        .withRecompileOnMacroDef(false) //     // macros in library+reflect are hard-wired to implementations with `FastTrack`.
+    }
   )
   .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
