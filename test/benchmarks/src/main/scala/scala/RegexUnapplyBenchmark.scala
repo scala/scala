@@ -40,8 +40,6 @@ class RegexUnapplyBenchmark {
     // Testing 2.10.x compatibility of the return types of unapplySeq
     val x :: Nil = full.unapplySeq(text: Any).get
     val y :: Nil = full.unapplySeq(text: CharSequence).get
-    require(x == "*")
-    require(y == "*")
     bh.consume(x)
     bh.consume(y)
   }
@@ -52,8 +50,6 @@ class RegexUnapplyBenchmark {
     // Testing 2.10.x compatibility of the return types of unapplySeq
     val x :: Nil = R.unapplySeq(matchh: Any).get
     val y :: Nil = R.unapplySeq(matchh).get
-    require(x == "1")
-    require(y == "1")
     bh.consume(x)
     bh.consume(y)
   }
@@ -62,7 +58,6 @@ class RegexUnapplyBenchmark {
     val r = t8022MatchRegex
     val s: String = null
     val x = s match { case r() => 1 ; case _ => 2 }
-    require(x == 2)
     bh.consume(x)
   }
 
@@ -74,7 +69,6 @@ class RegexUnapplyBenchmark {
       case _       => None
     }
 
-    require(List((1,2),(3,4),(5,6)) == z)
     bh.consume(z)
   }
 
@@ -86,7 +80,6 @@ class RegexUnapplyBenchmark {
       case _ => null
     }
 
-    require(null != res)
     bh.consume(res)
   }
 }

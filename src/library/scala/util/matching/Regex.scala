@@ -276,7 +276,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     case null => None
     case _    =>
       val m = pattern matcher s
-      if (runMatcher(m)) Some((1 to m.groupCount).map(m.group(_))(collection.breakOut))
+      if (runMatcher(m)) Some(List.tabulate(m.groupCount)(i => m.group(i + 1)))
       else None
   }
 
@@ -330,7 +330,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    */
   def unapplySeq(m: Match): Option[List[String]] =
     if (m == null || m.matched == null) None
-    else if (m.matcher.pattern == this.pattern) Some((1 to m.groupCount).map(m.group(_))(collection.breakOut))
+    else if (m.matcher.pattern == this.pattern) Some(List.tabulate(m.groupCount)(i => m.group(i + 1)))
     else unapplySeq(m.matched)
 
   /** Tries to match target.
@@ -341,7 +341,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   def unapplySeq(target: Any): Option[List[String]] = target match {
     case s: CharSequence =>
       val m = pattern matcher s
-      if (runMatcher(m)) Some((1 to m.groupCount).map(m.group(_))(collection.breakOut))
+      if (runMatcher(m)) Some(List.tabulate(m.groupCount)(i => m.group(i + 1)))
       else None
     case m: Match => unapplySeq(m.matched)
     case _ => None
@@ -768,7 +768,7 @@ object Regex {
    */
   object Groups {
     def unapplySeq(m: Match): Option[Seq[String]] = {
-      if (m.groupCount > 0) Some((1 to m.groupCount).map(m.group(_))(collection.breakOut)) else None
+      if (m.groupCount > 0) Some(List.tabulate(m.groupCount)(i => m.group(i + 1))) else None
     }
   }
 
