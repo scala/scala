@@ -16,6 +16,7 @@ object RegexUnapplyRunner extends JmhRunner {
     new Runner(groupingTestOpt).run()
 
     val restTestOpt = new OptionsBuilder()
+      .include(classOf[RegexUnapplyBenchmark].getSimpleName)
       .exclude(groupingTestFunctionName)
       .addProfiler("gc")
       .param("groupCount", "1")
