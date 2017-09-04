@@ -8,8 +8,17 @@ package reflect
 package internal
 
 import scala.annotation.tailrec
+import scala.collection.generic.Clearable
+import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
+
+  // Reset `scopeCount` per every run
+  private[scala] var scopeCount = 0
+  perRunCaches.recordCache {
+    val clearCount: Clearable = () => {scopeCount = 0}
+    clearCount
+  }
 
   /** An ADT to represent the results of symbol name lookups.
    */
@@ -50,6 +59,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    */
   class Scope protected[Scopes]() extends ScopeApi with MemberScopeApi {
 
+    scopeCount += 1
     private[scala] var elems: ScopeEntry = _
 
     /** The number of times this scope is nested in another
@@ -297,6 +307,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *  change to use iterators as too costly.
      */
     def lookupEntry(name: Name): ScopeEntry = {
+      val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopeLookupTime) else null
       var e: ScopeEntry = null
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
@@ -309,6 +320,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           e = e.next
         }
       }
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopeLookupTime, startTime)
       e
     }
 
@@ -452,18 +464,22 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** Create a new scope nested in another one with which it shares its elements */
   final def newNestedScope(outer: Scope): Scope = {
+    val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val nested = newScope // not `new Scope`, we must allow the runtime reflection universe to mixin SynchronizedScopes!
     nested.elems = outer.elems
     nested.nestinglevel = outer.nestinglevel + 1
     if (outer.hashtable ne null)
       nested.hashtable = java.util.Arrays.copyOf(outer.hashtable, outer.hashtable.length)
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     nested
   }
 
   /** Create a new scope with given initial elements */
   def newScopeWith(elems: Symbol*): Scope = {
+    val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val scope = newScope
     elems foreach scope.enter
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     scope
   }
 
@@ -489,4 +505,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   class ErrorScope(owner: Symbol) extends Scope
 
   private final val maxRecursions = 1000
+}
+
+trait ScopeStats {
+  self: Statistics =>
+  val scopeCountView = newView("#created scopes")(symbolTable.scopeCount)
+  val scopePopulationTime = newTimer("time spent in scope population")
+  val scopeLookupTime = newTimer("time spent in scope lookup")
 }

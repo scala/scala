@@ -55,7 +55,8 @@ abstract class SymbolTable extends macros.Universe
                         with TypesStats
                         with SymbolTableStats
                         with TreesStats
-                        with SymbolsStats { self: Statistics => }
+                        with SymbolsStats
+                        with ScopeStats { self: Statistics => }
 
   /** Some statistics (normally disabled) set with -Ystatistics */
   val statistics: Statistics with ReflectStats
