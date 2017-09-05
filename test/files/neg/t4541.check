@@ -1,7 +1,7 @@
 t4541.scala:11: error: variable data in class Sparse cannot be accessed in Sparse[Int]
  Access to protected variable data not permitted because
  prefix type Sparse[Int] does not conform to
- class Sparse$mcI$sp where the access take place
+ class Sparse$mcI$sp where the access takes place
     that.data
          ^
 one error found
