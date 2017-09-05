@@ -774,4 +774,11 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("scala/bug#10325: @note in source order") = {
+    createTemplates("t10325.scala")("X.html") match {
+      case node: scala.xml.Node => false
+      case _ => ???
+    }
+  }
 }
