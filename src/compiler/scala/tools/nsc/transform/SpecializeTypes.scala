@@ -149,7 +149,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def fromSpecialization(sym: Symbol, args: List[Type]): TypeEnv = {
       ifDebug(assert(sym.info.typeParams.length == args.length, sym + " args: " + args))
 
-      emptyEnv ++ collectMap2(sym.info.typeParams, args)((k, v) => k.isSpecialized)
+      emptyEnv ++ collectMap2(enteringSpecialize(sym.info).typeParams, args)((k, v) => k.isSpecialized)
     }
 
     /** Does typeenv `t1` include `t2`? All type variables in `t1`
@@ -325,7 +325,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val pre1 = this(pre)
         // when searching for a specialized class, take care to map all
         // type parameters that are subtypes of AnyRef to AnyRef
-        val args1 = map2(args, sym.info.typeParams)((tp, orig) =>
+        val args1 = map2(args, enteringSpecialize(sym.info).typeParams)((tp, orig) =>
           if (isSpecializedAnyRefSubtype(tp, orig)) AnyRefTpe
           else tp
         )
@@ -501,6 +501,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         args.foreach(tp => specializedTypeVarsBuffer(tp, result))
       else if (!args.isEmpty)
         enteringTyper {
+          if (!sym.hasCompleteInfo)
+            getClass
           foreach2(sym.typeParams, args) { (tp, arg) =>
             if (tp.isSpecialized)
               specializedTypeVarsBuffer(arg, result)
