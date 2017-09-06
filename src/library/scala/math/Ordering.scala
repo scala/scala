@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2017, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -183,15 +183,19 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
 }
 
 trait LowPriorityOrderingImplicits {
+
+  type AsComparable[A] = A => Comparable[A]
+
   /** This would conflict with all the nice implicit Orderings
    *  available, but thanks to the magic of prioritized implicits
    *  via subclassing we can make `Ordered[A] => Ordering[A]` only
    *  turn up if nothing else works.  Since `Ordered[A]` extends
    *  `Comparable[A]` anyway, we can throw in some Java interop too.
    */
-  implicit def ordered[A <% Comparable[A]]: Ordering[A] = new Ordering[A] {
+  implicit def ordered[A: AsComparable]: Ordering[A] = new Ordering[A] {
     def compare(x: A, y: A): Int = x compareTo y
   }
+
   implicit def comparatorToOrdering[A](implicit cmp: Comparator[A]): Ordering[A] = new Ordering[A] {
     def compare(x: A, y: A) = cmp.compare(x, y)
   }
