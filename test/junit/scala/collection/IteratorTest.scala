@@ -248,4 +248,10 @@ class IteratorTest {
     assertEquals(v2, v4)
     assertEquals(Some(v1), v2)
   }
+
+  @Test
+  def zipWithIndex(): Unit = {
+    assertEquals(List(1,2,3).iterator.zipWithIndex.toList, List((1, 0), (2, 1), (3, 2)))
+    assertEquals(List(1,2,3).iterator.zipWithIndex(42).toList, List((1, 42), (2, 43), (3, 44)))
+  }
 }

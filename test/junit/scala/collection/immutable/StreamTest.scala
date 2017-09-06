@@ -123,4 +123,10 @@ class StreamTest {
     assertEquals(Stream(None, Some(1)), None #:: Stream(Some(1)))
     assertEquals(Stream(None, Some(1)), Stream(None) #::: Stream(Some(1)))
   }
+
+  @Test
+  def zipWithIndex: Unit = {
+    assertEquals(Stream(1, 2, 3).zipWithIndex.toList, Stream((1, 0), (2, 1), (3, 2)))
+    assertEquals(Stream(1, 2, 3).zipWithIndex(42).toList, Stream((1,42), (2, 43), (3, 44)))
+  }
 }

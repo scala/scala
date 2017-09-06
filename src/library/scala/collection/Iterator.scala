@@ -861,14 +861,14 @@ trait Iterator[+A] extends TraversableOnce[A] {
   }
 
   /** Creates an iterator that pairs each element produced by this iterator
-   *  with its index, counting from 0.
+   *  with its index, counting from `indicesStart`.
    *
    *  @return        a new iterator containing pairs consisting of
    *                 corresponding elements of this iterator and their indices.
    *  @note          Reuse: $consumesAndProducesIterator
    */
-  def zipWithIndex: Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
-    var idx = 0
+  def zipWithIndex(indicesStart: Int = 0): Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
+    var idx = indicesStart
     def hasNext = self.hasNext
     def next = {
       val ret = (self.next(), idx)
@@ -876,6 +876,17 @@ trait Iterator[+A] extends TraversableOnce[A] {
       ret
     }
   }
+
+  /** Creates an iterator that pairs each element produced by this iterator
+   *  with its index, counting from `0`.
+   *
+   *  @return        a new iterator containing pairs consisting of
+   *                 corresponding elements of this iterator and their indices.
+   *  @note          Reuse: $consumesAndProducesIterator
+   *                 As a separate method, to avoid collisions in code like "foo.zipWithIndex"
+   */
+
+  def zipWithIndex: Iterator[(A, Int)] = zipWithIndex(0)
 
   /** Creates an iterator formed from this iterator and another iterator
    *  by combining corresponding elements in pairs.

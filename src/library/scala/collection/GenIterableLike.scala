@@ -96,7 +96,7 @@ trait GenIterableLike[+A, +Repr] extends Any with GenTraversableLike[A, Repr] {
    *                 result class `That` from the current representation type `Repr`
    *                 and the new element type `(A1, Int)`.
    *  @return        A new collection of type `That` containing pairs consisting of all elements of this
-   *                 $coll paired with their index. Indices start at `0`.
+   *                 $coll paired with their index. Indices start at `indicesStart`.
    *
    *  @usecase def zipWithIndex: $Coll[(A, Int)]
    *    @inheritdoc
@@ -104,12 +104,15 @@ trait GenIterableLike[+A, +Repr] extends Any with GenTraversableLike[A, Repr] {
    *    $orderDependent
    *
    *    @return        A new $coll containing pairs consisting of all elements of this
-   *                   $coll paired with their index. Indices start at `0`.
+   *                   $coll paired with their index. Indices start at `indicesStart`.
    *    @example
    *      `List("a", "b", "c").zipWithIndex = List(("a", 0), ("b", 1), ("c", 2))`
+   *      `List("a", "b", "c").zipWithIndex(42) = List(("a", 42), ("b", 43), ("c", 44))`
    *
    */
-  def zipWithIndex[A1 >: A, That](implicit bf: CBF[Repr, (A1, Int), That]): That
+  def zipWithIndex[A1 >: A, That](indicesStart: Int)(implicit bf: CBF[Repr, (A1, Int), That]): That
+
+  def zipWithIndex[A1 >: A, That](implicit bf: CBF[Repr, (A1, Int), That]): That = zipWithIndex(0)
 
   /** Returns a $coll formed from this $coll and another iterable collection
    *  by combining corresponding elements in pairs.

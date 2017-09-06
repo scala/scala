@@ -26,4 +26,10 @@ class IndexedSeqOptimizedTest {
     assertArrayEquals(Array(1, 2, 3), Array(1, 2, 3) drop Int.MinValue)
     assertArrayEquals(Array(1, 2, 3), Array(1, 2, 3) dropRight Int.MinValue)
   }
+
+  @Test
+  def zipWithIndex() = {
+    assertEquals("abc".zipWithIndex.toList, List(('a', 0), ('b', 1), ('c', 2)))
+    assertEquals("abc".zipWithIndex(42).toList, List(('a', 42), ('b', 43), ('c', 44)))
+  }
 }
