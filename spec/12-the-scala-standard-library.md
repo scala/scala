@@ -17,7 +17,7 @@ the following.
 The root of this hierarchy is formed by class `Any`.
 Every class in a Scala execution environment inherits directly or
 indirectly from this class.  Class `Any` has two direct
-subclasses: `AnyRef` and AnyVal`.
+subclasses: `AnyRef` and `AnyVal`.
 
 The subclass `AnyRef` represents all values which are represented
 as objects in the underlying host system. Classes written in other languages
