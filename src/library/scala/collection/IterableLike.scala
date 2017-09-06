@@ -277,15 +277,17 @@ self =>
     b.result()
   }
 
-  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
+  def zipWithIndex[A1 >: A, That](indicesStart: Int = 0)(implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
-    var i = 0
+    var i = indicesStart
     for (x <- this) {
       b += ((x, i))
       i += 1
     }
     b.result()
   }
+
+  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = zipWithIndex(0)
 
   def sameElements[B >: A](that: GenIterable[B]): Boolean = {
     val these = this.iterator

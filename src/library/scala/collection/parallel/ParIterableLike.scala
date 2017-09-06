@@ -823,7 +823,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
     tasksupport.executeAndWaitResult(new Zip(combinerFactory(() => bf(repr).asCombiner), splitter, thatseq.splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.zip(that)(bf2seq(bf)), tasksupport)
 
-  def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[Repr, (U, Int), That]): That = this zip immutable.ParRange(0, size, 1, inclusive = false)
+  def zipWithIndex[U >: T, That](indicesStart: Int = 0)(implicit bf: CanBuildFrom[Repr, (U, Int), That]): That = this zip immutable.ParRange(indicesStart, size + indicesStart, 1, inclusive = false)
+
+  override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[Repr, (U, Int), That]): That = zipWithIndex(0)
 
   def zipAll[S, U >: T, That](that: GenIterable[S], thisElem: U, thatElem: S)(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf(repr).isCombiner && that.isParSeq) {
     val thatseq = that.asParSeq

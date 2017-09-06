@@ -93,17 +93,20 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
   }
 
   override /*IterableLike*/
-  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
+  def zipWithIndex[A1 >: A, That](indicesStart: Int = 0)(implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
     val len = length
     b.sizeHint(len)
     var i = 0
     while (i < len) {
-      b += ((this(i), i))
+      b += ((this(i), i + indicesStart))
       i += 1
     }
     b.result()
   }
+
+  override /*IterableLike*/
+  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = zipWithIndex(0)
 
   override /*IterableLike*/
   def slice(from: Int, until: Int): Repr = {

@@ -139,8 +139,10 @@ trait IterableViewLike[+A,
 //    else super.zip[A1, B, That](that)(bf)
   }
 
-  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[This, (A1, Int), That]): That =
-    zip[A1, Int, That](Stream from 0)(bf)
+  override def zipWithIndex[A1 >: A, That](indicesStart: Int = 0)(implicit bf: CanBuildFrom[This, (A1, Int), That]): That =
+    zip[A1, Int, That](Stream from indicesStart)(bf)
+
+  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[This, (A1, Int), That]): That = zipWithIndex(0)
 
   override def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[This, (A1, B), That]): That =
     newZippedAll(that, thisElem, thatElem).asInstanceOf[That]

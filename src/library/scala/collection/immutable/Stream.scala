@@ -647,8 +647,10 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
    * // (5,4)
    * }}}
    */
-  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Stream[A], (A1, Int), That]): That =
-    this.zip[A1, Int, That](Stream.from(0))
+  override def zipWithIndex[A1 >: A, That](indicesStart: Int = 0)(implicit bf: CanBuildFrom[Stream[A], (A1, Int), That]): That =
+    this.zip[A1, Int, That](Stream.from(indicesStart))
+
+  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Stream[A], (A1, Int), That]): That = zipWithIndex(0)
 
   /** Write all defined elements of this iterable into given string builder.
    *  The written text begins with the string `start` and is finished by the string

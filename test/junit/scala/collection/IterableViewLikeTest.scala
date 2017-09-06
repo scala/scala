@@ -19,4 +19,10 @@ class IterableViewLikeTest {
     assertEquals(iter, iter.view drop Int.MinValue force)
     assertEquals(iter, iter.view dropRight Int.MinValue force)
   }
+
+  @Test
+  def zipWithIndex() {
+   assertEquals(Iterable(1, 2, 3).view.zipWithIndex.toList, List((1, 0), (2, 1), (3, 2)))
+   assertEquals(Iterable(1, 2, 3).view.zipWithIndex(42).toList, List((1, 42), (2, 43), (3, 44)))
+  }
 }
