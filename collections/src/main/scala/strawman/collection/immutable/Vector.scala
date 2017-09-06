@@ -185,7 +185,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
   // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
+  override def appendedAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
     if (suffix.isEmpty) this
     else {
@@ -200,12 +200,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           val ri = this.reverseIterator()
           while (ri.hasNext) v = ri.next() +: v
           v
-        case _ => super.appendAll(suffix)
+        case _ => super.appendedAll(suffix)
       }
     }
   }
 
-  override def prependAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
+  override def prependedAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
     // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
     // has a small number of elements compared to the other, then we add them using `:+` or `+:` in a loop
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
@@ -221,7 +221,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           val it = this.iterator()
           while (it.hasNext) v = v :+ it.next()
           v
-        case _ => super.prependAll(prefix)
+        case _ => super.prependedAll(prefix)
       }
     }
   }
@@ -252,7 +252,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     dirty = true
   }
 
-  override def prepend[B >: A](value: B): Vector[B] = {
+  override def prepended[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
@@ -330,7 +330,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     }
   }
 
-  override def append[B >: A](value: B): Vector[B] = {
+  override def appended[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31

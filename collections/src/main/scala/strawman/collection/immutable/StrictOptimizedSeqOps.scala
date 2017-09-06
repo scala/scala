@@ -11,7 +11,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   extends SeqOps[A, CC, C]
     with collection.StrictOptimizedSeqOps[A, CC, C] {
 
-  override def prepend[B >: A](elem: B): CC[B] = {
+  override def prepended[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
@@ -21,7 +21,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def append[B >: A](elem: B): CC[B] = {
+  override def appended[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
