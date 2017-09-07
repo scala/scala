@@ -88,6 +88,8 @@ private[process] trait ProcessBuilderImpl {
     protected def toSource = this
     protected def toSink = this
 
+    private val defaultStreamCapacity = 4096
+
     def #|(other: ProcessBuilder): ProcessBuilder  = {
       require(other.canPipeTo, "Piping to multiple processes is not supported.")
       new PipedBuilder(this, other, false)
@@ -106,10 +108,14 @@ private[process] trait ProcessBuilderImpl {
     def !!<                     = slurp(None, withIn = true)
     def !!<(log: ProcessLogger) = slurp(Some(log), withIn = true)
 
-    def lineStream: Stream[String]                       = lineStream(withInput = false, nonZeroException = true, None)
-    def lineStream(log: ProcessLogger): Stream[String]   = lineStream(withInput = false, nonZeroException = true, Some(log))
-    def lineStream_! : Stream[String]                    = lineStream(withInput = false, nonZeroException = false, None)
-    def lineStream_!(log: ProcessLogger): Stream[String] = lineStream(withInput = false, nonZeroException = false, Some(log))
+    def lineStream: Stream[String]                       = lineStream(withInput = false, nonZeroException = true, None, defaultStreamCapacity)
+    def lineStream(log: ProcessLogger): Stream[String]   = lineStream(withInput = false, nonZeroException = true, Some(log), defaultStreamCapacity)
+    def lineStream_! : Stream[String]                    = lineStream(withInput = false, nonZeroException = false, None, defaultStreamCapacity)
+    def lineStream_!(log: ProcessLogger): Stream[String] = lineStream(withInput = false, nonZeroException = false, Some(log), defaultStreamCapacity)
+    def lineStream(capacity: Integer): Stream[String]                       = lineStream(withInput = false, nonZeroException = true, None, capacity)
+    def lineStream(log: ProcessLogger, capacity: Integer): Stream[String]   = lineStream(withInput = false, nonZeroException = true, Some(log), capacity)
+    def lineStream_!(capacity: Integer) : Stream[String]                    = lineStream(withInput = false, nonZeroException = false, None, capacity)
+    def lineStream_!(log: ProcessLogger, capacity: Integer): Stream[String] = lineStream(withInput = false, nonZeroException = false, Some(log), capacity)
 
     def !                      = run(connectInput = false).exitValue()
     def !(io: ProcessIO)       = run(io).exitValue()
@@ -137,9 +143,10 @@ private[process] trait ProcessBuilderImpl {
     private[this] def lineStream(
       withInput: Boolean,
       nonZeroException: Boolean,
-      log: Option[ProcessLogger]
+      log: Option[ProcessLogger],
+      capacity: Integer
     ): Stream[String] = {
-      val streamed = Streamed[String](nonZeroException)
+      val streamed = Streamed[String](nonZeroException, capacity)
       val process  = run(BasicIO(withInput, streamed.process, log))
 
       Spawn(streamed done process.exitValue())
