@@ -28,7 +28,7 @@ abstract class Comment {
         case Chain(list) =>
           list foreach scan
         case tag: HtmlTag => {
-          if (stack.length > 0 && tag.canClose(stack.last)) {
+          if (stack.nonEmpty && tag.canClose(stack.last)) {
             stack.remove(stack.length-1)
           } else {
             tag.close match {

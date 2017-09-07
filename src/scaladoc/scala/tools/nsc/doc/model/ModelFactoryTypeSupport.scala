@@ -161,7 +161,7 @@ trait ModelFactoryTypeSupport {
           refBuffer += pos0 -> ((link, name.length))
           nameBuffer append name
 
-          if (!targs.isEmpty) {
+          if (targs.nonEmpty) {
             nameBuffer append '['
             appendTypes0(targs, ", ")
             nameBuffer append ']'

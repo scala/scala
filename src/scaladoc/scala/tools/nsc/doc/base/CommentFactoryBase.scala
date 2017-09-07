@@ -308,7 +308,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
 
       case line :: ls => {
-        if (docBody.length > 0) docBody append endOfLine
+        if (docBody.nonEmpty) docBody append endOfLine
         docBody append line
         parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
       }
@@ -337,7 +337,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
             case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
-              if (!rs.isEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
+              if (rs.nonEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
               Some(r)
             case _ => None
           }
@@ -595,7 +595,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           }
           case _ => ;
         }
-      } while (stack.length > 0 && char != endOfText)
+      } while (stack.nonEmpty && char != endOfText)
 
       list mkString ""
     }

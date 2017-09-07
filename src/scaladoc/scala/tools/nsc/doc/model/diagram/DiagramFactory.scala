@@ -138,7 +138,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
             case dnode: MemberTemplateImpl =>
               val superClasses = listSuperClasses(dnode)
 
-              if (!superClasses.isEmpty) {
+              if (superClasses.nonEmpty) {
                 nodesShown += dnode
                 nodesShown ++= superClasses
               }

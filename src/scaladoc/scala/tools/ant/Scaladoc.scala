@@ -576,7 +576,7 @@ class Scaladoc extends ScalaMatchingTask {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) buildError("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) buildError("Attribute 'srcdir' is not set.")
-    if (!destination.isEmpty && !destination.get.isDirectory())
+    if (destination.isDefined && !destination.get.isDirectory())
       buildError("Attribute 'destdir' does not refer to an existing directory.")
     if (destination.isEmpty) destination = Some(getOrigin.head)
 
@@ -624,21 +624,21 @@ class Scaladoc extends ScalaMatchingTask {
     // parameters.
     val docSettings = new Settings(buildError)
     docSettings.outdir.value = asString(destination.get)
-    if (!classpath.isEmpty)
+    if (classpath.isDefined)
       docSettings.classpath.value = asString(getClasspath)
-    if (!sourcepath.isEmpty)
+    if (sourcepath.isDefined)
       docSettings.sourcepath.value = asString(getSourcepath)
     /*else if (origin.get.size() > 0)
       settings.sourcepath.value = origin.get.list()(0)*/
-    if (!bootclasspath.isEmpty)
+    if (bootclasspath.isDefined)
       docSettings.bootclasspath.value = asString(getBootclasspath)
-    if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
-    if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
-    if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
-    if (!docfooter.isEmpty) docSettings.docfooter.value = decodeEscapes(docfooter.get)
-    if (!docversion.isEmpty) docSettings.docversion.value = decodeEscapes(docversion.get)
-    if (!docsourceurl.isEmpty) docSettings.docsourceurl.value = decodeEscapes(docsourceurl.get)
-    if (!docUncompilable.isEmpty) docSettings.docUncompilable.value = decodeEscapes(docUncompilable.get)
+    if (extdirs.isDefined) docSettings.extdirs.value = asString(getExtdirs)
+    if (encoding.isDefined) docSettings.encoding.value = encoding.get
+    if (doctitle.isDefined) docSettings.doctitle.value = decodeEscapes(doctitle.get)
+    if (docfooter.isDefined) docSettings.docfooter.value = decodeEscapes(docfooter.get)
+    if (docversion.isDefined) docSettings.docversion.value = decodeEscapes(docversion.get)
+    if (docsourceurl.isDefined) docSettings.docsourceurl.value = decodeEscapes(docsourceurl.get)
+    if (docUncompilable.isDefined) docSettings.docUncompilable.value = decodeEscapes(docUncompilable.get)
 
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
@@ -651,10 +651,10 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.docNoPrefixes.value = docNoPrefixes
     docSettings.docGroups.value = docGroups
     docSettings.docSkipPackages.value = docSkipPackages
-    if(!docDiagramsDotPath.isEmpty) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
+    if(docDiagramsDotPath.isDefined) docSettings.docDiagramsDotPath.value = docDiagramsDotPath.get
 
-    if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get
-    if (!docrootcontent.isEmpty) docSettings.docRootContent.value = docrootcontent.get.getAbsolutePath()
+    if (docgenerator.isDefined) docSettings.docgenerator.value = docgenerator.get
+    if (docrootcontent.isDefined) docSettings.docRootContent.value = docrootcontent.get.getAbsolutePath()
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
 
     docSettings processArgumentString addParams
