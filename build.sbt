@@ -1,3 +1,5 @@
+import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
 dotty in ThisBuild := "0.3.0-RC1"
@@ -32,13 +34,20 @@ val disableDotty = Seq(
 )
 
 val collections =
-  project.in(file("."))
+  crossProject.crossType(CrossType.Pure).in(file("."))
     .settings(commonSettings: _*)
-    .settings(
-      name := "collection-strawman",
+    .jvmSettings(
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % Test
-      ),
+      )
+    )
+    .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
+    .jsSettings(
+      disableDotty,
+      fork in Test := false
+    )
+    .settings(
+      name := "collection-strawman",
       scalacOptions += "-Yno-imports",
       pomExtra :=
         <developers>
@@ -64,8 +73,24 @@ val collections =
       ).toList
     )
 
+val collectionsJVM = collections.jvm
+val collectionsJS = collections.js
+
+val root = project.in(file("."))
+  .settings(commonSettings ++ disablePublishing)
+  .settings(
+    // Some short-cuts for common tasks
+    test in Test := (test in (collectionsJVM, Test)).value,
+    Seq(publish, publishLocal, publishSigned).map { publishKey =>
+      publishKey := {
+        val a = (publishKey in collectionsJVM).value
+        val b = (publishKey in collectionsJS).value
+      }
+    }
+  )
+
 val junit = project.in(file("test") / "junit")
-  .dependsOn(collections)
+  .dependsOn(collectionsJVM)
   .settings(commonSettings ++ disablePublishing)
    // Dotty 0.3.0-RC1 crashes when trying to compile this project
   .settings(disableDotty)
@@ -81,7 +106,7 @@ val junit = project.in(file("test") / "junit")
   )
 
 val scalacheck = project.in(file("test") / "scalacheck")
-  .dependsOn(collections)
+  .dependsOn(collectionsJVM)
   .settings(commonSettings)
   .settings(disablePublishing)
    // Dotty 0.3.0-RC1 crashes when trying to compile this project
@@ -96,7 +121,7 @@ val scalacheck = project.in(file("test") / "scalacheck")
 
 val timeBenchmark =
   project.in(file("benchmarks/time"))
-    .dependsOn(collections)
+    .dependsOn(collectionsJVM)
     .enablePlugins(JmhPlugin)
     .settings(commonSettings ++ disablePublishing)
      // Dotty 0.3.0-RC1 crashes when trying to compile this project
@@ -117,7 +142,7 @@ val timeBenchmark =
 
 val memoryBenchmark =
   project.in(file("benchmarks/memory"))
-    .dependsOn(collections)
+    .dependsOn(collectionsJVM)
     .settings(commonSettings ++ disablePublishing)
     .settings(
       libraryDependencies += ("org.spire-math" %% "jawn-ast" % "0.10.4").withDottyCompat(),
