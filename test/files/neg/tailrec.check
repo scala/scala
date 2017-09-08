@@ -7,9 +7,9 @@ tailrec.scala:50: error: could not optimize @tailrec annotated method fail1: it 
 tailrec.scala:53: error: could not optimize @tailrec annotated method fail2: it contains a recursive call not in tail position
   @tailrec final def fail2[T](xs: List[T]): List[T] = xs match {
                                                       ^
-tailrec.scala:59: error: could not optimize @tailrec annotated method fail3: it is called recursively with different type arguments
-  @tailrec final def fail3[T](x: Int): Int = fail3(x - 1)
-                                             ^
+tailrec.scala:59: error: could not optimize @tailrec annotated method fail3: it is called recursively with different specialized type arguments
+  @tailrec final def fail3[@specialized(Int) T](x: Int): Int = fail3(x - 1)
+                                                               ^
 tailrec.scala:63: error: could not optimize @tailrec annotated method fail4: it changes type of 'this' on a polymorphic recursive call
     @tailrec final def fail4[U](other: Tom[U], x: Int): Int = other.fail4[U](other, x - 1)
                                                                     ^

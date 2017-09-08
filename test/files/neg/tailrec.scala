@@ -56,7 +56,7 @@ class Failures {
   }
 
   // unsafe
-  @tailrec final def fail3[T](x: Int): Int = fail3(x - 1)
+  @tailrec final def fail3[@specialized(Int) T](x: Int): Int = fail3(x - 1)
 
   // unsafe
   class Tom[T](x: Int) {

@@ -199,6 +199,19 @@ object PolyObject extends App {
       tramp[A](x - 1)
     else
       0
+
+  def size[A](a: A, len: A => Int, tail: List[Either[String, Int]], acc: Int): Int = {
+    val acc1 = acc + len(a)
+    tail match {
+      case Nil           =>                              acc1
+      case Left(s)  :: t => size[String](s, _.length, t, acc1)
+      case Right(i) :: t => size[Int]   (i, _ => 1,   t, acc1)
+    }
+  }
+
+  def specializedSize[@specialized(Int) A](len: A => Int, as: List[A], acc: Int): Int =
+    if(as.isEmpty) acc
+    else specializedSize[A](len, as.tail, acc + len(as.head))
 }
 
 
@@ -410,6 +423,9 @@ object Test {
     check_success_b("FancyTailCalls.tcInPatternGuard", FancyTailCalls.tcInPatternGuard(max, max), true)
     check_success("FancyTailCalls.differentInstance", FancyTailCalls.differentInstance(max, 42), 42)
     check_success("PolyObject.tramp", PolyObject.tramp[Int](max), 0)
+    check_success("PolyObject.size", PolyObject.size[Int](1, _ => 1, (1 to 5000).toList.flatMap(_ => List(Left("hi"), Right(5))), 0), 15001)
+    check_success("PolyObject.specializedSize[Int]", PolyObject.specializedSize[Int](_ => 1, (1 to 5000).toList, 0), 5000)
+    check_success("PolyObject.specializedSize[String]", PolyObject.specializedSize[String](_.length, List.fill(5000)("hi"), 0), 10000)
   }
 
   // testing explicit tailcalls.
