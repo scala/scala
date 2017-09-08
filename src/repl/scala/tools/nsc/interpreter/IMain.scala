@@ -1285,7 +1285,7 @@ object IMain {
     def isStripping        = isettings.unwrapStrings
     def isTruncating       = reporter.truncationOK
 
-    def stripImpl(str: String): String = naming.unmangle(str)
+    def stripImpl(str: String): String = if (isInitializeComplete) naming.unmangle(str) else str
   }
   private[interpreter] def defaultSettings = new Settings()
   private[scala] def defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)

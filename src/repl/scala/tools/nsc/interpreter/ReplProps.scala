@@ -6,11 +6,11 @@
 package scala.tools.nsc
 package interpreter
 
-import Properties.{ javaVersion, javaVmName, shellPromptString, shellWelcomeString,
-                    versionString, versionNumberString }
+import Properties.{javaVersion, javaVmName, shellPromptString, shellWelcomeString,
+                    versionString, versionNumberString}
 import scala.sys._
 import Prop._
-import java.util.{ Formattable, FormattableFlags, Formatter }
+import java.util.{Formattable, FormattableFlags, Formatter}
 
 class ReplProps {
   private def bool(name: String) = BooleanProp.keyExists(name)
@@ -57,11 +57,15 @@ class ReplProps {
   }
   val continuePrompt = encolor(continueText)
 
-  // Next time.
-  //def welcome = enversion(Prop[String]("scala.repl.welcome") or shellWelcomeString)
+  // -Dscala.repl.welcome=banner uses shell.welcome property
   def welcome = enversion {
     val p = Prop[String]("scala.repl.welcome")
-    if (p.isSet) p.get else shellWelcomeString
+    if (p.isSet) p.get match {
+      case "banner" => shellWelcomeString
+      case text     => text
+    } else
+      """Welcome to Scala %1$#s (%3$s, Java %2$s).
+        |Type in expressions for evaluation. Or try :help.""".stripMargin
   }
 
   val pasteDelimiter = Prop[String]("scala.repl.here")

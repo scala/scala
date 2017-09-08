@@ -111,6 +111,7 @@ class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
   def start(): Unit = result.synchronized {
     require(thread == null, "Already started")
     thread = new Thread(this)
+    thread.setDaemon(true)
     running = true
     thread.start()
   }

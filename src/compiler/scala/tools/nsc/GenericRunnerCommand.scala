@@ -63,38 +63,41 @@ s"""|Usage: $cmdName <options> [<script|class|object|jar> <arguments>]
 """.stripMargin
 
   override def usageMsg = f"""$shortUsageMsg
-The first given argument other than options to $cmdName designates
-what to run.  Runnable targets are:
+The first argument to $cmdName after the options designates what to run.
 
-  - a file containing scala source
-  - the name of a compiled class
-  - a runnable jar file with a valid Main-Class attribute
-  - or if no argument is given, the repl (interactive shell) is started
+If no argument is given, the Scala REPL, an interactive shell, is started.
 
-Options to $cmdName which reach the java runtime:
+Otherwise, the Scala runner will try to run the named target, either as
+a compiled class with a main method, a jar file with a Main-Class manifest
+header, or as a Scala source file to compile and run.
 
- -Dname=prop  passed directly to java to set system properties
- -J<arg>      -J is stripped and <arg> passed to java as-is
- -nobootcp    do not put the scala jars on the boot classpath (slower)
+The REPL accepts expressions to evaluate. Try `:help` to see more commands.
+
+The script runner will invoke the main method of a top-level object if
+it finds one; otherwise, the script code is run locally to a synthetic
+main method with arguments available in a variable `args`.
+
+Options to $cmdName which reach the Java runtime:
+
+ -Dname=prop  passed directly to Java to set system properties
+ -J<arg>      -J is stripped and <arg> passed to Java as-is
+ -nobootcp    do not put the Scala jars on the boot classpath (slower)
 
 Other startup options:
 
- -howtorun    what to run <script|object|jar|guess> (default: guess)
- -i <file>    preload <file> before starting the repl
+ -i <file>    preload <file> before starting the REPL
  -I <file>    preload <file>, enforcing line-by-line interpretation
- -e <string>  execute <string> as if entered in the repl
+ -e <string>  execute <string> as if entered in the REPL
  -save        save the compiled script in a jar for future use
  -nc          no compilation daemon: do not use the fsc offline compiler
 
-A file argument will be run as a scala script unless it contains only
-self-contained compilation units (classes and objects) and exactly one
-runnable main method.  In that case the file will be compiled and the
-main method invoked.  This provides a bridge between scripts and standard
-scala source.
+If the runner does not correctly guess how to run the target:
+
+ -howtorun    what to run <script|object|jar|guess> (default: guess)
 
 When running a script or using -e, an already running compilation daemon
-(fsc) is used, or a new one started on demand.  The -nc option can be
-used to prevent this.%n"""
+(fsc) is used, or a new one started on demand.  Use the -nc option to
+create a fresh compiler instead.%n"""
 }
 
 object GenericRunnerCommand {
