@@ -31,20 +31,31 @@ abstract class GenBCode extends SubComponent {
 
     override val erasedTypes = true
 
-    def apply(unit: CompilationUnit): Unit = codeGen.genUnit(unit)
+    private val globalOptsEnabled = {
+      import postProcessorFrontendAccess._
+      compilerSettings.optInlinerEnabled || compilerSettings.optClosureInvocations
+    }
+
+    def apply(unit: CompilationUnit): Unit = {
+      val generated = BackendStats.timed(BackendStats.bcodeGenStat) {
+        codeGen.genUnit(unit)
+      }
+      if (globalOptsEnabled) postProcessor.generatedClasses ++= generated
+      else postProcessor.postProcessAndSendToDisk(generated)
+    }
 
     override def run(): Unit = {
-      val bcodeStart = Statistics.startTimer(BackendStats.bcodeTimer)
-
-      initialize()
-
-      val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
-      super.run() // invokes `apply` for each compilation unit
-      Statistics.stopTimer(BackendStats.bcodeGenStat, genStart)
-
-      postProcessor.postProcessAndSendToDisk()
-
-      Statistics.stopTimer(BackendStats.bcodeTimer, bcodeStart)
+      BackendStats.timed(BackendStats.bcodeTimer) {
+        try {
+          initialize()
+          super.run() // invokes `apply` for each compilation unit
+          if (globalOptsEnabled) postProcessor.postProcessAndSendToDisk(postProcessor.generatedClasses)
+        } finally {
+          // When writing to a jar, we need to close the jarWriter. Since we invoke the postProcessor
+          // multiple times if (!globalOptsEnabled), we have to do it here at the end.
+          postProcessor.classfileWriter.get.close()
+        }
+      }
     }
 
     /**
