@@ -152,6 +152,11 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   @deprecated("Use foldRight instead of :\\", "2.13.0")
   @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
 
+  def foldSomeLeft[B](z: B)(op: (B, A) => Option[B]): B = iterator().foldSomeLeft(z)(op)
+
+  def foldSomeRight[B](z: B)(op: (A, B) => Option[B]): B =
+    reversed.iterator().foldSomeLeft(z)((b, a) => op(a, b))
+
   /** Reduces the elements of this $coll using the specified associative binary operator.
    *
    *  $undefinedorder
