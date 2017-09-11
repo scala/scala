@@ -3325,7 +3325,7 @@ trait Types
     )
     override def etaExpand: Type = (
       if (!isHigherKinded) this
-      else logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
+      else logResult(s"Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
     )
     override def typeSymbol = origin.typeSymbol
 
