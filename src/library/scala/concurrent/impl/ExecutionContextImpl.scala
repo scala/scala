@@ -10,9 +10,9 @@ package scala.concurrent.impl
 
 import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.Semaphore
 import java.util.Collection
 import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
-import scala.annotation.tailrec
 
 
 private[scala] class ExecutionContextImpl private[impl] (val executor: Executor, val reporter: Throwable => Unit) extends ExecutionContextExecutor {
@@ -23,28 +23,19 @@ private[scala] class ExecutionContextImpl private[impl] (val executor: Executor,
 
 
 private[concurrent] object ExecutionContextImpl {
-
   // Implement BlockContext on FJP threads
   final class DefaultThreadFactory(
     daemonic: Boolean,
-    maxThreads: Int,
+    maxExtraThreads: Int,
     prefix: String,
-    uncaught: Thread.UncaughtExceptionHandler) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
+    uncaught: Thread.UncaughtExceptionHandler)
+    extends Semaphore(maxExtraThreads) with ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
 
     require(prefix ne null, "DefaultThreadFactory.prefix must be non null")
-    require(maxThreads > 0, "DefaultThreadFactory.maxThreads must be greater than 0")
+    require(maxExtraThreads >= 0, "DefaultThreadFactory.maxExtraThreads must be greater than or equal to 0")
 
-    private final val currentNumberOfThreads = new AtomicInteger(0)
-
-    @tailrec private final def reserveThread(): Boolean = currentNumberOfThreads.get() match {
-      case `maxThreads` | Int.`MaxValue` => false
-      case other => currentNumberOfThreads.compareAndSet(other, other + 1) || reserveThread()
-    }
-
-    @tailrec private final def deregisterThread(): Boolean = currentNumberOfThreads.get() match {
-      case 0 => false
-      case other => currentNumberOfThreads.compareAndSet(other, other - 1) || deregisterThread()
-    }
+    override def toString: String =
+      s"DefaultThreadFactory(daemonic = $daemonic, maxExtraThreads = $maxExtraThreads, prefix = $prefix, uncaught = $uncaught)"
 
     def wire[T <: Thread](thread: T): T = {
       thread.setDaemon(daemonic)
@@ -53,39 +44,54 @@ private[concurrent] object ExecutionContextImpl {
       thread
     }
 
-    // As per ThreadFactory contract newThread should return `null` if cannot create new thread.
-    def newThread(runnable: Runnable): Thread =
-      if (reserveThread())
-        wire(new Thread(new Runnable {
-          // We have to decrement the current thread count when the thread exits
-          override def run() = try runnable.run() finally deregisterThread()
-        })) else null
+    private[this] final def shouldAllocateUnlimited(): Boolean =
+      Thread.currentThread match {
+        case w: WorkerThread if w.isBlocking => false
+        case _ => true
+      }
 
-    def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
-      if (reserveThread()) {
-        wire(new ForkJoinWorkerThread(fjp) with BlockContext {
-          // We have to decrement the current thread count when the thread exits
-          final override def onTermination(exception: Throwable): Unit = deregisterThread()
-          final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
-            var result: T = null.asInstanceOf[T]
-            ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
-              @volatile var isdone = false
-              override def block(): Boolean = {
-                result = try {
-                    // When we block, switch out the BlockContext temporarily so that nested blocking does not created N new Threads
-                    BlockContext.withBlockContext(BlockContext.defaultBlockContext) { thunk }
-                  } finally {
-                    isdone = true
-                  }
+    override def newThread(runnable: Runnable): Thread =
+      if (shouldAllocateUnlimited()) wire(new Thread(runnable))
+      else if (tryAcquire(1)) wire(new Thread(new Runnable {
+          def run(): Unit = try runnable.run() finally release()
+        }))
+      else null
 
-                true
+    override def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
+      if (shouldAllocateUnlimited()) wire(new WorkerThread(fjp, null))
+      else if (tryAcquire(1)) wire(new WorkerThread(fjp, this))
+      else null
+
+      final class WorkerThread(final val fjp: ForkJoinPool, final val limiter: Semaphore)
+      extends ForkJoinWorkerThread(fjp) with BlockContext {
+        @volatile var isBlocking: Boolean = false
+        final override def toString: String = s"Worker(isBlocking = $isBlocking, limited = ${limiter ne null})"
+        final override def onTermination(exception: Throwable): Unit = if (limiter ne null) limiter.release()
+        final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
+            isBlocking = true
+            try {
+              if ((limiter ne null) && limiter.availablePermits < 1) {
+                BlockContext.defaultBlockContext.blockOn(thunk)
+              } else {
+                val b = new Block(thunk)
+                ForkJoinPool.managedBlock(b)
+                b.result
               }
-              override def isReleasable = isdone
-            })
-            result
+            } finally {
+              isBlocking = false
+            }
           }
-        })
-      } else null
+      }
+    final class Block[T](thunk: =>T) extends ForkJoinPool.ManagedBlocker {
+      @volatile var isReleasable: Boolean = _ // TODO: validate whether @volatile is required or not
+      var result: T = null.asInstanceOf[T]
+      override def block(): Boolean = {
+        if (!isReleasable)
+          result = try thunk finally { isReleasable = true }
+
+        true
+      }
+    }
   }
 
   def createDefaultExecutorService(reporter: Throwable => Unit): ExecutorService = {
@@ -96,27 +102,22 @@ private[concurrent] object ExecutionContextImpl {
       case other => other.toInt
     }
 
-    def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
-    val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
-    // The hard limit on the number of active threads that the thread factory will produce
-    // scala/bug#8955 Deadlocks can happen if maxNoOfThreads is too low, although we're currently not sure
-    //         about what the exact threshold is. numThreads + 256 is conservatively high.
-    val maxNoOfThreads = getInt("scala.concurrent.context.maxThreads", "x1")
+    def range(floor: Int, desired: Int, ceiling: Int): Int = scala.math.min(scala.math.max(floor, desired), ceiling)
 
     val desiredParallelism = range(
       getInt("scala.concurrent.context.minThreads", "1"),
-      numThreads,
-      maxNoOfThreads)
+      getInt("scala.concurrent.context.numThreads", "x1"),
+      getInt("scala.concurrent.context.maxThreads", "x1"))
 
     // The thread factory must provide additional threads to support managed blocking.
-    val maxExtraThreads = getInt("scala.concurrent.context.maxExtraThreads", "256")
+    val extraThreads = getInt("scala.concurrent.context.maxExtraThreads", "256")
 
     val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
       override def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
     }
 
     val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
-                                                                      maxThreads = maxNoOfThreads + maxExtraThreads,
+                                                                      maxExtraThreads = extraThreads,
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
@@ -172,5 +173,4 @@ private[concurrent] object ExecutionContextImpl {
       }
     }
 }
-
 
