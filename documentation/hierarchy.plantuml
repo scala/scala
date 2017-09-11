@@ -1,0 +1,11 @@
+@startuml
+interface Iterable<A>
+interface Seq<A>
+interface Set<A>
+interface Map<K, V>
+interface View<A>
+Iterable <|-- Seq
+Iterable <|-- Set
+Iterable <|-- Map
+Iterable <|-- View
+@enduml
