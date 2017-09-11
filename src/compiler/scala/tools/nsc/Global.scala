@@ -7,9 +7,10 @@ package scala
 package tools
 package nsc
 
-import java.io.{File, FileNotFoundException, IOException}
+import java.io._
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
@@ -27,7 +28,7 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.GenBCode
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
@@ -832,7 +833,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def assoc(path: String): Option[(ClassPath, ClassPath)] = {
       def origin(lookup: ClassPath): Option[String] = lookup match {
         case cp: JFileDirectoryLookup[_] => Some(cp.dir.getPath)
-        case cp: ZipArchiveFileLookup[_] => Some(cp.zipFile.getPath)
+        case cp: ZipArchiveFileLookup[_] => Some(cp.rootFile.getPath)
         case _ => None
       }
 
@@ -1077,6 +1078,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
 
+  var exec = ExecutionContext.fromExecutor(null, backgroundError)
+  def backgroundError(t: Throwable) = {
+    val buffer = new StringWriter
+
+    t.printStackTrace(new PrintWriter(buffer))
+    reporter.error(NoPosition, buffer.toString)
+  }
+
   /** A Run is a single execution of the compiler on a set of units.
    */
   class Run extends RunContextApi with RunReporting with RunParsing {
@@ -1152,7 +1161,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       curRun = this
       phase = SomePhase
       phaseWithId(phase.id) = phase
-      definitions.init()
+      val exec = Global.this.exec
+      classPath.startInUse(exec, false)
+      try {
+        classPath.makeCacheValid(exec, false)
+        definitions.init()
+      } finally classPath.endInUse()
 
       // the components to use, omitting those named by -Yskip and stopping at the -Ystop phase
       val components = {
@@ -1414,7 +1428,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =  compileUnitsInternal(units,fromPhase)
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit = {
+      val exec = Global.this.exec
+      classPath.startInUse(exec, true)
+      try {
+        classPath.makeCacheValid(exec,true)
+        compileUnitsInternal(units,fromPhase)
+      } finally classPath.endInUse()
+    }
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       def currentTime = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
 

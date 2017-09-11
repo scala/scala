@@ -8,11 +8,13 @@ package tools
 package util
 
 import java.net.URL
+
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.{CachedClassPath, ClassPath}
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
+import scala.concurrent.ExecutionContext
 import scala.tools.nsc.classpath._
 
 // Loosely based on the draft specification at:
@@ -184,7 +186,7 @@ object PathResolver {
     }
 }
 
-final class PathResolver(settings: Settings) {
+final class PathResolver(settings: Settings, executionContext: ExecutionContext = ExecutionContext.global) {
   private val classPathFactory = new ClassPathFactory(settings)
 
   import PathResolver.{ AsLines, Defaults, ppcp }
@@ -266,6 +268,7 @@ final class PathResolver(settings: Settings) {
   import PathResolver.MkLines
 
   def result: ClassPath = {
+    ZipJarClasspathCache.configureFromSettings(settings)
     val cp = computeResult()
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
@@ -283,6 +286,14 @@ final class PathResolver(settings: Settings) {
   @deprecated("Use resultAsURLs instead of this one", "2.11.5")
   def asURLs: List[URL] = resultAsURLs.toList
 
-  private def computeResult(): ClassPath = AggregateClassPath(containers.toIndexedSeq)
+  private def computeResult(): ClassPath = {
+    val underlying = AggregateClassPath(containers.toIndexedSeq)
+    if (settings.YClassPathCache) {
+      val cached = CachedClassPath(underlying)
+      if (settings.YClassPathTopPrefetch) cached.startPrefetch(executionContext)
+      cached
+    } else underlying
+
+  }
 }
 
