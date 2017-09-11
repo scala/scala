@@ -9,10 +9,11 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
+
 import scala.io.Codec
-import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
 import scala.reflect.internal.util.shortClassOfInstance
-import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable
 import PickleFormat._
 import Flags._
 
@@ -83,7 +84,7 @@ abstract class Pickler extends SubComponent {
     private val rootOwner = root.owner
     private var entries   = new Array[AnyRef](256)
     private var ep        = 0
-    private val index     = new LinkedHashMap[AnyRef, Int]
+    private val index     = new mutable.AnyRefMap[AnyRef, Int]
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
 
     private def isRootSym(sym: Symbol) =
