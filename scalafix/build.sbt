@@ -17,7 +17,7 @@ lazy val input = project.settings(
   scalafixSourceroot := sourceDirectory.in(Compile).value
 )
 
-val collections = ProjectRef(file(".."), "collections")
+val collections = ProjectRef(file(".."), "collectionsJVM")
 
 lazy val output = project
   .settings(
