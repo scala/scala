@@ -344,6 +344,8 @@ case object Nil extends List[Nothing] {
   override def nonEmpty: Boolean = false
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
+  override def last: Nothing = throw new NoSuchElementException("last of empty list")
+  override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
 }
 
 object List extends SeqFactory[List] {

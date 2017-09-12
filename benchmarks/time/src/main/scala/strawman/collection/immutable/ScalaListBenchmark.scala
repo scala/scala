@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Unit}
+import scala.{Any, AnyRef, Int, Long, Unit, math}
 import scala.Predef.{intWrapper, $conforms}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
@@ -15,35 +15,45 @@ import scala.Predef.{intWrapper, $conforms}
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
 class ScalaListBenchmark {
-
-  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "73121", "7312102"))
+  @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
   var size: Int = _
 
   var xs: scala.List[Long] = _
-  var xss: scala.Array[scala.List[Long]] = _
+  var zs: scala.List[Long] = _
   var zipped: scala.List[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
-  var randomIndices2: scala.Array[Int] = _
-  var randomXss: scala.Array[scala.List[Long]] = _
+  def fresh(n: Int) = scala.List((1 to n).map(_.toLong): _*)
 
   @Setup(Level.Trial)
-  def initData(): Unit = {
-    def freshCollection() = scala.List((1 to size).map(_.toLong): _*)
-    xs = freshCollection()
-    xss = scala.Array.fill(1000)(freshCollection())
-    zipped = xs.map(x => (x, x))
+  def initTrial(): Unit = {
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
-      randomIndices2 = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
-      randomXss = scala.Array.fill(1000)(freshCollection().take(scala.util.Random.nextInt(size)))
+    }
+  }
+
+  @Setup(Level.Invocation)
+  def initInvocation(): Unit = {
+    xs = fresh(size)
+    zs = fresh((size / 1000) max 2).map(-_)
+    zipped = xs.map(x => (x, x))
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(100)
+  def create(bh: Blackhole): Unit = {
+    var i = 0L
+    while (i < 100) {
+      bh.consume(fresh(size))
+      i += 1
     }
   }
 
   @Benchmark
-  def prepend(bh: Blackhole): Unit = {
-    var ys = scala.List.empty[Long]
+  @OperationsPerInvocation(1000)
+  def expand_prepend(bh: Blackhole): Unit = {
+    var ys = xs
     var i = 0L
-    while (i < size) {
+    while (i < 1000) {
       ys = i :: ys
       i += 1
     }
@@ -51,10 +61,24 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def append(bh: Blackhole): Unit = {
-    var ys = scala.List.empty[Long]
+  @OperationsPerInvocation(1000)
+  def expand_prependTail(bh: Blackhole): Unit = {
+    var ys = xs
     var i = 0L
-    while (i < size) {
+    while (i < 1000) {
+      ys = i :: ys
+      i += 1
+      ys = ys.tail
+    }
+    bh.consume(ys)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def expand_append(bh: Blackhole): Unit = {
+    var ys = xs
+    var i = 0L
+    while (i < 1000) {
       ys = ys :+ i
       i += 1
     }
@@ -62,10 +86,24 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def prependAppend(bh: Blackhole): Unit = {
-    var ys = scala.List.empty[Long]
+  @OperationsPerInvocation(1000)
+  def expand_appendInit(bh: Blackhole): Unit = {
+    var ys = xs
     var i = 0L
-    while (i < size) {
+    while (i < 1000) {
+      ys = ys :+ i
+      i += 1
+      ys = ys.init
+    }
+    bh.consume(ys)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(1000)
+  def expand_prependAppend(bh: Blackhole): Unit = {
+    var ys = xs
+    var i = 0L
+    while (i < 1000) {
       if ((i & 1) == 1) ys = ys :+ i
       else ys = i :: ys
       i += 1
@@ -74,35 +112,50 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def prependAll(bh: Blackhole): Unit = bh.consume(xs ++: xs)
-
-  @Benchmark
-  def appendAll(bh: Blackhole): Unit = bh.consume(xs ++ xs)
-
-  @Benchmark
-  def prependAllAppendAll(bh: Blackhole): Unit = {
-    var ys = scala.List.empty[Long]
-    val ys2 = xss(0).take(3)
+  @OperationsPerInvocation(1000)
+  def expand_prependAll(bh: Blackhole): Unit = {
+    var ys = xs
     var i = 0L
-    while (i < size) {
-      if ((i & 1) == 1) ys = ys ++ ys2
-      else ys = ys2 ++: ys
+    while (i < 1000) {
+      ys = zs ++: ys
       i += 1
     }
     bh.consume(ys)
   }
 
   @Benchmark
-  def tail(bh: Blackhole): Unit = bh.consume(xs.tail)
+  @OperationsPerInvocation(1000)
+  def expand_appendAll(bh: Blackhole): Unit = {
+    var ys = xs
+    var i = 0L
+    while (i < 1000) {
+      ys = ys ++ zs
+      i += 1
+    }
+    bh.consume(ys)
+  }
 
   @Benchmark
-  def init(bh: Blackhole): Unit = bh.consume(xs.init)
+  @OperationsPerInvocation(1000)
+  def expand_prependAllAppendAll(bh: Blackhole): Unit = {
+    var ys = xs
+    var i = 0L
+    while (i < 1000) {
+      if ((i & 1) == 1) ys = ys ++ zs
+      else ys = zs ++: ys
+      i += 1
+    }
+    bh.consume(ys)
+  }
 
   @Benchmark
-  def loop_foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
+  def expand_padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
 
   @Benchmark
-  def loop_headTail(bh: Blackhole): Unit = {
+  def traverse_foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
+
+  @Benchmark
+  def traverse_headTail(bh: Blackhole): Unit = {
     var ys = xs
     while (ys.nonEmpty) {
       bh.consume(ys.head)
@@ -111,7 +164,7 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def loop_initLast(bh: Blackhole): Unit = {
+  def traverse_initLast(bh: Blackhole): Unit = {
     var ys = xs
     while (ys.nonEmpty) {
       bh.consume(ys.last)
@@ -120,7 +173,7 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def loop_iterator(bh: Blackhole): Unit = {
+  def traverse_iterator(bh: Blackhole): Unit = {
     val it = xs.iterator
     while (it.hasNext) {
       bh.consume(it.next())
@@ -128,21 +181,32 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
+  def traverse_foldLeft(bh: Blackhole): Unit = bh.consume(xs.foldLeft(0) {
+    case (acc, n) =>
+      bh.consume(n)
+      acc + 1
+  })
+
+  @Benchmark
+  def traverse_foldRight(bh: Blackhole): Unit = bh.consume(xs.foldRight(0) {
+    case (n, acc) =>
+      bh.consume(n)
+      acc - 1
+  })
 
   @Benchmark
   @OperationsPerInvocation(1000)
-  def lookup_last(bh: Blackhole): Unit = {
+  def access_last(bh: Blackhole): Unit = {
     var i = 0
     while (i < 1000) {
-      bh.consume(xss(i)(size - 1))
+      bh.consume(xs(size - 1))
       i += 1
     }
   }
 
   @Benchmark
   @OperationsPerInvocation(1000)
-  def lookup_random(bh: Blackhole): Unit = {
+  def access_random(bh: Blackhole): Unit = {
     var i = 0
     while (i < 1000) {
       bh.consume(xs(randomIndices(i)))
@@ -151,8 +215,24 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
+  def access_tail(bh: Blackhole): Unit = bh.consume(xs.tail)
+
+  @Benchmark
+  def access_init(bh: Blackhole): Unit = bh.consume(xs.init)
+
+  @Benchmark
+  @OperationsPerInvocation(100)
+  def access_slice(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < 100) {
+      bh.consume(xs.slice(size - size / (i + 1), size))
+      i += 1
+    }
+  }
+
+  @Benchmark
   @OperationsPerInvocation(1000)
-  def updated_last(bh: Blackhole): Unit = {
+  def transform_updateLast(bh: Blackhole): Unit = {
     var i = 0
     while (i < 1000) {
       bh.consume(xs.updated(size - 1, i))
@@ -162,7 +242,7 @@ class ScalaListBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(1000)
-  def updated_random(bh: Blackhole): Unit = {
+  def transform_updateRandom(bh: Blackhole): Unit = {
     var i = 0
     while (i < 1000) {
       bh.consume(xs.updated(randomIndices(i), i))
@@ -171,23 +251,27 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
-
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def patch(bh: Blackhole): Unit = {
+  @OperationsPerInvocation(100)
+  def transform_patch(bh: Blackhole): Unit = {
     var i = 0
-    while (i < 1000) {
+    while (i < 100) {
       val from = randomIndices(i)
-      val replaced = randomIndices2(i)
-      bh.consume(xs.patch(from, randomXss(i), replaced))
+      val replaced = randomIndices(if (i > 0) i - 1 else math.min(i + 1, size - 1))
+      val length = randomIndices(if (i > 1) i - 2 else math.min(i + 2, size - 1))
+      bh.consume(xs.patch(from, xs.take(length), replaced))
       i += 1
     }
   }
 
   @Benchmark
+  def transform_distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
+
+  @Benchmark
+  def transform_map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
+
+  @Benchmark
   @OperationsPerInvocation(100)
-  def span(bh: Blackhole): Unit = {
+  def transform_span(bh: Blackhole): Unit = {
     var i = 0
     while (i < 100) {
       val (xs1, xs2) = xs.span(x => x < randomIndices(i))
@@ -198,30 +282,13 @@ class ScalaListBenchmark {
   }
 
   @Benchmark
-  def unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
+  def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
 
   @Benchmark
-  def padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
+  def transform_reverse(bh: Blackhole): Unit = bh.consume(xs.reverse)
 
   @Benchmark
-  def reverse(bh: Blackhole): Any = bh.consume(xs.reverse)
-
-  @Benchmark
-  def foldLeft(bh: Blackhole): Any = bh.consume(xs.foldLeft(0) {
-    case (acc, n) =>
-      bh.consume(n)
-      acc + 1
-  })
-
-  @Benchmark
-  def foldRight(bh: Blackhole): Any = bh.consume(xs.foldRight(0) {
-    case (n, acc) =>
-      bh.consume(n)
-      acc - 1
-  })
-
-  @Benchmark
-  def groupBy(bh: Blackhole): Unit = {
+  def transform_groupBy(bh: Blackhole): Unit = {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
