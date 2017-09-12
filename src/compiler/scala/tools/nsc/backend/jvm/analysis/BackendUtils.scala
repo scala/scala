@@ -38,13 +38,6 @@ abstract class BackendUtils extends PerRunInit {
   import frontendAccess.{compilerSettings, recordPerRunCache}
 
   /**
-   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
-   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
-   * computation only when necessary.
-   */
-  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
    * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
    * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
    * method has been generated. It is used during ordinary code generation, as well as during
@@ -426,7 +419,7 @@ abstract class BackendUtils extends PerRunInit {
     if (isAbstractMethod(method) || isNativeMethod(method)) {
       method.maxLocals = 0
       method.maxStack = 0
-    } else if (!maxLocalsMaxStackComputed(method)) {
+    } else if (!isMaxsComputed(method)) {
       val size = method.instructions.size
 
       var maxLocals = parametersSize(method)
@@ -541,12 +534,32 @@ abstract class BackendUtils extends PerRunInit {
       method.maxLocals = maxLocals
       method.maxStack = maxStack
 
-      maxLocalsMaxStackComputed += method
+      setMaxsComputed(method)
     }
   }
 }
 
 object BackendUtils {
+  /**
+   * A pseudo-flag, added MethodNodes whose maxLocals / maxStack are computed. This allows invoking
+   * `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual computation
+   * only when necessary.
+   *
+   * The largest JVM flag (as of JDK 8) is ACC_MANDATED (0x8000), however the asm framework uses
+   * the same trick and defines some pseudo flags
+   *   - ACC_DEPRECATED = 0x20000
+   *   - ACC_SYNTHETIC_ATTRIBUTE = 0x40000
+   *   - ACC_CONSTRUCTOR = 0x80000
+   *
+   * I haven't seen the value picked here in use anywhere. We make sure to remove the flag when
+   * it's no longer needed.
+   */
+  private val ACC_MAXS_COMPUTED = 0x1000000
+  def isMaxsComputed(method: MethodNode) = (method.access & ACC_MAXS_COMPUTED) != 0
+  def setMaxsComputed(method: MethodNode) = method.access |= ACC_MAXS_COMPUTED
+  def clearMaxsComputed(method: MethodNode) = method.access &= ~ACC_MAXS_COMPUTED
+
+
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]
 
