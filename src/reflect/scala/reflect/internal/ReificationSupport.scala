@@ -427,7 +427,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticTuple extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = {
-        require(args.isEmpty || TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
+        require(args.isEmpty || (TupleClass(args.length) != NoSymbol), s"Tuples with ${args.length} arity aren't supported")
         gen.mkTuple(args)
       }
 
@@ -447,7 +447,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticTupleType extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = {
-        require(args.isEmpty || TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
+        require(args.isEmpty || (TupleClass(args.length) != NoSymbol), s"Tuples with ${args.length} arity aren't supported")
         gen.mkTupleType(args)
       }
 
@@ -466,7 +466,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticFunctionType extends SyntacticFunctionTypeExtractor {
       def apply(argtpes: List[Tree], restpe: Tree): Tree = {
-        require(FunctionClass(argtpes.length).exists, s"Function types with ${argtpes.length} arity aren't supported")
+        require(FunctionClass(argtpes.length) != NoSymbol, s"Function types with ${argtpes.length} arity aren't supported")
         gen.mkFunctionTypeTree(argtpes, restpe)
       }
 

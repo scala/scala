@@ -1602,15 +1602,19 @@ trait Trees extends api.Trees {
         subst(from, to)
         tree match {
           case _: DefTree =>
-            val newInfo = symSubst(tree.symbol.info)
-            if (!(newInfo =:= tree.symbol.info)) {
-              debuglog(sm"""
-                |TreeSymSubstituter: updated info of symbol ${tree.symbol}
-                |  Old: ${showRaw(tree.symbol.info, printTypes = true, printIds = true)}
-                |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
-              mutatedSymbols ::= tree.symbol
-              tree.symbol updateInfo newInfo
+            def update(sym: Symbol) = {
+              val newInfo = symSubst(sym.info)
+              if (!(newInfo =:= sym.info)) {
+                debuglog(sm"""
+                  |TreeSymSubstituter: updated info of symbol ${sym}
+                  |  Old: ${showRaw(sym.info, printTypes = true, printIds = true)}
+                  |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
+                mutatedSymbols ::= sym
+                sym updateInfo newInfo
+              }
             }
+            update(tree.symbol)
+            if (tree.symbol.isModule) update(tree.symbol.moduleClass)
           case _          =>
             // no special handling is required for Function or Import nodes here.
             // as they don't have interesting infos attached to their symbols.

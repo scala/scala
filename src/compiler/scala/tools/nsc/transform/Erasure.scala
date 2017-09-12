@@ -23,9 +23,6 @@ abstract class Erasure extends InfoTransform
   import definitions._
   import CODE._
 
-  val analyzer: typechecker.Analyzer { val global: Erasure.this.global.type } =
-    this.asInstanceOf[typechecker.Analyzer { val global: Erasure.this.global.type }]
-
   val phaseName: String = "erasure"
 
   val requiredDirectInterfaces = perRunCaches.newAnyRefMap[Symbol, mutable.Set[Symbol]]()
@@ -73,9 +70,8 @@ abstract class Erasure extends InfoTransform
   }
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
-  def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
-    // scala/bug#10351: don't emit a signature if tp erases to a primitive
-    def needs(tp: Type) = NeedsSigCollector.collect(tp) && !erasure(tp.typeSymbol)(tp).typeSymbol.isPrimitiveValueClass
+  private def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
+    def needs(tp: Type) = NeedsSigCollector.collect(tp)
     needs(tp) || throwsArgs.exists(needs)
   }
 
@@ -90,31 +86,6 @@ abstract class Erasure extends InfoTransform
       (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
     )
   )
-
-  // Ensure every '.' in the generated signature immediately follows
-  // a close angle bracket '>'.  Any which do not are replaced with '$'.
-  // This arises due to multiply nested classes in the face of the
-  // rewriting explained at rebindInnerClass.   This should be done in a
-  // more rigorous way up front rather than catching it after the fact,
-  // but that will be more involved.
-  private def dotCleanup(sig: String): String = {
-    // OPT 50% of time in generic signatures (~1% of compile time) was in this method, hence the imperative rewrite.
-    var last: Char = '\u0000'
-    var i = 0
-    val len = sig.length
-    val copy: Array[Char] = sig.toCharArray
-    var changed = false
-    while (i < len) {
-      val ch = copy(i)
-      if (ch == '.' && last != '>') {
-         copy(i) = '$'
-         changed = true
-      }
-      last = ch
-      i += 1
-    }
-    if (changed) new String(copy) else sig
-  }
 
   /** This object is only used for sanity testing when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
@@ -218,10 +189,14 @@ abstract class Erasure extends InfoTransform
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
-  def javaSig(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = enteringErasure {
+
+  final def javaSig(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = enteringErasure { javaSig0(sym0, info, markClassUsed) }
+  @noinline
+  private final def javaSig0(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = {
+    val builder = new java.lang.StringBuilder(64)
     val isTraitSignature = sym0.enclClass.isTrait
 
-    def superSig(cls: Symbol, parents: List[Type]) = {
+    def superSig(cls: Symbol, parents: List[Type]): Unit = {
       def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
 
       // a signature should always start with a class
@@ -239,30 +214,39 @@ abstract class Erasure extends InfoTransform
         else minParents
 
       val ps = ensureClassAsFirstParent(validParents)
-
-      (ps map boxedSig).mkString
+      ps.foreach(boxedSig)
     }
-    def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
-    def boundsSig(bounds: List[Type]) = {
+    def boxedSig(tp: Type): Unit = jsig(tp, primitiveOK = false)
+    def boundsSig(bounds: List[Type]): Unit = {
       val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
-      val classPart = isClass match {
-        case Nil    => ":" // + boxedSig(ObjectTpe)
-        case x :: _ => ":" + boxedSig(x)
+      isClass match {
+        case Nil    => builder.append(':') // + boxedSig(ObjectTpe)
+        case x :: _ => builder.append(':'); boxedSig(x)
       }
-      classPart :: (isTrait map boxedSig) mkString ":"
+      isTrait.foreach { tp =>
+        builder.append(':')
+        boxedSig(tp)
+      }
     }
-    def paramSig(tsym: Symbol) = tsym.name + boundsSig(hiBounds(tsym.info.bounds))
-    def polyParamSig(tparams: List[Symbol]) = (
-      if (tparams.isEmpty) ""
-      else tparams map paramSig mkString ("<", "", ">")
+    def paramSig(tsym: Symbol): Unit = {
+      builder.append(tsym.name)
+      boundsSig(hiBounds(tsym.info.bounds))
+    }
+    def polyParamSig(tparams: List[Symbol]): Unit = (
+      if (!tparams.isEmpty) {
+        builder.append('<')
+        tparams foreach paramSig
+        builder.append('>')
+      }
     )
 
     // Anything which could conceivably be a module (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
-    def fullNameInSig(sym: Symbol) = "L" + enteringJVM(sym.javaBinaryNameString)
+    def fullNameInSig(sym: Symbol): Unit = builder.append('L').append(enteringJVM(sym.javaBinaryNameString))
 
-    def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): String = {
+    @noinline
+    def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): Unit = {
       val tp = tp0.dealias
       tp match {
         case st: SubType =>
@@ -270,51 +254,67 @@ abstract class Erasure extends InfoTransform
         case ExistentialType(tparams, tpe) =>
           jsig(tpe, tparams, toplevel, primitiveOK)
         case TypeRef(pre, sym, args) =>
-          def argSig(tp: Type) =
+          def argSig(tp: Type): Unit =
             if (existentiallyBound contains tp.typeSymbol) {
               val bounds = tp.typeSymbol.info.bounds
-              if (!(AnyRefTpe <:< bounds.hi)) "+" + boxedSig(bounds.hi)
-              else if (!(bounds.lo <:< NullTpe)) "-" + boxedSig(bounds.lo)
-              else "*"
+              if (!(AnyRefTpe <:< bounds.hi)) {
+                builder.append('+')
+                boxedSig(bounds.hi)
+              }
+              else if (!(bounds.lo <:< NullTpe)) {
+                builder.append('-')
+                boxedSig(bounds.lo)
+              }
+              else builder.append('*')
             } else tp match {
               case PolyType(_, res) =>
-                "*" // scala/bug#7932
+                builder.append('*') // scala/bug#7932
               case _ =>
                 boxedSig(tp)
             }
-          def classSig = {
+          def classSig: Unit = {
             markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
-            val sigCls = {
-              if (needsJavaSig(preRebound, Nil)) {
-                val s = jsig(preRebound, existentiallyBound)
-                if (s.charAt(0) == 'L') {
-                  val withoutSemi = s.substring(0, s.length - 1)
-                  // If the prefix is a module, drop the '$'. Classes (or modules) nested in modules
-                  // are separated by a single '$' in the filename: `object o { object i }` is o$i$.
-                  val withoutOwningModuleDollar =
-                    if (preRebound.typeSymbol.isModuleClass) withoutSemi.stripSuffix(nme.MODULE_SUFFIX_STRING)
-                    else withoutSemi
-                  withoutOwningModuleDollar + "." + sym.javaSimpleName
-                } else fullNameInSig(sym)
-              }
-              else fullNameInSig(sym)
+            if (needsJavaSig(preRebound, Nil)) {
+              val i = builder.length()
+              jsig(preRebound, existentiallyBound)
+              if (builder.charAt(i) == 'L') {
+                builder.delete(builder.length() - 1, builder.length())// delete ';'
+                // If the prefix is a module, drop the '$'. Classes (or modules) nested in modules
+                // are separated by a single '$' in the filename: `object o { object i }` is o$i$.
+                if (preRebound.typeSymbol.isModuleClass)
+                  builder.delete(builder.length() - 1, builder.length())
+
+                // Ensure every '.' in the generated signature immediately follows
+                // a close angle bracket '>'.  Any which do not are replaced with '$'.
+                // This arises due to multiply nested classes in the face of the
+                // rewriting explained at rebindInnerClass.
+
+                // TODO revisit this. Does it align with javac for code that can be expressed in both languages?
+                val delimiter = if (builder.charAt(builder.length() - 1) == '>') '.' else '$'
+                builder.append(delimiter).append(sym.javaSimpleName)
+              } else fullNameInSig(sym)
+            } else fullNameInSig(sym)
+
+            if (!args.isEmpty) {
+              builder.append('<')
+              args foreach argSig
+              builder.append('>')
             }
-            val sigArgs = {
-              if (args.isEmpty) ""
-              else "<"+(args map argSig).mkString+">"
-            }
-            dotCleanup(sigCls + sigArgs + ";")
+            builder.append(';')
           }
 
           // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectTpe)
-            else ARRAY_TAG.toString+(args map (jsig(_))).mkString
+            else {
+              builder.append(ARRAY_TAG)
+              args.foreach(jsig(_))
+            }
           }
           else if (isTypeParameterInSig(sym, sym0)) {
             assert(!sym.isAliasType, "Unexpected alias type: " + sym)
-            "" + TVAR_TAG + sym.name + ";"
+            builder.append(TVAR_TAG).append(sym.name).append(';')
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectTpe)
@@ -327,7 +327,7 @@ abstract class Erasure extends InfoTransform
           else if (isPrimitiveValueClass(sym)) {
             if (!primitiveOK) jsig(ObjectTpe)
             else if (sym == UnitClass) jsig(BoxedUnitTpe)
-            else abbrvTag(sym).toString
+            else builder.append(abbrvTag(sym))
           }
           else if (sym.isDerivedValueClass) {
             val unboxed     = sym.derivedValueClassUnbox.tpe_*.finalResultType
@@ -346,11 +346,11 @@ abstract class Erasure extends InfoTransform
             jsig(erasure(sym0)(tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
-          val poly = if (toplevel) polyParamSig(tparams) else ""
-          poly + jsig(restpe)
+          if (toplevel) polyParamSig(tparams)
+          jsig(restpe)
 
         case MethodType(params, restpe) =>
-          val buf = new StringBuffer("(")
+          builder.append('(')
           params foreach (p => {
             val tp = p.attachments.get[TypeParamVarargsAttachment] match {
               case Some(att) =>
@@ -358,14 +358,13 @@ abstract class Erasure extends InfoTransform
                 // instead of Array[T], as the latter would erase to Object (instead of Array[Object]).
                 // To make the generic signature correct ("[T", not "[Object"), an attachment on the
                 // parameter symbol stores the type T that was replaced by Object.
-                buf.append("["); att.typeParamRef
+                builder.append('['); att.typeParamRef
               case _         => p.tpe
             }
-            buf append jsig(tp)
+            jsig(tp)
           })
-          buf append ")"
-          buf append (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
-          buf.toString
+          builder.append(')')
+          if (restpe.typeSymbol == UnitClass || sym0.isConstructor) builder.append(VOID_TAG) else jsig(restpe)
 
         case RefinedType(parents, decls) =>
           jsig(intersectionDominator(parents), primitiveOK = primitiveOK)
@@ -384,7 +383,14 @@ abstract class Erasure extends InfoTransform
     }
     val throwsArgs = sym0.annotations flatMap ThrownException.unapply
     if (needsJavaSig(info, throwsArgs)) {
-      try Some(jsig(info, toplevel = true) + throwsArgs.map("^" + jsig(_, toplevel = true)).mkString(""))
+      try {
+        jsig(info, toplevel = true)
+        throwsArgs.foreach { t =>
+          builder.append('^')
+          jsig(t, toplevel = true)
+        }
+        Some(builder.toString)
+      }
       catch { case ex: UnknownSig => None }
     }
     else None
@@ -720,15 +726,24 @@ abstract class Erasure extends InfoTransform
             } else if (isMethodTypeWithEmptyParams(qual1.tpe)) { // see also adaptToType in TypeAdapter
               assert(qual1.symbol.isStable, qual1.symbol)
               adaptMember(selectFrom(applyMethodWithEmptyParams(qual1)))
-            } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
-              // For example in `(foo: Option[String]).get.trim`, the qualifier has type `Object`.
+            } else if (!qual1.isInstanceOf[Super] && (!isJvmAccessible(qual1.tpe.typeSymbol, context) || !qual1.tpe.typeSymbol.isSubClass(tree.symbol.owner))) {
+              // A selection requires a cast:
+              //   - In `(foo: Option[String]).get.trim`, the qualifier has type `Object`. We cast
+              //     to the owner of `trim` (`String`), unless the owner is a non-accessible Java
+              //     class, in which case a `QualTypeSymAttachment` is present (see below).
+              //   - In `a.b().c()`, the qualifier `a.b()` may have an accessible type `X` before
+              //     erasure, but a non-accessible type `Y` after erasure (scala/bug#10450). Again
+              //     we cast to the owner of `c`, or, if that is not accessible either, to the
+              //     class stored in the `QualTypeSymAttachment`.
+              //
               // A `QualTypeSymAttachment` is present if the selected member's owner is not an
-              // accessible (java-defined) class, see `preErase`. Selections from `super` are not
-              // handled here because inserting a cast would not be legal. Instead there's a
-              // special case in `typedSelectInternal`.
+              // accessible (java-defined) class, see `preErase`.
+              //
+              // Selections from `super` are not handled here because inserting a cast would not be
+              // legal code. Instead there's a special case in `typedSelectInternal`.
               val qualTpe = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
                 case Some(a) => a.sym.tpe
-                case None => tree.symbol.owner.tpe.resultType
+                case None => tree.symbol.owner.tpe
               }
               selectFrom(cast(qual1, qualTpe))
             } else {
@@ -945,6 +960,8 @@ abstract class Erasure extends InfoTransform
      *   - Reset all other type attributes to null, thus enforcing a retyping.
      */
     private val preTransformer = new TypingTransformer(unit) {
+      // Work around some incomplete path unification :( there are similar casts in SpecializeTypes
+      def context: Context = localTyper.context.asInstanceOf[Context]
 
       private def preEraseNormalApply(tree: Apply) = {
         val fn = tree.fun
@@ -1159,10 +1176,13 @@ abstract class Erasure extends InfoTransform
           //
           //  - In a `super.m` selection, erasure typing assigns the type of the superclass to the
           //    Super tree. This is wrong if `m` is a member of a trait (not the superclass). A
-          //    special-case in `typedSelectInternal` assigns m's owner in this case.
-          //  - In a non-super selection, the qualifier may erase to a type that doesn't hold the
-          //    selected member, for example `(q: Option[String]).get.trim` erases to Object, not
-          //    String. Erasure's `adaptMember` then introduces a cast to the member's owner.
+          //    special-case in `typedSelectInternal` by default assigns m's owner in this case.
+          //  - In a non-super selection, the qualifier may erase to a type that doesn't define the
+          //    selected member, for example the qualifier of `(q: Option[String]).get.trim` erases
+          //    to Object. Similarly, the qualifier may erase to a Java class that *does* define the
+          //    selected member but is not accessible (scala/bug#10450).
+          //    Erasure's `adaptMember` detects these cases and, by default, introduces a cast to
+          //    the member's owner.
           //
           // In both cases, using the member's owner is not legal if the member is defined in
           // Java and the owner class is not accessible (scala/bug#7936, scala/bug#4283). In this
@@ -1174,26 +1194,26 @@ abstract class Erasure extends InfoTransform
           // class if `m` is defined in Java. This avoids the need for having the Java class as
           // a direct parent (scala-dev#143).
           if (qual.isInstanceOf[Super]) {
-            val qualSym = accessibleOwnerOrParentDefiningMember(sym, qual.tpe.typeSymbol.parentSymbols, localTyper.context) match {
+            val qualSym = accessibleOwnerOrParentDefiningMember(sym, qual.tpe.typeSymbol.parentSymbols, context) match {
               case Some(p) => p
               case None =>
                 // There is no test for this warning, I have been unable to come up with an example that would trigger it.
                 // In a selection `a.m`, there must be a direct parent from which `m` can be selected.
-                reporter.error(tree.pos, s"Unable to emit super reference to ${sym.fullLocationString}, $owner is not accessible in ${localTyper.context.enclClass.owner}")
+                reporter.error(tree.pos, s"Unable to emit super reference to ${sym.fullLocationString}, $owner is not accessible in ${context.enclClass.owner}")
                 owner
             }
 
             if (sym.isJavaDefined && qualSym.isTraitOrInterface)
-              requiredDirectInterfaces.getOrElseUpdate(localTyper.context.enclClass.owner, mutable.Set.empty) += qualSym
+              requiredDirectInterfaces.getOrElseUpdate(context.enclClass.owner, mutable.Set.empty) += qualSym
 
             if (qualSym != owner)
               tree.updateAttachment(new QualTypeSymAttachment(qualSym))
-          } else if (!isJvmAccessible(owner, localTyper.context)) {
+          } else if (!isJvmAccessible(owner, context)) {
             val qualSym = qual.tpe.typeSymbol
-            if (qualSym != owner && isJvmAccessible(qualSym, localTyper.context) && definesMemberAfterErasure(qualSym, sym))
+            if (qualSym != owner && isJvmAccessible(qualSym, context) && definesMemberAfterErasure(qualSym, sym))
               tree.updateAttachment(new QualTypeSymAttachment(qualSym))
             else
-              reporter.error(tree.pos, s"Unable to emit reference to ${sym.fullLocationString}, $owner is not accessible in ${localTyper.context.enclClass.owner}")
+              reporter.error(tree.pos, s"Unable to emit reference to ${sym.fullLocationString}, $owner is not accessible in ${context.enclClass.owner}")
           }
 
           tree
@@ -1321,8 +1341,11 @@ abstract class Erasure extends InfoTransform
     ok(tpSym) && tpSym.ancestors.forall(sym => (sym eq AnyClass) || (sym eq ObjectClass) || ok(sym))
   }
 
-  final def isJvmAccessible(cls: Symbol, context: global.analyzer.Context): Boolean =
-    !cls.isJavaDefined || context.isAccessible(cls, cls.owner.thisType)
+  final def isJvmAccessible(cls: Symbol, context: Context): Boolean = {
+    // Phase travel necessary, isAccessible is too lax after erasure for Java-defined members, see
+    // comment in its implementation.
+    !cls.isJavaDefined || enteringErasure(context.isAccessible(cls, cls.owner.thisType))
+  }
 
   /**
    * Check if a class defines a member after erasure. The phase travel is important for
@@ -1342,7 +1365,7 @@ abstract class Erasure extends InfoTransform
    * - For Java-defined members we prefer a direct parent over of the owner, even if the owner is
    *   accessible. This way the owner doesn't need to be added as a direct parent, see scala-dev#143.
    */
-  final def accessibleOwnerOrParentDefiningMember(member: Symbol, parents: List[Symbol], context: global.analyzer.Context): Option[Symbol] = {
+  final def accessibleOwnerOrParentDefiningMember(member: Symbol, parents: List[Symbol], context: Context): Option[Symbol] = {
     def eraseAny(cls: Symbol) = if (cls == AnyClass || cls == AnyValClass) ObjectClass else cls
 
     if (member.isConstructor || !member.isJavaDefined) Some(eraseAny(member.owner))

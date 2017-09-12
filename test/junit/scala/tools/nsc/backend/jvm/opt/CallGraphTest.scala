@@ -8,7 +8,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
 import scala.collection.immutable.IntMap
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
@@ -20,17 +19,20 @@ import scala.tools.testing.BytecodeTesting._
 class CallGraphTest extends BytecodeTesting {
   override def compilerArgs = "-opt:inline -opt-inline-from:** -opt-warnings"
   import compiler._
-  import global.genBCode.bTypes
+  import global.genBCode.{bTypes, postProcessor}
+  import postProcessor.{byteCodeRepository, callGraph}
+
 
   compiler.keepPerRunCachesAfterRun(List(
     bTypes.classBTypeCacheFromSymbol,
     bTypes.classBTypeCacheFromClassfile,
-    bTypes.byteCodeRepository.compilingClasses,
-    bTypes.byteCodeRepository.parsedClasses,
-    bTypes.callGraph.callsites))
+    postProcessor.byteCodeRepository.compilingClasses,
+    postProcessor.byteCodeRepository.parsedClasses,
+    postProcessor.callGraph.callsites))
 
-  import global.genBCode.bTypes._
   import callGraph._
+  import global.genBCode.bTypes._
+  import postProcessor.bTypesFromClassfile._
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
     case call: MethodInsnNode => call

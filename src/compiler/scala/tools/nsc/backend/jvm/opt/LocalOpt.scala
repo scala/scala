@@ -7,14 +7,13 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{tailrec, switch}
-
-import scala.tools.asm.Type
-import scala.tools.asm.tree.analysis.Frame
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import scala.collection.mutable
+import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
+import scala.tools.asm.tree._
+import scala.tools.asm.tree.analysis.Frame
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -59,6 +58,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - redundant casts (`("a", "b")._1`: the generic `_1` method returns `Object`, a cast
  *       to String is added. The cast is redundant after eliminating the tuple.)
  *     - empty local variable descriptors (local variables that were holding the box may become unused)
+  *    - push-pop (due to artifacts of eliminating runtime type tests on primitives)
  *
  * copy propagation (replaces LOAD n to the LOAD m for the smallest m that is an alias of n)
  *   + enables downstream:
@@ -136,16 +136,36 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * Note on updating the call graph: whenever an optimization eliminates a callsite or a closure
  * instantiation, we eliminate the corresponding entry from the call graph.
  */
-class LocalOpt[BT <: BTypes](val btypes: BT) {
-  import LocalOptImpls._
-  import btypes._
-  import coreBTypes._
-  import backendUtils._
+abstract class LocalOpt {
+  val postProcessor: PostProcessor
 
-  val boxUnbox = new BoxUnbox(btypes)
+  import postProcessor.bTypes.frontendAccess.recordPerRunCache
+
+  /**
+   * Cache, contains methods whose unreachable instructions are eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This cache allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  import postProcessor._
+  import bTypes._
+  import bTypesFromClassfile._
+  import backendUtils._
+  import coreBTypes._
+  import frontendAccess.compilerSettings
+
+  import LocalOptImpls._
+
+  val boxUnbox = new BoxUnbox { val postProcessor: LocalOpt.this.postProcessor.type = LocalOpt.this.postProcessor }
   import boxUnbox._
 
-  val copyProp = new CopyProp(btypes)
+  val copyProp = new CopyProp { val postProcessor: LocalOpt.this.postProcessor.type = LocalOpt.this.postProcessor }
   import copyProp._
 
   /**
@@ -231,8 +251,13 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
     var currentTrace: String = null
-    val methodPrefix = {val p = compilerSettings.YoptTrace.value; if (p == "_") "" else p }
-    val doTrace = compilerSettings.YoptTrace.isSetByUser && s"$ownerClassName.${method.name}".startsWith(methodPrefix)
+    val doTrace = compilerSettings.optTrace match {
+      case Some(v) =>
+        val prefix = if (v == "_") "" else v
+        s"$ownerClassName.${method.name}".startsWith(prefix)
+
+      case _ => false
+    }
     def traceIfChanged(optName: String): Unit = if (doTrace) {
       val after = AsmUtils.textify(method)
       if (currentTrace != after) {
@@ -397,7 +422,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(btypes, method))
+      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, method))
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
@@ -924,6 +949,51 @@ object LocalOptImpls {
       case _ => false
     })
 
+    /**
+      * Replace conditional jump instructions with GOTO or NOP if statically known to be true or false.
+      *
+      * {{{
+      *      ICONST_0; IFEQ l;
+      *   => ICONST_0; POP; GOTO l;
+      *
+      *      ICONST_1; IFEQ l;
+      *   => ICONST_1; POP;
+      * }}}
+      *
+      * Note that the LOAD/POP pairs will be removed later by `eliminatePushPop`, and the code between
+      * the GOTO and `l` will be removed by DCE (if it's not jumped into from somewhere else).
+      */
+    def simplifyConstantConditions(instruction: AbstractInsnNode): Boolean = {
+      def replace(jump: JumpInsnNode, success: Boolean): Boolean = {
+        if (success) method.instructions.insert(jump, new JumpInsnNode(GOTO, jump.label))
+        replaceJumpByPop(jump)
+        true
+      }
+
+      instruction match {
+        case ConditionalJump(jump) =>
+          previousExecutableInstruction(instruction, jumpTargets) match {
+            case Some(prev) =>
+              val prevOp = prev.getOpcode
+              val isIConst = prevOp >= ICONST_M1 && prevOp <= ICONST_5
+              (jump.getOpcode: @switch) match {
+                case IFNULL if prevOp == ACONST_NULL =>
+                  replace(jump, success = true)
+                case IFNONNULL if prevOp == ACONST_NULL =>
+                  replace(jump, success = false)
+                case IFEQ if isIConst =>
+                  replace(jump, success = prevOp == ICONST_0)
+                case IFNE if isIConst =>
+                  replace(jump, success = prevOp != ICONST_0)
+                /* TODO: we also have IFLE, IF_?CMP* and friends, but how likely are they to be profitably optimizeable? */
+                case _ => false
+              }
+            case _ => false
+          }
+        case _ => false
+      }
+    }
+
     def run(): Boolean = {
       var changed = false
 
@@ -938,6 +1008,7 @@ object LocalOptImpls {
           if (!jumpRemoved) {
             changed = simplifyBranchOverGoto(jumpInsn, inTryBlock) || changed
             changed = simplifyGotoReturn(jumpInsn, inTryBlock) || changed
+            changed = simplifyConstantConditions(jumpInsn) || changed
           }
         }
 

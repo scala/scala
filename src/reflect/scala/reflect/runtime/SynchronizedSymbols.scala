@@ -118,7 +118,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def markFlagsCompleted(mask: Long): this.type = { _initializationMask = _initializationMask & ~mask; this }
     override def markAllCompleted(): this.type = { _initializationMask = 0L; _initialized = true; this }
 
-    def gilSynchronizedIfNotThreadsafe[T](body: => T): T = {
+    @inline final def gilSynchronizedIfNotThreadsafe[T](body: => T): T = {
       // TODO: debug and fix the race that doesn't allow us uncomment this optimization
       // if (isCompilerUniverse || isThreadsafe(purpose = AllOps)) body
       // else gilSynchronized { body }
@@ -128,6 +128,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }
     override def info = gilSynchronizedIfNotThreadsafe { super.info }
     override def rawInfo: Type = gilSynchronizedIfNotThreadsafe { super.rawInfo }
+    override def exists: Boolean = gilSynchronizedIfNotThreadsafe(super.exists)
     override def typeSignature: Type = gilSynchronizedIfNotThreadsafe { super.typeSignature }
     override def typeSignatureIn(site: Type): Type = gilSynchronizedIfNotThreadsafe { super.typeSignatureIn(site) }
 

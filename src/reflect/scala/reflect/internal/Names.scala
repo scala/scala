@@ -182,7 +182,7 @@ trait Names extends api.Names {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi {
+  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi with CharSequence {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
@@ -211,6 +211,7 @@ trait Names extends api.Names {
 
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name with ThisNameType
+    override def subSequence(from: Int, to: Int): CharSequence = subName(from, to)
 
     /** Return a new name of the same variety. */
     def newName(str: String): Name with ThisNameType

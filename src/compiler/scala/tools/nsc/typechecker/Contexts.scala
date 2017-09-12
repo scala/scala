@@ -735,14 +735,23 @@ trait Contexts { self: Analyzer =>
         || sym.isProtected &&
              (  superAccess
              || pre.isInstanceOf[ThisType]
-             || phase.erasedTypes
+             || phase.erasedTypes // (*)
              || (sym.overrideChain exists isProtectedAccessOK)
                 // that last condition makes protected access via self types work.
              )
         )
-        // note: phase.erasedTypes disables last test, because after addinterfaces
-        // implementation classes are not in the superclass chain. If we enable the
-        // test, bug780 fails.
+        // (*) in t780.scala: class B extends A { protected val x }; trait A { self: B => x }
+        // Before erasure, the `pre` is a `ThisType`, so the access is allowed. Erasure introduces
+        // a cast to access `x` (this.$asInstanceOf[B].x), then `pre` is no longer a `ThisType`
+        // but a `TypeRef` to `B`.
+        // Note that `isProtectedAccessOK` is false, it checks if access is OK in the current
+        // context's owner (trait `A`), not in the `pre` type.
+        // This implementation makes `isAccessible` return false positives. Maybe the idea is to
+        // represent VM-level information, as we don't emit protected? If so, it's wrong for
+        // Java-defined symbols, which can be protected in bytecode. History:
+        //   - Phase check added in 8243b2dd2d
+        //   - Removed in 1536b1c67e, but moved to `accessBoundary`
+        //   - Re-added in 42744ffda0 (and left in `accessBoundary`)
       }
     }
 

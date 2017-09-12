@@ -526,8 +526,8 @@ trait ImplicitMemberShadowing {
       assert(ambiguatingMembers.foreach(_.byConversion.isDefined) */
   def ambiguatingMembers: List[MemberEntity]
 
-  def isShadowed: Boolean = !shadowingMembers.isEmpty
-  def isAmbiguous: Boolean = !ambiguatingMembers.isEmpty
+  def isShadowed: Boolean = shadowingMembers.nonEmpty
+  def isAmbiguous: Boolean = ambiguatingMembers.nonEmpty
 }
 
 /** A trait that encapsulates a constraint necessary for implicit conversion */

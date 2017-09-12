@@ -46,7 +46,7 @@ import scala.reflect.ClassTag
  *  executed in a particular order.
  *
  *  @define caughtThrowables
- *  The future may contain a throwable object and this means that the future failed.
+ *  This future may contain a throwable object and this means that the future failed.
  *  Futures obtained through combinators have the same exception as the future they were obtained from.
  *  The following throwable objects are not contained in the future:
  *  - `Error` - errors are not contained within futures
@@ -197,6 +197,8 @@ trait Future[+T] extends Awaitable[T] {
    *  if the original `Future` fails.
    *
    *  If the original `Future` is successful, the returned `Future` is failed with a `NoSuchElementException`.
+   *
+   *  $caughtThrowables
    *
    * @return a failed projection of this `Future`.
    * @group Transformations

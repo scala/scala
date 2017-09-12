@@ -1,0 +1,6 @@
+Some(-1)
+Some(-2L)
+Some(-3.4f)
+Some(-5.6)
+Some(-   7d)
+Done.

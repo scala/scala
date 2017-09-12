@@ -209,7 +209,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       }
 
       def tParams(mbr: Any): String = mbr match {
-        case hk: HigherKinded if !hk.typeParams.isEmpty =>
+        case hk: HigherKinded if hk.typeParams.nonEmpty =>
           def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
             def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
               case None => ""
@@ -969,7 +969,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     while ((sym1 != NoSymbol) && (path.isEmpty || !stop(sym1))) {
       val sym1Norm = normalizeTemplate(sym1)
       if (!sym1.sourceModule.isPackageObject && sym1Norm != RootPackage) {
-        if (path.length != 0)
+        if (path.nonEmpty)
           path.insert(0, ".")
         path.insert(0, sym1Norm.nameString)
         // path::= sym1Norm

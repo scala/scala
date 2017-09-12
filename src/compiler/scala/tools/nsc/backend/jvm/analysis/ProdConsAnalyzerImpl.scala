@@ -435,7 +435,7 @@ trait ProdConsAnalyzerImpl {
  * The ASM built-in SourceValue analysis yields an empty producers set for such values. This leads
  * to ambiguities. Example (in Java one can re-assign parameter):
  *
- *   void foo(int a) {
+ *   int foo(int a) {
  *     if (a == 0) a = 1;
  *     return a;
  *   }

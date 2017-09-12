@@ -7,25 +7,27 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.tools.asm
-import asm.tree._
+import java.util.concurrent.atomic.AtomicLong
+
 import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
+import scala.tools.asm
 import scala.tools.asm.Attribute
+import scala.tools.asm.tree._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.util.ClassPath
-import BytecodeUtils._
-import BTypes.InternalName
-import java.util.concurrent.atomic.AtomicLong
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
  * The ByteCodeRepository provides utilities to read the bytecode of classfiles from the compilation
  * classpath. Parsed classes are cached in the `classes` map.
- *
- * @param classPath The compiler classpath where classfiles are searched and read from.
  */
-class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT) {
-  import btypes._
+abstract class ByteCodeRepository {
+  val postProcessor: PostProcessor
+
+  import postProcessor.{bTypes, bTypesFromClassfile}
+  import bTypes._
+  import frontendAccess.{backendClassPath, recordPerRunCache}
 
   /**
    * Contains ClassNodes and the canonical path of the source file path of classes being compiled in
@@ -42,8 +44,18 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
    */
   val parsedClasses: concurrent.Map[InternalName, Either[ClassNotFound, (ClassNode, Long)]] = recordPerRunCache(concurrent.TrieMap.empty)
 
+  /**
+   * Contains the internal names of all classes that are defined in Java source files of the current
+   * compilation run (mixed compilation). Used for more detailed error reporting.
+   */
+  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
+
   private val maxCacheSize = 1500
   private val targetSize   = 500
+
+  def initialize(): Unit = {
+    javaDefinedClasses ++= frontendAccess.javaDefinedClasses
+  }
 
   private object lruCounter extends AtomicLong(0l) with collection.generic.Clearable {
     def clear(): Unit = { this.set(0l) }
@@ -218,11 +230,11 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
           val maxSpecific = found.filterNot({
             case (method, owner) =>
               isAbstractMethod(method) || {
-                val ownerTp = classBTypeFromClassNode(owner)
+                val ownerTp = bTypesFromClassfile.classBTypeFromClassNode(owner)
                 found exists {
                   case (other, otherOwner) =>
                     (other ne method) && {
-                      val otherTp = classBTypeFromClassNode(otherOwner)
+                      val otherTp = bTypesFromClassfile.classBTypeFromClassNode(otherOwner)
                       otherTp.isSubtypeOf(ownerTp).get
                     }
                 }
@@ -269,7 +281,7 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
 
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
-    classPath.findClassFile(fullName) map { classFile =>
+    backendClassPath.findClassFile(fullName) map { classFile =>
       val classNode = new asm.tree.ClassNode()
       val classReader = new asm.ClassReader(classFile.toByteArray)
 

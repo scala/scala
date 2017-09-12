@@ -8,22 +8,28 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
+import scala.collection.mutable
 import scala.reflect.internal.util.NoPosition
-import scala.tools.asm.{Type, Opcodes}
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import BytecodeUtils._
-import BackendReporting._
-import Opcodes._
-import scala.collection.JavaConverters._
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
-class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
-  import btypes._
+abstract class ClosureOptimizer {
+  val postProcessor: PostProcessor
+
+  import postProcessor.{bTypes, bTypesFromClassfile, callGraph, byteCodeRepository, localOpt, inliner, backendUtils}
+  import bTypes._
+  import bTypesFromClassfile._
+  import backendUtils._
   import callGraph._
   import coreBTypes._
-  import backendUtils._
+  import frontendAccess.backendReporting
+
   import ClosureOptimizer._
 
   private object closureInitOrdering extends Ordering[ClosureInstantiation] {
@@ -342,7 +348,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       ownerMethod.instructions.insertBefore(invocation, op)
     } else {
       // see comment of that method
-      fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, btypes)
+      fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, bTypes)
     }
 
     ownerMethod.instructions.remove(invocation)
@@ -390,7 +396,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
 
     // Rewriting a closure invocation may render code unreachable. For example, the body method of
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
-    unreachableCodeEliminated -= ownerMethod
+    localOpt.unreachableCodeEliminated -= ownerMethod
 
     if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
       inliner.inlineCallsite(bodyMethodCallsite)

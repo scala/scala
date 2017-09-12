@@ -1,0 +1,6 @@
+t7187-2.13.scala:3: error: type mismatch;
+ found   : String
+ required: () => Any
+  val f: () => Any = foo
+                     ^
+one error found

@@ -14,7 +14,7 @@ import scala.collection.immutable.ListMap
  *  <ul>
  *  <li>''Java annotations'': annotations on definitions produced by the Java compiler, i.e., subtypes of [[java.lang.annotation.Annotation]]
  *  attached to program definitions. When read by Scala reflection, the [[scala.annotation.ClassfileAnnotation]] trait
- *  is automatically added as a subclass to every Java annotation.</li>
+ *  is automatically added as a superclass to every Java annotation type.</li>
  *  <li>''Scala annotations'': annotations on definitions or types produced by the Scala compiler.</li>
  *  </ul>
  *
