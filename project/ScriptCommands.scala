@@ -20,7 +20,7 @@ object ScriptCommands {
     ) ++ (args match {
       case Seq(url) => publishTarget(url)
       case Nil => Nil
-    }) ++ noDocs ++ enableOptimizerOldFlag
+    }) ++ noDocs ++ enableOptimizer
   }
 
   /** Set up the environment for `validate/test`.
@@ -31,7 +31,7 @@ object ScriptCommands {
     ) ++ (args match {
       case Seq(url) => Seq(resolvers in Global += "scala-pr" at url)
       case Nil => Nil
-    }) ++ enableOptimizerNewFlags
+    }) ++ enableOptimizer
   }
 
   /** Set up the environment for building STARR in `validate/bootstrap`. The arguments are:
@@ -41,7 +41,7 @@ object ScriptCommands {
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT"
-    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizerOldFlag
+    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
   }
 
   /** Set up the environment for building locker in `validate/bootstrap`. The arguments are:
@@ -52,7 +52,7 @@ object ScriptCommands {
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url
-    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizerOldFlag
+    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
   }
 
   /** Set up the environment for building quick in `validate/bootstrap`. The arguments are:
@@ -64,7 +64,7 @@ object ScriptCommands {
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ publishTarget(url) ++ enableOptimizerNewFlags
+    ) ++ publishTarget(url) ++ enableOptimizer
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:
@@ -81,7 +81,7 @@ object ScriptCommands {
       publishTo in Global := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
       credentials in Global += Credentials(Path.userHome / ".credentials-sonatype"),
       pgpPassphrase in Global := Some(Array.empty)
-    ) ++ enableOptimizerNewFlags
+    ) ++ enableOptimizer
   }
 
   private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) =
@@ -92,12 +92,7 @@ object ScriptCommands {
     logLevel in update in ThisBuild := Level.Warn
   )
 
-  // TODO: remove this once the STARR accepts the new flags
-  private[this] val enableOptimizerOldFlag = Seq(
-    scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:classpath")
-  )
-
-  private[this] val enableOptimizerNewFlags = Seq(
+  private[this] val enableOptimizer = Seq(
     scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
   )
 
