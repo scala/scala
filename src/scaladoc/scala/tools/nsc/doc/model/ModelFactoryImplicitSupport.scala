@@ -394,7 +394,7 @@ trait ModelFactoryImplicitSupport {
       debug(" * conversion " + convSym + " from " + sym.tpe + " to " + toType)
 
       debug("   -> full type: " + toType)
-      if (constraints.length != 0) {
+      if (constraints.nonEmpty) {
         debug("   -> constraints: ")
         constraints foreach { constr => debug("      - " + constr) }
       }
@@ -458,7 +458,7 @@ trait ModelFactoryImplicitSupport {
         }
 
         // we finally have the shadowing info
-        if (!shadowed.isEmpty || !ambiguous.isEmpty) {
+        if (shadowed.nonEmpty || ambiguous.nonEmpty) {
           val shadowing = new ImplicitMemberShadowing {
             def shadowingMembers: List[MemberEntity] = shadowed
             def ambiguatingMembers: List[MemberEntity] = ambiguous

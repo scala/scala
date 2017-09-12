@@ -120,7 +120,7 @@ class ContentDiagramDepth(pack: ContentDiagram) extends DepthInfo {
   // seed base nodes, to minimize noise - they can't all have parents, else there would only be cycles
   seedNodes ++= pack.nodes.filter(directEdges(_).isEmpty)
 
-  while (!seedNodes.isEmpty) {
+  while (seedNodes.nonEmpty) {
     var newSeedNodes = Set[Node]()
     for (node <- seedNodes) {
       val depth = 1 + (-1 :: directEdges(node).map(_nodeDepth.getOrElse(_, -1))).max

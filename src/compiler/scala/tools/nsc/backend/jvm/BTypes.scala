@@ -6,20 +6,13 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.switch
-import scala.collection.{concurrent, mutable}
 import scala.collection.concurrent.TrieMap
-import scala.reflect.internal.util.Position
+import scala.collection.{concurrent, mutable}
 import scala.tools.asm
-import asm.Opcodes
-import scala.tools.asm.tree._
-import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.asm.Opcodes
+import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.settings.ScalaSettings
 
 /**
  * The BTypes component defines The BType class hierarchy. A BType stores all type information
@@ -30,43 +23,11 @@ import scala.tools.nsc.settings.ScalaSettings
  * be queried by concurrent threads.
  */
 abstract class BTypes {
-  import BTypes.InternalName
+  val frontendAccess: PostProcessorFrontendAccess
+  import frontendAccess.{frontendSynch, recordPerRunCache}
 
-  // Stages after code generation in the backend (optimizations, classfile writing) are prepared
-  // to run in parallel on multiple classes. This object should be used for synchronizing operations
-  // that may access the compiler frontend during these late stages.
-  val frontendLock: AnyRef = new Object()
-
-  val backendUtils: BackendUtils[this.type]
-
-  // Some core BTypes are required here, in class BType, where no Global instance is available.
-  // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
-  // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
-  val coreBTypes: CoreBTypesProxyGlobalIndependent[this.type]
+  val coreBTypes: CoreBTypes { val bTypes: BTypes.this.type }
   import coreBTypes._
-
-  /**
-   * Tools for parsing classfiles, used by the inliner.
-   */
-  val byteCodeRepository: ByteCodeRepository[this.type]
-
-  val localOpt: LocalOpt[this.type]
-
-  val inliner: Inliner[this.type]
-
-  val inlinerHeuristics: InlinerHeuristics[this.type]
-
-  val closureOptimizer: ClosureOptimizer[this.type]
-
-  val callGraph: CallGraph[this.type]
-
-  val backendReporting: BackendReporting
-
-  // Allows to define per-run caches here and in the CallGraph component, which don't have a global
-  def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
-
-  // Allows access to the compiler settings for backend components that don't have a global in scope
-  def compilerSettings: ScalaSettings
 
   /**
    * Every ClassBType is cached on construction and accessible through this method.
@@ -82,236 +43,6 @@ abstract class BTypes {
   // might run on multiple classes concurrently.
   val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
   val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
-
-  /**
-   * Store the position of every MethodInsnNode during code generation. This allows each callsite
-   * in the call graph to remember its source position, which is required for inliner warnings.
-   */
-  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
-
-  /**
-   * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
-   * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
-   * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
-   */
-  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
-  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Contains the internal names of all classes that are defined in Java source files of the current
-   * compilation run (mixed compilation). Used for more detailed error reporting.
-   */
-  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Cache, contains methods whose unreachable instructions are eliminated.
-   *
-   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
-   * Transformations that use an analyzer (including inlining) therefore require unreachable code
-   * to be eliminated.
-   *
-   * This cache allows running dead code elimination whenever an analyzer is used. If the method
-   * is already optimized, DCE can return early.
-   */
-  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
-   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
-   * computation only when necessary.
-   */
-  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
-  /**
-   * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
-   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
-   * method has been generated. It is used during ordinary code generation, as well as during
-   * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
-   * has the method.
-   */
-  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
-
-  /**
-    * add methods
-    * @return the added methods. Note the order is undefined
-    */
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
-    if (handle.isEmpty) Nil else {
-      val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
-      if (set isEmpty) {
-        set ++= handle
-        handle
-      } else {
-        var added = List.empty[asm.Handle]
-        handle foreach { h => if (set.add(h)) added ::= h}
-        added
-      }
-    }
-  }
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: asm.Handle): Boolean = {
-    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()).add(handle)
-  }
-  def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
-    if (handle.nonEmpty)
-      indyLambdaImplMethods.get(hostClass).foreach(_ --= handle)
-  }
-
-  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
-    indyLambdaImplMethods.getOrNull(hostClass) match {
-      case null => Nil
-      case xs => xs
-    }
-  }
-
-  /**
-   * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
-   * is constructed by parsing the corresponding classfile.
-   *
-   * Some JVM operations use either a full descriptor or only an internal name. Example:
-   *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
-   *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
-   *
-   * This method supports both descriptors and internal names.
-   */
-  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
-    case 'V'                     => UNIT
-    case 'Z'                     => BOOL
-    case 'C'                     => CHAR
-    case 'B'                     => BYTE
-    case 'S'                     => SHORT
-    case 'I'                     => INT
-    case 'F'                     => FLOAT
-    case 'J'                     => LONG
-    case 'D'                     => DOUBLE
-    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
-    case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
-    case _                       => classBTypeFromParsedClassfile(desc)
-  }
-
-  /**
-   * Parse the classfile for `internalName` and construct the [[ClassBType]]. If the classfile cannot
-   * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
-   */
-  def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    cachedClassBType(internalName).getOrElse({
-      val res = ClassBType(internalName)(classBTypeCacheFromClassfile)
-      byteCodeRepository.classNode(internalName) match {
-        case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
-        case Right(c)  => setClassInfoFromClassNode(c, res)
-      }
-    })
-  }
-
-  /**
-   * Construct the [[ClassBType]] for a parsed classfile.
-   */
-  def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
-    cachedClassBType(classNode.name).getOrElse({
-      setClassInfoFromClassNode(classNode, ClassBType(classNode.name)(classBTypeCacheFromClassfile))
-    })
-  }
-
-  private def setClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): ClassBType = {
-    val superClass = classNode.superName match {
-      case null =>
-        assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")
-        None
-      case superName =>
-        Some(classBTypeFromParsedClassfile(superName))
-    }
-
-    val flags = classNode.access
-
-    /**
-     * Find all nested classes of classNode. The innerClasses attribute contains all nested classes
-     * that are declared inside classNode or used in the bytecode of classNode. So some of them are
-     * nested in some other class than classNode, and we need to filter them.
-     *
-     * For member classes, innerClassNode.outerName is defined, so we compare that to classNode.name.
-     *
-     * For local and anonymous classes, innerClassNode.outerName is null. Such classes are required
-     * to have an EnclosingMethod attribute declaring the outer class. So we keep those local and
-     * anonymous classes whose outerClass is classNode.name.
-     */
-    def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
-      (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
-      (innerClassNode.outerName == null && {
-        val classNodeForInnerClass = byteCodeRepository.classNode(innerClassNode.name).get // TODO: don't get here, but set the info to Left at the end
-        classNodeForInnerClass.outerClass == classNode.name
-      })
-    }
-
-    def nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
-      case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
-    })(collection.breakOut)
-
-    // if classNode is a nested class, it has an innerClass attribute for itself. in this
-    // case we build the NestedInfo.
-    def nestedInfo = classNode.innerClasses.asScala.find(_.name == classNode.name) map {
-      case innerEntry =>
-        val enclosingClass =
-          if (innerEntry.outerName != null) {
-            // if classNode is a member class, the outerName is non-null
-            classBTypeFromParsedClassfile(innerEntry.outerName)
-          } else {
-            // for anonymous or local classes, the outerName is null, but the enclosing class is
-            // stored in the EnclosingMethod attribute (which ASM encodes in classNode.outerClass).
-            classBTypeFromParsedClassfile(classNode.outerClass)
-          }
-        val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
-        NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
-    }
-
-    val inlineInfo = inlineInfoFromClassfile(classNode)
-
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
-
-    classBType.info = Right(ClassInfo(superClass, interfaces, flags, Lazy(nestedClasses), Lazy(nestedInfo), inlineInfo))
-    classBType
-  }
-
-  /**
-   * Build the InlineInfo for a class. For Scala classes, the information is stored in the
-   * ScalaInlineInfo attribute. If the attribute is missing, the InlineInfo is built using the
-   * metadata available in the classfile (ACC_FINAL flags, etc).
-   */
-  def inlineInfoFromClassfile(classNode: ClassNode): InlineInfo = {
-    def fromClassfileAttribute: Option[InlineInfo] = {
-      if (classNode.attrs == null) None
-      else classNode.attrs.asScala.collectFirst{ case a: InlineInfoAttribute => a.inlineInfo}
-    }
-
-    def fromClassfileWithoutAttribute = {
-      val warning = {
-        val isScala = classNode.attrs != null && classNode.attrs.asScala.exists(a => a.`type` == BTypes.ScalaAttributeName || a.`type` == BTypes.ScalaSigAttributeName)
-        if (isScala) Some(NoInlineInfoAttribute(classNode.name))
-        else None
-      }
-      // when building MethodInlineInfos for the members of a ClassSymbol, we exclude those methods
-      // in scalaPrimitives. This is necessary because some of them have non-erased types, which would
-      // require special handling. Excluding is OK because they are never inlined.
-      // Here we are parsing from a classfile and we don't need to do anything special. Many of these
-      // primitives don't even exist, for example Any.isInstanceOf.
-      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.map(methodNode => {
-        val info = MethodInlineInfo(
-          effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
-          annotatedInline                     = false,
-          annotatedNoInline                   = false)
-        (methodNode.name + methodNode.desc, info)
-      })(scala.collection.breakOut)
-      InlineInfo(
-        isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
-        sam = inlinerHeuristics.javaSam(classNode.name),
-        methodInfos = methodInfos,
-        warning)
-    }
-
-    // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
-    // being compiled. For those classes, the info is only needed if the inliner is enabled, otherwise
-    // we can save the memory.
-    if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
-    else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
-  }
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -1094,46 +825,6 @@ abstract class BTypes {
                              nestedClasses: Lazy[List[ClassBType]], nestedInfo: Lazy[Option[NestedInfo]],
                              inlineInfo: InlineInfo)
 
-  object Lazy {
-    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
-  }
-
-  final class Lazy[T <: AnyRef](t: () => T) {
-    private var value: T = null.asInstanceOf[T]
-
-    private var function = {
-      val tt = t // prevent allocating a field for t
-      () => { value = tt() }
-    }
-
-    override def toString = if (value == null) "<?>" else value.toString
-
-    def onForce(f: T => Unit): Unit = {
-      if (value != null) f(value)
-      else frontendLock.synchronized {
-        if (value != null) f(value)
-        else {
-          val prev = function
-          function = () => {
-            prev()
-            f(value)
-          }
-        }
-      }
-    }
-
-    def force: T = {
-      if (value != null) value
-      else frontendLock.synchronized {
-        if (value == null) {
-          function()
-          function = null
-        }
-        value
-      }
-    }
-  }
-
   /**
    * Information required to add a class to an InnerClass table.
    * The spec summary above explains what information is required for the InnerClass entry.
@@ -1198,6 +889,93 @@ abstract class BTypes {
    * Used only in assertions. Abstract here because its implementation depends on global.
    */
   def isCompilingPrimitive: Boolean
+
+  // The [[Lazy]] and [[LazyVar]] classes would conceptually be better placed within
+  // PostProcessorFrontendAccess (they access the `frontendLock` defined in that class). However,
+  // for every component in which we define nested classes, we need to make sure that the compiler
+  // knows that all component instances (val frontendAccess) in various classes are all the same,
+  // otherwise the prefixes don't match and we get type mismatch errors.
+  // Since we already do this dance (val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes)
+  // for BTypes, it's easier to add those nested classes to BTypes.
+
+  object Lazy {
+    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
+  }
+
+  /**
+   * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
+   * to be executed when it's forced.
+   */
+  final class Lazy[T <: AnyRef](t: () => T) {
+    @volatile private var value: T = _
+
+    private var initFunction = {
+      val tt = t // prevent allocating a field for t
+      () => { value = tt() }
+    }
+
+    override def toString = if (value == null) "<?>" else value.toString
+
+    def onForce(f: T => Unit): Unit = {
+      if (value != null) f(value)
+      else frontendSynch {
+        if (value != null) f(value)
+        else {
+          val prev = initFunction
+          initFunction = () => {
+            prev()
+            f(value)
+          }
+        }
+      }
+    }
+
+    def force: T = {
+      if (value != null) value
+      else frontendSynch {
+        if (value == null) {
+          initFunction()
+          initFunction = null
+        }
+        value
+      }
+    }
+  }
+
+  /**
+   * Create state that lazily evaluated (to work around / not worry about initialization ordering
+   * issues). The state is re-initialized in each compiler run when the component is initialized.
+   */
+  def perRunLazy[T](component: PerRunInit)(init: => T): LazyVar[T] = {
+    val r = new LazyVar(() => init)
+    component.perRunInit(r.reInitialize())
+    r
+  }
+
+  /**
+   * This implements a lazy value that can be reset and re-initialized.
+   * It synchronizes on `frontendLock` so that lazy state created through this utility can
+   * be safely initialized in the post-processor.
+   *
+   * Note that values defined as `LazyVar`s are usually `lazy val`s themselves (created through the
+   * `perRunLazy` method). This ensures that re-initializing a component only re-initializes those
+   * `LazyVar`s that have actually been used in the previous compiler run.
+   */
+  class LazyVar[T](init: () => T) {
+    @volatile private[this] var isInit: Boolean = false
+    private[this] var v: T = _
+
+    def get: T = {
+      if (isInit) v
+      else frontendSynch {
+        if (!isInit) v = init()
+        isInit = true
+        v
+      }
+    }
+
+    def reInitialize(): Unit = frontendSynch(isInit = false)
+  }
 }
 
 object BTypes {

@@ -8,7 +8,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
 import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testing.BytecodeTesting
@@ -16,15 +15,15 @@ import scala.tools.testing.BytecodeTesting
 @RunWith(classOf[JUnit4])
 class InlineInfoTest extends BytecodeTesting {
   import compiler._
-  import global.genBCode.bTypes
+  import global.genBCode.{bTypes, postProcessor}
 
   override def compilerArgs = "-opt:l:inline -opt-inline-from:**"
 
   compiler.keepPerRunCachesAfterRun(List(
     bTypes.classBTypeCacheFromSymbol,
     bTypes.classBTypeCacheFromClassfile,
-    bTypes.byteCodeRepository.compilingClasses,
-    bTypes.byteCodeRepository.parsedClasses))
+    postProcessor.byteCodeRepository.compilingClasses,
+    postProcessor.byteCodeRepository.parsedClasses))
 
   @Test
   def inlineInfosFromSymbolAndAttribute(): Unit = {
@@ -51,7 +50,7 @@ class InlineInfoTest extends BytecodeTesting {
 
     val fromAttrs = classes.map(c => {
       assert(c.attrs.asScala.exists(_.isInstanceOf[InlineInfoAttribute]), c.attrs)
-      global.genBCode.bTypes.inlineInfoFromClassfile(c)
+      global.genBCode.postProcessor.bTypesFromClassfile.inlineInfoFromClassfile(c)
     })
 
     assert(fromSyms == fromAttrs)

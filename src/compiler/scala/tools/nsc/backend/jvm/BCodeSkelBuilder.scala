@@ -25,6 +25,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
   import bTypes._
   import coreBTypes._
+  import genBCode.postProcessor.backendUtils
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,
@@ -78,10 +79,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     def tpeTK(tree: Tree): BType = typeToBType(tree.tpe)
 
-    def log(msg: => AnyRef) {
-      frontendLock synchronized { global.log(msg) }
-    }
-
     /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef) {
@@ -132,7 +129,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val flags = javaFlags(claszSymbol)
 
       val thisSignature = getGenericSignature(claszSymbol, claszSymbol.owner)
-      cnode.visit(classfileVersion, flags,
+      cnode.visit(backendUtils.classfileVersion.get, flags,
                   thisBType.internalName, thisSignature,
                   superClass, interfaceNames.toArray)
 

@@ -919,11 +919,16 @@ trait Namers extends MethodSynthesis {
             // while `valDef` is the field definition that spawned the accessor
             // NOTE: `valTypeCompleter` handles abstract vals, trait vals and lazy vals, where the ValDef carries the getter's symbol
 
-            // reuse work done in valTypeCompleter if we already computed the type signature of the val
-            // (assuming the field and accessor symbols are distinct -- i.e., we're not in a trait)
+            valDef.symbol.rawInfo match {
+              case c: ValTypeCompleter =>
+                // If the field and accessor symbols are distinct, i.e., we're not in a trait, invoke the
+                // valTypeCompleter. This ensures that field annotations are set correctly (scala/bug#10471).
+                c.completeImpl(valDef.symbol)
+              case _ =>
+            }
             val valSig =
-              if ((accessorSym ne valDef.symbol) && valDef.symbol.isInitialized) valDef.symbol.info
-              else typeSig(valDef, Nil) // don't set annotations for the valdef -- we just want to compute the type sig (TODO: dig deeper and see if we can use memberSig)
+              if (valDef.symbol.isInitialized) valDef.symbol.info // re-use an already computed type
+              else typeSig(valDef, Nil) // Don't pass any annotations to set on the valDef.symbol, just compute the type sig (TODO: dig deeper and see if we can use memberSig)
 
             // patch up the accessor's tree if the valdef's tpt was not known back when the tree was synthesized
             // can't look at `valDef.tpt` here because it may have been completed by now (this is why we pass in `missingTpt`)
@@ -1363,6 +1368,7 @@ trait Namers extends MethodSynthesis {
 
             // provisionally assign `meth` a method type with inherited result type
             // that way, we can leave out the result type even if method is recursive.
+            // this also prevents cycles in implicit search, see comment in scala/bug#10471
             meth setInfo deskolemizedPolySig(vparamSymss, overriddenResTp)
             overriddenResTp
           } else resTpGiven

@@ -144,6 +144,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     class IClass(val symbol: Symbol)
   }
 
+  // TODO: move to the backend, make it a component
   /** Scala primitives, used the backend */
   object scalaPrimitives extends {
     val global: Global.this.type = Global.this

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2017 LAMP/EPFL
  * @author  Paul Phillips
  */
 package scala
@@ -12,13 +12,13 @@ import JavaAccFlags._
 import ClassfileConstants._
 
 /** A value class which encodes the access_flags (JVMS 4.1)
- *  for a field, method, or class. The low 16 bits are the same
- *  as those returned by java.lang.reflect.Member#getModifiers
- *  and found in the bytecode.
- *
- *  The high bits encode whether the access flags are directly
- *  associated with a class, constructor, field, or method.
- */
+  * for a field, method, or class. The low 16 bits are the same
+  * as those returned by java.lang.reflect.Member#getModifiers
+  * and found in the bytecode.
+  *
+  * The high bits encode whether the access flags are directly
+  * associated with a class, constructor, field, or method.
+  */
 final class JavaAccFlags private (val coded: Int) extends AnyVal {
   private def has(mask: Int) = (flags & mask) != 0
   private def flagCarrierId  = coded >>> 16
@@ -44,9 +44,9 @@ final class JavaAccFlags private (val coded: Int) extends AnyVal {
   def isVolatile     = has(JAVA_ACC_VOLATILE)
 
   /** Do these flags describe a member which has either protected or package access?
-   *  Such access in java is encoded in scala as protected[foo] or private[foo], where
-   *  `foo` is the defining package.
-   */
+    * Such access in java is encoded in scala as protected[foo] or private[foo], where
+    * `foo` is the defining package.
+    */
   def hasPackageAccessBoundary = !has(JAVA_ACC_PRIVATE | JAVA_ACC_PUBLIC) // equivalently, allows protected or package level access
   def isPackageProtected       = !has(JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)
 
@@ -55,6 +55,19 @@ final class JavaAccFlags private (val coded: Int) extends AnyVal {
     case Method | Constructor => FlagTranslation methodFlags flags
     case Class                => FlagTranslation classFlags flags
     case _                    => FlagTranslation fieldFlags flags
+  }
+
+  /** A subset of `@native`/`@transient`/`@volatile` annotations
+    * representing the presence/absence of those flags in this flag set.
+    */
+  def toScalaAnnotations(syms: SymbolTable): List[syms.AnnotationInfo] = {
+    import syms._
+    def annInfo(asym: ClassSymbol) = AnnotationInfo(asym.tpe, Nil, Nil)
+    var anns: List[AnnotationInfo] = Nil
+    if (isNative)    anns ::= annInfo(definitions.NativeAttr)
+    if (isTransient) anns ::= annInfo(definitions.TransientAttr)
+    if (isVolatile)  anns ::= annInfo(definitions.VolatileAttr)
+    anns
   }
 }
 

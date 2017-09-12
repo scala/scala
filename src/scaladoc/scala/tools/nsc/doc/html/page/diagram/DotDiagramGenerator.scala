@@ -157,14 +157,14 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
       	  thisCluster + "\n" +
       	  incomingCluster + "\n" +
       	  // incoming implicit edge
-      	  (if (!incomingImplicits.isEmpty) {
+      	  (if (incomingImplicits.nonEmpty) {
       	    val n = incomingImplicits.last
       	    "node" + node2Index(n) +" -> node" + node2Index(thisNode) +
       	    " [id=\"" + cssClass(n, thisNode) + "|" + node2Index(n) + "_" + node2Index(thisNode) + "\", tooltip=\"" + incomingTooltip + "\"" +
       	    ", constraint=\"false\", minlen=\"2\", ltail=\"clusterIncoming\", lhead=\"clusterThis\", label=\"implicitly\"];\n"
       	  } else "") +
       	  // outgoing implicit edge
-      	  (if (!outgoingImplicits.isEmpty) {
+      	  (if (outgoingImplicits.nonEmpty) {
       	    val n = outgoingImplicits.head
       	    "node" + node2Index(thisNode) + " -> node" + node2Index(n) +
       	    " [id=\"" + cssClass(thisNode, n) + "|" + node2Index(thisNode) + "_" + node2Index(n) + "\", tooltip=\"" + outgoingTooltip + "\"" +
