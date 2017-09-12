@@ -896,6 +896,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
           else setError(tree)
 
+        def emptyApplication: Tree = adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+
         // constructors do not eta-expand
         if (meth.isConstructor) cantAdapt
         // (4.2) eta-expand method value when function or sam type is expected
@@ -912,26 +914,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case Typed(_, Function(Nil, EmptyTree)) => true // tree shape for `f _`
             case _ => false
           }
-          if (mt.params.isEmpty && !isExplicitEtaExpansion) {
-            currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
+          val isNullaryPtEtaExpansion = mt.params.isEmpty && !isExplicitEtaExpansion
+          val skipEta = isNullaryPtEtaExpansion && settings.isScala213
+          if (skipEta) emptyApplication
+          else {
+            if (isNullaryPtEtaExpansion && settings.isScala212) currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
               s"Eta-expansion of zero-argument method values is deprecated. Did you intend to write ${Apply(tree, Nil)}?", "2.12.0")
+
+            val tree0 = etaExpand(context.unit, tree, this)
+
+            // #2624: need to infer type arguments for eta expansion of a polymorphic method
+            // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
+            // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
+            // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
+            // (note that (3) does not call typed to do the polymorphic type instantiation --
+            //  it is called after the tree has been typed with a polymorphic expected result type)
+            if (hasUndets)
+              instantiate(typed(tree0, mode), mode, pt)
+            else
+              typed(tree0, mode, pt)
           }
-
-          val tree0 = etaExpand(context.unit, tree, this)
-
-          // #2624: need to infer type arguments for eta expansion of a polymorphic method
-          // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
-          // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
-          // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
-          // (note that (3) does not call typed to do the polymorphic type instantiation --
-          //  it is called after the tree has been typed with a polymorphic expected result type)
-          if (hasUndets)
-            instantiate(typed(tree0, mode), mode, pt)
-          else
-            typed(tree0, mode, pt)
         }
-        // (4.3) apply to empty argument list -- TODO 2.13: move this one case up to avoid eta-expanding at arity 0
-        else if (mt.params.isEmpty) adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+        // (4.3) apply to empty argument list
+        else if (mt.params.isEmpty) emptyApplication
         else cantAdapt
       }
 

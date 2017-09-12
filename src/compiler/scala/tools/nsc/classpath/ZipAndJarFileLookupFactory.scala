@@ -5,38 +5,32 @@ package scala.tools.nsc.classpath
 
 import java.io.File
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 
 import scala.annotation.tailrec
-import scala.reflect.io.{ AbstractFile, FileZipArchive, ManifestResources }
+import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.Settings
 import FileUtils._
 
 /**
  * A trait providing an optional cache for classpath entries obtained from zip and jar files.
- * It's possible to create such a cache assuming that entries in such files won't change (at
- * least will be the same each time we'll load classpath during the lifetime of JVM process)
- * - unlike class and source files in directories, which can be modified and recompiled.
  * It allows us to e.g. reduce significantly memory used by PresentationCompilers in Scala IDE
  * when there are a lot of projects having a lot of common dependencies.
  */
 sealed trait ZipAndJarFileLookupFactory {
-  private val cache = collection.mutable.Map.empty[AbstractFile, ClassPath]
+  private val cache = new FileBasedCache[ClassPath]
 
   def create(zipFile: AbstractFile, settings: Settings): ClassPath = {
-    if (settings.YdisableFlatCpCaching) createForZipFile(zipFile)
+    if (settings.YdisableFlatCpCaching || zipFile.file == null) createForZipFile(zipFile)
     else createUsingCache(zipFile, settings)
   }
 
   protected def createForZipFile(zipFile: AbstractFile): ClassPath
 
-  private def createUsingCache(zipFile: AbstractFile, settings: Settings): ClassPath = cache.synchronized {
-    def newClassPathInstance = {
-      if (settings.verbose || settings.Ylogcp)
-        println(s"$zipFile is not yet in the classpath cache")
-      createForZipFile(zipFile)
-    }
-    cache.getOrElseUpdate(zipFile, newClassPathInstance)
+  private def createUsingCache(zipFile: AbstractFile, settings: Settings): ClassPath = {
+    cache.getOrCreate(zipFile.file.toPath, () => createForZipFile(zipFile))
   }
 }
 
@@ -180,4 +174,30 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
   }
 
   override protected def createForZipFile(zipFile: AbstractFile): ClassPath = ZipArchiveSourcePath(zipFile.file)
+}
+
+final class FileBasedCache[T] {
+  private case class Stamp(lastModified: FileTime, fileKey: Object)
+  private val cache = collection.mutable.Map.empty[java.nio.file.Path, (Stamp, T)]
+
+  def getOrCreate(path: java.nio.file.Path, create: () => T): T = cache.synchronized {
+    val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
+    val lastModified = attrs.lastModifiedTime()
+    // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
+    val fileKey = attrs.fileKey()
+    val stamp = Stamp(lastModified, fileKey)
+    cache.get(path) match {
+      case Some((cachedStamp, cached)) if cachedStamp == stamp => cached
+      case _ =>
+        val value = create()
+        cache.put(path, (stamp, value))
+        value
+    }
+  }
+
+  def clear(): Unit = cache.synchronized {
+    // TODO support closing
+    // cache.valuesIterator.foreach(_.close())
+    cache.clear()
+  }
 }
