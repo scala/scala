@@ -76,8 +76,6 @@ abstract class ClassfileParser {
 
   def srcfile = srcfile0
 
-  private def optimized         = settings.optimise.value
-
   // u1, u2, and u4 are what these data types are called in the JVM spec.
   // They are an unsigned byte, unsigned char, and unsigned int respectively.
   // We bitmask u1 into an Int to make sure it's 0-255 (and u1 isn't used
@@ -534,7 +532,7 @@ abstract class ClassfileParser {
     val jflags = readFieldFlags()
     val sflags = jflags.toScalaFlags
 
-    if ((sflags & PRIVATE) != 0L && !optimized) {
+    if ((sflags & PRIVATE) != 0L) {
       in.skip(4); skipAttributes()
     } else {
       val name    = readName()
@@ -572,13 +570,13 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = readMethodFlags()
     val sflags = jflags.toScalaFlags
-    if (jflags.isPrivate && !optimized) {
+    if (jflags.isPrivate) {
       val name = readName()
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L && optimized) { // TODO this should be !optimized, no? See c4181f656d.
+      if ((sflags & PRIVATE) != 0L) {
         in.skip(4); skipAttributes()
       } else {
         val name = readName()
@@ -885,6 +883,7 @@ abstract class ClassfileParser {
               case Some(san: AnnotationInfo) =>
                 val bytes =
                   san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+
                 unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
               case None =>
                 throw new RuntimeException("Scala class file does not contain Scala annotation")
