@@ -76,11 +76,14 @@ val collections =
 val collectionsJVM = collections.jvm
 val collectionsJS = collections.js
 
-val root = project.in(file("."))
+val `collection-strawman` = project.in(file("."))
   .settings(commonSettings ++ disablePublishing)
   .settings(
+    sourceDirectory := baseDirectory.value, // Change the source directory to not overlap with the `collections` cross-project
     // Some short-cuts for common tasks
     test in Test := (test in (collectionsJVM, Test)).value,
+    compile in Compile := (compile in (collectionsJVM, Compile)).value,
+    compile in Test := (compile in (collectionsJVM, Test)).value,
     Seq(publish, publishLocal, publishSigned).map { publishKey =>
       publishKey := {
         val a = (publishKey in collectionsJVM).value

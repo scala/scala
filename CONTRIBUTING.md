@@ -12,6 +12,8 @@ You need the following:
 - JDK 8
 - SBT
 
+And be sure to be familiar with the [design](documentation/DESIGN.md).
+
 ### Workflow
 
 - Make sure you have signed the [Scala CLA](http://www.lightbend.com/contribute/cla/scala).
@@ -21,7 +23,23 @@ You need the following:
 Have a look at the [Waffle.io board](https://waffle.io/scala/collection-strawman) to
 quickly know which issues are ready and which are already in progress.
 
-### Build
+## Build
+
+### Sbt Projects
+
+- `collectionsJVM`/`collectionsJS` (in the root directory): contains the implementation
+  of the collections;
+- `junit` (in `test/junit/` directory): unit tests;
+- `scalacheck` (in `test/scalacheck/` directory): properties (not currently used);
+- `timeBenchmark` (in `benchmarks/time/` directory): benchmarks measuring
+  execution time;
+- `memoryBenchmark` (in `benchmarks/memory/` directory): benchmarks measuring
+  the memory footprint of the collections;
+- `collection-strawman` (in the root directory): root project;
+- Also, in directory `scalafix/` there is an independent project containing
+  the implementation of the migration tool.
+
+### Useful Sbt Commands
 
 - Compile the collections and run the tests:
   
