@@ -87,8 +87,16 @@ object ScriptCommands {
 
   def enableOptimizerCommand = setup("enableOptimizer")(_ => enableOptimizer)
 
-  private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) =
-    Command.args(name, name) { case (state, seq) => Project.extract(state).append(f(seq) ++ resetLogLevels, state) }
+  private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) = Command.args(name, name) { case (state, seq) =>
+    // `Project.extract(state).append(f(seq) ++ resetLogLevels, state)` would be simpler, but it
+    // takes the project's initial state and discards all changes that were made in the sbt console.
+    val session = Project.session(state)
+    val extracted = Project.extract(state)
+    val settings = f(seq) ++ resetLogLevels
+    val appendSettings = Load.transformSettings(Load.projectScope(extracted.currentRef), extracted.currentRef.build, extracted.rootProject, settings)
+    val newStructure = Load.reapply(session.mergeSettings ++ appendSettings, extracted.structure)(extracted.showKey)
+    Project.setProject(session, newStructure, state)
+  }
 
   private[this] val resetLogLevels = Seq(
     logLevel in ThisBuild := Level.Info,
