@@ -9,7 +9,8 @@ object ScriptCommands {
   def all = Seq(
     setupPublishCore,
     setupValidateTest,
-    setupBootstrapStarr, setupBootstrapLocker, setupBootstrapQuick, setupBootstrapPublish
+    setupBootstrapStarr, setupBootstrapLocker, setupBootstrapQuick, setupBootstrapPublish,
+    enableOptimizerCommand
   )
 
   /** Set up the environment for `validate/publish-core`.
@@ -83,6 +84,8 @@ object ScriptCommands {
       pgpPassphrase in Global := Some(Array.empty)
     ) ++ enableOptimizer
   }
+
+  def enableOptimizerCommand = setup("enableOptimizer")(_ => enableOptimizer)
 
   private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) =
     Command.args(name, name) { case (state, seq) => Project.extract(state).append(f(seq) ++ resetLogLevels, state) }
