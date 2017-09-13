@@ -177,11 +177,13 @@ abstract class LocalOpt {
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
     // code unreachable and therefore requires running another round.
     def removalRound(): Boolean = {
-      val (insnsRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      val insnsRemoved = removeUnreachableCodeImpl(method, ownerClassName)
       if (insnsRemoved) {
-        val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => liveLabels(h.start))
+        val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => BackendUtils.isLabelReachable(h.start))
         if (liveHandlerRemoved) removalRound()
       }
+      // Note that `removeUnreachableCodeImpl` adds `LABEL_REACHABLE_STATUS` to label.status fields. We don't clean up
+      // this flag here (in `minimalRemoveUnreachableCode`), we rely on that being done later in `methodOptimizations`.
       insnsRemoved
     }
 
@@ -285,7 +287,7 @@ abstract class LocalOpt {
       val runDCE = (compilerSettings.optUnreachableCode && (requestDCE || nullnessOptChanged)) ||
         compilerSettings.optBoxUnbox ||
         compilerSettings.optCopyPropagation
-      val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
+      val codeRemoved = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else false
       traceIfChanged("dce")
 
       // BOX-UNBOX
@@ -321,7 +323,7 @@ abstract class LocalOpt {
       // STALE HANDLERS
       val removedHandlers = if (runDCE) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
       val handlersRemoved = removedHandlers.nonEmpty
-      val liveHandlerRemoved = removedHandlers.exists(h => liveLabels(h.start))
+      val liveHandlerRemoved = removedHandlers.exists(h => BackendUtils.isLabelReachable(h.start))
       traceIfChanged("staleHandlers")
 
       // SIMPLIFY JUMPS
@@ -496,16 +498,16 @@ abstract class LocalOpt {
   }
 
   /**
-   * Removes unreachable basic blocks.
+   * Removes unreachable basic blocks, returns `true` if instructions were removed.
    *
-   * @return A set containing eliminated instructions, and a set containing all live label nodes.
+   * When this method returns, each `labelNode.getLabel` has a status set whether the label is live
+   * or not. This can be queried using `BackendUtils.isLabelReachable`.
    */
-  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Boolean, Set[LabelNode]) = {
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): Boolean = {
     val a = new AsmAnalyzer(method, ownerClassName)
     val frames = a.analyzer.getFrames
 
     var i = 0
-    var liveLabels = Set.empty[LabelNode]
     var changed = false
     var maxLocals = parametersSize(method)
     var maxStack = 0
@@ -518,7 +520,7 @@ abstract class LocalOpt {
       insn match {
         case l: LabelNode =>
           // label nodes are not removed: they might be referenced for example in a LocalVariableNode
-          if (isLive) liveLabels += l
+          if (isLive) BackendUtils.setLabelReachable(l) else BackendUtils.clearLabelReachable(l)
 
         case v: VarInsnNode if isLive =>
           val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
@@ -544,7 +546,7 @@ abstract class LocalOpt {
     }
     method.maxLocals = maxLocals
     method.maxStack  = maxStack
-    (changed, liveLabels)
+    changed
   }
 
   /**
@@ -724,6 +726,9 @@ object LocalOptImpls {
   /**
    * Removes LineNumberNodes that don't describe any executable instructions.
    *
+   * As a side-effect, this traversal removes the `LABEL_REACHABLE_STATUS` flag from all label's
+   * `status` fields.
+   *
    * This method expects (and asserts) that the `start` label of each LineNumberNode is the
    * lexically preceding label declaration.
    */
@@ -740,7 +745,9 @@ object LocalOptImpls {
     var previousLabel: LabelNode = null
     while (iterator.hasNext) {
       iterator.next match {
-        case label: LabelNode => previousLabel = label
+        case label: LabelNode =>
+          BackendUtils.clearLabelReachable(label)
+          previousLabel = label
         case line: LineNumberNode if isEmpty(line) =>
           assert(line.start == previousLabel)
           iterator.remove()

@@ -11,7 +11,7 @@ import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, Type}
+import scala.tools.asm.{Handle, Label, LabelAccess, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -573,6 +573,11 @@ object BackendUtils {
   def isDceDone(method: MethodNode) = (method.access & ACC_DCE_DONE) != 0
   def setDceDone(method: MethodNode) = method.access |= ACC_DCE_DONE
   def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
+
+  private val LABEL_REACHABLE_STATUS = 0x1000000
+  def isLabelReachable(label: LabelNode) = LabelAccess.isLabelFlagSet(label.getLabel, LABEL_REACHABLE_STATUS)
+  def setLabelReachable(label: LabelNode) = LabelAccess.setLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
+  def clearLabelReachable(label: LabelNode) = LabelAccess.clearLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]
