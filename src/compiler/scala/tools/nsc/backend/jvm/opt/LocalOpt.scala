@@ -178,7 +178,7 @@ abstract class LocalOpt {
     def removalRound(): Boolean = {
       val insnsRemoved = removeUnreachableCodeImpl(method, ownerClassName)
       if (insnsRemoved) {
-        val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => BackendUtils.isLabelReachable(h.start))
+        val (_, liveHandlerRemoved) = removeEmptyExceptionHandlers(method)
         if (liveHandlerRemoved) removalRound()
       }
       // Note that `removeUnreachableCodeImpl` adds `LABEL_REACHABLE_STATUS` to label.status fields. We don't clean up
@@ -320,9 +320,7 @@ abstract class LocalOpt {
       traceIfChanged("storeLoadPairs")
 
       // STALE HANDLERS
-      val removedHandlers = if (runDCE) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
-      val handlersRemoved = removedHandlers.nonEmpty
-      val liveHandlerRemoved = removedHandlers.exists(h => BackendUtils.isLabelReachable(h.start))
+      val (handlerRemoved, liveHandlerRemoved) = if (runDCE) removeEmptyExceptionHandlers(method) else (false, false)
       traceIfChanged("staleHandlers")
 
       // SIMPLIFY JUMPS
@@ -356,9 +354,9 @@ abstract class LocalOpt {
         boxUnboxChanged ||    // box-unbox renders locals (holding boxes) unused
         storesRemoved  ||
         storeLoadRemoved ||
-        handlersRemoved
+        handlerRemoved
 
-      val codeChanged = nullnessOptChanged || codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
+      val codeChanged = nullnessOptChanged || codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlerRemoved || jumpsChanged
       (codeChanged, requireEliminateUnusedLocals)
     }
 
@@ -600,9 +598,12 @@ object LocalOptImpls {
    *
    * Note that no instructions are eliminated.
    *
-   * @return the set of removed handlers
+   * Returns a pair of booleans (handlerRemoved, liveHandlerRemoved)
+   *
+   * The `liveHandlerRemoved` result depends on `removeUnreachableCode` being executed
+   * before, so that `BackendUtils.isLabelReachable` gives a correct answer.
    */
-  def removeEmptyExceptionHandlers(method: MethodNode): Set[TryCatchBlockNode] = {
+  def removeEmptyExceptionHandlers(method: MethodNode): (Boolean, Boolean) = {
     /** True if there exists code between start and end. */
     def containsExecutableCode(start: AbstractInsnNode, end: LabelNode): Boolean = {
       start != end && ((start.getOpcode: @switch) match {
@@ -612,16 +613,21 @@ object LocalOptImpls {
       })
     }
 
-    var removedHandlers = Set.empty[TryCatchBlockNode]
+    var handlerRemoved = false
+    var liveHandlerRemoved = false
+
     val handlersIter = method.tryCatchBlocks.iterator()
     while (handlersIter.hasNext) {
       val handler = handlersIter.next()
       if (!containsExecutableCode(handler.start, handler.end)) {
-        removedHandlers += handler
+        handlerRemoved = true
+        if (!liveHandlerRemoved && BackendUtils.isLabelReachable(handler.start))
+          liveHandlerRemoved = true
         handlersIter.remove()
       }
     }
-    removedHandlers
+
+    (handlerRemoved, liveHandlerRemoved)
   }
 
   /**
