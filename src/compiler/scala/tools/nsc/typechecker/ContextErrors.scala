@@ -82,14 +82,25 @@ trait ContextErrors {
   //    (pt at the point of divergence gives less information to the user)
   // Note: it is safe to delay error message generation in this case
   // because we don't modify implicits' infos.
+  sealed abstract class ImplicitTypeError extends TreeTypeError
+
   case class DivergentImplicitTypeError(underlyingTree: Tree, pt0: Type, sym: Symbol)
-    extends TreeTypeError {
+    extends ImplicitTypeError {
     def errMsg: String   = errMsgForPt(pt0)
     def withPt(pt: Type): AbsTypeError = this.copy(pt0 = pt)
     private def errMsgForPt(pt: Type) =
       s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
   }
 
+  case class NoninductiveImplicitTypeError(underlyingTree: Tree, pt: Type)
+    extends ImplicitTypeError {
+    def errMsg: String = s"Noninductive implicit expansion for type ${pt}"
+  }
+
+  case class IncompleteInductionImplicitTypeError(underlyingTree: Tree, pt: Type, aux: Type)
+    extends ImplicitTypeError {
+    def errMsg: String = s"Inductive implicit expansion for type ${pt} failed due to missing auxiliary implicit ${aux}"
+  }
 
   case class PosAndMsgTypeError(errPos: Position, errMsg: String)
     extends AbsTypeError
@@ -1306,6 +1317,12 @@ trait ContextErrors {
 
     def DivergingImplicitExpansionError(tree: Tree, pt: Type, sym: Symbol)(implicit context0: Context) =
       issueTypeError(DivergentImplicitTypeError(tree, pt, sym))
+
+    def NoninductiveImplicitExpansionError(tree: Tree, pt: Type)(implicit context0: Context) =
+      issueTypeError(NoninductiveImplicitTypeError(tree, pt))
+
+    def IncompleteInductionImplicitExpansionError(tree: Tree, pt: Type, aux: Type)(implicit context0: Context) =
+      issueTypeError(IncompleteInductionImplicitTypeError(tree, pt, aux))
   }
 
   object NamesDefaultsErrorsGen {

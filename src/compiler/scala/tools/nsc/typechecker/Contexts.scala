@@ -1321,15 +1321,23 @@ trait Contexts { self: Analyzer =>
     // have to pass in context because multiple contexts may share the same ReportBuffer
     def reportFirstDivergentError(fun: Tree, param: Symbol, paramTp: Type)(implicit context: Context): Unit =
       errors.collectFirst {
-        case dte: DivergentImplicitTypeError => dte
+        case ite: ImplicitTypeError => ite
       } match {
-        case Some(divergent) =>
+        case Some(divergent: DivergentImplicitTypeError) =>
           // DivergentImplicit error has higher priority than "no implicit found"
           // no need to issue the problem again if we are still in silent mode
           if (context.reportErrors) {
             context.issue(divergent.withPt(paramTp))
             errorBuffer.retain {
-              case dte: DivergentImplicitTypeError => false
+              case ite: ImplicitTypeError => false
+              case _ => true
+            }
+          }
+        case Some(ite) =>
+          if (context.reportErrors) {
+            context.issue(ite)
+            errorBuffer.retain {
+              case ite: ImplicitTypeError => false
               case _ => true
             }
           }
@@ -1345,7 +1353,7 @@ trait Contexts { self: Analyzer =>
 
     def propagateImplicitTypeErrorsTo(target: ContextReporter) = {
       errors foreach {
-        case err@(_: DivergentImplicitTypeError | _: AmbiguousImplicitTypeError) =>
+        case err@(_: ImplicitTypeError | _: AmbiguousImplicitTypeError) =>
           target.errorBuffer += err
         case _ =>
       }
