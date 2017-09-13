@@ -1,0 +1,31 @@
+implicitNotFound-outer.scala:19: error: Mid not found ... O1: Int; O2: String; M1: Long; M2: Long
+  implicitly[Outer[Int, String]#Mid[Long, Long]]
+            ^
+implicitNotFound-outer.scala:22: error: Mid not found ... O1: Int; O2: String; M1: Long; M2: Outer[Symbol,String]
+  implicitly[Outer[Int, String]#Mid[Long, Outer[Symbol, String]]]
+            ^
+implicitNotFound-outer.scala:25: error: Inner not found ... O1: Int; O2: Bar; M1: Foo; M2: Baz; I1: Foo
+  implicitly[Outer[Double, Bar]#Mid[Foo, Baz]#Inner[Int, Foo]]
+            ^
+implicitNotFound-outer.scala:30: error: Mid not found ... O1: Foo; O2: Long; M1: Bar; M2: Baz
+    implicitly[this.Mid[Bar, Baz]]
+              ^
+implicitNotFound-outer.scala:33: error: Inner not found ... O1: String; O2: Long; M1: Baz; M2: Nothing; I1: String
+    implicitly[Mid[Baz, Nothing]#Inner[String, String]]
+              ^
+implicitNotFound-outer.scala:38: error: Mid not found ... O1: Foo; O2: Long; M1: Long; M2: Bar
+      implicitly[ao.Mid[Long, Bar]]
+                ^
+implicitNotFound-outer.scala:41: error: Inner not found ... O1: Test.AnOuter.type; O2: Long; M1: Bar; M2: Long; I1: Long
+      implicitly[Inner[ao.type, Long]]
+                ^
+implicitNotFound-outer.scala:48: error: Mid not found ... O1: Foo; O2: Long; M1: Long; M2: Baz
+  implicitly[AnOuter.Mid[Long, Baz]]
+            ^
+implicitNotFound-outer.scala:55: error: Mid not found ... O1: java.time.Instant; O2: java.time.Instant; M1: Long; M2: Baz
+  implicitly[ho.Mid[Long, Baz]]
+            ^
+implicitNotFound-outer.scala:60: error: Inner not found ... O1: Bar; O2: Serializable; M1: Int; M2: Baz; I1: Long
+  implicitly[anon.Mid[Int, Baz]#Inner[Bar, Long]]
+            ^
+10 errors found

@@ -1,0 +1,23 @@
+implicitNotFound-outer-validation.scala:22: warning: Invalid @implicitNotFound message for trait Outer in package none-of-these-do:
+The type parameters M, Q referenced in the message of the @implicitNotFound annotation are not visible at trait Outer.
+Note that the following type parameters are visible at Outer: O (in trait Outer)
+  trait Outer[O] {
+        ^
+implicitNotFound-outer-validation.scala:24: warning: Invalid @implicitNotFound message for trait Mid in trait Outer:
+The type parameters I, Q referenced in the message of the @implicitNotFound annotation are not visible at trait Mid.
+Note that the following type parameters are visible at Mid: M (in trait Mid), O (in trait Outer)
+    trait Mid[M] {
+          ^
+implicitNotFound-outer-validation.scala:26: warning: Invalid @implicitNotFound message for trait Inner in trait Mid:
+The type parameters Q, Thwop referenced in the message of the @implicitNotFound annotation are not visible at trait Inner.
+Note that the following type parameters are visible at Inner: I (in trait Inner), M (in trait Mid), O (in trait Outer)
+      trait Inner[I]
+            ^
+implicitNotFound-outer-validation.scala:31: warning: Invalid @implicitNotFound message for trait Hrem in object Meh:
+The type parameters M, I referenced in the message of the @implicitNotFound annotation are not visible at trait Hrem.
+Note that the following type parameters are visible at Hrem: Q (in trait Hrem), O (in trait Outer)
+      trait Hrem[Q] extends meh.Inner[Q]
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found
