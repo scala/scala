@@ -113,14 +113,13 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *
  *
  * empty local variable descriptors (removes unused variables from the local variable table)
- *   + enables downstream:
- *     - stale labels (labels that the entry points to, if not otherwise referenced)
  *
  * empty line numbers (eliminates line number nodes that describe no executable instructions)
- *   + enables downstream:
- *     - stale labels (label of the line number node, if not otherwise referenced)
  *
- * stale labels (eliminate labels that are not referenced, merge sequences of label definitions)
+ * At this point, we used to filter out redundant label nodes (sequences of labels without any
+ * executable instructions in between). However, this operation is relatively expensive, and
+ * unnecessary: labels don't exist in the classfile, they are lowered to bytecode offsets, so
+ * redundant labels disappear by design.
  *
  *
  * Note on a method's maxLocals / maxStack: the backend only uses those values for running
@@ -385,11 +384,11 @@ abstract class LocalOpt {
       else false
     traceIfChanged("localVariables")
 
+    // The asm.MethodWriter writes redundant line numbers 1:1 to the classfile, so we filter them out
+    // Note that this traversal also cleans up `LABEL_REACHABLE_STATUS` flags that were added to Label's
+    // `stats` fields during `removeUnreachableCodeImpl` (both are guarded by `optUnreachableCode`).
     val lineNumbersRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLineNumbers(method) else false
     traceIfChanged("lineNumbers")
-
-    val labelsRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLabelNodes(method) else false
-    traceIfChanged("labels")
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
     // to eliminate those covering an empty range, similar to removeUnusedLocalVariableNodes.
@@ -400,7 +399,7 @@ abstract class LocalOpt {
     BackendUtils.clearMaxsComputed(method)
     BackendUtils.clearDceDone(method)
 
-    nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
+    nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved
   }
 
   /**
@@ -752,34 +751,6 @@ object LocalOptImpls {
           assert(line.start == previousLabel)
           iterator.remove()
         case _ =>
-      }
-    }
-    method.instructions.size != initialSize
-  }
-
-  /**
-   * Removes unreferenced label declarations, also squashes sequences of label definitions.
-   *
-   *      [ops];              Label(a); Label(b);  [ops];
-   *   => subs([ops], b, a);  Label(a);            subs([ops], b, a);
-   */
-  def removeEmptyLabelNodes(method: MethodNode): Boolean = {
-    val references = labelReferences(method)
-
-    val initialSize = method.instructions.size
-    val iterator = method.instructions.iterator()
-    var prev: LabelNode = null
-    while (iterator.hasNext) {
-      iterator.next match {
-        case label: LabelNode =>
-          if (!references.contains(label)) iterator.remove()
-          else if (prev != null) {
-            references(label).foreach(substituteLabel(_, label, prev))
-            iterator.remove()
-          } else prev = label
-
-        case instruction =>
-          if (instruction.getOpcode >= 0) prev = null
       }
     }
     method.instructions.size != initialSize

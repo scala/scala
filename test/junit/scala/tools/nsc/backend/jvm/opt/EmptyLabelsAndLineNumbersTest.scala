@@ -55,45 +55,4 @@ class EmptyLabelsAndLineNumbersTest {
     t(LineNumber(0, Label(1)), Label(1))
     t(Label(0), Label(1), LineNumber(0, Label(0)))
   }
-
-  @Test
-  def removeEmptyLabels(): Unit = {
-    val handler = List(ExceptionHandler(Label(4), Label(5), Label(6), Some("java/lang/Throwable")))
-    def ops(target1: Int, target2: Int, target3: Int, target4: Int, target5: Int, target6: Int) = List[(Instruction, Boolean)](
-      Label(1),
-      Label(2).dead,
-      Label(3).dead,
-      LineNumber(3, Label(target1)),
-      VarOp(ILOAD, 1),
-      Jump(IFGE, Label(target2)),
-
-      Label(4),
-      Label(5).dead,
-      Label(6).dead,
-      VarOp(ILOAD, 2),
-      Jump(IFGE, Label(target3)),
-
-      Label(7),
-      Label(8).dead,
-      Label(9).dead,
-      Op(RETURN),
-
-      LookupSwitch(LOOKUPSWITCH, Label(target4), List(1,2), List(Label(target4), Label(target5))),
-      TableSwitch(TABLESWITCH, 1, 2, Label(target4), List(Label(target4), Label(target5))),
-
-      Label(10),
-      LineNumber(10, Label(10)),
-      Label(11).dead,
-      LineNumber(12, Label(target6))
-    )
-
-    val method = genMethod(handlers = handler)(ops(2, 3, 8, 8, 9, 11).map(_._1): _*)
-    assertTrue(LocalOptImpls.removeEmptyLabelNodes(method))
-    val m = convertMethod(method)
-    assertSameCode(m.instructions, ops(1, 1, 7, 7, 7, 10).filter(_._2).map(_._1))
-    assertTrue(m.handlers match {
-      case List(ExceptionHandler(Label(4), Label(4), Label(4), _)) => true
-      case _ => false
-    })
-  }
 }
