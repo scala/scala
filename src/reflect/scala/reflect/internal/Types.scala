@@ -1131,7 +1131,6 @@ trait Types
     override def safeToString: String = "<error>"
     override def narrow: Type = this
     override def kind = "ErrorType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   /** An object representing an unknown type, used during type inference.
@@ -1141,7 +1140,6 @@ trait Types
     override def isWildcard = true
     override def safeToString: String = "?"
     override def kind = "WildcardType"
-    override def mapOver(map: TypeMap): Type = this
   }
   /** BoundedWildcardTypes, used only during type inference, are created in
    *  two places that I can find:
@@ -1171,7 +1169,6 @@ trait Types
     override def isTrivial: Boolean = true
     override def safeToString: String = "<notype>"
     override def kind = "NoType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   /** An object representing a non-existing prefix */
@@ -1180,7 +1177,6 @@ trait Types
     override def prefixString = ""
     override def safeToString: String = "<noprefix>"
     override def kind = "NoPrefixType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   /** A class for this-types of the form <sym>.this.type
@@ -1207,7 +1203,6 @@ trait Types
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
@@ -1869,7 +1864,6 @@ trait Types
     override protected def shouldForceScope = settings.debug || decls.size > 1
     override protected def scopeString      = initDecls.mkString(" {\n  ", "\n  ", "\n}")
     override def safeToString               = if (shouldForceScope) formattedToString else super.safeToString
-    override def mapOver(map: TypeMap): Type = this
   }
 
   object ClassInfoType extends ClassInfoTypeExtractor
@@ -1887,7 +1881,6 @@ trait Types
     override def safeToString: String =
       underlying.toString + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   final class UniqueConstantType(value: Constant) extends ConstantType(value)
@@ -2928,7 +2921,6 @@ trait Types
 
   case class ImportType(expr: Tree) extends Type {
     override def safeToString = "ImportType("+expr+")"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   /** A class remembering a type instantiation for some a set of overloaded
@@ -3562,7 +3554,8 @@ trait Types
    */
   case class NamedType(name: Name, tp: Type) extends Type {
     override def safeToString: String = name.toString +": "+ tp
-    override def mapOver(map: TypeMap): Type = this
+    // TODO is this needed? We only seem to get here in ContainsCollector in error message generation
+    // override def mapOver(map: TypeMap): Type = map.apply(tp)
   }
   /** As with NamedType, used only when calling isApplicable.
    *  Records that the application has a wildcard star (aka _*)
@@ -3570,7 +3563,8 @@ trait Types
    */
   case class RepeatedType(tp: Type) extends Type {
     override def safeToString: String = tp + ": _*"
-    override def mapOver(map: TypeMap): Type = this
+    // TODO is this needed? We only seem to get here in ContainsCollector in error message generation
+    // override def mapOver(map: TypeMap): Type = map.apply(tp)
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
@@ -3587,7 +3581,6 @@ trait Types
    */
   abstract case class ErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends UniqueType {
     override def safeToString = s"ErasedValueType($valueClazz, $erasedUnderlying)"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   final class UniqueErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends ErasedValueType(valueClazz, erasedUnderlying)
@@ -3606,7 +3599,6 @@ trait Types
     override def complete(sym: Symbol)
     override def safeToString = "<?>"
     override def kind = "LazyType"
-    override def mapOver(map: TypeMap): Type = this
   }
 
   /** A marker trait representing an as-yet unevaluated type
