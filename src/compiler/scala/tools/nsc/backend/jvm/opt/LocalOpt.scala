@@ -141,18 +141,6 @@ abstract class LocalOpt {
 
   import postProcessor.bTypes.frontendAccess.recordPerRunCache
 
-  /**
-   * Cache, contains methods whose unreachable instructions are eliminated.
-   *
-   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
-   * Transformations that use an analyzer (including inlining) therefore require unreachable code
-   * to be eliminated.
-   *
-   * This cache allows running dead code elimination whenever an analyzer is used. If the method
-   * is already optimized, DCE can return early.
-   */
-  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
-
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._
@@ -181,8 +169,8 @@ abstract class LocalOpt {
     // In principle, for the inliner, a single removeUnreachableCodeImpl would be enough. But that
     // would potentially leave behind stale handlers (empty try block) which is not legal in the
     // classfile. So we run both removeUnreachableCodeImpl and removeEmptyExceptionHandlers.
-    if (method.instructions.size == 0) return false     // fast path for abstract methods
-    if (unreachableCodeEliminated(method)) return false // we know there is no unreachable code
+    if (method.instructions.size == 0) return false  // fast path for abstract methods
+    if (BackendUtils.isDceDone(method)) return false // we know there is no unreachable code
     if (!AsmAnalyzer.sizeOKForBasicValue(method)) return false // the method is too large for running an analyzer
 
     // For correctness, after removing unreachable code, we have to eliminate empty exception
@@ -199,7 +187,7 @@ abstract class LocalOpt {
 
     val changed = removalRound()
     if (changed) removeUnusedLocalVariableNodes(method)()
-    unreachableCodeEliminated += method
+    BackendUtils.setDceDone(method)
     changed
   }
 
@@ -384,7 +372,7 @@ abstract class LocalOpt {
         requestPushPop = true,
         requestStoreLoad = true,
         firstIteration = true)
-      if (compilerSettings.optUnreachableCode) unreachableCodeEliminated += method
+      if (compilerSettings.optUnreachableCode) BackendUtils.setDceDone(method)
       r
     } else (false, false)
 
@@ -408,6 +396,7 @@ abstract class LocalOpt {
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
     BackendUtils.clearMaxsComputed(method)
+    BackendUtils.clearDceDone(method)
 
     nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }

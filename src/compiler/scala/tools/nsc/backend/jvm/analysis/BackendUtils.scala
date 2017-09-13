@@ -559,6 +559,20 @@ object BackendUtils {
   def setMaxsComputed(method: MethodNode) = method.access |= ACC_MAXS_COMPUTED
   def clearMaxsComputed(method: MethodNode) = method.access &= ~ACC_MAXS_COMPUTED
 
+  /**
+   * A pseudo-flag indicating if a MethodNode's unreachable code has been eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This flag allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  private val ACC_DCE_DONE = 0x2000000
+  def isDceDone(method: MethodNode) = (method.access & ACC_DCE_DONE) != 0
+  def setDceDone(method: MethodNode) = method.access |= ACC_DCE_DONE
+  def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]
