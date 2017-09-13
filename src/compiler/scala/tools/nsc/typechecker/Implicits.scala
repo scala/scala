@@ -1114,11 +1114,13 @@ trait Implicits {
               //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.bounds.hi)
 
-              //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
-              args foreach getParts
+              if(settings.isScala213) {
+                //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
+                args foreach getParts
 
-              //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-              getParts(pre)
+                //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
+                getParts(pre)
+              }
             }
           case ThisType(_) =>
             getParts(tp.widen)
