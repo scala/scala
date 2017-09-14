@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.generic.Clearable
 import scala.collection.{concurrent, mutable}
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -36,13 +37,24 @@ abstract class BTypes {
    * `getCommonSuperClass`. In this method we need to obtain the ClassBType for a given internal
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
-  def cachedClassBType(internalName: InternalName): Option[ClassBType] =
-    classBTypeCacheFromSymbol.get(internalName).orElse(classBTypeCacheFromClassfile.get(internalName))
+  def cachedClassBType(internalName: InternalName): Option[ClassBType] = {
+    classBTypeCacheFromSymbol.get(internalName) match {
+      case null => Option(classBTypeCacheFromClassfile.get(internalName))
+      case x => Some(x)
+    }
+  }
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
-  val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
-  val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeCacheFromSymbol: java.util.Map[InternalName, ClassBType] = new java.util.concurrent.ConcurrentHashMap[InternalName, ClassBType]()
+  val classBTypeCacheFromSymbolClearable = recordPerRunCache(new Clearable {
+    override def clear(): Unit = classBTypeCacheFromSymbol.clear()
+  })
+  val classBTypeCacheFromClassfile: java.util.Map[InternalName, ClassBType] = new java.util.concurrent.ConcurrentHashMap[InternalName, ClassBType]()
+  val classBTypeCacheFromClassfileClearable = recordPerRunCache(new Clearable {
+    override def clear(): Unit = classBTypeCacheFromSymbol.clear()
+  })
+
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -611,7 +623,7 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final case class ClassBType(internalName: InternalName)(cache: mutable.Map[InternalName, ClassBType]) extends RefBType {
+  final case class ClassBType(internalName: InternalName)(cache: java.util.Map[InternalName, ClassBType]) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -632,7 +644,7 @@ abstract class BTypes {
       checkInfoConsistency()
     }
 
-    cache(internalName) = this
+    cache.put(internalName, this)
 
     private def checkInfoConsistency(): Unit = {
       if (info.isLeft) return

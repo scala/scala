@@ -96,7 +96,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       cachedClassBType(internalName) match {
         case Some(bType) =>
           if (currentRun.compiles(classSym))
-            assert(classBTypeCacheFromSymbol.contains(internalName), s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+            assert(classBTypeCacheFromSymbol.containsKey(internalName), s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
           bType
         case None =>
           // The new ClassBType is added to the map in its constructor, before we set its info. This
