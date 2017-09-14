@@ -30,8 +30,7 @@ trait UnCurry {
 
   val uncurry: TypeMap = new TypeMap {
     def apply(tp0: Type): Type = {
-      val tp = expandAlias(tp0)
-      tp match {
+      tp0 match {
         case MethodType(params, MethodType(params1, restpe)) =>
           // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
           val packSymbolsMap = new TypeMap {
@@ -50,7 +49,7 @@ trait UnCurry {
         case DesugaredParameterType(desugaredTpe) =>
           apply(desugaredTpe)
         case _ =>
-          expandAlias(mapOver(tp))
+          mapOver(expandAlias(tp0))
       }
     }
   }
