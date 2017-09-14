@@ -69,7 +69,7 @@ object View extends IterableFactory[View] {
     override def knownSize = xs.length // should be: xs.knownSize, but A*'s are not sequences in this strawman.
   }
 
-  /** A view filled with `n` identical elements */
+  /** A view containing the results of some element computation a number of times. */
   case class Fill[A](n: Int)(elem: => A) extends View[A] {
     def iterator() = Iterator.fill(n)(elem)
     override def knownSize: Int = 0 max n
