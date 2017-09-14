@@ -11,14 +11,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 import org.junit.Assert.assertEquals
 
-// Each test normally ends in a moment, but for failure cases, waits two seconds.
+// Each test normally ends in a moment, but for failure cases, waits four seconds.
 // scala/bug#7350, scala/bug#8768
 
 // one second wasn't always enough --
 // https://github.com/scala/scala-dev/issues/313
+// two seconds wasn't always enough --
+// https://github.com/scala/community-builds/issues/569
 object TestDuration {
   import scala.concurrent.duration.{Duration, SECONDS}
-  val Standard = Duration(2, SECONDS)
+  val Standard = Duration(4, SECONDS)
 }
 
 @RunWith(classOf[JUnit4])
