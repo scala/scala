@@ -256,4 +256,36 @@ class IteratorTest {
 //    assertEquals(v2, v4)
 //    assertEquals(Some(v1), v2)
 //  }
+
+  @Test
+  def hasCorrectDistinct: Unit = {
+    val result = List(1, 1, 2, 3, 3, 3, 4, 5, 5).iterator().distinct
+
+    assertTrue(result.hasNext)
+    assertEquals(1, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(2, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(3, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(4, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(5, result.next())
+    assertFalse(result.hasNext)
+  }
+
+  @Test
+  def hasCorrectDistinctBy: Unit = {
+    val result = List("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").iterator().distinctBy(_.length)
+
+    assertTrue(result.hasNext)
+    assertEquals("a", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("aa", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("aaa", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("bbbb", result.next())
+    assertFalse(result.hasNext)
+  }
 }

@@ -104,10 +104,11 @@ object View extends IterableFactory[View] {
     def iterator(): Iterator[(K, V)] = underlying.iterator().filter(kv => p(kv._1))
   }
 
-  /** A view that removes the duplicated elements **/
-  class Distinct[A](val underlying: Iterable[A]) extends View[A] {
-    def iterator(): Iterator[A] = underlying.iterator().distinct
+  /** A view that removes the duplicated elements as determined by the transformation function `f` */
+  case class DistinctBy[A, B](underlying: Iterable[A], f: A => B) extends View[A] {
+    def iterator(): Iterator[A] = underlying.iterator().distinctBy(f)
   }
+
   /** A view that partitions an underlying collection into two views */
   case class Partition[A](underlying: Iterable[A], p: A => Boolean) {
 

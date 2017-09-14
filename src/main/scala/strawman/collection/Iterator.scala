@@ -3,7 +3,7 @@ package strawman.collection
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, PartialFunction, Some, StringContext, Unit, `inline`, math, throws}
-import scala.Predef.{intWrapper, require, String}
+import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import scala.annotation.tailrec
@@ -469,13 +469,25 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 
   /**
     *  Builds a new iterator from this one without any duplicated elements on it.
-    *  @return iterator with intermediate results
+    *  @return iterator with distinct elements
     *
     *  @note   Reuse: $consumesIterator
     */
-  def distinct: Iterator[A] = new Iterator[A] {
+  def distinct: Iterator[A] = distinctBy(identity)
 
-    private val traversedValues = mutable.HashSet.empty[A]
+  /**
+    *  Builds a new iterator from this one without any duplicated elements as determined by `==` after applying
+    *  the transforming function `f`.
+    *
+    *  @param f The transforming function whose result is used to determine the uniqueness of each element
+    *  @tparam B the type of the elements after being transformed by `f`
+    *  @return iterator with distinct elements
+    *
+    *  @note   Reuse: $consumesIterator
+    */
+  def distinctBy[B](f: A => B): Iterator[A] = new Iterator[A] {
+
+    private val traversedValues = mutable.HashSet.empty[B]
     private var nextElementDefined: Boolean = false
     private var nextElement: A = _
 
@@ -485,10 +497,11 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         if (!self.hasNext) false
         else {
           nextElement = self.next()
-          if (traversedValues.contains(nextElement)) {
+          val y = f(nextElement)
+          if (traversedValues.contains(y)) {
             loop()
           } else {
-            traversedValues += nextElement
+            traversedValues += y
             nextElementDefined = true
             true
           }
