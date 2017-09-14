@@ -1,11 +1,9 @@
-package scala
+package scala.util.matching
 
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
-
-import scala.util.matching.Regex
 
 @BenchmarkMode(Array(Mode.AverageTime))
 @Fork(2)
@@ -23,16 +21,6 @@ class RegexUnapplyBenchmark {
   val t8022MatchRegex = """(\d)""".r
   val t8787nullMatchRegex = """\d+""".r
   val t8787nullMatcherRegex = """(\d+):(\d+)""".r
-
-  @Param(Array("1", "10", "100", "1000"))
-  var groupCount: Int = _
-  var groupCorpus: String = _
-  var groupPattern: Regex = _
-
-  @Setup(Level.Trial) def initKeys(): Unit = {
-    groupCorpus = List.tabulate(groupCount)(idx => s"$idx:$idx").mkString(" ")
-    groupPattern = List.tabulate(groupCount)(_ => """(\d+:\d+)""").mkString(" ").r
-  }
 
   @Benchmark def t8022CharSequence(bh: Blackhole): Unit = {
     val full = t8022CharSequenceRegex
@@ -70,16 +58,5 @@ class RegexUnapplyBenchmark {
     }
 
     bh.consume(z)
-  }
-
-  @Benchmark def groupingBenchmark(bh: Blackhole) = {
-    val r = groupPattern
-
-    val res = groupCorpus match {
-      case r(all @ _*) => all
-      case _ => null
-    }
-
-    bh.consume(res)
   }
 }
