@@ -61,11 +61,6 @@ trait MatchTranslation {
       }
     }
 
-    def newBoundTree(tree: Tree, pt: Type): BoundTree = tree match {
-      case SymbolBound(sym, expr) => BoundTree(setVarInfo(sym, pt), expr)
-      case _                      => BoundTree(setVarInfo(freshSym(tree.pos, prefix = "p"), pt), tree)
-    }
-
     final case class BoundTree(binder: Symbol, tree: Tree) {
       private lazy val extractor = ExtractorCall(tree)
 
@@ -109,14 +104,14 @@ trait MatchTranslation {
 
       // example check: List[Int] <:< ::[Int]
       private def extractorStep(): TranslationStep = {
-        import extractor.treeMaker
+        import extractor.treeMakers
 
         // paramType = the type expected by the unapply
         // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
-        val makers = {
+        val (makers, unappBinder) = {
           val paramType = extractor.expectedExtractedType
           // Statically conforms to paramType
-          if (tpe <:< paramType) treeMaker(binder, false, pos) :: Nil
+          if (tpe <:< paramType) (treeMakers(binder, false, pos), binder)
           else {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
@@ -128,8 +123,13 @@ trait MatchTranslation {
             // check whether typetest implies binder is not null,
             // even though the eventual null check will be on typeTest.nextBinder
             // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
-            typeTest :: treeMaker(typeTest.nextBinder, binderKnownNonNull, pos) :: Nil
+            val unappBinder = typeTest.nextBinder
+            (typeTest :: treeMakers(unappBinder, binderKnownNonNull, pos), unappBinder)
           }
+        }
+
+        foreach2(extractor.subBoundTrees, extractor.subPatTypes(unappBinder)) { (bt, pt) =>
+          setVarInfo(bt.binder, pt)
         }
 
         step(makers: _*)(extractor.subBoundTrees: _*)
@@ -374,20 +374,17 @@ trait MatchTranslation {
       // TODO: check unargs == args
       def apply(tree: Tree): ExtractorCall = tree match {
         case UnApply(unfun@Unapplied(fun), args) => new ExtractorCallRegular(fun, args)(unfun) // extractor
-        case Apply(fun, args)     => new ExtractorCallProd(fun, args)      // case class
+        case Apply(fun, args)                    => new ExtractorCallProd(fun, args)      // case class
       }
     }
 
     abstract class ExtractorCall(fun: Tree, args: List[Tree]) extends ExtractorAlignment(fun, args)(context) {
-      def resultInMonad  = if (isBool) UnitTpe else elementTypeFromGet(resultType)
-      def resultType     = fun.tpe.finalResultType
-
       /** Create the TreeMaker that embodies this extractor call
        *
        * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMaker(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker
+      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker]
 
       // `subPatBinders` are the variables bound by this pattern in the following patterns
       // subPatBinders are replaced by references to the relevant part of the extractor's result (tuple component, seq element, the result as-is)
@@ -396,7 +393,10 @@ trait MatchTranslation {
       // (it will later result in a type test when `tp` is not a subtype of `b.info`)
       // TODO: can we simplify this, together with the Bound case?
       def subPatBinders = subBoundTrees map (_.binder)
-      lazy val subBoundTrees = (args, subPatTypes).zipped map newBoundTree
+      lazy val subBoundTrees: List[BoundTree] = args map {
+        case SymbolBound(sym, expr) => BoundTree(sym, expr)
+        case tree                   => BoundTree(freshSym(tree.pos, prefix = "p"), tree)
+      }
 
       // never store these in local variables (for PreserveSubPatBinders)
       lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSet
@@ -483,7 +483,7 @@ trait MatchTranslation {
        * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMaker(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
+      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
         val paramAccessors = expectedExtractedType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
@@ -504,7 +504,7 @@ trait MatchTranslation {
         )
 
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders)
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders) :: Nil
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -519,9 +519,15 @@ trait MatchTranslation {
       *
       * @param fun reference to the unapply method
       * @param args the subpatterns
-      * @param funAppliedToUnapplySelector an application of the unapply method to the (dummy) unapply selector
+      * @param unapplyAppliedToDummy an application of the unapply method to the (dummy) unapply selector
       */
-    class ExtractorCallRegular(fun: Tree, args: List[Tree])(funAppliedToUnapplySelector: Tree) extends ExtractorCall(fun, args) {
+    class ExtractorCallRegular(fun: Tree, args: List[Tree])(unapplyAppliedToDummy: Tree) extends ExtractorCall(fun, args) {
+      override lazy val unapplySelector =
+        unapplyAppliedToDummy match {
+          case Apply(_, (dummy@Ident(nme.SELECTOR_DUMMY)) :: Nil) => dummy.symbol
+          case _ => NoSymbol // if the unapply is applied to <unapply-selector>.toXXXX, we can't use the selector dummy's symbol
+        }
+
       /** Create the TreeMaker that embodies this extractor call
        *
        *  `binder` has been casted to `paramType` if necessary
@@ -532,14 +538,14 @@ trait MatchTranslation {
        *       case class Binder(sym: Symbol, knownNotNull: Boolean).
        *    Perhaps it hasn't reached critical mass, but it would already clean things up a touch.
        */
-      def treeMaker(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
+      def treeMakers(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
         // the extractor call (applied to the binder bound by the flatMap corresponding
         // to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
         // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely
         // wrong when isSeq, and resultInMonad should always be correct since it comes
         // directly from the extractor's result type
-        val binder         = freshSym(pos, pureType(resultInMonad))
+        val binder         = freshSym(pos, pureType(resultInMonad(patBinderOrCasted)))
         val potentiallyMutableBinders: Set[Symbol] =
           if (extractorApply.tpe.typeSymbol.isNonBottomSubClass(OptionClass) && !isSeq)
             Set.empty
@@ -547,7 +553,8 @@ trait MatchTranslation {
             // Ensures we capture unstable bound variables eagerly. These can arise under name based patmat or by indexing into mutable Seqs. See run t9003.scala
             subPatBinders.toSet
 
-        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
+        // types may refer to the dummy symbol unapplySelector (in case of dependent method type for the unapply method)
+        SubstOnlyTreeMaker(unapplySelector, patBinderOrCasted) :: ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
           subPatBinders,
           subPatRefs(binder),
           potentiallyMutableBinders,
@@ -555,7 +562,7 @@ trait MatchTranslation {
           checkedLength,
           patBinderOrCasted,
           ignoredSubPatBinders
-        )
+        ) :: Nil
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -575,15 +582,17 @@ trait MatchTranslation {
           override def transform(t: Tree) = t match {
             // duplicated with the extractor Unapplied
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
-              treeCopy.Apply(t, x, binderRef(i.pos) :: Nil)
+              // in case the result type depended on the unapply's argument, plug in the new symbol
+              treeCopy.Apply(t, x, binderRef(i.pos) :: Nil) modifyType(_.substSym(List(i.symbol), List(binder)))
             // scala/bug#7868 Account for numeric widening, e.g. <unapplySelector>.toInt
             case Apply(x, List(i @ (sel @ Select(Ident(nme.SELECTOR_DUMMY), name)))) =>
+              // not substituting `binder` for `i.symbol`: widening conversion implies the binder could not be used as a path
               treeCopy.Apply(t, x, treeCopy.Select(sel, binderRef(i.pos), name) :: Nil)
             case _ =>
               super.transform(t)
           }
         }
-        splice transform funAppliedToUnapplySelector
+        splice transform unapplyAppliedToDummy
       }
 
     }

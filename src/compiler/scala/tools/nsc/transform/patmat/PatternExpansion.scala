@@ -52,6 +52,10 @@ trait PatternExpansion {
   import definitions._
   import treeInfo._
 
+  // SI-6130 -- TODO: what should we do when a type in `formals` depends on the symbol `unapplyArg` (that references the unapply selector)
+  // One solution could be to widen all expected types for sub-patterns since the extractor's result type
+  // may contain singleton types that depend on `arg` (<unapply-selector>)
+  // `formals mapConserve (_.widen)`
   def unapplyFormals(fun: Tree, args: List[Tree])(context: Contexts#Context): List[Type] =
     new ExtractorAlignment(fun, args)(context).unapplyFormals.map{case NoType => ErrorType case tp => tp}
 
@@ -79,6 +83,8 @@ trait PatternExpansion {
   // Analyze the fun / args of a case class or extractor pattern in terms of repeated patterns etc.
   // Extracts some info from signatures of get/apply/head methods (name-based patmat)
   class ExtractorAlignment(val fun: Tree, val args: List[Tree])(context: Contexts#Context) extends ExtractorSubPatternAlignment {
+    def unapplySelector: Symbol = NoSymbol
+
     def productArity = productTypes.length // values coming from the fixed-length content
 
     def elementArity = nonStarArity - productArity // number of elements picked off from the sequence (the variable-length values of the extracted parts)
@@ -92,14 +98,21 @@ trait PatternExpansion {
       if (isUnapply || isUnapplySeq) firstParamType(fun.tpe)
       else fun.tpe.finalResultType // result type of the case class constructor
 
+    def resultInMonad(extractedBinder: Symbol) =
+      if (isBool) UnitTpe else resultOfGetInMonad(extractedBinder)
+
     // expected types for subpatterns (using repeated param type to absorb the
     // variable-length content, i.e., the elements and the final star pattern)
     def unapplyFormals: List[Type] =
       if (isSeq) productTypes :+ repeatedType else productTypes
 
-    def subPatTypes: List[Type] = {
+    def subPatTypes(extractedBinder: Symbol): List[Type] = {
+      def replaceUnapplySelector(tps: List[Type]) =
+        if (unapplySelector == NoSymbol) tps
+        else tps.map(_.substSym(List(unapplySelector), List(extractedBinder)))
+
       val withoutStar = productTypes ::: List.fill(elementArity)(elementType)
-      if (isStar) withoutStar :+ sequenceType else withoutStar
+      replaceUnapplySelector(if (isStar) withoutStar :+ sequenceType else withoutStar)
     }
 
     def lengthCompareSym = sequenceType member nme.lengthCompare
@@ -107,22 +120,26 @@ trait PatternExpansion {
     // rest is private
     private val isUnapply        = fun.symbol.name == nme.unapply
     private val isUnapplySeq     = fun.symbol.name == nme.unapplySeq
-    private def isBooleanUnapply = isUnapply && unapplyResultWithDummyUnapplySelector =:= BooleanTpe
+    private def isBooleanUnapply = isUnapply && unapplyResultType() =:= BooleanTpe
     private def isRepeatedCaseClass = caseCtorParamTypes.exists(tpes => tpes.nonEmpty && isScalaRepeatedParamType(tpes.last))
 
     private def caseCtorParamTypes: Option[List[Type]] =
       if (isUnapply || isUnapplySeq) None else Some(fun.tpe.paramTypes)
 
-    // TODO: the remainder needs to be reviewed regarding use of unapply-selector as a dummy argument,
-    // on which the unapply method's result type may depend
-    private def unapplyResultWithDummyUnapplySelector = fun.tpe.finalResultType
+    // bug#6130 can't really say what the result type is without referring to the binder we're extracting,
+    // as an unapply's result type could depend on its argument, e.g. crazy stuff like `def unapply(x: T): Option[(x.T, x.U)]`
+    // NOTE: we skip a potential implicit method type here -- could this be another avenue of craziness where the result type depends on the input?
+    private def unapplyResultType(extractedBinder: Symbol = unapplySelector): Type =
+      if (extractedBinder == NoSymbol) fun.tpe.finalResultType
+      else fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder))).finalResultType
 
-    private def resultOfGetInMonad = elementTypeFromGet(unapplyResultWithDummyUnapplySelector)
+    private def resultOfGetInMonad(arg: Symbol = unapplySelector) =
+      elementTypeFromGet(unapplyResultType(arg))
 
     // For a traditional extractor that returns an `Option[TupleN[..Ti..]]`, the component types `..Ti..`
     // Note, we do not unwrap a Tuple1... (similar for fromProductSelectors -- see pos/t796)
     private def fromTupleComponents: Option[List[Type]] =
-      resultOfGetInMonad match {
+      resultOfGetInMonad() match {
         case res if isTupleType(res) =>
           val components = tupleComponents(res)
           if (components.lengthCompare(1) > 0) Some(components)
@@ -132,7 +149,7 @@ trait PatternExpansion {
     private def tupleValuedUnapply = fromTupleComponents.nonEmpty
 
     private def fromProductSelectors: Option[List[Type]] = {
-      val res = resultOfGetInMonad
+      val res = resultOfGetInMonad()
       // Can't only check for _1 thanks to pos/t796.
       if (res.hasNonPrivateMember(nme._1) && res.hasNonPrivateMember(nme._2))
         Some(Stream.from(1).map(n => res.nonPrivateMember(newTermName("_" + n))).
@@ -148,7 +165,7 @@ trait PatternExpansion {
       booleanUnapply orElse
       fromTupleComponents orElse
       fromProductSelectors getOrElse
-      (resultOfGetInMonad :: Nil) // hope for the best
+      (resultOfGetInMonad() :: Nil) // hope for the best
 
     // The non-sequence types which are extracted
     private val productTypes =
@@ -169,7 +186,7 @@ trait PatternExpansion {
       // ```
       else if (totalArity == 1 && equivConstrParamTypes.tail.nonEmpty) {
         warnPatternTupling()
-        (if (tupleValuedUnapply) tupleType(equivConstrParamTypes) else resultOfGetInMonad) :: Nil
+        (if (tupleValuedUnapply) tupleType(equivConstrParamTypes) else resultOfGetInMonad()) :: Nil
       }
       else equivConstrParamTypes
 
@@ -226,7 +243,7 @@ trait PatternExpansion {
 
     // emit error/warning on mismatch
     if (isStar && !isSeq) err("Star pattern must correspond with varargs or unapplySeq")
-    else if (equivConstrParamTypes == List(NoType)) err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultWithDummyUnapplySelector}")
+    else if (equivConstrParamTypes == List(NoType)) err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultType()}")
     else if (elementArity < 0) arityError("not enough")
     else if (elementArity > 0 && !isSeq) arityError("too many")
     else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn(
