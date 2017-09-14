@@ -97,7 +97,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     *
     *  @return the values of this map as an iterable.
     */
-  def values: Iterable[V] = View.fromIterator(valuesIterator())
+  def values: Iterable[V] = View.fromIteratorProvider(() => valuesIterator())
 
   /** Creates an iterator for all keys.
     *

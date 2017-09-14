@@ -255,7 +255,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
   def size: Int = if (knownSize >= 0) knownSize else toIterable.iterator().length
 
   /** A view representing the elements of this collection. */
-  def view: View[A] = View.fromIterator(toIterable.iterator())
+  def view: View[A] = View.fromIteratorProvider(() => toIterable.iterator())
 
   /** Given a collection factory `fi`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:

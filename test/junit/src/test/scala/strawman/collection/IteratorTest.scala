@@ -72,10 +72,10 @@ class IteratorTest {
       //closures.foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
       List.fill(size)(() => Iterator(1)).foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
     }
-    assertEquals(100,    View.fromIterator(mk(100)).sum)
-    assertEquals(1000,   View.fromIterator(mk(1000)).sum)
-    assertEquals(10000,  View.fromIterator(mk(10000)).sum)
-    assertEquals(100000, View.fromIterator(mk(100000)).sum)
+    assertEquals(100,    View.fromIteratorProvider(() => mk(100)).sum)
+    assertEquals(1000,   View.fromIteratorProvider(() => mk(1000)).sum)
+    assertEquals(10000,  View.fromIteratorProvider(() => mk(10000)).sum)
+    assertEquals(100000, View.fromIteratorProvider(() => mk(100000)).sum)
   }
 
   @Test def from(): Unit = {
