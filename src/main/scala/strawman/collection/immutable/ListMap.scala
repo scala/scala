@@ -52,9 +52,9 @@ sealed class ListMap[K, +V]
   def iterableFactory = List
   def mapFactory = ListMap
 
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.fromIterable(it)
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.from(it)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] = ListMap.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] = ListMap.from(coll)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), ListMap[K, V]] = ListMap.newBuilder()
 
@@ -162,10 +162,10 @@ object ListMap extends MapFactory[ListMap] {
   @SerialVersionUID(-8256686706655863282L)
   private object EmptyListMap extends ListMap[Any, Nothing]
 
-  def fromIterable[K, V](it: collection.Iterable[(K, V)]): ListMap[K, V] =
+  def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
     it match {
       case lm: ListMap[K, V] => lm
-      case _ => empty ++ it
+      case _ => (newBuilder[K, V]() ++= it).result()
     }
 
   def newBuilder[K, V](): Builder[(K, V), ListMap[K, V]] =

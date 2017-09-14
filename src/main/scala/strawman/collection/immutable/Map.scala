@@ -86,10 +86,10 @@ object Map extends MapFactory[Map] {
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
 
-  def fromIterable[K, V](it: collection.Iterable[(K, V)]): Map[K, V] =
+  def from[K, V](it: collection.IterableOnce[(K, V)]): Map[K, V] =
     it match {
       case m: Map[K, V] => m
-      case _ => empty ++ it
+      case _ => (newBuilder[K, V]() ++= it).result()
     }
 
   def newBuilder[K, V](): Builder[(K, V), Map[K, V]] = HashMap.newBuilder()
@@ -98,8 +98,8 @@ object Map extends MapFactory[Map] {
     def iterableFactory: IterableFactory[Iterable] = Iterable
     def mapFactory: MapFactory[Map] = Map
     def empty: Map[K, V] = mapFactory.empty
-    protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): Map[K, V] = mapFactory.fromIterable(coll)
-    protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] = mapFactory.fromIterable(it)
+    protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): Map[K, V] = mapFactory.from(coll)
+    protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] = mapFactory.from(it)
     protected[this] def newSpecificBuilder(): Builder[(K, V), Map[K, V]] = mapFactory.newBuilder()
   }
 

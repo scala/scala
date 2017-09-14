@@ -49,6 +49,6 @@ class ListSetTest {
   @Test
   def hasCorrectIterator(): Unit = {
     val s = ListSet(1, 2, 3, 5, 4)
-    assertEquals(List(1, 2, 3, 5, 4), List.fromIterable(View.fromIterator(s.iterator())))
+    assertEquals(List(1, 2, 3, 5, 4), s.iterator().to(List))
   }
 }

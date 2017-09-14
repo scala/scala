@@ -52,10 +52,10 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   class SortedMapWithFilter(p: ((K, V)) => Boolean) extends MapWithFilter(p) {
 
     def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
-      sortedMapFactory.sortedFromIterable(View.Map(filtered, f))
+      sortedMapFactory.from(View.Map(filtered, f))
 
     def flatMap[K2 : Ordering, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
-      sortedMapFactory.sortedFromIterable(View.FlatMap(filtered, f))
+      sortedMapFactory.from(View.FlatMap(filtered, f))
 
     override def withFilter(q: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(kv => p(kv) && q(kv))
 

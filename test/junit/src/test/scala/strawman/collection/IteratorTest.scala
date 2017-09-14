@@ -156,7 +156,7 @@ class IteratorTest {
   // was java.lang.UnsupportedOperationException: tail of empty list
   @Test def iterateIsSufficientlyLazy(): Unit = {
     //Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).toList  // suffices
-    View.fromIterator(Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).map(_.head)).to(List)
+    Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).map(_.head).to(List)
   }
   // scala/bug#3516
   @Test def lazyListIsLazy(): Unit = {
@@ -167,9 +167,8 @@ class IteratorTest {
     val s1 = LazyList.fromIterator(mkIterator)
     val s2 = LazyList.fromIterator(mkInfinite)
     // back and forth without slipping into nontermination.
-    // TODO Uncomment and adapt with LazyList
-//    results += (Stream from 1).toIterator.drop(10).toStream.drop(10).toIterator.next()
-    assertSameElements(List.empty, results)
+    results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
+    assertSameElements(List(21), results)
   }
 
   // scala/bug#8552

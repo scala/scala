@@ -31,14 +31,15 @@ object View extends IterableFactory[View] {
   }
 
   /** Avoid copying if source collection is already a view. */
-  def fromIterable[E](it: Iterable[E]): View[E] = it match {
-    case it: View[E] => it
-    case _ => View.fromIterator(it.iterator())
+  def from[E](it: IterableOnce[E]): View[E] = it match {
+    case it: View[E]     => it
+    case it: Iterable[E] => View.fromIterator(it.iterator())
+    case _ => scala.sys.error("One should not build a View from an IterableOnce instance")
   }
 
   def empty[A]: View[A] = Empty
 
-  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(fromIterable)
+  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(from)
 
   override def apply[A](xs: A*): View[A] = Elems(xs: _*)
 

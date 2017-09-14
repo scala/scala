@@ -77,7 +77,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
 object HashSet extends IterableFactory[HashSet] {
 
-  def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = Growable.fromIterable(empty[B], it)
+  def from[B](it: strawman.collection.IterableOnce[B]): HashSet[B] = Growable.from(empty[B], it)
 
   def empty[A]: HashSet[A] = new HashSet[A]
 

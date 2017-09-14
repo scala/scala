@@ -23,8 +23,8 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     protected class ImmutableKeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
       def iterableFactory: IterableFactory[Set] = Set
       def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
-      protected[this] def sortedFromIterable[B: Ordering](it: collection.Iterable[B]): SortedSet[B] = sortedIterableFactory.sortedFromIterable(it)
-      protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): SortedSet[K] = sortedIterableFactory.sortedFromIterable(coll)
+      protected[this] def sortedFromIterable[B: Ordering](it: collection.Iterable[B]): SortedSet[B] = sortedIterableFactory.from(it)
+      protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): SortedSet[K] = sortedIterableFactory.from(coll)
       protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
       def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
         val map = self.rangeImpl(from, until)
@@ -36,7 +36,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     }
 
     protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
-      Map.fromIterable(it)
+      Map.from(it)
 
     // We override these methods to fix their return type (which would be `Map` otherwise)
     def updated[V1 >: V](key: K, value: V1): CC[K, V1]

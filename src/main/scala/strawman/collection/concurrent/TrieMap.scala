@@ -665,8 +665,8 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   def this() = this(Hashing.default, Equiv.universal)
 
   def mapFactory: MapFactory[TrieMap] = TrieMap
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TrieMap[K,V] = TrieMap.fromIterable(coll)
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): TrieMap[K2,V2] = TrieMap.fromIterable(it)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TrieMap[K,V] = TrieMap.from(coll)
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): TrieMap[K2,V2] = TrieMap.from(it)
   protected[this] def newSpecificBuilder(): Builder[(K, V), TrieMap[K,V]] = TrieMap.newBuilder[K, V]()
 
   /* internal methods */
@@ -988,7 +988,7 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
 
-  def fromIterable[K, V](it: Iterable[(K, V)]) = new TrieMap[K, V]() ++= it
+  def from[K, V](it: IterableOnce[(K, V)]) = new TrieMap[K, V]() ++= it
 
   def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
 
@@ -1082,7 +1082,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     // this one needs to be evaluated
     if (this.subiter == null) it.subiter = null
     else {
-      val lst = immutable.List.fromIterable(View.fromIterator(this.subiter))
+      val lst = this.subiter.to(immutable.List)
       this.subiter = lst.iterator()
       it.subiter = lst.iterator()
     }

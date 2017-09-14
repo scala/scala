@@ -350,9 +350,9 @@ case object Nil extends List[Nothing] {
 
 object List extends SeqFactory[List] {
 
-  def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
+  def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll
-    case _ => ListBuffer.fromIterable(coll).toList
+    case _ => ListBuffer.from(coll).toList
   }
 
   def newBuilder[A](): Builder[A, List[A]] =

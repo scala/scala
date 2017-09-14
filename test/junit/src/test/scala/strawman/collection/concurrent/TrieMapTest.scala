@@ -12,8 +12,8 @@ class TrieMapTest {
     val m = TrieMap[String, String]()
     val values = f(m)
     m.put("k", "v")
-    Assert.assertEquals(Nil, List.fromIterable(View.fromIterator(values.iterator())))
-    Assert.assertEquals(result2, List.fromIterable(View.fromIterator(f(m).iterator())))
+    Assert.assertEquals(Nil, values.iterator().to(List))
+    Assert.assertEquals(result2, f(m).iterator().to(List))
   }
 
   @Test

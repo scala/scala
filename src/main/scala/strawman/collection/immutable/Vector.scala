@@ -14,7 +14,7 @@ object Vector extends SeqFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL
 
-  def fromIterable[E](it: collection.Iterable[E]): Vector[E] =
+  def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
       case v: Vector[E] => v
       case _            => (newBuilder() ++= it).result()

@@ -47,7 +47,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   protected[this] def fromSpecificIterable(coll: Iterable[A]): C
 
-  protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.fromIterable(it)
+  protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.from(it)
 
   def iterableFactory: IterableFactory[CC]
 
@@ -264,12 +264,12 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[C1](f: CanBuild[A, C1]): C1 = f.fromSpecificIterable(toIterable)
+  def to[C1](f: CanBuild[A, C1]): C1 = f.fromSpecific(toIterable)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
-    else ArrayBuffer.fromIterable(toIterable).toArray[B]
+    else ArrayBuffer.from(toIterable).toArray[B]
 
   /** Copy all elements of this collection to array `xs`, starting at `start`. */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
@@ -484,9 +484,9 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
     protected[this] def filtered = View.Filter(toIterable, p, isFlipped = false)
 
-    def map[B](f: A => B): CC[B] = iterableFactory.fromIterable(View.Map(filtered, f))
+    def map[B](f: A => B): CC[B] = iterableFactory.from(View.Map(filtered, f))
 
-    def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.fromIterable(View.FlatMap(filtered, f))
+    def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.from(View.FlatMap(filtered, f))
 
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
 

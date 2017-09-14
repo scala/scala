@@ -734,6 +734,14 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     b
   }
 
+  /** Converts this Iterator into another collection.
+    *  @return a new collection containing all elements of this Iterator.
+    *  @tparam C The collection type to build.
+    *  @param canBuild Collection factory to use. The factory may or may
+    *                  not eagerly consume this iterator.
+    */
+  def to[C](canBuild: CanBuild[A, C]): C = canBuild.fromSpecific(self)
+
 }
 
 object Iterator {

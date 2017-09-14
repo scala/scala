@@ -62,7 +62,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         java.lang.System.arraycopy(bs.elements, 0, dest, length, bs.length)
         new ImmutableArray(dest)
       case _ =>
-        ImmutableArray.fromIterable(View.Concat(toIterable, xs))
+        fromIterable(View.Concat(toIterable, xs))
     }
 
   override def prependAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
@@ -73,7 +73,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         java.lang.System.arraycopy(elements, 0, dest, bs.length, length)
         new ImmutableArray(dest)
       case _ =>
-        ImmutableArray.fromIterable(View.Concat(xs, toIterable))
+        fromIterable(View.Concat(xs, toIterable))
     }
 
   override def zip[B](xs: collection.Iterable[B]): ImmutableArray[(A, B)] =
@@ -83,12 +83,12 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
           (apply(i), bs(i))
         }
       case _ =>
-        ImmutableArray.fromIterable(View.Zip(toIterable, xs))
+        fromIterable(View.Zip(toIterable, xs))
     }
 
   override def partition(p: A => Boolean): (ImmutableArray[A], ImmutableArray[A]) = {
     val pn = View.Partition(toIterable, p)
-    (ImmutableArray.fromIterable(pn.first), ImmutableArray.fromIterable(pn.second))
+    (fromIterable(pn.first), fromIterable(pn.second))
   }
 
   override def take(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n)(apply)
@@ -119,8 +119,8 @@ object ImmutableArray extends SeqFactory[ImmutableArray] {
   def fromArrayBuffer[A](arr: ArrayBuffer[A]): ImmutableArray[A] =
     new ImmutableArray[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
 
-  def fromIterable[A](it: strawman.collection.Iterable[A]): ImmutableArray[A] =
-    if (it.knownSize > -1) {
+  def from[A](it: strawman.collection.IterableOnce[A]): ImmutableArray[A] =
+    /*if (it.knownSize > -1) {
       val n = it.knownSize
       val elements = scala.Array.ofDim[Any](n)
       val iterator = it.iterator()
@@ -130,7 +130,7 @@ object ImmutableArray extends SeqFactory[ImmutableArray] {
         i = i + 1
       }
       new ImmutableArray(elements)
-    } else fromArrayBuffer(ArrayBuffer.fromIterable(it))
+    } else*/ fromArrayBuffer(ArrayBuffer.from(it))
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
     ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)
