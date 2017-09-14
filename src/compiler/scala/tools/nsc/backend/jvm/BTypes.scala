@@ -56,22 +56,25 @@ abstract class BTypes {
     }
 
     final def buildString(builder: java.lang.StringBuilder): Unit = this match {
-      case UNIT   => builder.append('V')
-      case BOOL   => builder.append('Z')
-      case CHAR   => builder.append('C')
-      case BYTE   => builder.append('B')
-      case SHORT  => builder.append('S')
-      case INT    => builder.append('I')
-      case FLOAT  => builder.append('F')
-      case LONG   => builder.append('J')
-      case DOUBLE => builder.append('D')
-      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
-      case ArrayBType(component)    => builder.append('['); component.buildString(builder)
-      case MethodBType(args, res)   =>
-        builder.append('(')
-        args.foreach(_.buildString(builder))
-        builder.append(')')
-        res.buildString(builder)
+      case _: PrimitiveBType =>
+        this match {
+          case UNIT => builder.append('V')
+          case BOOL => builder.append('Z')
+          case CHAR => builder.append('C')
+          case BYTE => builder.append('B')
+          case SHORT => builder.append('S')
+          case INT => builder.append('I')
+          case FLOAT => builder.append('F')
+          case LONG => builder.append('J')
+          case DOUBLE => builder.append('D')
+        }
+        case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
+        case ArrayBType(component)    => builder.append('['); component.buildString(builder)
+        case MethodBType(args, res)   =>
+          builder.append('(')
+          args.foreach(_.buildString(builder))
+          builder.append(')')
+          res.buildString(builder)
     }
 
     /**
