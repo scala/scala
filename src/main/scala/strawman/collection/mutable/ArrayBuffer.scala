@@ -136,13 +136,13 @@ object ArrayBuffer extends SeqFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
-    /*if (coll.knownSize >= 0) {
+    if (coll.knownSize >= 0) {
       val array = new Array[AnyRef](coll.knownSize)
       val it = coll.iterator()
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
     }
-    else*/ new ArrayBuffer[B] ++= coll
+    else new ArrayBuffer[B] ++= coll
 
   def newBuilder[A](): Builder[A, ArrayBuffer[A]] =
     new GrowableBuilder[A, ArrayBuffer[A]](empty) {

@@ -120,7 +120,7 @@ object ImmutableArray extends SeqFactory[ImmutableArray] {
     new ImmutableArray[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
 
   def from[A](it: strawman.collection.IterableOnce[A]): ImmutableArray[A] =
-    /*if (it.knownSize > -1) {
+    if (it.knownSize > -1) {
       val n = it.knownSize
       val elements = scala.Array.ofDim[Any](n)
       val iterator = it.iterator()
@@ -130,7 +130,7 @@ object ImmutableArray extends SeqFactory[ImmutableArray] {
         i = i + 1
       }
       new ImmutableArray(elements)
-    } else*/ fromArrayBuffer(ArrayBuffer.from(it))
+    } else fromArrayBuffer(ArrayBuffer.from(it))
 
   def newBuilder[A](): Builder[A, ImmutableArray[A]] =
     ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)

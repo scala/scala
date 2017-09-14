@@ -21,6 +21,8 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def next(): A
   def iterator() = this
 
+  final def knownSize: Int = -1
+
   /** Tests whether this iterator is empty.
     *
     *  @return   `true` if hasNext is false, `false` otherwise.
