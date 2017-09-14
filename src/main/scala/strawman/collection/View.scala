@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, Boolean, Equals, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
+import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
 import scala.Predef.{<:<, intWrapper}
 
 /** Concrete collection type: View */
@@ -26,15 +26,31 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 /** This object reifies operations on views as case classes */
 object View extends IterableFactory[View] {
 
+  /**
+    * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
+    *
+    * @param it Function creating the iterator to be used by the view. This function must always return
+    *           a fresh `Iterator`, otherwise the resulting view will be effectively iterable only once.
+    *
+    * @tparam A View element type
+    */
   def fromIteratorProvider[A](it: () => Iterator[A]): View[A] = new View[A] {
     def iterator() = it()
   }
 
-  /** Avoid copying if source collection is already a view. */
+  /**
+    * @return A view iterating over the given `Iterable`
+    *
+    * @param it The `Iterable` to view. It must be an `Iterable` (and not just an `IterableOnce`),
+    *           otherwise an `IllegalArgumentException` is thrown.
+    *
+    * @tparam E View element type
+    */
+  @throws[IllegalArgumentException]
   def from[E](it: IterableOnce[E]): View[E] = it match {
     case it: View[E]     => it
     case it: Iterable[E] => View.fromIteratorProvider(() => it.iterator())
-    case _ => scala.sys.error("One should not build a View from an IterableOnce instance")
+    case _ => throw new IllegalArgumentException("One should not build a View from an IterableOnce instance")
   }
 
   def empty[A]: View[A] = Empty
