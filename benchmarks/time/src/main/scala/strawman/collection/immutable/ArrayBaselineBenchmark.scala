@@ -28,7 +28,7 @@ class ArrayBaselineBenchmark {
   var vLo: Array[Long] = _
 
   @Setup(Level.Trial)
-  def initData(): Unit = {
+  def initTrial(): Unit = {
 
     def fillArray(range: Int) = {
       val array = new Array[Long](range)

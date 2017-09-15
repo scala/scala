@@ -38,7 +38,7 @@ class ArrayViewBenchmark {
   }
 
   @Setup(Level.Trial)
-  def initData(): Unit = {
+  def initTrial(): Unit = {
 
     v = ArrayView(fillArray(size))
     vLo = ArrayView(fillArray(vLoSize))

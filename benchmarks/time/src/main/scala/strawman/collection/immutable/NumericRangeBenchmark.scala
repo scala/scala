@@ -15,7 +15,6 @@ import scala.Predef.intWrapper
 @Measurement(iterations = 12)
 @State(Scope.Benchmark)
 class NumericRangeBenchmark {
-
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
   var size: Int = _
 
@@ -26,26 +25,15 @@ class NumericRangeBenchmark {
 
   @Setup(Level.Trial)
   def initTrial(): Unit = {
+    xs = fresh(size)
+    zs = NumericRange.inclusive(-1, (-size / 1000) min -2, -1)
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
   }
 
-  @Setup(Level.Invocation)
-  def initInvocation(): Unit = {
-    xs = fresh(size)
-    zs = NumericRange.inclusive(-1, (-size / 1000) min -2, -1)
-  }
-
   @Benchmark
-  @OperationsPerInvocation(100)
-  def create(bh: Blackhole): Unit = {
-    var i = 0L
-    while (i < 100) {
-      bh.consume(fresh(size))
-      i += 1
-    }
-  }
+  def create(bh: Blackhole): Unit = bh.consume(fresh(size))
 
   @Benchmark
   def traverse_foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
