@@ -957,8 +957,12 @@ trait Implicits {
           result
         }
 
-        // most frequent one first
-        matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        if (settings.isScala213) matches
+        else {
+          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
+          // compilation order variation in whether a search succeeds or diverges.
+          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        }
       }
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")

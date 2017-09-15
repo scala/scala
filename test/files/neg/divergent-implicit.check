@@ -4,7 +4,7 @@ divergent-implicit.scala:4: error: type mismatch;
   val x1: String = 1
                    ^
 divergent-implicit.scala:5: error: diverging implicit expansion for type Int => String
-starting with method $conforms in object Predef
+starting with method cast in object Test1
   val x2: String = cast[Int, String](1)
                                     ^
 divergent-implicit.scala:14: error: type mismatch;
