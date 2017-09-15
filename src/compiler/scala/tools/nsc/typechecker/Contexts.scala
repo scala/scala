@@ -1207,7 +1207,7 @@ trait Contexts { self: Analyzer =>
         if (s != NoSymbol && s.owner == expectedOwner)
           res = s
         else
-          ctx = outerContextWithDistinctScope(ctx)
+          ctx = ctx.outer
       }
       res
     }
@@ -1222,7 +1222,7 @@ trait Contexts { self: Analyzer =>
           if (s != null)
             res = s
           else
-            ctx = outerContextWithDistinctScope(ctx)
+            ctx = ctx.outer
         }
         res
       }
