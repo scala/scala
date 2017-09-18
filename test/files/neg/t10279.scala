@@ -6,5 +6,8 @@ object Test {
     // foo(1) _
   }
 
-  foo(1) _
+  val bar = foo(1) _
+
+  def fooSimple(implicit x: Int): Int = x
+  val barSimple = fooSimple _
 }
