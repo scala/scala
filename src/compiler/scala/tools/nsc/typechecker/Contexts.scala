@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2017 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -647,10 +647,16 @@ trait Contexts { self: Analyzer =>
     // Accessibility checking
     //
 
-    /** Is `sub` a subclass of `base` or a companion object of such a subclass? */
+    /** True iff...
+      * - `sub` is a subclass of `base`
+      * - `sub` is the module class of a companion of a subclass of `base`
+      * - `base` is a Java-defined module class (containing static members),
+      *   and `sub` is a subclass of its companion class. (see scala/bug#6394)
+      */
     private def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
-    sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
+        (sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)) ||
+        (base.isJavaDefined && base.isModuleClass && sub.isNonBottomSubClass(base.linkedClassOfClass))
 
     /** Return the closest enclosing context that defines a subclass of `clazz`
      *  or a companion object thereof, or `NoContext` if no such context exists.
@@ -702,10 +708,10 @@ trait Contexts { self: Analyzer =>
         val c = enclosingSubClassContext(sym.owner)
         if (c == NoContext)
           lastAccessCheckDetails =
-            "\n Access to protected "+target+" not permitted because"+
-            "\n "+"enclosing "+this.enclClass.owner+
-            this.enclClass.owner.locationString+" is not a subclass of "+
-            "\n "+sym.owner+sym.owner.locationString+" where target is defined"
+            sm"""
+                | Access to protected $target not permitted because
+                | enclosing ${this.enclClass.owner}${this.enclClass.owner.locationString} is not a subclass of
+                | ${sym.owner}${sym.owner.locationString} where target is defined"""
         c != NoContext &&
         {
           target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
@@ -715,9 +721,10 @@ trait Contexts { self: Analyzer =>
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
             if (!res)
               lastAccessCheckDetails =
-                "\n Access to protected "+target+" not permitted because"+
-                "\n prefix type "+pre.widen+" does not conform to"+
-                "\n "+c.owner+c.owner.locationString+" where the access take place"
+                sm"""
+                    | Access to protected $target not permitted because
+                    | prefix type ${pre.widen} does not conform to
+                    | ${c.owner}${c.owner.locationString} where the access takes place"""
               res
           }
         }
