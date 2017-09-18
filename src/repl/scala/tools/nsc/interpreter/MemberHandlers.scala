@@ -141,7 +141,8 @@ trait MemberHandlers {
           if (replProps.vids) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
           else ""
 
-        val nameString = colorName(prettyName) + vidString
+        val modifier = if (member.mods.isMutable) "var" else "val"
+        val nameString = s"$modifier ${colorName(prettyName)}" + vidString
         val typeString = colorType(req typeOf name)
         s""" + "$nameString: $typeString = " + $resultString"""
       }
@@ -153,7 +154,9 @@ trait MemberHandlers {
     override def resultExtractionCode(req: Request) = {
       val nameString = colorName(name)
       val typeString = colorType(req typeOf name)
-      if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
+      val nameSeparator = if (member.vparamss.isEmpty) ": " else ""
+
+      if (mods.isPublic) s""" + "def $nameString$nameSeparator$typeString\\n"""" else ""
     }
   }
 
