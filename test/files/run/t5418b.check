@@ -1,2 +1,2 @@
 new Object().getClass()
-TypeRef(ThisType(java.lang), java.lang.Class, List(TypeRef(NoPrefix, TypeName("?0"), List())))
+TypeRef(ThisType(java.lang), java.lang.Class, List(TypeRef(NoPrefix, TypeName("T"), List())))

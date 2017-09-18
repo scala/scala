@@ -1,0 +1,2 @@
+public class D<T> {}
+
