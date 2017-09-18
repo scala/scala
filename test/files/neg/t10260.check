@@ -1,0 +1,17 @@
+Test.scala:1: error: class IAImpl needs to be abstract, since method foo in trait IA of type (a: A)Unit is not defined
+(Note that A does not match A[_]. To implement this raw type, use A[T] forSome { type T <: A[T] })
+class IAImpl extends IA { def foo(a: A[_]) = ??? }
+      ^
+Test.scala:2: error: class IBImpl needs to be abstract, since method foo in trait IB of type (a: B)Unit is not defined
+(Note that B does not match B[_, _]. To implement this raw type, use B[T,R] forSome { type T; type R <: java.util.List[_ >: T] })
+class IBImpl extends IB { def foo(a: B[_,_]) = ??? }
+      ^
+Test.scala:3: error: class ICImpl needs to be abstract, since method foo in trait IC of type (a: Int, b: C, c: String)C is not defined
+(Note that C does not match C[_]. To implement this raw type, use C[_ <: String])
+class ICImpl extends IC { def foo(a: Int, b: C[_], c: String) = ??? }
+      ^
+Test.scala:4: error: class IDImpl needs to be abstract, since method foo in trait ID of type (a: D)Unit is not defined
+(Note that D does not match D[_ <: String]. To implement this raw type, use D[_])
+class IDImpl extends ID { def foo(a: D[_ <: String]) = ??? }
+      ^
+four errors found
