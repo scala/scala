@@ -4,7 +4,9 @@ names-defaults.scala:269: warning: a pure expression does nothing in statement p
 names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
-warning: there were four deprecation warnings; re-run with -deprecation for details
+warning: there were four deprecation warnings
+warning: there was one deprecation warning (since 2.12.4)
+warning: there were 5 deprecation warnings in total; re-run with -deprecation for details
 1: @
 get: $
 get: 2
