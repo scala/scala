@@ -359,4 +359,24 @@ class OptimizedBytecodeTest extends BytecodeTesting {
     val List(c) = readAsmClasses(newCompiler(extraArgs = "-optimise -deprecation").compileToBytes(code, allowMessage = _.msg.contains("is deprecated")))
     assertInvoke(getMethod(c, "t"), "C", "$anonfun$t$1") // range-foreach inlined from classpath
   }
+
+  @Test
+  def virtualCallWithSingleImplementationInlined(): Unit = {
+    val code =
+      """sealed trait Foo {
+        |  def foo(s: String): Unit
+        |}
+        |
+        |class FooImpl extends Foo {
+        |  @inline
+        |  final def foo(s: String): Unit = ()
+        |}
+        |
+        |class Test {
+        |  def go(f: Foo): Unit = f.foo("Hi!")
+        |}
+      """.stripMargin
+    val List(f, fi, t) = compileClasses(code)
+    assertNoInvoke(getMethod(t, "go"))
+  }
 }
