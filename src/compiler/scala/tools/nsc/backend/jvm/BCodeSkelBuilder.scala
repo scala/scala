@@ -337,7 +337,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      */
     object locals {
 
-      private val slots = mutable.Map.empty[Symbol, Local] // (local-or-param-sym -> Local(BType, name, idx, isSynth))
+      private val slots = mutable.AnyRefMap.empty[Symbol, Local] // (local-or-param-sym -> Local(BType, name, idx, isSynth))
 
       private var nxtIdx = -1 // next available index for local-var
 
@@ -369,10 +369,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       }
 
       private def makeLocal(sym: Symbol, tk: BType): Local = {
-        assert(!slots.contains(sym), "attempt to create duplicate local var.")
         assert(nxtIdx != -1, "not a valid start index")
         val loc = Local(tk, sym.javaSimpleName.toString, nxtIdx, sym.isSynthetic)
-        slots += (sym -> loc)
+        val existing = slots.put(sym, loc)
+        if (existing.isDefined)
+          globalError(sym.pos, "attempt to create duplicate local var.")
         assert(tk.size > 0, "makeLocal called for a symbol whose type is Unit.")
         nxtIdx += tk.size
         loc

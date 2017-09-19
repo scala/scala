@@ -207,7 +207,7 @@ trait Implicits {
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
-    private var isCyclicOrErroneousCache: TriState = TriState.Unknown
+    private var isErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
     def tpe: Type = {
@@ -215,13 +215,16 @@ trait Implicits {
       tpeCache
     }
 
-    def isCyclicOrErroneous: Boolean = {
-      if (!isCyclicOrErroneousCache.isKnown) isCyclicOrErroneousCache = computeIsCyclicOrErroneous
-      isCyclicOrErroneousCache.booleanValue
-    }
+    def isCyclicOrErroneous: Boolean =
+      if(sym.hasFlag(LOCKED)) true
+      else {
+        if(!isErroneousCache.isKnown)
+          isErroneousCache = computeErroneous
+        isErroneousCache.booleanValue
+      }
 
-    private[this] final def computeIsCyclicOrErroneous =
-      try sym.hasFlag(LOCKED) || containsError(tpe)
+    private[this] final def computeErroneous =
+      try containsError(tpe)
       catch { case _: CyclicReference => true }
 
     var useCountArg: Int = 0

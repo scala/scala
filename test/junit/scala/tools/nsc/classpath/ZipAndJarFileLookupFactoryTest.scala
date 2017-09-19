@@ -8,6 +8,8 @@ import scala.reflect.io.AbstractFile
 
 class ZipAndJarFileLookupFactoryTest {
   @Test def cacheInvalidation(): Unit = {
+    if (scala.util.Properties.isWin) return // can't overwrite an open file on windows.
+
     val f = Files.createTempFile("test-", ".jar")
     Files.delete(f)
     val g = new scala.tools.nsc.Global(new scala.tools.nsc.Settings())

@@ -4,7 +4,7 @@ t3871b.scala:61: error: not found: value protOT
 t3871b.scala:77: error: method prot in class A cannot be accessed in E.this.A
  Access to protected method prot not permitted because
  prefix type E.this.A does not conform to
- class B in class E where the access take place
+ class B in class E where the access takes place
       a.prot    // not allowed, prefix type `A` does not conform to `B`
         ^
 t3871b.scala:79: error: value protT is not a member of E.this.B
@@ -19,7 +19,7 @@ t3871b.scala:81: error: value protT is not a member of E.this.A
 t3871b.scala:91: error: method prot in class A cannot be accessed in E.this.A
  Access to protected method prot not permitted because
  prefix type E.this.A does not conform to
- object B in class E where the access take place
+ object B in class E where the access takes place
       a.prot    // not allowed
         ^
 t3871b.scala:93: error: value protT is not a member of E.this.B
