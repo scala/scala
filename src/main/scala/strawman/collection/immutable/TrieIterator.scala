@@ -3,14 +3,14 @@ package strawman
 package collection
 package immutable
 
-//import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
+import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
 import HashSet.{HashSet1, HashSetCollision1, HashTrieSet}
 import collection.Iterator
 import strawman.collection.mutable.ArrayBuffer
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.annotation.tailrec
-import scala.{AnyRef, Array, Boolean, Int, NoSuchElementException, throws}
+import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, throws}
 import scala.Predef.intWrapper
 
 /** Abandons any pretense of type safety for speed.  You can't say I
@@ -36,23 +36,23 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   private[this] var subIter                                   = initSubIter
 
   private[this] def getElems(x: Iterable[T]): Array[Iterable[T]] = (x match {
-//    case x: HashTrieMap[_, _] => x.elems
+    case x: HashTrieMap[_, _] => x.elems
     case x: HashTrieSet[_]    => x.elems
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {
-//    case x: HashMapCollision1[_, _] => x.kvs.map(x => HashMap(x)).toArray
+    case x: HashMapCollision1[_, _] => x.kvs.map((x: (Any, Any)) => HashMap(x)).toArray
     case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
 
   private def isTrie(x: AnyRef) = x match {
-//    case _: HashTrieMap[_,_] | _: HashTrieSet[_] => true
+    case _: HashTrieMap[_,_] | _: HashTrieSet[_] => true
     case _                                       => false
   }
   private def isContainer(x: AnyRef) = x match {
-//    case _: HashMap1[_, _] | _: HashSet1[_] => true
+    case _: HashMap1[_, _] | _: HashSet1[_] => true
     case _                                  => false
   }
 
@@ -84,7 +84,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   private[this] def splitArray(ad: Array[Iterable[T]]): SplitIterators =
     if (ad.length > 1) arrayToIterators(ad)
     else ad(0) match {
-      case /*_: HashMapCollision1[_, _] |*/ _: HashSetCollision1[_] =>
+      case _: HashMapCollision1[_, _] | _: HashSetCollision1[_] =>
         arrayToIterators(collisionToArray(ad(0)))
       case _ =>
         splitArray(getElems(ad(0)))
