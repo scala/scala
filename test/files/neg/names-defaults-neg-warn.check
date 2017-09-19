@@ -4,6 +4,20 @@ names-defaults-neg-warn.scala:11: warning: the parameter name s is deprecated: u
 names-defaults-neg-warn.scala:12: warning: the parameter name x is deprecated: use s instead
   deprNam2.g(x = "dlkjf")
                ^
-error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
-one error found
+names-defaults-neg-warn.scala:22: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
+    f1(x = 1) // 2.12: error, ambiguous (named arg or assign). 2.13: named arg
+         ^
+names-defaults-neg-warn.scala:23: warning: assignments in argument position are deprecated in favor of named arguments. Wrap the assignment in brackets, e.g., `{ x = ... }`.
+    f2(x = 1) // 2.12: deprecation warning, compiles. 2.13: error, no parameter named x
+         ^
+names-defaults-neg-warn.scala:34: warning: assignments in argument position are deprecated in favor of named arguments. Wrap the assignment in brackets, e.g., `{ x = ... }`.
+    synchronized(x = 1) // deprecation warning in 2.12, error in 2.13
+                   ^
+names-defaults-neg-warn.scala:42: warning: a pure expression does nothing in statement position
+    f1(x = 1) // 2.12, 2.13: ok, named arg (value discard)
+           ^
+names-defaults-neg-warn.scala:43: error: reassignment to val
+    f2(x = 1) // 2.12, 2.13: error (no such parameter). no deprecation warning in 2.12, x is not a variable.
+         ^
+5 warnings found
+two errors found

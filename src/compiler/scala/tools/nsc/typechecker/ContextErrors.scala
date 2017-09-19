@@ -1337,8 +1337,12 @@ trait ContextErrors {
       context.warning(arg.pos, note)
     }
 
-    def UnknownParameterNameNamesDefaultError(arg: Tree, name: Name)(implicit context: Context) = {
-      issueNormalTypeError(arg, "unknown parameter name: " + name)
+    def UnknownParameterNameNamesDefaultError(arg: Tree, name: Name, isVariableInScope: Boolean)(implicit context: Context) = {
+      val suffix =
+        if (isVariableInScope)
+          s"\nNote that assignments in argument position are no longer allowed since Scala 2.13.\nTo express the assignment expression, wrap it in brackets, e.g., `{ $name = ... }`."
+        else ""
+      issueNormalTypeError(arg, s"unknown parameter name: $name$suffix")
       setError(arg)
     }
 

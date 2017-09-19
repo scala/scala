@@ -1,3 +1,21 @@
+checksensible.scala:45: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+        signature: Any.==(x$1: Any): Boolean
+  given arguments: <none>
+ after adaptation: Any.==((): Unit)
+  () == ()
+     ^
+checksensible.scala:48: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+        signature: Object.!=(x$1: Any): Boolean
+  given arguments: <none>
+ after adaptation: Object.!=((): Unit)
+  scala.runtime.BoxedUnit.UNIT != ()
+                               ^
+checksensible.scala:49: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+        signature: Any.!=(x$1: Any): Boolean
+  given arguments: <none>
+ after adaptation: Any.!=((): Unit)
+  (scala.runtime.BoxedUnit.UNIT: java.io.Serializable) != () // shouldn't warn
+                                                       ^
 checksensible.scala:13: warning: comparing a fresh object using `eq' will always yield false
   (new AnyRef) eq (new AnyRef)
                ^
@@ -97,7 +115,6 @@ checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:95: warning: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-warning: there were three deprecation warnings (since 2.11.0); re-run with -deprecation for details
 error: No warnings can be incurred under -Xfatal-warnings.
-34 warnings found
+36 warnings found
 one error found
