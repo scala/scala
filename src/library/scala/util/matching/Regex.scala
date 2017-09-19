@@ -276,7 +276,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     case null => None
     case _    =>
       val m = pattern matcher s
-      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
+      if (runMatcher(m)) Regex.extractGroupsFromMatcher(m)
       else None
   }
 
@@ -330,7 +330,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    */
   def unapplySeq(m: Match): Option[List[String]] =
     if (m == null || m.matched == null) None
-    else if (m.matcher.pattern == this.pattern) Some((1 to m.groupCount).toList map m.group)
+    else if (m.matcher.pattern == this.pattern) Regex.extractGroupsFromMatch(m)
     else unapplySeq(m.matched)
 
   /** Tries to match target.
@@ -341,7 +341,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   def unapplySeq(target: Any): Option[List[String]] = target match {
     case s: CharSequence =>
       val m = pattern matcher s
-      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
+      if (runMatcher(m)) Regex.extractGroupsFromMatcher(m)
       else None
     case m: Match => unapplySeq(m.matched)
     case _ => None
@@ -767,7 +767,29 @@ object Regex {
    *  }}}
    */
   object Groups {
-    def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
+    def unapplySeq(m: Match): Option[Seq[String]] = {
+      if (m.groupCount > 0) extractGroupsFromMatch(m) else None
+    }
+  }
+
+  private def extractGroupsFromMatch(m: Match): Option[List[String]] = {
+    var res = List.empty[String]
+    var index = m.groupCount
+    while (index > 0) {
+      res ::= m.group(index)
+      index -= 1
+    }
+    Some(res)
+  }
+
+  private def extractGroupsFromMatcher(m: Matcher): Option[List[String]] = {
+    var res = List.empty[String]
+    var index = m.groupCount
+    while (index > 0) {
+      res ::= m.group(index)
+      index -= 1
+    }
+    Some(res)
   }
 
   /** A class to step through a sequence of regex matches.
