@@ -49,7 +49,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
 
   protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.from(it)
 
-  def iterableFactory: IterableFactory[CC]
+  def iterableFactory: IterableFactoryLike[CC]
 
   /**
     * @return a strict builder for the same collection type.

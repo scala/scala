@@ -243,6 +243,14 @@ object LazyList extends SeqFactory[LazyList] {
     case _ => fromIterator(coll.iterator())
   }
 
+  /**
+    * @return A `LazyList[A]` that gets its elements from the given `Iterator`.
+    *
+    * @param it Source iterator
+    * @tparam A type of elements
+    */
+  // Note that the resulting `LazyList` will be effectively iterable more than once because
+  // `LazyList` memoizes its elements
   def fromIterator[A](it: Iterator[A]): LazyList[A] =
     if (it.hasNext) {
       // Be sure that `it.next()` is called even when the `head`

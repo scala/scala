@@ -38,16 +38,38 @@ trait CanBuild[-A, +C] extends Any with BuildFrom[Any, A, C] {
   def newBuilder(): Builder[A, C]
 }
 
-/** Base trait for companion objects of unconstrained collection types
+/** Base trait for companion objects of unconstrained collection types that may require
+  * multiple traversals of a source collection to build a target collection `CC`.
   *
   * @define $coll collection
+  * @define $Coll CC
   *
   * @tparam CC Collection type constructor (e.g. `List`)
   */
-trait IterableFactory[+CC[_]] {
-  def from[E](it: IterableOnce[E]): CC[E]
+trait IterableFactoryLike[+CC[_]] {
+
+  /** Type of a source collection to build from */
+  type Source[A] >: Iterable[A]
+
+  /** Creates a target $coll from an existing source collection
+    *
+    * @param source Source collection
+    * @tparam A the type of the collection’s elements
+    * @return a new $coll with the elements of `source`
+    */
+  def from[A](source: Source[A]): CC[A]
+
+  /** An empty collection
+    * @tparam A      the type of the ${coll}'s elements
+    */
   def empty[A]: CC[A]
-  def apply[A](xs: A*): CC[A] = from(View.Elems(xs: _*))
+
+  /** Creates a $coll with the specified elements.
+    * @tparam A     the type of the ${coll}'s elements
+    * @param elems  the elements of the created $coll
+    * @return a new $coll with elements `elems`
+    */
+  def apply[A](elems: A*): CC[A] = from(View.Elems(elems: _*))
 
   /** Produces a $coll containing repeated applications of a function to a start value.
     *
@@ -74,7 +96,26 @@ trait IterableFactory[+CC[_]] {
     */
   def range[A : Integral](start: A, end: A, step: A): CC[A] = from(NumericRange(start, end, step))
 
+  /**
+    * @return A builder for `$Coll` objects.
+    * @tparam A the type of the ${$coll}’s elements
+    */
   def newBuilder[A](): Builder[A, CC[A]]
+
+}
+
+/** Base trait for companion objects of unconstrained collection types that can
+  * build a target collection `CC` from a source collection with a single traversal
+  * of the source.
+  *
+  * @tparam CC Collection type constructor (e.g. `List`)
+  */
+trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] {
+
+  // Since most collection factories can build a target collection instance by performing only one
+  // traversal of a source collection, the type of this source collection can be refined to be
+  // just `IterableOnce`
+  type Source[A] = IterableOnce[A]
 
   implicit def canBuildIterable[A]: CanBuild[A, CC[A]] = IterableFactory.toCanBuild(this)
 

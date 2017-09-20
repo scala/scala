@@ -23,8 +23,16 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def className = "View"
 }
 
-/** This object reifies operations on views as case classes */
-object View extends IterableFactory[View] {
+/** This object reifies operations on views as case classes
+  *
+  * @define $Coll View
+  * @define $coll view
+  */
+object View extends IterableFactoryLike[View] {
+
+  // Views are just forwarders to a source collection’s iterator. Consequently, they have to be
+  // build from an `Iterable` source in order to be themselves `Iterable`
+  type Source[A] = Iterable[A]
 
   /**
     * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
@@ -46,11 +54,9 @@ object View extends IterableFactory[View] {
     *
     * @tparam E View element type
     */
-  @throws[IllegalArgumentException]
-  def from[E](it: IterableOnce[E]): View[E] = it match {
+  def from[E](it: Iterable[E]): View[E] = it match {
     case it: View[E]     => it
-    case it: Iterable[E] => View.fromIteratorProvider(() => it.iterator())
-    case _ => throw new IllegalArgumentException("One should not build a View from an IterableOnce instance")
+    case _               => View.fromIteratorProvider(() => it.iterator())
   }
 
   def empty[A]: View[A] = Empty
