@@ -4087,15 +4087,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
 
-      /** Returns `Some(t)` if `name` can be selected dynamically on `qual`, `None` if not.
-       * `t` specifies the type to be passed to the applyDynamic/selectDynamic call (unless it is NoType)
-       * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
-       */
-      def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
-        // don't selectDynamic selectDynamic, do select dynamic at unknown type,
-        // in scala-virtualized, we may return a Some(tp) where tp ne NoType
-        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
-        else None
 
       def isDynamicallyUpdatable(tree: Tree) = tree match {
         case DynamicUpdate(qual, name) =>
@@ -4147,7 +4138,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *  - simplest solution: have two method calls
        *
        */
-      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Tree = {
         val cxTree = context.enclosingNonImportContext.tree // scala/bug#8364
         debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
         val treeInfo.Applied(treeSelection, _, _) = tree
@@ -4158,7 +4149,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _                              => false
           }
         }
-        acceptsApplyDynamicWithType(qual, name) map { tp =>
+        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) {
           // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
           // here - it is for scala-virtualized, where tp will be passed as an argument (for
           // selection on a staged Struct)
@@ -4194,8 +4185,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
               setError(tree)
           }
-        }
+        } else EmptyTree
       }
+
       def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
     }
 
@@ -4207,15 +4199,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // Lookup in the given qualifier.  Used in last-ditch efforts by typedIdent and typedSelect.
       def lookupInRoot(name: Name): Symbol  = lookupInOwner(rootMirror.RootClass, name)
       def lookupInEmpty(name: Name): Symbol = rootMirror.EmptyPackageClass.info member name
-
-      def lookupInQualifier(qual: Tree, name: Name): Symbol = (
-        if (name == nme.ERROR || qual.tpe.widen.isErroneous)
-          NoSymbol
-        else lookupInOwner(qual.tpe.typeSymbol, name) orElse {
-          NotAMemberError(tree, qual, name)
-          NoSymbol
-        }
-      )
 
       def typedAnnotated(atd: Annotated): Tree = {
         val ann = atd.annot
@@ -4877,10 +4860,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (tree.isInstanceOf[SelectFromTypeTree]) TypeSelectionFromVolatileTypeError(tree, qual)
           else UnstableTreeError(qual)
         else {
-          def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
-            dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
-          }
-
           val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
@@ -4908,39 +4887,40 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             qual.setType(qualSym.tpe)
           }
 
-          if (!reallyExists(sym)) {
-            def handleMissing: Tree = {
-              def errorTree = missingSelectErrorTree(tree, qual, name)
-              def asTypeSelection = (
-                if (context.unit.isJava && name.isTypeName) {
-                  // scala/bug#3120 Java uses the same syntax, A.B, to express selection from the
-                  // value A and from the type A. We have to try both.
-                  atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
-                    case EmptyTree => None
-                    case tree1     => Some(typed1(tree1, mode, pt))
-                  }
-                }
-                else None
-              )
-              debuglog(s"""
-                |qual=$qual:${qual.tpe}
-                |symbol=${qual.tpe.termSymbol.defString}
-                |scope-id=${qual.tpe.termSymbol.info.decls.hashCode}
-                |members=${qual.tpe.members mkString ", "}
-                |name=$name
-                |found=$sym
-                |owner=${context.enclClass.owner}
-                """.stripMargin)
-
-              // 1) Try converting a term selection on a java class into a type selection.
-              // 2) Try expanding according to Dynamic rules.
-              // 3) Try looking up the name in the qualifier.
-              asTypeSelection orElse asDynamicCall getOrElse (lookupInQualifier(qual, name) match {
-                case NoSymbol => setError(errorTree)
-                case found    => typed1(tree setSymbol found, mode, pt)
-              })
+          def tryJavaTypeSelection =
+            if (context.unit.isJava && name.isTypeName) {
+              // scala/bug#3120 Java uses the same syntax, A.B, to express selection from the
+              // value A and from the type A. We have to try both.
+              atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
+                case EmptyTree => EmptyTree
+                case tree1     => typed1(tree1, mode, pt)
+              }
             }
-            handleMissing
+            else EmptyTree
+
+          def tryDynamicCall =
+            dyna.mkInvoke(context, tree, qual, name) match {
+              case EmptyTree => EmptyTree
+              case tree => silent(_.typed1(tree, mode, pt)) orElse (err => DynamicRewriteError(tree, err.head))
+            }
+
+          def tryMissingHook(qual: Tree, name: Name) =
+            lookupInOwner(qual.tpe.typeSymbol, name) match {
+              case NoSymbol =>
+                NotAMemberError(tree, qual, name)
+                EmptyTree
+              case found => typed1(tree setSymbol found, mode, pt)
+            }
+
+
+          // If the symbol does not exist (and we're not in a clearly erroneous state), try:
+          //  1) converting a term selection on a java class into a type selection,
+          //  2) expanding according to Dynamic rules,
+          //  3) looking up the name in the qualifier.
+          if (!reallyExists(sym)) {
+            (if (name == nme.ERROR || qual.tpe.widen.isErroneous) EmptyTree
+            else tryJavaTypeSelection orElse tryDynamicCall orElse tryMissingHook(qual, name)
+            ) orElse setError(missingSelectErrorTree(tree, qual, name))
           }
           else {
             val tree1 = tree match {
@@ -4976,7 +4956,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   typed(Select(qual1, name) setPos tree.pos, mode, pt)
                 else
                   // before failing due to access, try a dynamic call.
-                  asDynamicCall getOrElse {
+                  tryDynamicCall orElse {
                     context.issue(accessibleError.get)
                     setError(tree)
                   }
