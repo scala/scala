@@ -19,12 +19,16 @@ abstract class StatisticsInfo {
 
   def print(phase: Phase) = if (settings.Ystatistics contains phase.name) {
     inform("*** Cumulative statistics at phase " + phase)
-    retainedCount.value = 0
-    for (c <- retainedByType.keys)
-      retainedByType(c).value = 0
-    for (u <- currentRun.units; t <- u.body) {
-      retainedCount.value += 1
-      retainedByType(t.getClass).value += 1
+
+    if (settings.YhotStatistics.value) {
+      // High overhead, only enable retained stats under hot stats
+      retainedCount.value = 0
+      for (c <- retainedByType.keys)
+        retainedByType(c).value = 0
+      for (u <- currentRun.units; t <- u.body) {
+        retainedCount.value += 1
+        retainedByType(t.getClass).value += 1
+      }
     }
 
     val quants =
