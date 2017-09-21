@@ -12,7 +12,7 @@ import ExecutionContext.Implicits.global
  */
 object Test {
  val arrSz = 50 * 10000
-  val numFutures = 10000
+  val numFutures = 4000
 
   val rng = new Random()
 
