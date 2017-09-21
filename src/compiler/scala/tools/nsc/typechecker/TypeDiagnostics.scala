@@ -603,7 +603,7 @@ trait TypeDiagnostics {
       private def warningsEnabled: Boolean = {
         val ss = settings
         import ss._
-        warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams || warnUnusedImplicits
+        warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams
       }
 
       def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
@@ -656,9 +656,9 @@ trait TypeDiagnostics {
           for (v <- p.unusedPatVars)
             context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
         }
-        if (settings.warnUnusedParams || settings.warnUnusedImplicits) {
-          def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
+        if (settings.warnUnusedParams) {
           def isImplementation(m: Symbol): Boolean = {
+            def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
             val opc = new overridingPairs.Cursor(classOf(m))
             opc.iterator.exists(pair => pair.low == m)
           }
@@ -666,8 +666,9 @@ trait TypeDiagnostics {
             (p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main") ||
             (p.tpe =:= typeOf[scala.Predef.DummyImplicit])
           }
+          def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
           def warnable(s: Symbol) = (
-               (settings.warnUnusedParams || s.isImplicit)
+               warningIsOnFor(s)
             && !isImplementation(s.owner)
             && !isConvention(s)
           )
