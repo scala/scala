@@ -550,11 +550,11 @@ abstract class TreeInfo {
     case _                                                          => false
   }
 
-  /** Translates an Assign(_, _) node to AssignOrNamedArg(_, _) if
+  /** Translates an Assign(_, _) node to NamedArg(_, _) if
    *  the lhs is a simple ident. Otherwise returns unchanged.
    */
   def assignmentToMaybeNamedArg(tree: Tree) = tree match {
-    case t @ Assign(id: Ident, rhs) => atPos(t.pos)(AssignOrNamedArg(id, rhs))
+    case t @ Assign(id: Ident, rhs) => atPos(t.pos)(NamedArg(id, rhs))
     case t                          => t
   }
 

@@ -3302,7 +3302,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               functionType(vparams map (_ => AnyTpe), shapeType(body))
             case Match(EmptyTree, _) => // A partial function literal
               appliedType(PartialFunctionClass, AnyTpe :: NothingTpe :: Nil)
-            case AssignOrNamedArg(Ident(name), rhs) =>
+            case NamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>
               NothingTpe
@@ -3400,11 +3400,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // infer.checkNames must not use UnitType: it may not be a valid assignment, or the setter may return another type from Unit
                   // TODO: just make it an error to refer to a non-existent named arg, as it's far more likely to be
                   //       a typo than an assignment passed as an argument
-                  case AssignOrNamedArg(lhs@Ident(name), rhs) =>
+                  case NamedArg(lhs@Ident(name), rhs) =>
                     // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                     // the assign is untyped; that's ok because we call doTypedApply
                     typedArg0(rhs) match {
-                      case (rhsTyped, tp) => (treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
+                      case (rhsTyped, tp) => (treeCopy.NamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
                     }
                   case treeInfo.WildcardStarArg(_) =>
                     typedArg0(arg) match {
@@ -3814,7 +3814,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             val nvPairs = args map {
-              case arg @ AssignOrNamedArg(Ident(name), rhs) =>
+              case arg @ NamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScopeJava.lookup(name)
                           else findSymbol(typedFun.tpe.params)(_.name == name)
                 if (sym == NoSymbol) {
@@ -4126,7 +4126,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedNamedApply(orig: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
         def argToBinding(arg: Tree): Tree = arg match {
-          case AssignOrNamedArg(i @ Ident(name), rhs) =>
+          case NamedArg(i @ Ident(name), rhs) =>
             atPos(i.pos.withEnd(rhs.pos.end)) {
               gen.mkTuple(List(atPos(i.pos)(CODE.LIT(name.toString)), rhs))
             }
@@ -4172,7 +4172,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
           // here - it is for scala-virtualized, where tp will be passed as an argument (for
           // selection on a staged Struct)
-          def hasNamed(args: List[Tree]): Boolean = args exists (_.isInstanceOf[AssignOrNamedArg])
+          def hasNamed(args: List[Tree]): Boolean = args exists (_.isInstanceOf[NamedArg])
           // not supported: foo.bar(a1,..., an: _*)
           def hasStar(args: List[Tree]) = treeInfo.isWildcardStarArgList(args)
           def applyOp(args: List[Tree]) = if (hasNamed(args)) nme.applyDynamicNamed else nme.applyDynamic
@@ -5530,7 +5530,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case tree: Match            => typedVirtualizedMatch(tree)
         case tree: New              => typedNew(tree)
         case tree: Assign           => typedAssign(tree.lhs, tree.rhs)
-        case tree: AssignOrNamedArg => typedAssign(tree.lhs, tree.rhs) // called by NamesDefaults in silent typecheck
+        case tree: NamedArg         => typedAssign(tree.lhs, tree.rhs)
         case tree: Super            => typedSuper(tree)
         case tree: Annotated        => typedAnnotated(tree)
         case tree: Return           => typedReturn(tree)

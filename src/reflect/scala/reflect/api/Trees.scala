@@ -1219,14 +1219,14 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type AssignOrNamedArg >: Null <: AssignOrNamedArgApi with TermTree
+  type NamedArg >: Null <: NamedArgApi with TermTree
 
-  /** The constructor/extractor for `AssignOrNamedArg` instances.
+  /** The constructor/extractor for `NamedArg` instances.
    *  @group Extractors
    */
-  val AssignOrNamedArg: AssignOrNamedArgExtractor
+  val NamedArg: NamedArgExtractor
 
-  /** An extractor class to create and pattern match with syntax `AssignOrNamedArg(lhs, rhs)`.
+  /** An extractor class to create and pattern match with syntax `NamedArg(lhs, rhs)`.
    *  This AST node corresponds to the following Scala code:
    *
    *  {{{
@@ -1238,15 +1238,15 @@ trait Trees { self: Universe =>
    *
    *  @group Extractors
    */
-  abstract class AssignOrNamedArgExtractor {
-    def apply(lhs: Tree, rhs: Tree): AssignOrNamedArg
-    def unapply(assignOrNamedArg: AssignOrNamedArg): Option[(Tree, Tree)]
+  abstract class NamedArgExtractor {
+    def apply(lhs: Tree, rhs: Tree): NamedArg
+    def unapply(namedArg: NamedArg): Option[(Tree, Tree)]
   }
 
   /** The API that all assigns support
    *  @group API
    */
-  trait AssignOrNamedArgApi extends TermTreeApi { this: AssignOrNamedArg =>
+  trait NamedArgApi extends TermTreeApi { this: NamedArg =>
     /** The left-hand side of the expression.
      */
     def lhs: Tree
@@ -2331,10 +2331,10 @@ trait Trees { self: Universe =>
      */
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
 
-    /** Creates a `AssignOrNamedArg` node from the given components, having a given `tree` as a prototype.
+    /** Creates a `NamedArg` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
-    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree): AssignOrNamedArg
+    def NamedArg(tree: Tree, lhs: Tree, rhs: Tree): NamedArg
 
     /** Creates a `If` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.

@@ -565,7 +565,7 @@ trait ContextErrors {
             }
           }
           val unknowns = (namelessArgs zip args) collect {
-            case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
+            case (_: Assign, NamedArg(Ident(name), _)) => name
           }
           val suppl = 
             unknowns.size match {

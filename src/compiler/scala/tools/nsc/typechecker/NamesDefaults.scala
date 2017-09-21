@@ -50,9 +50,9 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
+  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case NamedArg(Ident(name), _) => name }
   def isNamedArg(arg: Tree) = arg match {
-    case AssignOrNamedArg(Ident(_), _) => true
+    case NamedArg(Ident(_), _) => true
     case _                             => false
   }
 
@@ -452,7 +452,7 @@ trait NamesDefaults { self: Analyzer =>
               Apply(tree, args.map(_.duplicate)))
             Some(atPos(pos) {
               if (positional) default2
-              else AssignOrNamedArg(Ident(p.name), default2)
+              else NamedArg(Ident(p.name), default2)
             })
           }
         })
@@ -594,8 +594,8 @@ trait NamesDefaults { self: Analyzer =>
     val argPos       = Array.fill(args.length)(-1)
     val namelessArgs = {
       var positionalAllowed = true
-      def stripNamedArg(arg: AssignOrNamedArg, argIndex: Int): Tree = {
-        val AssignOrNamedArg(Ident(name), rhs) = arg
+      def stripNamedArg(arg: NamedArg, argIndex: Int): Tree = {
+        val NamedArg(Ident(name), rhs) = arg
         params indexWhere (p => matchesName(p, name, argIndex)) match {
           case -1 if positionalAllowed && !settings.isScala213 =>
             if (isVariableInScope(context0, name)) {
@@ -614,7 +614,7 @@ trait NamesDefaults { self: Analyzer =>
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
             val otherName = Some(args(paramPos)) collect {
-              case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
+              case NamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
           case paramPos if !settings.isScala213 && isAmbiguousAssignment(typer, params(paramPos), arg) =>
@@ -627,7 +627,7 @@ trait NamesDefaults { self: Analyzer =>
         }
       }
       mapWithIndex(args) {
-        case (arg: AssignOrNamedArg, argIndex) =>
+        case (arg: NamedArg, argIndex) =>
           val t = stripNamedArg(arg, argIndex)
           if (!t.isErroneous && argPos(argIndex) < 0) argPos(argIndex) = argIndex
           t

@@ -441,9 +441,9 @@ trait Trees extends api.Trees {
        extends TermTree with AssignApi
   object Assign extends AssignExtractor
 
-  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree with AssignOrNamedArgApi
-  object AssignOrNamedArg extends AssignOrNamedArgExtractor
+  case class NamedArg(lhs: Tree, rhs: Tree)
+       extends TermTree with NamedArgApi
+  object NamedArg extends NamedArgExtractor
 
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree with IfApi
@@ -686,8 +686,8 @@ trait Trees extends api.Trees {
       new Function(vparams, body).copyAttrs(tree)
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
       new Assign(lhs, rhs).copyAttrs(tree)
-    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree) =
-      new AssignOrNamedArg(lhs, rhs).copyAttrs(tree)
+    def NamedArg(tree: Tree, lhs: Tree, rhs: Tree) =
+      new NamedArg(lhs, rhs).copyAttrs(tree)
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       new If(cond, thenp, elsep).copyAttrs(tree)
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
@@ -839,10 +839,10 @@ trait Trees extends api.Trees {
       if (lhs0 == lhs) && (rhs0 == rhs) => t
       case _ => treeCopy.Assign(tree, lhs, rhs)
     }
-    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
-      case t @ AssignOrNamedArg(lhs0, rhs0)
+    def NamedArg(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
+      case t @ NamedArg(lhs0, rhs0)
       if (lhs0 == lhs) && (rhs0 == rhs) => t
-      case _ => treeCopy.AssignOrNamedArg(tree, lhs, rhs)
+      case _ => treeCopy.NamedArg(tree, lhs, rhs)
     }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = tree match {
       case t @ If(cond0, thenp0, elsep0)
@@ -1264,7 +1264,7 @@ trait Trees extends api.Trees {
       case Assign(lhs, rhs) =>
         traverse(lhs)
         traverse(rhs)
-      case AssignOrNamedArg(lhs, rhs) =>
+      case NamedArg(lhs, rhs) =>
         traverse(lhs)
         traverse(rhs)
       case If(cond, thenp, elsep) =>
@@ -1395,8 +1395,8 @@ trait Trees extends api.Trees {
         treeCopy.New(tree, transform(tpt))
       case Assign(lhs, rhs) =>
         treeCopy.Assign(tree, transform(lhs), transform(rhs))
-      case AssignOrNamedArg(lhs, rhs) =>
-        treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
+      case NamedArg(lhs, rhs) =>
+        treeCopy.NamedArg(tree, transform(lhs), transform(rhs))
       case Try(block, catches, finalizer) =>
         treeCopy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
       case EmptyTree =>
@@ -1865,7 +1865,7 @@ trait Trees extends api.Trees {
   implicit val AnnotatedTag           = ClassTag[Annotated](classOf[Annotated])
   implicit val AppliedTypeTreeTag     = ClassTag[AppliedTypeTree](classOf[AppliedTypeTree])
   implicit val ApplyTag               = ClassTag[Apply](classOf[Apply])
-  implicit val AssignOrNamedArgTag    = ClassTag[AssignOrNamedArg](classOf[AssignOrNamedArg])
+  implicit val NamedArgTag            = ClassTag[NamedArg](classOf[NamedArg])
   implicit val AssignTag              = ClassTag[Assign](classOf[Assign])
   implicit val BindTag                = ClassTag[Bind](classOf[Bind])
   implicit val BlockTag               = ClassTag[Block](classOf[Block])
