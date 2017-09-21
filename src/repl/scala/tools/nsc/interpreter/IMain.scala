@@ -156,9 +156,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   import global._
-  import definitions.{ ObjectClass, termMember, dropNullaryMethod}
+  import definitions.{ObjectClass, termMember, dropNullaryMethod}
 
-  lazy val runtimeMirror = ru.runtimeMirror(classLoader)
+  def runtimeMirror = ru.runtimeMirror(classLoader)
 
   private def noFatal(body: => Symbol): Symbol = try body catch { case _: FatalError => NoSymbol }
 
@@ -357,8 +357,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       _runtimeClassLoader
     })
 
-  // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = classLoader.setAsContext()
+  @deprecated("The thread context classloader is now set and restored around execution of REPL line, this method is now a no-op.", since = "2.12.0")
+  def setContextClassLoader() = () // Called from sbt-interface/0.12.4/src/ConsoleInterface.scala:39
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted
@@ -1038,14 +1038,15 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   // Given the fullName of the symbol, reflectively drill down the path
   def valueOfTerm(id: String): Option[Any] = {
     def value(fullName: String) = {
-      import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
+      val mirror = runtimeMirror
+      import mirror.universe.{Symbol, InstanceMirror, TermName}
       val pkg :: rest = (fullName split '.').toList
-      val top = runtimeMirror.staticPackage(pkg)
+      val top = mirror.staticPackage(pkg)
       @annotation.tailrec
       def loop(inst: InstanceMirror, cur: Symbol, path: List[String]): Option[Any] = {
         def mirrored =
           if (inst != null) inst
-          else runtimeMirror.reflect((runtimeMirror reflectModule cur.asModule).instance)
+          else mirror.reflect((mirror reflectModule cur.asModule).instance)
 
         path match {
           case last :: Nil  =>
@@ -1057,10 +1058,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
             val i =
               if (s.isModule) {
                 if (inst == null) null
-                else runtimeMirror.reflect((inst reflectModule s.asModule).instance)
+                else mirror.reflect((inst reflectModule s.asModule).instance)
               }
               else if (s.isAccessor) {
-                runtimeMirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
+                mirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
               }
               else {
                 assert(false, originalPath(s))

@@ -99,4 +99,30 @@ class ScriptedTest {
     val err = "not found: value foo in def f = foo at line number 11 at column number 9"
     assertThrows[ScriptException](engine.compile("def f = foo"), _ == err)
   }
+  @Test def `restore classloader`(): Unit = {
+    val saved0 = Thread.currentThread.getContextClassLoader
+    try {
+      Thread.currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader)
+      val saved = Thread.currentThread.getContextClassLoader
+      val engine = scripted
+      scripted.eval("42")
+      val now = Thread.currentThread.getContextClassLoader
+      assert(saved eq now)
+    } finally {
+      Thread.currentThread.setContextClassLoader(saved0)
+    }
+  }
+  @Test def `restore classloader script api`(): Unit = {
+    val saved0 = Thread.currentThread.getContextClassLoader
+    try {
+      Thread.currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader)
+      val saved = Thread.currentThread.getContextClassLoader
+      val engine = new ScriptEngineManager().getEngineByName("scala")
+      assertNotNull(engine)
+      val now = Thread.currentThread.getContextClassLoader
+      assert(saved eq now)
+    } finally {
+      Thread.currentThread.setContextClassLoader(saved0)
+    }
+  }
 }
