@@ -1,15 +1,13 @@
-package scala.collection.mutable
+package strawman.collection.mutable
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.{ Assert, Test }
 
-import scala.collection.mutable
-
 /* Test for scala/bug#9095 */
 @RunWith(classOf[JUnit4])
 class LinkedHashMapTest {
-  class TestClass extends mutable.LinkedHashMap[String, Int] {
+  class TestClass extends LinkedHashMap[String, Int] {
     def lastItemRef = lastEntry
   }
   

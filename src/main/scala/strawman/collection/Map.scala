@@ -214,6 +214,8 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
 
+  override def toString(): String = super[IterableOps].toString()
+
   override def mkString(start: String, sep: String, end: String): String =
     toIterable.iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
