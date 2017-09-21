@@ -230,7 +230,7 @@ $ sbt
 > console
 ```
 
-Note that the scala modules are currently not built / published against the
+Note that the scala modules are currently not built/published against the
 tested version during CI validation.
 
 ## Nightly builds
