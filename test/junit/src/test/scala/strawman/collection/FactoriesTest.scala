@@ -18,9 +18,9 @@ class FactoriesTest {
     Assert.assertEquals("ArrayBuffer", cloneCollection(seq).className)
   }
 
-  @Test def canBuildIgnoresSourceCollectionFactory(): Unit = {
+  @Test def factoryIgnoresSourceCollectionFactory(): Unit = {
 
-    def cloneElements[A, C](xs: Iterable[A])(cb: CanBuild[A, C]): C =
+    def cloneElements[A, C](xs: Iterable[A])(cb: Factory[A, C]): C =
       cb.fromSpecific(xs)
 
     Assert.assertEquals("List", cloneElements(seq)(Seq).className)
