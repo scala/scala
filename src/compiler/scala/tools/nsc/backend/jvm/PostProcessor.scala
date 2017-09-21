@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
-import scala.tools.asm.tree.ClassNode
+import scala.tools.asm.tree.{ClassNode, MethodNode}
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 

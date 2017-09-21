@@ -17,9 +17,12 @@ import scala.tools.testing.ClearAfterClass
 class UnreachableCodeTest extends ClearAfterClass {
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder
-  val methodOptCompiler     = cached("methodOptCompiler", () => newCompiler(extraArgs = "-opt:l:method"))
-  val dceCompiler           = cached("dceCompiler",       () => newCompiler(extraArgs = "-opt:unreachable-code"))
-  val noOptCompiler         = cached("noOptCompiler",     () => newCompiler(extraArgs = "-opt:l:none"))
+  val methodOptCompiler     = cached("methodOptCompiler",    () => newCompiler(extraArgs = "-opt:l:method"))
+  val dceCompiler           = cached("dceCompiler",          () => newCompiler(extraArgs = "-opt:unreachable-code"))
+  // By default, DCE is only run on methods that are emitted with a `ATHROW` which avoids some extremely ugly bytecode without
+  // incurring the cost of running DCE everywhere.
+  val selectiveDceCompiler  = cached("selectiveCceCompiler", () => newCompiler(extraArgs = "-opt:l:default")) // same as omitting `-opt`
+  val noOptCompiler         = cached("noOptCompiler",        () => newCompiler(extraArgs = "-opt:l:none"))
 
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)
@@ -201,7 +204,11 @@ class UnreachableCodeTest extends ClearAfterClass {
   }
 
   @Test
-  def loadNullNothingBytecode(): Unit = {
+  def loadNullNothingBytecodeSelectiveDCE(): Unit = testLoadNullNothingBytecode(selectiveDceCompiler)
+  @Test
+  def loadNullNothingBytecodeExplicitDCE(): Unit = testLoadNullNothingBytecode(dceCompiler)
+
+  private def testLoadNullNothingBytecode(compiler: scala.tools.testing.Compiler): Unit = {
     val code =
       """class C {
         |  def nl: Null = null
@@ -241,7 +248,7 @@ class UnreachableCodeTest extends ClearAfterClass {
     assertSameSummary(getMethod(c, "t4"), List(
       ALOAD, ALOAD, "nt", ATHROW, NOP, NOP, NOP, ATHROW))
 
-    val cDCE = dceCompiler.compileClass(code)
+    val cDCE = compiler.compileClass(code)
     assertSameSummary(getMethod(cDCE, "t3"), List(ALOAD, NEW, DUP, LDC, "<init>", ATHROW))
     assertSameSummary(getMethod(cDCE, "t4"), List(ALOAD, ALOAD, "nt", ATHROW))
   }

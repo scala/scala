@@ -244,27 +244,6 @@ object BytecodeUtils {
     (Type.getArgumentsAndReturnSizes(methodNode.desc) >> 2) - (if (isStaticMethod(methodNode)) 1 else 0)
   }
 
-  def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
-    val res = mutable.AnyRefMap[LabelNode, Set[AnyRef]]()
-    def add(l: LabelNode, ref: AnyRef) = if (res contains l) res(l) = res(l) + ref else res(l) = Set(ref)
-
-    method.instructions.iterator().asScala foreach {
-      case jump: JumpInsnNode           => add(jump.label, jump)
-      case line: LineNumberNode         => add(line.start, line)
-      case switch: LookupSwitchInsnNode => switch.labels.asScala.foreach(add(_, switch)); add(switch.dflt, switch)
-      case switch: TableSwitchInsnNode  => switch.labels.asScala.foreach(add(_, switch)); add(switch.dflt, switch)
-      case _ =>
-    }
-    if (method.localVariables != null) {
-      method.localVariables.iterator().asScala.foreach(l => { add(l.start, l); add(l.end, l) })
-    }
-    if (method.tryCatchBlocks != null) {
-      method.tryCatchBlocks.iterator().asScala.foreach(l => { add(l.start, l); add(l.handler, l); add(l.end, l) })
-    }
-
-    res.toMap
-  }
-
   def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {
     def substList(list: java.util.List[LabelNode]) = {
       foreachWithIndex(list.asScala.toList) { case (l, i) =>
