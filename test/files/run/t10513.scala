@@ -1,5 +1,6 @@
 //package scala.concurrent
 import scala.concurrent._
+import duration._
 
 import scala.util.{Random, Try}
 import ExecutionContext.Implicits.global
@@ -29,6 +30,6 @@ object Test {
     }
     val fSeq = Future.sequence(futures)
     val finalF = fSeq.map(_.sum)
-    val res = Await.result(finalF, duration.Duration.Inf)
+    val res = Await.result(finalF, 2.minutes)
   }
 }
