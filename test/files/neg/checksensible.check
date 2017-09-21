@@ -40,7 +40,7 @@ checksensible.scala:19: warning: comparing a fresh object using `eq' will always
 checksensible.scala:26: warning: comparing values of types Unit and Int using `==' will always yield false
   (c = 1) == 0
           ^
-checksensible.scala:27: warning: comparing values of types Int and Unit using `==' will always yield false
+checksensible.scala:27: warning: comparing values of types Integer and Unit using `==' will always yield false
   0 == (c = 1)
     ^
 checksensible.scala:29: warning: comparing values of types Int and String using `==' will always yield false
