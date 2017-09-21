@@ -677,11 +677,9 @@ object Future {
   def firstCompletedOf[T](futures: TraversableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
     val p = Promise[T]()
     val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
-      override def apply(v1: Try[T]): Unit = {
-        val p = getAndSet(null)
-        if( null != p ){
-          p tryComplete v1
-        }
+      override def apply(v1: Try[T]): Unit = getAndSet(null) match {
+        case null => ()
+        case some => some tryComplete v1
       }
     }
     futures foreach { _ onComplete firstCompleteHandler }
