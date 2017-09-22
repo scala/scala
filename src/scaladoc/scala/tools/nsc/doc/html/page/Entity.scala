@@ -700,7 +700,7 @@ trait EntityPage extends HtmlPage {
                  exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
               }</ol>
             </div>
-	        }
+          }
 
         val version: NodeSeq =
           orEmpty(comment.version) {
