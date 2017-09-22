@@ -29,6 +29,9 @@ object Page {
     case EntityLink(in, _) => inlineToStr(in)
   }
 
+  def inlineToStrForTitleTag(inl: Inline): String =
+    inlineToStr(inl).split("\n").map(_.trim).mkString(" ")
+
   def templateToPath(tpl: TemplateEntity): List[String] = {
     def doName(tpl: TemplateEntity): String =
       (if (tpl.inPackageObject) "package$$" else "") + NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
