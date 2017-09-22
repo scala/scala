@@ -144,7 +144,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
         /**/
         new Change(sfidx, randomPositionIn(inputs(sfidx)), randomNumChars(), rand.nextBoolean())
       }
-      doTest(sfidx, changes, testPositions, otherTest) match {
+      doTest(sfidx, changes, testPositions, () => otherTest()) match {
         case Some(errortrace) =>
           println(errortrace)
           minimize(errortrace)

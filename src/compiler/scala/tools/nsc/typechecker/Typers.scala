@@ -753,7 +753,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (immediate) {
           action()
         } else {
-          unit.toCheck += action
+          unit.toCheck += (() => action())
           true
         }
       }
