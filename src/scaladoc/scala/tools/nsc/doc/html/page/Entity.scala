@@ -90,13 +90,13 @@ trait EntityPage extends HtmlPage {
                           mbr match {
                             case dtpl: DocTemplateEntity =>
                               dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
-                                <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}></a>
+                                <a class="object" href={relativeLinkTo(c)} title={memberToShortCommentTitleTag(c)}></a>
                               }
                             case _ => <span class="separator"></span>
                           }
                         }
-                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}></a>
-                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStrForTitleTag(com.short))}>{mbr.name}</a>
+                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={memberToShortCommentTitleTag(mbr)}></a>
+                        <a href={relativeLinkTo(mbr)} title={memberToShortCommentTitleTag(mbr)}>{mbr.name}</a>
                       </li>
 
                   // Get path from root
@@ -464,6 +464,9 @@ trait EntityPage extends HtmlPage {
     mbr.comment.fold(NodeSeq.Empty) { comment =>
       <p class="shortcomment cmt">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ inlineToHtml(comment.short) }</p>
     }
+
+  def memberToShortCommentTitleTag(mbr: MemberEntity): String =
+    mbr.comment.fold("")(comment => Page.inlineToStrForTitleTag(comment.short))
 
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
@@ -895,7 +898,7 @@ trait EntityPage extends HtmlPage {
             }
           }
           if (!nameLink.isEmpty)
-            <a title={mbr.comment.fold("")(c => Page.inlineToStrForTitleTag(c.short))} href={nameLink}>{nameHtml}</a>
+            <a title={memberToShortCommentTitleTag(mbr)} href={nameLink}>{nameHtml}</a>
           else nameHtml
         }{
           def tparamsToHtml(mbr: Any): NodeSeq = mbr match {
