@@ -343,7 +343,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           }
 
         def allTags(key: SimpleTagKey): List[Body] =
-          (bodyTags remove key).getOrElse(Nil).filterNot(_.blocks.isEmpty)
+          (bodyTags remove key).getOrElse(Nil).filterNot(_.blocks.isEmpty).reverse
 
         def allSymsOneTag(key: TagKey, filterEmpty: Boolean = true): Map[String, Body] = {
           val keys: Seq[SymbolTagKey] =
