@@ -1,0 +1,6 @@
+Main_2.scala:5: warning: Unused import
+    import Implicits._
+                     ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
