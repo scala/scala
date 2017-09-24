@@ -1007,28 +1007,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
         }
       case _ =>
     }
-    // wait until after startup to enable noisy settings
-    def withSuppressedSettings[A](body: => A): A = {
-      val ss = this.settings
-      import ss._
-      val noisy = List(Xprint, Ytyperdebug, browse)
-      val noisesome = noisy.exists(!_.isDefault)
-      val current = (Xprint.value, Ytyperdebug.value, browse.value)
-      if (isReplDebug || !noisesome) body
-      else {
-        this.settings.Xprint.value = List.empty
-        this.settings.browse.value = List.empty
-        this.settings.Ytyperdebug.value = false
-        try body
-        finally {
-          Xprint.value       = current._1
-          Ytyperdebug.value  = current._2
-          browse.value      = current._3
-          intp.global.printTypings = current._2
-        }
-      }
-    }
-    def startup(): String = withSuppressedSettings {
+    // ctl-D on first line of repl zaps the intp
+    def globalOrNull = if (intp != null) intp.global else null
+    // wait until after startup to enable noisy settings; intp is used only after body completes
+    def startup(): String = IMain.withSuppressedSettings(settings, globalOrNull) {
       // -e is non-interactive
       val splash =
         runnerSettings.filter(_.execute.isSetByUser).map(ss => batchLoop(ss.execute.value)).getOrElse {

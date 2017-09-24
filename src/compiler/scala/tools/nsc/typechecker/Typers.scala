@@ -4869,155 +4869,149 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * `qual` is already attributed.
        */
       def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
-        val t = typedSelectInternal(tree, qual, name)
-        // Checking for OverloadedTypes being handed out after overloading
-        // resolution has already happened.
-        if (isPastTyper) t.tpe match {
-          case OverloadedType(pre, alts) =>
-            if (alts forall (s => (s.owner == ObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
-            else if (settings.debug) printCaller(
-              s"""|Select received overloaded type during $phase, but typer is over.
-                  |If this type reaches the backend, we are likely doomed to crash.
-                  |$t has these overloads:
-                  |${alts map (s => "  " + s.defStringSeenAs(pre memberType s)) mkString "\n"}
-                  |""".stripMargin
-            )("")
-          case _ =>
-        }
-        t
-      }
-      def typedSelectInternal(tree: Tree, qual: Tree, name: Name): Tree = {
-        def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
-          dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
-        }
-
-        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
-        if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-          // symbol not found? --> try to convert implicitly to a type that does have the required
-          // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
-          // xml member to StringContext, which in turn has an unapply[Seq] method)
-          val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-          if ((qual1 ne qual) && !qual1.isErrorTyped)
-            return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-        }
-
-        // This special-case complements the logic in `adaptMember` in erasure, it handles selections
-        // from `Super`. In `adaptMember`, if the erased type of a qualifier doesn't conform to the
-        // owner of the selected member, a cast is inserted, e.g., (foo: Option[String]).get.trim).
-        // Similarly, for `super.m`, typing `super` during erasure assigns the superclass. If `m`
-        // is defined in a trait, this is incorrect, we need to assign a type to `super` that conforms
-        // to the owner of `m`. Adding a cast (as in `adaptMember`) would not work, `super.asInstanceOf`
-        // is not a valid tree.
-        if (phase.erasedTypes && qual.isInstanceOf[Super]) {
-          //  See the comment in `preErase` why we use the attachment (scala/bug#7936)
-          val qualSym = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
-            case Some(a) => a.sym
-            case None => sym.owner
-          }
-          qual.setType(qualSym.tpe)
-        }
-
-        if (!reallyExists(sym)) {
-          def handleMissing: Tree = {
-            def errorTree = missingSelectErrorTree(tree, qual, name)
-            def asTypeSelection = (
-              if (context.unit.isJava && name.isTypeName) {
-                // scala/bug#3120 Java uses the same syntax, A.B, to express selection from the
-                // value A and from the type A. We have to try both.
-                atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
-                  case EmptyTree => None
-                  case tree1     => Some(typed1(tree1, mode, pt))
-                }
-              }
-              else None
-            )
-            debuglog(s"""
-              |qual=$qual:${qual.tpe}
-              |symbol=${qual.tpe.termSymbol.defString}
-              |scope-id=${qual.tpe.termSymbol.info.decls.hashCode}
-              |members=${qual.tpe.members mkString ", "}
-              |name=$name
-              |found=$sym
-              |owner=${context.enclClass.owner}
-              """.stripMargin)
-
-            // 1) Try converting a term selection on a java class into a type selection.
-            // 2) Try expanding according to Dynamic rules.
-            // 3) Try looking up the name in the qualifier.
-            asTypeSelection orElse asDynamicCall getOrElse (lookupInQualifier(qual, name) match {
-              case NoSymbol => setError(errorTree)
-              case found    => typed1(tree setSymbol found, mode, pt)
-            })
-          }
-          handleMissing
-        }
+        // note: on error, we discard the work we did in type checking tree.qualifier into qual
+        // (tree is either Select or SelectFromTypeTree, and qual may be different from tree.qualifier because it has been type checked)
+        val qualTp = qual.tpe
+        if ((qualTp eq null) || qualTp.isError) setError(tree)
+        else if (name.isTypeName && qualTp.isVolatile)  // TODO: use same error message for volatileType#T and volatilePath.T?
+          if (tree.isInstanceOf[SelectFromTypeTree]) TypeSelectionFromVolatileTypeError(tree, qual)
+          else UnstableTreeError(qual)
         else {
-          val tree1 = tree match {
-            case Select(_, _) => treeCopy.Select(tree, qual, name)
-            case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
-          }
-          val (result, accessibleError) = silent(_.makeAccessible(tree1, sym, qual.tpe, qual)) match {
-            case SilentTypeError(err: AccessTypeError) =>
-              (tree1, Some(err))
-            case SilentTypeError(err) =>
-              SelectWithUnderlyingError(tree, err)
-              return tree
-            case SilentResultValue(treeAndPre) =>
-              (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
+          def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
+            dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
           }
 
-          result match {
-            // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
-            case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
-              treeCopy.SelectFromTypeTree(
-                result,
-                (TypeTreeWithDeferredRefCheck(){ () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
-                  // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
-                  checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
-                  qual // you only get to see the wrapped tree after running this check :-p
-                }) setType qual.tpe setPos qual.pos,
-                name)
-            case _ if accessibleError.isDefined =>
-              // don't adapt constructor, scala/bug#6074
-              val qual1 = if (name == nme.CONSTRUCTOR) qual
-                          else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
-              if (!qual1.isErrorTyped && (qual1 ne qual))
-                typed(Select(qual1, name) setPos tree.pos, mode, pt)
-              else
-                // before failing due to access, try a dynamic call.
-                asDynamicCall getOrElse {
-                  context.issue(accessibleError.get)
-                  setError(tree)
+          val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
+          if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
+            // symbol not found? --> try to convert implicitly to a type that does have the required
+            // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
+            // xml member to StringContext, which in turn has an unapply[Seq] method)
+
+              val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+              if ((qual1 ne qual) && !qual1.isErrorTyped)
+                return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+          }
+
+          // This special-case complements the logic in `adaptMember` in erasure, it handles selections
+          // from `Super`. In `adaptMember`, if the erased type of a qualifier doesn't conform to the
+          // owner of the selected member, a cast is inserted, e.g., (foo: Option[String]).get.trim).
+          // Similarly, for `super.m`, typing `super` during erasure assigns the superclass. If `m`
+          // is defined in a trait, this is incorrect, we need to assign a type to `super` that conforms
+          // to the owner of `m`. Adding a cast (as in `adaptMember`) would not work, `super.asInstanceOf`
+          // is not a valid tree.
+          if (phase.erasedTypes && qual.isInstanceOf[Super]) {
+            //  See the comment in `preErase` why we use the attachment (scala/bug#7936)
+            val qualSym = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
+              case Some(a) => a.sym
+              case None => sym.owner
+            }
+            qual.setType(qualSym.tpe)
+          }
+
+          if (!reallyExists(sym)) {
+            def handleMissing: Tree = {
+              def errorTree = missingSelectErrorTree(tree, qual, name)
+              def asTypeSelection = (
+                if (context.unit.isJava && name.isTypeName) {
+                  // scala/bug#3120 Java uses the same syntax, A.B, to express selection from the
+                  // value A and from the type A. We have to try both.
+                  atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
+                    case EmptyTree => None
+                    case tree1     => Some(typed1(tree1, mode, pt))
+                  }
                 }
-            case _ =>
-              result
+                else None
+              )
+              debuglog(s"""
+                |qual=$qual:${qual.tpe}
+                |symbol=${qual.tpe.termSymbol.defString}
+                |scope-id=${qual.tpe.termSymbol.info.decls.hashCode}
+                |members=${qual.tpe.members mkString ", "}
+                |name=$name
+                |found=$sym
+                |owner=${context.enclClass.owner}
+                """.stripMargin)
+
+              // 1) Try converting a term selection on a java class into a type selection.
+              // 2) Try expanding according to Dynamic rules.
+              // 3) Try looking up the name in the qualifier.
+              asTypeSelection orElse asDynamicCall getOrElse (lookupInQualifier(qual, name) match {
+                case NoSymbol => setError(errorTree)
+                case found    => typed1(tree setSymbol found, mode, pt)
+              })
+            }
+            handleMissing
+          }
+          else {
+            val tree1 = tree match {
+              case Select(_, _) => treeCopy.Select(tree, qual, name)
+              case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+            }
+            val (result, accessibleError) = silent(_.makeAccessible(tree1, sym, qual.tpe, qual)) match {
+              case SilentTypeError(err: AccessTypeError) =>
+                (tree1, Some(err))
+              case SilentTypeError(err) =>
+                SelectWithUnderlyingError(tree, err)
+                return tree
+              case SilentResultValue((qual, pre)) =>
+                (stabilize(qual, pre, mode, pt), None)
+            }
+
+            result match {
+              // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
+              case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
+                treeCopy.SelectFromTypeTree(
+                  result,
+                  (TypeTreeWithDeferredRefCheck(){ () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
+                    // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
+                    checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
+                    qual // you only get to see the wrapped tree after running this check :-p
+                  }) setType qual.tpe setPos qual.pos,
+                  name)
+              case _ if accessibleError.isDefined =>
+                // don't adapt constructor, scala/bug#6074
+                val qual1 = if (name == nme.CONSTRUCTOR) qual
+                            else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
+                if (!qual1.isErrorTyped && (qual1 ne qual))
+                  typed(Select(qual1, name) setPos tree.pos, mode, pt)
+                else
+                  // before failing due to access, try a dynamic call.
+                  asDynamicCall getOrElse {
+                    context.issue(accessibleError.get)
+                    setError(tree)
+                  }
+              case _ =>
+                result
+            }
           }
         }
       }
+
+      def typedTypeSelectionQualifier(tree: Tree, pt: Type = AnyRefTpe) =
+        context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
 
       def typedSelectOrSuperCall(tree: Select) = tree match {
         case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
           // the qualifier type of a supercall constructor is its first parent class
           typedSelect(tree, typedSelectOrSuperQualifier(qual), nme.CONSTRUCTOR)
         case Select(qual, name) =>
-          if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
-          val qualTyped = checkDead(typedQualifier(qual, mode))
-          val qualStableOrError = (
-            if (qualTyped.isErrorTyped || !name.isTypeName || treeInfo.admitsTypeSelection(qualTyped))
-              qualTyped
-            else
-              UnstableTreeError(qualTyped)
-          )
-          val tree1 = typedSelect(tree, qualStableOrError, name)
-          def sym = tree1.symbol
-          if (tree.isInstanceOf[PostfixSelect])
-            checkFeature(tree.pos, PostfixOpsFeature, name.decode)
-          if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-            checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
+          if (name.isTypeName)
+            typedSelect(tree, typedTypeSelectionQualifier(tree.qualifier, WildcardType), name)
+          else {
+            if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
+            val qualTyped = checkDead(typedQualifier(qual, mode))
+            val tree1 = typedSelect(tree, qualTyped, name)
 
-          qualStableOrError.symbol match {
-            case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
-            case _                            => tree1
+            if (tree.isInstanceOf[PostfixSelect])
+              checkFeature(tree.pos, PostfixOpsFeature, name.decode)
+            val sym = tree1.symbol
+            if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
+              checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
+
+            qualTyped.symbol match {
+              case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
+              case _ => tree1
+            }
           }
       }
 
@@ -5419,25 +5413,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
-        val refTyped =
-          context.withImplicitsDisabled {
-            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
-          }
+        val refTyped = typedTypeSelectionQualifier(tree.ref)
 
-        if (refTyped.isErrorTyped) {
-          setError(tree)
-        } else {
+        if (refTyped.isErrorTyped) setError(tree)
+        else {
           tree setType refTyped.tpe.resultType.deconst
-          if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
-          else UnstableTreeError(tree)
+          if (!treeInfo.admitsTypeSelection(refTyped)) UnstableTreeError(tree)
+          else tree
         }
-      }
-
-      def typedSelectFromTypeTree(tree: SelectFromTypeTree) = {
-        val qual1 = typedType(tree.qualifier, mode)
-        if (qual1.isErrorTyped) setError(treeCopy.SelectFromTypeTree(tree, qual1, tree.name))
-        else if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
-        else typedSelect(tree, qual1, tree.name)
       }
 
       def typedTypeBoundsTree(tree: TypeBoundsTree) = {
@@ -5494,7 +5477,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case tree: AppliedTypeTree              => typedAppliedTypeTree(tree)
         case tree: TypeBoundsTree               => typedTypeBoundsTree(tree)
         case tree: SingletonTypeTree            => typedSingletonTypeTree(tree)
-        case tree: SelectFromTypeTree           => typedSelectFromTypeTree(tree)
+        case tree: SelectFromTypeTree           => typedSelect(tree, typedType(tree.qualifier, mode), tree.name)
         case tree: CompoundTypeTree             => typedCompoundTypeTree(tree)
         case tree: ExistentialTypeTree          => typedExistentialTypeTree(tree)
         case tree: TypeTreeWithDeferredRefCheck => tree // TODO: retype the wrapped tree? TTWDRC would have to change to hold the wrapped tree (not a closure)
@@ -5567,10 +5550,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else
           typedInternal(tree, mode, pt)
       )
-      val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
-      if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
+      val startByType = if (Statistics.hotEnabled) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
+      if (Statistics.hotEnabled) Statistics.incCounter(visitsByType, tree.getClass)
       try body
-      finally if (Statistics.canEnable) Statistics.popTimer(byTypeStack, startByType)
+      finally if (Statistics.hotEnabled) Statistics.popTimer(byTypeStack, startByType)
     }
 
     private def typedInternal(tree: Tree, mode: Mode, pt: Type): Tree = {
