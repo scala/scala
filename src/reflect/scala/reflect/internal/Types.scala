@@ -2982,17 +2982,22 @@ trait Types
   trait UntouchableTypeVar extends TypeVar {
     override def untouchable = true
     override def isGround = true
-    override def registerTypeEquality(tp: Type, typeVarLHS: Boolean) = tp match {
-      case t: TypeVar if !t.untouchable =>
-        t.registerTypeEquality(this, !typeVarLHS)
-      case _ =>
-        super.registerTypeEquality(tp, typeVarLHS)
+    override def registerTypeEquality(tp: Type, typeVarLHS: Boolean) = {
+      assert((params.size - typeArgs.size) == (tp.typeParams.size))
+      tp match {
+        case t: TypeVar if !t.untouchable =>
+          t.registerTypeEquality(this, !typeVarLHS)
+        case _ =>
+          super.registerTypeEquality(tp, typeVarLHS)
+      }
     }
-    override def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = tp match {
-      case t: TypeVar if !t.untouchable =>
-        t.registerBound(this, !isLowerBound, isNumericBound)
-      case _ =>
-        super.registerBound(tp, isLowerBound, isNumericBound)
+    override def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
+      tp match {
+        case t: TypeVar if !t.untouchable =>
+          t.registerBound(this, !isLowerBound, isNumericBound)
+        case _ =>
+          super.registerBound(tp, isLowerBound, isNumericBound)
+      }
     }
   }
 
@@ -3277,6 +3282,7 @@ trait Types
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
+      assert((params.size - typeArgs.size) == (tp.typeParams.size))
 //      println("regTypeEq: "+(safeToString, debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (instValid) "IV" else "")) //@MDEBUG
       def checkIsSameType(tp: Type) = (
         if (typeVarLHS) inst =:= tp
