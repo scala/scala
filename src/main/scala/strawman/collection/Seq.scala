@@ -1,7 +1,7 @@
 package strawman.collection
 
 import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, NoSuchElementException, Ordering, Unit, math, throws}
-import scala.Predef.intWrapper
+import scala.Predef.{identity, intWrapper}
 import java.lang.Object
 
 import strawman.collection.immutable.Range
@@ -34,7 +34,16 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
     */
-  def distinct: C = fromSpecificIterable(new View.Distinct(toIterable))
+  def distinct: C = distinctBy(identity)
+
+  /** Selects all the elements of this $coll ignoring the duplicates as determined by `==` after applying
+    * the transforming function `f`.
+    *
+    * @param f The transforming function whose result is used to determine the uniqueness of each element
+    * @tparam B the type of the elements after being transformed by `f`
+    * @return a new $coll consisting of all the elements of this $coll without duplicates.
+    */
+  def distinctBy[B](f: A => B): C = fromSpecificIterable(new View.DistinctBy(toIterable, f))
 
   /** Returns new $coll with elements in reversed order.
    *

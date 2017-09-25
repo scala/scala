@@ -8,13 +8,14 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   extends SeqOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
-  override def distinct: C = {
+  override def distinctBy[B](f: A => B): C = {
     val builder = newSpecificBuilder()
-    val seen = mutable.HashSet.empty[A]
+    val seen = mutable.HashSet.empty[B]
 
     for (x <- toIterable) {
-      if (!seen.contains(x)) {
-        seen += x
+      val y = f(x)
+      if (!seen.contains(y)) {
+        seen += y
         builder += x
       }
     }

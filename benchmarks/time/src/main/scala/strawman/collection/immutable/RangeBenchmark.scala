@@ -151,6 +151,9 @@ class RangeBenchmark {
   def transform_distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
 
   @Benchmark
+  def transform_distinctBy(bh: Blackhole): Unit = bh.consume(xs.distinctBy(_ % 2))
+
+  @Benchmark
   def transform_map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
 
   @Benchmark
