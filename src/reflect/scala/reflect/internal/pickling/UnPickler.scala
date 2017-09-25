@@ -45,6 +45,12 @@ abstract class UnPickler {
     }
   }
 
+  /** Keep track of the symbols pending to be initialized.
+    *
+    * Useful for reporting on stub errors and cyclic errors.
+    */
+  private val completingStack = new mutable.ArrayBuffer[Symbol](24)
+
   class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
@@ -698,12 +704,6 @@ abstract class UnPickler {
     def toTypeError(e: MissingRequirementError) = {
       new TypeError(e.msg)
     }
-
-    /** Keep track of the symbols pending to be initialized.
-      *
-      * Useful for reporting on stub errors and cyclic errors.
-      */
-    private var completingStack = new mutable.ArrayBuffer[Symbol](128)
 
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType with FlagAgnosticCompleter {
