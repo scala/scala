@@ -1226,13 +1226,17 @@ abstract class Erasure extends InfoTransform
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
-        case Literal(ct) if ct.tag == ClazzTag
-                         && ct.typeValue.typeSymbol != definitions.UnitClass =>
-          val erased = ct.typeValue.dealiasWiden match {
-            case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(tr)
-            case tpe => specialScalaErasure(tpe)
-          }
-          treeCopy.Literal(tree, Constant(erased))
+        case Literal(ct) =>
+          // We remove the original tree attachments in pre-easure to free up memory
+          val cleanLiteral = tree.removeAttachment[OriginalTreeAttachment]
+
+          if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != definitions.UnitClass) {
+            val erased = ct.typeValue.dealiasWiden match {
+              case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(tr)
+              case tpe => specialScalaErasure(tpe)
+            }
+            treeCopy.Literal(cleanLiteral, Constant(erased))
+          } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
