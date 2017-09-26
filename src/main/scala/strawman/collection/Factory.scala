@@ -10,31 +10,26 @@ import scala.{Any, Int, Integral, Nothing, Ordering}
 import scala.Predef.implicitly
 import scala.annotation.unchecked.uncheckedVariance
 
-
-/** Builds a collection of type `C` from elements of type `A` when a source collection of type `From` is available.
-  * Implicit instances of `BuildFrom` are available for all collection types.
-  *
-  * @tparam From Type of source collection
-  * @tparam A Type of elements (e.g. `Int`, `Boolean`, etc.)
-  * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
-  */
-trait BuildFrom[-From, -A, +C] extends Any {
-  def fromSpecific(from: From)(it: IterableOnce[A]): C
-
-  /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
-    * Building collections with `fromSpecificIterable` is preferred because it can be lazy for lazy collections. */
-  def newBuilder(from: From): Builder[A, C]
-}
-
 /**
-  * Builds a collection of type `C` from elements of type `A`
+  * A factory that builds a collection of type `C` with elements of type `A`.
+  *
+  * This is a general form of any factory ([[IterableFactory]],
+  * [[SortedIterableFactory]], [[MapFactory]] and [[SortedMapFactory]]) whose
+  * element type is fixed.
+  *
   * @tparam A Type of elements (e.g. `Int`, `Boolean`, etc.)
   * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
   */
-trait CanBuild[-A, +C] extends Any with BuildFrom[Any, A, C] {
-  def fromSpecific(from: Any)(it: IterableOnce[A]): C = fromSpecific(it)
+trait Factory[-A, +C] extends Any {
+
+  /**
+    * @return A collection of type `C` containing the same elements
+    *         as the source collection `it`.
+    * @param it Source collection
+    */
   def fromSpecific(it: IterableOnce[A]): C
-  def newBuilder(from: Any): Builder[A, C] = newBuilder()
+
+  /** A strict builder that eventually produces a `C` */
   def newBuilder(): Builder[A, C]
 }
 
@@ -110,20 +105,39 @@ trait IterableFactoryLike[+CC[_]] {
   *
   * @tparam CC Collection type constructor (e.g. `List`)
   */
-trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] {
+trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] { factory =>
 
   // Since most collection factories can build a target collection instance by performing only one
   // traversal of a source collection, the type of this source collection can be refined to be
   // just `IterableOnce`
   type Source[A] = IterableOnce[A]
 
-  implicit def canBuildIterable[A]: CanBuild[A, CC[A]] = IterableFactory.toCanBuild(this)
+  implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
+
+  /**
+    * @return a `BuildFrom` instance that ignores the factory of the source collection.
+    * @tparam A Type of elements
+    */
+  def toBuildFrom[A]: BuildFrom[Any, A, CC[A]] =
+    new BuildFrom[Any, A, CC[A]] {
+      def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder()
+    }
 
 }
 
 object IterableFactory {
-  implicit def toCanBuild[A, CC[_]](factory: IterableFactory[CC]): CanBuild[A, CC[A]] =
-    new CanBuild[A, CC[A]] {
+
+  /**
+    * Fixes the element type of `factory` to `A`
+    * @param factory The factory to fix the element type
+    * @tparam A Type of elements
+    * @tparam CC Collection type constructor of the factory (e.g. `Seq`, `List`)
+    * @return A [[Factory]] that uses the given `factory` to build a collection of elements
+    *         of type `A`
+    */
+  implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
+    new Factory[A, CC[A]] {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
       def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
     }
@@ -251,7 +265,7 @@ object SeqFactory {
   }
 }
 
-trait SpecificIterableFactory[-A, +C] extends CanBuild[A, C] {
+trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecific(View.Elems(xs: _*))
   def fill(n: Int)(elem: => A): C = fromSpecific(View.Fill(n)(elem))
@@ -259,41 +273,95 @@ trait SpecificIterableFactory[-A, +C] extends CanBuild[A, C] {
 }
 
 /** Factory methods for collections of kind `* −> * -> *` */
-trait MapFactory[+CC[_, _]] {
+trait MapFactory[+CC[_, _]] { factory =>
+
   def empty[K, V]: CC[K, V]
+
   def from[K, V](it: IterableOnce[(K, V)]): CC[K, V]
+
   def apply[K, V](elems: (K, V)*): CC[K, V] = from(elems.toStrawman)
+
   def newBuilder[K, V](): Builder[(K, V), CC[K, V]]
-  implicit def canBuildMap[K, V]: CanBuild[(K, V), CC[K, V]] = MapFactory.toCanBuild(this)
+
+  implicit def mapFactory[K, V]: Factory[(K, V), CC[K, V]] = MapFactory.toFactory(this)
+
+  /**
+    * @return a `BuildFrom` instance that ignores the factory of the source collection
+    * @tparam K Type of keys
+    * @tparam V Type of values
+    */
+  def toBuildFrom[K, V]: BuildFrom[Any, (K, V), CC[K, V]] =
+    new BuildFrom[Any, (K, V), CC[K, V]] {
+      def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[K, V]()
+    }
+
 }
 
 object MapFactory {
-  implicit def toCanBuild[K, V, CC[_, _]](factory: MapFactory[CC]): CanBuild[(K, V), CC[K, V]] =
-    new CanBuild[(K, V), CC[K, V]] {
+
+  /**
+    * Fixes the key and value types of `factory` to `K` and `V`, respectively
+    * @param factory The factory to fix the key and value types
+    * @tparam K Type of keys
+    * @tparam V Type of values
+    * @tparam CC Collection type constructor of the factory (e.g. `Map`, `HashMap`, etc.)
+    * @return A [[Factory]] that uses the given `factory` to build a map with keys of type `K`
+    *         and values of type `V`
+    */
+  implicit def toFactory[K, V, CC[_, _]](factory: MapFactory[CC]): Factory[(K, V), CC[K, V]] =
+    new Factory[(K, V), CC[K, V]] {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
       def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
     }
 
-  class Delegate[C[_, _]](delegate: MapFactory[C]) extends MapFactory[C] {
-    def from[K, V](it: IterableOnce[(K, V)]): C[K, V] = delegate.from(it)
-    def empty[K, V]: C[K, V] = delegate.empty
-    def newBuilder[K, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
+
+  class Delegate[CC[_, _]](delegate: MapFactory[CC]) extends MapFactory[CC] {
+    def from[K, V](it: IterableOnce[(K, V)]): CC[K, V] = delegate.from(it)
+    def empty[K, V]: CC[K, V] = delegate.empty
+    def newBuilder[K, V](): Builder[(K, V), CC[K, V]] = delegate.newBuilder()
   }
 }
 
 /** Base trait for companion objects of collections that require an implicit evidence */
-trait SortedIterableFactory[+CC[_]] {
+trait SortedIterableFactory[+CC[_]] { factory =>
+
   def from[E : Ordering](it: IterableOnce[E]): CC[E]
+
   def empty[A : Ordering]: CC[A]
+
   def apply[A : Ordering](xs: A*): CC[A] = from(View.Elems(xs: _*))
+
   def fill[A : Ordering](n: Int)(elem: => A): CC[A] = from(View.Fill(n)(elem))
+
   def newBuilder[A : Ordering](): Builder[A, CC[A]]
-  implicit def canBuildSortedIterable[A : Ordering]: CanBuild[A, CC[A]] = SortedIterableFactory.toCanBuild(this)
+
+  implicit def sortedIterableFactory[A : Ordering]: Factory[A, CC[A]] = SortedIterableFactory.toFactory(this)
+
+  /**
+    * @return A `BuildFrom` instance that ignores the factory of the source collection.
+    * @tparam A Type of elements
+    */
+  def toBuildFrom[A: Ordering]: BuildFrom[Any, A, CC[A]] =
+    new BuildFrom[Any, A, CC[A]] {
+      def fromSpecificIterable(from: Any)(it: Iterable[A]): CC[A] = factory.from[A](it)
+      def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]()
+    }
+
 }
 
 object SortedIterableFactory {
-  implicit def toCanBuild[A: Ordering, CC[_]](factory: SortedIterableFactory[CC]): CanBuild[A, CC[A]] =
-    new CanBuild[A, CC[A]] {
+
+  /**
+    * Fixes the element type of `factory` to `A`
+    * @param factory The factory to fix the element type
+    * @tparam A Type of elements
+    * @tparam CC Collection type constructor of the factory (e.g. `TreeSet`)
+    * @return A [[Factory]] that uses the given `factory` to build a collection of elements
+    *         of type `A`
+    */
+  implicit def toFactory[A: Ordering, CC[_]](factory: SortedIterableFactory[CC]): Factory[A, CC[A]] =
+    new Factory[A, CC[A]] {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
       def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
     }
@@ -306,17 +374,46 @@ object SortedIterableFactory {
 }
 
 /** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
-trait SortedMapFactory[+CC[_, _]] {
+trait SortedMapFactory[+CC[_, _]] { factory =>
+
   def empty[K : Ordering, V]: CC[K, V]
+
   def from[K : Ordering, V](it: IterableOnce[(K, V)]): CC[K, V]
+
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] = from(elems.toStrawman)
+
   def newBuilder[K : Ordering, V](): Builder[(K, V), CC[K, V]]
-  implicit def canBuildSortedMap[K : Ordering, V]: CanBuild[(K, V), CC[K, V]] = SortedMapFactory.toCanBuild(this)
+
+  implicit def sortedMapFactory[K : Ordering, V]: Factory[(K, V), CC[K, V]] = SortedMapFactory.toFactory(this)
+
+  /**
+    * @return a `BuildFrom` instance that ignores the factory of the source collection.
+    * @tparam K Type of keys
+    * @tparam V Type of values
+    */
+  def toBuildFrom[K : Ordering, V]: BuildFrom[Any, (K, V), CC[K, V]] =
+    new BuildFrom[Any, (K, V), CC[K, V]] {
+      def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[K, V]()
+    }
+
 }
 
 object SortedMapFactory {
-  implicit def toCanBuild[K : Ordering, V, CC[X, Y]](factory: SortedMapFactory[CC]): CanBuild[(K, V), CC[K, V]] =
-    new CanBuild[(K, V), CC[K, V]] {
+
+  /**
+    * Implicit conversion that fixes the key and value types of `factory` to `K` and `V`,
+    * respectively.
+    *
+    * @param factory The factory to fix the key and value types
+    * @tparam K Type of keys
+    * @tparam V Type of values
+    * @tparam CC Collection type constructor of the factory (e.g. `TreeMap`)
+    * @return A [[Factory]] that uses the given `factory` to build a map with keys of
+    *         type `K` and values of type `V`
+    */
+  implicit def toFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): Factory[(K, V), CC[K, V]] =
+    new Factory[(K, V), CC[K, V]] {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
       def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
     }

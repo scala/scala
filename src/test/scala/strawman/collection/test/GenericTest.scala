@@ -30,9 +30,9 @@ object Parse {
     }
   }
 
-  def parseCollection[A, C](implicit parseA: Parse[A], cb: CanBuild[A, C]): Parse[C] = { (s: String) =>
+  def parseCollection[A, C](implicit parseA: Parse[A], factory: Factory[A, C]): Parse[C] = { (s: String) =>
     val parts = s.split("\\|")
-    parts.foldLeft[Option[Builder[A, C]]](Some(cb.newBuilder())) { (maybeBuilder, s) =>
+    parts.foldLeft[Option[Builder[A, C]]](Some(factory.newBuilder())) { (maybeBuilder, s) =>
       (maybeBuilder, parseA.parse(s)) match {
         case (Some(builder), Some(a)) =>
           Some(builder += a)
