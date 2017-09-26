@@ -109,11 +109,13 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `Range` / `NumericRange`
 - [x] `Vector`
 - [x] `HashMap`
+- [x] `mutable.LinkedHashMap`
 - [x] `TreeMap`
 - [ ] `IntMap` / `LongMap` (?)
 - [x] `ListMap`
 - [ ] `MultiMap`
 - [x] `HashSet`
+- [x] `mutable.LinkedHashSet`
 - [x] `ListSet`
 - [x] `TreeSet`
 - [ ] `EqSet`
