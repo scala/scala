@@ -1245,14 +1245,14 @@ trait Contexts { self: Analyzer =>
   trait ImportContext extends Context {
     private val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
-      if (settings.warnUnusedImport && !isRootImport) // excludes java.lang/scala/Predef imports
+      if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
     }
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
     override final def isRootImport = !tree.pos.isDefined
-    override final def toString     = super.toString + " with " + s"ImportContext { $impInfo; outer.owner = ${outer.owner} }"
+    override final def toString     = s"${super.toString} with ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
   /** A reporter for use during type checking. It has multiple modes for handling errors.

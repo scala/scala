@@ -155,5 +155,5 @@ trait Outsiders {
 }
 
 class MacroClient {
-  def x = Macro.f  // warn, not crash
+  def x = Macro.f  // don't crash; but also don't warn on expansion, see scala/bug#10270 and [pos|neg]/t10270
 }

@@ -45,9 +45,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final val shortenImports = false
 
   // allows override of the behavior of the resetTyper method w.r.t comments
-  def resetDocComments() = {
-    clearDocComments()
-  }
+  def resetDocComments() = clearDocComments()
 
   def resetTyper() {
     //println("resetTyper called")
@@ -3054,7 +3052,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedImport(imp : Import) : Import = (transformed remove imp) match {
       case Some(imp1: Import) => imp1
-      case _                  => log("unhandled import: "+imp+" in "+unit); imp
+      case _                  => log(s"unhandled import: $imp in $unit"); imp
     }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol, warnPure: Boolean = true): List[Tree] = {
