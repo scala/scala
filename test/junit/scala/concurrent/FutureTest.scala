@@ -23,17 +23,5 @@ class FutureTest {
     assertNotReachable(result, unfulfilled) {
       quick.complete(Try(result))
     }
-
-    /* The test has this structure:
-    val p = Promise[String]
-    val q = Promise[String]
-    val res = Promise[String]
-    val s = "hi"
-    p.future.onComplete(t => res.complete(t))
-    q.future.onComplete(t => res.complete(t))
-    assertNotReachable(s, q) {
-      p.complete(Try(s))
-    }
-    */
   }
 }
