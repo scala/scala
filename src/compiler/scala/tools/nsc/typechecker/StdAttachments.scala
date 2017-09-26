@@ -165,4 +165,21 @@ trait StdAttachments {
   def markDynamicRewrite(tree: Tree): Tree = tree.updateAttachment(DynamicRewriteAttachment)
   def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type]
   def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type].isDefined
+
+  /**
+   * Marks a tree that has been adapted by typer and sets the original tree that was in place before.
+   * 
+   * Keeping track of the original trees were is an important feature for some compiler plugins (like
+   * Scalameta) and the incremental compiler (Zinc). In both cases, adapting trees loses information
+   * in some sense and do not allow external tools to capture some information stored in user-defined
+   * trees that are optimized away by early phases (mostly, typer).
+   * 
+   * See how the absence of this attachment blocks Zinc: https://github.com/sbt/zinc/issues/227.
+   * Related: https://github.com/scala/scala-dev/issues/340.
+   * 
+   * This attachment is, at the moment, only used to keep track of constant-folded constants. It
+   * has a generic wording in the hope that in the future can be reused in the same context to keep
+   * track of other adapted trees.
+   */
+  case class OriginalTreeAttachment(original: Tree)
 }

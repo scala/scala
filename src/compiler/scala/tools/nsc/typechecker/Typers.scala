@@ -995,8 +995,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val sym = tree.symbol
         if (sym != null && sym.isDeprecated)
           context.deprecationWarning(tree.pos, sym)
-
-        treeCopy.Literal(tree, value)
+        // Keep the original tree in an annotation to avoid losing tree information for plugins
+        treeCopy.Literal(tree, value).updateAttachment(OriginalTreeAttachment(original))
       }
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
