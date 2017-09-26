@@ -674,7 +674,6 @@ abstract class RefChecks extends Transform {
               // If there is a concrete method whose name matches the unimplemented
               // abstract method, and a cursory examination of the difference reveals
               // something obvious to us, let's make it more obvious to them.
-              val abstractParams     = underlying.tpe.paramTypes
               val abstractParamLists = underlying.paramLists
               val matchingName       = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
               val matchingArity      = matchingName filter { m =>
@@ -682,7 +681,6 @@ abstract class RefChecks extends Transform {
                 (m.name == underlying.name) &&
                 (m.paramLists.length == abstractParamLists.length) &&
                 (m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum) &&
-                (m.tpe.paramTypes.size == underlying.tpe.paramTypes.size) &&
                 (m.tpe.typeParams.size == underlying.tpe.typeParams.size)
               }
 
