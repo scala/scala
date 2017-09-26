@@ -39,10 +39,10 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
   def sortedIterableFactory = TreeSet
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): TreeSet[A] =
-    TreeSet.sortedFromIterable(coll)
+    TreeSet.from(coll)
 
   protected[this] def sortedFromIterable[B : Ordering](coll: strawman.collection.Iterable[B]): TreeSet[B] =
-    TreeSet.sortedFromIterable(coll)
+    TreeSet.from(coll)
 
   protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder()
 
@@ -137,10 +137,10 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
-  def sortedFromIterable[E: Ordering](it: strawman.collection.Iterable[E]): TreeSet[E] =
+  def from[E: Ordering](it: strawman.collection.IterableOnce[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => empty[E] ++ it
+      case _ => (newBuilder[E]() ++= it).result()
     }
 
   def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =

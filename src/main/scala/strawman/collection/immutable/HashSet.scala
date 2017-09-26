@@ -59,10 +59,10 @@ sealed abstract class HashSet[A]
 
 object HashSet extends IterableFactory[HashSet] {
 
-  def fromIterable[A](it: collection.Iterable[A]): HashSet[A] =
+  def from[A](it: collection.IterableOnce[A]): HashSet[A] =
     it match {
       case hs: HashSet[A] => hs
-      case _ => empty ++ it
+      case _ => (newBuilder[A]() ++= it).result()
     }
 
   def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]

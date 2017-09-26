@@ -40,8 +40,8 @@ final class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, D
 
   def this() = this(null)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.fromIterable(it)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
+  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.from(it)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] =  HashMap.newBuilder()
 
@@ -118,7 +118,7 @@ object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = new HashMap[K, V]
 
-  def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] = Growable.fromIterable(empty[K, V], it)
+  def from[K, V](it: collection.IterableOnce[(K, V)]): HashMap[K, V] = Growable.from(empty[K, V], it)
 
   def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] = new GrowableBuilder(HashMap.empty[K, V])
 

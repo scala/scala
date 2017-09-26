@@ -53,11 +53,11 @@ class CollectTest {
 
   @Ignore @Test
   def testIteratorCollect: Unit =
-    testing(???)(List.fromIterable(View.fromIterator(Iterator(1, 2) collect { case x if f(x) && x < 2 => x})))
+    testing(???)(Iterator(1, 2) collect { case x if f(x) && x < 2 => x} to List)
 
   @Ignore @Test
   def testListViewCollect: Unit =
-    testing(???)(List.fromIterable(View.fromIterator(Iterator(1, 2) collect { case x if f(x) && x < 2 => x})))
+    testing(???)(Iterator(1, 2) collect { case x if f(x) && x < 2 => x} to List)
 
   @Ignore @Test
   def testFutureCollect: Unit = {

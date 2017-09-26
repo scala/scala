@@ -238,11 +238,19 @@ object LazyList extends SeqFactory[LazyList] {
     def unapply[A](s: LazyList[A]): Evaluated[A] = s.force
   }
 
-  def fromIterable[A](coll: collection.Iterable[A]): LazyList[A] = coll match {
+  def from[A](coll: collection.IterableOnce[A]): LazyList[A] = coll match {
     case coll: LazyList[A] => coll
     case _ => fromIterator(coll.iterator())
   }
 
+  /**
+    * @return A `LazyList[A]` that gets its elements from the given `Iterator`.
+    *
+    * @param it Source iterator
+    * @tparam A type of elements
+    */
+  // Note that the resulting `LazyList` will be effectively iterable more than once because
+  // `LazyList` memoizes its elements
   def fromIterator[A](it: Iterator[A]): LazyList[A] =
     if (it.hasNext) {
       // Be sure that `it.next()` is called even when the `head`
@@ -305,7 +313,7 @@ object LazyList extends SeqFactory[LazyList] {
     loop(init)
   }
 
-  def newBuilder[A](): Builder[A, LazyList[A]] = ArrayBuffer.newBuilder[A]().mapResult(fromIterable)
+  def newBuilder[A](): Builder[A, LazyList[A]] = ArrayBuffer.newBuilder[A]().mapResult(array => from(array))
 
   private[immutable] def filteredTail[A](lazyList: LazyList[A], p: A => Boolean, isFlipped: Boolean) = {
     cons(lazyList.head, lazyList.tail.filterImpl(p, isFlipped))

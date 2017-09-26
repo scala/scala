@@ -39,10 +39,10 @@ sealed trait HashMap[K, +V]
   def iterableFactory = List
   def mapFactory = HashMap
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.fromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
 
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
-    HashMap.fromIterable(it)
+    HashMap.from(it)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] = HashMap.newBuilder()
 
@@ -108,10 +108,10 @@ object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 
-  def fromIterable[K, V](it: collection.Iterable[(K, V)]): HashMap[K, V] =
+  def from[K, V](it: collection.IterableOnce[(K, V)]): HashMap[K, V] =
     it match {
       case hm: HashMap[K, V] => hm
-      case _ => empty ++ it
+      case _ => (newBuilder[K, V]() ++= it).result()
     }
 
   def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] =

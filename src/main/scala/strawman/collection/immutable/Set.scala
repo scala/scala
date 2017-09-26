@@ -52,13 +52,13 @@ object Set extends IterableFactory[Set] {
 
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
-  def fromIterable[E](it: collection.Iterable[E]): Set[E] =
+  def from[E](it: collection.IterableOnce[E]): Set[E] =
     it match {
       // We want `SortedSet` (and subclasses, such as `BitSet`) to
       // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E] => empty ++ it
+      case _: SortedSet[E] => (newBuilder[E]() ++= it).result()
       case s: Set[E]       => s
-      case _               => empty ++ it
+      case _               => (newBuilder[E]() ++= it).result()
     }
 
   def newBuilder[A](): Builder[A, Set[A]] = HashSet.newBuilder()
@@ -67,7 +67,7 @@ object Set extends IterableFactory[Set] {
   trait SmallSet[A] extends Set[A] {
     def iterableFactory: IterableFactory[Set] = Set
     def empty: Set[A] = iterableFactory.empty
-    protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): Set[A] = iterableFactory.fromIterable(coll)
+    protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): Set[A] = iterableFactory.from(coll)
     protected[this] def newSpecificBuilder(): Builder[A, Set[A]] = iterableFactory.newBuilder()
   }
 

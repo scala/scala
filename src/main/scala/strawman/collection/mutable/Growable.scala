@@ -70,6 +70,6 @@ object Growable {
     * @tparam A Element type
     * @return The filled instance
     */
-  def fromIterable[A](empty: Growable[A], it: collection.Iterable[A]): empty.type = empty ++= it
+  def from[A](empty: Growable[A], it: collection.IterableOnce[A]): empty.type = empty ++= it
 
 }

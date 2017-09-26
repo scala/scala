@@ -41,10 +41,10 @@ class BitSet(protected[collection] final var elems: Array[Long])
   def sortedIterableFactory = SortedSet
 
   protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): collection.mutable.SortedSet[B] =
-    collection.mutable.SortedSet.sortedFromIterable(it)
+    collection.mutable.SortedSet.from(it)
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet =
-    BitSet.fromSpecificIterable(coll)
+    BitSet.fromSpecific(coll)
 
   protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = BitSet.newBuilder()
 
@@ -153,7 +153,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
-  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet = Growable.fromIterable(empty, it)
+  def fromSpecific(it: strawman.collection.IterableOnce[Int]): BitSet = Growable.from(empty, it)
 
   def empty: BitSet = new BitSet()
 

@@ -107,7 +107,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
             }
         }
       case _ =>
-        insertAll(idx, ArrayBuffer.fromIterable(View.fromIterator(elems.iterator())))
+        insertAll(idx, ArrayBuffer.from(elems))
     }
   }
 
@@ -135,7 +135,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
-  def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =
+  def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
       val array = new Array[AnyRef](coll.knownSize)
       val it = coll.iterator()

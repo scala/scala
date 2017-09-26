@@ -40,9 +40,9 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def iterator(): collection.Iterator[A] = RB.keysIterator(tree)
 
-  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): TreeSet[B] = TreeSet.sortedFromIterable(it)
+  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): TreeSet[B] = TreeSet.from(it)
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.sortedFromIterable(coll)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): TreeSet[A] = TreeSet.from(coll)
 
   protected[this] def newSpecificBuilder(): Builder[A, TreeSet[A]] = TreeSet.newBuilder()
 
@@ -184,7 +184,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()
 
-  def sortedFromIterable[E : Ordering](it: collection.Iterable[E]): TreeSet[E] = Growable.fromIterable(empty[E], it)
+  def from[E : Ordering](it: collection.IterableOnce[E]): TreeSet[E] = Growable.from(empty[E], it)
 
   def newBuilder[A: Ordering](): Builder[A, TreeSet[A]] = new GrowableBuilder(empty[A])
 

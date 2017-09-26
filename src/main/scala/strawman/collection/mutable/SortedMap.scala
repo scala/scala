@@ -13,6 +13,6 @@ trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], 
   extends collection.SortedMapOps[K, V, CC, C]
     with MapOps[K, V, Map, C] {
 
-  def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] = Map.fromIterable(it)
+  def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] = Map.from(it)
 
 }

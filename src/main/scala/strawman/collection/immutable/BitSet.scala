@@ -30,8 +30,8 @@ sealed abstract class BitSet
   def iterableFactory = Set
   def sortedIterableFactory = SortedSet
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecificIterable(coll)
-  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.sortedFromIterable(it)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecific(coll)
+  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.from(it)
   protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = BitSet.newBuilder()
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
@@ -62,10 +62,10 @@ sealed abstract class BitSet
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
-  def fromSpecificIterable(it: strawman.collection.Iterable[Int]): BitSet =
+  def fromSpecific(it: strawman.collection.IterableOnce[Int]): BitSet =
     it match {
       case bs: BitSet => bs
-      case _          => empty.++(it)
+      case _          => (newBuilder() ++= it).result()
     }
 
   def empty: BitSet = new BitSet1(0L)

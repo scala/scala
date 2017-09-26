@@ -2,7 +2,7 @@ package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, Boolean, Equals, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
+import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
 import scala.Predef.{<:<, intWrapper}
 
 /** Concrete collection type: View */
@@ -23,22 +23,45 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def className = "View"
 }
 
-/** This object reifies operations on views as case classes */
-object View extends IterableFactory[View] {
+/** This object reifies operations on views as case classes
+  *
+  * @define $Coll View
+  * @define $coll view
+  */
+object View extends IterableFactoryLike[View] {
 
-  def fromIterator[A](it: => Iterator[A]): View[A] = new View[A] {
-    def iterator() = it
+  // Views are just forwarders to a source collection’s iterator. Consequently, they have to be
+  // build from an `Iterable` source in order to be themselves `Iterable`
+  type Source[A] = Iterable[A]
+
+  /**
+    * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
+    *
+    * @param it Function creating the iterator to be used by the view. This function must always return
+    *           a fresh `Iterator`, otherwise the resulting view will be effectively iterable only once.
+    *
+    * @tparam A View element type
+    */
+  def fromIteratorProvider[A](it: () => Iterator[A]): View[A] = new View[A] {
+    def iterator() = it()
   }
 
-  /** Avoid copying if source collection is already a view. */
-  def fromIterable[E](it: Iterable[E]): View[E] = it match {
-    case it: View[E] => it
-    case _ => View.fromIterator(it.iterator())
+  /**
+    * @return A view iterating over the given `Iterable`
+    *
+    * @param it The `Iterable` to view. It must be an `Iterable` (and not just an `IterableOnce`),
+    *           otherwise an `IllegalArgumentException` is thrown.
+    *
+    * @tparam E View element type
+    */
+  def from[E](it: Iterable[E]): View[E] = it match {
+    case it: View[E]     => it
+    case _               => View.fromIteratorProvider(() => it.iterator())
   }
 
   def empty[A]: View[A] = Empty
 
-  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(fromIterable)
+  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(from)
 
   override def apply[A](xs: A*): View[A] = Elems(xs: _*)
 

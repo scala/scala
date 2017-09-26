@@ -38,7 +38,7 @@ class ListBuffer[A]
   protected[this] def newSpecificBuilder(): Builder[A, ListBuffer[A]] = ListBuffer.newBuilder()
 
   private def copyElems(): Unit = {
-    val buf = ListBuffer.fromIterable(this)
+    val buf = ListBuffer.from(this)
     first = buf.first
     last0 = buf.last0
     aliased = false
@@ -246,7 +246,7 @@ class ListBuffer[A]
 
 object ListBuffer extends SeqFactory[ListBuffer] {
 
-  def fromIterable[A](coll: collection.Iterable[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
+  def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
   def newBuilder[A](): Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
 
