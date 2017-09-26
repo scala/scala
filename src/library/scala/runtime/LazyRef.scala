@@ -10,7 +10,7 @@ package scala.runtime
 
 /** Classes used as holders for lazy vals defined in methods. */
 
-class LazyRef[T] {
+class LazyRef[T] extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -25,7 +25,7 @@ class LazyRef[T] {
   override def toString = s"LazyRef ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyBoolean {
+class LazyBoolean extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -40,7 +40,7 @@ class LazyBoolean {
   override def toString = s"LazyBoolean ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyByte {
+class LazyByte extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -57,7 +57,7 @@ class LazyByte {
   override def toString = s"LazyByte ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyChar {
+class LazyChar extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -72,7 +72,7 @@ class LazyChar {
   override def toString = s"LazyChar ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyShort {
+class LazyShort extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -87,7 +87,7 @@ class LazyShort {
   override def toString = s"LazyShort ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyInt {
+class LazyInt extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -102,7 +102,7 @@ class LazyInt {
   override def toString = s"LazyInt ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyLong {
+class LazyLong extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -117,7 +117,7 @@ class LazyLong {
   override def toString = s"LazyLong ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyFloat {
+class LazyFloat extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -132,7 +132,7 @@ class LazyFloat {
   override def toString = s"LazyFloat ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyDouble {
+class LazyDouble extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
@@ -147,7 +147,7 @@ class LazyDouble {
   override def toString = s"LazyDouble ${if (_initialized) s"of: ${_value}" else "thunk"}"
 }
 
-class LazyUnit {
+class LazyUnit extends Serializable {
   @volatile private[this] var _initialized: Boolean = _
   def initialized = _initialized
 
