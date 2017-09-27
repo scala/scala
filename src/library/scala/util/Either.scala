@@ -9,7 +9,7 @@
 package scala
 package util
 
-/** Represents a value of one of two possible types (a disjoint union.)
+/** Represents a value of one of two possible types (a disjoint union).
  *  An instance of `Either` is an instance of either [[scala.util.Left]] or [[scala.util.Right]].
  *
  *  A common use of `Either` is as an alternative to [[scala.Option]] for dealing
