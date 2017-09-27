@@ -607,13 +607,13 @@ trait ContextErrors {
 
       //doTypedApply - patternMode
       def TooManyArgsPatternError(fun: Tree) =
-        NormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
+        issueNormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
 
       def BlackboxExtractorExpansion(fun: Tree) =
-        NormalTypeError(fun, "extractor macros can only be whitebox")
+        issueNormalTypeError(fun, "extractor macros can only be whitebox")
 
       def WrongShapeExtractorExpansion(fun: Tree) =
-        NormalTypeError(fun, "extractor macros can only expand into extractor calls")
+        issueNormalTypeError(fun, "extractor macros can only expand into extractor calls")
 
       def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
