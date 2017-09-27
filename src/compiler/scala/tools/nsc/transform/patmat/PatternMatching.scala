@@ -47,7 +47,7 @@ trait PatternMatching extends Transform
                       with MatchAnalysis
                       with MatchOptimization
                       with MatchWarnings
-                      with ScalacPatternExpanders {
+                      with PatternExpansion {
   import global._
 
   val phaseName: String = "patmat"

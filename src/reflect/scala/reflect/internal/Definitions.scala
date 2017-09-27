@@ -731,9 +731,6 @@ trait Definitions extends api.StandardDefinitions {
       case tp                     => tp
     }
 
-    def getterMemberTypes(tpe: Type, getters: List[Symbol]): List[Type] =
-      getters map (m => dropNullaryMethod(tpe memberType m))
-
     def dropNullaryMethod(tp: Type) = tp match {
       case NullaryMethodType(restpe) => restpe
       case _                         => tp
@@ -892,16 +889,13 @@ trait Definitions extends api.StandardDefinitions {
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
-    // FYI the long clunky name is because it's really hard to put "get" into the
-    // name of a method without it sounding like the method "get"s something, whereas
-    // this method is about a type member which just happens to be named get.
-    def typeOfMemberNamedGet(tp: Type)   = typeArgOfBaseTypeOr(tp, OptionClass)(resultOfMatchingMethod(tp, nme.get)())
-    def typeOfMemberNamedHead(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.head)())
-    def typeOfMemberNamedApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
-    def typeOfMemberNamedDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
-    def typesOfSelectors(tp: Type)       =
-      if (isTupleType(tp)) tupleComponents(tp)
-      else getterMemberTypes(tp, productSelectors(tp))
+    // For name-based pattern matching, derive the "element type" (type argument of Option/Seq)
+    // from the relevant part of the signature of various members (get/head/apply/drop)
+    def elementTypeFromGet(tp: Type)   = typeArgOfBaseTypeOr(tp, OptionClass)(resultOfMatchingMethod(tp, nme.get)())
+    def elementTypeFromHead(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.head)())
+    def elementTypeFromApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
+    def elementTypeFromDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
+    def resultOfIsEmpty(tp: Type)      = resultOfMatchingMethod(tp, nme.isEmpty)()
 
     // scala/bug#8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
     //         extractor to limit exposure to regressions like the reported problem with existentials.
@@ -914,32 +908,12 @@ trait Definitions extends api.StandardDefinitions {
       case _        => or
     }
 
-    // Can't only check for _1 thanks to pos/t796.
-    def hasSelectors(tp: Type) = (
-         (tp.members containsName nme._1)
-      && (tp.members containsName nme._2)
-    )
-
-    /** Returns the method symbols for members _1, _2, ..., _N
-     *  which exist in the given type.
-     */
-    def productSelectors(tpe: Type): List[Symbol] = {
-      def loop(n: Int): List[Symbol] = tpe member TermName("_" + n) match {
-        case NoSymbol                => Nil
-        case m if m.paramss.nonEmpty => Nil
-        case m                       => m :: loop(n + 1)
-      }
-      // Since ErrorType always returns a symbol from a call to member, we
-      // had better not start looking for _1, _2, etc. expecting it to run out.
-      if (tpe.isErroneous) Nil else loop(1)
-    }
-
     /** If `tp` has a term member `name`, the first parameter list of which
      *  matches `paramTypes`, and which either has no further parameter
      *  lists or only an implicit one, then the result type of the matching
      *  method. Otherwise, NoType.
      */
-    def resultOfMatchingMethod(tp: Type, name: TermName)(paramTypes: Type*): Type = {
+    private def resultOfMatchingMethod(tp: Type, name: TermName)(paramTypes: Type*): Type = {
       def matchesParams(member: Symbol) = member.paramss match {
         case Nil        => paramTypes.isEmpty
         case ps :: rest => (rest.isEmpty || isImplicitParamss(rest)) && (ps corresponds paramTypes)(_.tpe =:= _)

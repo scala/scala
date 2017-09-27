@@ -81,7 +81,7 @@ trait MatchCodeGen extends Interface {
       def drop(tgt: Tree)(n: Int): Tree = {
         def callDirect   = fn(tgt, nme.drop, LIT(n))
         def callRuntime  = Apply(REF(currentRun.runDefinitions.traversableDropMethod), tgt :: LIT(n) :: Nil)
-        def needsRuntime = (tgt.tpe ne null) && (typeOfMemberNamedDrop(tgt.tpe) == NoType)
+        def needsRuntime = (tgt.tpe ne null) && (elementTypeFromDrop(tgt.tpe) == NoType)
 
         if (needsRuntime) callRuntime else callDirect
       }
