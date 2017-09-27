@@ -45,9 +45,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final val shortenImports = false
 
   // allows override of the behavior of the resetTyper method w.r.t comments
-  def resetDocComments() = {
-    clearDocComments()
-  }
+  def resetDocComments() = clearDocComments()
 
   def resetTyper() {
     //println("resetTyper called")
@@ -995,8 +993,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val sym = tree.symbol
         if (sym != null && sym.isDeprecated)
           context.deprecationWarning(tree.pos, sym)
-
-        treeCopy.Literal(tree, value)
+        // Keep the original tree in an annotation to avoid losing tree information for plugins
+        treeCopy.Literal(tree, value).updateAttachment(OriginalTreeAttachment(original))
       }
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
@@ -3054,7 +3052,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedImport(imp : Import) : Import = (transformed remove imp) match {
       case Some(imp1: Import) => imp1
-      case _                  => log("unhandled import: "+imp+" in "+unit); imp
+      case _                  => log(s"unhandled import: $imp in $unit"); imp
     }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol, warnPure: Boolean = true): List[Tree] = {
@@ -5300,7 +5298,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Typed(expr, Function(Nil, EmptyTree)) =>
             typed1(suppressMacroExpansion(expr), mode, pt) match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
-              case methodValue                                       => typedEta(checkDead(methodValue), tree)
+              case methodValue                                       => typedEta(checkDead(methodValue), expr)
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first

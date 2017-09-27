@@ -711,6 +711,7 @@ trait Definitions extends api.StandardDefinitions {
     def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
+    lazy val ProductRootTpe: Type          = ProductRootClass.tpe
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
       def Product_productElement        = getMemberMethod(ProductRootClass, nme.productElement)
       def Product_iterator              = getMemberMethod(ProductRootClass, nme.productIterator)
