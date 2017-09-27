@@ -1,4 +1,5 @@
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+import org.scalajs.sbtplugin.cross.CrossProject
 
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
@@ -18,7 +19,29 @@ val commonSettings = Seq(
   },
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a"),
   fork in Test := true,
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  homepage := Some(url("https://github.com/scala/collection-strawman")),
+  licenses := Seq("BSD 3-clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/scala/collection-strawman"),
+      "scm:git:git@github.com:scala/collection-strawman.git"
+    )
+  ),
+  pomExtra :=
+    <developers>
+      <developer><id>ichoran</id><name>Rex Kerr</name></developer>
+      <developer><id>odersky</id><name>Martin Odersky</name></developer>
+      <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
+      <developer><id>szeiger</id><name>Stefan Zeiger</name></developer>
+    </developers>,
+  // For publishing snapshots
+  credentials ++= (
+    for {
+      username <- sys.env.get("SONATYPE_USERNAME")
+      password <- sys.env.get("SONATYPE_PASSWORD")
+    } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
+  ).toList
 )
 
 val disablePublishing = Seq(
@@ -33,53 +56,43 @@ val disableDotty = Seq(
   crossScalaVersions ~= (_.filterNot(_.startsWith("0.")))
 )
 
-val collections =
-  crossProject.crossType(CrossType.Pure).in(file("."))
-    .settings(commonSettings: _*)
+def crossProj(id: String, base: File) =
+  CrossProject(id, base, CrossType.Pure)
+    .settings(commonSettings)
+    .jsSettings(
+      disableDotty,
+      fork in Test := false
+    )
     .jvmSettings(
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.11" % Test
       )
     )
     .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
-    .jsSettings(
-      disableDotty,
-      fork in Test := false
-    )
+
+val collections =
+  crossProj("collections", file("collections"))
     .settings(
       name := "collection-strawman",
-      scalacOptions += "-Yno-imports",
-      pomExtra :=
-        <developers>
-          <developer><id>ichoran</id><name>Rex Kerr</name></developer>
-          <developer><id>odersky</id><name>Martin Odersky</name></developer>
-          <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
-          <developer><id>szeiger</id><name>Stefan Zeiger</name></developer>
-        </developers>,
-      homepage := Some(url("https://github.com/scala/collection-strawman")),
-      licenses := Seq("BSD 3-clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),
-      scmInfo := Some(
-        ScmInfo(
-          url("https://github.com/scala/collection-strawman"),
-          "scm:git:git@github.com:scala/collection-strawman.git"
-        )
-      ),
-      // For publishing snapshots
-      credentials ++= (
-        for {
-          username <- sys.env.get("SONATYPE_USERNAME")
-          password <- sys.env.get("SONATYPE_PASSWORD")
-        } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
-      ).toList
+      scalacOptions += "-Yno-imports"
     )
 
 val collectionsJVM = collections.jvm
 val collectionsJS = collections.js
 
+val `collections-contrib` =
+  crossProj("collections-contrib", file("collections-contrib"))
+    .dependsOn(collections)
+    .settings(
+      name := "collections-contrib"
+    )
+
+val `collections-contrib-jvm` = `collections-contrib`.jvm
+val `collections-contrib-js` = `collections-contrib`.js
+
 val `collection-strawman` = project.in(file("."))
   .settings(commonSettings ++ disablePublishing)
   .settings(
-    sourceDirectory := baseDirectory.value, // Change the source directory to not overlap with the `collections` cross-project
     // Some short-cuts for common tasks
     test in Test := (test in (collectionsJVM, Test)).value,
     compile in Compile := (compile in (collectionsJVM, Compile)).value,
@@ -88,6 +101,8 @@ val `collection-strawman` = project.in(file("."))
       publishKey := {
         val a = (publishKey in collectionsJVM).value
         val b = (publishKey in collectionsJS).value
+        val c = (publishKey in `collections-contrib-jvm`).value
+        val d = (publishKey in `collections-contrib-js`).value
       }
     }
   )
