@@ -27,7 +27,7 @@ quickly know which issues are ready and which are already in progress.
 
 ### Sbt Projects
 
-- `collectionsJVM`/`collectionsJS` (in the root directory): contains the implementation
+- `collectionsJVM`/`collectionsJS` (in the `collections/` directory): contains the implementation
   of the collections;
 - `junit` (in `test/junit/` directory): unit tests;
 - `scalacheck` (in `test/scalacheck/` directory): properties (not currently used);
@@ -35,6 +35,8 @@ quickly know which issues are ready and which are already in progress.
   execution time;
 - `memoryBenchmark` (in `benchmarks/memory/` directory): benchmarks measuring
   the memory footprint of the collections;
+- `collections-contribJS`/`collections-contribJVM` (in the `collections-contrib/` directory): implementation
+  of decorators or additional features;
 - `collection-strawman` (in the root directory): root project;
 - Also, in directory `scalafix/` there is an independent project containing
   the implementation of the migration tool.

@@ -27,6 +27,7 @@ Add the following dependency to your project:
 
 ~~~ scala
 libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.4.0"
+libraryDependencies += "ch.epfl.scala" %% "collections-contrib" % "0.4.0" // optional
 ~~~
 
 The 0.4.0 version is compatible with Scala 2.13 and Dotty 0.2. Scala 2.12 is also supported
@@ -39,6 +40,14 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.5.0-SNAPSHOT"
 ~~~
+
+The `collections-contrib` artifact provides additional operations on the collections (see the
+[Additional operations](#additional-operations) section).
+
+### API Documentation
+
+- [`collection-strawman`](https://static.javadoc.io/ch.epfl.scala/collection-strawman_2.12/0.4.0/index.html)
+- [`collections-contrib`](https://static.javadoc.io/ch.epfl.scala/collections-contrib_2.12/0.4.0/index.html)
 
 ### Migrating from the standard collections to the strawman
 
@@ -63,6 +72,23 @@ The migration tool is not exhaustive and we will continue to improve
 it over time. If you encounter a use case that’s not supported, please
 report it as described in the
 [contributing documentation](CONTRIBUTING.md#migration-tool).
+
+### Additional Operations
+
+The `collections-contrib` artifact provides decorators enriching the collections with new operations. You can
+think of this artifact as an incubator: if we get evidence that these operations should be part of the core,
+we might eventually move them.
+
+The new operations are provided via an implicit enrichment. You need to add the following import to make them
+available:
+
+~~~ scala
+import strawman.collection.decorators._
+~~~
+
+The following operations are provided:
+
+- `Map#zipByKeyWith`
 
 ## Roadmap
 
