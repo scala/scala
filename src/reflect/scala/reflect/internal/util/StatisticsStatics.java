@@ -31,7 +31,7 @@ public final class StatisticsStatics extends BooleanContainer {
   private static final MethodHandle COLD_STATS_GETTER = COLD_STATS.createGetter();
   private static final MethodHandle HOT_STATS_GETTER = HOT_STATS.createGetter();
   
-  public static boolean areColdStatsEnabled() {
+  public static boolean areSomeColdStatsEnabled() {
     try {
       return ((BooleanContainer)(Object) COLD_STATS_GETTER.invokeExact()).isEnabledNow();
     } catch (Throwable e) {
@@ -39,7 +39,7 @@ public final class StatisticsStatics extends BooleanContainer {
     }
   }
 
-  public static boolean areHotStatsEnabled() {
+  public static boolean areSomeHotStatsEnabled() {
     try {
       return ((BooleanContainer)(Object) HOT_STATS_GETTER.invokeExact()).isEnabledNow();
     } catch (Throwable e) {

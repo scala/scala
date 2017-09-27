@@ -11,6 +11,7 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.StatisticsStatics
 
 // a literal is a (possibly negated) variable
 class Lit(val v: Int) extends AnyVal {
@@ -471,7 +472,7 @@ trait Solving extends Logic {
 
       debug.patmat(s"DPLL\n${cnfString(clauses)}")
 
-      val start = if (statistics.canEnable) statistics.startTimer(statistics.patmatAnaDPLL) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
       val satisfiableWithModel: TseitinModel =
         if (clauses isEmpty) EmptyTseitinModel
@@ -507,7 +508,7 @@ trait Solving extends Logic {
             }
         }
 
-      if (statistics.canEnable) statistics.stopTimer(statistics.patmatAnaDPLL, start)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
     }
 

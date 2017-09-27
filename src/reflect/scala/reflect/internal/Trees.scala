@@ -10,7 +10,7 @@ package internal
 import Flags._
 import scala.collection.mutable
 import scala.reflect.macros.Attachments
-import util.Statistics
+import util.{Statistics, StatisticsStatics}
 
 trait Trees extends api.Trees {
   self: SymbolTable =>
@@ -38,7 +38,8 @@ trait Trees extends api.Trees {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    if (statistics.hotEnabled) statistics.incCounter(statistics.nodeByType, getClass)
+    if (StatisticsStatics.areSomeHotStatsEnabled())
+      statistics.incCounter(statistics.nodeByType, getClass)
 
     final override def pos: Position = rawatt.pos
 

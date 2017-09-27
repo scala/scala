@@ -115,7 +115,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
 
   /** Does this abstract file denote an existing file? */
   def exists: Boolean = {
-    //if (statistics.canEnable) statistics.incCounter(IOStats.fileExistsCount)
+    //if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(IOStats.fileExistsCount)
     (file eq null) || file.exists
   }
 

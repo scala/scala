@@ -5,6 +5,7 @@
 package scala.reflect.internal
 package tpe
 
+import util.StatisticsStatics
 import Flags._
 
 trait FindMembers {
@@ -42,10 +43,10 @@ trait FindMembers {
 
     // Main entry point
     def apply(): T = {
-      if (statistics.canEnable) statistics.incCounter(findMemberCount)
-      val start = if (statistics.canEnable) statistics.pushTimer(typeOpsStack, findMemberNanos) else null
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(findMemberCount)
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, findMemberNanos) else null
       try searchConcreteThenDeferred
-      finally if (statistics.canEnable) statistics.popTimer(typeOpsStack, start)
+      finally if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
     }
 
     protected def result: T
@@ -275,11 +276,11 @@ trait FindMembers {
     // Assemble the result from the hand-rolled ListBuffer
     protected def result: Symbol = if (members eq null) {
       if (member0 == NoSymbol) {
-        if (statistics.canEnable) statistics.incCounter(noMemberCount)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(noMemberCount)
         NoSymbol
       } else member0
     } else {
-      if (statistics.canEnable) statistics.incCounter(multMemberCount)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
       lastM.tl = Nil
       initBaseClasses.head.newOverloaded(tpe, members)
     }

@@ -7,6 +7,7 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
+import scala.reflect.internal.util.StatisticsStatics
 
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
@@ -209,7 +210,7 @@ trait MatchTranslation {
 
       debug.patmat("translating "+ cases.mkString("{", "\n", "}"))
 
-      val start = if (statistics.canEnable) statistics.startTimer(statistics.patmatNanos) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatNanos) else null
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
@@ -225,7 +226,7 @@ trait MatchTranslation {
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
 
-      if (statistics.canEnable) statistics.stopTimer(statistics.patmatNanos, start)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatNanos, start)
       combined
     }
 

@@ -15,7 +15,7 @@ import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
 import util.{ClassPath, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
+import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
@@ -169,7 +169,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
                        with PatternMatchingStats { self: Statistics => }
 
   /** Redefine statistics to include all known global + reflect stats. */
-  object statistics extends Statistics(Global.this, settings) with GlobalStats
+  final object statistics extends Statistics(Global.this, settings) with GlobalStats
 
   // Components for collecting and generating output
 
@@ -1227,7 +1227,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       statistics.initFromSettings(settings)
 
       // Report the overhead of statistics measurements per every run
-      if (statistics.canEnable)
+      if (StatisticsStatics.areSomeColdStatsEnabled)
         statistics.reportStatisticsOverhead(reporter)
 
       phase = first   //parserPhase
