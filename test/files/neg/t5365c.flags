@@ -1,0 +1,1 @@
+-Xfatal-warnings -Xstrict-patmat-analysis -Xlint:strict-unsealed-patmat

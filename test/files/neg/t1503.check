@@ -3,6 +3,10 @@ unsound assumption that it has type Whatever.type, whereas we can only safely
 count on it having type Any, as the pattern is matched using `==` (see scala/bug#1503).
   def matchWhateverCCE(x: Any) = x match { case n @ Whatever => n }
                                                     ^
+t1503.scala:7: warning: match may not be exhaustive.
+It would fail on the following input: (x: Any forSome x not in Whatever)
+  def matchWhateverCCE(x: Any) = x match { case n @ Whatever => n }
+                                 ^
 error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
+two warnings found
 one error found
