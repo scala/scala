@@ -766,7 +766,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      if (Statistics.hotEnabled) Statistics.incCounter(flagsCount)
+      if (Statistics.canEnable) Statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
@@ -1196,7 +1196,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
     def owner: Symbol = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
+      if (Statistics.canEnable) Statistics.incCounter(ownerCount)
       rawowner
     }
     final def safeOwner: Symbol   = if (this eq NoSymbol) NoSymbol else owner
@@ -2765,7 +2765,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
     def name = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
+      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       _rawname
     }
     override def name_=(name: Name) {
@@ -2899,13 +2899,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def moduleClass = referenced
 
     override def owner = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
+      if (Statistics.canEnable) Statistics.incCounter(ownerCount)
       // a non-static module symbol gets the METHOD flag in uncurry's info transform -- see isModuleNotMethod
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
     override def name: TermName = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
+      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -3037,7 +3037,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def rawname = _rawname
     def name = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
+      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       _rawname
     }
     final def asNameType(n: Name) = n.toTypeName
@@ -3164,7 +3164,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
 
-    if (Statistics.hotEnabled) Statistics.incCounter(typeSymbolCount)
+    if (Statistics.canEnable) Statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -3324,7 +3324,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def owner: Symbol = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
+      if (Statistics.canEnable) Statistics.incCounter(ownerCount)
       if (needsFlatClasses) rawowner.owner else rawowner
     }
 
@@ -3385,7 +3385,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else super.toString
     )
 
-    if (Statistics.hotEnabled) Statistics.incCounter(classSymbolCount)
+    if (Statistics.canEnable) Statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 

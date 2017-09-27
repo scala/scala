@@ -178,7 +178,7 @@ abstract class SymbolTable extends macros.Universe
 
   final def atPhaseStack: List[Phase] = List.tabulate(phStackIndex)(i => phStack(i))
   final def phase: Phase = {
-    if (Statistics.hotEnabled)
+    if (Statistics.canEnable)
       Statistics.incCounter(SymbolTableStats.phaseCounter)
     ph
   }
