@@ -309,22 +309,25 @@ trait TypeDiagnostics {
       finalOwners(foundWiden) && finalOwners(reqWiden) &&
       !found.typeSymbol.isTypeParameterOrSkolem && !req.typeSymbol.isTypeParameterOrSkolem
 
-    if (easilyMistakable) {
-      val longestNameLength = foundWiden.nameAndArgsString.length max reqWiden.nameAndArgsString.length
-      val paddedFoundName = foundWiden.nameAndArgsString.padTo(longestNameLength, ' ')
-      val paddedReqName = reqWiden.nameAndArgsString.padTo(longestNameLength, ' ')
-      ";\n found   : " + (paddedFoundName + s" (in ${found.prefix.typeSymbol.fullNameString}) ") + explainAlias(found) +
-       "\n required: " + (paddedReqName + s" (in ${req.prefix.typeSymbol.fullNameString}) ") + explainAlias(req)
-    } else {
-      def baseMessage = {
-        ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
-         "\n required: " + req + existentialContext(req) + explainAlias(req)
+    def defaultMsg = {
+      if (easilyMistakable) {
+        val longestNameLength = foundWiden.nameAndArgsString.length max reqWiden.nameAndArgsString.length
+        val paddedFoundName = foundWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+        val paddedReqName = reqWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+        ";\n found   : " + (paddedFoundName + s" (in ${found.prefix.typeSymbol.fullNameString}) ") + explainAlias(found) +
+        "\n required: " + (paddedReqName + s" (in ${req.prefix.typeSymbol.fullNameString}) ") + explainAlias(req)
+      } else {
+        def baseMessage = {
+          ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
+          "\n required: " + req + existentialContext(req) + explainAlias(req)
+        }
+        (withDisambiguation(Nil, found, req)(baseMessage)
+          + explainVariance(found, req)
+          + explainAnyVsAnyRef(found, req)
+          )
       }
-      (withDisambiguation(Nil, found, req)(baseMessage)
-        + explainVariance(found, req)
-        + explainAnyVsAnyRef(found, req)
-        )
     }
+    pluginsFoundReqMsg(found, req).getOrElse(defaultMsg)
   }
 
   def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {
@@ -553,9 +556,9 @@ trait TypeDiagnostics {
           && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
         )
         def isSyntheticWarnable(sym: Symbol) = (
-          sym.isDefaultGetter 
+          sym.isDefaultGetter
         )
-        
+
         def isUnusedTerm(m: Symbol): Boolean = (
              m.isTerm
           && (!m.isSynthetic || isSyntheticWarnable(m))

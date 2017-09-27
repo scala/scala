@@ -25,7 +25,7 @@ import scala.language.implicitConversions
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Implicits {
+trait Implicits extends ImplicitChains {
   self: Analyzer =>
 
   import global._
@@ -89,7 +89,11 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
+    if (!ImplicitError.nested) ImplicitError.errors = List()
+    ImplicitError.stack = pt :: ImplicitError.stack
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
+    if (result.isSuccess) ImplicitError.removeErrorsFor(pt)
+    ImplicitError.stack = ImplicitError.stack.drop(1)
 
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
       implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
@@ -764,8 +768,21 @@ trait Implicits {
 
             context.reporter.firstError match {
               case Some(err) =>
+                def pushImpFailure(fun: Tree, args: List[Tree]) = {
+                  fun.tpe match {
+                    case PolyType(tparams, restpe) if tparams.nonEmpty && sameLength(tparams, args) =>
+                      val targs = mapList(args)(treeTpe)
+                      val ncb =
+                        ImplicitError.NonconformantBounds(pt, itree3, ImplicitError.nesting, targs, tparams, err)
+                      ImplicitError.push(ncb)
+                  }
+                }
+                itree3 match {
+                  case TypeApply(fun, args) => pushImpFailure(fun, args)
+                  case Apply(TypeApply(fun, args), _) => pushImpFailure(fun, args)
+                }
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
-              case None      =>
+              case None =>
                 val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams)
                 if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
                 typingLog("success", s"inferred value of type $ptInstantiated is $result")
@@ -1554,6 +1571,81 @@ trait Implicits {
           Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not defined by $sym.")
       }
     }
+  }
+}
+
+trait ImplicitChains {
+  self: Analyzer =>
+
+  import global._
+
+  trait ImplicitError
+  {
+    import ImplicitError._
+
+    def tpe: Type
+    def candidate: Tree
+    def nesting: Int
+
+    lazy val unapplyCandidate = candidate match {
+      case TypeApply(name, _) => name
+      case a => a
+    }
+
+    def candidateName = unapplyCandidate match {
+      case Select(_, name) => name.toString
+      case Ident(name) => name.toString
+      case a => a.toString
+    }
+
+    lazy val cleanCandidate = {
+      unapplyCandidate.toString match {
+        case candidateRegex(suf) => suf
+        case a => a
+      }
+    }
+
+    override def equals(other: Any) = other match {
+      case o: ImplicitError =>
+        o.tpe.toString == tpe.toString && candidateName == o.candidateName
+      case _ => false
+    }
+
+    override def hashCode = (tpe.toString.hashCode, candidateName.hashCode).hashCode
+  }
+
+  object ImplicitError
+  {
+    case class NotFound(tpe: Type, candidate: Tree, nesting: Int, param: Symbol)
+    extends ImplicitError
+    {
+      override def toString =
+        s"NotFound(${shortName(tpe.toString)}, ${shortName(candidate.toString)}), $nesting, $param"
+    }
+
+    case class NonconformantBounds(tpe: Type, candidate: Tree, nesting: Int, targs: List[Type], tparams: List[Symbol],
+      originalError: AbsTypeError)
+    extends ImplicitError
+    {
+      override def toString =
+        s"NonconformantBounds(${shortName(tpe.toString)}, ${shortName(candidate.toString)}), $nesting, $targs, $tparams"
+    }
+
+    var stack = List[Type]()
+
+    var errors = List[ImplicitError]()
+
+    def push(error: ImplicitError): Unit = errors = error :: errors
+
+    def nesting: Int = stack.length - 1
+
+    val candidateRegex: Regex = """.*\.this\.(.*)""".r
+
+    def shortName(ident: String): String = ident.split('.').toList.lastOption.getOrElse(ident)
+
+    def nested: Boolean = stack.nonEmpty
+
+    def removeErrorsFor(tpe: Type): Unit = errors = errors.dropWhile(_.tpe == tpe)
   }
 }
 

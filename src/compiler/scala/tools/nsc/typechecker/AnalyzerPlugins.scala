@@ -10,7 +10,7 @@ package typechecker
  *  @author Lukas Rytz
  *  @version 1.0
  */
-trait AnalyzerPlugins { self: Analyzer =>
+trait AnalyzerPlugins { self: Analyzer with ImplicitChains =>
   import global._
 
   trait AnalyzerPlugin {
@@ -153,6 +153,22 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param pt    The return type of the enclosing method
      */
     def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = tpe
+
+    /**
+     * Construct a custom error message for implicit parameters that could not be resolved.
+     *
+     * @param tree The tree that requested the implicit
+     * @param param The implicit parameter that was resolved
+     */
+    def noImplicitFoundError(param: Symbol, errors: List[ImplicitError]): Option[String] = None
+
+    /**
+     * Construct a custom message for found/required errors
+     *
+     * @param found actual type
+     * @param req expected type
+     */
+    def foundReqMsg(found: Type, req: Type): Option[String] = None
   }
 
   /**
@@ -348,6 +364,20 @@ trait AnalyzerPlugins { self: Analyzer =>
     def default = adaptTypeOfReturn(tree.expr, pt, tpe)
     def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
   })
+
+  /** @see AnalyzerPlugin.noImplicitFoundError */
+  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImplicitError]): Option[String] =
+    invoke(new CumulativeOp[Option[String]] {
+      def default = None
+      def accumulate = (tpe, p) => p.noImplicitFoundError(param, errors)
+    })
+
+  /** @see AnalyzerPlugin.foundReqMsg */
+  def pluginsFoundReqMsg(found: Type, req: Type): Option[String] =
+    invoke(new CumulativeOp[Option[String]] {
+      def default = None
+      def accumulate = (tpe, p) => p.foundReqMsg(found, req)
+    })
 
   /** A list of registered macro plugins */
   private var macroPlugins: List[MacroPlugin] = Nil
