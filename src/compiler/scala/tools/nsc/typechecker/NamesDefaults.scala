@@ -486,6 +486,10 @@ trait NamesDefaults { self: Analyzer =>
     } else NoSymbol
   }
 
+  def isVariableInScope(context: Context, name: Name): Boolean = {
+    context.lookupSymbol(name, _.isVariable).isSuccess
+  }
+
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
@@ -593,19 +597,27 @@ trait NamesDefaults { self: Analyzer =>
       def stripNamedArg(arg: AssignOrNamedArg, argIndex: Int): Tree = {
         val AssignOrNamedArg(Ident(name), rhs) = arg
         params indexWhere (p => matchesName(p, name, argIndex)) match {
-          case -1 if positionalAllowed =>
+          case -1 if positionalAllowed && !settings.isScala213 =>
+            if (isVariableInScope(context0, name)) {
+              // only issue the deprecation warning if `name` is in scope, this avoids the warning when mis-spelling a parameter name.
+              context0.deprecationWarning(
+                arg.pos,
+                context0.owner,
+                s"assignments in argument position are deprecated in favor of named arguments. Wrap the assignment in brackets, e.g., `{ $name = ... }`.",
+                "2.12.4")
+            }
             // prevent isNamed from being true when calling doTypedApply recursively,
             // treat the arg as an assignment of type Unit
             Assign(arg.lhs, rhs) setPos arg.pos
           case -1 =>
-            UnknownParameterNameNamesDefaultError(arg, name)
+            UnknownParameterNameNamesDefaultError(arg, name, isVariableInScope(context0, name))
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
             val otherName = Some(args(paramPos)) collect {
               case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
-          case paramPos if isAmbiguousAssignment(typer, params(paramPos), arg) =>
+          case paramPos if !settings.isScala213 && isAmbiguousAssignment(typer, params(paramPos), arg) =>
             AmbiguousReferenceInNamesDefaultError(arg, name)
           case paramPos if paramPos != argIndex =>
             positionalAllowed = false    // named arg is not in original parameter order: require names after this
