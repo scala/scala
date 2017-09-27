@@ -689,6 +689,8 @@ trait StdNames {
     val ex: NameType                   = "ex"
     val experimental: NameType         = "experimental"
     val f: NameType                    = "f"
+    val s: NameType                    = "sNew"
+    val rawMethod: NameType            = "rawNew"
     val false_ : NameType              = "false"
     val filter: NameType               = "filter"
     val finalize_ : NameType           = "finalize"

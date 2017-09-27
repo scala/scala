@@ -5,6 +5,9 @@
 # what appears to be a Scala IDE-generated file
 .cache-main
 
+# Intellij build diectory
+.idea
+
 # standard Eclipse output directory
 /bin/
 
