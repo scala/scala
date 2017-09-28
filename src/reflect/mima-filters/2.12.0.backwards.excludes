@@ -6,3 +6,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.Symbo
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.lateMap")
 
 ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$exists")
+
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats")
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats$")

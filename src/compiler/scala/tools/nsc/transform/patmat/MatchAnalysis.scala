@@ -7,7 +7,7 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.StatisticsStatics
 
 trait TreeAndTypeAnalysis extends Debugging {
   import global._
@@ -426,7 +426,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 }
 
 trait MatchAnalysis extends MatchApproximation {
-  import PatternMatchingStats._
   import global._
   import global.definitions._
 
@@ -450,7 +449,7 @@ trait MatchAnalysis extends MatchApproximation {
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaReach) else null
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
@@ -499,7 +498,7 @@ trait MatchAnalysis extends MatchApproximation {
           }
         }
 
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaReach, start)
 
         if (reachable) None else Some(caseIndex)
       } catch {
@@ -518,7 +517,7 @@ trait MatchAnalysis extends MatchApproximation {
       // - back off (to avoid crying exhaustive too often) when:
       //    - there are guards -->
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
 
       val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
@@ -572,7 +571,7 @@ trait MatchAnalysis extends MatchApproximation {
           // since e.g. List(_, _) would cover List(1, _)
           val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
 
-          if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
+          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaExhaust, start)
           pruned
         } catch {
           case ex: AnalysisBudget.Exception =>

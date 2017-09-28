@@ -3,6 +3,7 @@ package symtab
 
 import scala.reflect.ClassTag
 import scala.reflect.internal.{NoPhase, Phase, SomePhase}
+import scala.reflect.internal.util.Statistics
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
@@ -72,6 +73,8 @@ class SymbolTableForUnitTesting extends SymbolTable {
     s.usejavacp.value = true
     s
   }
+
+  override lazy val statistics = new Statistics(this, settings) with ReflectStats
 
    // Members declared in scala.reflect.internal.Required
   def picklerPhase: scala.reflect.internal.Phase = SomePhase

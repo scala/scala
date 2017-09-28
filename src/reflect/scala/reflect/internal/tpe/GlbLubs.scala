@@ -5,13 +5,14 @@ package tpe
 
 import scala.collection.mutable
 import scala.annotation.tailrec
-import util.Statistics
+import scala.reflect.internal.util.StatisticsStatics
 import Variance._
 
 private[internal] trait GlbLubs {
   self: SymbolTable =>
+
   import definitions._
-  import TypesStats._
+  import statistics._
 
   private final val printLubs = scala.sys.props contains "scalac.debug.lub"
   private final val strictInference = settings.strictInference
@@ -254,8 +255,8 @@ private[internal] trait GlbLubs {
     case Nil      => NothingTpe
     case t :: Nil => t
     case _        =>
-      if (Statistics.canEnable) Statistics.incCounter(lubCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(lubCount)
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
         val res = lub(ts, lubDepth(ts))
         // If the number of unapplied type parameters in all incoming
@@ -273,7 +274,7 @@ private[internal] trait GlbLubs {
       finally {
         lubResults.clear()
         glbResults.clear()
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
 
@@ -396,7 +397,7 @@ private[internal] trait GlbLubs {
       indent = indent + "  "
       assert(indent.length <= 100)
     }
-    if (Statistics.canEnable) Statistics.incCounter(nestedLubCount)
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nestedLubCount)
     val res = lub0(ts)
     if (printLubs) {
       indent = indent stripSuffix "  "
@@ -421,14 +422,14 @@ private[internal] trait GlbLubs {
     case List() => AnyTpe
     case List(t) => t
     case ts0 =>
-      if (Statistics.canEnable) Statistics.incCounter(lubCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(lubCount)
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
         lubResults.clear()
         glbResults.clear()
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
 
@@ -542,7 +543,7 @@ private[internal] trait GlbLubs {
       }
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
-    if (Statistics.canEnable) Statistics.incCounter(nestedLubCount)
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nestedLubCount)
     glb0(ts)
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
   }

@@ -9,9 +9,10 @@ package symtab
 import classfile.ClassfileParser
 import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
-import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
+import scala.reflect.internal.TypesStats
+import scala.reflect.internal.util.StatisticsStatics
 
 /** This class ...
  *
@@ -25,7 +26,9 @@ abstract class SymbolLoaders {
   val platform: backend.Platform {
     val symbolTable: SymbolLoaders.this.symbolTable.type
   }
+
   import symbolTable._
+
   /**
    * Required by ClassfileParser. Check documentation in that class for details.
    */
@@ -36,7 +39,6 @@ abstract class SymbolLoaders {
    * interface.
    */
   protected def compileLate(srcfile: AbstractFile): Unit
-  import SymbolLoadersStats._
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
@@ -312,7 +314,7 @@ abstract class SymbolLoaders {
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
-      val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.classReadNanos) else null
       classfileParser.parse(classfile, clazz, module)
       if (root.associatedFile eq NoAbstractFile) {
         root match {
@@ -324,7 +326,7 @@ abstract class SymbolLoaders {
             debuglog("Not setting associatedFile to %s because %s is a %s".format(classfile, root.name, root.shortSymbolClass))
         }
       }
-      if (Statistics.canEnable) Statistics.stopTimer(classReadNanos, start)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
@@ -344,9 +346,4 @@ abstract class SymbolLoaders {
   /** used from classfile parser to avoid cycles */
   var parentsLevel = 0
   var pendingLoadActions: List[() => Unit] = Nil
-}
-
-object SymbolLoadersStats {
-  import scala.reflect.internal.TypesStats.typerNanos
-  val classReadNanos = Statistics.newSubTimer  ("time classfilereading", typerNanos)
 }

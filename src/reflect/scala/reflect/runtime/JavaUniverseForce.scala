@@ -123,6 +123,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.termNames
     this.nme
     this.sn
+    this.undetBaseTypeSeq
     this.Constant
     this.definitions
     this.LookupSucceeded
