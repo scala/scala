@@ -676,6 +676,64 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     result
   }
 
+  /**
+    * Partitions this $coll into a map of ${coll}s according to a discriminator function `key`.
+    * Each element in a group is transformed into a value of type `B` using the `value` function.
+    *
+    * It is equivalent to `groupBy(key).mapValues(_.map(f))`, but more efficient.
+    *
+    * {{{
+    *   case class User(name: String, age: Int)
+    *
+    *   def namesByAge(users: Seq[User]): Map[Int, Seq[String]] =
+    *     users.groupMap(_.age)(_.name)
+    * }}}
+    *
+    * @param key the discriminator function
+    * @param f the element transformation function
+    * @tparam K the type of keys returned by the discriminator function
+    * @tparam B the type of values returned by the transformation function
+    */
+  def groupMap[K, B](key: A => K)(f: A => B): immutable.Map[K, CC[B]] = {
+    val m = mutable.Map.empty[K, Builder[B, CC[B]]]
+    for (elem <- toIterable) {
+      val k = key(elem)
+      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B]())
+      bldr += f(elem)
+    }
+    var result = immutable.Map.empty[K, CC[B]]
+    m.foreach { case (k, v) =>
+      result = result + ((k, v.result()))
+    }
+    result
+  }
+
+  /**
+    * Partitions this $coll into a map according to a discriminator function `key`. All the values that
+    * have the same discriminator are then transformed by the `value` function and then reduced into a
+    * single value with the `reduce` function.
+    *
+    * It is equivalent to `groupBy(key).mapValues(_.map(f).reduce(reduce))`, but more efficient.
+    *
+    * {{{
+    *   def occurrences[A](as: Seq[A]): Map[A, Int] =
+    *     as.groupMapReduce(identity)(_ => 1)(_ + _)
+    * }}}
+    */
+  def groupMapReduce[K, B](key: A => K)(f: A => B)(reduce: (B, B) => B): immutable.Map[K, B] = {
+    val m = mutable.Map.empty[K, B]
+    for (elem <- toIterable) {
+      val k = key(elem)
+      val v =
+        m.get(k) match {
+          case Some(b) => reduce(b, f(elem))
+          case None => f(elem)
+        }
+      m.put(k, v)
+    }
+    m.to(immutable.Map)
+  }
+
   /** Computes a prefix scan of the elements of the collection.
     *
     *  Note: The neutral element `z` may be applied more than once.
