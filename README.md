@@ -88,6 +88,7 @@ import strawman.collection.decorators._
 
 The following operations are provided:
 
+- `Seq#intersperse`
 - `Map#zipByKeyWith`
 
 ## Roadmap
