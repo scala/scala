@@ -74,9 +74,9 @@ trait Implicits {
    *  @param saveAmbiguousDivergent  False if any divergent/ambiguous errors should be ignored after
    *                                 implicits search,
    *                                 true if they should be reported (used in further typechecking).
-   *  @param pos                     Position that is should be used for tracing and error reporting
+   *  @param pos                     Position that should be used for tracing and error reporting
    *                                 (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
-   *                                 If it's set NoPosition, then position-based services will use `tree.pos`
+   *                                 If it's set to NoPosition, then position-based services will use `tree.pos`
    *  @return                        A search result
    */
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
@@ -1042,7 +1042,7 @@ trait Implicits {
      *    - the parts of its immediate components (prefix and argument)
      *    - the parts of its base types
      *    - for alias types and abstract types, we take instead the parts
-     *    - of their upper bounds.
+     *      of their upper bounds.
      *  @return For those parts that refer to classes with companion objects that
      *  can be accessed with unambiguous stable prefixes that are not existentially
      *  bound, the implicits infos which are members of these companion objects.
@@ -1113,7 +1113,18 @@ trait Implicits {
             } else if (sym.isAliasType) {
               getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
+              // SLS 2.12, section 7.2:
+
+              //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.bounds.hi)
+
+              if(settings.isScala213) {
+                //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
+                args foreach getParts
+
+                //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
+                getParts(pre)
+              }
             }
           case ThisType(_) =>
             getParts(tp.widen)
