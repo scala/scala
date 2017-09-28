@@ -7,7 +7,7 @@ dotty in ThisBuild := "0.3.0-RC2"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
-  version := "0.5.0",
+  version := "0.6.0-SNAPSHOT",
   scalaVersion := "2.12.3",
   crossScalaVersions := scalaVersion.value :: "2.13.0-M2" :: dotty.value :: Nil,
   scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-language:higherKinds"/*, "-opt:l:classpath"*/),
