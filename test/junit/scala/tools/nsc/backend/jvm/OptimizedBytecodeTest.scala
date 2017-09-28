@@ -111,7 +111,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
   def t8062(): Unit = {
     val c1 =
       """package warmup
-        |object Warmup { def filter[A](p: Any => Boolean): Any = filter[Any](p) }
+        |object Warmup { def filter[A](p: Any => Boolean): Int = 1 + filter[Any](p) }
       """.stripMargin
     val c2 = "class C { def t = warmup.Warmup.filter[Any](x => false) }"
     val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = compilerArgs)

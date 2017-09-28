@@ -3,8 +3,4 @@ class Bad[X, Y](val v: Int) extends AnyVal {
     this.notTailPos[Z](a)(b)
     println("tail")
   }
-
-  @annotation.tailrec final def differentTypeArgs {
-    {(); new Bad[String, Unit](0)}.differentTypeArgs
-  }
 }
