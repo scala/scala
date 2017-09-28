@@ -1,17 +1,13 @@
 package strawman
 
-package collection.test
+package collection
 
 import org.junit.Test
-import strawman.collection._
 import strawman.collection.mutable.{ArrayBuffer, Builder, Growable}
 
-import scala.{Either, Int, Left, None, Option, Right, Some, Unit, PartialFunction, Boolean}
-import java.lang.String
-import scala.Predef.ArrowAssoc
 import scala.math.Ordering
 
-class TraverseTest {
+class BuildFromTest {
 
   // You can either overload methods for IterableOps and Iterable with SortedOps (if you want to support constrained collection types)
   def optionSequence1[CC[X] <: IterableOps[X, CC, _], A](xs: CC[Option[A]]): Option[CC[A]] =

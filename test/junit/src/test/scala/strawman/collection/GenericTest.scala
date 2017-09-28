@@ -5,9 +5,6 @@ package test
 import mutable.Builder
 
 import scala.util.Try
-import scala.{Any, Int, None, Nothing, Option, Ordering, Some, Unit}
-import scala.Predef.{augmentString, implicitly, wrapRefArray, assert}
-import java.lang.String
 
 import org.junit.Test
 

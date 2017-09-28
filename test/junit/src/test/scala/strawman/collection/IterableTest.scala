@@ -3,9 +3,20 @@ package strawman.collection
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import strawman.collection.immutable.{ImmutableArray, List}
 
 @RunWith(classOf[JUnit4])
 class IterableTest {
+
+  def f(xs: Seq[Seq[Int]], ys: Seq[Int]): Unit = {
+    assert(xs.flatten == ys)
+    assert(ys.flatMap(y => Some(y)) == ys.map(y => Some(y)).flatten)
+  }
+
+  @Test
+  def flattenTest: Unit = {
+    f(List(ImmutableArray(1, 2, 3)), List(1, 2, 3))
+  }
 
   @Test
   def groupMap(): Unit = {
