@@ -1093,23 +1093,22 @@ trait Implicits {
         seen += tp
         tp match {
           case TypeRef(pre, sym, args) =>
-            if (sym.isClass) {
-              if (!sym.isAnonOrRefinementClass && !sym.isRoot) {
-                if (sym.isStatic && !(pending contains sym))
-                  infoMap ++= {
-                    infoMapCache get sym match {
-                      case Some(imap) => imap
-                      case None =>
-                        val result = new InfoMap
-                        getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
-                        infoMapCache(sym) = result
-                        result
-                    }
+            if (sym.isClass && !sym.isRoot &&
+                (settings.isScala213 || !sym.isAnonOrRefinementClass)) {
+              if (sym.isStatic && !(pending contains sym))
+                infoMap ++= {
+                  infoMapCache get sym match {
+                    case Some(imap) => imap
+                    case None =>
+                      val result = new InfoMap
+                      getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
+                      infoMapCache(sym) = result
+                      result
                   }
-                else
-                  getClassParts(tp)
-                args foreach getParts
-              }
+                }
+              else
+                getClassParts(tp)
+              args foreach getParts
             } else if (sym.isAliasType) {
               getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
