@@ -1,11 +1,8 @@
 package strawman
 package collection
-package test
 
 import immutable.{List, TreeMap, TreeSet}
 
-import scala.{Char, Int, Unit}
-import scala.Predef.{ArrowAssoc, assert}
 import org.junit.Test
 
 class WithFilterTest {
