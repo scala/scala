@@ -15,7 +15,7 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
-  // Non-lint warnings.
+  // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
     name    = "-Ywarn-macros",
     helpArg = "mode",

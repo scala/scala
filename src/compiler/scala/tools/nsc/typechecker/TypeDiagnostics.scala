@@ -473,7 +473,7 @@ trait TypeDiagnostics {
         "readResolve", "readObject", "writeObject", "writeReplace"
       ).map(TermName(_))
 
-      class UnusedPrivates(traverseCheck: Tree => Tree, isOriginal: Boolean) extends Traverser {
+      class UnusedPrivates extends Traverser {
         val defnTrees = ListBuffer[MemberDef]()
         val targets   = mutable.Set[Symbol]()
         val setVars   = mutable.Set[Symbol]()
@@ -492,7 +492,6 @@ trait TypeDiagnostics {
           && !sym.isParamAccessor       // could improve this, but it's a pain
           && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
           && !(sym.isGetter && sym.accessed.isEarlyInitialized)
-          && (isOriginal || !sym.isMacro)
         )
         def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
         def qualifies(sym: Symbol) = (
@@ -500,8 +499,7 @@ trait TypeDiagnostics {
           && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
         )
 
-        override def traverse(t0: Tree): Unit = {
-          val t   = traverseCheck(t0)
+        override def traverse(t: Tree): Unit = {
           val sym = t.symbol
           t match {
             case m: MemberDef if qualifies(t.symbol)   =>
@@ -602,15 +600,30 @@ trait TypeDiagnostics {
         def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
       }
 
+      object skipMacroCall extends UnusedPrivates {
+        override def qualifiesTerm(sym: Symbol): Boolean =
+          super.qualifiesTerm(sym) && !sym.isMacro
+      }
+      object skipMacroExpansion extends UnusedPrivates {
+        override def traverse(t: Tree): Unit =
+          if (!hasMacroExpansionAttachment(t)) super.traverse(t)
+      }
+      object checkMacroExpandee extends UnusedPrivates {
+        override def traverse(t: Tree): Unit =
+          super.traverse(if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t)
+      }
+
       private def warningsEnabled: Boolean = {
         val ss = settings
         import ss._
         warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams
       }
 
-      def process(p: UnusedPrivates): Unit = {
+      def run(unusedPrivates: UnusedPrivates)(body: Tree): Unit = {
+        unusedPrivates.traverse(body)
+
         if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
-          for (defn: DefTree <- p.unusedTerms) {
+          for (defn: DefTree <- unusedPrivates.unusedTerms) {
             val sym = defn.symbol
             val pos = (
               if (defn.pos.isDefined) defn.pos
@@ -640,10 +653,10 @@ trait TypeDiagnostics {
             )
             context.warning(pos, s"$why $what in ${sym.owner} is never used")
           }
-          for (v <- p.unsetVars) {
+          for (v <- unusedPrivates.unsetVars) {
             context.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set: consider using immutable val")
           }
-          for (t <- p.unusedTypes) {
+          for (t <- unusedPrivates.unusedTypes) {
             val sym = t.symbol
             val wrn = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
             if (wrn) {
@@ -653,7 +666,7 @@ trait TypeDiagnostics {
           }
         }
         if (settings.warnUnusedPatVars) {
-          for (v <- p.unusedPatVars)
+          for (v <- unusedPrivates.unusedPatVars)
             context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
         }
         if (settings.warnUnusedParams) {
@@ -672,28 +685,18 @@ trait TypeDiagnostics {
             && !isImplementation(s.owner)
             && !isConvention(s)
           )
-          for (s <- p.unusedParams if warnable(s))
+          for (s <- unusedPrivates.unusedParams if warnable(s))
             context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
         }
       }
       def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
+        val body = unit.body
+        // TODO the message should distinguish whether the unusage is before or after macro expansion.
         settings.warnMacros.value match {
-          case "none"   =>
-            val only = new UnusedPrivates((t: Tree) => if (hasMacroExpansionAttachment(t)) EmptyTree else t, isOriginal = true)
-            only.traverse(unit.body)
-            process(only)
-          case "before" | "both" =>
-            val first = new UnusedPrivates((t: Tree) => if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t, isOriginal = true)
-            first.traverse(unit.body)
-            process(first)
-          case _ => ()
-        }
-        settings.warnMacros.value match {
-          case "after" | "both" =>
-            val second = new UnusedPrivates((t: Tree) => t, isOriginal = false)
-            second.traverse(unit.body)
-            process(second)
-          case _ => ()
+          case "none"   => run(skipMacroExpansion)(body)
+          case "before" => run(checkMacroExpandee)(body)
+          case "after"  => run(skipMacroCall)(body)
+          case "both"   => run(checkMacroExpandee)(body) ; run(skipMacroCall)(body)
         }
       }
     }
