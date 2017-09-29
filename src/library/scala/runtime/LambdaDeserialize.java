@@ -21,8 +21,19 @@ public final class LambdaDeserialize {
 
     private MethodHandles.Lookup lookup;
     private final HashMap<String, MethodHandle> cache = new HashMap<>();
-    private final LambdaDeserializer$ l = LambdaDeserializer$.MODULE$;
     private final HashMap<String, MethodHandle> targetMethodMap;
+    private static final MethodHandle LAMBDA_DESERIALIZER_DESERIALIZE_LAMBDA;
+
+    static {
+        LAMBDA_DESERIALIZER_DESERIALIZE_LAMBDA = lookup();
+    }
+    private static MethodHandle lookup() {
+        try {
+            return MethodHandles.lookup().findStatic(Class.forName("scala.runtime.LambdaDeserializer"), "deserializeLambda", MethodType.methodType(Object.class, MethodHandles.Lookup.class, java.util.Map.class, java.util.Map.class, SerializedLambda.class));
+        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private LambdaDeserialize(MethodHandles.Lookup lookup, MethodHandle[] targetMethods) {
         this.lookup = lookup;
@@ -34,8 +45,9 @@ public final class LambdaDeserialize {
         }
     }
 
-    public Object deserializeLambda(SerializedLambda serialized) {
-        return l.deserializeLambda(lookup, cache, targetMethodMap, serialized);
+
+    public Object deserializeLambda(SerializedLambda serialized) throws Throwable {
+        return LAMBDA_DESERIALIZER_DESERIALIZE_LAMBDA.invoke(lookup, cache, targetMethodMap, serialized);
     }
 
     public static CallSite bootstrap(MethodHandles.Lookup lookup, String invokedName,
