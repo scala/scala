@@ -29,6 +29,7 @@ C(2,3)
     };
     override <synthetic> def hashCode(): Int = {
       <synthetic> var acc: Int = -889275714;
+      acc = scala.runtime.Statics.mix(acc, C.this.productPrefix.hashCode());
       acc = scala.runtime.Statics.mix(acc, x);
       acc = scala.runtime.Statics.mix(acc, y);
       scala.runtime.Statics.finalizeHash(acc, 2)
