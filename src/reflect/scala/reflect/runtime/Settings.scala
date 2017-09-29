@@ -54,4 +54,5 @@ private[reflect] class Settings extends MutableSettings {
   val maxClassfileName  = new IntSetting(255)
   def isScala211        = true
   def isScala212        = true
+  private[scala] def isScala213 = false
 }

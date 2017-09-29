@@ -15,3 +15,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LeakyEntry")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.exists")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.isScala213")
