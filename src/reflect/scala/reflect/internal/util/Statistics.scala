@@ -268,27 +268,20 @@ quant)
     if (cond && !enabled) {
       StatisticsStatics.enableColdStats()
       areColdStatsLocallyEnabled = true
-    } else if (!cond && enabled) {
-      StatisticsStatics.disableColdStats()
-      areColdStatsLocallyEnabled = false
     }
   }
 
   /** Represents whether hot statistics can or cannot be enabled. */
   @inline final def hotEnabled: Boolean = enabled && areHotStatsLocallyEnabled
   def hotEnabled_=(cond: Boolean) = {
-    if (cond && enabled && !hotEnabled) {
+    if (cond && enabled && !areHotStatsLocallyEnabled) {
       StatisticsStatics.enableHotStats()
       areHotStatsLocallyEnabled = true
-    } else if (!cond && enabled && hotEnabled) {
-      StatisticsStatics.disableHotStats()
-      areHotStatsLocallyEnabled = false
     }
   }
 
   /** Tells whether statistics should be definitely reported to the user for this `Global` instance. */
-  @inline final def areStatisticsLocallyEnabled: Boolean =
-    areColdStatsLocallyEnabled || areHotStatsLocallyEnabled
+  @inline final def areStatisticsLocallyEnabled: Boolean = areColdStatsLocallyEnabled
 
   import scala.reflect.internal.Reporter
   /** Reports the overhead of measuring statistics via the nanoseconds variation. */

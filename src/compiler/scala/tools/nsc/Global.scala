@@ -1227,7 +1227,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       statistics.initFromSettings(settings)
 
       // Report the overhead of statistics measurements per every run
-      if (StatisticsStatics.areSomeColdStatsEnabled)
+      if (statistics.areStatisticsLocallyEnabled)
         statistics.reportStatisticsOverhead(reporter)
 
       phase = first   //parserPhase
@@ -1440,7 +1440,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
-      val timePhases = StatisticsStatics.areSomeColdStatsEnabled || settings.verbose
+      val timePhases = statistics.areStatisticsLocallyEnabled
       val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
 
       while (globalPhase.hasNext && !reporter.hasErrors) {
