@@ -1,7 +1,7 @@
 package scala.reflect.internal
 
 import org.junit.Assert._
-import org.junit.{Assert, Test}
+import org.junit.{After, Assert, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import scala.collection.mutable
@@ -12,6 +12,18 @@ class TypesTest {
 
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._, definitions._
+
+  var storedYpartialUnification = false
+
+  @Before
+  def storeYpartialUnification: Unit = {
+    storedYpartialUnification = settings.YpartialUnification
+  }
+
+  @After
+  def restoreYpartialUnification: Unit = {
+    settings.YpartialUnification.value = storedYpartialUnification
+  }
 
   @Test
   def testRefinedTypeSI8611(): Unit = {
@@ -139,4 +151,88 @@ class TypesTest {
     assert(ts.forall(_ <:< merged2))
     assert(merged1 =:= merged2)
   }
+
+
+  class Foo[A]
+  class Bar[A, B]
+  class Baz {
+    def f[F[_]] = ()
+    def g[G[_, _]] = ()
+  }
+
+    val FooTpe = typeOf[Foo[Int]] match {
+      case TypeRef(pre, sym, _) =>
+        sym.typeParams // doing it for the side effect of initializing type params
+        TypeRef(pre, sym, Nil)
+    }
+    val BarTpe = typeOf[Bar[Int, Int]] match {
+      case TypeRef(pre, sym, _) =>
+        sym.typeParams // doing it for the side effect of initializing type params
+        TypeRef(pre, sym, Nil)
+    }
+
+    // apply Foo to type arugment A
+    def Foo(A: Type) = FooTpe match {
+      case TypeRef(pre, sym, Nil) => TypeRef(pre, sym, A :: Nil)
+    }
+
+    // apply Bar to type arguments A, B
+    def Bar(A: Type, B: Type) = BarTpe match {
+      case TypeRef(pre, sym, Nil) => TypeRef(pre, sym, A :: B :: Nil)
+    }
+
+    val F0 = typeOf[Baz].member(TermName("f")).typeSignature.typeParams.head
+    val G0 = typeOf[Baz].member(TermName("g")).typeSignature.typeParams.head
+
+    // Creates a type variable F[_], not applied to any type arguments.
+    // Since TypeVars are mutable, we will be creating fresh ones.
+    def F() = TypeVar(F0)
+
+    // Creates a type variable G[_, _], not applied to any type arguments.
+    // Since TypeVars are mutable, we will be creating fresh ones.
+    def G() = TypeVar(G0)
+
+    def polyType(f: TypeVar => Type): Type = {
+      val A = rootMirror.EmptyPackageClass.newTypeParameter(newTypeName("A"))
+      A.setInfo(TypeBounds.empty)
+      val A_ = TypeVar(A)
+      PolyType(A :: Nil, f(A_))
+    }
+
+    val Any = typeOf[Any]
+    val Int = typeOf[Int]
+
+  @Test
+  def testHigherKindedTypeVarUnification1(): Unit = {
+    settings.YpartialUnification.value = true
+
+    // test that ?G doesn't unify with [A]Bar[A, A]
+    // (wrong number of type parameters (2 vs 1)
+    assertFalse(G() <:< polyType(A => Bar(A, A)))
+    assertFalse(polyType(A => Bar(A, A)) <:< G())
+    // The following fail, but shouldn't.
+    // Probably a bug in TypeVar#registerTypeEquality: not checking the number of type parameters.
+    assertFalse(G() =:= polyType(A => Bar(A, A))) // FAILS!
+    assertFalse(polyType(A => Bar(A, A)) =:= G()) // FAILS!
+  }
+
+  @Test
+  def testHigherKindedTypeVarUnification2(): Unit = {
+    settings.YpartialUnification.value = true
+
+    // Test that both
+    //   Foo <:< ?F
+    //   ?F <:< [A]Bar[Int, A]
+    // but not at the same time! That, by transitivity, would mean
+    //   Foo <:< [A]Bar[Int, A]
+    // which is wrong.
+
+    assert(FooTpe <:< F())
+    assert(F() <:< polyType(A => Bar(Int, A)))
+
+    F() match { case _F =>
+      assertFalse(FooTpe <:< _F && _F <:< polyType(A => Bar(Int, A))) // FAILS!
+    }
+  }
+
 }
