@@ -1583,9 +1583,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
 
+    private val hotCounters =
+      List(statistics.retainedCount, statistics.retainedByType, statistics.nodeByType)
     private val parserStats = {
-      import statistics._
-      Seq(treeNodeCount, nodeByType, retainedCount, retainedByType)
+      import statistics.treeNodeCount
+      if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters
+      else List(treeNodeCount)
     }
 
     final def printStatisticsFor(phase: Phase) = {
@@ -1602,7 +1605,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         }
       }
 
-      val quants = if (phase.name == "parser") parserStats else statistics.allQuantities
+      val quants: Iterable[statistics.Quantity] =
+        if (phase.name == "parser") parserStats
+        else if (settings.YhotStatisticsEnabled) statistics.allQuantities
+        else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
       for (q <- quants if q.showAt(phase.name)) inform(q.line)
     }
   } // class Run
