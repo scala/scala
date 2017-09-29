@@ -1,0 +1,59 @@
+t10474b.scala:14: error: method wat cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Crimp.wat as a `val`?
+    case Crimp.wat =>
+               ^
+t10474b.scala:15: error: method whut cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Crimp.whut as a `val`?
+    case Crimp.whut =>
+               ^
+t10474b.scala:16: error: method wat cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Crimp.wat as a `val`?
+    case `wat` =>
+         ^
+t10474b.scala:17: error: method whut cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Crimp.whut as a `val`?
+    case `whut` =>
+         ^
+t10474b.scala:19: error: method wat is not a case class, nor does it have an unapply/unapplySeq member
+    case Crimp.wat() =>
+               ^
+t10474b.scala:20: error: method whut is not a case class, nor does it have an unapply/unapplySeq member
+    case Crimp.whut() =>
+               ^
+t10474b.scala:21: error: method wat is not a case class, nor does it have an unapply/unapplySeq member
+    case wat() =>
+         ^
+t10474b.scala:22: error: method whut is not a case class, nor does it have an unapply/unapplySeq member
+    case whut() =>
+         ^
+t10474b.scala:24: error: method wat is not a case class, nor does it have an unapply/unapplySeq member
+    case Crimp.wat(_) =>
+               ^
+t10474b.scala:25: error: method whut is not a case class, nor does it have an unapply/unapplySeq member
+    case Crimp.whut(_) =>
+               ^
+t10474b.scala:26: error: method wat is not a case class, nor does it have an unapply/unapplySeq member
+    case wat(_) =>
+         ^
+t10474b.scala:27: error: method whut is not a case class, nor does it have an unapply/unapplySeq member
+    case whut(_) =>
+         ^
+t10474b.scala:29: error: value U is not a member of Int
+    case Crimp.wat.U =>
+                   ^
+t10474b.scala:30: error: Unapplied method whut is not allowed inside a pattern.
+Selections in patterns must be from stable values.
+    case Crimp.whut.U =>
+               ^
+t10474b.scala:31: error: value U is not a member of Int
+    case wat.U =>
+             ^
+t10474b.scala:32: error: Unapplied method whut is not allowed inside a pattern.
+Selections in patterns must be from stable values.
+    case whut.U =>
+         ^
+16 errors found

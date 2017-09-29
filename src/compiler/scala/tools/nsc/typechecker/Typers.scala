@@ -615,9 +615,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def narrowIf(tree: Tree, condition: Boolean) =
         if (condition) tree setType singleType(pre, sym) else tree
 
-      def checkStable(tree: Tree): Tree =
+      def checkStableIdPattern(tree: Tree): Tree =
         if (treeInfo.isStableIdentifierPattern(tree)) tree
-        else UnstableTreeError(tree)
+        else IdentifierPatternNotStableIdError(tree, sym)
 
       if (tree.isErrorTyped)
         tree
@@ -625,7 +625,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         NotAValueError(tree, sym)
       else if (isStableIdPattern)                     // (1)
         // A module reference in a pattern has type Foo.type, not "object Foo"
-        narrowIf(checkStable(tree), sym.isModuleNotMethod)
+        narrowIf(checkStableIdPattern(tree), sym.isModuleNotMethod)
       else if (isModuleTypedExpr)                     // (3)
         narrowIf(tree, true)
       else if (isGetClassCall)                        // (4)
@@ -893,11 +893,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         def cantAdapt =
-          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
-          else if (mode.inQualMode) UnstableTreeError(tree)
-          else setError(tree) // scala/bug#10474 implies that not issuing an
-                              // error here might be harmful... can we get here
-                              // with implicits disabled and not in QUALmode?
+          if (context.isWithinPattern || context.isWithinType) UnexpectedMethodTpeError(tree, meth)
+          else MissingArgsForMethodTpeError(tree, meth)
 
         // constructors do not eta-expand
         if (meth.isConstructor) cantAdapt
@@ -2042,7 +2039,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (sym.hasAnnotation(definitions.VolatileAttr) && !((sym hasFlag MUTABLE | LAZY) || (sym hasFlag ACCESSOR) && sym.owner.isTrait))
         VolatileValueError(vdef)
 
-      val rhs1 =
+      val rhs1 = context.withoutType {
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && !sym.isLazy && !isPastTyper)
             LocalVarUninitializedError(vdef)
@@ -2066,6 +2063,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else tpt1.tpe
           transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
+      }
       treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(rhs1)) setType NoType
     }
 
@@ -2270,7 +2268,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = typedModifiers(ddef.mods)
-      var rhs1 =
+      var rhs1 = context.withoutType {
         if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
           if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
@@ -2285,6 +2283,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         } else {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
+      }
 
       if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
         // There are no supercalls for AnyVal or constructors from Java sources, which
@@ -5039,6 +5038,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *                  (2) Change imported symbols to selections
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
+        // ignore current variable scope in patterns to enforce linearity
+        val startContext = if (mode.typingPatternOrTypePat) context.outer else context
         // setting to enable unqualified idents in empty package (used by the repl)
         def inEmptyPackage = if (settings.exposeEmptyPackage) lookupInEmpty(name) else NoSymbol
 
@@ -5050,8 +5051,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           setError(tree)
         }
-          // ignore current variable scope in patterns to enforce linearity
-        val startContext = if (mode.typingPatternOrTypePat) context.outer else context
+
+        def notFound = issue {
+          def defaultError = SymbolNotFoundError(tree, name, context.owner, startContext)
+
+          /* If we wound up excluding a symbol because of case 3 in `qualifies` above,
+           * try again to see if we can give a `CaseClassConstructorError` rather than
+           * a simple `SymbolNotFoundError`. */
+          if (mode.typingConstructorPattern)
+            startContext.lookupSymbol(name, sym => sym.hasRawInfo && reallyExists(sym)) match {
+              case LookupSucceeded(_, symbol) if symbol.isMethod && !symbol.isStable =>
+                CaseClassNeedsUnapplyError(tree, symbol)
+              case _ => defaultError
+            }
+          else defaultError
+        }
+
         val nameLookup   = tree.symbol match {
           case NoSymbol   => startContext.lookupSymbol(name, qualifies)
           case sym        => LookupSucceeded(EmptyTree, sym)
@@ -5062,7 +5077,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
             inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+              case NoSymbol => notFound
               case sym      => typed1(tree setSymbol sym, mode, pt)
                 }
           case LookupSucceeded(qual, sym)   =>
@@ -5689,6 +5704,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Types a pattern with prototype `pt` */
     def typedPattern(tree: Tree, pt: Type): Tree = {
+      import ContextMode._
       // We disable implicits because otherwise some constructs will
       // type check which should not.  The pattern matcher does not
       // perform implicit conversions in an attempt to consummate a match.
@@ -5707,12 +5723,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // as a compromise, context.enrichmentEnabled tells adaptToMember to go ahead and enrich,
       // but arbitrary conversions (in adapt) are disabled
       // TODO: can we achieve the pattern matching bit of the string interpolation SIP without this?
-      typingInPattern(context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt)))
+      context.withMode(enabled = EnrichmentEnabled | WithinPattern, disabled = ImplicitsEnabled) {
+        typed(tree, PATTERNmode, pt)
+      }
     }
 
     /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree, mode: Mode): Tree =
-      typed(tree, mode.forTypeMode, WildcardType)
+      context.withinType(typed(tree, mode.forTypeMode, WildcardType))
 
     /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree): Tree = typedType(tree, NOmode)

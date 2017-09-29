@@ -85,19 +85,24 @@ trait PatternTypers {
         || member.isOverloaded // the whole overloading situation is over the rails
       )
 
+      def issue(err: AbsTypeError) = {
+        ErrorUtils.issueTypeError(err)
+        setError(fun)
+      }
+
       // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
       // A case class with 23+ params has no unapply method.
       // A case class constructor may be overloaded with unapply methods in the companion.
       if (canElide && caseClass.isCase && !member.isOverloaded)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
       else if (!reallyExists(member))
-        CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have an unapply/unapplySeq member")
+        issue(CaseClassNeedsUnapplyError(fun, fun.symbol))
       else if (isOkay)
         fun
       else if (isEmptyType == NoType)
-        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean")
+        issue(CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean"))
       else
-        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean (found: def isEmpty: $isEmptyType)")
+        issue(CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean (found: def isEmpty: $isEmptyType)"))
     }
 
     def typedArgsForFormals(args: List[Tree], formals: List[Type], mode: Mode): List[Tree] = {

@@ -1,7 +1,11 @@
-t3816.scala:30: error: stable identifier required, but `syncID` found.
+t3816.scala:30: error: variable syncID cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Test.syncID as a `val`?
       case Some( `syncID` ) =>
                  ^
-t3816.scala:38: error: stable identifier required, but Test.this.foo found.
+t3816.scala:38: error: variable foo cannot be used as an identifier pattern;
+identifier patterns must refer to stable values.
+Perhaps you meant to define Test.foo as a `val`?
       case Some( `foo` ) =>
                  ^
 two errors found

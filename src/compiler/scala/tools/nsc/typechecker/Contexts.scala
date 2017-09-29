@@ -269,6 +269,8 @@ trait Contexts { self: Analyzer =>
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+    def isWithinPattern                       = this(WithinPattern)
+    def isWithinType                          = this(WithinType)
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
@@ -399,6 +401,9 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+    @inline final def withinPattern[T](op: => T): T                        = withMode(enabled = WithinPattern)(op)
+    @inline final def withinType[T](op: => T): T                           = withMode(enabled = WithinType)(op)
+    @inline final def withoutType[T](op: => T): T                          = withMode(disabled = WithinType)(op)
 
     /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
      *  adapt should then check kind-arity based on the prototypical type's kind
@@ -1541,7 +1546,7 @@ object ContextMode {
    */
   final val ReTyping: ContextMode                 = 1 << 10
 
-  /** Are we typechecking pattern alternatives. Formerly ALTmode. */
+  /** Are we typechecking pattern alternatives. Formerly ALTmode; implies `WithinPattern`. */
   final val PatternAlternative: ContextMode       = 1 << 11
 
   /** Are star patterns allowed. Formerly STARmode. */
@@ -1560,6 +1565,17 @@ object ContextMode {
 
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
+
+  /** Are we typing inside a pattern?
+    * Differs from PATTERNmode in that all parts of a pattern are
+    * typed WithinPattern, including qualifiers. */
+  final val WithinPattern: ContextMode            = 1 << 17
+
+  /** Are we typing inside a type?
+    * Differs from TYPEmode in that all parts of a pattern are
+    * typed WithinType, including qualifiers. But note that typing
+    * a term declaration will reset WithinType. */
+  final val WithinType: ContextMode               = 1 << 18
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
@@ -1584,7 +1600,9 @@ object ContextMode {
     StarPatterns           -> "StarPatterns",
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
-    TypeConstructorAllowed -> "TypeConstructorAllowed"
+    TypeConstructorAllowed -> "TypeConstructorAllowed",
+    WithinPattern          -> "WithinPattern",
+    WithinType             -> "WithinType",
   )
 }
 

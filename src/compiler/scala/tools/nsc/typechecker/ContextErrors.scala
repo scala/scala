@@ -679,6 +679,22 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def UnexpectedMethodTpeError(tree: Tree, sym: Symbol) = {
+        if (settings.debug)
+          assert((context.isWithinType || context.isWithinPattern) && sym.isMethod)
+        val (where, hint) =
+          if (context.isWithinType) // check type first: types can be in patterns but not vice versa
+            ("inside a type expression",
+             "\nSelections in types must be from stable values or other types.")
+          else if (context.isWithinPattern)
+            ("inside a pattern",
+             "\nSelections in patterns must be from stable values.")
+          else ("here", "") // currently unused
+        issueNormalTypeError(tree,
+          s"""Unapplied $sym is not allowed $where.$hint""")
+        setError(tree)
+      }
+
       def MissingTypeParametersError(tree: Tree) = {
         issueNormalTypeError(tree, tree.symbol+" takes type parameters")
         setError(tree)
@@ -696,8 +712,11 @@ trait ContextErrors {
           case sym if hasMultipleNonImplicitParamLists(sym) => s"\nNote: ${sym.defString} exists in ${tree.symbol}, but it cannot be used as an extractor due to its second non-implicit parameter list"
           case _                                            => ""
         }
-        issueNormalTypeError(tree, baseMessage + addendum)
-        setError(tree)
+        NormalTypeError(tree, baseMessage + addendum)
+      }
+
+      def CaseClassNeedsUnapplyError(tree: Tree, fun: Symbol) = {
+        CaseClassConstructorError(tree, s"$fun is not a case class, nor does it have an unapply/unapplySeq member")
       }
 
       def ConstructorPrefixError(tree: Tree, restpe: Type) = {
@@ -751,6 +770,17 @@ trait ContextErrors {
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {
         issueNormalTypeError(tree, sym.kindString + " " + sym.fullName + " is not a value")
+        setError(tree)
+      }
+
+      def IdentifierPatternNotStableIdError(tree: Tree, sym: Symbol) = {
+        val hint =
+          if ((sym.isVariable || sym.isMethod) && currentRun.compiles(sym))
+            s"\nPerhaps you meant to define ${sym.fullName} as a `val`?"
+          else ""
+        issueNormalTypeError(tree,
+          sm"""$sym cannot be used as an identifier pattern;
+              |identifier patterns must refer to stable values.$hint""")
         setError(tree)
       }
 
@@ -905,7 +935,7 @@ trait ContextErrors {
   trait InferencerContextErrors {
     self: Inferencer =>
 
-    private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
+    private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type)(implicit context: Context) = {
       def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
 
       def resType   = if (pt.isWildcard) "" else " with expected result type " + pt
