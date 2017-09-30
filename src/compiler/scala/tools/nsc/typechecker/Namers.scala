@@ -1079,24 +1079,7 @@ trait Namers extends MethodSynthesis {
 
       val defnTpe = widenIfNecessary(tree.symbol, rhsTpe, pt)
       tree.tpt defineType defnTpe setPos tree.pos.focus
-      val tpe = tree.tpt.tpe
-      // if enabled, validate that the now inferred val or def type isn't PwS
-      if (settings.warnInferPwS && context.reportErrors) {
-        tpe match {
-          case RefinedType(ProductRootTpe :: SerializableTpe :: _, scope) if scope.isEmpty =>
-            reporter.warning(tree.pos, s"a type was inferred to be `$tpe`; this may indicate a programming error")
-          case _ =>
-        }
-      }
-      // if enabled, validate the now inferred type isn't Any or AnyVal
-      if (settings.warnInferAny && context.reportErrors) {
-        tpe match {
-          case AnyTpe | AnyValTpe =>
-            reporter.warning(tree.pos, s"a type was inferred to be `$tpe`; this may indicate a programming error")
-          case _ =>
-        }
-      }
-      tpe
+      tree.tpt.tpe
     }
 
     // owner is the class with the self type
