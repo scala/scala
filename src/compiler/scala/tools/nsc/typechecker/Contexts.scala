@@ -214,7 +214,12 @@ trait Contexts { self: Analyzer =>
     /** Is this context in all modes in the given `mask`? */
     def apply(mask: ContextMode): Boolean = contextMode.inAll(mask)
 
-    /** The next outer context whose tree is a method */
+    /** The next (logical) outer context whose tree is a method.
+      *
+      * NOTE: this is the "logical" enclosing method, which may not be the actual enclosing method when we
+      * synthesize a nested method, such as for lazy val getters (scala/bug#8245) or the methods that
+      * implement a PartialFunction literal (scala/bug#10291).
+      */
     var enclMethod: Context = _
 
     /** Variance relative to enclosing class */
