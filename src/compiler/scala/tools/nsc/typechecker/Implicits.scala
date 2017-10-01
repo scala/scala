@@ -90,7 +90,10 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
-    val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
+    val search = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos)
+    pluginsNotifyImplicitSearch(search)
+    val result = search.bestImplicit
+    pluginsNotifyImplicitSearchResult(result)
 
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
       implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
@@ -362,7 +365,7 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
@@ -1581,10 +1584,10 @@ trait ImplicitsStats {
   val matchingImplicits   = newSubCounter("  #matching", implicitSearchCount)
   val typedImplicits      = newSubCounter("  #typed", implicitSearchCount)
   val foundImplicits      = newSubCounter("  #found", implicitSearchCount)
-  val improvesCount       = newSubCounter("implicit improves tests", implicitSearchCount)
-  val improvesCachedCount = newSubCounter("#implicit improves cached ", implicitSearchCount)
-  val inscopeImplicitHits = newSubCounter("#implicit inscope hits", implicitSearchCount)
-  val oftypeImplicitHits  = newSubCounter("#implicit oftype hits ", implicitSearchCount)
+  val improvesCount       = newSubCounter("  #implicit improves tests", implicitSearchCount)
+  val improvesCachedCount = newSubCounter("  #implicit improves cached ", implicitSearchCount)
+  val inscopeImplicitHits = newSubCounter("  #implicit inscope hits", implicitSearchCount)
+  val oftypeImplicitHits  = newSubCounter("  #implicit oftype hits ", implicitSearchCount)
   val implicitNanos       = newSubTimer  ("time spent in implicits", typerNanos)
   val inscopeSucceedNanos = newSubTimer  ("  successful in scope", typerNanos)
   val inscopeFailNanos    = newSubTimer  ("  failed in scope", typerNanos)
