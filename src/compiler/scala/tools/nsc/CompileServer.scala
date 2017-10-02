@@ -183,14 +183,15 @@ object CompileServer {
     execute(() => (), args)
 
   /**
-   * Used for internal testing. The callback is called upon
-   * server start, notifying the caller that the server is
-   * ready to run. WARNING: the callback runs in the
-   * server's thread, blocking the server from doing any work
-   * until the callback is finished. Callbacks should be kept
-   * simple and clients should not try to interact with the
-   * server while the callback is processing.
-   */
+    * The server's main loop.
+    *
+    * `startupCallback` is used for internal testing; it's called upon server start,
+    * notifying the caller that the server is ready to run.
+    *
+    * WARNING: the callback runs in the server's thread, blocking the server from doing any work
+    * until the callback is finished. Callbacks should be kept simple and clients should not try to
+    * interact with the server while the callback is processing.
+    */
   def execute(startupCallback : () => Unit, args: Array[String]) {
     val debug = args contains "-v"
     var port = 0
@@ -198,14 +199,13 @@ object CompileServer {
     val i = args.indexOf("-p")
     if (i >= 0 && args.length > i + 1) {
     	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
-    		port = args(i + 1).toInt
+		port = args(i + 1).toInt
     	}
     }
 
     // Create instance rather than extend to pass a port parameter.
     val server = new StandardCompileServer(port)
-    val redirectDir = (server.compileSocket.tmpDir / "output-redirects").createDirectory()
-
+    val redirectDir = server.compileSocket.mkDaemonDir("fsc_redirects")
     if (debug) {
       server.echo("Starting CompileServer on port " + server.port)
       server.echo("Redirect dir is " + redirectDir)
