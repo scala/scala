@@ -1,14 +1,13 @@
-package strawman.collection.mutable
+package strawman.collection
 
-import strawman.collection.immutable.{List, Vector}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import strawman.collection.View
+import strawman.collection.immutable.{List, Vector}
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#8014 and ++ in general  */
-class VectorTest {
+class CatTest {
   val noVec = Vector.empty[Int]
   val smallVec = Vector.range(0,3)
   val bigVec = Vector.range(0,64)
