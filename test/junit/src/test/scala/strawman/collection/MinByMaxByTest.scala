@@ -10,7 +10,7 @@ import scala.util.Random
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7614 */
-class TraversableOnceTest {
+class MinByMaxByTest {
   val list = List.fill(1000)(scala.util.Random.nextInt(10000) - 5000)
 
   // Basic emptiness check

@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import language.postfixOps
 
 @RunWith(classOf[JUnit4])
-class IterableViewLikeTest {
+class ViewTest {
 
   @Test
   def hasCorrectDropAndTakeMethods(): Unit = {

@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import strawman.collection.IterableFactory
 
 @RunWith(classOf[JUnit4])
-class SetOpsTest {
+class SetTest {
 
   class MySet(self: Set[String]) extends Set[String] with SetOps[String, Set, MySet] {
     def iterableFactory: IterableFactory[Set] = Set
