@@ -45,5 +45,13 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val nc = BooleanSetting(
       "-nc",
-      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
+      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon" withPostSetHook((x: BooleanSetting) => {_useCompDaemon = !x.value })
+
+  private def defaultUseCompdaemon = {
+    // can't reliably lock down permissions on the portfile in this environment => disable by default.
+    !scala.util.Properties.isWin || scala.util.Properties.isJavaAtLeast("7")
+  }
+  private[this] var _useCompDaemon = defaultUseCompdaemon
+
+  def useCompDaemon: Boolean = _useCompDaemon
 }
