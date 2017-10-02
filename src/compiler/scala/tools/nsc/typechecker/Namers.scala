@@ -914,7 +914,7 @@ trait Namers extends MethodSynthesis {
           }
 
         // must use typeSig, not memberSig (TODO: when do we need to switch namers?)
-        val sig = typeSig(tree, annots)
+        val sig = dropIllegalStarTypes(typeSig(tree, annots))
 
         fieldOrGetterSym setInfo (if (isGetter) NullaryMethodType(sig) else sig)
 

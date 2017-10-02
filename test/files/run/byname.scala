@@ -45,7 +45,8 @@ val testAllR = testAll _
 test("all r", 7, testAllR(2, 3, Seq(34, 35)))
 
 val testAllS: (Int, =>Int, Int*) => Int = testAll _
-test("all s", 8, testAllS(1, 5, 78, 89))
+//test("all s", 8, testAllS(1, 5, 78, 89))
+test("all s", 8, testAllS(1, 5, Seq(78, 89)))
 
 // test currying
 
@@ -66,9 +67,9 @@ val testCVVR = testCVV _
 test("cvv r", 3, testCVVR(Seq(1))("", Seq(8, 9)))
 
 val testCVVRS: (String, Int*) => Int = testCVV(2, 3)
-test("cvv rs", 4, testCVVRS("", 5, 6))
+//test("cvv rs", 4, testCVVRS("", 5, 6))
+test("cvv rs", 4, testCVVRS("", Seq(5, 6)))
 
 println("$")
 
-// vim: set ts=4 sw=4 et:
 }

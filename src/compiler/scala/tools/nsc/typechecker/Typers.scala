@@ -2103,7 +2103,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val accToSuperAcc = mutable.AnyRefMap[Symbol, Symbol]()
             for ((superAcc, superArg@Ident(name)) <- superParamAccessors zip superArgs) {
               if (mexists(vparamss)(_.symbol == superArg.symbol)) {
-                val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
+                val ownAcc = clazz.info.decl(name) suchThat (_.isParamAccessor) match {
                   case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
                   case acc => acc
                 }
@@ -5084,7 +5084,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 SelectWithUnderlyingError(tree, err)
                 return tree
               case SilentResultValue((qual, pre)) =>
-                (stabilize(qual, pre, mode, pt), None)
+                (stabilize(qual, pre, mode, pt).modifyType(dropIllegalStarTypes), None)
             }
 
             result match {
@@ -5970,7 +5970,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             orElse (superAcc getterIn superAcc.owner) // otherwise, lookup the accessor for the super
             filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias) // the accessor must be public
           )
-        if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
+        def isSuperParamRepeated = superClazz.primaryConstructor.paramss.exists(_.exists(psym =>
+            psym.name == alias.name && isRepeatedParamType(psym.tpe)
+        ))
+        if (alias.exists && !alias.accessed.isVariable && !isSuperParamRepeated) {
           ownAcc match {
             case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
               debuglog(s"$acc has alias ${alias.fullLocationString}")
