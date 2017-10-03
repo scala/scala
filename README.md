@@ -88,8 +88,11 @@ import strawman.collection.decorators._
 
 The following operations are provided:
 
-- `Seq#intersperse`
-- `Map#zipByKeyWith`
+- `Seq`
+    - `intersperse`
+- `Map`
+    - `zipByKey` / `join` / `zipByKeyWith`
+    - `mergeByKey` / `fullOuterJoin` / `mergeByKeyWith` / `leftOuterJoin` / `rightOuterJoin`
 
 ## Roadmap
 
