@@ -94,6 +94,8 @@ trait Analyzer extends AnyRef
           applyPhase(unit)
           undoLog.clear()
         }
+        // defensive measure in case the bookkeeping in deferred macro expansion is buggy
+        clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
