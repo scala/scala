@@ -361,7 +361,7 @@ trait Solving extends Logic {
         case And(props) =>
           // scala/bug#6942:
           // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
-          props.map(cnfFor).reduce(_ ++ _)
+          props.iterator.map(cnfFor).reduce(_ ++ _)
         case p          =>
           cnfFor(p)
       }

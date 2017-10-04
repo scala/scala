@@ -853,10 +853,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *    1) type vars (tpe.isInstanceOf[TypeVar]) // [Eugene] this check is disabled right now, because TypeVars seem to be created from undetparams anyways
    *    2) undetparams (sym.isTypeParameter && !sym.isSkolem)
    */
-  var hasPendingMacroExpansions = false
+  var hasPendingMacroExpansions = false // JZ this is never reset to false. What is its purpose? Should it not be stored in Context?
+  def typerShouldExpandDeferredMacros: Boolean = hasPendingMacroExpansions && !delayed.isEmpty
   private val forced = perRunCaches.newWeakSet[Tree]
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]()
   private def isDelayed(expandee: Tree) = delayed contains expandee
+  def clearDelayed(): Unit = delayed.clear()
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     if (forced(expandee)) scala.collection.mutable.Set[Int]()
     else delayed.getOrElse(expandee, {
