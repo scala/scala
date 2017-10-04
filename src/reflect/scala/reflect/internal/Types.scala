@@ -2503,7 +2503,7 @@ trait Types
 
     private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
       case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
+        p.tpe.isTrivial && !symTpesContain(params, p) && !(resultType contains p) &&
         areTrivialParams(rest)
       case _ =>
         true
@@ -4790,6 +4790,10 @@ trait Types
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)
+    case _ => false
+  }
+  @tailrec private def symTpesContain(tps: List[Symbol], sym: Symbol): Boolean = tps match {
+    case sym :: rest => (sym.tpe contains sym) || symTpesContain(rest, sym)
     case _ => false
   }
 
