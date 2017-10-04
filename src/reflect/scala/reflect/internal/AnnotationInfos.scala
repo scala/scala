@@ -58,7 +58,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     @tailrec private
     def dropOtherAnnotations(anns: List[AnnotationInfo], cls: Symbol): List[AnnotationInfo] = anns match {
       case ann :: rest => if (ann matches cls) anns else dropOtherAnnotations(rest, cls)
-      case Nil => Nil
+      case nil => nil
     }
   }
 
