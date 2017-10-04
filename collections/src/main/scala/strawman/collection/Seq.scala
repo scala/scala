@@ -11,10 +11,45 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
 /** Base trait for sequence collections */
-trait Seq[+A] extends Iterable[A] with SeqOps[A, Seq, Seq[A]] {
+trait Seq[+A]
+  extends Iterable[A]
+    with SeqOps[A, Seq, Seq[A]]
+    with Equals {
+
   final protected[this] def coll: this.type = this
+
   final def toSeq: this.type = this
+
   def iterableFactory: SeqFactory[Seq]
+
+  /** Method called from equality methods, so that user-defined subclasses can
+    *  refuse to be equal to other collections of the same kind.
+    *  @param   that   The object with which this $coll should be compared
+    *  @return  `true`, if this $coll can possibly equal `that`, `false` otherwise. The test
+    *           takes into consideration only the run-time types of objects but ignores their elements.
+    */
+  def canEqual(that: Any): Boolean = true
+
+  override def equals(o: scala.Any): Boolean =
+    o match {
+      case it: Seq[A] => (it canEqual this) && sameElements(it)
+      case _ => false
+    }
+
+  override def hashCode(): Int = stableIterableHash(toIterable)
+
+  // Temporary: TODO move to MurmurHash3.scala
+  private def stableIterableHash(xs: Iterable[_]): Int = {
+    var n = 0
+    var h = "Seq".##
+    val it = xs.iterator()
+    while (it.hasNext) {
+      h = MurmurHash3.mix(h, it.next().##)
+      n += 1
+    }
+    MurmurHash3.finalizeHash(h, n)
+  }
+
 }
 
 object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
@@ -22,8 +57,7 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
 /** Base trait for Seq operations */
 trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
-  with ArrayLike[A]
-  with Equals {
+  with ArrayLike[A] {
 
   /**
     * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
@@ -567,33 +601,6 @@ trait SeqOps[+A, +CC[X], +C] extends Any
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =
     toIterable.iterator().sameElements(that)
 
-  /** Method called from equality methods, so that user-defined subclasses can
-    *  refuse to be equal to other collections of the same kind.
-    *  @param   that   The object with which this $coll should be compared
-    *  @return  `true`, if this $coll can possibly equal `that`, `false` otherwise. The test
-    *           takes into consideration only the run-time types of objects but ignores their elements.
-    */
-  def canEqual(that: Any): Boolean = true
-
-  override def equals(o: scala.Any): Boolean =
-    o match {
-      case it: Seq[A] => (it canEqual this) && sameElements(it)
-      case _ => false
-    }
-
-  override def hashCode(): Int = stableIterableHash(toIterable)
-
-  // Temporary: TODO move to MurmurHash3.scala
-  private def stableIterableHash(xs: Iterable[_]): Int = {
-    var n = 0
-    var h = "Seq".##
-    val it = xs.iterator()
-    while (it.hasNext) {
-      h = MurmurHash3.mix(h, it.next().##)
-      n += 1
-    }
-    MurmurHash3.finalizeHash(h, n)
-  }
 }
 
 object SeqOps {

@@ -8,15 +8,33 @@ import java.lang.String
 
 /** Base trait for set collections.
   */
-trait Set[A] extends Iterable[A] with SetOps[A, Set, Set[A]] {
+trait Set[A]
+  extends Iterable[A]
+    with SetOps[A, Set, Set[A]]
+    with Equals {
+
   final protected[this] def coll: this.type = this
+
+  def canEqual(that: Any) = true
+
+  override def equals(that: Any): Boolean =
+    that match {
+      case set: Set[A] =>
+        (this eq set) ||
+          (set canEqual this) &&
+            (toIterable.size == set.size) &&
+            (this subsetOf set)
+      case _ => false
+    }
+
+  override def hashCode(): Int = Set.setHash(toIterable)
+
 }
 
 /** Base trait for set operations */
 trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
-     with (A => Boolean)
-     with Equals {
+     with (A => Boolean) {
 
   def contains(elem: A): Boolean
 
@@ -103,20 +121,6 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
       result
     }
   }
-
-  def canEqual(that: Any) = true
-
-  override def equals(that: Any): Boolean =
-    that match {
-      case set: Set[A] =>
-        (this eq set) ||
-          (set canEqual this) &&
-            (toIterable.size == set.size) &&
-            (this subsetOf set)
-      case _ => false
-    }
-
-  override def hashCode(): Int = Set.setHash(toIterable)
 
   override def toString(): String = super[IterableOps].toString() // Because `Function1` overrides `toString` too
 

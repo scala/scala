@@ -9,8 +9,38 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
-trait Map[K, +V] extends Iterable[(K, V)] with MapOps[K, V, Map, Map[K, V]] {
+trait Map[K, +V]
+  extends Iterable[(K, V)]
+    with MapOps[K, V, Map, Map[K, V]]
+    with Equals {
+
   final protected[this] def coll: this.type = this
+
+  def canEqual(that: Any): Boolean = true
+
+  override def equals(o: Any): Boolean = o match {
+    case that: Map[K, _] =>
+      (this eq that) ||
+      (that canEqual this) &&
+      (this.size == that.size) && {
+        try {
+          this forall {
+            case (k, v) => that.get(k) match {
+              case Some(`v`) =>
+                true
+              case _ => false
+            }
+          }
+        } catch {
+          case _: ClassCastException => false
+        }
+      }
+    case _ =>
+      false
+  }
+
+  override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
+
 }
 
 /** Base Map implementation type */
@@ -188,31 +218,6 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
-
-  def canEqual(that: Any): Boolean = true
-
-  override def equals(o: Any): Boolean = o match {
-    case that: Map[K, _] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) && {
-        try {
-          this forall {
-            case (k, v) => that.get(k) match {
-              case Some(`v`) =>
-                true
-              case _ => false
-            }
-          }
-        } catch {
-          case _: ClassCastException => false
-        }
-      }
-    case _ =>
-      false
-  }
-
-  override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
 
   override def toString(): String = super[IterableOps].toString()
 
