@@ -70,7 +70,7 @@ class BuildFromTest {
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
     val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
-    val o4 = optionSequence2(xs4)(immutable.TreeMap.toBuildFrom)
+    val o4 = optionSequence2(xs4)(immutable.TreeMap) // same syntax as in `.to`
     val o4t: Option[immutable.TreeMap[Int, String]] = o4
   }
 
@@ -86,7 +86,7 @@ class BuildFromTest {
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
     val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
-    val o4 = optionSequence3(xs4)(immutable.TreeMap.toBuildFrom)
+    val o4 = optionSequence3(xs4)(immutable.TreeMap) // same syntax as in `.to`
     val o4t: Option[immutable.TreeMap[Int, String]] = o4
   }
 
