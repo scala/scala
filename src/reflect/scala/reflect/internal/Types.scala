@@ -1196,6 +1196,13 @@ trait Types
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
+    //OPT specialize hashCode
+    override final def computeHashCode = {
+      import scala.util.hashing.MurmurHash3._
+      var h = productSeed
+      h = mix(h, sym.hashCode)
+      finalizeHash(h, 1)
+    }
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
@@ -1258,6 +1265,14 @@ trait Types
       else pre.prefixString + sym.nameString + "."
     )
     override def kind = "SingleType"
+    //OPT specialize hashCode
+    override final def computeHashCode = {
+      import scala.util.hashing.MurmurHash3._
+      var h = productSeed
+      h = mix(h, pre.hashCode)
+      h = mix(h, sym.hashCode)
+      finalizeHash(h, 2)
+    }
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
