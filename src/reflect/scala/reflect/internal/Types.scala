@@ -4347,20 +4347,20 @@ trait Types
             else matchesType(tp1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
-          case TypeRef(_, sym, Nil) =>
+          case TypeRef(_, sym, args) if args eq Nil =>
             params1.isEmpty && sym.isModuleClass && matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             false
         }
       case mt1 @ NullaryMethodType(res1) =>
         tp2 match {
-          case mt2 @ MethodType(Nil, res2)  => // could never match if params nonEmpty, and !mt2.isImplicit is implied by empty param list
+          case mt2 @ MethodType(params, res2) if params eq Nil  => // could never match if params nonEmpty, and !mt2.isImplicit is implied by empty param list
             matchesType(res1, res2, alwaysMatchSimple)
           case NullaryMethodType(res2) =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
-          case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+          case TypeRef(_, sym, args) if (args eq Nil) && sym.isModuleClass =>
             matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             matchesType(res1, tp2, alwaysMatchSimple)
@@ -4385,7 +4385,7 @@ trait Types
             if (alwaysMatchSimple) matchesType(res1, tp2, alwaysMatchSimple = true)
             else lastTry
         }
-      case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+      case TypeRef(_, sym, args) if (args eq Nil) && sym.isModuleClass =>
         tp2 match {
           case MethodType(Nil, res2)   => matchesType(tp1, res2, alwaysMatchSimple)
           case NullaryMethodType(res2) => matchesType(tp1, res2, alwaysMatchSimple)

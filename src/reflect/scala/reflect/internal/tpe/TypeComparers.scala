@@ -361,7 +361,7 @@ trait TypeComparers {
   }
   private def isNoArgStaticClassTypeRef(tp: Type) = tp match {
     // isStatic to allow prefixes with type vars to accumulate constraints in the slow path in isHKSubType
-    case TypeRef(_, sym, Nil) if sym.isClass && sym.isStatic => true
+    case TypeRef(_, sym, args) if (args eq Nil) && sym.isClass && sym.isStatic => true
     case _ => false
   }
 
