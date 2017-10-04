@@ -738,6 +738,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       (flags & mask) != 0
     }
+    final def hasRawFlag(mask: Long): Boolean = {
+      (_rawflags & mask) != 0
+    }
     def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
 
     /** Does symbol have ALL the flags in `mask` set? */
@@ -814,7 +817,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
     final def isThisSym = isTerm && owner.thisSym == this
-    final def isError = hasFlag(IS_ERROR)
+    final def isError = hasRawFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe_*.isErroneous
 
     def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
