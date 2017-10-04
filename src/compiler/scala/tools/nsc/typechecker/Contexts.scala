@@ -227,7 +227,7 @@ trait Contexts { self: Analyzer =>
 
     private var _undetparams: List[Symbol] = List()
 
-    protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
+    protected final def outerDepth = if (outerIsNoContext) 0 else _outer.depth
 
     val depth: Int = {
       val increasesDepth = isRootImport || outerIsNoContext || (outer.scope != scope)
