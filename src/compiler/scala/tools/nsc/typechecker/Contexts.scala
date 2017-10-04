@@ -1297,8 +1297,8 @@ trait Contexts { self: Analyzer =>
 
     @inline final def withFreshErrorBuffer[T](expr: => T): T = {
       val previousBuffer = _errorBuffer
-      _errorBuffer = newBuffer
-      val res = expr // expr will read _errorBuffer
+      _errorBuffer = null // lazily created on first message issued
+      val res = expr // expr might read init and read _errorBuffer
       _errorBuffer = previousBuffer
       res
     }
@@ -1324,7 +1324,7 @@ trait Contexts { self: Analyzer =>
         case INFO    => reporter.echo(pos, msg)
       }
 
-    final override def hasErrors = super.hasErrors || errorBuffer.nonEmpty
+    final override def hasErrors = super.hasErrors || (_errorBuffer != null && _errorBuffer.nonEmpty)
 
     // TODO: everything below should be pushed down to BufferingReporter (related to buffering)
     // Implicit relies on this most heavily, but there you know reporter.isInstanceOf[BufferingReporter]
