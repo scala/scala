@@ -3245,7 +3245,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedArg(arg: Tree, mode: Mode, newmode: Mode, pt: Type): Tree = {
       val typedMode = mode.onlySticky | newmode
       val t = withCondConstrTyper(mode.inSccMode)(_.typed(arg, typedMode, pt))
-      checkDead.inMode(typedMode, t)
+      if (mode.typingMonoExprByValue) checkDead(t) else t
     }
 
     def typedArgs(args: List[Tree], mode: Mode) =
@@ -3614,7 +3614,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else
                   constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
               }
-              checkDead.updateExpr(fun) {
+              updateExpr(fun) {
                 handleMonomorphicCall
               }
             } else if (needsInstantiation(tparams, formals, args)) {
