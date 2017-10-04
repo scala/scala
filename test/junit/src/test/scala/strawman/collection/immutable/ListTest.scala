@@ -48,4 +48,23 @@ class ListTest {
     // real assertion
     Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
   }
+
+  @Test
+  def updated(): Unit = {
+    val xs = 1 :: 2 :: Nil
+    Assert.assertEquals(0 :: 2 :: Nil, xs.updated(index = 0, elem = 0))
+    Assert.assertEquals(1 :: 0 :: Nil, xs.updated(index = 1, elem = 0))
+    try {
+      xs.updated(index = -1, 0)
+      Assert.fail("No exception thrown")
+    } catch {
+      case e: IndexOutOfBoundsException => ()
+    }
+    try {
+      xs.updated(index = 2, 0)
+      Assert.fail("No exception thrown")
+    } catch {
+      case e: IndexOutOfBoundsException => ()
+    }
+  }
 }

@@ -8,7 +8,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer, ReusableBuilder}
 
-import scala.{Any, AnyRef, Boolean, Function1, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient}
+import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient}
 
 
 /** A class for immutable linked lists representing ordered collections
@@ -204,6 +204,22 @@ sealed trait List[+A]
       these = these.tail
     }
     (b.toList, these)
+  }
+
+  override def updated[B >: A](index: Int, elem: B): List[B] = {
+    var i = 0
+    var current = this
+    var prefix = ListBuffer.empty[B]
+    while (i < index && current.nonEmpty) {
+      i += 1
+      prefix += current.head
+      current = current.tail
+    }
+    if (i == index && current.nonEmpty) {
+      prefix.prependToList(elem :: current.tail)
+    } else {
+      throw new IndexOutOfBoundsException(index.toString)
+    }
   }
 
   final override def map[B](f: A => B): List[B] = {
