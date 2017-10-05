@@ -569,19 +569,21 @@ trait TypeComparers {
       def abstractTypeOnLeft(hi: Type) = isDifferentTypeConstructor(tp1, hi) && retry(hi, tp2)
 
       tp1 match {
-        case tr1 @ TypeRef(pre1, sym1, _) =>
+        case tr1 @ TypeRef(pre1, sym1, args) =>
           def nullOnLeft = tp2 match {
             case TypeRef(_, sym2, _) => sym1 isBottomSubClass sym2
             case _                   => isSingleType(tp2) && retry(tp1, tp2.widen)
           }
+          def isTr1Raw = (args eq Nil) && !phase.erasedTypes && isRawIfWithoutArgs(sym1)
 
           sym1 match {
             case NothingClass                             => true
             case NullClass                                => nullOnLeft
-            case _: ClassSymbol if isRawType(tp1)         => retry(normalizePlus(tp1), normalizePlus(tp2))
+            case _: ClassSymbol if isTr1Raw               => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isModuleClass     => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isRefinementClass => retry(sym1.info, tp2)
             case _: TypeSymbol if sym1.isDeferred         => abstractTypeOnLeft(tp1.bounds.hi)
+            case _: ClassSymbol                           => retry(normalizePlusNonRaw(tp1), normalizePlus(tp2))
             case _: TypeSymbol                            => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _                                        => false
           }
