@@ -334,7 +334,8 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           case ImportSelector(name: Name, _, _, _) =>
             def lookupImported(name: Name) = expr.symbol.info.member(name)
             // importing a name means importing both a term and a type (if they exist)
-            addDependency(lookupImported(name.toTermName))
+            val termSymbol = lookupImported(name.toTermName)
+            if (termSymbol.info != NoType) addDependency(termSymbol)
             addDependency(lookupImported(name.toTypeName))
         }
         inImportNode = false
