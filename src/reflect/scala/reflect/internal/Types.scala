@@ -7,11 +7,11 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
-import scala.util.control.ControlThrowable
+import scala.util.control.{ControlThrowable, NoStackTrace}
 import scala.annotation.tailrec
 import util.{Statistics, StatisticsStatics}
 import util.ThreeValues._
@@ -4627,7 +4627,7 @@ trait Types
 // Errors and Diagnostics -----------------------------------------------------
 
   /** A throwable signalling a type error */
-  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) {
+  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) with NoStackTrace {
     def this(msg: String) = this(NoPosition, msg)
   }
 
