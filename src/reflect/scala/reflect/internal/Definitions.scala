@@ -570,6 +570,9 @@ trait Definitions extends api.StandardDefinitions {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
       val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      private var array = seq.map(_.id).sorted.toArray
+      def contains(sym: Symbol): Boolean = java.util.Arrays.binarySearch(array, sym.id) >= 0
+
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {
         val arity = args.length
@@ -608,9 +611,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
+    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
