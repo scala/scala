@@ -625,7 +625,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Reset unit to unloaded state */
   private def reset(unit: RichCompilationUnit): Unit = {
-    unit.depends.clear()
     unit.defined.clear()
     unit.synthetics.clear()
     unit.toCheck.clear()

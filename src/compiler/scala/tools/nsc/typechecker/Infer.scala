@@ -259,9 +259,6 @@ trait Infer extends Checkable {
         case NoSymbol if sym.isJavaDefined && context.unit.isJava => sym  // don't try to second guess Java; see #4402
         case sym1                                                 => sym1
       }
-      // XXX So... what's this for exactly?
-      if (context.unit.exists)
-        context.unit.depends += sym.enclosingTopLevelClass
 
       if (sym.isError)
         tree setSymbol sym setType ErrorType
