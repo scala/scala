@@ -466,22 +466,6 @@ class StrawmanTest {
     assert(lazeCountS==lazeCountL)
   }
 
-  def equality(): Unit = {
-    val list: Iterable[Int] = List(1, 2, 3)
-    val lazyList: Iterable[Int] = LazyList(1, 2, 3)
-    val buffer = ArrayBuffer(1, 2, 3)
-    val range = Range.inclusive(1, 3)
-    assert(list == lazyList)
-    assert(list.## == lazyList.##)
-    assert(list == (buffer: Iterable[Int]))
-    assert(list.## == buffer.##)
-    assert(list == (range: Iterable[Int]))
-    assert(list.## == range.##)
-    buffer += 4
-    assert(list != (buffer: Iterable[Int]))
-    assert(list.## != buffer.##)
-  }
-
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
     iterableOps(xs)
     val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
@@ -590,7 +574,6 @@ class StrawmanTest {
     immutableSeqOps(intsArr)
     immutableArrayOps(intsArr)
     lazyListOps(intsLzy)
-    equality()
     distinct()
     linearSeqSize()
   }
