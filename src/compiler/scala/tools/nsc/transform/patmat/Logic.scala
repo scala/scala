@@ -174,8 +174,8 @@ trait Logic extends Debugging  {
     def simplify(f: Prop): Prop = {
 
       // limit size to avoid blow up
-      def hasImpureAtom(ops: Seq[Prop]): Boolean = ops.size < 10 &&
-        ops.combinations(2).exists {
+      def hasImpureAtom(ops: Traversable[Prop]): Boolean =
+        ops.toSeq.combinations(2).exists {
           case Seq(a, Not(b)) if a == b => true
           case Seq(Not(a), b) if a == b => true
           case _                        => false
@@ -203,42 +203,63 @@ trait Logic extends Debugging  {
 
       def simplifyProp(p: Prop): Prop = p match {
         case And(fv)     =>
-          // recurse for nested And (pulls all Ands up)
-          val ops = fv.map(simplifyProp) - True // ignore `True`
-
-          // build up Set in order to remove duplicates
-          val opsFlattened = ops.flatMap {
-            case And(fv) => fv
-            case f       => Set(f)
-          }.toSeq
-
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(False)) {
-            False
-          } else {
-            opsFlattened match {
-              case Seq()  => True
-              case Seq(f) => f
-              case ops    => And(ops: _*)
+          def simplifyAnd: Prop = {
+            val it = fv.iterator
+            var result = Set[Prop]()
+            while (it.hasNext) {
+              simplifyProp(it.next()) match {
+                case False => return False
+                case True => // ignore
+                case And(ops1) =>
+                  // recurse for nested And (pulls all Ands up)
+                  val it1 = ops1.iterator
+                  while (it1.hasNext) {
+                    it1.next() match {
+                      // TODO case True => // ignore
+                      case False => return False
+                      case v => result += v
+                    }
+                  }
+                case v =>
+                  result += v
+              }
             }
+            val size = result.size
+            if (size < 10 && hasImpureAtom(result)) False
+            else if (size == 0) True
+            else if (size == 1) result.head
+            else And(result)
           }
+          simplifyAnd
         case Or(fv)      =>
-          // recurse for nested Or (pulls all Ors up)
-          val ops = fv.map(simplifyProp) - False // ignore `False`
-
-          val opsFlattened = ops.flatMap {
-            case Or(fv) => fv
-            case f      => Set(f)
-          }.toSeq
-
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(True)) {
-            True
-          } else {
-            opsFlattened match {
-              case Seq()  => False
-              case Seq(f) => f
-              case ops    => Or(ops: _*)
+          def simplifyOr: Prop = {
+            val it = fv.iterator
+            var result = Set[Prop]()
+            while (it.hasNext) {
+              simplifyProp(it.next()) match {
+                case True => return True
+                case False => // ignore
+                case And(ops1) =>
+                  // recurse for nested And (pulls all Ands up)
+                  val it1 = ops1.iterator
+                  while (it1.hasNext) {
+                    it1.next() match {
+                      // TODO case False => // ignore
+                      case True => return True
+                      case v => result += v
+                    }
+                  }
+                case v =>
+                  result += v
+              }
             }
+            val size = result.size
+            if (size < 10 && hasImpureAtom(result)) True
+            else if (size == 0) False
+            else if (size == 1) result.head
+            else Or(result)
           }
+          simplifyOr
         case Not(Not(a)) =>
           simplify(a)
         case Not(p)      =>
