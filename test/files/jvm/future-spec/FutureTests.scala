@@ -61,7 +61,7 @@ class FutureTests extends MinimalScalaTest {
       val waiting = Future {
         Thread.sleep(1000)
       }
-      Await.ready(waiting, 2000 millis)
+      Await.ready(waiting, 4000 millis)
 
       ms.size mustBe (4)
       ec.shutdownNow()
@@ -95,7 +95,7 @@ class FutureTests extends MinimalScalaTest {
 
       val t = new InterruptedException()
       val f = Future(throw t)(ec)
-      Await.result(p.future, 2.seconds) mustBe t
+      Await.result(p.future, 4.seconds) mustBe t
     }
   }
 
