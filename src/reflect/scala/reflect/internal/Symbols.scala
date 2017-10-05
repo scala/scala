@@ -2174,7 +2174,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The package class containing this symbol, or NoSymbol if there
      *  is not one. */
-    def enclosingRootClass: Symbol = enclosingSuchThat(_.isRoot)
+    def enclosingRootClass: Symbol = if (isCompilerUniverse) rootMirror.RootClass else enclosingSuchThat(_.isRoot)
 
     /** The package containing this symbol, or NoSymbol if there
      *  is not one. */
