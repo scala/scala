@@ -2479,7 +2479,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         treeCopy.Block(block, statsTyped, expr1)
-          .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
+          .setType(if (!phase.erasedTypes && treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
         // transient flag
