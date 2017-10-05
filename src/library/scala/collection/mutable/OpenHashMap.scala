@@ -79,7 +79,7 @@ extends AbstractMap[Key, Value]
   private var _size = 0
   private var deleted = 0
 
-  // Used for tracking inserts so that iterators can determine in concurrent modification has occurred.
+  // Used for tracking inserts so that iterators can determine if concurrent modification has occurred.
   private[this] var modCount = 0
 
   override def size = _size
