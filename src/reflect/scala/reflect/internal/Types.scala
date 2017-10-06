@@ -2614,7 +2614,7 @@ trait Types
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type with PolyTypeApi {
     //assert(!(typeParams contains NoSymbol), this)
-    assert(typeParams.nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
+    assert(typeParams ne Nil, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss
