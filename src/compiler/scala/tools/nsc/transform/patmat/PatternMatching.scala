@@ -210,7 +210,7 @@ trait Interface extends ast.TreeDSL {
           case i@Ident(_) => from contains i.symbol
           case tt: TypeTree => tt.tpe.exists {
             case SingleType(_, sym) =>
-              (from contains sym) && {
+              containsRef(from, sym) && {
                 if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree `$tt`, subst= $this")
                 true
               }
@@ -260,7 +260,7 @@ trait Interface extends ast.TreeDSL {
       // the substitution that chains `other` before `this` substitution
       // forall t: Tree. this(other(t)) == (this >> other)(t)
       def >>(other: Substitution): Substitution = {
-        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !other.from.contains(f) }
+        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !containsRef(other.from, f) }
         new Substitution(other.from ++ fromFiltered, other.to.map(apply) ++ toFiltered) // a quick benchmarking run indicates the `.map(apply)` is not too costly
       }
       override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")

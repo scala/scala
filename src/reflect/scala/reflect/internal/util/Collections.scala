@@ -74,6 +74,16 @@ trait Collections {
     }
   }
 
+  final def containsRef(thiss: List[AnyRef], that: AnyRef): Boolean = {
+      var these = thiss
+      var those = that
+      while (these ne Nil) {
+        if (these.head eq that) return true
+        these = these.tail
+      }
+      false
+  }
+
   final def collectFirst[A, B](as: List[A])(pf: PartialFunction[A, B]): Option[B] = {
     @tailrec
     def loop(rest: List[A]): Option[B] = rest match {
