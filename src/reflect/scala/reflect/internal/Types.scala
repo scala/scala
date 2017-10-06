@@ -3926,7 +3926,7 @@ trait Types
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
   def isRawType(tp: Type) = !phase.erasedTypes && (tp match {
-    case TypeRef(_, sym, Nil) => isRawIfWithoutArgs(sym)
+    case TypeRef(_, sym, args) if args eq Nil => isRawIfWithoutArgs(sym)
     case _                    => false
   })
 
