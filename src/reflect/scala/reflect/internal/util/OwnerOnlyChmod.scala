@@ -8,7 +8,7 @@ import java.io.{File, FileOutputStream, IOException}
 
 
 trait OwnerOnlyChmod {
-  /** Remove group/other permisisons for `file`, it if exists */
+  /** Remove group/other permissions for `file`, it if exists */
   def chmod(file: java.io.File): Unit
 
   /** Delete `file` if it exists, recreate it with no group/other permissions, and write `contents` */
@@ -50,9 +50,9 @@ object Java6UnixChmod extends OwnerOnlyChmod {
   def chmod(file: File): Unit = if (file.exists()) {
     def clearAndSetOwnerOnly(f: (Boolean, Boolean) => Boolean): Unit = {
       def fail() = throw new IOException("Unable to modify permissions of " + file)
-      // attribute = false, ownerOwnly = false
+      // attribute = false, ownerOnly = false
       if (!f(false, false)) fail()
-      // attribute = true, ownerOwnly = true
+      // attribute = true, ownerOnly = true
       if (!f(true, true)) fail()
     }
     if (file.isDirectory) {
@@ -65,32 +65,29 @@ object Java6UnixChmod extends OwnerOnlyChmod {
 
 
 object NioAclChmodReflective {
-  private class Reflectors {
-    val file_toPath = classOf[java.io.File].getMethod("toPath")
-    val files = Class.forName("java.nio.file.Files")
-    val path_class = Class.forName("java.nio.file.Path")
-    val getFileAttributeView = files.getMethod("getFileAttributeView", path_class, classOf[Class[_]], Class.forName("[Ljava.nio.file.LinkOption;"))
-    val linkOptionEmptyArray = java.lang.reflect.Array.newInstance(Class.forName("java.nio.file.LinkOption"), 0)
-    val aclFileAttributeView_class = Class.forName("java.nio.file.attribute.AclFileAttributeView")
-    val aclEntry_class = Class.forName("java.nio.file.attribute.AclEntry")
-    val aclEntryBuilder_class = Class.forName("java.nio.file.attribute.AclEntry$Builder")
-    val newBuilder = aclEntry_class.getMethod("newBuilder")
-    val aclEntryBuilder_build = aclEntryBuilder_class.getMethod("build")
-    val userPrinciple_class = Class.forName("java.nio.file.attribute.UserPrincipal")
-    val setPrincipal = aclEntryBuilder_class.getMethod("setPrincipal", userPrinciple_class)
-    val setPermissions = aclEntryBuilder_class.getMethod("setPermissions", Class.forName("[Ljava.nio.file.attribute.AclEntryPermission;"))
-    val aclEntryType_class = Class.forName("java.nio.file.attribute.AclEntryType")
-    val setType = aclEntryBuilder_class.getMethod("setType", aclEntryType_class)
-    val aclEntryPermission_class = Class.forName("java.nio.file.attribute.AclEntryPermission")
-    val aclEntryPermissionValues = aclEntryPermission_class.getDeclaredMethod("values")
-    val aclEntryType_ALLOW = aclEntryType_class.getDeclaredField("ALLOW")
-  }
-  private val reflectors = try { new Reflectors } catch { case ex: Throwable => null }
+  val file_toPath = classOf[java.io.File].getMethod("toPath")
+  val files = Class.forName("java.nio.file.Files")
+  val path_class = Class.forName("java.nio.file.Path")
+  val getFileAttributeView = files.getMethod("getFileAttributeView", path_class, classOf[Class[_]], Class.forName("[Ljava.nio.file.LinkOption;"))
+  val linkOptionEmptyArray = java.lang.reflect.Array.newInstance(Class.forName("java.nio.file.LinkOption"), 0)
+  val aclFileAttributeView_class = Class.forName("java.nio.file.attribute.AclFileAttributeView")
+  val aclEntry_class = Class.forName("java.nio.file.attribute.AclEntry")
+  val aclEntryBuilder_class = Class.forName("java.nio.file.attribute.AclEntry$Builder")
+  val newBuilder = aclEntry_class.getMethod("newBuilder")
+  val aclEntryBuilder_build = aclEntryBuilder_class.getMethod("build")
+  val userPrinciple_class = Class.forName("java.nio.file.attribute.UserPrincipal")
+  val setPrincipal = aclEntryBuilder_class.getMethod("setPrincipal", userPrinciple_class)
+  val setPermissions = aclEntryBuilder_class.getMethod("setPermissions", Class.forName("[Ljava.nio.file.attribute.AclEntryPermission;"))
+  val aclEntryType_class = Class.forName("java.nio.file.attribute.AclEntryType")
+  val setType = aclEntryBuilder_class.getMethod("setType", aclEntryType_class)
+  val aclEntryPermission_class = Class.forName("java.nio.file.attribute.AclEntryPermission")
+  val aclEntryPermissionValues = aclEntryPermission_class.getDeclaredMethod("values")
+  val aclEntryType_ALLOW = aclEntryType_class.getDeclaredField("ALLOW")
 }
 
 /** Reflective version of `NioAclChmod` */
 final class NioAclChmodReflective extends OwnerOnlyChmod {
-  import NioAclChmodReflective.reflectors._
+  import NioAclChmodReflective._
   def chmod(file: java.io.File): Unit = {
     val path = file_toPath.invoke(file)
     val view = getFileAttributeView.invoke(null, path, aclFileAttributeView_class, linkOptionEmptyArray)

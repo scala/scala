@@ -20,7 +20,7 @@ trait FileBackedHistory extends JLineHistory with PersistentHistory {
 
   // For a history file in the standard location, always try to restrict permission,
   // creating an empty file if none exists.
-  // For a user-specified location, only lock down permissions on if we're the ones
+  // For a user-specified location, only lock down permissions if we're the ones
   // creating it, otherwise responsibility for permissions is up to the caller.
   protected lazy val historyFile: File = File {
     propOrNone("scala.shell.histfile").map(Path.apply) match {

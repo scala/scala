@@ -8,6 +8,7 @@ package scala.tools.nsc
 import java.math.BigInteger
 import java.security.SecureRandom
 
+import scala.io.Codec
 import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._
@@ -133,10 +134,10 @@ class CompileSocket extends CompileOutputCommon {
 
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: Int): Unit = {
-    val file    = portFile(port)
-    val secretBytes = new Array[Byte](16)
-    new SecureRandom().nextBytes(secretBytes)
-    val secretDigits = new BigInteger(secretBytes).toString().getBytes("UTF-8")
+    val file = portFile(port)
+    // 128 bits of delicious randomness, suitable for printing with println over a socket,
+    // and storage in a file -- see getPassword
+    val secretDigits = new BigInteger(128, new SecureRandom()).toString.getBytes("UTF-8")
 
     try OwnerOnlyChmod().chmodAndWrite(file.jfile, secretDigits)
     catch chmodFailHandler(s"Cannot create file: ${file}")
@@ -197,7 +198,7 @@ class CompileSocket extends CompileOutputCommon {
 
   def getPassword(port: Int): String = {
     val ff  = portFile(port)
-    val f   = ff.bufferedReader()
+    val f   = ff.bufferedReader(Codec.UTF8)
 
     // allow some time for the server to start up
     def check = {
