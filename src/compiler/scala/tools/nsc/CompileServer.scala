@@ -6,11 +6,13 @@
 package scala.tools.nsc
 
 import java.io.PrintStream
-import io.Directory
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.{FakePos, Position}
+
+import scala.reflect.internal.util.FakePos
+import scala.tools.nsc.Properties.scalacDir
+import scala.tools.nsc.io.Directory
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.settings.FscSettings
 import scala.tools.util.SocketServer
-import settings.FscSettings
 
 /**
  *  The server part of the fsc offline compiler.  It awaits compilation
@@ -33,7 +35,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   val MaxCharge = 0.8
 
   private val runtime = Runtime.getRuntime()
-  import runtime.{ totalMemory, freeMemory, maxMemory }
+  import runtime.{freeMemory, maxMemory, totalMemory}
 
   /** Create a new compiler instance */
   def newGlobal(settings: Settings, reporter: Reporter) =
@@ -178,14 +180,15 @@ object CompileServer {
     execute(() => (), args)
 
   /**
-   * Used for internal testing. The callback is called upon
-   * server start, notifying the caller that the server is
-   * ready to run. WARNING: the callback runs in the
-   * server's thread, blocking the server from doing any work
-   * until the callback is finished. Callbacks should be kept
-   * simple and clients should not try to interact with the
-   * server while the callback is processing.
-   */
+    * The server's main loop.
+    *
+    * `startupCallback` is used for internal testing; it's called upon server start,
+    * notifying the caller that the server is ready to run.
+    *
+    * WARNING: the callback runs in the server's thread, blocking the server from doing any work
+    * until the callback is finished. Callbacks should be kept simple and clients should not try to
+    * interact with the server while the callback is processing.
+    */
   def execute(startupCallback : () => Unit, args: Array[String]) {
     val debug = args contains "-v"
     var port = 0
@@ -193,14 +196,14 @@ object CompileServer {
     val i = args.indexOf("-p")
     if (i >= 0 && args.length > i + 1) {
     	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
-    		port = args(i + 1).toInt 
+		port = args(i + 1).toInt
     	}
     }
-    
+
     // Create instance rather than extend to pass a port parameter.
     val server = new StandardCompileServer(port)
-    val redirectDir = (server.compileSocket.tmpDir / "output-redirects").createDirectory()
-    
+    val redirectDir = server.compileSocket.mkDaemonDir("fsc_redirects")
+
     if (debug) {
       server.echo("Starting CompileServer on port " + server.port)
       server.echo("Redirect dir is " + redirectDir)

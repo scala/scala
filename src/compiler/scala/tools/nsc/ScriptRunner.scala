@@ -67,7 +67,10 @@ class ScriptRunner extends HasCompileSocket {
     val coreCompArgs     = compSettings flatMap (_.unparse)
     val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
 
-    CompileSocket getOrCreateSocket "" match {
+    // TODO: untangle this mess of top-level objects with their own little view of the mutable world of settings
+    compileSocket.verbose = settings.verbose.value
+
+    compileSocket getOrCreateSocket "" match {
       case Some(sock) => compileOnServer(sock, compArgs)
       case _          => false
     }
@@ -99,13 +102,22 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nc) {
+      // can't reliably lock down permissions on the portfile in this environment => disable by default.
+      // not the cleanest to do this here, but I don't see where else to decide this and emit the warning below
+      val cantLockdown = !settings.nc.isSetByUser && scala.util.Properties.isWin && !scala.util.Properties.isJavaAtLeast("7")
+
+      if (cantLockdown) settings.nc.value = true
+
+      if (!settings.useCompDaemon) {
         /* Setting settings.script.value informs the compiler this is not a
          * self contained compilation unit.
          */
         settings.script.value = mainClass
         val reporter = new ConsoleReporter(settings)
         val compiler = newGlobal(settings, reporter)
+
+        if (cantLockdown)
+          reporter.echo("[info] The compilation daemon is disabled by default on this platform. To force its usage, use `-nocompdaemon:false`.")
 
         new compiler.Run compile List(scriptFile)
         if (reporter.hasErrors) None else Some(compiledPath)
