@@ -5,12 +5,17 @@
 
 package scala.tools.nsc
 
-import java.io.FileNotFoundException
+import java.math.BigInteger
 import java.security.SecureRandom
-import io.{ File, Path, Socket }
-import scala.tools.util.CompileOutputCommon
+
+import scala.io.Codec
+import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._
+import scala.tools.nsc.Properties.scalacDir
+import scala.tools.nsc.io.{File, Socket}
+import scala.tools.util.CompileOutputCommon
+import scala.util.control.NonFatal
 
 trait HasCompileSocket {
   def compileSocket: CompileSocket
@@ -46,14 +51,10 @@ trait HasCompileSocket {
 class CompileSocket extends CompileOutputCommon {
   protected lazy val compileClient: StandardCompileClient = CompileClient
   def verbose = compileClient.verbose
-
+  def verbose_=(v: Boolean) = compileClient.verbose = v
   /* Fixes the port where to start the server, 0 yields some free port */
   var fixPort = 0
 
-  /** The prefix of the port identification file, which is followed
-   *  by the port number.
-   */
-  protected lazy val dirName = "scalac-compile-server-port"
   protected def cmdName = Properties.scalaCmd
 
   /** The vm part of the command to start a new scala compile server */
@@ -69,20 +70,8 @@ class CompileSocket extends CompileOutputCommon {
   protected val serverClass     = "scala.tools.nsc.CompileServer"
   protected def serverClassArgs = (if (verbose) List("-v") else Nil) ::: (if (fixPort > 0) List("-p", fixPort.toString) else Nil)
 
-  /** A temporary directory to use */
-  val tmpDir = {
-    val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (Path(Properties.tmpDir) / ("scala-devel" + udir)).createDirectory()
-
-    if (f.isDirectory && f.canWrite) {
-      info("[Temp directory: " + f + "]")
-      f
-    }
-    else fatal("Could not find a directory for temporary files")
-  }
-
   /* A directory holding port identification files */
-  val portsDir = (tmpDir / dirName).createDirectory()
+  private lazy val portsDir = mkDaemonDir("fsc_port")
 
   /** The command which starts the compile server, given vm arguments.
     *
@@ -104,7 +93,7 @@ class CompileSocket extends CompileOutputCommon {
   }
 
   /** The port identification file */
-  def portFile(port: Int) = portsDir / File(port.toString)
+  def portFile(port: Int): File = portsDir / File(port.toString)
 
   /** Poll for a server port number; return -1 if none exists yet */
   private def pollPort(): Int = if (fixPort > 0) {
@@ -138,19 +127,19 @@ class CompileSocket extends CompileOutputCommon {
     }
     info("[Port number: " + port + "]")
     if (port < 0)
-      fatal("Could not connect to compilation daemon after " + attempts + " attempts.")
+      fatal(s"Could not connect to compilation daemon after $attempts attempts. To run without it, use `-nocompdaemon` or `-nc`.")
     port
   }
 
   /** Set the port number to which a scala compile server is connected */
-  def setPort(port: Int) {
-    val file    = portFile(port)
-    val secret  = new SecureRandom().nextInt.toString
+  def setPort(port: Int): Unit = {
+    val file = portFile(port)
+    // 128 bits of delicious randomness, suitable for printing with println over a socket,
+    // and storage in a file -- see getPassword
+    val secretDigits = new BigInteger(128, new SecureRandom()).toString.getBytes("UTF-8")
 
-    try file writeAll secret catch {
-      case e @ (_: FileNotFoundException | _: SecurityException) =>
-        fatal("Cannot create file: %s".format(file.path))
-    }
+    try OwnerOnlyChmod.chmodFileAndWrite(file.jfile.toPath, secretDigits)
+    catch chmodFailHandler(s"Cannot create file: ${file}")
   }
 
   /** Delete the port number to which a scala compile server was connected */
@@ -208,7 +197,7 @@ class CompileSocket extends CompileOutputCommon {
 
   def getPassword(port: Int): String = {
     val ff  = portFile(port)
-    val f   = ff.bufferedReader()
+    val f   = ff.bufferedReader(Codec.UTF8)
 
     // allow some time for the server to start up
     def check = {
@@ -223,6 +212,24 @@ class CompileSocket extends CompileOutputCommon {
     f.close()
     result
   }
+
+  private def chmodFailHandler(msg: String): PartialFunction[Throwable, Unit] = {
+    case NonFatal(e) =>
+      if (verbose) e.printStackTrace()
+      fatal(msg)
+  }
+
+  def mkDaemonDir(name: String) = {
+    val dir = (scalacDir / name).createDirectory()
+
+    if (dir.isDirectory && dir.canWrite) info(s"[Temp directory: $dir]")
+    else fatal(s"Could not create compilation daemon directory $dir")
+
+    try OwnerOnlyChmod.chmod(dir.jfile.toPath)
+    catch chmodFailHandler(s"Failed to change permissions on $dir. The compilation daemon requires a secure directory; use -nc to disable the daemon.")
+    dir
+  }
+
 }
 
 

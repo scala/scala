@@ -5,6 +5,8 @@
 
 package scala.tools.nsc
 
+import scala.tools.nsc.io.Path
+
 /** Loads `compiler.properties` from the jar archive file.
  */
 object Properties extends scala.util.PropertiesTrait {
@@ -28,4 +30,7 @@ object Properties extends scala.util.PropertiesTrait {
 
   // derived values
   def isEmacsShell         = propOrEmpty("env.emacs") != ""
+
+  // Where we keep fsc's state (ports/redirection)
+  lazy val scalacDir = (Path(Properties.userHome) / ".scalac").createDirectory(force = false)
 }
