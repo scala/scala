@@ -1,0 +1,6 @@
+Unused_2.scala:9: warning: private method unusedMacro in object Unused is never used
+  private def unusedMacro(): Unit = macro UnusedMacro.usedMacroImpl
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
