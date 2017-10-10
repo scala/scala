@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.NoPosition
+import scala.reflect.internal.util.{NoPosition, Statistics}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
 import scala.tools.asm.tree.ClassNode
@@ -13,7 +13,7 @@ import scala.tools.nsc.backend.jvm.opt._
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
  * optimizations, post-processing and classfile serialization and writing.
  */
-abstract class PostProcessor extends PerRunInit {
+abstract class PostProcessor(statistics: Statistics with BackendStats) extends PerRunInit {
   self =>
   val bTypes: BTypes
 
@@ -30,7 +30,8 @@ abstract class PostProcessor extends PerRunInit {
   val bTypesFromClassfile : BTypesFromClassfile { val postProcessor: self.type } = new { val postProcessor: self.type = self } with BTypesFromClassfile
 
   // re-initialized per run because it reads compiler settings that might change
-  lazy val classfileWriter: LazyVar[ClassfileWriter] = perRunLazy(this)(new ClassfileWriter(frontendAccess))
+  lazy val classfileWriter: LazyVar[ClassfileWriter] =
+    perRunLazy(this)(new ClassfileWriter(frontendAccess, statistics))
 
   lazy val generatedClasses = recordPerRunCache(new ListBuffer[GeneratedClass])
 
@@ -91,7 +92,7 @@ abstract class PostProcessor extends PerRunInit {
   }
 
   def localOptimizations(classNode: ClassNode): Unit = {
-    BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
+    statistics.timed(statistics.methodOptTimer)(localOpt.methodOptimizations(classNode))
   }
 
   def setInnerClasses(classNode: ClassNode): Unit = {

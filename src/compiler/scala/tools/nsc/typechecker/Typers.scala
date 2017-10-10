@@ -14,7 +14,8 @@ package tools.nsc
 package typechecker
 
 import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.{ListOfNil, Statistics}
+import scala.reflect.internal.util.{ListOfNil, Statistics, StatisticsStatics}
+import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -32,7 +33,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   import global._
   import definitions._
-  import TypersStats._
+  import statistics._
 
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
@@ -669,15 +670,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def silent[T](op: Typer => T,
                   reportAmbiguousErrors: Boolean = context.ambiguousErrors,
                   newtree: Tree = context.tree): SilentResult[T] = {
-      val rawTypeStart = if (Statistics.canEnable) Statistics.startCounter(rawTypeFailed) else null
-      val findMemberStart = if (Statistics.canEnable) Statistics.startCounter(findMemberFailed) else null
-      val subtypeStart = if (Statistics.canEnable) Statistics.startCounter(subtypeFailed) else null
-      val failedSilentStart = if (Statistics.canEnable) Statistics.startTimer(failedSilentNanos) else null
+      val rawTypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(rawTypeFailed) else null
+      val findMemberStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(findMemberFailed) else null
+      val subtypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeFailed) else null
+      val failedSilentStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedSilentNanos) else null
       def stopStats() = {
-        if (Statistics.canEnable) Statistics.stopCounter(rawTypeFailed, rawTypeStart)
-        if (Statistics.canEnable) Statistics.stopCounter(findMemberFailed, findMemberStart)
-        if (Statistics.canEnable) Statistics.stopCounter(subtypeFailed, subtypeStart)
-        if (Statistics.canEnable) Statistics.stopTimer(failedSilentNanos, failedSilentStart)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeFailed, rawTypeStart)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberFailed, findMemberStart)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeFailed, subtypeStart)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedSilentNanos, failedSilentStart)
       }
       @inline def wrapResult(reporter: ContextReporter, result: T) =
         if (reporter.hasErrors) {
@@ -3893,9 +3894,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def isCapturedExistential(sym: Symbol) = (
       (sym hasAllFlags EXISTENTIAL | CAPTURED) && {
-        val start = if (Statistics.canEnable) Statistics.startTimer(isReferencedNanos) else null
+        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(isReferencedNanos) else null
         try !isReferencedFrom(context, sym)
-        finally if (Statistics.canEnable) Statistics.stopTimer(isReferencedNanos, start)
+        finally if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(isReferencedNanos, start)
       }
     )
 
@@ -4588,10 +4589,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
-        val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
+        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedApplyNanos) else null
 
         def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
-          if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
+          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, convert to existentials and try again.
           // See #4712 for a case where this situation arises,
@@ -4652,8 +4653,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // TODO: replace `fun.symbol.isStable` by `treeInfo.isStableIdentifierPattern(fun)`
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
         val funpt = if (mode.inPatternMode) pt else WildcardType
-        val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
-        val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
+        val appStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedApplyNanos) else null
+        val opeqStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedOpEqNanos) else null
 
         def isConversionCandidate(qual: Tree, name: Name): Boolean =
           !mode.inPatternMode && nme.isOpAssignmentName(TermName(name.decode)) && !qual.exists(_.isErroneous)
@@ -4683,7 +4684,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Select(qual, name) if isConversionCandidate(qual, name) =>
             val qual1 = typedQualifier(qual)
             if (treeInfo.isVariableOrGetter(qual1)) {
-              if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
+              if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedOpEqNanos, opeqStart)
               val erred = qual1.exists(_.isErroneous) || args.exists(_.isErroneous)
               if (erred) reportError(error) else {
                 val convo = convertToAssignment(fun, qual1, name, args)
@@ -4695,7 +4696,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 }
               }
             } else {
-              if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+              if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, appStart)
               val Apply(Select(qual2, _), args2) = tree
               val erred = qual2.exists(_.isErroneous) || args2.exists(_.isErroneous)
               reportError {
@@ -4703,7 +4704,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
             }
           case _ =>
-            if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+            if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, appStart)
             reportError(error)
         }
         val silentResult = silent(
@@ -4714,7 +4715,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         silentResult match {
           case SilentResultValue(fun1) =>
             val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-            if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
+            if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedApplyCount)
             val noSecondTry = (
                  isPastTyper
               || context.inSecondTry
@@ -5006,7 +5007,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (name.isTypeName)
             typedSelect(tree, typedTypeSelectionQualifier(tree.qualifier, WildcardType), name)
           else {
-            if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
+            if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedSelectCount)
             val qualTyped = checkDead(typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
 
@@ -5094,7 +5095,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
-        if (Statistics.canEnable) Statistics.incCounter(typedIdentCount)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedIdentCount)
         if ((name == nme.WILDCARD && mode.typingPatternNotConstructor) ||
             (name == tpnme.WILDCARD && mode.inTypeMode))
           tree setType makeFullyDefined(pt)
@@ -5558,10 +5559,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else
           typedInternal(tree, mode, pt)
       )
-      val startByType = if (Statistics.hotEnabled) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
-      if (Statistics.hotEnabled) Statistics.incCounter(visitsByType, tree.getClass)
+      val statsEnabled = StatisticsStatics.areSomeHotStatsEnabled() && statistics.areHotStatsLocallyEnabled
+      val startByType = if (statsEnabled) statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
+      if (statsEnabled) statistics.incCounter(visitsByType, tree.getClass)
       try body
-      finally if (Statistics.hotEnabled) Statistics.popTimer(byTypeStack, startByType)
+      finally if (statsEnabled) statistics.popTimer(byTypeStack, startByType)
     }
 
     private def typedInternal(tree: Tree, mode: Mode, pt: Type): Tree = {
@@ -5803,19 +5805,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
 }
 
-object TypersStats {
-  import scala.reflect.internal.TypesStats._
-  val typedIdentCount     = Statistics.newCounter("#typechecked identifiers")
-  val typedSelectCount    = Statistics.newCounter("#typechecked selections")
-  val typedApplyCount     = Statistics.newCounter("#typechecked applications")
-  val rawTypeFailed       = Statistics.newSubCounter ("  of which in failed", rawTypeCount)
-  val subtypeFailed       = Statistics.newSubCounter("  of which in failed", subtypeCount)
-  val findMemberFailed    = Statistics.newSubCounter("  of which in failed", findMemberCount)
-  val failedSilentNanos   = Statistics.newSubTimer("time spent in failed", typerNanos)
-  val failedApplyNanos    = Statistics.newSubTimer("  failed apply", typerNanos)
-  val failedOpEqNanos     = Statistics.newSubTimer("  failed op=", typerNanos)
-  val isReferencedNanos   = Statistics.newSubTimer("time spent ref scanning", typerNanos)
-  val visitsByType        = Statistics.newByClass("#visits by tree node", "typer")(Statistics.newCounter(""))
-  val byTypeNanos         = Statistics.newByClass("time spent by tree node", "typer")(Statistics.newStackableTimer("", typerNanos))
-  val byTypeStack         = Statistics.newTimerStack()
+trait TypersStats {
+  self: TypesStats with Statistics =>
+  val typedIdentCount     = newCounter("#typechecked identifiers")
+  val typedSelectCount    = newCounter("#typechecked selections")
+  val typedApplyCount     = newCounter("#typechecked applications")
+  val rawTypeFailed       = newSubCounter ("  of which in failed", rawTypeCount)
+  val subtypeFailed       = newSubCounter("  of which in failed", subtypeCount)
+  val findMemberFailed    = newSubCounter("  of which in failed", findMemberCount)
+  val failedSilentNanos   = newSubTimer("time spent in failed", typerNanos)
+  val failedApplyNanos    = newSubTimer("  failed apply", typerNanos)
+  val failedOpEqNanos     = newSubTimer("  failed op=", typerNanos)
+  val isReferencedNanos   = newSubTimer("time spent ref scanning", typerNanos)
+  val visitsByType        = newByClass("#visits by tree node", "typer")(newCounter(""))
+  val byTypeNanos         = newByClass("time spent by tree node", "typer")(newStackableTimer("", typerNanos))
+  val byTypeStack         = newTimerStack()
 }

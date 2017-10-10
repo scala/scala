@@ -388,17 +388,6 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   }
 }
 
-object AliasingFrame {
-//  val start1 = AliasingFrame.timer1.start()
-//  AliasingFrame.timer1.stop(start1)
-  import scala.reflect.internal.util.Statistics._
-  val timer1 = newTimer("t1", "jvm")
-  val timer2 = newTimer("t2", "jvm")
-  val timer3 = newTimer("t3", "jvm")
-  val timers = List(timer1, timer2, timer3)
-  def reset(): Unit = for (t <- timers) { t.nanos = 0; t.timings = 0 }
-}
-
 /**
  * An analyzer that uses AliasingFrames instead of bare Frames. This can be used when an analysis
  * needs to track aliases, but doesn't require a more specific Frame subclass.

@@ -380,12 +380,12 @@ trait ScalaSettings extends AbsScalaSettings
       descr   = description,
       domain  = YstatisticsPhases,
       default = Some(List("_"))
-    ).withPostSetHook(_ => Statistics.enabled = true)
+    )
   }
+  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
-  def YstatisticsEnabled = Ystatistics.value.nonEmpty
   val YhotStatistics = BooleanSetting("-Yhot-statistics", "Print hot compiler statistics for all relevant phases")
-    .withPostSetHook(_ => Statistics.hotEnabled = true)
+  override def YhotStatisticsEnabled = YhotStatistics.value
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
   val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").

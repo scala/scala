@@ -5,12 +5,12 @@
 package scala.reflect.internal
 package tpe
 
+import util.StatisticsStatics
 import Flags._
-import util.Statistics
-import TypesStats._
 
 trait FindMembers {
   this: SymbolTable =>
+  import statistics._
 
   /** Implementation of `Type#{findMember, findMembers}` */
   private[internal] abstract class FindMemberBase[T](tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) {
@@ -43,10 +43,10 @@ trait FindMembers {
 
     // Main entry point
     def apply(): T = {
-      if (Statistics.canEnable) Statistics.incCounter(findMemberCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMemberNanos) else null
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(findMemberCount)
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, findMemberNanos) else null
       try searchConcreteThenDeferred
-      finally if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+      finally if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
     }
 
     protected def result: T
@@ -276,11 +276,11 @@ trait FindMembers {
     // Assemble the result from the hand-rolled ListBuffer
     protected def result: Symbol = if (members eq null) {
       if (member0 == NoSymbol) {
-        if (Statistics.canEnable) Statistics.incCounter(noMemberCount)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(noMemberCount)
         NoSymbol
       } else member0
     } else {
-      if (Statistics.canEnable) Statistics.incCounter(multMemberCount)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
       lastM.tl = Nil
       initBaseClasses.head.newOverloaded(tpe, members)
     }
