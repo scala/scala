@@ -56,6 +56,9 @@ test FancyTailCalls.tcInIfCond was successful
 test FancyTailCalls.tcInPatternGuard was successful
 test FancyTailCalls.differentInstance was successful
 test PolyObject.tramp was successful
+test PolyObject.size was successful
+test PolyObject.specializedSize[Int] was successful
+test PolyObject.specializedSize[String] was successful
 #partest avian
 test Object   .f was successful
 test Final    .f was successful
@@ -114,3 +117,6 @@ test FancyTailCalls.tcInIfCond was successful
 test FancyTailCalls.tcInPatternGuard was successful
 test FancyTailCalls.differentInstance was successful
 test PolyObject.tramp was successful
+test PolyObject.size was successful
+test PolyObject.specializedSize[Int] was successful
+test PolyObject.specializedSize[String] was successful

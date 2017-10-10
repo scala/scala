@@ -63,10 +63,11 @@ abstract class TailCalls extends Transform {
    * <p>
    *   A method call is self-recursive if it calls the current method and
    *   the method is final (otherwise, it could
-   *   be a call to an overridden method in a subclass). Furthermore, If
-   *   the method has type parameters, the call must contain these
-   *   parameters as type arguments. Recursive calls on a different instance
-   *   are optimized. Since 'this' is not a local variable, a dummy local val
+   *   be a call to an overridden method in a subclass). Furthermore, if
+   *   the method has `@specialized` annotated type parameters, the recursive
+   *   call must contain these parameters as type arguments.
+   *   Recursive calls on a different instance are optimized.
+   *   Since 'this' is not a local variable, a dummy local val
    *   is added and used as a label parameter. The backend knows to load
    *   the corresponding argument in the 'this' (local at index 0). This dummy local
    *   is never used and should be cleaned up by dead code elimination (when enabled).
@@ -228,7 +229,10 @@ abstract class TailCalls extends Transform {
         def receiverIsSuper   = ctx.enclosingType.widen <:< receiver.tpe.widen
         def isRecursiveCall   = (ctx.method eq fun.symbol) && ctx.tailPos
         def transformArgs     = if (mustTransformArgs) noTailTransforms(args) else args
-        def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
+        def matchesTypeArgs   = (ctx.tparams corresponds targs)((p, a) => !isSpecialized(p) || p == a.tpe.typeSymbol)
+
+        def isSpecialized(tparam: Symbol) =
+          tparam.hasAnnotation(SpecializedClass)
 
         /* Records failure reason in Context for reporting.
          * Position is unchanged (by default, the method definition.)
@@ -258,7 +262,7 @@ abstract class TailCalls extends Transform {
                                         failHere("it contains a recursive call targeting a supertype")
           else                          failHere(defaultReason)
         }
-        else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")
+        else if (!matchesTypeArgs)      failHere("it is called recursively with different specialized type arguments")
         else if (receiver == EmptyTree) rewriteTailCall(This(currentClass))
         else if (!receiverIsSame)       failHere("it changes type of 'this' on a polymorphic recursive call")
         else                            rewriteTailCall(receiver)
