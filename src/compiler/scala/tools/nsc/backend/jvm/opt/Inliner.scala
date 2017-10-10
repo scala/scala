@@ -16,6 +16,7 @@ import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class Inliner {
@@ -578,7 +579,7 @@ abstract class Inliner {
     undo { callGraph.addCallsite(callsite) }
 
     // Inlining a method body can render some code unreachable, see example above in this method.
-    localOpt.unreachableCodeEliminated -= callsiteMethod
+    BackendUtils.clearDceDone(callsiteMethod)
   }
 
   /**

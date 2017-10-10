@@ -6,8 +6,9 @@
 package scala
 package reflect.internal.util
 
-import scala.language.implicitConversions
+import java.lang.invoke.{ MethodHandles, MethodType }
 
+import scala.language.implicitConversions
 import java.lang.{ ClassLoader => JClassLoader }
 import java.lang.reflect.Modifier
 import java.net.{ URLClassLoader => JURLClassLoader }
@@ -145,8 +146,9 @@ object ScalaClassLoader {
     }
   }
 
-  def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =
-    new URLClassLoader(urls, parent)
+  def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader = {
+    new URLClassLoader(urls, if (parent == null) bootClassLoader else parent)
+  }
 
   /** True if supplied class exists in supplied path */
   def classExists(urls: Seq[URL], name: String): Boolean =
@@ -155,4 +157,18 @@ object ScalaClassLoader {
   /** Finding what jar a clazz or instance came from */
   def originOfClass(x: Class[_]): Option[URL] =
     Option(x.getProtectionDomain.getCodeSource) flatMap (x => Option(x.getLocation))
+
+  private[this] val bootClassLoader: ClassLoader = {
+    if (!util.Properties.isJavaAtLeast("9")) null
+    else {
+      try {
+        MethodHandles.lookup().findStatic(classOf[ClassLoader], "getPlatformClassLoader", MethodType.methodType(classOf[ClassLoader])).invoke()
+      } catch {
+        case _: Throwable =>
+          null
+      }
+    }
+
+
+  }
 }

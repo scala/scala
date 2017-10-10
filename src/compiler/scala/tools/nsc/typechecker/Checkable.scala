@@ -289,9 +289,11 @@ trait Checkable {
     )
 
     /** TODO: much better error positions.
-     *  Kind of stuck right now because they just pass us the one tree.
-     *  TODO: Eliminate inPattern, canRemedy, which have no place here.
-     */
+      * Kind of stuck right now because they just pass us the one tree.
+      * TODO: Eliminate inPattern, canRemedy, which have no place here.
+      *
+      *  Instead of the canRemedy flag, annotate uncheckable types that have become checkable because of the availability of a class tag?
+      */
     def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false) {
       if (uncheckedOk(P0)) return
       def where = if (inPattern) "pattern " else ""

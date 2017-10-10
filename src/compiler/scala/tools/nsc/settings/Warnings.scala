@@ -26,8 +26,9 @@ trait Warnings {
     val PatVars   = Choice("patvars",   "Warn if a variable bound in a pattern is unused.")
     val Privates  = Choice("privates",  "Warn if a private member is unused.")
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
-    val Params    = Choice("params",    "Warn if a value parameter is unused.")
+    val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+    val Params    = Choice("params",    "Warn if a value parameter is unused.", expandsTo = List(Explicits, Implicits))
     val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
   }
 
@@ -44,14 +45,15 @@ trait Warnings {
   def warnUnusedPatVars   = warnUnused contains UnusedWarnings.PatVars
   def warnUnusedPrivates  = warnUnused contains UnusedWarnings.Privates
   def warnUnusedLocals    = warnUnused contains UnusedWarnings.Locals
-  def warnUnusedParams    = warnUnused contains UnusedWarnings.Params
+  def warnUnusedParams    = warnUnusedExplicits || warnUnusedImplicits
+  def warnUnusedExplicits = warnUnused contains UnusedWarnings.Explicits
   def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
 
   BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
     warnUnused.add(s"${if (s) "" else "-"}imports")
   } //withDeprecationMessage s"Enable -Ywarn-unused:imports"
 
-  val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
+  val warnExtraImplicit   = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
@@ -73,7 +75,8 @@ trait Warnings {
     val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.",                       true)
     val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()' overrides nullary `def f'.",                true)
-    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument is inferred to be `Any`.",                        true)
+    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument, variable definition or method definition is inferred to be `Any`.", true)
+    val InferPwS               = LintWarning("infer-pws",                 "Warn when a type argument, variable definition, or method definition is inferred to be `Product with Serializable`.")
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "A Scaladoc comment appears to be detached from its element.")
     val PrivateShadow          = LintWarning("private-shadow",            "A private field (or class parameter) shadows a superclass field.")
@@ -97,6 +100,7 @@ trait Warnings {
   def warnInaccessible           = lint contains Inaccessible
   def warnNullaryOverride        = lint contains NullaryOverride
   def warnInferAny               = lint contains InferAny
+  def warnInferPwS               = lint contains InferPwS
   def warnMissingInterpolator    = lint contains MissingInterpolator
   def warnDocDetached            = lint contains DocDetached
   def warnPrivateShadow          = lint contains PrivateShadow

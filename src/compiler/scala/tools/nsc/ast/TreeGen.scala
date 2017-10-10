@@ -146,7 +146,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(!pt.isInstanceOf[MethodType], tree)
-    assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
     atPos(tree.pos) {
       mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = isAtPhaseAfter(currentRun.uncurryPhase))
     }
@@ -156,6 +155,9 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   // let's assume for now annotations don't affect casts, drop them there, and bring them back using the outer Typed tree
   def mkCastPreservingAnnotations(tree: Tree, pt: Type) =
     Typed(mkCast(tree, pt.withoutAnnotations.dealias), TypeTree(pt))
+    // ^^^ I think we should either normalize or do nothing, but the half measure of dealias does not make sense,
+    // as the logic behind a cast operates on the fully normalized type, not just on a dealiased type (think refinements with type aliases).
+    // It would be ok to do nothing here, because erasure will convert the type to something that can be casted anyway.
 
   /** Generate a cast for tree Tree representing Array with
    *  elem type elemtp to expected type pt.

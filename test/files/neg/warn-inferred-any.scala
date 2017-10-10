@@ -25,3 +25,21 @@ trait Zs {
   def za = f(1, "one")
   def zu = g(1, "one")
 }
+
+trait DefAny {
+  def get(b: Boolean) = if (b) 42 else true // warn (AnyVal)
+  def got(b: Boolean) = if (b) 42 else "42" // warn (Any)
+}
+
+trait ValAny {
+  val foo = if (true) 42 else false // warn (AnyVal)
+  val bar = if (true) 42 else "42" // warn (Any)
+}
+
+// these should not warn due to explicit types
+trait ExplicitAny {
+  def get(b: Boolean): AnyVal = if (b) 42 else true
+  def got(b: Boolean): Any = if (b) 42 else "42"
+  val foo: AnyVal = if (true) 42 else false
+  val bar: Any = if (true) 42 else "42"
+}

@@ -1,0 +1,7 @@
+t10279.scala:9: error: could not find implicit value for parameter s: String
+  val bar = foo(1) _
+               ^
+t10279.scala:12: error: could not find implicit value for parameter x: Int
+  val barSimple = fooSimple _
+                  ^
+two errors found

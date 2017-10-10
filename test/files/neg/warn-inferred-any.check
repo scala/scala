@@ -10,6 +10,18 @@ warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this ma
 warn-inferred-any.scala:25: warning: a type was inferred to be `Any`; this may indicate a programming error.
   def za = f(1, "one")
            ^
+warn-inferred-any.scala:30: warning: a type was inferred to be `AnyVal`; this may indicate a programming error
+  def get(b: Boolean) = if (b) 42 else true // warn (AnyVal)
+      ^
+warn-inferred-any.scala:31: warning: a type was inferred to be `Any`; this may indicate a programming error
+  def got(b: Boolean) = if (b) 42 else "42" // warn (Any)
+      ^
+warn-inferred-any.scala:35: warning: a type was inferred to be `AnyVal`; this may indicate a programming error
+  val foo = if (true) 42 else false // warn (AnyVal)
+      ^
+warn-inferred-any.scala:36: warning: a type was inferred to be `Any`; this may indicate a programming error
+  val bar = if (true) 42 else "42" // warn (Any)
+      ^
 error: No warnings can be incurred under -Xfatal-warnings.
-four warnings found
+8 warnings found
 one error found

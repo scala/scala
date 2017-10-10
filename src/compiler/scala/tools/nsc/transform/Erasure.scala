@@ -398,48 +398,32 @@ abstract class Erasure extends InfoTransform
 
   class UnknownSig extends Exception
 
-  // TODO: move to constructors?
-  object mixinTransformer extends Transformer {
-    /** Add calls to supermixin constructors
-      *    `super[mix].$init$()`
-      *  to tree, which is assumed to be the body of a constructor of class clazz.
-      */
-    private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-      def mixinConstructorCalls: List[Tree] = {
-        for (mc <- clazz.mixinClasses.reverse if mc.isTrait && mc.primaryConstructor != NoSymbol)
-          yield atPos(tree.pos) {
-            Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
-          }
-      }
-
-      tree match {
-        case Block(Nil, expr) =>
-          // AnyVal constructor - have to provide a real body so the
-          // jvm doesn't throw a VerifyError. But we can't add the
-          // body until now, because the typer knows that Any has no
-          // constructor and won't accept a call to super.init.
-          assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
-          Block(List(Apply(gen.mkSuperInitCall, Nil)), expr)
-
-        case Block(stats, expr) =>
-          // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
-          val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
-          treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
-      }
+  /** Add calls to supermixin constructors
+    *    `super[mix].$init$()`
+    *  to tree, which is assumed to be the body of a constructor of class clazz.
+    */
+  private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
+    // TODO: move to constructors?
+    def mixinConstructorCalls: List[Tree] = {
+      for (mc <- clazz.mixinClasses.reverse if mc.isTrait && mc.primaryConstructor != NoSymbol)
+        yield atPos(tree.pos) {
+          Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+        }
     }
 
-    override def transform(tree: Tree): Tree = {
-      val sym = tree.symbol
-      val tree1 = tree match {
-        case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
-          deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
-        case Template(parents, self, body) =>
-          val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
-          treeCopy.Template(tree, parents1, noSelfType, body)
-        case _ =>
-          tree
-      }
-      super.transform(tree1)
+    tree match {
+      case Block(Nil, expr) =>
+        // AnyVal constructor - have to provide a real body so the
+        // jvm doesn't throw a VerifyError. But we can't add the
+        // body until now, because the typer knows that Any has no
+        // constructor and won't accept a call to super.init.
+        assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
+        Block(List(Apply(gen.mkSuperInitCall, Nil)), expr)
+
+      case Block(stats, expr) =>
+        // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
+        treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
 
@@ -769,6 +753,11 @@ abstract class Erasure extends InfoTransform
     override def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
       val tree1 = try {
         tree match {
+          case DefDef(_,_,_,_,_,_) if tree.symbol.isClassConstructor && tree.symbol.isPrimaryConstructor && tree.symbol.owner != ArrayClass =>
+            super.typed1(deriveDefDef(tree)(addMixinConstructorCalls(_, tree.symbol.owner)), mode, pt) // (3)
+          case Template(parents, self, body) =>
+            val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
+            super.typed1(treeCopy.Template(tree, parents1, noSelfType, body), mode, pt)
           case InjectDerivedValue(arg) =>
             (tree.attachments.get[TypeRefAttachment]: @unchecked) match {
               case Some(itype) =>
@@ -1226,13 +1215,17 @@ abstract class Erasure extends InfoTransform
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
-        case Literal(ct) if ct.tag == ClazzTag
-                         && ct.typeValue.typeSymbol != definitions.UnitClass =>
-          val erased = ct.typeValue.dealiasWiden match {
-            case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(tr)
-            case tpe => specialScalaErasure(tpe)
-          }
-          treeCopy.Literal(tree, Constant(erased))
+        case Literal(ct) =>
+          // We remove the original tree attachments in pre-easure to free up memory
+          val cleanLiteral = tree.removeAttachment[OriginalTreeAttachment]
+
+          if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != definitions.UnitClass) {
+            val erased = ct.typeValue.dealiasWiden match {
+              case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(tr)
+              case tpe => specialScalaErasure(tpe)
+            }
+            treeCopy.Literal(cleanLiteral, Constant(erased))
+          } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
@@ -1289,10 +1282,7 @@ abstract class Erasure extends InfoTransform
       val tree1 = preTransformer.transform(tree)
       // log("tree after pretransform: "+tree1)
       exitingErasure {
-        val tree2 = mixinTransformer.transform(tree1)
-        // debuglog("tree after addinterfaces: \n" + tree2)
-
-        newTyper(rootContextPostTyper(unit, tree)).typed(tree2)
+        newTyper(rootContextPostTyper(unit, tree)).typed(tree1)
       }
     }
   }
