@@ -551,37 +551,21 @@ trait Infer extends Checkable {
         }
       }
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      def warnIfInferred(warn: Type => Boolean) = {
-        if (context.reportErrors && !fn.isEmpty) {
-          targs.withFilter(warn).foreach { targ =>
-            reporter.warning(fn.pos, s"a type was inferred to be `$targ`; this may indicate a programming error.")
-          }
-        }
-      }
-      def canWarnAbout(explicitlyTyped: List[Type] => Boolean): Boolean = {
-        val loBounds = tparams map (_.info.bounds.lo)
-        val hasExplicitType = pt :: restpe :: formals ::: argtpes ::: loBounds exists (tp => explicitlyTyped(tp.dealiasWidenChain))
-        !hasExplicitType
-      }
       // Can warn about inferring Any/AnyVal as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
-      def canWarnAboutAny = canWarnAbout(_ exists (t => (t contains AnyClass) || (t contains AnyValClass)))
-      if (settings.warnInferAny && canWarnAboutAny) {
-        warnIfInferred {
-          _.typeSymbol match {
-            case AnyClass | AnyValClass => true
-            case _ => false
-          }
-        }
+      def canWarnAboutAny = {
+        val loBounds = tparams map (_.info.bounds.lo)
+        def containsAny(t: Type) = (t contains AnyClass) || (t contains AnyValClass)
+        val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
+        !hasAny
       }
-      // Ditto for Product with Serializable
-      def canWarnAboutPwS = canWarnAbout(tps => (tps exists (_ contains ProductRootClass)) && (tps exists (_ contains SerializableClass)))
-      if (settings.warnInferPwS && canWarnAboutPwS) {
-        warnIfInferred {
-          case RefinedType(ProductRootTpe :: SerializableTpe :: _, scope) if scope.isEmpty => true
-          case _ => false
-        }
+      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
+        targs.foreach(_.typeSymbol match {
+          case sym @ (AnyClass | AnyValClass) =>
+            reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
+          case _ =>
+        })
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }

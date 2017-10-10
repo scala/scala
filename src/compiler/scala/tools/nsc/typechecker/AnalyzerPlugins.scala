@@ -153,6 +153,26 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param pt    The return type of the enclosing method
      */
     def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = tpe
+
+    /**
+     * Access the search instance that will be used for the implicit search.
+     *
+     * The motivation of this method is to allow analyzer plugins to control when/where
+     * implicit search are triggered, and access their environment for data capturing purposes.
+     *
+     * @param search The instance that holds all the information about a given implicit search.
+     */
+    def pluginsNotifyImplicitSearch(search: ImplicitSearch): Unit = ()
+
+    /**
+     * Access the implicit search result from Scalac's typechecker.
+     *
+     * The motivation of this method is to allow analyzer plugins to control when/where
+     * implicit search results are returned, and inspec them for data capturing purposes.
+     *
+     * @param result The result to a given implicit search.
+     */
+    def pluginsNotifyImplicitSearchResult(result: SearchResult): Unit = ()
   }
 
   /**
@@ -347,6 +367,18 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = invoke(new CumulativeOp[Type] {
     def default = adaptTypeOfReturn(tree.expr, pt, tpe)
     def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
+  })
+
+  /** @see AnalyzerPlugin.pluginsImplicitSearch */
+  def pluginsNotifyImplicitSearch(search: ImplicitSearch): Unit = invoke(new CumulativeOp[Unit] {
+    def default = ()
+    def accumulate = (_, p) => p.pluginsNotifyImplicitSearch(search)
+  })
+
+  /** @see AnalyzerPlugin.pluginsImplicitSearchResult */
+  def pluginsNotifyImplicitSearchResult(result: SearchResult): Unit = invoke(new CumulativeOp[Unit] {
+    def default = ()
+    def accumulate = (_, p) => p.pluginsNotifyImplicitSearchResult(result)
   })
 
   /** A list of registered macro plugins */

@@ -1227,7 +1227,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       statistics.initFromSettings(settings)
 
       // Report the overhead of statistics measurements per every run
-      if (StatisticsStatics.areSomeColdStatsEnabled)
+      if (statistics.areStatisticsLocallyEnabled)
         statistics.reportStatisticsOverhead(reporter)
 
       phase = first   //parserPhase
@@ -1430,28 +1430,34 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
+    private final val GlobalPhaseName = "global (synthetic)"
+    protected final val totalCompileTime = statistics.newTimer("#total compile time", GlobalPhaseName)
+
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit =
       compileUnitsInternal(units, fromPhase)
-
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
-      def currentTime = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
-
       units foreach addUnit
-      val startTime = currentTime
-
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
+      val timePhases = statistics.areStatisticsLocallyEnabled
+      val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
+
       while (globalPhase.hasNext && !reporter.hasErrors) {
-        val startTime = currentTime
         phase = globalPhase
+        val phaseTimer = if (timePhases) statistics.newSubTimer(s"  ${phase.name}", totalCompileTime) else null
+        val startPhase = if (timePhases) statistics.startTimer(phaseTimer) else null
+
         val profileBefore=profiler.beforePhase(phase)
-        globalPhase.run()
+        try globalPhase.run()
+        finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
+        if (timePhases)
+          informTime(globalPhase.description, phaseTimer.nanos)
+
         // progress update
-        informTime(globalPhase.description, startTime)
         if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
@@ -1504,7 +1510,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       symSource.keys foreach (x => resetPackageClass(x.owner))
 
-      informTime("total", startTime)
+      if (timePhases) {
+        statistics.stopTimer(totalCompileTime, startTotal)
+        informTime("total", totalCompileTime.nanos)
+        inform("*** Cumulative timers for phases")
+        for (q <- statistics.allQuantities if q.phases == List(GlobalPhaseName))
+          inform(q.line)
+      }
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
@@ -1572,9 +1584,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
 
+    private val hotCounters =
+      List(statistics.retainedCount, statistics.retainedByType, statistics.nodeByType)
     private val parserStats = {
-      import statistics._
-      Seq(treeNodeCount, nodeByType, retainedCount, retainedByType)
+      import statistics.treeNodeCount
+      if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters
+      else List(treeNodeCount)
     }
 
     final def printStatisticsFor(phase: Phase) = {
@@ -1591,7 +1606,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         }
       }
 
-      val quants = if (phase.name == "parser") parserStats else statistics.allQuantities
+      val quants: Iterable[statistics.Quantity] =
+        if (phase.name == "parser") parserStats
+        else if (settings.YhotStatisticsEnabled) statistics.allQuantities
+        else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
       for (q <- quants if q.showAt(phase.name)) inform(q.line)
     }
   } // class Run

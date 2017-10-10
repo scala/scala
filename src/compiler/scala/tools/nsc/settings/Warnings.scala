@@ -87,8 +87,7 @@ trait Warnings {
     val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.",                       true)
     val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()' overrides nullary `def f'.",                true)
-    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument, variable definition or method definition is inferred to be `Any`.", true)
-    val InferPwS               = LintWarning("infer-pws",                 "Warn when a type argument, variable definition, or method definition is inferred to be `Product with Serializable`.")
+    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument is inferred to be `Any`.",                        true)
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "A Scaladoc comment appears to be detached from its element.")
     val PrivateShadow          = LintWarning("private-shadow",            "A private field (or class parameter) shadows a superclass field.")
@@ -112,7 +111,6 @@ trait Warnings {
   def warnInaccessible           = lint contains Inaccessible
   def warnNullaryOverride        = lint contains NullaryOverride
   def warnInferAny               = lint contains InferAny
-  def warnInferPwS               = lint contains InferPwS
   def warnMissingInterpolator    = lint contains MissingInterpolator
   def warnDocDetached            = lint contains DocDetached
   def warnPrivateShadow          = lint contains PrivateShadow

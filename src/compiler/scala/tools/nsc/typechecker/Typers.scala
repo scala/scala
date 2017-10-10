@@ -2649,6 +2649,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), body)
         }
 
+      def synthMethodTyper(methodSym: MethodSymbol) = {
+        val ctx = context.makeNewScope(context.tree, methodSym)
+        // scala/bug#10291 make sure `Return`s are linked to the original enclosing method, not the one we're synthesizing
+        ctx.enclMethod = context.enclMethod
+        newTyper(ctx)
+      }
+
       // `def applyOrElse[A1 <: $argTp, B1 >: $matchResTp](x: A1, default: A1 => B1): B1 =
       //  ${`$selector match { $cases; case default$ => default(x) }`
       def applyOrElseMethodDef = {
@@ -2665,7 +2672,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val paramSyms = List(x, default)
         methodSym setInfo genPolyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
 
-        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
+        val methodBodyTyper = synthMethodTyper(methodSym)
         if (!paramSynthetic) methodBodyTyper.context.scope enter x
 
         // First, type without the default case; only the cases provided
@@ -2745,7 +2752,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos.makeTransparent, FINAL)
         val paramSym = mkParam(methodSym)
 
-        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+        val methodBodyTyper = synthMethodTyper(methodSym) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
         if (!paramSynthetic) methodBodyTyper.context.scope enter paramSym
         methodSym setInfo MethodType(List(paramSym), BooleanTpe)
 
@@ -2763,7 +2770,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         methodSym setInfo MethodType(List(paramSym), AnyTpe)
 
-        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
+        val methodBodyTyper = synthMethodTyper(methodSym)
         if (!paramSynthetic) methodBodyTyper.context.scope enter paramSym
 
         val match_ = methodBodyTyper.typedMatch(selector(paramSym), cases, mode, resTp)
