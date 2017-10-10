@@ -65,7 +65,10 @@ class ScriptRunner extends HasCompileSocket {
     val coreCompArgs     = compSettings flatMap (_.unparse)
     val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
 
-    CompileSocket getOrCreateSocket "" match {
+    // TODO: untangle this mess of top-level objects with their own little view of the mutable world of settings
+    compileSocket.verbose = settings.verbose.value
+
+    compileSocket getOrCreateSocket "" match {
       case Some(sock) => compileOnServer(sock, compArgs)
       case _          => false
     }
@@ -97,7 +100,7 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nc) {
+      if (!settings.useCompDaemon) {
         /* Setting settings.script.value informs the compiler this is not a
          * self contained compilation unit.
          */
