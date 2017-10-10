@@ -9,17 +9,23 @@
 package scala
 package tools.util
 
-import java.net.{ ServerSocket, SocketException, SocketTimeoutException }
-import java.io.{ PrintWriter, BufferedReader }
+import java.net.{ServerSocket, SocketException, SocketTimeoutException}
+import java.io.{BufferedReader, PrintStream, PrintWriter}
+
 import scala.tools.nsc.io.Socket
 
 trait CompileOutputCommon {
   def verbose: Boolean
 
   def info(msg: String)  = if (verbose) echo(msg)
-  def echo(msg: String)  = {Console println msg; Console.flush()}
-  def warn(msg: String)  = {Console.err println msg; Console.flush()}
+  def echo(msg: String)  = printlnFlush(msg, Console.out)
+  def warn(msg: String)  = printlnFlush(msg, Console.err)
   def fatal(msg: String) = { warn(msg) ; sys.exit(1) }
+
+  private def printlnFlush(msg: String, out: PrintStream) = {
+    out.println(msg)
+    out.flush()
+  }
 }
 
 /** The abstract class SocketServer implements the server

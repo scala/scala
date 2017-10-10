@@ -14,13 +14,12 @@ import java.util.EnumSet
 
 
 object OwnerOnlyChmod {
+  // @requires Files.exists(path)
   private def canPosix(path: Path) =
     Files.getFileStore(path).supportsFileAttributeView(classOf[PosixFileAttributeView])
 
   private val posixDir  = EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE)
   private val posixFile = EnumSet.of(OWNER_READ, OWNER_WRITE)
-  private def fileAttributes(path: Path) =
-    if (canPosix(path)) Array(asFileAttribute(posixFile)) else Array.empty[FileAttribute[_]]
 
   /** Remove group/other permissions for `file`, it if exists, and if the runtime environment supports modifying permissions. */
   def chmod(path: Path): Unit = {
@@ -44,16 +43,14 @@ object OwnerOnlyChmod {
   }
 
   def chmodFileOrCreateEmpty(path: Path): Unit = {
-    // Create new file if none existed, with appropriate permissions via the fileAttributes attributes (if supported).
-    Files.newByteChannel(path, EnumSet.of(WRITE, CREATE), fileAttributes(path): _*).close()
-    // Change (if needed -- either because the file already existed, or the FS needs a separate call to set the ACL)
+    Files.newByteChannel(path, EnumSet.of(WRITE, CREATE)).close() // make sure it exists
     chmod(path)
   }
 
   def chmodFileAndWrite(path: Path, contents: Array[Byte]): Unit = {
-    val sbc = Files.newByteChannel(path, EnumSet.of(WRITE, TRUNCATE_EXISTING), fileAttributes(path): _*)
+    val sbc = Files.newByteChannel(path, EnumSet.of(WRITE, CREATE, TRUNCATE_EXISTING))
     try sbc.write(ByteBuffer.wrap(contents)) finally sbc.close()
-    chmod(path) // for acl-based FS
+    chmod(path)
   }
 }
 
