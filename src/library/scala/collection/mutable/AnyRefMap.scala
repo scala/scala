@@ -81,13 +81,14 @@ extends AbstractMap[K, V]
     (_size + _vacant) > 0.5*mask || _vacant > _size
 
   private def hashOf(key: K): Int = {
+    // Note: this method must not return 0 or Int.MinValue, as these indicate no element
     if (key eq null) 0x41081989
     else {
       val h = key.hashCode
       // Part of the MurmurHash3 32 bit finalizer
       val i = (h ^ (h >>> 16)) * 0x85EBCA6B
-      val j = (i ^ (i >>> 13))
-      if (j==0) 0x41081989 else j & 0x7FFFFFFF
+      val j = (i ^ (i >>> 13)) & 0x7FFFFFFF
+      if (j==0) 0x41081989 else j
     }
   }
 
