@@ -8,32 +8,48 @@ package scala.tools.nsc.interpreter.jline
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.{FileSystems, Files, Path}
-import java.util
 
 import _root_.jline.console.history.PersistentHistory
 
 import scala.collection.JavaConverters._
 import scala.io.Codec
+import scala.reflect.internal.util.OwnerOnlyChmod
+import scala.util.control.NonFatal
 
 
 /** TODO: file locking.
   */
 trait FileBackedHistory extends JLineHistory with PersistentHistory {
   def maxSize: Int
-  import java.nio.file.StandardOpenOption.{CREATE, APPEND, TRUNCATE_EXISTING}
+  import java.nio.file.StandardOpenOption.{APPEND, TRUNCATE_EXISTING}
 
   val charSet: Charset = implicitly[Codec].charSet
 
+  // For a history file in the standard location, always try to restrict permission,
+  // creating an empty file if none exists.
+  // For a user-specified location, only lock down permissions if we're the ones
+  // creating it, otherwise responsibility for permissions is up to the caller.
   private lazy val historyPath = {
     val fs = FileSystems.getDefault
 
     // This would really have been sufficient for our property getting infrastructure
     def prop(p: String) = Option(System.getProperty(p))
 
-    (prop("scala.shell.histfile") orElse
-      prop("user.home").map(_ + s"${fs.getSeparator}${FileBackedHistory.defaultFileName}")
-      ).map(n => fs.getPath(n)).getOrElse(throw new IllegalStateException("Cannot determine path for history file."))
+    (prop("scala.shell.histfile").map(fs.getPath(_)).map{ p => if (!Files.exists(p)) secure(p); p } orElse
+      prop("user.home").map(n => fs.getPath(n + s"${fs.getSeparator}${FileBackedHistory.defaultFileName}")).map(secure)
+      ).getOrElse(throw new IllegalStateException("Cannot determine path for history file."))
   }
+
+  private def secure(p: Path): Path = {
+    try OwnerOnlyChmod.chmodFileOrCreateEmpty(p)
+    catch { case NonFatal(e) =>
+      e.printStackTrace(Console.err)
+      Console.err.println(s"Warning: history file ${p}'s permissions could not be restricted to owner-only.")
+    }
+
+    p
+  }
+
 
   protected lazy val lines: List[String] = {
     try Files.readAllLines(historyPath, charSet).asScala.toList

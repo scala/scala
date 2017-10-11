@@ -11,6 +11,10 @@ class Bad[X, Y](val v: Int) extends AnyVal {
   @annotation.tailrec final def dependent[Z](a: Int)(b: String): b.type = {
     this.dependent[Z](a)(b)
   }
+
+  @annotation.tailrec final def differentTypeArgs {
+    {(); new Bad[String, Unit](0)}.differentTypeArgs
+  }
 }
 
 class HK[M[_]](val v: Int) extends AnyVal {

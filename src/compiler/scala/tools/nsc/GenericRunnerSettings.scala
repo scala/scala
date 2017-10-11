@@ -45,5 +45,9 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val nc = BooleanSetting(
       "-nc",
-      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
+      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon" withPostSetHook((x: BooleanSetting) => {_useCompDaemon = !x.value })
+
+
+  private[this] var _useCompDaemon = true
+  def useCompDaemon: Boolean = _useCompDaemon
 }

@@ -4,13 +4,15 @@ package internal
 package tpe
 
 import scala.collection.{ mutable }
-import util.{ Statistics, TriState }
+import util.TriState
 import scala.annotation.tailrec
+import scala.reflect.internal.util.StatisticsStatics
 
 trait TypeComparers {
   self: SymbolTable =>
+
   import definitions._
-  import TypesStats._
+  import statistics._
 
   private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
@@ -90,7 +92,7 @@ trait TypeComparers {
 
   /** Do `tp1` and `tp2` denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
-    if (Statistics.canEnable) Statistics.incCounter(sametypeCount)
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(sametypeCount)
     subsametypeRecursions += 1
     //OPT cutdown on Function0 allocation
     //was:
@@ -365,7 +367,32 @@ trait TypeComparers {
 
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
   def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
-    def isSub(ntp1: Type, ntp2: Type) = (ntp1.withoutAnnotations, ntp2.withoutAnnotations) match {
+
+    def isSubHKTypeVar(tp1: Type, tp2: Type) = (tp1, tp2) match {
+      case (tv1 @ TypeVar(_, _), tv2 @ TypeVar(_, _)) =>
+        reporter.warning(tv1.typeSymbol.pos,
+          sm"""|compiler bug: Unexpected code path: testing two type variables for subtype relation:
+               |  ${tv1} <:< ${tv2}
+               |Please report bug at https://github.com/scala/bug/issues
+            """.trim)
+        false
+      case (tp1, tv2 @ TypeVar(_, _)) =>
+        val ntp1 = tp1.normalize
+        (tv2.params corresponds ntp1.typeParams)(methodHigherOrderTypeParamsSubVariance) &&
+        { tv2.addLoBound(ntp1); true }
+      case (tv1 @ TypeVar(_, _), tp2) =>
+        val ntp2 = tp2.normalize
+        (ntp2.typeParams corresponds tv1.params)(methodHigherOrderTypeParamsSubVariance) &&
+        { tv1.addHiBound(ntp2); true }
+      case _ =>
+        false
+    }
+
+    def isSub(tp1: Type, tp2: Type) =
+      settings.isScala213 && isSubHKTypeVar(tp1, tp2) ||
+        isSub2(tp1.normalize, tp2.normalize)  // @M! normalize reduces higher-kinded case to PolyType's
+
+    def isSub2(ntp1: Type, ntp2: Type) = (ntp1, ntp2) match {
       case (TypeRef(_, AnyClass, _), _)                                     => false                    // avoid some warnings when Nothing/Any are on the other side
       case (_, TypeRef(_, NothingClass, _))                                 => false
       case (pt1: PolyType, pt2: PolyType)                                   => isPolySubType(pt1, pt2)  // @assume both .isHigherKinded (both normalized to PolyType)
@@ -381,7 +408,7 @@ trait TypeComparers {
       || (if (isNoArgStaticClassTypeRef(tp1) && isNoArgStaticClassTypeRef(tp2))
             tp1.typeSymbolDirect.isNonBottomSubClass(tp2.typeSymbolDirect) // OPT faster than comparing eta-expanded types
           else
-            isSub(tp1.normalize, tp2.normalize) && annotationsConform(tp1, tp2)  // @M! normalize reduces higher-kinded case to PolyType's
+            isSub(tp1.withoutAnnotations, tp2.withoutAnnotations) && annotationsConform(tp1, tp2)
          )
     )
   }

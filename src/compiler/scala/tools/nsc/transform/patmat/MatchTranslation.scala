@@ -7,15 +7,14 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
+import scala.reflect.internal.util.StatisticsStatics
 
-import scala.reflect.internal.util.Statistics
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
 trait MatchTranslation {
   self: PatternMatching =>
 
-  import PatternMatchingStats._
   import global._
   import definitions._
   import treeInfo.{ Unapplied, unbind }
@@ -211,7 +210,7 @@ trait MatchTranslation {
 
       debug.patmat("translating "+ cases.mkString("{", "\n", "}"))
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatNanos) else null
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
@@ -227,7 +226,7 @@ trait MatchTranslation {
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
 
-      if (Statistics.canEnable) Statistics.stopTimer(patmatNanos, start)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatNanos, start)
       combined
     }
 
@@ -541,7 +540,7 @@ trait MatchTranslation {
       def treeMakers(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
         // the extractor call (applied to the binder bound by the flatMap corresponding
         // to the previous (i.e., enclosing/outer) pattern)
-        val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
+        val (extractorApply, needsSubst) = spliceApply(pos, patBinderOrCasted)
         // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely
         // wrong when isSeq, and resultInMonad should always be correct since it comes
         // directly from the extractor's result type
@@ -554,7 +553,7 @@ trait MatchTranslation {
             subPatBinders.toSet
 
         // types may refer to the dummy symbol unapplySelector (in case of dependent method type for the unapply method)
-        SubstOnlyTreeMaker(unapplySelector, patBinderOrCasted) :: ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
+        val extractorTreeMaker = ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
           subPatBinders,
           subPatRefs(binder),
           potentiallyMutableBinders,
@@ -562,7 +561,11 @@ trait MatchTranslation {
           checkedLength,
           patBinderOrCasted,
           ignoredSubPatBinders
-        ) :: Nil
+        )
+        if (needsSubst)
+          SubstOnlyTreeMaker(unapplySelector, patBinderOrCasted) :: extractorTreeMaker :: Nil
+        else
+          extractorTreeMaker :: Nil
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -575,7 +578,8 @@ trait MatchTranslation {
         if (isSingle) REF(binder) :: Nil // special case for extractors
         else super.subPatRefs(binder)
 
-      protected def spliceApply(binder: Symbol): Tree = {
+      protected def spliceApply(pos: Position, binder: Symbol): (Tree, Boolean) = {
+        var needsSubst = false
         object splice extends Transformer {
           def binderRef(pos: Position): Tree =
             REF(binder) setPos pos
@@ -583,7 +587,14 @@ trait MatchTranslation {
             // duplicated with the extractor Unapplied
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
               // in case the result type depended on the unapply's argument, plug in the new symbol
-              treeCopy.Apply(t, x, binderRef(i.pos) :: Nil) modifyType(_.substSym(List(i.symbol), List(binder)))
+              val apply = treeCopy.Apply(t, x, binderRef(i.pos) :: Nil)
+              val tpe = apply.tpe
+              val substedTpe = tpe.substSym(List(i.symbol), List(binder))
+              if (tpe ne substedTpe) {
+                needsSubst = true
+                apply.setType(substedTpe)
+              }
+              apply
             // scala/bug#7868 Account for numeric widening, e.g. <unapplySelector>.toInt
             case Apply(x, List(i @ (sel @ Select(Ident(nme.SELECTOR_DUMMY), name)))) =>
               // not substituting `binder` for `i.symbol`: widening conversion implies the binder could not be used as a path
@@ -592,7 +603,7 @@ trait MatchTranslation {
               super.transform(t)
           }
         }
-        splice transform unapplyAppliedToDummy
+        (atPos(pos)(splice transform unapplyAppliedToDummy), needsSubst)
       }
 
     }

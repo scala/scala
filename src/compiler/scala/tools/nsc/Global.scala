@@ -13,9 +13,9 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, U
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
-import util.{ClassPath, StatisticsInfo, returning}
+import util.{ClassPath, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
+import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
@@ -26,7 +26,7 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
-import backend.jvm.GenBCode
+import backend.jvm.{GenBCode, BackendStats}
 import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
@@ -159,10 +159,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // Components for collecting and generating output
 
-  /** Some statistics (normally disabled) set with -Ystatistics */
-  object statistics extends {
-    val global: Global.this.type = Global.this
-  } with StatisticsInfo
+  import scala.reflect.internal.util.Statistics
+  import scala.tools.nsc.transform.patmat.PatternMatchingStats
+  trait GlobalStats extends ReflectStats
+                       with TypersStats
+                       with ImplicitsStats
+                       with MacrosStats
+                       with BackendStats
+                       with PatternMatchingStats { self: Statistics => }
+
+  /** Redefine statistics to include all known global + reflect stats. */
+  final object statistics extends Statistics(Global.this, settings) with GlobalStats
+
+  // Components for collecting and generating output
 
   /** Print tree in detailed form */
   object nodePrinters extends {
@@ -1214,10 +1223,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
       checkPhaseSettings(including = false, exclusions map (_.value): _*)
 
+      // Enable or disable depending on the current setting -- useful for interactive behaviour
+      statistics.initFromSettings(settings)
+
       // Report the overhead of statistics measurements per every run
-      import scala.reflect.internal.util.Statistics
-      if (Statistics.canEnable)
-        Statistics.reportStatisticsOverhead(reporter)
+      if (statistics.areStatisticsLocallyEnabled)
+        statistics.reportStatisticsOverhead(reporter)
 
       phase = first   //parserPhase
       first
@@ -1419,28 +1430,34 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
+    private final val GlobalPhaseName = "global (synthetic)"
+    protected final val totalCompileTime = statistics.newTimer("#total compile time", GlobalPhaseName)
+
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit =
       compileUnitsInternal(units, fromPhase)
-
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
-      def currentTime = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
-
       units foreach addUnit
-      val startTime = currentTime
-
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
+      val timePhases = statistics.areStatisticsLocallyEnabled
+      val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
+
       while (globalPhase.hasNext && !reporter.hasErrors) {
-        val startTime = currentTime
         phase = globalPhase
+        val phaseTimer = if (timePhases) statistics.newSubTimer(s"  ${phase.name}", totalCompileTime) else null
+        val startPhase = if (timePhases) statistics.startTimer(phaseTimer) else null
+
         val profileBefore=profiler.beforePhase(phase)
-        globalPhase.run()
+        try globalPhase.run()
+        finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
+        if (timePhases)
+          informTime(globalPhase.description, phaseTimer.nanos)
+
         // progress update
-        informTime(globalPhase.description, startTime)
         if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
@@ -1467,8 +1484,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           runCheckers()
 
         // output collected statistics
-        if (settings.YstatisticsEnabled)
-          statistics.print(phase)
+        if (settings.YstatisticsEnabled && settings.Ystatistics.contains(phase.name))
+          printStatisticsFor(phase)
 
         advancePhase()
       }
@@ -1493,7 +1510,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       symSource.keys foreach (x => resetPackageClass(x.owner))
 
-      informTime("total", startTime)
+      if (timePhases) {
+        statistics.stopTimer(totalCompileTime, startTotal)
+        informTime("total", totalCompileTime.nanos)
+        inform("*** Cumulative timers for phases")
+        for (q <- statistics.allQuantities if q.phases == List(GlobalPhaseName))
+          inform(q.line)
+      }
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
@@ -1559,6 +1582,35 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
+    }
+
+    private val hotCounters =
+      List(statistics.retainedCount, statistics.retainedByType, statistics.nodeByType)
+    private val parserStats = {
+      import statistics.treeNodeCount
+      if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters
+      else List(treeNodeCount)
+    }
+
+    final def printStatisticsFor(phase: Phase) = {
+      inform("*** Cumulative statistics at phase " + phase)
+
+      if (settings.YhotStatisticsEnabled) {
+        // High overhead, only enable retained stats under hot stats
+        statistics.retainedCount.value = 0
+        for (c <- statistics.retainedByType.keys)
+          statistics.retainedByType(c).value = 0
+        for (u <- currentRun.units; t <- u.body) {
+          statistics.retainedCount.value += 1
+          statistics.retainedByType(t.getClass).value += 1
+        }
+      }
+
+      val quants: Iterable[statistics.Quantity] =
+        if (phase.name == "parser") parserStats
+        else if (settings.YhotStatisticsEnabled) statistics.allQuantities
+        else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
+      for (q <- quants if q.showAt(phase.name)) inform(q.line)
     }
   } // class Run
 

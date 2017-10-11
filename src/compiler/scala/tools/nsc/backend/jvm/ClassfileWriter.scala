@@ -10,7 +10,8 @@ import scala.reflect.io._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.{AbstractFile, Jar, JarWriter}
 
-class ClassfileWriter(frontendAccess: PostProcessorFrontendAccess) {
+class ClassfileWriter(frontendAccess: PostProcessorFrontendAccess,
+                      statistics: Statistics with BackendStats) {
   import frontendAccess.{backendReporting, compilerSettings}
 
   // if non-null, asm text files are written to this directory
@@ -90,7 +91,7 @@ class ClassfileWriter(frontendAccess: PostProcessorFrontendAccess) {
   }
 
   def write(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = try {
-    val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
+    val writeStart = statistics.startTimer(statistics.bcodeWriteTimer)
     if (jarWriter == null) {
       val outFolder = compilerSettings.outputDirectoryFor(sourceFile)
       val outFile = getFile(outFolder, className, ".class")
@@ -101,7 +102,7 @@ class ClassfileWriter(frontendAccess: PostProcessorFrontendAccess) {
       try out.write(bytes, 0, bytes.length)
       finally out.flush()
     }
-    Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
+    statistics.stopTimer(statistics.bcodeWriteTimer, writeStart)
 
     if (asmOutputDir != null) {
       val asmpFile = getFile(asmOutputDir, className, ".asmp")

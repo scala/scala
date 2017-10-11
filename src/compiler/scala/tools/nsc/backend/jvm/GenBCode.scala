@@ -7,12 +7,12 @@ package scala.tools.nsc
 package backend
 package jvm
 
-import scala.reflect.internal.util.Statistics
 import scala.tools.asm.Opcodes
 
 abstract class GenBCode extends SubComponent {
   self =>
   import global._
+  import statistics._
 
   val postProcessorFrontendAccess: PostProcessorFrontendAccess = new PostProcessorFrontendAccess.PostProcessorFrontendAccessImpl(global)
 
@@ -20,7 +20,9 @@ abstract class GenBCode extends SubComponent {
 
   val codeGen: CodeGen[global.type] = new { val bTypes: self.bTypes.type = self.bTypes } with CodeGen[global.type](global)
 
-  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new { val bTypes: self.bTypes.type = self.bTypes } with PostProcessor
+  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new {
+    val bTypes: self.bTypes.type = self.bTypes
+  } with PostProcessor(statistics)
 
   val phaseName = "jvm"
 
@@ -37,7 +39,7 @@ abstract class GenBCode extends SubComponent {
     }
 
     def apply(unit: CompilationUnit): Unit = {
-      val generated = BackendStats.timed(BackendStats.bcodeGenStat) {
+      val generated = statistics.timed(bcodeGenStat) {
         codeGen.genUnit(unit)
       }
       if (globalOptsEnabled) postProcessor.generatedClasses ++= generated
@@ -45,7 +47,7 @@ abstract class GenBCode extends SubComponent {
     }
 
     override def run(): Unit = {
-      BackendStats.timed(BackendStats.bcodeTimer) {
+      statistics.timed(bcodeTimer) {
         try {
           initialize()
           super.run() // invokes `apply` for each compilation unit
@@ -63,13 +65,13 @@ abstract class GenBCode extends SubComponent {
      * it depends on frontend data that may change between runs: Symbols, Types, Settings.
      */
     private def initialize(): Unit = {
-      val initStart = Statistics.startTimer(BackendStats.bcodeInitTimer)
+      val initStart = statistics.startTimer(bcodeInitTimer)
       scalaPrimitives.init()
       bTypes.initialize()
       codeGen.initialize()
       postProcessorFrontendAccess.initialize()
       postProcessor.initialize()
-      Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
+      statistics.stopTimer(bcodeInitTimer, initStart)
     }
   }
 }

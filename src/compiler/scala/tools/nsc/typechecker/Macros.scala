@@ -5,7 +5,8 @@ import java.lang.Math.min
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.{Statistics, StatisticsStatics}
+import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
@@ -45,7 +46,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   import global._
   import definitions._
   import treeInfo.{isRepeatedParamType => _, _}
-  import MacrosStats._
 
   lazy val fastTrack = new FastTrack[self.type](self)
 
@@ -575,8 +575,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       linkExpandeeAndDesugared(expandee, desugared)
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
-      if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.macroExpandNanos) else null
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(statistics.macroExpandCount)
       try {
         withInfoLevel(nodePrinters.InfoLevel.Quiet) { // verbose printing might cause recursive macro expansions
           if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
@@ -609,7 +609,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           }
         }
       } finally {
-        if (Statistics.canEnable) Statistics.stopTimer(macroExpandNanos, start)
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.macroExpandNanos, start)
       }
     }
   }
@@ -853,10 +853,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *    1) type vars (tpe.isInstanceOf[TypeVar]) // [Eugene] this check is disabled right now, because TypeVars seem to be created from undetparams anyways
    *    2) undetparams (sym.isTypeParameter && !sym.isSkolem)
    */
-  var hasPendingMacroExpansions = false
+  var hasPendingMacroExpansions = false // JZ this is never reset to false. What is its purpose? Should it not be stored in Context?
+  def typerShouldExpandDeferredMacros: Boolean = hasPendingMacroExpansions && !delayed.isEmpty
   private val forced = perRunCaches.newWeakSet[Tree]
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]()
   private def isDelayed(expandee: Tree) = delayed contains expandee
+  def clearDelayed(): Unit = delayed.clear()
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     if (forced(expandee)) scala.collection.mutable.Set[Int]()
     else delayed.getOrElse(expandee, {
@@ -911,10 +913,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     }.transform(expandee)
 }
 
-object MacrosStats {
-  import scala.reflect.internal.TypesStats.typerNanos
-  val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
-  val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
+trait MacrosStats {
+  self: TypesStats with Statistics =>
+  val macroExpandCount    = newCounter ("#macro expansions", "typer")
+  val macroExpandNanos    = newSubTimer("time spent in macroExpand", typerNanos)
 }
 
 class Fingerprint private[Fingerprint](val value: Int) extends AnyVal {

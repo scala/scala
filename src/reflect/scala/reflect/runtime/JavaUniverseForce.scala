@@ -122,6 +122,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.termNames
     this.nme
     this.sn
+    this.undetBaseTypeSeq
     this.Constant
     this.definitions
     this.LookupSucceeded
@@ -338,7 +339,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.AbstractFunctionClass
     definitions.MacroContextType
     definitions.ProductRootClass
-    definitions.ProductRootTpe
     definitions.Any_$eq$eq
     definitions.Any_$bang$eq
     definitions.Any_equals

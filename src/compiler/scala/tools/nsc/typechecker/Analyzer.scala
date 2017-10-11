@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.StatisticsStatics
 
 /** The main attribution phase.
  */
@@ -76,7 +76,7 @@ trait Analyzer extends AnyRef
   object typerFactory extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
   } with SubComponent {
-    import scala.reflect.internal.TypesStats.typerNanos
+    import global.statistics
     val phaseName = "typer"
     val runsAfter = List[String]()
     val runsRightAfter = Some("packageobjects")
@@ -88,13 +88,15 @@ trait Analyzer extends AnyRef
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
       override def run() {
-        val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
+        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.typerNanos) else null
         global.echoPhaseSummary(this)
         for (unit <- currentRun.units) {
           applyPhase(unit)
           undoLog.clear()
         }
-        if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
+        // defensive measure in case the bookkeeping in deferred macro expansion is buggy
+        clearDelayed()
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
         try {

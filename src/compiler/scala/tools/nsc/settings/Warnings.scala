@@ -15,8 +15,20 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
-  // Non-lint warnings.
-
+  // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
+  val warnMacros           = ChoiceSetting(
+    name    = "-Ywarn-macros",
+    helpArg = "mode",
+    descr   = "Enable lint warnings on macro expansions.",
+    choices = List("none", "before", "after", "both"),
+    default = "before",
+    choicesHelp = List(
+      "Do not inspect expansions or their original trees when generating unused symbol warnings.",
+      "Only inspect unexpanded user-written code for unused symbols.",
+      "Only inspect expanded trees when generating unused symbol warnings.",
+      "Inspect both user-written code and expanded trees when generating unused symbol warnings."
+    )
+  )
   val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
   val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
   val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
@@ -75,8 +87,7 @@ trait Warnings {
     val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.",                       true)
     val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()' overrides nullary `def f'.",                true)
-    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument, variable definition or method definition is inferred to be `Any`.", true)
-    val InferPwS               = LintWarning("infer-pws",                 "Warn when a type argument, variable definition, or method definition is inferred to be `Product with Serializable`.")
+    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument is inferred to be `Any`.",                        true)
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "A Scaladoc comment appears to be detached from its element.")
     val PrivateShadow          = LintWarning("private-shadow",            "A private field (or class parameter) shadows a superclass field.")
@@ -100,7 +111,6 @@ trait Warnings {
   def warnInaccessible           = lint contains Inaccessible
   def warnNullaryOverride        = lint contains NullaryOverride
   def warnInferAny               = lint contains InferAny
-  def warnInferPwS               = lint contains InferPwS
   def warnMissingInterpolator    = lint contains MissingInterpolator
   def warnDocDetached            = lint contains DocDetached
   def warnPrivateShadow          = lint contains PrivateShadow

@@ -7,11 +7,11 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.internal.util.Statistics
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.StatisticsStatics
 
 // a literal is a (possibly negated) variable
 class Lit(val v: Int) extends AnyVal {
@@ -33,8 +33,7 @@ object Lit {
 /** Solve pattern matcher exhaustivity problem via DPLL.
  */
 trait Solving extends Logic {
-
-  import PatternMatchingStats._
+  import global.statistics
 
   trait CNF extends PropositionalLogic {
 
@@ -362,7 +361,7 @@ trait Solving extends Logic {
         case And(props) =>
           // scala/bug#6942:
           // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
-          props.map(cnfFor).reduce(_ ++ _)
+          props.iterator.map(cnfFor).reduce(_ ++ _)
         case p          =>
           cnfFor(p)
       }
@@ -473,7 +472,7 @@ trait Solving extends Logic {
 
       debug.patmat(s"DPLL\n${cnfString(clauses)}")
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaDPLL) else null
+      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
       val satisfiableWithModel: TseitinModel =
         if (clauses isEmpty) EmptyTseitinModel
@@ -509,7 +508,7 @@ trait Solving extends Logic {
             }
         }
 
-      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
     }
 

@@ -25,7 +25,8 @@ object MainBench extends Driver with EvalLoop {
     for (i <- 0 until NIter) {
       if (i == NIter-1) {
         theCompiler.settings.Ystatistics.default.get foreach theCompiler.settings.Ystatistics.add
-        Statistics.enabled = true
+        theCompiler.statistics.enabled = true
+        theCompiler.statistics.hotEnabled = true
       }
       process(args)
       val end = System.nanoTime()

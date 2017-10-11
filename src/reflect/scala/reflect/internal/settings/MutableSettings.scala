@@ -56,11 +56,17 @@ abstract class MutableSettings extends AbsSettings {
   def YpartialUnification: BooleanSetting
   def Yvirtpatmat: BooleanSetting
 
+  // Define them returning a `Boolean` to avoid breaking bincompat change
+  // TODO: Add these fields typed as `BooleanSetting` for 2.13.x
+  def YhotStatisticsEnabled: Boolean = false
+  def YstatisticsEnabled: Boolean = false
+
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
 
   def isScala211: Boolean
   def isScala212: Boolean
+  private[scala] def isScala213: Boolean
 }
 
 object MutableSettings {
