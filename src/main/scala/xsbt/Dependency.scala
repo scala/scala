@@ -92,16 +92,21 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     }
 
     // Define processor reusing `processDependency` definition
-    val memberRef = processDependency(DependencyByMemberRef) _
-    val inheritance = processDependency(DependencyByInheritance) _
-    val localInheritance = processDependency(LocalDependencyByInheritance) _
+    val memberRef = processDependency(DependencyByMemberRef, false) _
+    val inheritance = processDependency(DependencyByInheritance, true) _
+    val localInheritance = processDependency(LocalDependencyByInheritance, true) _
+
+    @deprecated("Use processDependency that takes allowLocal.", "1.1.0")
+    def processDependency(context: DependencyContext)(dep: ClassDependency): Unit =
+      processDependency(context, true)(dep)
 
     /*
      * Handles dependency on given symbol by trying to figure out if represents a term
      * that is coming from either source code (not necessarily compiled in this compilation
      * run) or from class file and calls respective callback method.
      */
-    def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
+    def processDependency(context: DependencyContext, allowLocal: Boolean)(
+        dep: ClassDependency): Unit = {
       val fromClassName = classNameAsString(dep.from)
 
       def binaryDependency(file: File, binaryClassName: String) =
@@ -133,11 +138,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           case None =>
             debuglog(Feedback.noOriginFileForExternalSymbol(dep.to))
         }
-      } else if (onSource.file != sourceFile) {
-        // Dependency is internal -- but from other file / compilation unit
+      } else if (onSource.file != sourceFile || allowLocal) {
+        // We cannot ignore dependencies coming from the same source file because
+        // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
         val onClassName = classNameAsString(dep.to)
         callback.classDependency(onClassName, fromClassName, context)
-      } else () // Comes from the same file, ignore
+      }
     }
   }
 
@@ -227,7 +233,6 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       val depClass = enclOrModuleClass(dep)
       val dependency = ClassDependency(fromClass, depClass)
       if (!cache.contains(dependency) &&
-          fromClass.associatedFile != depClass.associatedFile &&
           !depClass.isRefinementClass) {
         process(dependency)
         cache.add(dependency)
