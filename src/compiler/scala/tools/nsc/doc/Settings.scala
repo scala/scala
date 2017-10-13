@@ -45,7 +45,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   val docfooter = StringSetting (
     "-doc-footer",
     "footer",
-    "A footer on every ScalaDoc page, by default the EPFL/Typesafe copyright notice. Can be overridden with a custom footer.",
+    "A footer on every ScalaDoc page, by default the EPFL/Lightbend copyright notice. Can be overridden with a custom footer.",
     ""
   )
 

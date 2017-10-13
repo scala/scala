@@ -191,7 +191,7 @@ In detail:
   http://github.com/scala/scala
 
 If you are interested in contributing code, we ask you to sign the
-[Scala Contributor License Agreement](http://typesafe.com/contribute/cla/scala),
+[Scala Contributor License Agreement](https://www.lightbend.com/contribute/cla/scala),
 which allows us to ensure that all code submitted to the project is
 unencumbered by copyrights or patents.
 
