@@ -453,12 +453,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *     non-erased existential type.
      */
     def erasedType(tp: Type): Type = enteringErasure {
-      // make sure we don't erase value class references to the type that the value class boxes
-      // this is basically the same logic as in erasure's preTransform, case Literal(classTag).
-      tp.dealiasWiden match {
-        case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => erasure.scalaErasure.eraseNormalClassRef(tr)
-        case tpe => erasure.erasure(tpe.typeSymbol)(tpe)
-      }
+      erasure.erasure(tp.typeSymbol).applyInArray(tp)
     }
 
     def descriptorForErasedType(tp: Type): String = typeToBType(erasedType(tp)).descriptor
