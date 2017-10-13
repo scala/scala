@@ -55,7 +55,7 @@ macro-deprecate-idents.scala:3: error: '=' expected but '}' found.
 macro-deprecate-idents.scala:7: error: '=' expected but '}' found.
 }
 ^
-macro-deprecate-idents.scala:42: error: '{' expected but ';' found.
+macro-deprecate-idents.scala:42: error: '{' expected.
 package foo {
 ^
 macro-deprecate-idents.scala:45: error: '{' expected but '}' found.

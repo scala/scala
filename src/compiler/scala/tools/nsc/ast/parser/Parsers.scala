@@ -591,7 +591,11 @@ self =>
     }
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
-    def expectedMsg(token: Token): String = expectedMsgTemplate(token2string(token), token2string(in.token))
+    def expectedMsg(token: Token): String =
+      in.token match {
+        case NEWLINE | NEWLINES => s"${token2string(token)} expected."
+        case actual             => expectedMsgTemplate(token2string(token), token2string(actual))
+      }
 
     /** Consume one token of the specified type, or signal an error if it is not there. */
     def accept(token: Token): Offset = {
@@ -1144,7 +1148,7 @@ self =>
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
     def selector(t: Tree): Tree = {
-      val point = if(isIdent) in.offset else in.lastOffset //scala/bug#8459
+      val point = if (isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
         Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
@@ -2509,7 +2513,10 @@ self =>
         case THIS   => thisDotted(tpnme.EMPTY)
         case _      =>
           val id = atPos(start)(Ident(ident()))
-          accept(DOT)
+
+          if (in.token == DOT || !isStatSep) accept(DOT)
+          else syntaxError(in.lastOffset, s". expected", skipIt = false)
+
           if (in.token == THIS) thisDotted(id.name.toTypeName)
           else id
       })
