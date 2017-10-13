@@ -3,19 +3,18 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
-package util
+package scala.tools.nsc.util
 
-import java.lang.{ ClassLoader => JClassLoader }
-import java.lang.reflect.{ Constructor, Modifier, Method }
-import java.io.{ File => JFile }
-import java.net.{ URLClassLoader => JURLClassLoader }
-import java.net.URL
-import scala.reflect.runtime.ReflectionUtils.unwrapHandler
-import ScalaClassLoader._
-import scala.util.control.Exception.{ catching }
+import java.io.{File => JFile}
+import java.lang.reflect.{Constructor, Modifier}
+import java.lang.{ClassLoader => JClassLoader}
+import java.net.{URL, URLClassLoader => JURLClassLoader}
+
 import scala.language.implicitConversions
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.runtime.ReflectionUtils.unwrapHandler
+import scala.reflect.{ClassTag, classTag}
+import scala.tools.nsc.io.Streamable
+import scala.util.control.Exception.catching
 
 trait HasClassPath {
   def classPathURLs: Seq[URL]
@@ -25,6 +24,8 @@ trait HasClassPath {
  *  of java reflection.
  */
 trait ScalaClassLoader extends JClassLoader {
+  import ScalaClassLoader._
+
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
     val saved = contextLoader
@@ -52,7 +53,7 @@ trait ScalaClassLoader extends JClassLoader {
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def classBytes(className: String): Array[Byte] = classAsStream(className) match {
     case null   => Array()
-    case stream => io.Streamable.bytes(stream)
+    case stream => Streamable.bytes(stream)
   }
 
   /** An InputStream representing the given class name, or null if not found. */

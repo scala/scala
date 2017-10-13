@@ -7,14 +7,37 @@ package scala.tools.nsc
 package interpreter
 package session
 
-import scala.tools.nsc.io._
-import FileBackedHistory._
+import scala.reflect.internal.util.OwnerOnlyChmod
+import scala.reflect.io.{File, Path}
+import scala.tools.nsc.Properties.{propOrNone, userHome}
+import scala.util.control.NonFatal
 
 /** TODO: file locking.
  */
 trait FileBackedHistory extends JLineHistory with JPersistentHistory {
   def maxSize: Int
-  protected lazy val historyFile: File = defaultFile
+
+  // For a history file in the standard location, always try to restrict permission,
+  // creating an empty file if none exists.
+  // For a user-specified location, only lock down permissions if we're the ones
+  // creating it, otherwise responsibility for permissions is up to the caller.
+  protected lazy val historyFile: File = File {
+    propOrNone("scala.shell.histfile").map(Path.apply) match {
+      case Some(p) => if (!p.exists) secure(p) else p
+      case None => secure(Path(userHome) / FileBackedHistory.defaultFileName)
+    }
+  }
+
+  private def secure(p: Path): Path = {
+    try OwnerOnlyChmod().chmodOrCreateEmpty(p.jfile)
+    catch { case NonFatal(e) =>
+      if (interpreter.isReplDebug) e.printStackTrace()
+      interpreter.replinfo(s"Warning: history file ${p}'s permissions could not be restricted to owner-only.")
+    }
+
+    p
+  }
+
   private var isPersistent = true
 
   locally {
@@ -79,6 +102,5 @@ object FileBackedHistory {
   //   val ContinuationNL: String = Array('\003', '\n').mkString
   import Properties.userHome
 
-  def defaultFileName = ".scala_history"
-  def defaultFile: File = File(Path(userHome) / defaultFileName)
+  final val defaultFileName = ".scala_history"
 }
