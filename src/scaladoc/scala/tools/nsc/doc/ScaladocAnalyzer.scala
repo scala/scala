@@ -43,7 +43,7 @@ trait ScaladocAnalyzer extends Analyzer {
             case _ =>
           }
           for (useCaseSym <- useCase.defined) {
-            if (sym.name != useCaseSym.name)
+            if (sym.getterName != useCaseSym.getterName)
               reporter.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
           }
         }
