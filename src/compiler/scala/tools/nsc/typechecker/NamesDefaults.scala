@@ -596,6 +596,10 @@ trait NamesDefaults { self: Analyzer =>
       var positionalAllowed = true
       def stripNamedArg(arg: AssignOrNamedArg, argIndex: Int): Tree = {
         val AssignOrNamedArg(Ident(name), rhs) = arg
+        def invokesDefault: Boolean = rhs match {
+          case Select(_, f) => f.startsWith(nme.DEFAULT_GETTER_INIT_STRING) || f.indexOf(nme.DEFAULT_GETTER_STRING) >= 0
+          case _ => false
+        }
         params indexWhere (p => matchesName(p, name, argIndex)) match {
           case -1 if positionalAllowed && !settings.isScala213 =>
             if (isVariableInScope(context0, name)) {
@@ -617,7 +621,7 @@ trait NamesDefaults { self: Analyzer =>
               case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
-          case paramPos if !settings.isScala213 && isAmbiguousAssignment(typer, params(paramPos), arg) =>
+          case paramPos if !settings.isScala213 && !invokesDefault && isAmbiguousAssignment(typer, params(paramPos), arg) =>
             AmbiguousReferenceInNamesDefaultError(arg, name)
           case paramPos if paramPos != argIndex =>
             positionalAllowed = false    // named arg is not in original parameter order: require names after this
