@@ -237,7 +237,7 @@ trait EntityPage extends HtmlPage {
             <span class="filtertype">Ordering</span>
             <ol>
               {
-                if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                if (!universe.settings.docGroups.value || tpl.members.map(_.group).distinct.forall(_ == ModelFactory.defaultGroup))
                   NodeSeq.Empty
                 else
                   <li class="group out"><span>Grouped</span></li>
