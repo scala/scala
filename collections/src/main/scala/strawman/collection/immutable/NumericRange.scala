@@ -41,9 +41,21 @@ sealed class NumericRange[T](
   extends IndexedSeq[T]
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
-    with Serializable {
+    with Serializable { self =>
 
-  override def iterator(): Iterator[T] = new NumericRangeIterator[T](start, step, last, isEmpty)
+  override def iterator() = new Iterator[T] {
+    private var _hasNext = !self.isEmpty
+    private var _next: T = start
+    private val lastElement: T = if (_hasNext) last else start
+    def hasNext: Boolean = _hasNext
+    def next(): T = {
+      if (!_hasNext) Iterator.empty.next()
+      val value = _next
+      _hasNext = value != lastElement
+      _next = num.plus(value, step)
+      value
+    }
+  }
 
   def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 
@@ -401,23 +413,4 @@ object NumericRange {
     Numeric.BigDecimalAsIfIntegral -> Ordering.BigDecimal
   )
 
-}
-
-private class NumericRangeIterator[T](
-  start: T,
-  step: T,
-  lastElement: T,
-  initiallyEmpty: Boolean
-)(implicit num: Numeric[T]) extends Iterator[T] {
-  private var _hasNext: Boolean = !initiallyEmpty
-  private var _next: T = start
-  def hasNext: Boolean = _hasNext
-  @throws[NoSuchElementException]
-  def next(): T = {
-    if (!_hasNext) Iterator.empty.next()
-    val value = _next
-    _hasNext = value != lastElement
-    _next = num.plus(value, step)
-    value
-  }
 }
