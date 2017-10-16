@@ -38,3 +38,10 @@ ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyByte.serialVersio
 ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyLong.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyBoolean.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyFloat.serialVersionUID")
+
+# https://github.com/scala/scala/pull/6138
+ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#EmptyMap.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map1.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map2.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map3.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map4.serialVersionUID")
