@@ -131,8 +131,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @tparam A1      A type parameter for the binary operator, a supertype of `A`.
    *  @param op       A binary operator that must be associative.
    *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
-   *  @throws UnsupportedOperationException
-   *  if this $coll is empty.
+   *  @throws UnsupportedOperationException if this $coll is empty.
    */
   def reduce[A1 >: A](op: (A1, A1) => A1): A1
 
@@ -393,6 +392,7 @@ trait GenTraversableOnce[+A] extends Any {
    *    @inheritdoc
    *
    *    @return   the smallest element of this $coll
+   *    @throws   UnsupportedOperationException if this $coll is empty.
    */
   def min[A1 >: A](implicit ord: Ordering[A1]): A
 
@@ -406,6 +406,7 @@ trait GenTraversableOnce[+A] extends Any {
    *    @inheritdoc
    *
    *    @return   the largest element of this $coll.
+   *    @throws   UnsupportedOperationException if this $coll is empty.
    */
   def max[A1 >: A](implicit ord: Ordering[A1]): A
 
@@ -415,12 +416,13 @@ trait GenTraversableOnce[+A] extends Any {
    *  @tparam   B     The result type of the function f.
    *  @param    f     The measuring function.
    *  @return   the first element of this $coll with the largest value measured by function f
-   *  with respect to the ordering `cmp`.
+   *            with respect to the ordering `cmp`.
    *
    *  @usecase def maxBy[B](f: A => B): A
    *    @inheritdoc
    *
    *    @return   the first element of this $coll with the largest value measured by function f.
+   *    @throws   UnsupportedOperationException if this $coll is empty.
    */
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A
 
@@ -430,12 +432,13 @@ trait GenTraversableOnce[+A] extends Any {
    *  @tparam   B     The result type of the function f.
    *  @param    f     The measuring function.
    *  @return   the first element of this $coll with the smallest value measured by function f
-   *  with respect to the ordering `cmp`.
+   *            with respect to the ordering `cmp`.
    *
    *  @usecase def minBy[B](f: A => B): A
    *    @inheritdoc
    *
    *    @return   the first element of this $coll with the smallest value measured by function f.
+   *    @throws   UnsupportedOperationException if this $coll is empty.
    */
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A
 
