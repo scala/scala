@@ -13,4 +13,7 @@ package object decorators {
   implicit def MapDecorator[K, V](map: Map[K, V]): MapDecorator[K, V] { val `this`: map.type } =
     new MapDecorator[K, V] { val `this`: map.type = map }
 
+  implicit def MutableMapDecorator[K, V](map: mutable.Map[K, V]): MutableMapDecorator[K, V] =
+    new MutableMapDecorator[K, V](map)
+
 }
