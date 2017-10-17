@@ -829,10 +829,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
-          import scala.tools.asm.util.SignatureChecker
-          if (sym.isMethod)    { SignatureChecker checkMethodSignature sig } // requires asm-util.jar
-          else if (sym.isTerm) { SignatureChecker checkFieldSignature  sig }
-          else                 { SignatureChecker checkClassSignature  sig }
+          import scala.tools.asm.util.CheckClassAdapter
+          if (sym.isMethod)    { CheckClassAdapter checkMethodSignature sig } // requires asm-util.jar
+          else if (sym.isTerm) { CheckClassAdapter checkFieldSignature  sig }
+          else                 { CheckClassAdapter checkClassSignature  sig }
         }
 
         if(!isValidSignature) {
@@ -1810,17 +1810,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       def div(tk: TypeKind) { emitPrimitive(divOpcodes, tk) }
       def rem(tk: TypeKind) { emitPrimitive(remOpcodes, tk) }
 
-      def invokespecial(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc)
+      def invokespecial(owner: String, name: String, desc: String, itf: Boolean) {
+        jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc, itf)
       }
-      def invokestatic(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc)
+      def invokestatic(owner: String, name: String, desc: String, itf: Boolean) {
+        jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc, itf)
       }
-      def invokeinterface(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc)
+      def invokeinterface(owner: String, name: String, desc: String, itf: Boolean) {
+        jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc, itf)
       }
-      def invokevirtual(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc)
+      def invokevirtual(owner: String, name: String, desc: String, itf: Boolean) {
+        jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc, itf)
       }
 
       def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
@@ -2315,15 +2315,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             jmethod.visitFieldInsn(asm.Opcodes.PUTSTATIC, thisName, strMODULE_INSTANCE_FIELD, thisDescr)
           }
         }
-
+        val itf = if (receiver.isJavaDefined)
+          (if (receiver.isModuleClass) receiver.linkedClassOfClass else receiver).isJavaInterface
+        else
+          receiver.isInterface
         style match {
-          case Static(true)                            => dbg("invokespecial");  jcode.invokespecial  (jowner, jname, jtype)
-          case Static(false)                           => dbg("invokestatic");   jcode.invokestatic   (jowner, jname, jtype)
-          case Dynamic if needsInterfaceCall(receiver) => dbg("invokinterface"); jcode.invokeinterface(jowner, jname, jtype)
-          case Dynamic                                 => dbg("invokevirtual");  jcode.invokevirtual  (jowner, jname, jtype)
+          case Static(true)                            => dbg("invokespecial");  jcode.invokespecial  (jowner, jname, jtype, itf)
+          case Static(false)                           => dbg("invokestatic");   jcode.invokestatic   (jowner, jname, jtype, itf)
+          case Dynamic if needsInterfaceCall(receiver) => dbg("invokinterface"); jcode.invokeinterface(jowner, jname, jtype, itf)
+          case Dynamic                                 => dbg("invokevirtual");  jcode.invokevirtual  (jowner, jname, jtype, itf)
           case SuperCall(_)                            =>
             dbg("invokespecial")
-            jcode.invokespecial(jowner, jname, jtype)
+            jcode.invokespecial(jowner, jname, jtype, itf)
             initModule()
         }
       } // end of genCode()'s genCallMethod()
@@ -2455,11 +2458,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
             case BOX(kind) =>
               val MethodNameAndType(mname, mdesc) = jBoxTo(kind)
-              jcode.invokestatic(BoxesRunTime, mname, mdesc)
+              jcode.invokestatic(BoxesRunTime, mname, mdesc, itf = false)
 
             case UNBOX(kind) =>
               val MethodNameAndType(mname, mdesc) = jUnboxTo(kind)
-              jcode.invokestatic(BoxesRunTime, mname, mdesc)
+              jcode.invokestatic(BoxesRunTime, mname, mdesc, itf = false)
 
             case NEW(REFERENCE(cls)) =>
               val className = javaName(cls)
@@ -2497,7 +2500,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             /** Special handling to access native Array.clone() */
             case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
               val target: String = javaType(call.targetTypeKind).getInternalName
-              jcode.invokevirtual(target, "clone", mdesc_arrayClone)
+              jcode.invokevirtual(target, "clone", mdesc_arrayClone, itf = false)
 
             case call @ CALL_METHOD(method, style) => genCallMethod(call)
 
@@ -2854,7 +2857,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             jcode.invokespecial(
               StringBuilderClassName,
               INSTANCE_CONSTRUCTOR_NAME,
-              mdesc_arglessvoid
+              mdesc_arglessvoid,
+              itf = false
             )
 
           case StringConcat(el) =>
@@ -2865,11 +2869,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             jcode.invokevirtual(
               StringBuilderClassName,
               "append",
-              asm.Type.getMethodDescriptor(StringBuilderType, Array(jtype): _*)
+              asm.Type.getMethodDescriptor(StringBuilderType, Array(jtype): _*),
+              itf = false
             )
 
           case EndConcat =>
-            jcode.invokevirtual(StringBuilderClassName, "toString", mdesc_toString)
+            jcode.invokevirtual(StringBuilderClassName, "toString", mdesc_toString, itf = false)
 
           case _ => abort("Unimplemented primitive " + primitive)
         }
