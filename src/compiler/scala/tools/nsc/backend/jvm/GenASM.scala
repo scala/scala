@@ -2320,9 +2320,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           (if (receiver.isModuleClass) receiver.linkedClassOfClass else receiver).isJavaInterface
         else
           receiver.isInterface
+        def checkInterfaceTarget() = if (itf && settings.target.value != "jvm-1.8") reporter.error(call.pos, "Static methods in interface require -target:jvm-1.8")
+
         style match {
           case Static(true)                            => dbg("invokespecial");  jcode.invokespecial  (jowner, jname, jtype, itf)
-          case Static(false)                           => dbg("invokestatic");   jcode.invokestatic   (jowner, jname, jtype, itf)
+          case Static(false)                           => dbg("invokestatic");   jcode.invokestatic   (jowner, jname, jtype, itf); checkInterfaceTarget();
           case Dynamic if needsInterfaceCall(receiver) => dbg("invokinterface"); jcode.invokeinterface(jowner, jname, jtype, itf)
           case Dynamic                                 => dbg("invokevirtual");  jcode.invokevirtual  (jowner, jname, jtype, itf)
           case SuperCall(_)                            =>
