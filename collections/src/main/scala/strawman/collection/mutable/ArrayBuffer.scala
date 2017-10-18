@@ -132,7 +132,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
 }
 
-object ArrayBuffer extends SeqFactory[ArrayBuffer] {
+object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =

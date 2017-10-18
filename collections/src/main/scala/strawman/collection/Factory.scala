@@ -261,6 +261,32 @@ object SeqFactory {
   }
 }
 
+trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
+
+  override def fill[A](n: Int)(elem: => A): CC[A] = {
+    val b = newBuilder[A]()
+    b.sizeHint(n)
+    var i = 0
+    while (i < n) {
+      b += elem
+      i += 1
+    }
+    b.result()
+  }
+
+  override def tabulate[A](n: Int)(f: Int => A): CC[A] = {
+    val b = newBuilder[A]()
+    b.sizeHint(n)
+    var i = 0
+    while (i < n) {
+      b += f(i)
+      i += 1
+    }
+    b.result()
+  }
+
+}
+
 trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecific(View.Elems(xs: _*))

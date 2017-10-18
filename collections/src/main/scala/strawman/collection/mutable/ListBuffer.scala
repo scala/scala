@@ -14,7 +14,8 @@ import scala.Predef.{assert, intWrapper}
 class ListBuffer[A]
   extends Seq[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
-     with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]] {
+     with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
+     with ReusableBuilder[A, immutable.List[A]] {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
@@ -35,6 +36,9 @@ class ListBuffer[A]
   def length = len
   override def knownSize = len
 
+  override def isEmpty: Boolean = len == 0
+  override def nonEmpty: Boolean = len > 0
+
   protected[this] def newSpecificBuilder(): Builder[A, ListBuffer[A]] = ListBuffer.newBuilder()
 
   private def copyElems(): Unit = {
@@ -51,6 +55,8 @@ class ListBuffer[A]
     aliased = true
     first
   }
+
+  def result(): immutable.List[A] = toList
 
   /** Prepends the elements of this buffer to a given list
     *
@@ -244,7 +250,7 @@ class ListBuffer[A]
 
 }
 
-object ListBuffer extends SeqFactory[ListBuffer] {
+object ListBuffer extends StrictOptimizedSeqFactory[ListBuffer] {
 
   def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 

@@ -10,7 +10,7 @@ import scala.Predef.intWrapper
 
 /** Companion object to the Vector class
  */
-object Vector extends SeqFactory[Vector] {
+object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL
 

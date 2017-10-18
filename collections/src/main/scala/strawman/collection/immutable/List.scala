@@ -364,20 +364,14 @@ case object Nil extends List[Nothing] {
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
 }
 
-object List extends SeqFactory[List] {
+object List extends StrictOptimizedSeqFactory[List] {
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll
     case _ => ListBuffer.from(coll).toList
   }
 
-  def newBuilder[A](): Builder[A, List[A]] =
-    new ReusableBuilder[A, List[A]] {
-      private[this] val buffer = ListBuffer.empty[A]
-      override def clear(): Unit = buffer.clear()
-      override def result(): List[A] = buffer.toList
-      def add(elem: A): this.type = { buffer += elem; this }
-    }
+  def newBuilder[A](): Builder[A, List[A]] = new ListBuffer()
 
   def empty[A]: List[A] = Nil
 
