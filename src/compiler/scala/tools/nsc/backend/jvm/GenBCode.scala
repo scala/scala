@@ -81,6 +81,7 @@ object GenBCode {
 
   final val PublicStatic = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
   final val PublicStaticFinal = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
+  final val PrivateStaticFinal = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
 
   val CLASS_CONSTRUCTOR_NAME = "<clinit>"
   val INSTANCE_CONSTRUCTOR_NAME = "<init>"

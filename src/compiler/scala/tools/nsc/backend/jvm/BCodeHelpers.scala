@@ -864,14 +864,16 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     val MIN_SWITCH_DENSITY = 0.7
 
     /*
-     *  Add public static final field serialVersionUID with value `id`
+     *  Add private static final field serialVersionUID with value `id`.
      *
      *  can-multi-thread
      */
     def addSerialVUID(id: Long, jclass: asm.ClassVisitor) {
       // add static serialVersionUID field if `clasz` annotated with `@SerialVersionUID(uid: Long)`
+      // private for ease of binary compatibility (docs for java.io.Serializable
+      // claim that the access modifier can be anything we want).
       jclass.visitField(
-        GenBCode.PublicStaticFinal,
+        GenBCode.PrivateStaticFinal,
         "serialVersionUID",
         "J",
         null, // no java-generic-signature
