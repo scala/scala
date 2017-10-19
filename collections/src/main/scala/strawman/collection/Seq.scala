@@ -178,11 +178,14 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
+  def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = super.concat(suffix)
 
   /** Alias for `appendedAll` */
   @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
+  // Make `concat` an alias for `appendedAll` so that it benefits from performance
+  // overrides of this method
+  @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
   /** Selects all the elements of this $coll ignoring the duplicates.
     *

@@ -828,7 +828,7 @@ trait IterableOps[+A, +CC[X], +C] extends Any {
     None
   }
 
-  @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(View.Concat(toIterable, suffix))
+  def concat[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(View.Concat(toIterable, suffix))
 
   /** Alias for `concat` */
   @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
