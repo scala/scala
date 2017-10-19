@@ -5188,6 +5188,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val asym = arg.symbol
               def abounds = asym.info.bounds
               def tbounds = tparam.info.bounds
+              // TODO investigate whether this should be merged with the near duplicate in Inferencer
+              // and whether or not we should avoid using setInfo here as well to avoid potentially
+              // trampling on type history.
               def enhanceBounds(): Unit = {
                 val TypeBounds(lo0, hi0) = abounds
                 val TypeBounds(lo1, hi1) = tbounds.subst(tparams, argtypes)
