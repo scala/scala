@@ -1,5 +1,5 @@
-class Length(value: Int) extends annotation.ClassfileAnnotation
-class Ann2(value: String) extends annotation.ClassfileAnnotation
+class Length(value: Int) extends annotation.ConstantAnnotation
+class Ann2(value: String) extends annotation.ConstantAnnotation
 
 object Test {
   def n = 15

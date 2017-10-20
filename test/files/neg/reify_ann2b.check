@@ -1,4 +1,0 @@
-reify_ann2b.scala:9: error: inner classes cannot be classfile annotations
-    class ann(bar: String) extends annotation.ClassfileAnnotation
-          ^
-one error found

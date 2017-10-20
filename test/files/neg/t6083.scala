@@ -3,5 +3,5 @@ object conv {
 }
 import conv._
 
-class annot(value: String) extends annotation.ClassfileAnnotation
+class annot(value: String) extends annotation.ConstantAnnotation
 @annot(101) class C

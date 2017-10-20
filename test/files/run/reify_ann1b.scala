@@ -3,7 +3,7 @@ import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.tools.reflect.ToolBox
 
-class ann(bar: String) extends annotation.ClassfileAnnotation
+class ann(bar: String) extends annotation.ConstantAnnotation
 
 object Test extends App {
   // test 1: reify

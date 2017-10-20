@@ -476,7 +476,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       */
     private def shouldEmitAnnotation(annot: AnnotationInfo) = {
       annot.symbol.initialize.isJavaDefined &&
-        annot.matches(ClassfileAnnotationClass) &&
         retentionPolicyOf(annot) != AnnotationRetentionPolicySourceValue &&
         annot.args.isEmpty
     }

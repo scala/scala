@@ -1820,18 +1820,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
 
-      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
-        if (!clazz.owner.isPackageClass)
-          context.error(clazz.pos, "inner classes cannot be classfile annotations")
-        // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
-        // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
-        // of constant argument values "for free". Related to scala/bug#7041.
-        else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
-          """|subclassing Classfile does not
-             |make your annotation visible at runtime.  If that is what
-             |you want, you must write the annotation class in Java.""".stripMargin)
-      }
-
       warnTypeParameterShadow(tparams1, clazz)
 
       if (!isPastTyper) {
@@ -1910,8 +1898,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (txt eq context) namer enterSym tree
       else newNamer(txt) enterSym tree
 
-    /** <!-- 2 --> Check that inner classes do not inherit from Annotation
-     */
     def typedTemplate(templ0: Template, parents1: List[Tree]): Template = {
       val templ = templ0
       // please FIXME: uncommenting this line breaks everything
@@ -1971,9 +1957,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
-
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
-        context.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
@@ -3767,7 +3750,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
             reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
-          else if (!annType.typeSymbol.isSubClass(ClassfileAnnotationClass))
+          else if (!annType.typeSymbol.isJavaDefined)
             reportAnnotationError(NestedAnnotationError(ann, annType))
 
           if (annInfo.atp.isErroneous) { hasError = true; None }
@@ -3819,17 +3802,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
       val annType = annTpt.tpe
+      val isJava = annType != null && annType.typeSymbol.isJavaDefined
 
       finish(
         if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
-        else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
-          // annotation to be saved as java classfile annotation
-          val isJava = typedFun.symbol.owner.isJavaDefined
+        else if (isJava || annType.typeSymbol.isNonBottomSubClass(ConstantAnnotationClass)) {
+          // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
+          // stored in the `assocs` field of the resulting AnnotationInfo
           if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
-          }
-          else {
+          } else {
             val annScopeJava =
               if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
               else EmptyScope // annScopeJava is only used if isJava
@@ -3874,8 +3857,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (hasError) ErroneousAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
-        }
-        else {
+        } else {
           val typedAnn: Tree = {
             // local dummy fixes scala/bug#5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))

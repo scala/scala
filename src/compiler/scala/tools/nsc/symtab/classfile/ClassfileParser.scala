@@ -470,7 +470,7 @@ abstract class ClassfileParser {
                         else pool.getSuperClass(u2).tpe_*
         val ifaceCount = u2
         var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
-        if (jflags.isAnnotation) ifaces ::= ClassfileAnnotationClass.tpe
+        if (jflags.isAnnotation) ifaces ::= StaticAnnotationClass.tpe
         superType :: ifaces
       }
 

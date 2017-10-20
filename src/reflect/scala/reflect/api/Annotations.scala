@@ -13,12 +13,11 @@ import scala.collection.immutable.ListMap
  *
  *  <ul>
  *  <li>''Java annotations'': annotations on definitions produced by the Java compiler, i.e., subtypes of [[java.lang.annotation.Annotation]]
- *  attached to program definitions. When read by Scala reflection, the [[scala.annotation.ClassfileAnnotation]] trait
- *  is automatically added as a superclass to every Java annotation type.</li>
+ *  attached to program definitions.</li>
  *  <li>''Scala annotations'': annotations on definitions or types produced by the Scala compiler.</li>
  *  </ul>
  *
- *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled,
+ *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] is compiled,
  *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing
  *  just [[scala.annotation.Annotation]] is not enough to have the corresponding metadata persisted for runtime reflection.
  *

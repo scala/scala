@@ -499,7 +499,7 @@ trait ContextErrors {
         NormalTypeError(tree, "duplicate value for annotation argument " + name)
 
       def ClassfileAnnotationsAsNamedArgsError(tree: Tree) =
-        NormalTypeError(tree, "classfile annotation arguments have to be supplied as named arguments")
+        NormalTypeError(tree, "arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments")
 
       def AnnotationMissingArgError(tree: Tree, annType: Type, sym: Symbol) =
         NormalTypeError(tree, "annotation " + annType.typeSymbol.fullName + " is missing argument " + sym.name)
