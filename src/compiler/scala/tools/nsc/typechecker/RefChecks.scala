@@ -1430,6 +1430,14 @@ abstract class RefChecks extends Transform {
           analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
           analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
 
+          if (sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
+            def warn(what: String) =
+              reporter.warning(tree.pos, s"@serialVersionUID has no effect on $what")
+
+            if (sym.isTrait) warn("traits")
+            else if (!sym.isSerializable) warn("non-serializable classes")
+          }
+
         case tpt@TypeTree() =>
           if (tpt.original != null) {
             tpt.original foreach {

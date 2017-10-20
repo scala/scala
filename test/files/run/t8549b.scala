@@ -1,15 +1,19 @@
+import java.lang.reflect.Modifier._
 
 @SerialVersionUID(42)
-class C
+class C extends Serializable
 
 @SerialVersionUID(43 - 1)
-class D
+class D extends Serializable
 
 
 object Test extends App {
   def checkId(cls: Class[_]) {
-    val id = cls.getDeclaredField("serialVersionUID").get(null)
-    assert(id == 42, (cls, id))  
+    val field = cls.getDeclaredField("serialVersionUID")
+    assert(isPrivate(field.getModifiers))
+    field.setAccessible(true)
+    val id = field.get(null)
+    assert(id == 42, (cls, id))
   }
   checkId(classOf[C])
   checkId(classOf[D])

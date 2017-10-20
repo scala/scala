@@ -8,6 +8,7 @@ object Test extends App {
       o.getClass.getName)
 
     val Some(f) = o.getClass.getDeclaredFields.find(_.getName == "serialVersionUID")
+    f.setAccessible(true)
     assert(f.getLong(null) == 0l)
   }
 
