@@ -708,6 +708,8 @@ self =>
       case _ => false
     }
 
+    def isSimpleTypeIntro: Boolean = isTypeIntroToken(in.token)
+
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
     def isCaseDefEnd = in.token == RBRACE || in.token == CASE || in.token == EOF
@@ -1039,14 +1041,17 @@ self =>
       }
 
       /** {{{
-       *  CompoundType ::= AnnotType {with AnnotType} [Refinement]
+       *  CompoundType ::= PrefixType
+       *                |  AnnotType {with AnnotType} [Refinement]
        *                |  Refinement
        *  }}}
        */
-      def compoundType(): Tree = compoundTypeRest(
-        if (in.token == LBRACE) atInPos(scalaAnyRefConstr)
-        else annotType()
-      )
+      def compoundType(): Tree =  if (isUnaryOp) prefixType() else {
+        compoundTypeRest(
+          if (in.token == LBRACE) atInPos(scalaAnyRefConstr)
+          else annotType()
+        )
+      }
 
       def compoundTypeRest(t: Tree): Tree = {
         val ts = new ListBuffer[Tree] += t
@@ -1146,6 +1151,24 @@ self =>
         //or an infix expression (e.g., (i : Int*String))
         if (isIdent) checkRepeatedParam orElse asInfix
         else thList.reduceHistoryToTree()
+      }
+
+      /** {{{
+        *  PrefixType ::= [`-' | `+' | `~' | `!'] SimpleType
+        *  }}}
+        */
+      def prefixType(): Tree = {
+        if (lookingAhead(isSimpleTypeIntro)) {
+          val namePos = in.offset
+          val uname = nme.toUnaryName(rawIdent().toTermName)
+          //TODO: Add support for literal types in SIP23 implementation here
+          val opTree = atPos(namePos) { Ident(uname.toTypeName) }
+          val simpleTree = simpleType()
+//          println(s"opTree = $opTree\tsimpleTree = $simpleTree")
+          atPos(opTree.pos.start, namePos) {AppliedTypeTree(opTree, List(simpleTree))}
+            //Select(stripParens(simpleType()), uname)
+        }
+        else atPos(in.offset) {simpleType()}
       }
 
       /** {{{
