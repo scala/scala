@@ -248,4 +248,20 @@ class SettingsTest {
       marginallyEquals(expected, m.help)
     })
   }
+
+  @Test def addSettingKeepsLastSetting(): Unit = {
+
+    val desc = "Test new setting with same name"
+
+    class OriginalSettings() extends MutableSettings(msg => throw new IllegalArgumentException(msg)) {
+      val param = add(StringSetting("-x", "test", "Test original setting", "test", None))
+    }
+    class NewSettings() extends OriginalSettings {
+      override val param = add(StringSetting("-x", "test-new", desc, "test-new", None))
+    }
+
+    val newSettings = new NewSettings()
+    val setting = newSettings.allSettings.find(_.name == "-x").get
+    assertEquals(desc, setting.helpDescription)
+  }
 }
