@@ -8,7 +8,6 @@
 package xsbt
 
 import scala.tools.nsc.{ CompilerCommand, Settings }
-import Compat._
 
 object Command {
 

@@ -7,10 +7,9 @@
 
 package xsbt
 
-import xsbti.{ AnalysisCallback, Logger, Problem, Reporter, Severity }
+import xsbti.{ AnalysisCallback, Logger, Problem, Reporter }
 import xsbti.compile._
-import scala.tools.nsc.{ io, reporters, Phase, Global, Settings, SubComponent }
-import io.AbstractFile
+import scala.tools.nsc.Settings
 import scala.collection.mutable
 import Log.debug
 import java.io.File

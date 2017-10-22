@@ -10,7 +10,6 @@ package xsbt
 import java.io.File
 import java.util.{ Arrays, Comparator }
 import scala.tools.nsc.symtab.Flags
-import scala.collection.mutable.{ HashMap, HashSet, ListBuffer }
 import xsbti.api._
 
 import scala.tools.nsc.Global

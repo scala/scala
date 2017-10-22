@@ -78,7 +78,7 @@ private object DelegatingReporter {
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
       val pointerSpace = lineContent.toList.take(pointer).map {
         case '\t' => '\t'
-        case x    => ' '
+        case _    => ' '
       }
       new PositionImpl(Option(sourcePath),
                        Option(sourceFile),
