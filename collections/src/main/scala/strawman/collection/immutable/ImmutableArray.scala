@@ -2,7 +2,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
-import strawman.collection.{IterableOnce, Iterator, SeqFactory, View}
+import strawman.collection.{IterableOnce, Iterator, SeqFactory, StrictOptimizedSeqFactory, View}
 
 import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws}
 import scala.runtime.ScalaRunTime
@@ -110,7 +110,7 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
 }
 
-object ImmutableArray extends SeqFactory[ImmutableArray] {
+object ImmutableArray extends StrictOptimizedSeqFactory[ImmutableArray] {
 
   private[this] lazy val emptyImpl = new ImmutableArray[Nothing](new scala.Array[Any](0))
 
