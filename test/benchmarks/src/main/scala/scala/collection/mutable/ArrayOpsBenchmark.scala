@@ -13,11 +13,17 @@ import org.openjdk.jmh.infra.Blackhole
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 class ArrayOpsBenchmark {
-  @Param(Array("1000000"))
-  var size: Int = _
 
-  val integers = (1 to size).toList
-  val strings = integers.map(_.toString)
+  @Param(Array("10", "1000", "10000"))
+  var size: Int = _
+  var integers: List[Int] = _
+  var strings: List[String] = _
+
+
+  @Setup(Level.Trial) def initNumbers: Unit = {
+    integers = (1 to size).toList
+    strings = integers.map(_.toString)
+  }
 
   @Benchmark def appendInteger(bh: Blackhole): Unit = {
     var arr = Array.empty[Int]

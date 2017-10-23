@@ -63,7 +63,7 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
 
   def :+[B >: T: ClassTag](elem: B): Array[B] = {
     val currentLength = repr.length
-    val result = Array.ofDim[B](currentLength + 1)
+    val result = new Array[B](currentLength + 1)
     Array.copy(repr, 0, result, 0, currentLength)
     result(currentLength) = elem
     result
@@ -71,7 +71,7 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
 
   def +:[B >: T: ClassTag](elem: B): Array[B] = {
     val currentLength = repr.length
-    val result = Array.ofDim[B](currentLength + 1)
+    val result = new Array[B](currentLength + 1)
     result(0) = elem
     Array.copy(repr, 0, result, 1, currentLength)
     result
