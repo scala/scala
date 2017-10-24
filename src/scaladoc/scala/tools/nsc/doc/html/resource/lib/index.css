@@ -31,6 +31,56 @@
   url('open-sans-v13-latin-regular.woff') format('woff'),
   url('open-sans-v13-latin-regular.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: url('open-sans-v13-latin-400i.eot');
+  src: local('Open Sans Italic'), local('OpenSans-Italic'),
+  url('open-sans-v13-latin-400i.eot?#iefix') format('embedded-opentype'),
+  url('open-sans-v13-latin-400i.woff') format('woff'),
+  url('open-sans-v13-latin-400i.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: oblique;
+  font-weight: 400;
+  src: url('open-sans-v13-latin-400i.eot');
+  src: local('Open Sans Italic'), local('OpenSans-Italic'),
+  url('open-sans-v13-latin-400i.eot?#iefix') format('embedded-opentype'),
+  url('open-sans-v13-latin-400i.woff') format('woff'),
+  url('open-sans-v13-latin-400i.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url('open-sans-v13-latin-700.eot');
+  src: local('Open Sans Bold'), local('OpenSans-Bold'),
+  url('open-sans-v13-latin-700.eot?#iefix') format('embedded-opentype'),
+  url('open-sans-v13-latin-700.woff') format('woff'),
+  url('open-sans-v13-latin-700.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 700;
+  src: url('open-sans-v13-latin-700i.eot');
+  src: local('Open Sans Bold Italic'), local('OpenSans-BoldItalic'),
+  url('open-sans-v13-latin-700i.eot?#iefix') format('embedded-opentype'),
+  url('open-sans-v13-latin-700i.woff') format('woff'),
+  url('open-sans-v13-latin-700i.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: oblique;
+  font-weight: 700;
+  src: url('open-sans-v13-latin-700i.eot');
+  src: local('Open Sans Bold Italic'), local('OpenSans-BoldItalic'),
+  url('open-sans-v13-latin-700i.eot?#iefix') format('embedded-opentype'),
+  url('open-sans-v13-latin-700i.woff') format('woff'),
+  url('open-sans-v13-latin-700i.ttf') format('truetype');
+}
 
 @font-face {
   font-family: 'Source Code Pro';
