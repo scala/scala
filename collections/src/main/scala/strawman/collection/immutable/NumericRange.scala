@@ -1,7 +1,7 @@
 package strawman.collection.immutable
 
 import strawman.collection
-import strawman.collection.{IterableOnce, Iterator, SeqFactory, StrictOptimizedIterableOps}
+import strawman.collection.{SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, arrayToArrayOps}
 
 import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, NoSuchElementException, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized, throws}
 import scala.Predef.ArrowAssoc
@@ -82,7 +82,8 @@ sealed class NumericRange[T](
   override def head: T = if (isEmpty) Nil.head else start
   override def tail: NumericRange[T] =
     if (isEmpty) Nil.tail
-    else new NumericRange(start + step, end, step, isInclusive)
+    else if(isInclusive) new NumericRange.Inclusive(start + step, end, step)
+    else new NumericRange.Exclusive(start + step, end, step)
 
   /** Create a new range with the start and end values of this range and
     *  a new `step`.
@@ -93,7 +94,7 @@ sealed class NumericRange[T](
   /** Create a copy of this range.
     */
   def copy(start: T, end: T, step: T): NumericRange[T] =
-    new NumericRange[T](start, end, step, isInclusive)
+    new NumericRange(start, end, step, isInclusive)
 
   @throws[IndexOutOfBoundsException]
   def apply(idx: Int): T = {
@@ -131,22 +132,22 @@ sealed class NumericRange[T](
   // based on the given value.
   private def newEmptyRange(value: T) = NumericRange(value, value, step)
 
-  override def take(n: Int): NumericRange[T] = (
+  override def take(n: Int): NumericRange[T] = {
     if (n <= 0 || length == 0) newEmptyRange(start)
     else if (n >= length) this
-    else new NumericRange(start, locationAfterN(n - 1), step, isInclusive = true)
-    )
+    else new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
+  }
 
-  override def drop(n: Int): NumericRange[T] = (
+  override def drop(n: Int): NumericRange[T] = {
     if (n <= 0 || length == 0) this
     else if (n >= length) newEmptyRange(end)
     else copy(locationAfterN(n), end, step)
-    )
+  }
 
   override def splitAt(n: Int): (NumericRange[T], NumericRange[T]) = (take(n), drop(n))
 
   override def reverse: NumericRange[T] =
-    if (isEmpty) this else new NumericRange(last, start, -step, isInclusive = true)
+    if (isEmpty) this else new NumericRange.Inclusive(last, start, -step)
 
   import NumericRange.defaultOrdering
 
@@ -396,10 +397,26 @@ object NumericRange {
     }
   }
 
-  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]): NumericRange[T] =
-    new NumericRange[T](start, end, step, isInclusive = false)
-  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]): NumericRange[T] =
-    new NumericRange[T](start, end, step, isInclusive = true)
+  class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
+    extends NumericRange(start, end, step, true) {
+    override def copy(start: T, end: T, step: T): Inclusive[T] =
+      NumericRange.inclusive(start, end, step)
+
+    def exclusive: Exclusive[T] = NumericRange(start, end, step)
+  }
+
+  class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
+    extends NumericRange(start, end, step, false) {
+    override def copy(start: T, end: T, step: T): Exclusive[T] =
+      NumericRange(start, end, step)
+
+    def inclusive: Inclusive[T] = NumericRange.inclusive(start, end, step)
+  }
+
+  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]): Exclusive[T] =
+    new Exclusive(start, end, step)
+  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]): Inclusive[T] =
+    new Inclusive(start, end, step)
 
   private[collection] val defaultOrdering = Map[Numeric[_], Ordering[_]](
     Numeric.BigIntIsIntegral -> Ordering.BigInt,

@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, `inline`, Int, NoSuchElementException, Ordering, Unit, math, throws}
+import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, NoSuchElementException, Ordering, Unit, math, throws, `inline`, deprecated, PartialFunction}
 import scala.Predef.{identity, intWrapper}
 import java.lang.Object
 
@@ -13,12 +13,9 @@ import scala.util.hashing.MurmurHash3
 /** Base trait for sequence collections */
 trait Seq[+A]
   extends Iterable[A]
+    with PartialFunction[Int, A]
     with SeqOps[A, Seq, Seq[A]]
     with Equals {
-
-  final protected[this] def coll: this.type = this
-
-  final def toSeq: this.type = this
 
   def iterableFactory: SeqFactory[Seq]
 
@@ -146,7 +143,6 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @return       a new collection which contains all elements
     *                of `prefix` followed by all the elements of this $coll.
     *
-    *  @usecase def prependAll[B](that: Iterable[B]): $Coll[B]
     *    @inheritdoc
     *
     *    Example:
@@ -230,7 +226,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     * @return `true` if the sequence `that` is contained in this $coll at
     *         index `offset`, otherwise `false`.
     */
-  def startsWith[B >: A](that: Seq[B], offset: Int = 0): Boolean = {
+  def startsWith[B >: A](that: IterableOnce[B], offset: Int = 0): Boolean = {
     val i = toIterable.iterator() drop offset
     val j = that.iterator()
     while (j.hasNext && i.hasNext)
@@ -245,8 +241,8 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *  @param  that    the sequence to test
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
-  def endsWith[B >: A](that: Seq[B]): Boolean = {
-    val i = toIterable.iterator().drop(length - that.length)
+  def endsWith[B >: A](that: Iterable[B]): Boolean = {
+    val i = toIterable.iterator().drop(length - that.size)
     val j = that.iterator()
     while (i.hasNext && j.hasNext)
       if (i.next() != j.next())
@@ -254,6 +250,16 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
     !j.hasNext
   }
+
+  /** Tests whether this $coll contains given index.
+    *
+    *  The implementations of methods `apply` and `isDefinedAt` turn a `Seq[A]` into
+    *  a `PartialFunction[Int, A]`.
+    *
+    * @param    idx     the index to test
+    * @return   `true` if this $coll contains an element at position `idx`, `false` otherwise.
+    */
+  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
   /** A copy of this $coll with an element value appended until a given target length is reached.
    *
@@ -374,6 +380,9 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *              determined by `==`) to `elem`, `false` otherwise.
    */
   def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
+
+  @deprecated("Use .reverseIterator().map(f).to(...) instead of .reverseMap(f)", "2.13.0")
+  def reverseMap[B](f: A => B): CC[B] = fromIterable(View.Map(View.fromIteratorProvider(() => reverseIterator()), f))
 
   /** Iterates over distinct permutations.
     *
@@ -598,12 +607,126 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     */
   def indices: Range = Range(0, length)
 
+  /** Compares the length of this $coll to a test value.
+    *
+    *   @param   len   the test value that gets compared with the length.
+    *   @return  A value `x` where
+    *   {{{
+    *        x <  0       if this.length <  len
+    *        x == 0       if this.length == len
+    *        x >  0       if this.length >  len
+    *   }}}
+    *  The method as implemented here does not call `length` directly; its running time
+    *  is `O(length min len)` instead of `O(length)`. The method should be overwritten
+    *  if computing `length` is cheap.
+    */
+  def lengthCompare(len: Int): Int = {
+    if (len < 0) 1
+    else {
+      var i = 0
+      val it = iterator()
+      while (it.hasNext) {
+        if (i == len) return if (it.hasNext) 1 else 0
+        it.next()
+        i += 1
+      }
+      i - len
+    }
+  }
+
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =
     toIterable.iterator().sameElements(that)
 
+  /** Tests whether every element of this $coll relates to the
+    * corresponding element of another sequence by satisfying a test predicate.
+    *
+    *  @param   that  the other sequence
+    *  @param   p     the test predicate, which relates elements from both sequences
+    *  @tparam  B     the type of the elements of `that`
+    *  @return  `true` if both sequences have the same length and
+    *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
+    *                  and `y` of `that`, otherwise `false`.
+    */
+  def corresponds[B](that: Seq[B])(p: (A, B) => Boolean): Boolean = {
+    val i = toIterable.iterator()
+    val j = that.iterator()
+    while (i.hasNext && j.hasNext)
+      if (!p(i.next(), j.next()))
+        return false
+    !i.hasNext && !j.hasNext
+  }
+
+  /** Computes the multiset difference between this $coll and another sequence.
+    *
+    *  @param that   the sequence of elements to remove
+    *  @tparam B     the element type of the returned $coll.
+    *  @return       a new collection of type `That` which contains all elements of this $coll
+    *                except some of occurrences of elements that also appear in `that`.
+    *                If an element value `x` appears
+    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
+    *                part of the result, but any following occurrences will.
+    *    @inheritdoc
+    *
+    *    $willNotTerminateInf
+    *
+    *    @return       a new $coll which contains all elements of this $coll
+    *                  except some of occurrences of elements that also appear in `that`.
+    *                  If an element value `x` appears
+    *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
+    *                  part of the result, but any following occurrences will.
+    */
+  def diff[B >: A](that: Seq[B]): C = {
+    val occ = occCounts(that)
+    //TODO diff and intersect could have efficient lazy implementations if fromSpecificIterable accepted an IterableOnce, i.e. it guaranteed doing only a single traversal
+    val b = newSpecificBuilder()
+    for (x <- this) {
+      val ox = occ(x)  // Avoid multiple map lookups
+      if (ox == 0) b += x
+      else occ(x) = ox - 1
+    }
+    b.result()
+  }
+
+  /** Computes the multiset intersection between this $coll and another sequence.
+    *
+    *  @param that   the sequence of elements to intersect with.
+    *  @tparam B     the element type of the returned $coll.
+    *  @return       a new collection of type `That` which contains all elements of this $coll
+    *                which also appear in `that`.
+    *                If an element value `x` appears
+    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+    *                in the result, but any following occurrences will be omitted.
+    *    @inheritdoc
+    *
+    *    $mayNotTerminateInf
+    *
+    *    @return       a new $coll which contains all elements of this $coll
+    *                  which also appear in `that`.
+    *                  If an element value `x` appears
+    *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+    *                  in the result, but any following occurrences will be omitted.
+    */
+  def intersect[B >: A](that: Seq[B]): C = {
+    val occ = occCounts(that)
+    val b = newSpecificBuilder()
+    for (x <- this) {
+      val ox = occ(x)  // Avoid multiple map lookups
+      if (ox > 0) {
+        b += x
+        occ(x) = ox - 1
+      }
+    }
+    b.result()
+  }
+
+  private[this] def occCounts[B](sq: Seq[B]): mutable.HashMap[B, Int] = {
+    val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
+    for (y <- sq) occ(y) += 1
+    occ
+  }
 }
 
 object SeqOps {
@@ -771,3 +894,5 @@ object SeqOps {
   }
 }
 
+/** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+abstract class AbstractSeq[+A] extends AbstractIterable[A] with Seq[A]

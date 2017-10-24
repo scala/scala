@@ -14,8 +14,6 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
-  final protected[this] def coll: this.type = this
-
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
@@ -227,3 +225,6 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 }
 
 object Map extends MapFactory.Delegate[Map](immutable.Map)
+
+/** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]

@@ -23,3 +23,6 @@ trait IterableOps[A, +CC[X], +C]
 
 object Iterable
   extends IterableFactory.Delegate[Iterable](ArrayBuffer)
+
+/** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
+abstract class AbstractIterable[A] extends strawman.collection.AbstractIterable[A] with Iterable[A]

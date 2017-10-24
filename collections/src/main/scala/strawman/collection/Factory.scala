@@ -6,7 +6,7 @@ import strawman.collection.immutable.NumericRange
 import scala.language.implicitConversions
 import strawman.collection.mutable.Builder
 
-import scala.{Any, Int, Integral, Nothing, Ordering}
+import scala.{Any, Int, Integral, Nothing, Ordering, Some}
 import scala.Predef.implicitly
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -29,7 +29,8 @@ trait Factory[-A, +C] extends Any {
     */
   def fromSpecific(it: IterableOnce[A]): C
 
-  /** A strict builder that eventually produces a `C` */
+  /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
+    * Building collections with `fromSpecific` is preferred because it can be lazy for lazy collections. */
   def newBuilder(): Builder[A, C]
 }
 
@@ -150,6 +151,7 @@ object IterableFactory {
   * @tparam CC Collection type constructor (e.g. `List`)
   */
 trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
+  def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
 
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.

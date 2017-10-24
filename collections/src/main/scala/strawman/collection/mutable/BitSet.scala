@@ -149,6 +149,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override def clone(): BitSet =
     new BitSet(java.util.Arrays.copyOf(elems, elems.length))
 
+  def toImmutable: immutable.BitSet = immutable.BitSet.fromBitMask(elems)
 }
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {

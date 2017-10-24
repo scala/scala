@@ -145,7 +145,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     override def contains(key: K) = isInsideViewBounds(key) && RB.contains(tree, key)
 
     override def head = headOption.get
-    /*override*/ def headOption = {
+    override def headOption = {
       val entry = if (from.isDefined) RB.minAfter(tree, from.get) else RB.min(tree)
       (entry, until) match {
         case (Some(e), Some(unt)) if ordering.compare(e._1, unt) >= 0 => None

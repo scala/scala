@@ -6,7 +6,10 @@ import scala.{Any, Int, `inline`}
 
 trait Seq[+A] extends Iterable[A]
                  with collection.Seq[A]
-                 with SeqOps[A, Seq, Seq[A]]
+                 with SeqOps[A, Seq, Seq[A]] {
+
+  override final def toSeq: this.type = this
+}
 
 trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
 

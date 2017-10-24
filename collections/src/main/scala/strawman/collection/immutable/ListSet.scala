@@ -59,8 +59,6 @@ sealed class ListSet[A]
   protected def elem: A = throw new NoSuchElementException("elem of empty set")
   protected def next: ListSet[A] = throw new NoSuchElementException("next of empty set")
 
-  def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
-
   def iterableFactory = ListSet
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListSet[A] = fromIterable(coll)
 

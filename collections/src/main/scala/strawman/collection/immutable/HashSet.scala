@@ -5,7 +5,7 @@ package immutable
 import mutable.{Builder, ImmutableBuilder}
 import Hashing.computeHash
 
-import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, `inline`, sys}
+import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, SerialVersionUID, Serializable, Unit, `inline`, sys, Some, None}
 import scala.Predef.assert
 import java.lang.Integer
 
@@ -80,6 +80,8 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def head: Any = throw new NoSuchElementException("Empty Set")
 
+    override def headOption: None.type = None
+
     override def tail: HashSet[Any] = throw new NoSuchElementException("Empty Set")
 
     override def init: HashSet[Any] = throw new NoSuchElementException("Empty Set")
@@ -108,6 +110,8 @@ object HashSet extends IterableFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = f(key)
 
     override def head: A = key
+
+    override def headOption: Some[A] = Some(key)
 
     override def tail: HashSet[A] = HashSet.empty[A]
 

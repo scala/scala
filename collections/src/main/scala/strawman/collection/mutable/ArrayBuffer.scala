@@ -9,7 +9,8 @@ import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
-  extends IndexedSeq[A]
+  extends Buffer[A]
+    with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with IndexedOptimizedSeq[A]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
@@ -85,6 +86,11 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     ensureSize(end + 1)
     Array.copy(array, idx, array, idx + 1, end - idx)
     this(idx) = elem
+  }
+
+  def prepend(elem: A): this.type = {
+    insert(0, elem)
+    this
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {

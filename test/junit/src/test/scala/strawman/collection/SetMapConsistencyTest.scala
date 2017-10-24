@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.Predef.{genericArrayOps => _, assert, classOf, ArrowAssoc, intWrapper, identity, augmentString}
+import scala.Predef.{genericArrayOps => _, assert, classOf, ArrowAssoc, intWrapper, identity}
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4

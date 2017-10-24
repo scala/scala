@@ -9,7 +9,7 @@ package object collection extends LowPriority {
   // ------------------ Decorators to add collection ops to existing types -----------------------
 
   /** Decorator to add collection operations to strings. */
-  implicit def stringToStringOps(s: String): StringOps = new StringOps(s)
+  implicit def stringToStringOps(s: String): immutable.StringOps = new immutable.StringOps(s)
 
   /** Decorator to add collection operations to arrays. */
   implicit def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)
@@ -104,8 +104,8 @@ class LowPriority {
   import strawman.collection._
 
   /** Convert array to iterable via view. Lower priority than ArrayOps */
-  implicit def arrayToView[T](xs: Array[T]): ArrayView[T] = new ArrayView[T](xs)
+  implicit def arrayToView[T](xs: Array[T]): ArrayView[T] = ArrayView[T](xs)
 
   /** Convert string to iterable via view. Lower priority than StringOps */
-  implicit def stringToView(s: String): StringView = new StringView(s)
+  implicit def stringToView(s: String): immutable.StringView = new immutable.StringView(s)
 }

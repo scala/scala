@@ -2,6 +2,7 @@ package strawman.collection
 package mutable
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.tailrec
 import scala.{Any, Boolean, Int, Unit, throws}
 import scala.Int._
 import strawman.collection
@@ -12,7 +13,7 @@ import scala.Predef.{assert, intWrapper}
 
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
-  extends Seq[A]
+  extends Buffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
      with ReusableBuilder[A, immutable.List[A]] {
@@ -51,7 +52,7 @@ class ListBuffer[A]
   private def ensureUnaliased() = if (aliased) copyElems()
 
   /** Convert to list; avoids copying where possible. */
-  def toList = {
+  override def toList: List[A] = {
     aliased = true
     first
   }
@@ -151,6 +152,11 @@ class ListBuffer[A]
       setNext(p, elem :: getNext(p))
       len += 1
     }
+  }
+
+  def prepend(elem: A): this.type = {
+    insert(0, elem)
+    this
   }
 
   private def insertAfter(p: Predecessor[A], it: Iterator[A]) = {
