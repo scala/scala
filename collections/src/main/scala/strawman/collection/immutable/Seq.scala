@@ -11,6 +11,10 @@ trait Seq[+A] extends Iterable[A]
   override final def toSeq: this.type = this
 }
 
+/**
+  * @define coll immutable sequence
+  * @define Coll `immutable.Seq`
+  */
 trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
 
   /** A copy of this $coll with one single replaced element.
@@ -19,10 +23,6 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
     *  @tparam B        the element type of the returned $coll.
     *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
-    *
-    *    @inheritdoc
-    *
-    *    @return a copy of this $coll with the element at position `index` replaced by `elem`.
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(toIterable, index, elem))
 
@@ -45,6 +45,11 @@ trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll immutable sequence
+  * @define Coll `immutable.Seq`
+  */
 object Seq extends SeqFactory.Delegate[Seq](List)
 
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */

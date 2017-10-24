@@ -9,6 +9,10 @@ trait Iterable[A]
   extends collection.Iterable[A]
     with IterableOps[A, Iterable, Iterable[A]]
 
+/**
+  * @define coll mutable collection
+  * @define Coll `mutable.Iterable`
+  */
 trait IterableOps[A, +CC[X], +C]
   extends collection.IterableOps[A, CC, C]
     with Growable[A] {
@@ -21,6 +25,11 @@ trait IterableOps[A, +CC[X], +C]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll mutable collection
+  * @define Coll `mutable.Iterable`
+  */
 object Iterable
   extends IterableFactory.Delegate[Iterable](ArrayBuffer)
 

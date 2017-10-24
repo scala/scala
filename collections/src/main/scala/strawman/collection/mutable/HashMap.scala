@@ -114,6 +114,11 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
 
 }
 
+/**
+  * $factoryInfo
+  *  @define Coll `mutable.HashMap`
+  *  @define coll mutable hash map
+  */
 object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = new HashMap[K, V]

@@ -11,6 +11,10 @@ trait Set[A]
     with collection.Set[A]
     with SetOps[A, Set, Set[A]]
 
+/**
+  * @define coll mutable set
+  * @define Coll `mutable.Set`
+  */
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
     with collection.SetOps[A, CC, C]
@@ -96,6 +100,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll mutable set
+  * @define Coll `mutable.Set`
+  */
 object Set extends IterableFactory.Delegate[Set](HashSet)
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */

@@ -75,6 +75,11 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
 }
 
+/**
+  * $factoryInfo
+  * @define Coll `mutable.HashSet`
+  * @define coll mutable hash set
+  */
 object HashSet extends IterableFactory[HashSet] {
 
   def from[B](it: strawman.collection.IterableOnce[B]): HashSet[B] = Growable.from(empty[B], it)

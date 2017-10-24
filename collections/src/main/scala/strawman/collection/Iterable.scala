@@ -10,7 +10,13 @@ import scala.Predef.<:<
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
 
-/** Base trait for generic collections */
+/** Base trait for generic collections.
+  *
+  * @tparam A the element type of the collection
+  *
+  * @define Coll `Iterable`
+  * @define coll iterable collection
+  */
 trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] with Traversable[A] {
 
   /** The collection itself */
@@ -23,18 +29,37 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 
 /** Base trait for Iterable operations
   *
-  *  VarianceNote
-  *  ============
+  * =VarianceNote=
   *
-  *  We require that for all child classes of Iterable the variance of
-  *  the child class and the variance of the `C` parameter passed to `IterableOps`
-  *  are the same. We cannot express this since we lack variance polymorphism. That's
-  *  why we have to resort at some places to write `C[A @uncheckedVariance]`.
+  * We require that for all child classes of Iterable the variance of
+  * the child class and the variance of the `C` parameter passed to `IterableOps`
+  * are the same. We cannot express this since we lack variance polymorphism. That's
+  * why we have to resort at some places to write `C[A @uncheckedVariance]`.
   *
-  *  @tparam CC type constructor of the collection (e.g. `List`, `Set`). Operations returning a collection
-  *             with a different type of element `B` (e.g. `map`) return a `CC[B]`.
-  *  @tparam C  type of the collection (e.g. `List[Int]`, `String`, `BitSet`). Operations returning a collection
-  *             with the same type of element (e.g. `drop`, `filter`) return a `C`.
+  * @tparam CC type constructor of the collection (e.g. `List`, `Set`). Operations returning a collection
+  *            with a different type of element `B` (e.g. `map`) return a `CC[B]`.
+  * @tparam C  type of the collection (e.g. `List[Int]`, `String`, `BitSet`). Operations returning a collection
+  *            with the same type of element (e.g. `drop`, `filter`) return a `C`.
+  *
+  * @define Coll Iterable
+  * @define coll iterable collection
+  * @define orderDependent
+  *
+  *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+  * @define orderDependentFold
+  *
+  *    Note: might return different results for different runs, unless the
+  *    underlying collection type is ordered or the operator is associative
+  *    and commutative.
+  * @define mayNotTerminateInf
+  *
+  *    Note: may not terminate for infinite-sized collections.
+  * @define willNotTerminateInf
+  *
+  *    Note: will not terminate for infinite-sized collections.
+  *  @define undefinedorder
+  *  The order in which operations are performed on elements is unspecified
+  *  and may be nondeterministic.
   */
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
@@ -576,7 +601,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new WithFilter(p)
 
   /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
-    *  of trait `Iterable`.
+    * of trait `Iterable`.
+    *
+    * @define coll iterable collection
     */
   class WithFilter(p: A => Boolean) extends collection.WithFilter[A, CC] {
 
@@ -673,12 +700,11 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     b.result()
   }
 
-  /** Skips longest sequence of elements of this iterator which satisfy given
-    *  predicate `p`, and returns an iterator of the remaining elements.
-    *
-    *  @param p the predicate used to skip elements.
-    *  @return  an iterator consisting of the remaining elements
-    *  @note    Reuse: $consumesAndProducesIterator
+  /** Drops longest prefix of elements that satisfy a predicate.
+    *  $orderDependent
+    *  @param   p  The predicate used to test elements.
+    *  @return  the longest suffix of this $coll whose first element
+    *           does not satisfy the predicate `p`.
     */
   def dropWhile(p: A => Boolean): C = fromSpecificIterable(View.DropWhile(toIterable, p))
 

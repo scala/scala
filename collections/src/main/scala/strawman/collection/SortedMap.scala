@@ -48,7 +48,10 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
 
-  /** Specializes `MapWithFilter` for sorted Map collections */
+  /** Specializes `MapWithFilter` for sorted Map collections
+    *
+    * @define coll sorted map collection
+    */
   class SortedMapWithFilter(p: ((K, V)) => Boolean) extends MapWithFilter(p) {
 
     def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =

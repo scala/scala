@@ -172,13 +172,10 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 }
 
 /**
+  * $factoryInfo
   * @define Coll `mutable.TreeSet`
   * @define coll mutable tree set
-  * @factoryInfo
-  *   Companion object of TreeSet providing factory related utilities.
-  *
   * @author Lucien Pereira
-  *
   */
 object TreeSet extends SortedIterableFactory[TreeSet] {
 

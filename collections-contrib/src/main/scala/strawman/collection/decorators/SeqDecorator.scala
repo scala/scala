@@ -1,6 +1,14 @@
 package strawman.collection
 package decorators
 
+/**
+  * @param `this` the decorated collection
+  * @tparam A     the type of elements
+  * @tparam CC    the collection type constructor
+  *
+  * @define coll sequence
+  * @define Coll `Seq`
+  */
 class SeqDecorator[A, CC[X] <: SeqOps[X, CC, _]](`this`: CC[A]) {
 
   /** Adds the element `sep` between each element of the sequence.

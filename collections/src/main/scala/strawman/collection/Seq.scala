@@ -10,7 +10,10 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 
-/** Base trait for sequence collections */
+/** Base trait for sequence collections
+  *
+  * @tparam A the element type of the collection
+  */
 trait Seq[+A]
   extends Iterable[A]
     with PartialFunction[Int, A]
@@ -49,9 +52,33 @@ trait Seq[+A]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll sequence
+  * @define Coll `Seq`
+  */
 object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
 
-/** Base trait for Seq operations */
+/** Base trait for Seq operations
+  *
+  * @tparam A the element type of the collection
+  * @tparam CC type constructor of the collection (e.g. `List`, `Set`). Operations returning a collection
+  *             with a different type of element `B` (e.g. `map`) return a `CC[B]`.
+  * @tparam C  type of the collection (e.g. `List[Int]`, `String`, `BitSet`). Operations returning a collection
+  *             with the same type of element (e.g. `drop`, `filter`) return a `C`.
+  * @define orderDependent
+  * @define orderDependentFold
+  * @define mayNotTerminateInf
+  *
+  *    Note: may not terminate for infinite-sized collections.
+  *
+  * @define willNotTerminateInf
+  *
+  *    Note: will not terminate for infinite-sized collections.
+  *
+  * @define coll sequence
+  * @define Coll `Seq`
+  */
 trait SeqOps[+A, +CC[X], +C] extends Any
   with IterableOps[A, CC, C]
   with ArrayLike[A] {
@@ -63,14 +90,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
   /** A copy of the $coll with an element prepended.
     *
-    *  @param  elem   the prepended element
-    *  @tparam B      the element type of the returned $coll.
-    *  @return a new collection of type `$Coll[B]` as this $coll consisting of `value` followed
-    *          by all elements of this $coll.
-    *
-    *    @inheritdoc
-    *
-    *    Also, the original $coll is not modified, so you will want to capture the result.
+    * Also, the original $coll is not modified, so you will want to capture the result.
     *
     *    Example:
     *    {{{
@@ -83,6 +103,9 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *      scala> println(x)
     *      List(1)
     *    }}}
+    *
+    *  @param  elem   the prepended element
+    *  @tparam B      the element type of the returned $coll.
     *
     *    @return a new $coll consisting of `value` followed
     *            by all elements of this $coll.
@@ -98,29 +121,24 @@ trait SeqOps[+A, +CC[X], +C] extends Any
 
   /** A copy of this $coll with an element appended.
     *
-    *  @param  elem   the appended element
-    *  @tparam B      the element type of the returned $coll.
-    *  @return a new collection of type `$Coll[B]` consisting of
-    *          all elements of this $coll followed by `value`.
+    * $willNotTerminateInf
     *
-    *    @inheritdoc
+    * Example:
+    * {{{
+    *    scala> val a = List(1)
+    *    a: List[Int] = List(1)
     *
-    *    $willNotTerminateInf
+    *    scala> val b = a :+ 2
+    *    b: List[Int] = List(1, 2)
     *
-    *    Example:
-    *    {{{
-    *       scala> val a = List(1)
-    *       a: List[Int] = List(1)
+    *    scala> println(a)
+    *    List(1)
+    * }}}
     *
-    *       scala> val b = a :+ 2
-    *       b: List[Int] = List(1, 2)
-    *
-    *       scala> println(a)
-    *       List(1)
-    *    }}}
-    *
-    *    @return a new $coll consisting of
-    *            all elements of this $coll followed by `value`.
+    * @param  elem   the appended element
+    * @tparam B      the element type of the returned $coll.
+    * @return a new $coll consisting of
+    *         all elements of this $coll followed by `value`.
     */
   def appended[B >: A](elem: B): CC[B] = fromIterable(View.Append(toIterable, elem))
 
@@ -140,24 +158,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *
     *  @param prefix   the iterable to prepend.
     *  @tparam B     the element type of the returned collection.
-    *  @return       a new collection which contains all elements
-    *                of `prefix` followed by all the elements of this $coll.
-    *
-    *    @inheritdoc
-    *
-    *    Example:
-    *    {{{
-    *      scala> val x = List(1)
-    *      x: List[Int] = List(1)
-    *
-    *      scala> val y = Vector(2)
-    *      y: scala.collection.immutable.Vector[Int] = Vector(2)
-    *
-    *      scala> val z = x ++: y
-    *      z: scala.collection.immutable.Vector[Int] = Vector(1, 2)
-    *    }}}
-    *
-    *    @return       a new $coll which contains all elements of `prefix` followed
+    *  @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
   def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(View.Concat(prefix, toIterable))
@@ -266,7 +267,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
    *  @param   len   the target length
    *  @param   elem  the padding value
    *  @tparam B      the element type of the returned $coll.
-   *  @return a new collection of type `$Coll` consisting of
+   *  @return a new $coll consisting of
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
@@ -579,7 +580,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     */
   def sortWith(lt: (A, A) => Boolean): C = sorted(Ordering.fromLessThan(lt))
 
-  /** Sorts this $Coll according to the Ordering which results from transforming
+  /** Sorts this $coll according to the Ordering which results from transforming
     *  an implicitly given Ordering with a transformation function.
     *  @see [[scala.math.Ordering]]
     *  $willNotTerminateInf
@@ -668,15 +669,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
-    *    @inheritdoc
-    *
-    *    $willNotTerminateInf
-    *
-    *    @return       a new $coll which contains all elements of this $coll
-    *                  except some of occurrences of elements that also appear in `that`.
-    *                  If an element value `x` appears
-    *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
-    *                  part of the result, but any following occurrences will.
+    *  $willNotTerminateInf
     */
   def diff[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
@@ -699,15 +692,7 @@ trait SeqOps[+A, +CC[X], +C] extends Any
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
-    *    @inheritdoc
-    *
-    *    $mayNotTerminateInf
-    *
-    *    @return       a new $coll which contains all elements of this $coll
-    *                  which also appear in `that`.
-    *                  If an element value `x` appears
-    *                  ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
-    *                  in the result, but any following occurrences will be omitted.
+    *  $mayNotTerminateInf
     */
   def intersect[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)

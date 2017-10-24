@@ -305,6 +305,8 @@ sealed class NumericRange[T](
 }
 
 /** A companion object for numeric ranges.
+  *  @define Coll `NumericRange`
+  *  @define coll numeric range
   */
 object NumericRange {
 

@@ -24,7 +24,10 @@ trait Map[K, V]
   */
 }
 
-/** Base trait of mutable Maps implementations */
+/**
+  * @define coll mutable map
+  * @define Coll `mutable.Map`
+  */
 trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C]
@@ -131,6 +134,11 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll mutable map
+  * @define Coll `mutable.Map`
+  */
 object Map extends MapFactory.Delegate[Map](HashMap)
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */

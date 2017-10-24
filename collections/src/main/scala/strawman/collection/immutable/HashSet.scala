@@ -57,6 +57,11 @@ sealed abstract class HashSet[A]
 
 }
 
+/**
+  * $factoryInfo
+  * @define Coll `immutable.HashSet`
+  * @define coll immutable hash set
+  */
 object HashSet extends IterableFactory[HashSet] {
 
   def from[A](it: collection.IterableOnce[A]): HashSet[A] =

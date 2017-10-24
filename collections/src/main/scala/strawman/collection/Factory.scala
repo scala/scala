@@ -37,10 +37,14 @@ trait Factory[-A, +C] extends Any {
 /** Base trait for companion objects of unconstrained collection types that may require
   * multiple traversals of a source collection to build a target collection `CC`.
   *
-  * @define $coll collection
-  * @define $Coll CC
-  *
   * @tparam CC Collection type constructor (e.g. `List`)
+  * @define factoryInfo
+  *   This object provides a set of operations to create $Coll values.
+  *   @author Martin Odersky
+  *   @version 2.8
+  *
+  * @define coll collection
+  * @define Coll `Iterable`
   */
 trait IterableFactoryLike[+CC[_]] {
 
@@ -93,8 +97,8 @@ trait IterableFactoryLike[+CC[_]] {
   def range[A : Integral](start: A, end: A, step: A): CC[A] = from(NumericRange(start, end, step))
 
   /**
-    * @return A builder for `$Coll` objects.
-    * @tparam A the type of the ${$coll}’s elements
+    * @return A builder for $Coll objects.
+    * @tparam A the type of the ${coll}’s elements
     */
   def newBuilder[A](): Builder[A, CC[A]]
 
@@ -289,6 +293,17 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
 
 }
 
+/**
+  * @tparam A Type of elements (e.g. `Int`, `Boolean`, etc.)
+  * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
+  * @define factoryInfo
+  *   This object provides a set of operations to create $Coll values.
+  *   @author Martin Odersky
+  *   @version 2.8
+  *
+  * @define coll collection
+  * @define Coll `Iterable`
+  */
 trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecific(View.Elems(xs: _*))
@@ -296,7 +311,15 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def newBuilder(): Builder[A, C]
 }
 
-/** Factory methods for collections of kind `* −> * -> *` */
+/**
+  * @define factoryInfo
+  *   This object provides a set of operations to create $Coll values.
+  *   @author Martin Odersky
+  *   @version 2.8
+  *
+  * @define coll collection
+  * @define Coll `Iterable`
+  */
 trait MapFactory[+CC[_, _]] {
 
   def empty[K, V]: CC[K, V]
@@ -341,7 +364,16 @@ object MapFactory {
   }
 }
 
-/** Base trait for companion objects of collections that require an implicit evidence */
+/** Base trait for companion objects of collections that require an implicit evidence
+  *
+  * @define factoryInfo
+  *   This object provides a set of operations to create $Coll values.
+  *   @author Martin Odersky
+  *   @version 2.8
+  *
+  * @define coll collection
+  * @define Coll `Iterable`
+  */
 trait SortedIterableFactory[+CC[_]] {
 
   def from[E : Ordering](it: IterableOnce[E]): CC[E]
@@ -387,7 +419,15 @@ object SortedIterableFactory {
   }
 }
 
-/** Factory methods for collections of kind `* −> * -> *` which require an implicit evidence value for the key type */
+/**
+  * @define factoryInfo
+  *   This object provides a set of operations to create $Coll values.
+  *   @author Martin Odersky
+  *   @version 2.8
+  *
+  * @define coll collection
+  * @define Coll `Iterable`
+  */
 trait SortedMapFactory[+CC[_, _]] {
 
   def empty[K : Ordering, V]: CC[K, V]

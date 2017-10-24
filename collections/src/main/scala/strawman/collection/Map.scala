@@ -41,7 +41,17 @@ trait Map[K, +V]
 
 }
 
-/** Base Map implementation type */
+/** Base Map implementation type
+  *
+  * @tparam K Type of keys
+  * @tparam V Type of values
+  * @tparam CC type constructor of the map (e.g. `HashMap`). Operations returning a collection
+  *            with a different type of entries `(L, W)` (e.g. `map`) return a `CC[L, W]`.
+  * @tparam C  type of the map (e.g. `HashMap[Int, String]`). Operations returning a collection
+  *            with the same type of element (e.g. `drop`, `filter`) return a `C`.
+  * @define coll map
+  * @define Coll `Map`
+  */
 trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with PartialFunction[K, V]
@@ -197,7 +207,10 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   override def withFilter(p: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(p)
 
-  /** Specializes `WithFilter` for Map collection types */
+  /** Specializes `WithFilter` for Map collection types
+    *
+    * @define coll map collection
+    */
   class MapWithFilter(p: ((K, V)) => Boolean) extends WithFilter(p) {
 
     def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(View.Map(filtered, f))
@@ -224,6 +237,11 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll map
+  * @define Coll `Map`
+  */
 object Map extends MapFactory.Delegate[Map](immutable.Map)
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */

@@ -6,10 +6,32 @@ import scala.Predef.String
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+/**
+  * A template trait for collections which can be traversed either once only
+  * or one or more times.
+  *
+  * @define orderDependent
+  *
+  *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+  * @define orderDependentFold
+  *
+  *    Note: might return different results for different runs, unless the
+  *    underlying collection type is ordered or the operator is associative
+  *    and commutative.
+  * @define mayNotTerminateInf
+  *
+  *    Note: may not terminate for infinite-sized collections.
+  * @define willNotTerminateInf
+  *
+  *    Note: will not terminate for infinite-sized collections.
+  *
+  * @define coll collection
+  */
 trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator(): Iterator[A]
 
+  /** @return The number of elements of this $coll if it can be computed in O(1) time, otherwise -1 */
   def knownSize: Int
 }
 

@@ -60,6 +60,11 @@ sealed abstract class BitSet
   protected def updateWord(idx: Int, w: Long): BitSet
 }
 
+/**
+  * $factoryInfo
+  * @define Coll `immutable.BitSet`
+  * @define coll immutable bitset
+  */
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
   def fromSpecific(it: strawman.collection.IterableOnce[Int]): BitSet =

@@ -7,6 +7,8 @@ import scala.{Boolean, Unit}
   *
   * @tparam A Element type (e.g. `Int`)
   * @tparam CC Collection type constructor (e.g. `List`)
+  *
+  * @define coll collection
   */
 abstract class WithFilter[+A, +CC[_]] {
 

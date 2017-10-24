@@ -104,6 +104,11 @@ sealed trait HashMap[K, +V]
 
 }
 
+/**
+  * $factoryInfo
+  * @define Coll `immutable.HashMap`
+  * @define coll immutable hash map
+  */
 object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]

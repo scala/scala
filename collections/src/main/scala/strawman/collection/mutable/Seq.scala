@@ -10,6 +10,10 @@ trait Seq[A]
     with collection.Seq[A]
     with SeqOps[A, Seq, Seq[A]]
 
+/**
+  * @define coll mutable sequence
+  * @define Coll `mutable.Seq`
+  */
 trait SeqOps[A, +CC[X] <: Seq[X], +C <: Seq[A]]
   extends IterableOps[A, CC, C]
     with collection.SeqOps[A, CC, C]

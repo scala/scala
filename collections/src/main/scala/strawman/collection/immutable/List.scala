@@ -420,6 +420,11 @@ case object Nil extends List[Nothing] {
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
 }
 
+/**
+  * $factoryInfo
+  * @define coll list
+  * @define Coll `List`
+  */
 object List extends StrictOptimizedSeqFactory[List] {
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
