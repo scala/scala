@@ -359,7 +359,16 @@ class ExtractAPI[GlobalType <: Global](
    * TODO: can we include hashes for parent classes instead? This seems a bit messy.
    */
   private def mkStructureWithInherited(info: Type, s: Symbol): xsbti.api.Structure = {
-    val ancestorTypes = linearizedAncestorTypes(info)
+    val ancestorTypes0 = linearizedAncestorTypes(info)
+    val ancestorTypes =
+      if (s.isDerivedValueClass) {
+        val underlying = s.derivedValueClassUnbox.tpe.finalResultType
+        // The underlying type of a value class should be part of the name hash
+        // of the value class (see the test `value-class-underlying`), this is accomplished
+        // by adding the underlying type to the list of parent types.
+        underlying :: ancestorTypes0
+      } else
+        ancestorTypes0
     val decls = info.decls.toList
     val declsNoModuleCtor = if (s.isModuleClass) removeConstructors(decls) else decls
     val declSet = decls.toSet
