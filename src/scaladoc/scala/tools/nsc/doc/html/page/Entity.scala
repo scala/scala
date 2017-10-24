@@ -468,9 +468,6 @@ trait EntityPage extends HtmlPage {
   def memberToShortCommentTitleTag(mbr: MemberEntity): String =
     mbr.comment.fold("")(comment => Page.inlineToStrForTitleTag(comment.short))
 
-  def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
-    <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
-
   def memberToCommentBodyHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
     val s = universe.settings
 
