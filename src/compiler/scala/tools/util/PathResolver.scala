@@ -222,8 +222,10 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
     private def javaBootClasspath = {
       val cp = classesInPath(javaBootClassPath)
-      val okay = cp.exists(_.findClass("java/lang/Object.class").isDefined)
-      if (!okay) cp :+ new DirectoryClassPath(new JavaToolsPlatformArchive(), context) else cp
+      if (scala.util.Properties.isJavaAtLeast("9") && !cp.exists(_.findClass("java/lang/Object.class").isDefined))
+        cp :+ new DirectoryClassPath(new JavaToolsPlatformArchive(), context)
+      else
+        cp
     }
 
     // Assemble the elements!
