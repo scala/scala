@@ -62,6 +62,7 @@ abstract class BackendUtils extends PerRunInit {
 
   lazy val classfileVersion: LazyVar[Int] = perRunLazy(this)(compilerSettings.target match {
     case "jvm-1.8" => asm.Opcodes.V1_8
+    case "jvm-9" => asm.Opcodes.V1_9
   })
 
 
