@@ -635,7 +635,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def flags: Long = {
       if (Statistics.hotEnabled) Statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
-      (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
+      (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
     def flags_=(fs: Long) = _rawflags = fs
     def rawflags_=(x: Long) { _rawflags = x }
@@ -2933,7 +2933,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
     override def isAnonymousClass        = name containsName tpnme.ANON_CLASS_NAME
     override def isConcreteClass         = !(this hasFlag ABSTRACT | TRAIT)
-    override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
+    override def isJavaInterface         = hasAllFlags(JAVA | TRAIT) || hasJavaAnnotationFlag
     override def isNestedClass           = !owner.isPackageClass
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
     override def isNumeric               = isNumericValueClass

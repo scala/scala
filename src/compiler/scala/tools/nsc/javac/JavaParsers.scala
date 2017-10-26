@@ -806,7 +806,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val (statics, body) = typeBody(AT, name)
       val templ = makeTemplate(annotationParents, body)
       addCompanionObject(statics, atPos(pos) {
-        ClassDef(mods, name, List(), templ)
+        ClassDef(mods | Flags.JAVA_ANNOTATION, name, List(), templ)
       })
     }
 
