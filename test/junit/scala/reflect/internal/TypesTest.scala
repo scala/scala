@@ -320,6 +320,7 @@ class TypesTest {
 
     assert(typeIsAny(AnyTpe))
     assert(typeIsNothing(NothingTpe))
+    assert(!typeIsAny(LiteralType(Constant(1))))
     assert(!typeIsAny(SingleType(NoPrefix, aSym)))
     assert(!typeIsNothing(SingleType(NoPrefix, nSym)))
   }
