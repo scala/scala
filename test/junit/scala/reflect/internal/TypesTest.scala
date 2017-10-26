@@ -313,4 +313,16 @@ class TypesTest {
       assert(polyType(A => Bar(Int, A)) <:< _F && _F <:< polyType(A => Bar(Any, A)))
     }
   }
+
+  @Test
+  def testAnyNothing(): Unit = {
+    object Foo { val a: Any = 23 ; val n: Nothing = ??? }
+    val aSym = typeOf[Foo.type].member(TermName("a"))
+    val nSym = typeOf[Foo.type].member(TermName("n"))
+
+    assert(typeIsAny(AnyTpe))
+    assert(typeIsNothing(NothingTpe))
+    assert(!typeIsAny(SingleType(NoPrefix, aSym)))
+    assert(!typeIsNothing(SingleType(NoPrefix, nSym)))
+  }
 }
