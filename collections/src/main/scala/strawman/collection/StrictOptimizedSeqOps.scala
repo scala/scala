@@ -12,7 +12,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     val builder = newSpecificBuilder()
     val seen = mutable.HashSet.empty[B]
 
-    for (x <- toIterable) {
+    for (x <- this) {
       val y = f(x)
       if (!seen.contains(y)) {
         seen += y

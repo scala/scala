@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Ordering, Option, Some}
+import scala.{None, Ordering, Option, Some}
 
 /** Base trait for sorted collections */
 trait SortedOps[A, +C] {
@@ -12,18 +12,6 @@ trait SortedOps[A, +C] {
 
   /** Returns the last key of the collection. */
   def lastKey: A
-
-  /**
-    * Creates an iterator over all the keys(or elements)  contained in this
-    * collection greater than or equal to `start`
-    * according to the ordering of this collection. x.keysIteratorFrom(y)
-    * is equivalent to but often more efficient than
-    * x.from(y).keysIterator.
-    *
-    * @param start The lower bound (inclusive)
-    * on the keys to be returned
-    */
-  def keysIteratorFrom(start: A): Iterator[A]
 
   /** Creates a ranged projection of this collection. Any mutations in the
     *  ranged projection will update this collection and vice versa.
@@ -46,4 +34,22 @@ trait SortedOps[A, +C] {
     *  @param until The upper-bound (exclusive) of the ranged projection.
     */
   def range(from: A, until: A): C = rangeImpl(Some(from), Some(until))
+
+  /** Creates a ranged projection of this collection with no upper-bound.
+    *
+    *  @param from The lower-bound (inclusive) of the ranged projection.
+    */
+  def from(from: A): C = rangeImpl(Some(from), None)
+
+  /** Creates a ranged projection of this collection with no lower-bound.
+    *
+    *  @param until The upper-bound (exclusive) of the ranged projection.
+    */
+  def until(until: A): C = rangeImpl(None, Some(until))
+
+  /** Create a range projection of this collection with no lower-bound.
+    *  @param to The upper-bound (inclusive) of the ranged projection.
+    */
+  def rangeTo(to: A): C
+
 }

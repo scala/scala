@@ -1,9 +1,11 @@
-import collection.immutable._
+import strawman.collection.immutable._
 import org.scalacheck._
 import Prop._
 import Gen._
 import Arbitrary._
 import util._
+
+import strawman.collection.Generators._
 
 object TreeSetTest extends Properties("TreeSet") {
   def genTreeSet[A: Arbitrary: Ordering]: Gen[TreeSet[A]] =
@@ -13,10 +15,10 @@ object TreeSetTest extends Properties("TreeSet") {
   implicit def arbTreeSet[A : Arbitrary : Ordering]: Arbitrary[TreeSet[A]] = Arbitrary(genTreeSet)
 
   property("foreach/iterator consistency") = forAll { (subject: TreeSet[Int]) =>
-    val it = subject.iterator
+    val it = subject.iterator()
     var consistent = true
     subject.foreach { element =>
-      consistent &&= it.hasNext && element == it.next
+      consistent &&= it.hasNext && element == it.next()
     }
     consistent
   }
@@ -33,8 +35,8 @@ object TreeSetTest extends Properties("TreeSet") {
     val highest = if (even) (1 << (n+1)) - 2 else 3*(1 << n) - 2
     val values = (1 to highest).reverse
     val subject = TreeSet(values: _*)
-    val it = subject.iterator
-    try { while (it.hasNext) it.next; true } catch { case _: Throwable => false }
+    val it = subject.iterator()
+    try { while (it.hasNext) it.next(); true } catch { case _: Throwable => false }
   }
 
   property("sorted") = forAll { (subject: TreeSet[Int]) => (subject.size >= 3) ==> {
@@ -42,27 +44,27 @@ object TreeSetTest extends Properties("TreeSet") {
   }}
 
   property("contains all") = forAll { (elements: List[Int]) =>
-    val subject = TreeSet(elements: _*)
+    val subject = TreeSet(elements.toClassic: _*)
     elements.forall(subject.contains)
   }
 
   property("size") = forAll { (elements: List[Int]) =>
-    val subject = TreeSet(elements: _*)
+    val subject = TreeSet(elements.toClassic: _*)
     elements.distinct.size == subject.size
   }
 
   property("toSeq") = forAll { (elements: List[Int]) =>
-    val subject = TreeSet(elements: _*)
+    val subject = TreeSet(elements.toClassic: _*)
     elements.distinct.sorted == subject.toSeq
   }
 
   property("head") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
-    val subject = TreeSet(elements: _*)
+    val subject = TreeSet(elements.toClassic: _*)
     elements.min == subject.head
   }}
 
   property("last") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
-    val subject = TreeSet(elements: _*)
+    val subject = TreeSet(elements.toClassic: _*)
     elements.max == subject.last
   }}
 
@@ -130,7 +132,7 @@ object TreeSetTest extends Properties("TreeSet") {
   property("to is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val to = subject.drop(n).firstKey
-    subject.to(to).lastKey == to && subject.to(to).forall(_ <= to)
+    subject.rangeTo(to).lastKey == to && subject.rangeTo(to).forall(_ <= to)
   }}
 
   property("until is exclusive") = forAll { (subject: TreeSet[Int]) => subject.size > 1 ==> {
@@ -140,7 +142,7 @@ object TreeSetTest extends Properties("TreeSet") {
   }}
 
   property("remove single") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
-    val element = oneOf(subject.toSeq).sample.get
+    val element = oneOf(subject.toSeq.toClassic).sample.get
     val removed = subject - element
     subject.contains(element) && !removed.contains(element) && subject.size - 1 == removed.size
   }}

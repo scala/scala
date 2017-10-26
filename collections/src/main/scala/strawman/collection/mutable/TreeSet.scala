@@ -50,7 +50,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def sortedIterableFactory = TreeSet
 
-  def keysIteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
+  def iteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 
   def empty: TreeSet[A] = TreeSet.empty
 
@@ -136,8 +136,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     override def contains(key: A) = isInsideViewBounds(key) && RB.contains(tree, key)
 
     override def iterator() = RB.keysIterator(tree, from, until)
-    override def keysIteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
-//    override def iteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
+    override def iteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
 
     override def size = iterator().length
     override def isEmpty = !iterator().hasNext

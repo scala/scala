@@ -97,7 +97,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def iterator(): Iterator[A] = RB.keysIterator(tree)
 
-  def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
+  def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
   def unordered: Set[A] = this
 

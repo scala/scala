@@ -1,7 +1,9 @@
 import org.scalacheck.Properties
 import org.scalacheck.Prop._
 
-import scala.reflect.internal.util.Collections._
+import strawman.reflect.internal.util.Collections._
+import strawman.collection.immutable.{List, Nil}
+import strawman.collection.Generators._
 
 object CheckCollectionsTest extends Properties("reflect.internal.util.Collections") {
   def map2ConserveOld[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =

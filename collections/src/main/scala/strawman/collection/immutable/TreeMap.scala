@@ -52,6 +52,10 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
+  def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
+
+  override def valuesIteratorFrom(start: K): Iterator[V] = RB.valuesIterator(tree, Some(start))
+
   def get(key: K): Option[V] = RB.get(tree, key)
 
   def remove(key: K): TreeMap[K,V] =

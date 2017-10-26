@@ -2,7 +2,7 @@ package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Option, PartialFunction, Some, StringContext, Unit, `inline`, math, throws}
+import scala.{Any, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
 import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
@@ -434,6 +434,248 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       i += 1
     }
     -1
+  }
+
+  /** Reduces the elements of this $coll using the specified associative binary operator.
+    *
+    *  $undefinedorder
+    *
+    *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
+    *  @param op       A binary operator that must be associative.
+    *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
+    *  @throws UnsupportedOperationException
+    *  if this $coll is empty.
+    */
+  def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
+
+  /** Reduces the elements of this $coll, if any, using the specified
+    *  associative binary operator.
+    *
+    *  $undefinedorder
+    *
+    *  @tparam B     A type parameter for the binary operator, a supertype of `A`.
+    *  @param op      A binary operator that must be associative.
+    *  @return        An option value containing result of applying reduce operator `op` between all
+    *                 the elements if the collection is nonempty, and `None` otherwise.
+    */
+  def reduceOption[B >: A](op: (B, B) => B): Option[B] = reduceLeftOption(op)
+
+  /** Applies a binary operator to all elements of this $coll,
+    *  going left to right.
+    *  $willNotTerminateInf
+    *  $orderDependentFold
+    *
+    *  @param  op    the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  the result of inserting `op` between consecutive elements of this $coll,
+    *           going left to right:
+    *           {{{
+    *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
+    *           }}}
+    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *  @throws UnsupportedOperationException if this $coll is empty.   */
+  def reduceLeft[B >: A](op: (B, A) => B): B = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.reduceLeft")
+
+    var first = true
+    var acc: B = 0.asInstanceOf[B]
+
+    for (x <- this) {
+      if (first) {
+        acc = x
+        first = false
+      }
+      else acc = op(acc, x)
+    }
+    acc
+  }
+
+  // For internal use
+  protected[this] def reversed: Iterable[A] = {
+    var xs: immutable.List[A] = immutable.Nil
+    val it = iterator()
+    while (it.hasNext) xs = it.next() :: xs
+    xs
+  }
+
+  /** Applies a binary operator to all elements of this $coll, going right to left.
+    *  $willNotTerminateInf
+    *  $orderDependentFold
+    *
+    *  @param  op    the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  the result of inserting `op` between consecutive elements of this $coll,
+    *           going right to left:
+    *           {{{
+    *             op(x_1, op(x_2, ..., op(x_{n-1}, x_n)...))
+    *           }}}
+    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *  @throws UnsupportedOperationException if this $coll is empty.
+    */
+  def reduceRight[B >: A](op: (A, B) => B): B = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.reduceRight")
+
+    reversed.reduceLeft[B]((x, y) => op(y, x))
+  }
+
+  /** Optionally applies a binary operator to all elements of this $coll, going left to right.
+    *  $willNotTerminateInf
+    *  $orderDependentFold
+    *
+    *  @param  op    the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
+    *           `None` otherwise.
+    */
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = if (isEmpty) None else Some(reduceLeft(op))
+
+  /** Optionally applies a binary operator to all elements of this $coll, going
+    *  right to left.
+    *  $willNotTerminateInf
+    *  $orderDependentFold
+    *
+    *  @param  op    the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
+    *           `None` otherwise.
+    */
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = if (isEmpty) None else Some(reduceRight(op))
+
+  /** Sums up the elements of this collection.
+    *
+    *   @param   num  an implicit parameter defining a set of numeric operations
+    *                 which includes the `+` operator to be used in forming the sum.
+    *   @tparam  B    the result type of the `+` operator.
+    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
+    *
+    *   @usecase def sum: A
+    *     @inheritdoc
+    *
+    *     @return       the sum of all elements in this $coll of numbers of type `Int`.
+    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+    *     can be used as element type of the $coll and as result type of `sum`.
+    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+    *
+    */
+  def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
+
+  /** Multiplies up the elements of this collection.
+    *
+    *   @param   num  an implicit parameter defining a set of numeric operations
+    *                 which includes the `*` operator to be used in forming the product.
+    *   @tparam  B   the result type of the `*` operator.
+    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
+    *
+    *   @usecase def product: A
+    *     @inheritdoc
+    *
+    *     @return       the product of all elements in this $coll of numbers of type `Int`.
+    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+    *     can be used as element type of the $coll and as result type of `product`.
+    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+    */
+  def product[B >: A](implicit num: Numeric[B]): B = foldLeft(num.one)(num.times)
+
+  /** Finds the smallest element.
+    *
+    *  @param    ord   An ordering to be used for comparing elements.
+    *  @tparam   B    The type over which the ordering is defined.
+    *  @return   the smallest element of this $coll with respect to the ordering `ord`.
+    *
+    *  @usecase def min: A
+    *    @inheritdoc
+    *
+    *    @return   the smallest element of this $coll
+    */
+  def min[B >: A](implicit ord: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.min")
+
+    reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
+  }
+
+  /** Finds the largest element.
+    *
+    *  @param    ord   An ordering to be used for comparing elements.
+    *  @tparam   B    The type over which the ordering is defined.
+    *  @return   the largest element of this $coll with respect to the ordering `ord`.
+    *
+    *  @usecase def max: A
+    *    @inheritdoc
+    *
+    *    @return   the largest element of this $coll.
+    */
+  def max[B >: A](implicit ord: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.max")
+
+    reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
+  }
+
+  /** Finds the first element which yields the largest value measured by function f.
+    *
+    *  @param    cmp   An ordering to be used for comparing elements.
+    *  @tparam   B     The result type of the function f.
+    *  @param    f     The measuring function.
+    *  @return   the first element of this $coll with the largest value measured by function f
+    *  with respect to the ordering `cmp`.
+    *
+    *  @usecase def maxBy[B](f: A => B): A
+    *    @inheritdoc
+    *
+    *    @return   the first element of this $coll with the largest value measured by function f.
+    */
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.maxBy")
+
+    var maxF: B = null.asInstanceOf[B]
+    var maxElem: A = null.asInstanceOf[A]
+    var first = true
+
+    for (elem <- this) {
+      val fx = f(elem)
+      if (first || cmp.gt(fx, maxF)) {
+        maxElem = elem
+        maxF = fx
+        first = false
+      }
+    }
+    maxElem
+  }
+
+  /** Finds the first element which yields the smallest value measured by function f.
+    *
+    *  @param    cmp   An ordering to be used for comparing elements.
+    *  @tparam   B     The result type of the function f.
+    *  @param    f     The measuring function.
+    *  @return   the first element of this $coll with the smallest value measured by function f
+    *  with respect to the ordering `cmp`.
+    *
+    *  @usecase def minBy[B](f: A => B): A
+    *    @inheritdoc
+    *
+    *    @return   the first element of this $coll with the smallest value measured by function f.
+    */
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.minBy")
+
+    var minF: B = null.asInstanceOf[B]
+    var minElem: A = null.asInstanceOf[A]
+    var first = true
+
+    for (elem <- this) {
+      val fx = f(elem)
+      if (first || cmp.lt(fx, minF)) {
+        minElem = elem
+        minF = fx
+        first = false
+      }
+    }
+    minElem
   }
 
   def length: Int = {

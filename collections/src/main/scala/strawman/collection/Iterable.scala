@@ -92,7 +92,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   // Consumes all the collection!
   protected[this] def reversed: Iterable[A] = {
     var xs: immutable.List[A] = immutable.Nil
-    val it = toIterable.iterator()
+    val it = iterator()
     while (it.hasNext) xs = it.next() :: xs
     xs
   }
@@ -100,7 +100,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */
-  def foreach[U](f: A => U): Unit = toIterable.iterator().foreach(f)
+  def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
   /** Tests whether a predicate holds for all elements of this $coll.
    *
@@ -110,7 +110,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @return        `true` if this $coll is empty or the given predicate `p`
    *                 holds for all elements of this $coll, otherwise `false`.
    */
-  def forall(p: A => Boolean): Boolean = toIterable.iterator().forall(p)
+  def forall(p: A => Boolean): Boolean = iterator().forall(p)
 
   /** Tests whether a predicate holds for at least one element of this $coll.
    *
@@ -119,14 +119,14 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @param   p     the predicate used to test elements.
    *  @return        `true` if the given predicate `p` is satisfied by at least one element of this $coll, otherwise `false`
    */
-  def exists(p: A => Boolean): Boolean = toIterable.iterator().exists(p)
+  def exists(p: A => Boolean): Boolean = iterator().exists(p)
 
   /** Counts the number of elements in the $coll which satisfy a predicate.
    *
    *  @param p     the predicate  used to test elements.
    *  @return      the number of elements satisfying the predicate `p`.
    */
-  def count(p: A => Boolean): Int = toIterable.iterator().count(p)
+  def count(p: A => Boolean): Int = iterator().count(p)
 
   /** Finds the first element of the $coll satisfying a predicate, if any.
     *
@@ -137,13 +137,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *  @return        an option value containing the first element in the $coll
     *                 that satisfies `p`, or `None` if none exists.
     */
-  def find(p: A => Boolean): Option[A] = toIterable.iterator().find(p)
+  def find(p: A => Boolean): Option[A] = iterator().find(p)
 
   /** Fold left */
-  def foldLeft[B](z: B)(op: (B, A) => B): B = toIterable.iterator().foldLeft(z)(op)
+  def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)
 
   /** Fold right */
-  def foldRight[B](z: B)(op: (A, B) => B): B = toIterable.iterator().foldRight(z)(op)
+  def foldRight[B](z: B)(op: (A, B) => B): B = iterator().foldRight(z)(op)
 
   @deprecated("Use foldLeft instead of /:", "2.13.0")
   @`inline` final def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
@@ -161,7 +161,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @throws UnsupportedOperationException
    *  if this $coll is empty.
    */
-  def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
+  def reduce[B >: A](op: (B, B) => B): B = iterator().reduce(op)
 
   /** Reduces the elements of this $coll, if any, using the specified
    *  associative binary operator.
@@ -173,7 +173,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @return        An option value containing result of applying reduce operator `op` between all
    *                 the elements if the collection is nonempty, and `None` otherwise.
    */
-  def reduceOption[B >: A](op: (B, B) => B): Option[B] = reduceLeftOption(op)
+  def reduceOption[B >: A](op: (B, B) => B): Option[B] = iterator().reduceOption(op)
 
   /** Applies a binary operator to all elements of this $coll,
    *  going left to right.
@@ -189,22 +189,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws UnsupportedOperationException if this $coll is empty.   */
-  def reduceLeft[B >: A](op: (B, A) => B): B = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.reduceLeft")
-
-    var first = true
-    var acc: B = 0.asInstanceOf[B]
-
-    for (x <- toIterable) {
-      if (first) {
-        acc = x
-        first = false
-      }
-      else acc = op(acc, x)
-    }
-    acc
-  }
+  def reduceLeft[B >: A](op: (B, A) => B): B = iterator().reduceLeft(op)
 
   /** Applies a binary operator to all elements of this $coll, going right to left.
    *  $willNotTerminateInf
@@ -220,12 +205,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws UnsupportedOperationException if this $coll is empty.
    */
-  def reduceRight[B >: A](op: (A, B) => B): B = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.reduceRight")
-
-    reversed.reduceLeft[B]((x, y) => op(y, x))
-  }
+  def reduceRight[B >: A](op: (A, B) => B): B = iterator().reduceRight(op)
 
   /** Optionally applies a binary operator to all elements of this $coll, going left to right.
    *  $willNotTerminateInf
@@ -236,7 +216,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
    *           `None` otherwise.
    */
-  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = if (isEmpty) None else Some(reduceLeft(op))
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = iterator().reduceLeftOption(op)
 
   /** Optionally applies a binary operator to all elements of this $coll, going
    *  right to left.
@@ -248,20 +228,28 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
    *           `None` otherwise.
    */
-  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = if (isEmpty) None else Some(reduceRight(op))
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = iterator().reduceRightOption(op)
 
   /** Is the collection empty? */
-  def isEmpty: Boolean = !toIterable.iterator().hasNext
+  def isEmpty: Boolean = !iterator().hasNext
 
   /** Is the collection not empty? */
-  def nonEmpty: Boolean = toIterable.iterator().hasNext
+  def nonEmpty: Boolean = iterator().hasNext
 
-  /** The first element of the collection. */
-  def head: A = toIterable.iterator().next()
+  /** Selects the first element of this $coll.
+    *  $orderDependent
+    *  @return  the first element of this $coll.
+    *  @throws NoSuchElementException if the $coll is empty.
+    */
+  def head: A = iterator().next()
 
-  /** The first element of the collection. */
+  /** Optionally selects the first element.
+    *  $orderDependent
+    *  @return  the first element of this $coll if it is nonempty,
+    *           `None` if it is empty.
+    */
   def headOption: Option[A] = {
-    val it = toIterable.iterator()
+    val it = iterator()
     if(it.hasNext) Some(it.next()) else None
   }
 
@@ -271,7 +259,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    val it = toIterable.iterator()
+    val it = iterator()
     var lst = it.next()
     while (it.hasNext) lst = it.next()
     lst
@@ -295,10 +283,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   /** The number of elements in this collection. Does not terminate for
     *  infinite collections.
     */
-  def size: Int = if (knownSize >= 0) knownSize else toIterable.iterator().length
+  def size: Int = if (knownSize >= 0) knownSize else iterator().length
 
   /** A view representing the elements of this collection. */
-  def view: View[A] = View.fromIteratorProvider(() => toIterable.iterator())
+  def view: View[A] = View.fromIteratorProvider(() => iterator())
 
   /** Given a collection factory `factory`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:
@@ -307,30 +295,30 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *      xs.to(ArrayBuffer)
     *      xs.to(BitSet) // for xs: Iterable[Int]
     */
-  def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(toIterable)
+  def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(this)
 
-  def toList: immutable.List[A] = immutable.List.from(toIterable)
+  def toList: immutable.List[A] = immutable.List.from(this)
 
-  def toVector: immutable.Vector[A] = immutable.Vector.from(toIterable)
+  def toVector: immutable.Vector[A] = immutable.Vector.from(this)
 
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
-    immutable.Map.from(toIterable.asInstanceOf[Iterable[(K, V)]])
+    immutable.Map.from(this.asInstanceOf[IterableOnce[(K, V)]])
 
-  def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(toIterable)
+  def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(this)
 
-  def toSeq: immutable.Seq[A] = immutable.Seq.from(toIterable)
+  def toSeq: immutable.Seq[A] = immutable.Seq.from(this)
 
-  def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(toIterable)
+  def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
-    else ArrayBuffer.from(toIterable).toArray[B]
+    else ArrayBuffer.from(this).toArray[B]
 
   /** Copy all elements of this collection to array `xs`, starting at `start`. */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
     var i = start
-    val it = toIterable.iterator()
+    val it = iterator()
     while (it.hasNext) {
       xs(i) = it.next()
       i += 1
@@ -449,7 +437,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
     *
     */
-  def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
+  def sum[B >: A](implicit num: Numeric[B]): B = iterator().sum[B]
 
   /** Multiplies up the elements of this collection.
    *
@@ -466,7 +454,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *     can be used as element type of the $coll and as result type of `product`.
    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
    */
-  def product[B >: A](implicit num: Numeric[B]): B = foldLeft(num.one)(num.times)
+  def product[B >: A](implicit num: Numeric[B]): B = iterator().product[B]
 
   /** Finds the smallest element.
    *
@@ -479,12 +467,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *
    *    @return   the smallest element of this $coll
    */
-  def min[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.min")
-
-    reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
-  }
+  def min[B >: A](implicit ord: Ordering[B]): A = iterator().min[B]
 
   /** Finds the largest element.
    *
@@ -497,12 +480,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *
    *    @return   the largest element of this $coll.
    */
-  def max[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.max")
-
-    reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
-  }
+  def max[B >: A](implicit ord: Ordering[B]): A = iterator().max[B]
 
   /** Finds the first element which yields the largest value measured by function f.
    *
@@ -517,24 +495,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *
    *    @return   the first element of this $coll with the largest value measured by function f.
    */
-  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.maxBy")
-
-    var maxF: B = null.asInstanceOf[B]
-    var maxElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- toIterable) {
-      val fx = f(elem)
-      if (first || cmp.gt(fx, maxF)) {
-        maxElem = elem
-        maxF = fx
-        first = false
-      }
-    }
-    maxElem
-  }
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = iterator().maxBy(f)
 
   /** Finds the first element which yields the smallest value measured by function f.
    *
@@ -549,24 +510,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *
    *    @return   the first element of this $coll with the smallest value measured by function f.
    */
-  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.minBy")
-
-    var minF: B = null.asInstanceOf[B]
-    var minElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- toIterable) {
-      val fx = f(elem)
-      if (first || cmp.lt(fx, minF)) {
-        minElem = elem
-        minF = fx
-        first = false
-      }
-    }
-    minElem
-  }
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = iterator().minBy(f)
 
   /** Selects all elements of this $coll which satisfy a predicate.
     *
@@ -649,8 +593,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   def takeRight(n: Int): C = {
     val b = newSpecificBuilder()
     b.sizeHintBounded(n, toIterable)
-    val lead = toIterable.iterator() drop n
-    val it = toIterable.iterator()
+    val lead = iterator() drop n
+    val it = iterator()
     while (lead.hasNext) {
       lead.next()
       it.next()
@@ -691,8 +635,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   def dropRight(n: Int): C = {
     val b = newSpecificBuilder()
     if (n >= 0) b.sizeHint(toIterable, delta = -n)
-    val lead = toIterable.iterator() drop n
-    val it = toIterable.iterator()
+    val lead = iterator() drop n
+    val it = iterator()
     while (lead.hasNext) {
       b += it.next()
       lead.next()
@@ -716,7 +660,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
    *          last will be less than size `size` if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[C] =
-    toIterable.iterator().grouped(size).map(fromSpecificIterable)
+    iterator().grouped(size).map(fromSpecificIterable)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in `grouped`.)
@@ -742,17 +686,17 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *          if there are fewer than `size` elements remaining to be grouped.
     */
   def sliding(size: Int, step: Int): Iterator[C] =
-    toIterable.iterator().sliding(size, step).map(fromSpecificIterable)
+    iterator().sliding(size, step).map(fromSpecificIterable)
 
   /** The rest of the collection without its first element. */
   def tail: C = {
-    if (toIterable.isEmpty) throw new UnsupportedOperationException
+    if (isEmpty) throw new UnsupportedOperationException
     drop(1)
   }
 
   /** The initial part of the collection without its last element. */
   def init: C = {
-    if (toIterable.isEmpty) throw new UnsupportedOperationException
+    if (isEmpty) throw new UnsupportedOperationException
     dropRight(1)
   }
 
@@ -788,7 +732,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
     val m = mutable.Map.empty[K, Builder[A, C]]
-    for (elem <- toIterable) {
+    for (elem <- this) {
       val key = f(elem)
       val bldr = m.getOrElseUpdate(key, newSpecificBuilder())
       bldr += elem
@@ -820,7 +764,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def groupMap[K, B](key: A => K)(f: A => B): immutable.Map[K, CC[B]] = {
     val m = mutable.Map.empty[K, Builder[B, CC[B]]]
-    for (elem <- toIterable) {
+    for (elem <- this) {
       val k = key(elem)
       val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B]())
       bldr += f(elem)
@@ -846,7 +790,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def groupMapReduce[K, B](key: A => K)(f: A => B)(reduce: (B, B) => B): immutable.Map[K, B] = {
     val m = mutable.Map.empty[K, B]
-    for (elem <- toIterable) {
+    for (elem <- this) {
       val k = key(elem)
       val v =
         m.get(k) match {
@@ -941,7 +885,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
     */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    val i: Iterator[A] = toIterable.iterator()
+    val i: Iterator[A] = iterator()
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
     // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
     val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }

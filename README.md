@@ -175,7 +175,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `indices`
 - [x] `isDefinedAt`
 - [x] `isEmpty` / `nonEmpty`
-- [x] `keysIteratorFrom`
+- [x] `iteratorFrom` / `keysIteratorFrom` / `valuesIteratorFrom`
 - [x] `last` / `lastOption`
 - [x] `lastKey`
 - [x] `max` / `maxBy`
@@ -200,7 +200,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `init`
 - [x] `intersect`
 - [x] `partition`
-- [x] `range`
+- [x] `range` / `rangeTo`
 - [x] `rangeImpl`
 - [x] `sorted` / `sortBy` / `sortWith`
 - [x] `slice`

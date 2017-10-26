@@ -20,8 +20,55 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
 
+  /**
+    * Creates an iterator over all the key/value pairs
+    * contained in this map having a key greater than or
+    * equal to `start` according to the ordering of
+    * this map. x.iteratorFrom(y) is equivalent
+    * to but often more efficient than x.from(y).iterator.
+    *
+    * @param start The lower bound (inclusive)
+    * on the keys to be returned
+    */
+  def iteratorFrom(start: K): Iterator[(K, V)]
+
+  /**
+    * Creates an iterator over all the keys(or elements)  contained in this
+    * collection greater than or equal to `start`
+    * according to the ordering of this collection. x.keysIteratorFrom(y)
+    * is equivalent to but often more efficient than
+    * x.from(y).keysIterator.
+    *
+    * @param start The lower bound (inclusive)
+    * on the keys to be returned
+    */
+  def keysIteratorFrom(start: K): Iterator[K]
+
+  /**
+    * Creates an iterator over all the values contained in this
+    * map that are associated with a key greater than or equal to `start`
+    * according to the ordering of this map. x.valuesIteratorFrom(y) is
+    * equivalent to but often more efficient than
+    * x.from(y).valuesIterator.
+    *
+    * @param start The lower bound (inclusive)
+    * on the keys to be returned
+    */
+  def valuesIteratorFrom(start: K): Iterator[V] = iteratorFrom(start).map(_._2)
+
   def firstKey: K = head._1
   def lastKey: K = last._1
+
+  def rangeTo(to: K): C = {
+    val i = keySet.from(to).iterator()
+    if (i.isEmpty) return coll
+    val next = i.next()
+    if (ordering.compare(next, to) == 0)
+      if (i.isEmpty) coll
+      else until(i.next())
+    else
+      until(next)
+  }
 
   override def keySet: SortedSet[K] = new KeySortedSet
 
@@ -43,7 +90,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   /** A generic trait that is reused by sorted keyset implementations */
   protected trait GenKeySortedSet extends GenKeySet { this: SortedSet[K] =>
     implicit def ordering: Ordering[K] = SortedMapOps.this.ordering
-    def keysIteratorFrom(start: K): Iterator[K] = SortedMapOps.this.keysIteratorFrom(start)
+    def iteratorFrom(start: K): Iterator[K] = SortedMapOps.this.keysIteratorFrom(start)
   }
 
   override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
