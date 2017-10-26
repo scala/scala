@@ -9,10 +9,11 @@ package io
 
 import java.net.URL
 import java.io.{ IOException, InputStream, ByteArrayInputStream, FilterInputStream }
-import java.io.{ File => JFile }
-import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
+import java.io.{File => JFile}
+import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import java.util.jar.Manifest
-import scala.collection.{ immutable, mutable }
+
+import scala.collection.{immutable, mutable}
 import scala.collection.convert.WrapAsScala.asScalaIterator
 import scala.annotation.tailrec
 
@@ -64,7 +65,7 @@ import ZipArchive._
 abstract class ZipArchive(override val file: JFile) extends AbstractFile with Equals {
   self =>
 
-  override def underlyingSource = Some(this)
+  override def underlyingSource: Some[AbstractFile] = Some(this)
   def isDirectory = true
   def lookupName(name: String, directory: Boolean) = unsupported()
   def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
@@ -78,7 +79,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this name for compat with sbt's compiler-interface
     def getArchive: ZipFile = null
-    override def underlyingSource = Some(self)
+    override def underlyingSource: Some[AbstractFile] = Some(self)
     override def toString = self.path + "(" + path + ")"
   }
 
@@ -94,7 +95,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     }
   }
 
-  private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry =
+  protected def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry =
     //OPT inlined from getOrElseUpdate; saves ~50K closures on test run.
     // was:
     // dirs.getOrElseUpdate(path, {
@@ -288,5 +289,50 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
         in = null
       }
     }
+  }
+}
+
+
+final class JavaToolsPlatformArchive() extends ZipArchive(new java.io.File(System.getProperty("java.home"))) {
+  def iterator: Iterator[Entry] = {
+    import javax.tools._
+    import java.nio.charset.Charset
+    import scala.collection.JavaConverters._
+    val fileManager = ToolProvider.getSystemJavaCompiler.getStandardFileManager(new DiagnosticCollector, java.util.Locale.getDefault, Charset.defaultCharset)
+    val root    = new DirEntry("/")
+    val dirs    = mutable.HashMap[String, DirEntry]("/" -> root)
+    val files: java.lang.Iterable[JavaFileObject] = fileManager.list(StandardLocation.PLATFORM_CLASS_PATH, "", java.util.EnumSet.of(JavaFileObject.Kind.CLASS), true)
+
+    for (f <- files.iterator().asScala) {
+      val binaryName = fileManager.inferBinaryName(StandardLocation.PLATFORM_CLASS_PATH, f)
+      val relativePath = binaryName.replace('.', '/') + ".class"
+      val (packNameDotted, simpleName) = relativePath.lastIndexOf('/') match {
+        case -1 => ("", binaryName)
+        case i => (relativePath.substring(0, i + 1), relativePath.substring(i + 1))
+      }
+      val dir = if (packNameDotted.isEmpty) root else ensureDir(dirs, packNameDotted, null)
+      class FileEntry() extends Entry(relativePath) {
+        override def getArchive   = null
+        override def lastModified = 0L
+        override def input        = f.openInputStream()
+        override def sizeOption   = None
+      }
+      val entry = new FileEntry()
+      dir.entries(simpleName) = entry
+    }
+    root.iterator
+  }
+
+  def name         = file.getName
+  def path         = file.getPath
+  def input        = unsupported
+  def lastModified = file.lastModified
+
+  override def sizeOption = None
+  override def canEqual(other: Any) = other.isInstanceOf[JavaToolsPlatformArchive]
+  override def hashCode() = file.hashCode
+  override def equals(that: Any) = that match {
+    case x: JavaToolsPlatformArchive => true
+    case _                 => false
   }
 }

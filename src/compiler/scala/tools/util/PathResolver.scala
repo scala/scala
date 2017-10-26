@@ -10,7 +10,7 @@ package util
 import java.net.URL
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
+import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, DirectoryClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
@@ -18,6 +18,7 @@ import PartialFunction.condOpt
 import scala.language.postfixOps
 import scala.tools.nsc.classpath.{ AggregateFlatClassPath, ClassPathFactory, FlatClassPath, FlatClassPathFactory }
 import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.reflect.io.JavaToolsPlatformArchive
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -268,9 +269,18 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
 
     import classPathFactory._
 
+    private def javaBootClasspath = {
+      val cp = classesInPath(javaBootClassPath)
+      val okay = cp.exists(_.findClass("java/lang/Object.class").isDefined)
+      val isFlat = settings.YclasspathImpl.value == ClassPathRepresentationType.Flat
+      if (!isFlat && !okay)
+        cp :+ new DirectoryClassPath(new JavaToolsPlatformArchive(), DefaultJavaContext).asInstanceOf[BaseClassPathType]
+      else cp
+    }
+
     // Assemble the elements!
     def basis = List[Traversable[BaseClassPathType]](
-      classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
+      javaBootClasspath,                            // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.
