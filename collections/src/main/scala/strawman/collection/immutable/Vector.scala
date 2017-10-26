@@ -8,8 +8,10 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.{AnyRef, Array, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, math, NoSuchElementException, Nothing, Serializable, SerialVersionUID, Unit, UnsupportedOperationException, `inline`, throws}
 import scala.Predef.intWrapper
 
-/** Companion object to the Vector class
- */
+/** $factoryInfo
+  * @define Coll `Vector`
+  * @define coll vector
+  */
 object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL

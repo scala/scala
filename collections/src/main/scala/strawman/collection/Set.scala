@@ -29,7 +29,11 @@ trait Set[A]
 
 }
 
-/** Base trait for set operations */
+/** Base trait for set operations
+  *
+  * @define coll set
+  * @define Coll `Set`
+  */
 trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
      with (A => Boolean) {
@@ -179,6 +183,11 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   def empty: C
 }
 
+/**
+  * $factoryInfo
+  * @define coll set
+  * @define Coll `Set`
+  */
 object Set extends IterableFactory.Delegate[Set](immutable.Set) {
 
   // Temporary, TODO move to MurmurHash3

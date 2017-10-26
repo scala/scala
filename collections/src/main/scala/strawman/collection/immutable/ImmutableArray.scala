@@ -12,6 +12,9 @@ import scala.Predef.{???, intWrapper}
   * An immutable array.
   *
   * Supports efficient indexed access and has a small memory footprint.
+  *
+  * @define coll immutable array
+  * @define Coll `ImmutableArray`
   */
 class ImmutableArray[+A] private[collection] (private val elements: scala.Array[Any])
   extends IndexedSeq[A]
@@ -110,6 +113,11 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll immutable array
+  * @define Coll `ImmutableArray`
+  */
 object ImmutableArray extends StrictOptimizedSeqFactory[ImmutableArray] {
 
   private[this] lazy val emptyImpl = new ImmutableArray[Nothing](new scala.Array[Any](0))

@@ -5,7 +5,10 @@ import strawman.collection.mutable.{ArrayBuffer, Builder}
 import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
 import scala.Predef.{<:<, intWrapper}
 
-/** Concrete collection type: View */
+/** Concrete collection type: View
+  * @define coll view
+  * @define Coll `View`
+  */
 trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def view = this
 
@@ -23,8 +26,8 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
 /** This object reifies operations on views as case classes
   *
-  * @define $Coll View
-  * @define $coll view
+  * @define Coll View
+  * @define coll view
   */
 object View extends IterableFactoryLike[View] {
 

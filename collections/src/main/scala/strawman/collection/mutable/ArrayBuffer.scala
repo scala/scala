@@ -7,7 +7,15 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws}
 import scala.Predef.intWrapper
 
-/** Concrete collection type: ArrayBuffer */
+/** Concrete collection type: ArrayBuffer
+  *
+  * @define coll array buffer
+  * @define Coll `mutable.ArrayBuffer`
+  * @define orderDependent
+  * @define orderDependentFold
+  * @define mayNotTerminateInf
+  * @define willNotTerminateInf
+  */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends Buffer[A]
     with IndexedSeq[A]
@@ -138,6 +146,14 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
 }
 
+/**
+  * Factory object for the `ArrayBuffer` class.
+  *
+  * $factoryInfo
+  *
+  * @define coll array buffer
+  * @define Coll `mutable.ArrayBuffer`
+  */
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */

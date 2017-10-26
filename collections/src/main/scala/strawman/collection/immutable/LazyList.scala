@@ -8,6 +8,180 @@ import scala.{Any, AnyRef, Boolean, Int, None, NoSuchElementException, noinline,
 import scala.Predef.String
 import scala.annotation.tailrec
 
+/**  The class `LazyList` implements lazy lists where elements
+  *  are only evaluated when they are needed. Here is an example:
+  *
+  *  {{{
+  *  import scala.math.BigInt
+  *  object Main extends App {
+  *
+  *    lazy val fibs: LazyList[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
+  *
+  *    fibs take 5 foreach println
+  *  }
+  *
+  *  // prints
+  *  //
+  *  // 0
+  *  // 1
+  *  // 1
+  *  // 2
+  *  // 3
+  *  }}}
+  *
+  *  The `LazyList` class also employs memoization such that previously computed
+  *  values are converted from `LazyList` elements to concrete values of type `A`.
+  *  To illustrate, we will alter body of the `fibs` value above and take some
+  *  more values:
+  *
+  *  {{{
+  *  import scala.math.BigInt
+  *  object Main extends App {
+  *
+  *    lazy val fibs: LazyList[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
+  *      fibs.tail).map(n => {
+  *        println("Adding %d and %d".format(n._1, n._2))
+  *        n._1 + n._2
+  *      })
+  *
+  *    fibs take 5 foreach println
+  *    fibs take 6 foreach println
+  *  }
+  *
+  *  // prints
+  *  //
+  *  // 0
+  *  // 1
+  *  // Adding 0 and 1
+  *  // 1
+  *  // Adding 1 and 1
+  *  // 2
+  *  // Adding 1 and 2
+  *  // 3
+  *
+  *  // And then prints
+  *  //
+  *  // 0
+  *  // 1
+  *  // 1
+  *  // 2
+  *  // 3
+  *  // Adding 2 and 3
+  *  // 5
+  *  }}}
+  *
+  *  There are a number of subtle points to the above example.
+  *
+  *  - The definition of `fibs` is a `val` not a method.  The memoization of the
+  *  `LazyList` requires us to have somewhere to store the information and a `val`
+  *  allows us to do that.
+  *
+  *  - While the `LazyList` is actually being modified during access, this does not
+  *  change the notion of its immutability.  Once the values are memoized they do
+  *  not change and values that have yet to be memoized still "exist", they
+  *  simply haven't been realized yet.
+  *
+  *  - One must be cautious of memoization; you can very quickly eat up large
+  *  amounts of memory if you're not careful.  The reason for this is that the
+  *  memoization of the `LazyList` creates a structure much like
+  *  [[scala.collection.immutable.List]].  So long as something is holding on to
+  *  the head, the head holds on to the tail, and so it continues recursively.
+  *  If, on the other hand, there is nothing holding on to the head (e.g. we used
+  *  `def` to define the `LazyList`) then once it is no longer being used directly,
+  *  it disappears.
+  *
+  *  - Note that some operations, including [[drop]], [[dropWhile]],
+  *  [[flatMap]] or [[collect]] may process a large number of intermediate
+  *  elements before returning.  These necessarily hold onto the head, since
+  *  they are methods on `LazyList`, and a lazy list holds its own head. For
+  *  computations of this sort where memoization is not desired, use
+  *  `Iterator` when possible.
+  *
+  *  {{{
+  *  // For example, let's build the natural numbers and do some silly iteration
+  *  // over them.
+  *
+  *  // We'll start with a silly iteration
+  *  def loop(s: String, i: Int, iter: Iterator[Int]): Unit = {
+  *    // Stop after 200,000
+  *    if (i < 200001) {
+  *      if (i % 50000 == 0) println(s + i)
+  *      loop(s, iter.next(), iter)
+  *    }
+  *  }
+  *
+  *  // Our first LazyList definition will be a val definition
+  *  val lazylist1: LazyList[Int] = {
+  *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
+  *    loop(0)
+  *  }
+  *
+  *  // Because lazylist1 is a val, everything that the iterator produces is held
+  *  // by virtue of the fact that the head of the LazyList is held in lazylist1
+  *  val it1 = lazylist1.iterator()
+  *  loop("Iterator1: ", it1.next(), it1)
+  *
+  *  // We can redefine this LazyList such that all we have is the Iterator left
+  *  // and allow the LazyList to be garbage collected as required.  Using a def
+  *  // to provide the LazyList ensures that no val is holding onto the head as
+  *  // is the case with lazylist1
+  *  def lazylist2: LazyList[Int] = {
+  *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
+  *    loop(0)
+  *  }
+  *  val it2 = stream2.iterator()
+  *  loop("Iterator2: ", it2.next(), it2)
+  *
+  *  // And, of course, we don't actually need a LazyList at all for such a simple
+  *  // problem.  There's no reason to use a LazyList if you don't actually need
+  *  // one.
+  *  val it3 = new Iterator[Int] {
+  *    var i = -1
+  *    def hasNext = true
+  *    def next(): Int = { i += 1; i }
+  *  }
+  *  loop("Iterator3: ", it3.next(), it3)
+  *  }}}
+  *
+  *  - The fact that `tail` works at all is of interest.  In the definition of
+  *  `fibs` we have an initial `(0, 1, LazyList(...))` so `tail` is deterministic.
+  *  If we defined `fibs` such that only `0` were concretely known then the act
+  *  of determining `tail` would require the evaluation of `tail` which would
+  *  cause an infinite recursion and stack overflow.  If we define a definition
+  *  where the tail is not initially computable then we're going to have an
+  *  infinite recursion:
+  *  {{{
+  *  // The first time we try to access the tail we're going to need more
+  *  // information which will require us to recurse, which will require us to
+  *  // recurse, which...
+  *  lazy val sov: LazyList[Vector[Int]] = Vector(0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+  *  }}}
+  *
+  *  The definition of `fibs` above creates a larger number of objects than
+  *  necessary depending on how you might want to implement it.  The following
+  *  implementation provides a more "cost effective" implementation due to the
+  *  fact that it has a more direct route to the numbers themselves:
+  *
+  *  {{{
+  *  lazy val fib: LazyList[Int] = {
+  *    def loop(h: Int, n: Int): LazyList[Int] = h #:: loop(n, h + n)
+  *    loop(1, 1)
+  *  }
+  *  }}}
+  *
+  *  @tparam A    the type of the elements contained in this stream.
+  *
+  *  @author Martin Odersky, Matthias Zenger
+  *  @version 1.1 08/08/03
+  *  @since   2.8
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#streams "Scala's Collection Library overview"]]
+  *  section on `Streams` for more information.
+
+  *  @define Coll `LazyList`
+  *  @define coll lazy list
+  *  @define orderDependent
+  *  @define orderDependentFold
+  */
 sealed abstract class LazyList[+A]
   extends LinearSeq[A]
      with LinearSeqOps[A, LazyList, LazyList[A]] {
@@ -180,6 +354,11 @@ sealed abstract class LazyList[+A]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll lazy list
+  * @define Coll `LazyList`
+  */
 object LazyList extends SeqFactory[LazyList] {
 
   type Evaluated[+A] = Option[(A, LazyList[A])]

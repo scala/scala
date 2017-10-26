@@ -9,7 +9,11 @@ import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Seriali
 /** Base trait for immutable set collections */
 trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
 
-/** Base trait for immutable set operations */
+/** Base trait for immutable set operations
+  *
+  * @define coll immutable set
+  * @define Coll `immutable.Set`
+  */
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends collection.SetOps[A, CC, C] {
 
@@ -49,6 +53,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
 }
 
+/**
+  * $factoryInfo
+  * @define coll immutable set
+  * @define Coll `immutable.Set`
+  */
 object Set extends IterableFactory[Set] {
 
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]

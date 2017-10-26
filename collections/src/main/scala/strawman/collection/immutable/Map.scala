@@ -12,7 +12,11 @@ trait Map[K, +V]
      with collection.Map[K, V]
      with MapOps[K, V, Map, Map[K, V]]
 
-/** Base trait of immutable Maps implementations */
+/** Base trait of immutable Maps implementations
+  *
+  * @define coll immutable map
+  * @define Coll `immutable.Map`
+  */
 trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
@@ -82,6 +86,11 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
 
 }
 
+/**
+  * $factoryInfo
+  * @define coll immutable map
+  * @define Coll `immutable.Map`
+  */
 object Map extends MapFactory[Map] {
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]

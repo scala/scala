@@ -39,6 +39,13 @@ import strawman.collection.mutable.Builder
   *                     use `last` instead.
   *  @param step        the step for the range.
   *  @param isInclusive whether the end of the range is included or not
+  *
+  *  @define coll range
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  *  @define doesNotUseBuilders
+  *    '''Note:''' this method does not use builders to construct a new range,
+  *         and its complexity is O(1).
   */
 @SerialVersionUID(7618862778670199309L)
 sealed abstract class Range(
@@ -388,10 +395,15 @@ sealed abstract class Range(
 
 }
 
+/**
+  * Companion object for ranges.
+  *  @define Coll `Range`
+  *  @define coll range
+  */
 object Range {
 
   /** Counts the number of range elements.
-    *  @pre  step != 0
+    *  precondition:  step != 0
     *  If the size of the range exceeds Int.MaxValue, the
     *  result will be negative.
     */

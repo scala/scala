@@ -4,7 +4,18 @@ package collection
 import scala.{Array, Boolean, `inline`, Int, Long, Option, Ordering, Unit}
 import scala.Predef.{assert, intWrapper}
 
-/** Base type of bitsets */
+/** Base type of bitsets.
+  *
+  * This trait provides most of the operations of a `BitSet` independently of its representation.
+  * It is inherited by all concrete implementations of bitsets.
+  *
+  * @define bitsetinfo
+  *  Bitsets are sets of non-negative integers which are represented as
+  *  variable-size arrays of bits packed into 64-bit words. The memory footprint of a bitset is
+  *  determined by the largest number stored in it.
+  * @define coll bitset
+  * @define Coll `BitSet`
+  */
 trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
 
 /** Base implementation type of bitsets */

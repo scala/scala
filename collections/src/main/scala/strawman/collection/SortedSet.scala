@@ -20,6 +20,8 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
 
   /** Specialize `WithFilter` for sorted collections
+    *
+    * @define coll sorted collection
     */
   class SortedWithFilter(p: A => Boolean) extends WithFilter(p) {
 

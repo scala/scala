@@ -17,6 +17,7 @@ val commonSettings = Seq(
     else
       Seq()
   },
+  scalacOptions in (Compile, doc) ++= Seq("-implicits", "-groups"),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a"),
   fork in Test := true,
   parallelExecution in Test := false,
