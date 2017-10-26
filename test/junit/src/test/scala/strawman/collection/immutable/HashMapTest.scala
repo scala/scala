@@ -1,7 +1,6 @@
 package strawman.collection.immutable
 
 import strawman.collection.Hashing
-
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,5 +45,13 @@ class HashMapTest {
       throw new RuntimeException("Should not be reached.")
     }
     assertEquals(expected, mergedWithMergeFunction)
+  }
+
+  @Test
+  def testWithDefaultValue: Unit = {
+    val m1 = HashMap(1 -> "a", 2 -> "b")
+    val m2 = m1.withDefaultValue(0)
+    assertEquals("a", m2(1))
+    assertEquals(0, m2(3))
   }
 }

@@ -10,7 +10,30 @@ import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing
 trait Map[K, +V]
   extends Iterable[(K, V)]
      with collection.Map[K, V]
-     with MapOps[K, V, Map, Map[K, V]]
+     with MapOps[K, V, Map, Map[K, V]] {
+
+  /** The same map with a given default function.
+    *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
+    *  are not affected by `withDefault`.
+    *
+    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
+    *
+    *  @param d     the function mapping keys to values, used for non-present keys
+    *  @return      a wrapper of the map with a default value
+    */
+  def withDefault[V1 >: V](d: K => V1): Map[K, V1] = new Map.WithDefault[K, V1](this, d)
+
+  /** The same map with a given default value.
+    *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
+    *  are not affected by `withDefaultValue`.
+    *
+    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
+    *
+    *  @param d     default value used for non-present keys
+    *  @return      a wrapper of the map with a default value
+    */
+  def withDefaultValue[V1 >: V](d: V1): Map[K, V1] = new Map.WithDefault[K, V1](this, x => d)
+}
 
 /** Base trait of immutable Maps implementations
   *
@@ -92,6 +115,29 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   * @define Coll `immutable.Map`
   */
 object Map extends MapFactory[Map] {
+
+  final class WithDefault[K, +V](underlying: Map[K, V], d: K => V) extends Map[K, V] {
+    // These factory methods will lose the default value
+    def iterableFactory = underlying.iterableFactory
+    def mapFactory: MapFactory[Map] = underlying.mapFactory
+    protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
+
+    // Specific building will keep the default but may lose the precise underlying type because our own V can be
+    // a supertype of the underlying collection's V so we cannot rebuild with potentially new values that are not
+    // valid for the underlying collection.
+    protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): Map[K,V] = new WithDefault[K, V](mapFactory.from(coll), d)
+    protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), Map[K,V]] =
+      mapFactory.newBuilder[K, V]().mapResult(new WithDefault[K, V](_, d))
+    override def size = underlying.size
+    def get(key: K) = underlying.get(key)
+    def iterator() = underlying.iterator()
+    override def default(key: K): V = d(key)
+    override def empty = new WithDefault(underlying.empty, d)
+    override def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] = new WithDefault[K, V1](underlying.updated[V1](key, value), d)
+    override def remove (key: K): WithDefault[K, V] = new WithDefault(underlying - key, d)
+    override def withDefault[V1 >: V](d: K => V1): immutable.Map[K, V1] = new WithDefault[K, V1](underlying, d)
+    override def withDefaultValue[V1 >: V](d: V1): immutable.Map[K, V1] = new WithDefault[K, V1](underlying, x => d)
+  }
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
 
@@ -225,5 +271,4 @@ object Map extends MapFactory[Map] {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
   }
-
 }
