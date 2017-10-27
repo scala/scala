@@ -9,8 +9,12 @@ class Ann(
 
 // non-constant defaults are allowed
 class Ann1(value: Int = Test.nonConst) extends ConstantAnnotation {
-  def this(s: String) = this(0)
+  def this(s: String) = this(0) // err
 }
+class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
+class Ann3 extends ConstantAnnotation
+class Ann4(x: Int = 0, value: Int) extends ConstantAnnotation
+class Ann5() extends ConstantAnnotation
 
 object Test {
   final val const = 1
@@ -58,4 +62,18 @@ object Test {
   @Ann1(0) def v2 = 0 // err
   @Ann1(value = 0) def v3 = 0 // err
   @Ann1(x = "") def v4 = 0 // err
+  @Ann1 def v5 = 0 // err
+  @Ann1(0)(0) def v6 = 0 // err
+  @Ann2 def v7 = 0 // err
+  @Ann2(x = 0) def v8 = 0
+  @Ann2(x = 0)(y = 0) def v9 = 0 // err
+  @Ann3 def v10 = 0
+  @Ann3(0) def v11 = 0 // err
+  @Ann4(0) def v12 = 0
+  @Ann4(0, 1) def v13 = 0 // err
+  @Ann4(x = 0, value = 1) def v14 = 0
+  @Ann4(value = 1, x = 0) def v15 = 0
+  @Ann5 def v16 = 0
+  @Ann5() def v17 = 0
+  @Ann5(0) def v18 = 0 // err
 }

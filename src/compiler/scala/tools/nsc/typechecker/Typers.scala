@@ -1979,6 +1979,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (clazz.info.firstParent.typeSymbol == AnyValClass)
         validateDerivedValueClass(clazz, body3)
 
+      if (!clazz.isTrait && clazz.isNonBottomSubClass(ConstantAnnotationClass)) {
+        val (pConstrOpt, auxConstrs) = body3.filter(s => s.isInstanceOf[DefDef] && s.symbol.isConstructor).splitAt(1)
+        for (p <- pConstrOpt) p.symbol.paramss match {
+          case List(ps) =>
+          case _ => ConstantAnnotationNeedsSingleArgumentList(p, clazz)
+        }
+        for (c <- auxConstrs) AuxConstrInConstantAnnotation(c, clazz)
+      }
+
+
       if (clazz.isTrait) {
         for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
           context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
@@ -3822,12 +3832,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                        else typedFun.tpe.params.iterator)
 
             def hasValue = names exists (_.name == nme.value)
-            val args = argss match {
-              case (arg :: Nil) :: Nil if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
-              case args :: Nil                                         => args
+            val namedArgs = argss match {
+              case List(List(arg)) if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
+              case List(args) => args
             }
 
-            val nvPairs = args map {
+            val nvPairs = namedArgs map {
               case arg @ NamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScopeJava.lookup(name)
                           else findSymbol(typedFun.tpe.params)(_.name == name)
@@ -3855,7 +3865,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             if (hasError) ErroneousAnnotation
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
           }
         } else {
           val typedAnn: Tree = {
