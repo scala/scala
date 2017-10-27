@@ -40,7 +40,7 @@ trait Warnings {
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
     val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
-    val Params    = Choice("params",    "Warn if a value parameter is unused.", expandsTo = List(Explicits, Implicits))
+    val Params    = Choice("params",    "Enable -Ywarn-unused:explicits,implicits.", expandsTo = List(Explicits, Implicits))
     val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
   }
 
