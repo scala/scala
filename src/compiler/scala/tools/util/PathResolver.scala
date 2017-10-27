@@ -273,7 +273,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
       val cp = classesInPath(javaBootClassPath)
       val okay = cp.exists(_.findClass("java/lang/Object.class").isDefined)
       val isFlat = settings.YclasspathImpl.value == ClassPathRepresentationType.Flat
-      if (!isFlat && !okay)
+      if (scala.util.Properties.isJavaAtLeast("9") && !isFlat && !okay)
         cp :+ new DirectoryClassPath(new JavaToolsPlatformArchive(), DefaultJavaContext).asInstanceOf[BaseClassPathType]
       else cp
     }
