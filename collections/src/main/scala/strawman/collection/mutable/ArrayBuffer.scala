@@ -4,7 +4,7 @@ package mutable
 
 import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 
-import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws}
+import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws, Serializable, SerialVersionUID}
 import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer
@@ -16,12 +16,14 @@ import scala.Predef.intWrapper
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
+@SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   extends Buffer[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with IndexedOptimizedSeq[A]
-    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
+    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with Serializable {
 
   def this() = this(new Array[AnyRef](16), 0)
 
