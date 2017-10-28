@@ -3,7 +3,7 @@ package mutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Boolean, Int, Unit, throws}
+import scala.{Any, Boolean, Int, Unit, throws, Serializable, SerialVersionUID}
 import scala.Int._
 import strawman.collection
 import strawman.collection.immutable.{List, Nil, ::}
@@ -12,11 +12,13 @@ import java.lang.IndexOutOfBoundsException
 import scala.Predef.{assert, intWrapper}
 
 /** Concrete collection type: ListBuffer */
+@SerialVersionUID(3419063961353022662L)
 class ListBuffer[A]
   extends Buffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
-     with ReusableBuilder[A, immutable.List[A]] {
+     with ReusableBuilder[A, immutable.List[A]]
+     with Serializable {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
