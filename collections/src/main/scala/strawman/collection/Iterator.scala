@@ -922,6 +922,29 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       else Iterator.empty.next()
   }
 
+  /** Creates an iterator returning an interval of the values produced by this iterator.
+    *
+    *  @param from   the index of the first element in this iterator which forms part of the slice.
+    *                If negative, the slice starts at zero.
+    *  @param until  the index of the first element following the slice. If negative, the slice is empty.
+    *  @return an iterator which advances this iterator past the first `from` elements using `drop`,
+    *  and then takes `until - from` elements, using `take`.
+    *  @note         Reuse: $consumesAndProducesIterator
+    */
+  def slice(from: Int, until: Int): Iterator[A] = sliceIterator(from, until max 0)
+
+  /** Creates an optionally bounded slice, unbounded if `until` is negative. */
+  protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+    val lo = from max 0
+    val rest =
+      if (until < 0) -1            // unbounded
+      else if (until <= lo) 0      // empty
+      else until - lo              // finite
+
+    if (rest == 0) Iterator.empty
+    else new Iterator.SliceIterator(this, lo, rest)
+  }
+
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new Iterator[(A, B)] {
     val thatIterator = that.iterator()
     def hasNext = self.hasNext && thatIterator.hasNext
@@ -1251,6 +1274,51 @@ object Iterator {
   private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A]) {
     def headIterator: Iterator[A] = head.iterator()
   }
+
+  /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.
+    *  Lazily skip to start on first evaluation.  Avoids daisy-chained iterators due to slicing.
+    */
+  private[strawman] final class SliceIterator[A](val underlying: Iterator[A], start: Int, limit: Int) extends AbstractIterator[A] {
+    private var remaining = limit
+    private var dropping  = start
+    @inline private def unbounded = remaining < 0
+    private def skip(): Unit =
+      while (dropping > 0) {
+        if (underlying.hasNext) {
+          underlying.next()
+          dropping -= 1
+        } else
+          dropping = 0
+      }
+    def hasNext = { skip(); remaining != 0 && underlying.hasNext }
+    def next()  = {
+      skip()
+      if (remaining > 0) {
+        remaining -= 1
+        underlying.next()
+      }
+      else if (unbounded) underlying.next()
+      else empty.next()
+    }
+    override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+      val lo = from max 0
+      def adjustedBound =
+        if (unbounded) -1
+        else 0 max (remaining - lo)
+      val rest =
+        if (until < 0) adjustedBound          // respect current bound, if any
+        else if (until <= lo) 0               // empty
+        else if (unbounded) until - lo        // now finite
+        else adjustedBound min (until - lo)   // keep lesser bound
+      if (rest == 0) empty
+      else {
+        dropping += lo
+        remaining = rest
+        this
+      }
+    }
+  }
+
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */

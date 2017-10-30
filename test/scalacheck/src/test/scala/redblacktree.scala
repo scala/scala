@@ -1,6 +1,6 @@
-package scala.collection.immutable.redblacktree
+package strawman.collection.immutable.redblacktree
 
-import collection.immutable.{RedBlackTree => RB}
+import strawman.collection.immutable.{RedBlackTree => RB, List}
 import org.scalacheck._
 import Prop._
 import Gen._
@@ -24,7 +24,7 @@ abstract class RedBlackTreeTest extends Properties("RedBlackTree") {
   import RB._
 
   def nodeAt[A](tree: Tree[String, A], n: Int): Option[(String, A)] = if (n < iterator(tree).size && n >= 0)
-    Some(iterator(tree).drop(n).next)
+    Some(iterator(tree).drop(n).next())
   else
     None
 
@@ -199,11 +199,10 @@ object TestRange extends RedBlackTreeTest with RedBlackTreeInvariants  {
   property("range returns all elements") = forAll(genInput) { case (tree, parm, newTree) =>
     val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
     val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-    val filteredTree = (keysIterator(tree)
+    val filteredTree = List.from(keysIterator(tree)
       .filter(key => from forall (key >=))
-      .filter(key => to forall (key <))
-      .toList)
-    filteredTree == keysIterator(newTree).toList
+      .filter(key => to forall (key <)))
+    filteredTree == List.from(keysIterator(newTree))
   }
 }
 
@@ -215,7 +214,7 @@ object TestDrop extends RedBlackTreeTest with RedBlackTreeInvariants  {
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = drop(tree, parm)
 
   property("drop") = forAll(genInput) { case (tree, parm, newTree) =>
-    iterator(tree).drop(parm).toList == iterator(newTree).toList
+    List.from(iterator(tree).drop(parm)) == List.from(iterator(newTree))
   }
 }
 
@@ -227,7 +226,7 @@ object TestTake extends RedBlackTreeTest with RedBlackTreeInvariants  {
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = take(tree, parm)
 
   property("take") = forAll(genInput) { case (tree, parm, newTree) =>
-    iterator(tree).take(parm).toList == iterator(newTree).toList
+    List.from(iterator(tree).take(parm)) == List.from(iterator(newTree))
   }
 }
 
@@ -242,6 +241,6 @@ object TestSlice extends RedBlackTreeTest with RedBlackTreeInvariants  {
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = slice(tree, parm._1, parm._2)
 
   property("slice") = forAll(genInput) { case (tree, parm, newTree) =>
-    iterator(tree).slice(parm._1, parm._2).toList == iterator(newTree).toList
+    List.from(iterator(tree).slice(parm._1, parm._2)) == List.from(iterator(newTree))
   }
 }
