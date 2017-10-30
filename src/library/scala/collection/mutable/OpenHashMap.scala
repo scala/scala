@@ -21,6 +21,8 @@ object OpenHashMap {
   def apply[K, V](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
   def empty[K, V] = new OpenHashMap[K, V]
 
+  private val MaximumTableCapacity = 1 << 30
+
   /** A hash table entry.
     * 
     * The entry is occupied if and only if its `value` is a `Some`;
@@ -56,7 +58,7 @@ extends AbstractMap[Key, Value]
    with Map[Key, Value]
    with MapLike[Key, Value, OpenHashMap[Key, Value]] {
 
-  import OpenHashMap.OpenEntry
+  import OpenHashMap._
   private type Entry = OpenEntry[Key, Value]
 
   /** A default constructor creates a hashmap with initial size `8`.
@@ -97,7 +99,7 @@ extends AbstractMap[Key, Value]
     */
   private[this] def growTable() = {
     val oldSize = mask + 1
-    val newSize = 4 * oldSize
+    val newSize = if (oldSize >= MaximumTableCapacity) Int.MaxValue - 8 else 4 * oldSize
     val oldTable = table
     table = new Array[Entry](newSize)
     mask = newSize - 1

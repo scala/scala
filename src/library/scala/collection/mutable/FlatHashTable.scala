@@ -219,7 +219,9 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     tableSize = 0
     nnSizeMapReset(table.length)
     seedvalue = tableSizeSeed
-    threshold = newThreshold(_loadFactor, table.length)
+    // If the table length reaches MaximumTableCapacity of Int.MaxValue / 2 then set the
+    // threshold to Int.MaxValue - 8 as a safe value
+    threshold = if (table.length >= MaximumTableCapacity) Int.MaxValue - 8 else newThreshold(_loadFactor, table.length)
     var i = 0
     while (i < oldtable.length) {
       val entry = oldtable(i)
@@ -383,6 +385,8 @@ private[collection] object FlatHashTable {
   final def seedGenerator = new ThreadLocal[scala.util.Random] {
     override def initialValue = new scala.util.Random
   }
+
+  private val MaximumTableCapacity = 1 << 30
 
   private object NullSentinel {
     override def hashCode = 0
