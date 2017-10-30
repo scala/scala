@@ -6,6 +6,7 @@ import collection.mutable.Builder
 import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, StringContext, `inline`, throws}
 import scala.Predef.String
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.implicitConversions
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
@@ -242,7 +243,9 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   * @define coll map
   * @define Coll `Map`
   */
-object Map extends MapFactory.Delegate[Map](immutable.Map)
+object Map extends MapFactory.Delegate[Map](immutable.Map) {
+  implicit def toLazyZipOps[K, V, CC[X, Y] <: Iterable[(X, Y)]](that: CC[K, V]): LazyZipOps[(K, V), CC[K, V]] = new LazyZipOps(that)
+}
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
 abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]

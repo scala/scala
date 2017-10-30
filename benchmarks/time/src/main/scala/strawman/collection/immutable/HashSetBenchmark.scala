@@ -136,6 +136,21 @@ class HashSetBenchmark {
   }
 
   @Benchmark
+  def transform_zip(bh: Blackhole): Unit = bh.consume(xs.zip(xs))
+
+  @Benchmark
+  def transform_zipMapTupled(bh: Blackhole): Unit = {
+    val f = (a: Long, b: Long) => (a, b)
+    bh.consume(xs.zip(xs).map(f.tupled))
+  }
+
+  @Benchmark
+  def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
+
+  @Benchmark
+  def transform_lazyZip(bh: Blackhole): Unit = bh.consume(xs.lazyZip(xs).map((_, _)))
+
+  @Benchmark
   def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
 
   @Benchmark

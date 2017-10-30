@@ -5,8 +5,8 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Unit, math}
-import scala.Predef.{intWrapper, longArrayOps, wrapLongArray, wrapRefArray}
+import scala.{Any, AnyRef, Int, Long, Unit, math, Tuple2}
+import scala.Predef.{intWrapper, longArrayOps, tuple2ToZippedOps, wrapLongArray, wrapRefArray}
 
 import scala.Predef.{intWrapper, longArrayOps}
 
@@ -271,6 +271,21 @@ class ScalaArrayBenchmark {
       i += 1
     }
   }
+
+  @Benchmark
+  def transform_zip(bh: Blackhole): Unit = bh.consume(xs.zip(xs))
+
+  @Benchmark
+  def transform_zipMapTupled(bh: Blackhole): Unit = {
+    val f = (a: Long, b: Long) => (a, b)
+    bh.consume(xs.zip(xs).map(f.tupled))
+  }
+
+  @Benchmark
+  def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
+
+  @Benchmark
+  def transform_lazyZip(bh: Blackhole): Unit = bh.consume((xs, xs).zipped.map((_, _)))
 
   @Benchmark
   def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip(t => (t._1, t._2)))

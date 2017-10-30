@@ -79,14 +79,14 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         fromIterable(View.Concat(xs, toIterable))
     }
 
-  override def zip[B](xs: collection.Iterable[B]): ImmutableArray[(A, B)] =
-    xs match {
+  override def zip[B](that: collection.Iterable[B]): ImmutableArray[(A, B)] =
+    that match {
       case bs: ImmutableArray[B] =>
         ImmutableArray.tabulate(length min bs.length) { i =>
           (apply(i), bs(i))
         }
       case _ =>
-        fromIterable(View.Zip(toIterable, xs))
+        fromIterable(View.Zip(toIterable, that))
     }
 
   override def partition(p: A => Boolean): (ImmutableArray[A], ImmutableArray[A]) = {

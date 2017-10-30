@@ -21,12 +21,14 @@ class NumericRangeBenchmark {
   var xs: NumericRange[Int] = _
   var zs: NumericRange[Int] = _
   var randomIndices: scala.Array[Int] = _
+  var zipped: IndexedSeq[(Long, Long)] = _
   def fresh(n: Int) = NumericRange.inclusive(1, n, 1)
 
   @Setup(Level.Trial)
   def initTrial(): Unit = {
     xs = fresh(size)
     zs = NumericRange.inclusive(-1, (-size / 1000) min -2, -1)
+    zipped = xs.map(x => (x, x))
     if (size > 0) {
       randomIndices = scala.Array.fill(1000)(scala.util.Random.nextInt(size))
     }
@@ -176,4 +178,25 @@ class NumericRangeBenchmark {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
+
+  @Benchmark
+  def transform_zip(bh: Blackhole): Unit = bh.consume(xs.zip(xs))
+
+  @Benchmark
+  def transform_zipMapTupled(bh: Blackhole): Unit = {
+    val f = (a: Int, b: Int) => (a, b)
+    bh.consume(xs.zip(xs).map(f.tupled))
+  }
+
+  @Benchmark
+  def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
+
+  @Benchmark
+  def transform_lazyZip(bh: Blackhole): Unit = {
+    val xs1: IndexedSeq[Int] = xs
+    bh.consume(xs1.lazyZip(xs1).map((_, _)))
+  }
+
+  @Benchmark
+  def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
 }
