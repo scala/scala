@@ -5,6 +5,9 @@ import scala.tools.partest._
 object Test extends CompilerTest {
   import global._
 
+
+  override def extraSettings: String = super.extraSettings + " -target:jvm-1.8"
+
   override lazy val units: List[CompilationUnit] = {
     // This test itself does not depend on JDK8.
     javaCompilationUnits(global)(staticMethodInInterface) ++
