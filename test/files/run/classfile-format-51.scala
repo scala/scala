@@ -81,7 +81,7 @@ object Test extends DirectTest {
 
     val test = cw.visitMethod(ACC_PUBLIC + ACC_FINAL, "test", s"()Ljava/lang/String;", null, null)
     test.visitCode()
-    val bootstrapHandle = new Handle(H_INVOKESTATIC, invokerClassName, bootstrapMethodName, bootStrapMethodType)
+    val bootstrapHandle = new Handle(H_INVOKESTATIC, invokerClassName, bootstrapMethodName, bootStrapMethodType, false)
     test.visitInvokeDynamicInsn("invoke", targetMethodType, bootstrapHandle)
     test.visitInsn(ARETURN)
     test.visitMaxs(1, 1)
