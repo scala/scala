@@ -231,7 +231,7 @@ For more information, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 - [x] `sliding`
 - [x] `unzip`
 - [x] `values` / `valuesIterator`
-- [x] `zip` / `zipWithIndex`
+- [x] `zip` / `zipWithIndex` / `lazyZip`
 
 ### In-place mutating operations
 

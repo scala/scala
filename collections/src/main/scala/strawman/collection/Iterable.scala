@@ -2,6 +2,7 @@ package strawman
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, AnyRef}
 import java.lang.{String, UnsupportedOperationException}
@@ -961,19 +962,18 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *  by combining corresponding elements in pairs.
     *  If one of the two collections is longer than the other, its remaining elements are ignored.
     *
-    *  @param   xs  The iterable providing the second half of each result pair
+    *  @param   that  The iterable providing the second half of each result pair
     *  @tparam  B     the type of the second half of the returned pairs
-    *  @return        a new collection of type `That` containing pairs consisting of
-    *                 corresponding elements of this $coll and `that`. The length
-    *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
+    *  @return        a new $coll containing pairs consisting of corresponding elements of this $coll and `that`.
+    *                 The length of the returned collection is the minimum of the lengths of this $coll and `that`.
     */
-  def zip[B](xs: Iterable[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(toIterable, xs))
+  def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] = fromIterable(View.Zip(toIterable, that))
   // sound bcs of VarianceNote
 
   /** Zips this $coll with its indices.
     *
-    *  @return        A new collection of type `That` containing pairs consisting of all elements of this
-    *                 $coll paired with their index. Indices start at `0`.
+    *  @return        A new $coll containing pairs consisting of all elements of this $coll paired with their index.
+    *                 Indices start at `0`.
     *  @example
     *    `List("a", "b", "c").zipWithIndex == List(("a", 0), ("b", 1), ("c", 2))`
     */
@@ -1002,9 +1002,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     val unzipped = View.Unzip(toIterable)
     (fromIterable(unzipped.first), fromIterable(unzipped.second))
   }
-
 }
 
-object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)
+object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
+  implicit def toLazyZipOps[A, CC[X] <: Iterable[X]](that: CC[A]): LazyZipOps[A, CC[A]] = new LazyZipOps(that)
+}
 
 abstract class AbstractIterable[+A] extends Iterable[A]

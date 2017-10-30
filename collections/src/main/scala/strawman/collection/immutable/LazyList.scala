@@ -346,9 +346,9 @@ sealed abstract class LazyList[+A]
       else prefix.lazyAppendAll(nonEmptyPrefix.tail.flatMap(f))
     }
 
-  override final def zip[B](xs: collection.Iterable[B]): LazyList[(A, B)] =
-    if (this.isEmpty || xs.isEmpty) LazyList.empty
-    else LazyList.cons((this.head, xs.head), this.tail.zip(xs.tail))
+  override final def zip[B](that: collection.Iterable[B]): LazyList[(A, B)] =
+    if (this.isEmpty || that.isEmpty) LazyList.empty
+    else LazyList.cons((this.head, that.head), this.tail.zip(that.tail))
 
   override final def zipWithIndex: LazyList[(A, Int)] = this.zip(LazyList.from(0))
 
