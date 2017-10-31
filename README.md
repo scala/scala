@@ -141,7 +141,6 @@ codebase and re-compiles too many files, resulting in long build times (check
 meantime you can:
   - Enable "Ant mode" in which sbt only re-compiles source files that were modified.
     Create a file `local.sbt` containing the line `antStyle := true`.
-    Add an entry `local.sbt` to your `~/.gitignore`.
   - Use IntelliJ IDEA for incremental compiles (see [IDE Setup](#ide-setup) below) - its
     incremental compiler is a bit less conservative, but usually correct.
 
