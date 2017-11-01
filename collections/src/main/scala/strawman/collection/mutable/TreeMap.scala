@@ -48,6 +48,10 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
 
+  def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
+
+  override def valuesIteratorFrom(start: K): Iterator[V] = RB.valuesIterator(tree, Some(start))
+
   def empty: TreeMap[K, V] = TreeMap.empty
 
   def add(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
@@ -139,6 +143,8 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
     override def iterator() = RB.iterator(tree, from, until)
     override def keysIteratorFrom(start: K) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
+    override def iteratorFrom(start: K) = RB.iterator(tree, pickLowerBound(Some(start)), until)
+    override def valuesIteratorFrom(start: K) = RB.valuesIterator(tree, pickLowerBound(Some(start)), until)
 
     override def size = iterator().length
     override def isEmpty = !iterator().hasNext

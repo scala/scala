@@ -3,6 +3,9 @@ import Prop._
 import Gen._
 import Arbitrary._
 
+import strawman.collection.immutable.Range
+import strawman.collection.Set
+
 class Counter(r: Range) {
   var cnt = 0L
   var last: Option[Int] = None
@@ -62,7 +65,7 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     if (r.end.toLong - r.start.toLong).abs <= 10000000L
   } yield if (r.start < r.end) Range(r.start, r.end) else Range(r.end, r.start)
 
-  def genRangeClosedByOne = for (r <- genRangeOpenByOne) yield r.start to r.end
+  def genRangeClosedByOne = for (r <- genRangeOpenByOne) yield Range.inclusive(r.start, r.end)
 
   def str(r: Range) = "Range["+r.start+", "+r.end+", "+r.step+(if (r.isInclusive) "]" else ")")
 

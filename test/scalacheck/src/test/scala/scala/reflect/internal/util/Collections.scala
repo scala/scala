@@ -3,10 +3,13 @@
  * @author  Paul Phillips
  */
 
-package scala
+package strawman
 package reflect.internal.util
 
-import scala.collection.{ mutable, immutable }
+import strawman.collection.{ mutable, immutable }
+import strawman.collection.immutable.{List, Nil, ::}
+import strawman.collection.{Iterable, Map, toOldSeq}
+
 import scala.annotation.tailrec
 import mutable.ListBuffer
 
@@ -54,7 +57,7 @@ trait Collections {
     var rest = as.tail
     while (rest ne Nil) {
       val next = new ::(f(rest.head), Nil)
-      tail.tl = next
+      tail.next = next
       tail = next
       rest = rest.tail
     }
@@ -148,10 +151,10 @@ trait Collections {
       ys1 = ys1.tail
       ys2 = ys2.tail
     }
-    if (lb eq null) Nil else lb.result
+    if (lb eq null) Nil else lb.toList
   }
 
-  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
+  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Iterable[B]]): List[B] = {
     val lb = new ListBuffer[B]
     for (x <- elems ; if pf isDefinedAt x)
       lb ++= pf(x)
@@ -187,15 +190,15 @@ trait Collections {
   }
 
   // @inline
-  final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+  final def findOrElse[A](xs: Iterable[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
   }
 
   final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
-    Map[A1, B](xs map (x => (x, f(x))): _*)
+    Map[A1, B]((xs map (x => (x, f(x)))).toClassic: _*)
   }
   final def linkedMapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): mutable.LinkedHashMap[A1, B] = {
-    mutable.LinkedHashMap[A1, B](xs map (x => (x, f(x))): _*)
+    mutable.LinkedHashMap[A1, B]((xs map (x => (x, f(x)))).toClassic: _*)
   }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {

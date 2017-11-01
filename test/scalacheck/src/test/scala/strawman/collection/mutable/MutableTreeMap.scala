@@ -1,16 +1,17 @@
-package scala.collection.mutable
+package strawman.collection.mutable
 
 import java.io._
 
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
+import strawman.collection.{BuildFrom, Iterator, View, immutable, mutable}
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
-import scala.collection.mutable
+import strawman.collection.immutable.List
+import strawman.collection
+import strawman.collection.Generators._
+import strawman.collection.mutable.{RedBlackTree => RB}
 import scala.util.Try
-import scala.collection.mutable.{RedBlackTree => RB}
 
 trait Generators {
 
@@ -133,36 +134,36 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.iterator.toSeq == entries.toSeq.sorted
+    map.iterator().to(immutable.Seq) == entries.toSeq.sorted
   }
 
   property("iteratorFrom") = forAll { (entries: Map[K, V], k: K) =>
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.iteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted
+    map.iteratorFrom(k).to(immutable.Seq) == entries.filterKeys(_ >= k).toSeq.sorted
   }
 
   property("keysIteratorFrom") = forAll { (entries: Map[K, V], k: K) =>
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.keysIteratorFrom(k).toSeq == entries.keysIterator.filter(_ >= k).toSeq.sorted
+    map.keysIteratorFrom(k).to(immutable.Seq) == entries.keysIterator().filter(_ >= k).to(immutable.Seq).sorted
   }
 
   property("valuesIteratorFrom") = forAll { (entries: Map[K, V], k: K) =>
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.valuesIteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted.map(_._2)
+    map.valuesIteratorFrom(k).to(immutable.Seq) == entries.filterKeys(_ >= k).toSeq.sorted.map(_._2)
   }
 
   property("headOption") = forAll { (map: mutable.TreeMap[K, V]) =>
-    map.headOption == Try(map.iterator.next()).toOption
+    map.headOption == Try(map.iterator().next()).toOption
   }
 
   property("lastOption") = forAll { (map: mutable.TreeMap[K, V]) =>
-    map.lastOption == Try(map.iterator.max).toOption
+    map.lastOption == Try(map.iterator().max).toOption
   }
 
   property("clear") = forAll { (map: mutable.TreeMap[K, V]) =>
@@ -178,7 +179,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
 
     val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
     val sameMap = in.readObject().asInstanceOf[mutable.TreeMap[K, V]]
-    map.iterator.toSeq == sameMap.iterator.toSeq
+    map.iterator().to(immutable.Seq) == sameMap.iterator().to(immutable.Seq)
   }
 
   property("same behavior as immutable.TreeMap") = forAll { ops: Seq[Either[(K, V), K]] =>
@@ -203,8 +204,8 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
-  def entriesInView[This <: TraversableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: CanBuildFrom[This, (K, V), That]) = {
-    (bf.apply(entries) ++= entries.filter { case (k, _) => in(k, from, until) }).result()
+  def entriesInView[This <: Iterable[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, (K, V), That]) = {
+    (bf.newBuilder(entries) ++= entries.filter { case (k, _) => in(k, from, until) }).result()
   }
 
   property("get, contains") = forAll { (allEntries: Map[K, V], from: Option[K], until: Option[K]) =>
@@ -276,7 +277,7 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
     map ++= entries
 
     val mapView = map.rangeImpl(from, until)
-    mapView.iterator.toSeq == entriesInView(entries, from, until).toSeq.sorted
+    mapView.iterator().to(immutable.Seq) == entriesInView(entries, from, until).toSeq.sorted
   }
 
   property("iteratorFrom") = forAll { (entries: Map[K, V], k: K, from: Option[K], until: Option[K]) =>
@@ -285,7 +286,7 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
 
     val mapView = map.rangeImpl(from, until)
     val newLower = Some(from.fold(k)(ord.max(_, k)))
-    mapView.iteratorFrom(k).toSeq == entriesInView(entries, newLower, until).toSeq.sorted
+    mapView.iteratorFrom(k).to(immutable.Seq) == entriesInView(entries, newLower, until).toSeq.sorted
   }
 
   property("keysIteratorFrom") = forAll { (entries: Map[K, V], k: K, from: Option[K], until: Option[K]) =>
@@ -294,7 +295,7 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
 
     val mapView = map.rangeImpl(from, until)
     val newLower = Some(from.fold(k)(ord.max(_, k)))
-    mapView.keysIteratorFrom(k).toSeq == entriesInView(entries, newLower, until).toSeq.sorted.map(_._1)
+    mapView.keysIteratorFrom(k).to(immutable.Seq) == entriesInView(entries, newLower, until).toSeq.sorted.map(_._1)
   }
 
   property("valuesIteratorFrom") = forAll { (entries: Map[K, V], k: K, from: Option[K], until: Option[K]) =>
@@ -303,17 +304,17 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
 
     val mapView = map.rangeImpl(from, until)
     val newLower = Some(from.fold(k)(ord.max(_, k)))
-    mapView.valuesIteratorFrom(k).toSeq == entriesInView(entries, newLower, until).toSeq.sorted.map(_._2)
+    mapView.valuesIteratorFrom(k).to(immutable.Seq) == entriesInView(entries, newLower, until).toSeq.sorted.map(_._2)
   }
 
   property("headOption") = forAll { (map: mutable.TreeMap[K, V], from: Option[K], until: Option[K]) =>
     val mapView = map.rangeImpl(from, until)
-    mapView.headOption == Try(entriesInView(map.iterator, from, until).next()).toOption
+    mapView.headOption == Try(entriesInView(map, from, until).head).toOption
   }
 
   property("lastOption") = forAll { (map: mutable.TreeMap[K, V], from: Option[K], until: Option[K]) =>
     val mapView = map.rangeImpl(from, until)
-    mapView.lastOption == Try(entriesInView(map.iterator, from, until).max).toOption
+    mapView.lastOption == Try(entriesInView(map, from, until).max).toOption
   }
 
   property("clear") = forAll { (map: mutable.TreeMap[K, V], from: Option[K], until: Option[K]) =>
@@ -332,6 +333,6 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
 
     val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
     val sameMapView = in.readObject().asInstanceOf[mutable.TreeMap[K, V]]
-    mapView.iterator.toSeq == sameMapView.iterator.toSeq
+    mapView.iterator().to(immutable.Seq) == sameMapView.iterator().to(immutable.Seq)
   }
 }

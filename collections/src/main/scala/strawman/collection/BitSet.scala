@@ -40,9 +40,9 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
-  def iterator(): Iterator[Int] = keysIteratorFrom(0)
+  def iterator(): Iterator[Int] = iteratorFrom(0)
 
-  def keysIteratorFrom(start: Int) = new Iterator[Int] {
+  def iteratorFrom(start: Int) = new Iterator[Int] {
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {

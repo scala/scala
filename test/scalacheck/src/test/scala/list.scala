@@ -2,6 +2,10 @@ import org.scalacheck._
 import Prop._
 import Gen._
 
+import strawman.collection.immutable.List
+import strawman.collection.Set
+import strawman.collection.Generators._
+
 object ListTest extends Properties("List") {
   def sorted(xs: List[Int]) = xs sortWith (_ < _)
 

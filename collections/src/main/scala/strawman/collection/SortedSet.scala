@@ -14,8 +14,29 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 
   protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
 
+  /**
+    * Creates an iterator that contains all values from this collection
+    * greater than or equal to `start` according to the ordering of
+    * this collection. x.iteratorFrom(y) is equivalent to but will usually
+    * be more efficient than x.from(y).iterator
+    *
+    * @param start The lower-bound (inclusive) of the iterator
+    */
+  def iteratorFrom(start: A): Iterator[A]
+
   def firstKey: A = head
   def lastKey: A = last
+
+  def rangeTo(to: A): C = {
+    val i = from(to).iterator()
+    if (i.isEmpty) return coll
+    val next = i.next()
+    if (ordering.compare(next, to) == 0)
+      if (i.isEmpty) coll
+      else until(i.next())
+    else
+      until(next)
+  }
 
   override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
 

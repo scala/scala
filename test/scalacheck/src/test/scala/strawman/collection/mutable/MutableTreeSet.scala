@@ -1,15 +1,17 @@
-package scala.collection.mutable
+package strawman.collection.mutable
 
 import java.io._
 
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen.listOf
 import org.scalacheck.Prop.forAll
+import strawman.collection.BuildFrom
+import strawman.collection.immutable
+import strawman.collection.mutable
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
-import scala.collection.mutable
 import scala.util.Try
+import strawman.collection.Generators._
 
 object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
   type K = String
@@ -55,23 +57,22 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
     val set = mutable.TreeSet[K]()
     set ++= ks
 
-    set.iterator.toSeq == ks.toSeq.sorted
+    set.iterator().to(immutable.Seq) == ks.toSeq.sorted
   }
 
-  property("iteratorFrom, keysIteratorFrom") = forAll { (ks: Set[K], k: K) =>
+  property("iteratorFrom") = forAll { (ks: Set[K], k: K) =>
     val set = mutable.TreeSet[K]()
     set ++= ks
 
-    set.iteratorFrom(k).toSeq == ks.filter(_ >= k).toSeq.sorted
-    set.keysIteratorFrom(k).toSeq == ks.filter(_ >= k).toSeq.sorted
+    set.iteratorFrom(k).to(immutable.Seq) == ks.filter(_ >= k).toSeq.sorted
   }
 
   property("headOption") = forAll { (set: mutable.TreeSet[K]) =>
-    set.headOption == Try(set.iterator.next()).toOption
+    set.headOption == Try(set.iterator().next()).toOption
   }
 
   property("lastOption") = forAll { (set: mutable.TreeSet[K]) =>
-    set.lastOption == Try(set.iterator.max).toOption
+    set.lastOption == Try(set.iterator().max).toOption
   }
 
   property("clear") = forAll { (set: mutable.TreeSet[K]) =>
@@ -87,7 +88,7 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
 
     val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
     val sameSet = in.readObject().asInstanceOf[mutable.TreeSet[K]]
-    set.iterator.toSeq == sameSet.iterator.toSeq
+    set.iterator().to(immutable.Seq) == sameSet.iterator().to(immutable.Seq)
   }
 
   property("same behavior as immutable.TreeMap") = forAll { ops: Seq[Either[K, K]] =>
@@ -111,8 +112,8 @@ object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
-  def keysInView[This <: TraversableOnce[K], That](keys: This, from: Option[K], until: Option[K])(implicit bf: CanBuildFrom[This, K, That]) = {
-    (bf.apply(keys) ++= keys.filter(in(_, from, until))).result()
+  def keysInView[This <: Iterable[K], That](keys: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, K, That]) = {
+    (bf.newBuilder(keys) ++= keys.filter(in(_, from, until))).result()
   }
 
   property("size, isEmpty") = forAll { (keys: Set[K], from: Option[K], until: Option[K]) =>
@@ -166,7 +167,7 @@ object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
     set ++= ks
 
     val setView = set.rangeImpl(from, until)
-    setView.iterator.toSeq == keysInView(ks, from, until).toSeq.sorted
+    setView.iterator().to(immutable.Seq) == keysInView(ks, from, until).toSeq.sorted
   }
 
   property("iteratorFrom, keysIteratorFrom") = forAll { (ks: Set[K], k: K, from: Option[K], until: Option[K]) =>
@@ -175,17 +176,17 @@ object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
 
     val setView = set.rangeImpl(from, until)
     val newLower = Some(from.fold(k)(ord.max(_, k)))
-    setView.iteratorFrom(k).toSeq == keysInView(ks, newLower, until).toSeq.sorted
+    setView.iteratorFrom(k).to(immutable.Seq) == keysInView(ks, newLower, until).toSeq.sorted
   }
 
   property("headOption") = forAll { (set: mutable.TreeSet[K], from: Option[K], until: Option[K]) =>
     val setView = set.rangeImpl(from, until)
-    setView.headOption == Try(keysInView(set.iterator, from, until).next()).toOption
+    setView.headOption == Try(keysInView(set, from, until).head).toOption
   }
 
   property("lastOption") = forAll { (set: mutable.TreeSet[K], from: Option[K], until: Option[K]) =>
     val setView = set.rangeImpl(from, until)
-    setView.lastOption == Try(keysInView(set.iterator, from, until).max).toOption
+    setView.lastOption == Try(keysInView(set, from, until).max).toOption
   }
 
   property("clear") = forAll { (set: mutable.TreeSet[K], from: Option[K], until: Option[K]) =>
@@ -204,6 +205,6 @@ object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
 
     val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
     val sameSetView = in.readObject().asInstanceOf[mutable.TreeSet[K]]
-    setView.iterator.toSeq == sameSetView.iterator.toSeq
+    setView.iterator().to(immutable.Seq) == sameSetView.iterator().to(immutable.Seq)
   }
 }

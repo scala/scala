@@ -80,7 +80,7 @@ sealed abstract class Range(
       || (start == end && !isInclusive)
     )
 
-  val length: Int = {
+  val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
     else {
@@ -89,6 +89,8 @@ sealed abstract class Range(
       else len.toInt
     }
   }
+
+  def length = if (numRangeElements < 0) fail() else numRangeElements
 
   // This field has a sensible value only for non-empty ranges
   private val lastElement = step match {
@@ -129,7 +131,7 @@ sealed abstract class Range(
   override def tail: Range = {
     if (isEmpty)
       Nil.tail
-    if (length == 1) newEmptyRange(end)
+    if (numRangeElements == 1) newEmptyRange(end)
     else if(isInclusive) new Range.Inclusive(start + step, end, step)
     else new Range.Exclusive(start + step, end, step)
   }
@@ -153,7 +155,7 @@ sealed abstract class Range(
   // which means it will not fail fast for those cases where failing was
   // correct.
   private def validateMaxLength(): Unit = {
-    if (length < 0)
+    if (numRangeElements < 0)
       fail()
   }
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
@@ -162,7 +164,7 @@ sealed abstract class Range(
   @throws[IndexOutOfBoundsException]
   def apply(idx: Int): Int = {
     validateMaxLength()
-    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
+    if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
     else start + (step * idx)
   }
 
@@ -186,7 +188,7 @@ sealed abstract class Range(
     */
   override def take(n: Int): Range =
     if (n <= 0 || isEmpty) newEmptyRange(start)
-    else if (n >= length && length >= 0) this
+    else if (n >= numRangeElements && numRangeElements >= 0) this
     else {
       // May have more than Int.MaxValue elements in range (numRangeElements < 0)
       // but the logic is the same either way: take the first n
@@ -200,7 +202,7 @@ sealed abstract class Range(
     */
   override def drop(n: Int): Range =
     if (n <= 0 || isEmpty) this
-    else if (n >= length && length >= 0) newEmptyRange(end)
+    else if (n >= numRangeElements && numRangeElements >= 0) newEmptyRange(end)
     else {
       // May have more than Int.MaxValue elements (numRangeElements < 0)
       // but the logic is the same either way: go forwards n steps, keep the rest
@@ -213,7 +215,7 @@ sealed abstract class Range(
     */
   override def takeRight(n: Int): Range = {
     if (n <= 0) newEmptyRange(start)
-    else if (length >= 0) drop(length - n)
+    else if (numRangeElements >= 0) drop(numRangeElements - n)
     else {
       // Need to handle over-full range separately
       val y = last
@@ -229,7 +231,7 @@ sealed abstract class Range(
     */
   override def dropRight(n: Int): Range = {
     if (n <= 0) this
-    else if (length >= 0) take(length - n)
+    else if (numRangeElements >= 0) take(numRangeElements - n)
     else {
       // Need to handle over-full range separately
       val y = last - step.toInt*n
@@ -290,7 +292,7 @@ sealed abstract class Range(
     */
   override def slice(from: Int, until: Int): Range =
     if (from <= 0) take(until)
-    else if (until >= length && length >= 0) drop(from)
+    else if (until >= numRangeElements && numRangeElements >= 0) drop(from)
     else {
       val fromValue = locationAfterN(from)
       if (from >= until) newEmptyRange(fromValue)

@@ -1,10 +1,13 @@
-import collection.immutable._
+import strawman.collection.immutable._
 import org.scalacheck._
 import Prop._
 import Gen._
 import Arbitrary._
 import util._
 import Buildable._
+
+import strawman.collection.{toOldSeq, Seq}
+import strawman.collection.Generators._
 
 object TreeMapTest extends Properties("TreeMap") {
   def genTreeMap[A: Arbitrary: Ordering, B: Arbitrary]: Gen[TreeMap[A, B]] =
@@ -15,10 +18,10 @@ object TreeMapTest extends Properties("TreeMap") {
   implicit def arbTreeMap[A : Arbitrary : Ordering, B : Arbitrary] = Arbitrary(genTreeMap[A, B])
 
   property("foreach/iterator consistency") = forAll { (subject: TreeMap[Int, String]) =>
-    val it = subject.iterator
+    val it = subject.iterator()
     var consistent = true
     subject.foreach { element =>
-      consistent &&= it.hasNext && element == it.next
+      consistent &&= it.hasNext && element == it.next()
     }
     consistent
   }
@@ -44,27 +47,27 @@ object TreeMapTest extends Properties("TreeMap") {
   }}
 
   property("contains all") = forAll { (arr: List[(Int, String)]) =>
-    val subject = TreeMap(arr: _*)
+    val subject = TreeMap(arr.toClassic: _*)
     arr.map(_._1).forall(subject.contains(_))
   }
 
   property("size") = forAll { (elements: List[(Int, Int)]) =>
-    val subject = TreeMap(elements: _*)
+    val subject = TreeMap(elements.toClassic: _*)
     elements.map(_._1).distinct.size == subject.size
   }
 
   property("toSeq") = forAll { (elements: List[(Int, Int)]) =>
-    val subject = TreeMap(elements: _*)
+    val subject = TreeMap(elements.toClassic: _*)
     elements.map(_._1).distinct.sorted == subject.toSeq.map(_._1)
   }
 
   property("head") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
-    val subject = TreeMap(elements zip elements: _*)
+    val subject = TreeMap((elements zip elements).toClassic: _*)
     elements.min == subject.head._1
   }}
 
   property("last") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
-    val subject = TreeMap(elements zip elements: _*)
+    val subject = TreeMap((elements zip elements).toClassic: _*)
     elements.max == subject.last._1
   }}
 
@@ -132,7 +135,7 @@ object TreeMapTest extends Properties("TreeMap") {
   property("to is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val to = subject.drop(n).firstKey
-    subject.to(to).lastKey == to && subject.to(to).forall(_._1 <= to)
+    subject.rangeTo(to).lastKey == to && subject.rangeTo(to).forall(_._1 <= to)
   }}
 
   property("until is exclusive") = forAll { (subject: TreeMap[Int, String]) => subject.size > 1 ==> {
@@ -142,7 +145,7 @@ object TreeMapTest extends Properties("TreeMap") {
   }}
 
   property("remove single") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
-    val key = oneOf(subject.keys.toSeq).sample.get
+    val key = oneOf(subject.keys.toSeq.toClassic).sample.get
     val removed = subject - key
     subject.contains(key) && !removed.contains(key) && subject.size - 1 == removed.size
   }}

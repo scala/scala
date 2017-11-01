@@ -6,6 +6,10 @@ import util._
 import Buildable._
 import scala.collection.mutable.ArraySeq
 
+import scala.Predef.{ refArrayOps => _, genericArrayOps => _, genericWrapArray => _, wrapRefArray => _, _ }
+import strawman.collection.arrayToArrayOps
+import strawman.collection.IterableOnce
+
 object ArrayOldTest extends Properties("Array") {
   /** At this moment the authentic scalacheck Array Builder/Arb bits are commented out.
    */
@@ -30,7 +34,7 @@ object ArrayOldTest extends Properties("Array") {
   def smallInt = choose(1, 10)
   property("ofDim") = forAll(smallInt, smallInt, smallInt) { (i1, i2, i3) =>
     val arr = Array.ofDim[String](i1, i2, i3)
-    val flattened = arr flatMap (x => x) flatMap (x => x)
+    val flattened = arr flatMap (x => (x: IterableOnce[Array[String]])) flatMap (x => x: IterableOnce[String])
     flattened.length == i1 * i2 * i3
   }
 }
