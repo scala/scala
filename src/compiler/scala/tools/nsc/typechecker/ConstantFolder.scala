@@ -24,22 +24,26 @@ abstract class ConstantFolder {
     def unapply(tree: Tree): Option[Constant] = tree match {
       case Literal(x) => Some(x)
       case term if term.symbol != null && !term.symbol.isLazy && (term.symbol.isVal || (term.symbol.isGetter && term.symbol.accessed.isVal)) =>
-        term.tpe.underlying match {
-          case ConstantType(x) => Some(x)
-          case _ => None
-        }
+        extractConstant(term.tpe)
       case _ => None
     }
   }
 
   // We can fold the types of side effecting terms, but not the terms themselves
   object ConstantTerm {
-    def unapply(tree: Tree): Option[Constant] =
-      tree.tpe match {
-        case ConstantType(x) => Some(x)
-        case _ => None
-      }
+    def unapply(tree: Tree): Option[Constant] = extractConstant(tree.tpe)
   }
+
+  private def extractConstant(tpe: Type): Option[Constant] =
+    tpe match {
+      case ConstantType(x) => Some(x)
+      case st: SingleType =>
+        st.underlying match {
+          case ConstantType(x) => Some(x)
+          case _ => None
+        }
+      case _ => None
+    }
 
   /** If tree is a constant operation, replace with result. */
   def apply(tree: Tree): Tree = {
