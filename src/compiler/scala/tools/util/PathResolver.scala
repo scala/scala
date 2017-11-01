@@ -232,9 +232,11 @@ final class PathResolver(settings: Settings) {
 
     import classPathFactory._
 
+    private def release: Option[String] = Option(settings.release.value).filter(_ != "")
+
     // Assemble the elements!
     def basis = List[Traversable[ClassPath]](
-      JrtClassPath.apply(),                         // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
+      JrtClassPath.apply(release),                  // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.

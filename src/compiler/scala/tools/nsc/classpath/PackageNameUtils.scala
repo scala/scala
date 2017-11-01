@@ -14,7 +14,7 @@ object PackageNameUtils {
    * @param fullClassName full class name with package
    * @return (package, simple class name)
    */
-  def separatePkgAndClassNames(fullClassName: String): (String, String) = {
+  @inline def separatePkgAndClassNames(fullClassName: String): (String, String) = {
     val lastDotIndex = fullClassName.lastIndexOf('.')
     if (lastDotIndex == -1)
       (RootPackage, fullClassName)
@@ -23,4 +23,10 @@ object PackageNameUtils {
   }
 
   def packagePrefix(inPackage: String): String = if (inPackage == RootPackage) "" else inPackage + "."
+
+  def packageContains(inPackage: String, packageDottedName: String) = {
+    if (packageDottedName.contains("."))
+      packageDottedName.startsWith(inPackage) && packageDottedName.lastIndexOf('.') == inPackage.length
+    else inPackage == ""
+  }
 }

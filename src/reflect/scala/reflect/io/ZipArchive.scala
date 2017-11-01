@@ -8,13 +8,15 @@ package reflect
 package io
 
 import java.net.URL
-import java.io.{ IOException, InputStream, ByteArrayInputStream, FilterInputStream }
-import java.io.{ File => JFile }
-import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
+import java.io.{ByteArrayInputStream, FilterInputStream, IOException, InputStream}
+import java.io.{File => JFile}
+import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import java.util.jar.Manifest
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.annotation.tailrec
+import scala.reflect.internal.JDK9Reflectors
 
 /** An abstraction for zip files and streams.  Everything is written the way
  *  it is for performance: we come through here a lot on every run.  Be careful
@@ -63,8 +65,9 @@ object ZipArchive {
 }
 import ZipArchive._
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
-abstract class ZipArchive(override val file: JFile) extends AbstractFile with Equals {
+abstract class ZipArchive(override val file: JFile, release: Option[String]) extends AbstractFile with Equals {
   self =>
+  def this(file: JFile) = this(file, None)
 
   override lazy val canonicalPath = super.canonicalPath
 
@@ -117,15 +120,24 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
         dir
     }
 
-  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
-    if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
-    else ensureDir(dirs, dirName(entry.getName), null)
+  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = getDir(dirs, entry, entry.getName)
+
+  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry, entryName: String): DirEntry = {
+    if (entry.isDirectory) ensureDir(dirs, entryName, entry)
+    else ensureDir(dirs, dirName(entryName), null)
   }
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
-final class FileZipArchive(file: JFile) extends ZipArchive(file) {
+final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArchive(file, release) {
+  def this(file: JFile) = this(file, None)
   private[this] def openZipFile(): ZipFile = try {
-    new ZipFile(file)
+    release match {
+      case Some(r) if file.getName.endsWith(".jar") =>
+        val releaseVersion = JDK9Reflectors.runtimeVersionParse(r)
+        JDK9Reflectors.newJarFile(file, true, ZipFile.OPEN_READ, releaseVersion)
+      case _ =>
+        new ZipFile(file)
+    }
   } catch {
     case ioe: IOException => throw new IOException("Error accessing " + file.getPath, ioe)
   }
@@ -153,8 +165,9 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
   // faster than LazyEntry.
   private[this] class LeakyEntry(
     zipFile: ZipFile,
-    zipEntry: ZipEntry
-  ) extends Entry(zipEntry.getName) {
+    zipEntry: ZipEntry,
+    name: String
+  ) extends Entry(name) {
     override def lastModified: Long = zipEntry.getTime
     override def input: InputStream = zipFile.getInputStream(zipEntry)
     override def sizeOption: Option[Int] = Some(zipEntry.getSize.toInt)
@@ -169,20 +182,27 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
     try {
       while (enum.hasMoreElements) {
         val zipEntry = enum.nextElement
-        val dir = getDir(dirs, zipEntry)
-        if (zipEntry.isDirectory) dir
-        else {
-          val f =
-            if (ZipArchive.closeZipFile)
-              new LazyEntry(
-                zipEntry.getName(),
-                zipEntry.getTime(),
-                zipEntry.getSize().toInt
-              )
-            else
-              new LeakyEntry(zipFile, zipEntry)
+        if (!zipEntry.getName.startsWith("META-INF/versions/")) {
+          val zipEntryVersioned = if (release.isDefined) {
+            // JARFile will return the entry for the corresponding release-dependent version here under META-INF/versions
+            zipFile.getEntry(zipEntry.getName)
+          } else zipEntry
+          // We always use the original entry name here, which corresponds to the class FQN.
+          val entryName = zipEntry.getName
+          val dir = getDir(dirs, zipEntry, entryName)
+          if (!zipEntry.isDirectory) {
+            val f =
+              if (ZipArchive.closeZipFile)
+                new LazyEntry(
+                  entryName,
+                  zipEntry.getTime(),
+                  zipEntry.getSize().toInt
+                )
+              else
+                new LeakyEntry(zipFile, zipEntryVersioned, entryName)
 
-          dir.entries(f.name) = f
+            dir.entries(f.name) = f
+          }
         }
       }
     } finally {
