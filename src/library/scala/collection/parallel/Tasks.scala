@@ -391,12 +391,10 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   def execute[R, Tp](task: Task[R, Tp]): () => R = {
     val fjtask = newWrappedTask(task)
 
-    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
-      fjtask.fork
-    } else {
-      forkJoinPool.execute(fjtask)
+    Thread.currentThread match {
+      case fjw: ForkJoinWorkerThread if fjw.getPool eq forkJoinPool => fjtask.fork()
+      case _ => forkJoinPool.execute(fjtask)
     }
-
     () => {
       fjtask.sync()
       fjtask.body.forwardThrowable()
@@ -414,12 +412,10 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = {
     val fjtask = newWrappedTask(task)
 
-    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
-      fjtask.fork
-    } else {
-      forkJoinPool.execute(fjtask)
+    Thread.currentThread match {
+      case fjw: ForkJoinWorkerThread if fjw.getPool eq forkJoinPool => fjtask.fork()
+      case _ => forkJoinPool.execute(fjtask)
     }
-
     fjtask.sync()
     // if (fjtask.body.throwable != null) println("throwing: " + fjtask.body.throwable + " at " + fjtask.body)
     fjtask.body.forwardThrowable()
