@@ -344,6 +344,7 @@ object ClassfileConstants {
       case JAVA_ACC_STATIC     => STATIC
       case JAVA_ACC_ABSTRACT   => if (isAnnotation) 0L else if (isClass) ABSTRACT else DEFERRED
       case JAVA_ACC_INTERFACE  => if (isAnnotation) 0L else TRAIT | INTERFACE | ABSTRACT
+      case JAVA_ACC_ANNOTATION => JAVA_ANNOTATION
       case _                   => 0L
     }
     private def translateFlags(jflags: Int, baseFlags: Long, isAnnotation: Boolean, isClass: Boolean): Long = {
@@ -357,6 +358,7 @@ object ClassfileConstants {
       res |= translateFlag0(jflags & JAVA_ACC_STATIC)
       res |= translateFlag0(jflags & JAVA_ACC_ABSTRACT)
       res |= translateFlag0(jflags & JAVA_ACC_INTERFACE)
+      res |= translateFlag0(jflags & JAVA_ACC_ANNOTATION)
       res
     }
 

@@ -41,7 +41,7 @@ import scala.tools.asm.signature.SignatureVisitor;
  */
 public final class TraceSignatureVisitor extends SignatureVisitor {
 
-    private final StringBuffer declaration;
+    private final StringBuilder declaration;
 
     private boolean isInterface;
 
@@ -53,9 +53,9 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     private boolean seenInterface;
 
-    private StringBuffer returnType;
+    private StringBuilder returnType;
 
-    private StringBuffer exceptions;
+    private StringBuilder exceptions;
 
     /**
      * Stack used to keep track of class types that have arguments. Each element
@@ -75,13 +75,13 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     private String separator = "";
 
     public TraceSignatureVisitor(final int access) {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
         isInterface = (access & Opcodes.ACC_INTERFACE) != 0;
-        this.declaration = new StringBuffer();
+        this.declaration = new StringBuilder();
     }
 
-    private TraceSignatureVisitor(final StringBuffer buf) {
-        super(Opcodes.ASM4);
+    private TraceSignatureVisitor(final StringBuilder buf) {
+        super(Opcodes.ASM5);
         this.declaration = buf;
     }
 
@@ -117,8 +117,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitInterface() {
-        separator = seenInterface ? ", " : isInterface
-                ? " extends "
+        separator = seenInterface ? ", " : isInterface ? " extends "
                 : " implements ";
         seenInterface = true;
         startType();
@@ -147,14 +146,14 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
             declaration.append('(');
         }
         declaration.append(')');
-        returnType = new StringBuffer();
+        returnType = new StringBuilder();
         return new TraceSignatureVisitor(returnType);
     }
 
     @Override
     public SignatureVisitor visitExceptionType() {
         if (exceptions == null) {
-            exceptions = new StringBuffer();
+            exceptions = new StringBuilder();
         } else {
             exceptions.append(", ");
         }
@@ -165,34 +164,34 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     @Override
     public void visitBaseType(final char descriptor) {
         switch (descriptor) {
-            case 'V':
-                declaration.append("void");
-                break;
-            case 'B':
-                declaration.append("byte");
-                break;
-            case 'J':
-                declaration.append("long");
-                break;
-            case 'Z':
-                declaration.append("boolean");
-                break;
-            case 'I':
-                declaration.append("int");
-                break;
-            case 'S':
-                declaration.append("short");
-                break;
-            case 'C':
-                declaration.append("char");
-                break;
-            case 'F':
-                declaration.append("float");
-                break;
-            // case 'D':
-            default:
-                declaration.append("double");
-                break;
+        case 'V':
+            declaration.append("void");
+            break;
+        case 'B':
+            declaration.append("byte");
+            break;
+        case 'J':
+            declaration.append("long");
+            break;
+        case 'Z':
+            declaration.append("boolean");
+            break;
+        case 'I':
+            declaration.append("int");
+            break;
+        case 'S':
+            declaration.append("short");
+            break;
+        case 'C':
+            declaration.append("char");
+            break;
+        case 'F':
+            declaration.append("float");
+            break;
+        // case 'D':
+        default:
+            declaration.append("double");
+            break;
         }
         endType();
     }

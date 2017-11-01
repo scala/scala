@@ -63,7 +63,7 @@ import scala.collection.{ mutable, immutable }
 // 46:        ARTIFACT
 // 47: DEFAULTMETHOD/M
 // 48:
-// 49:
+// 49: JAVA_ANNOTATION
 // 50:
 // 51:    lateDEFERRED
 // 52:       lateFINAL
@@ -118,6 +118,7 @@ class ModifierFlags {
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
   // ARTIFACT at #46 in 2.11+
   final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
+  final val JAVA_ANNOTATION    = 1L << 49 // symbol is a java annotation
 
   // Overridden.
   def flagToString(flag: Long): String = ""
@@ -170,12 +171,28 @@ class Flags extends ModifierFlags {
   final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
 
   // ------- shift definitions -------------------------------------------------------
+  //
+  // Flags from 1L to (1L << 50) are normal flags.
+  //
+  // The flags DEFERRED (1L << 4) to MODULE (1L << 8) have a `late` counterpart. Late flags change
+  // their counterpart from 0 to 1 after a specific phase (see below). The first late flag
+  // (lateDEFERRED) is at (1L << 51), i.e., late flags are shifted by 47. The last one is (1L << 55).
+  //
+  // The flags PROTECTED (1L) to PRIVATE (1L << 2) have a `not` counterpart. Negated flags change
+  // their counterpart from 1 to 0 after a specific phase (see below). They are shifted by 56, i.e.,
+  // the first negated flag (notPROTECTED) is at (1L << 56), the last at (1L << 58).
+  //
+  // Late and negative flags are only enabled after certain phases, implemented by the phaseNewFlags
+  // method of the SubComponent, so they implement a bit of a flag history.
+  //
+  // The flags (1L << 59) to (1L << 63) are currently unused. If added to the InitialFlags mask,
+  // they could be used as normal flags.
 
-  final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
-  final val LateFlags     = 0x00FE000000000000L // flags that override flags in 0x1FC.
-  final val AntiFlags     = 0x7F00000000000000L // flags that cancel flags in 0x07F
-  final val LateShift     = 47L
-  final val AntiShift     = 56L
+  final val InitialFlags  = 0x0007FFFFFFFFFFFFL // normal flags, enabled from the first phase: 1L to (1L << 50)
+  final val LateFlags     = 0x00F8000000000000L // flags that override flags in (1L << 4) to (1L << 8): DEFERRED, FINAL, INTERFACE, METHOD, MODULE
+  final val AntiFlags     = 0x0700000000000000L // flags that cancel flags in 1L to (1L << 2): PROTECTED, OVERRIDE, PRIVATE
+  final val LateShift     = 47
+  final val AntiShift     = 56
 
   // Flags which sketchily share the same slot
   // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
@@ -425,7 +442,7 @@ class Flags extends ModifierFlags {
     case     0x400000000000L => ""                                    // (1L << 46)
     case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
-    case    0x2000000000000L => ""                                    // (1L << 49)
+    case     JAVA_ANNOTATION => "<annotation>"                        // (1L << 49)
     case    0x4000000000000L => ""                                    // (1L << 50)
     case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)
     case         `lateFINAL` => "<latefinal>"                         // (1L << 52)

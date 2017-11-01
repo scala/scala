@@ -44,16 +44,17 @@ public class LdcInsnNode extends AbstractInsnNode {
     /**
      * The constant to be loaded on the stack. This parameter must be a non null
      * {@link Integer}, a {@link Float}, a {@link Long}, a {@link Double}, a
-     * {@link String} or a {@link org.objectweb.asm.Type}.
+     * {@link String} or a {@link scala.tools.asm.Type}.
      */
     public Object cst;
 
     /**
      * Constructs a new {@link LdcInsnNode}.
      *
-     * @param cst the constant to be loaded on the stack. This parameter must be
-     *        a non null {@link Integer}, a {@link Float}, a {@link Long}, a
-     *        {@link Double} or a {@link String}.
+     * @param cst
+     *            the constant to be loaded on the stack. This parameter must be
+     *            a non null {@link Integer}, a {@link Float}, a {@link Long}, a
+     *            {@link Double} or a {@link String}.
      */
     public LdcInsnNode(final Object cst) {
         super(Opcodes.LDC);
@@ -68,10 +69,11 @@ public class LdcInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitLdcInsn(cst);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new LdcInsnNode(cst);
+        return new LdcInsnNode(cst).cloneAnnotations(this);
     }
 }

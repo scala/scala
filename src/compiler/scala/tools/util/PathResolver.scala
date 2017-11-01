@@ -9,11 +9,12 @@ package util
 import java.net.{ URL, MalformedURLException }
 import scala.tools.reflect.WrappedProperties.AccessControl
 import nsc.{ Settings, GenericRunnerSettings }
-import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
+import nsc.util.{ ClassPath, DirectoryClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
+import scala.reflect.io.JavaToolsPlatformArchive
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SW/Classpath
@@ -219,9 +220,17 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
     import context._
 
+    private def javaBootClasspath = {
+      val cp = classesInPath(javaBootClassPath)
+      if (scala.util.Properties.isJavaAtLeast("9") && !cp.exists(_.findClass("java/lang/Object.class").isDefined))
+        cp :+ new DirectoryClassPath(new JavaToolsPlatformArchive(), context)
+      else
+        cp
+    }
+
     // Assemble the elements!
     def basis = List[Traversable[ClassPath[AbstractFile]]](
-      classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
+      javaBootClasspath,                            // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.

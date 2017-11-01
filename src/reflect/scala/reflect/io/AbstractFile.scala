@@ -10,6 +10,7 @@ package io
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.io.{ File => JFile }
 import java.net.URL
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -159,16 +160,24 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   @throws(classOf[IOException])
   def toByteArray: Array[Byte] = {
     val in = input
-    var rest = sizeOption.getOrElse(0)
-    val arr = new Array[Byte](rest)
-    while (rest > 0) {
-      val res = in.read(arr, arr.length - rest, rest)
-      if (res == -1)
-        throw new IOException("read error")
-      rest -= res
+    try {
+      sizeOption match {
+        case Some(rest) =>
+          var rest = sizeOption.getOrElse(0)
+          val arr = new Array[Byte](rest)
+          while (rest > 0) {
+            val res = in.read(arr, arr.length - rest, rest)
+            if (res == -1)
+              throw new IOException("read error")
+            rest -= res
+          }
+          arr
+        case None =>
+          Streamable.bytes(in)
+      }
+    } finally {
+      in.close()
     }
-    in.close()
-    arr
   }
 
   /** Returns all abstract subfiles of this abstract directory. */

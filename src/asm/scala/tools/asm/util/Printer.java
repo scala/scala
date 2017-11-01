@@ -37,6 +37,7 @@ import scala.tools.asm.Attribute;
 import scala.tools.asm.Handle;
 import scala.tools.asm.Label;
 import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
 
 /**
  * An abstract converter from visit events to text.
@@ -52,14 +53,14 @@ public abstract class Printer {
 
     /**
      * The names of the for <code>operand</code> parameter values of the
-     * {@link org.objectweb.asm.MethodVisitor#visitIntInsn} method when
+     * {@link scala.tools.asm.MethodVisitor#visitIntInsn} method when
      * <code>opcode</code> is <code>NEWARRAY</code>.
      */
     public static final String[] TYPES;
 
     /**
      * The names of the <code>tag</code> field values for
-     * {@link org.objectweb.asm.Handle}.
+     * {@link scala.tools.asm.Handle}.
      */
     public static final String[] HANDLE_TAG;
 
@@ -103,8 +104,8 @@ public abstract class Printer {
         }
 
         s = "H_GETFIELD,H_GETSTATIC,H_PUTFIELD,H_PUTSTATIC,"
-          + "H_INVOKEVIRTUAL,H_INVOKESTATIC,H_INVOKESPECIAL,"
-          + "H_NEWINVOKESPECIAL,H_INVOKEINTERFACE,";
+                + "H_INVOKEVIRTUAL,H_INVOKESTATIC,H_INVOKESPECIAL,"
+                + "H_NEWINVOKESPECIAL,H_INVOKEINTERFACE,";
         HANDLE_TAG = new String[10];
         j = 0;
         i = 1;
@@ -116,7 +117,7 @@ public abstract class Printer {
 
     /**
      * The ASM API version implemented by this class. The value of this field
-     * must be one of {@link Opcodes#ASM4}.
+     * must be one of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     protected final int api;
 
@@ -141,6 +142,10 @@ public abstract class Printer {
 
     /**
      * Constructs a new {@link Printer}.
+     *
+     * @param api
+     *            the ASM API version implemented by this printer. Must be one
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     protected Printer(final int api) {
         this.api = api;
@@ -150,80 +155,194 @@ public abstract class Printer {
 
     /**
      * Class header.
-     * See {@link org.objectweb.asm.ClassVisitor#visit}.
+     * See {@link scala.tools.asm.ClassVisitor#visit}.
+     *
+     * @param version
+     *            the class version.
+     * @param access
+     *            the class's access flags (see {@link Opcodes}). This parameter
+     *            also indicates if the class is deprecated.
+     * @param name
+     *            the internal name of the class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * @param signature
+     *            the signature of this class. May be <tt>null</tt> if the class
+     *            is not a generic one, and does not extend or implement generic
+     *            classes or interfaces.
+     * @param superName
+     *            the internal of name of the super class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     *            For interfaces, the super class is {@link Object}. May be
+     *            <tt>null</tt>, but only for the {@link Object} class.
+     * @param interfaces
+     *            the internal names of the class's interfaces (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     *            May be <tt>null</tt>.
      */
-    public abstract void visit(
-        final int version,
-        final int access,
-        final String name,
-        final String signature,
-        final String superName,
-        final String[] interfaces);
+    public abstract void visit(final int version, final int access,
+            final String name, final String signature, final String superName,
+            final String[] interfaces);
 
     /**
      * Class source.
-     * See {@link org.objectweb.asm.ClassVisitor#visitSource}.
+     * See {@link scala.tools.asm.ClassVisitor#visitSource}.
+     *
+     * @param source
+     *            the name of the source file from which the class was compiled.
+     *            May be <tt>null</tt>.
+     * @param debug
+     *            additional debug information to compute the correspondance
+     *            between source and compiled elements of the class. May be
+     *            <tt>null</tt>.
      */
-    public abstract void visitSource(final String file, final String debug);
+    public abstract void visitSource(final String source, final String debug);
 
     /**
      * Class outer class.
-     * See {@link org.objectweb.asm.ClassVisitor#visitOuterClass}.
+     * See {@link scala.tools.asm.ClassVisitor#visitOuterClass}.
+     *
+     * Visits the enclosing class of the class. This method must be called only
+     * if the class has an enclosing class.
+     *
+     * @param owner
+     *            internal name of the enclosing class of the class.
+     * @param name
+     *            the name of the method that contains the class, or
+     *            <tt>null</tt> if the class is not enclosed in a method of its
+     *            enclosing class.
+     * @param desc
+     *            the descriptor of the method that contains the class, or
+     *            <tt>null</tt> if the class is not enclosed in a method of its
+     *            enclosing class.
      */
-    public abstract void visitOuterClass(
-        final String owner,
-        final String name,
-        final String desc);
+    public abstract void visitOuterClass(final String owner, final String name,
+            final String desc);
 
     /**
      * Class annotation.
-     * See {@link org.objectweb.asm.ClassVisitor#visitAnnotation}.
+     * See {@link scala.tools.asm.ClassVisitor#visitAnnotation}.
+     *
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
      */
-    public abstract Printer visitClassAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitClassAnnotation(final String desc,
+            final boolean visible);
+
+    /**
+     * Class type annotation.
+     * See {@link scala.tools.asm.ClassVisitor#visitTypeAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be
+     *            {@link scala.tools.asm.TypeReference#CLASS_TYPE_PARAMETER CLASS_TYPE_PARAMETER},
+     *            {@link scala.tools.asm.TypeReference#CLASS_TYPE_PARAMETER_BOUND CLASS_TYPE_PARAMETER_BOUND}
+     *            or {@link scala.tools.asm.TypeReference#CLASS_EXTENDS CLASS_EXTENDS}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitClassTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Class attribute.
-     * See {@link org.objectweb.asm.ClassVisitor#visitAttribute}.
+     * See {@link scala.tools.asm.ClassVisitor#visitAttribute}.
+     *
+     * @param attr
+     *            an attribute.
      */
     public abstract void visitClassAttribute(final Attribute attr);
 
     /**
      * Class inner name.
-     * See {@link org.objectweb.asm.ClassVisitor#visitInnerClass}.
+     * See {@link scala.tools.asm.ClassVisitor#visitInnerClass}.
+     *
+     * @param name
+     *            the internal name of an inner class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * @param outerName
+     *            the internal name of the class to which the inner class
+     *            belongs (see {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     *            May be <tt>null</tt> for not member classes.
+     * @param innerName
+     *            the (simple) name of the inner class inside its enclosing
+     *            class. May be <tt>null</tt> for anonymous inner classes.
+     * @param access
+     *            the access flags of the inner class as originally declared in
+     *            the enclosing class.
      */
-    public abstract void visitInnerClass(
-        final String name,
-        final String outerName,
-        final String innerName,
-        final int access);
+    public abstract void visitInnerClass(final String name,
+            final String outerName, final String innerName, final int access);
 
     /**
      * Class field.
-     * See {@link org.objectweb.asm.ClassVisitor#visitField}.
+     * See {@link scala.tools.asm.ClassVisitor#visitField}.
+     *
+     * @param access
+     *            the field's access flags (see {@link Opcodes}). This parameter
+     *            also indicates if the field is synthetic and/or deprecated.
+     * @param name
+     *            the field's name.
+     * @param desc
+     *            the field's descriptor (see {@link scala.tools.asm.Type Type}).
+     * @param signature
+     *            the field's signature. May be <tt>null</tt> if the field's
+     *            type does not use generic types.
+     * @param value
+     *            the field's initial value. This parameter, which may be
+     *            <tt>null</tt> if the field does not have an initial value,
+     *            must be an {@link Integer}, a {@link Float}, a {@link Long}, a
+     *            {@link Double} or a {@link String} (for <tt>int</tt>,
+     *            <tt>float</tt>, <tt>long</tt> or <tt>String</tt> fields
+     *            respectively). <i>This parameter is only used for static
+     *            fields</i>. Its value is ignored for non static fields, which
+     *            must be initialized through bytecode instructions in
+     *            constructors or methods.
+     * @return the printer
      */
-    public abstract Printer visitField(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final Object value);
+    public abstract Printer visitField(final int access, final String name,
+            final String desc, final String signature, final Object value);
 
     /**
      * Class method.
-     * See {@link org.objectweb.asm.ClassVisitor#visitMethod}.
+     * See {@link scala.tools.asm.ClassVisitor#visitMethod}.
+     *
+     * @param access
+     *            the method's access flags (see {@link Opcodes}). This
+     *            parameter also indicates if the method is synthetic and/or
+     *            deprecated.
+     * @param name
+     *            the method's name.
+     * @param desc
+     *            the method's descriptor (see {@link scala.tools.asm.Type Type}).
+     * @param signature
+     *            the method's signature. May be <tt>null</tt> if the method
+     *            parameters, return type and exceptions do not use generic
+     *            types.
+     * @param exceptions
+     *            the internal names of the method's exception classes (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}). May be
+     *            <tt>null</tt>.
+     * @return the printer
      */
-    public abstract Printer visitMethod(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final String[] exceptions);
+    public abstract Printer visitMethod(final int access, final String name,
+            final String desc, final String signature, final String[] exceptions);
 
     /**
-     * Class end.
-     * See {@link org.objectweb.asm.ClassVisitor#visitEnd}.
+     * Class end. See {@link scala.tools.asm.ClassVisitor#visitEnd}.
      */
     public abstract void visitClassEnd();
 
@@ -233,36 +352,68 @@ public abstract class Printer {
 
     /**
      * Annotation value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visit}.
+     * See {@link scala.tools.asm.AnnotationVisitor#visit}.
+     *
+     * @param name
+     *            the value name.
+     * @param value
+     *            the actual value, whose type must be {@link Byte},
+     *            {@link Boolean}, {@link Character}, {@link Short},
+     *            {@link Integer} , {@link Long}, {@link Float}, {@link Double},
+     *            {@link String} or {@link scala.tools.asm.Type}
+     *            or OBJECT or ARRAY sort.
+     *            This value can also be an array of byte, boolean, short, char, int,
+     *            long, float or double values (this is equivalent to using
+     *            {@link #visitArray visitArray} and visiting each array element
+     *            in turn, but is more convenient).
      */
     public abstract void visit(final String name, final Object value);
 
     /**
      * Annotation enum value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitEnum}.
+     * See {@link scala.tools.asm.AnnotationVisitor#visitEnum}.
+     *
+     * Visits an enumeration value of the annotation.
+     *
+     * @param name
+     *            the value name.
+     * @param desc
+     *            the class descriptor of the enumeration class.
+     * @param value
+     *            the actual enumeration value.
      */
-    public abstract void visitEnum(
-        final String name,
-        final String desc,
-        final String value);
+    public abstract void visitEnum(final String name, final String desc,
+            final String value);
 
     /**
      * Nested annotation value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitAnnotation}.
+     * See {@link scala.tools.asm.AnnotationVisitor#visitAnnotation}.
+     *
+     * @param name
+     *            the value name.
+     * @param desc
+     *            the class descriptor of the nested annotation class.
+     * @return the printer
      */
-    public abstract Printer visitAnnotation(
-        final String name,
-        final String desc);
+    public abstract Printer visitAnnotation(final String name, final String desc);
 
     /**
      * Annotation array value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitArray}.
+     * See {@link scala.tools.asm.AnnotationVisitor#visitArray}.
+     *
+     * Visits an array value of the annotation. Note that arrays of primitive
+     * types (such as byte, boolean, short, char, int, long, float or double)
+     * can be passed as value to {@link #visit visit}. This is what
+     * {@link scala.tools.asm.ClassReader} does.
+     *
+     * @param name
+     *            the value name.
+     * @return the printer
      */
     public abstract Printer visitArray(final String name);
 
     /**
-     * Annotation end.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitEnd}.
+     * Annotation end. See {@link scala.tools.asm.AnnotationVisitor#visitEnd}.
      */
     public abstract void visitAnnotationEnd();
 
@@ -272,21 +423,52 @@ public abstract class Printer {
 
     /**
      * Field annotation.
-     * See {@link org.objectweb.asm.FieldVisitor#visitAnnotation}.
+     * See {@link scala.tools.asm.FieldVisitor#visitAnnotation}.
+     *
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
      */
-    public abstract Printer visitFieldAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitFieldAnnotation(final String desc,
+            final boolean visible);
+
+    /**
+     * Field type annotation.
+     * See {@link scala.tools.asm.FieldVisitor#visitTypeAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link scala.tools.asm.TypeReference#FIELD FIELD}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitFieldTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Field attribute.
-     * See {@link org.objectweb.asm.FieldVisitor#visitAttribute}.
+     * See {@link scala.tools.asm.FieldVisitor#visitAttribute}.
+     *
+     * @param attr
+     *            an attribute.
      */
     public abstract void visitFieldAttribute(final Attribute attr);
 
     /**
      * Field end.
-     * See {@link org.objectweb.asm.FieldVisitor#visitEnd}.
+     * See {@link scala.tools.asm.FieldVisitor#visitEnd}.
      */
     public abstract void visitFieldEnd();
 
@@ -295,193 +477,647 @@ public abstract class Printer {
     // ------------------------------------------------------------------------
 
     /**
+     * Method parameter.
+     * See {@link scala.tools.asm.MethodVisitor#visitParameter(String, int)}.
+     *
+     * @param name
+     *            parameter name or null if none is provided.
+     * @param access
+     *            the parameter's access flags, only <tt>ACC_FINAL</tt>,
+     *            <tt>ACC_SYNTHETIC</tt> or/and <tt>ACC_MANDATED</tt> are
+     *            allowed (see {@link Opcodes}).
+     */
+    public void visitParameter(String name, int access) {
+        throw new RuntimeException("Must be overridden");
+    }
+
+    /**
      * Method default annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAnnotationDefault}.
+     * See {@link scala.tools.asm.MethodVisitor#visitAnnotationDefault}.
+     *
+     * @return the printer
      */
     public abstract Printer visitAnnotationDefault();
 
     /**
      * Method annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAnnotation}.
+     * See {@link scala.tools.asm.MethodVisitor#visitAnnotation}.
+     *
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
      */
-    public abstract Printer visitMethodAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitMethodAnnotation(final String desc,
+            final boolean visible);
+
+    /**
+     * Method type annotation.
+     * See {@link scala.tools.asm.MethodVisitor#visitTypeAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link scala.tools.asm.TypeReference#FIELD FIELD}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitMethodTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method parameter annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitParameterAnnotation}.
+     * See {@link scala.tools.asm.MethodVisitor#visitParameterAnnotation}.
+     *
+     * @param parameter
+     *            the parameter index.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
      */
-    public abstract Printer visitParameterAnnotation(
-        final int parameter,
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitParameterAnnotation(final int parameter,
+            final String desc, final boolean visible);
 
     /**
      * Method attribute.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAttribute}.
+     * See {@link scala.tools.asm.MethodVisitor#visitAttribute}.
+     *
+     * @param attr
+     *            an attribute.
      */
     public abstract void visitMethodAttribute(final Attribute attr);
 
     /**
      * Method start.
-     * See {@link org.objectweb.asm.MethodVisitor#visitCode}.
+     * See {@link scala.tools.asm.MethodVisitor#visitCode}.
      */
     public abstract void visitCode();
 
     /**
      * Method stack frame.
-     * See {@link org.objectweb.asm.MethodVisitor#visitFrame}.
+     * See {@link scala.tools.asm.MethodVisitor#visitFrame}.
+     *
+     * Visits the current state of the local variables and operand stack
+     * elements. This method must(*) be called <i>just before</i> any
+     * instruction <b>i</b> that follows an unconditional branch instruction
+     * such as GOTO or THROW, that is the target of a jump instruction, or that
+     * starts an exception handler block. The visited types must describe the
+     * values of the local variables and of the operand stack elements <i>just
+     * before</i> <b>i</b> is executed.<br>
+     * <br>
+     * (*) this is mandatory only for classes whose version is greater than or
+     * equal to {@link Opcodes#V1_6 V1_6}. <br>
+     * <br>
+     * The frames of a method must be given either in expanded form, or in
+     * compressed form (all frames must use the same format, i.e. you must not
+     * mix expanded and compressed frames within a single method):
+     * <ul>
+     * <li>In expanded form, all frames must have the F_NEW type.</li>
+     * <li>In compressed form, frames are basically "deltas" from the state of
+     * the previous frame:
+     * <ul>
+     * <li>{@link Opcodes#F_SAME} representing frame with exactly the same
+     * locals as the previous frame and with the empty stack.</li>
+     * <li>{@link Opcodes#F_SAME1} representing frame with exactly the same
+     * locals as the previous frame and with single value on the stack (
+     * <code>nStack</code> is 1 and <code>stack[0]</code> contains value for the
+     * type of the stack item).</li>
+     * <li>{@link Opcodes#F_APPEND} representing frame with current locals are
+     * the same as the locals in the previous frame, except that additional
+     * locals are defined (<code>nLocal</code> is 1, 2 or 3 and
+     * <code>local</code> elements contains values representing added types).</li>
+     * <li>{@link Opcodes#F_CHOP} representing frame with current locals are the
+     * same as the locals in the previous frame, except that the last 1-3 locals
+     * are absent and with the empty stack (<code>nLocals</code> is 1, 2 or 3).</li>
+     * <li>{@link Opcodes#F_FULL} representing complete frame data.</li>
+     * </ul>
+     * </li>
+     * </ul>
+     * <br>
+     * In both cases the first frame, corresponding to the method's parameters
+     * and access flags, is implicit and must not be visited. Also, it is
+     * illegal to visit two or more frames for the same code location (i.e., at
+     * least one instruction must be visited between two calls to visitFrame).
+     *
+     * @param type
+     *            the type of this stack map frame. Must be
+     *            {@link Opcodes#F_NEW} for expanded frames, or
+     *            {@link Opcodes#F_FULL}, {@link Opcodes#F_APPEND},
+     *            {@link Opcodes#F_CHOP}, {@link Opcodes#F_SAME} or
+     *            {@link Opcodes#F_APPEND}, {@link Opcodes#F_SAME1} for
+     *            compressed frames.
+     * @param nLocal
+     *            the number of local variables in the visited frame.
+     * @param local
+     *            the local variable types in this frame. This array must not be
+     *            modified. Primitive types are represented by
+     *            {@link Opcodes#TOP}, {@link Opcodes#INTEGER},
+     *            {@link Opcodes#FLOAT}, {@link Opcodes#LONG},
+     *            {@link Opcodes#DOUBLE},{@link Opcodes#NULL} or
+     *            {@link Opcodes#UNINITIALIZED_THIS} (long and double are
+     *            represented by a single element). Reference types are
+     *            represented by String objects (representing internal names),
+     *            and uninitialized types by Label objects (this label
+     *            designates the NEW instruction that created this uninitialized
+     *            value).
+     * @param nStack
+     *            the number of operand stack elements in the visited frame.
+     * @param stack
+     *            the operand stack types in this frame. This array must not be
+     *            modified. Its content has the same format as the "local"
+     *            array.
+     * @throws IllegalStateException
+     *             if a frame is visited just after another one, without any
+     *             instruction between the two (unless this frame is a
+     *             Opcodes#F_SAME frame, in which case it is silently ignored).
      */
-    public abstract void visitFrame(
-        final int type,
-        final int nLocal,
-        final Object[] local,
-        final int nStack,
-        final Object[] stack);
+    public abstract void visitFrame(final int type, final int nLocal,
+            final Object[] local, final int nStack, final Object[] stack);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitInsn}
+     *
+     * @param opcode
+     *            the opcode of the instruction to be visited. This opcode is
+     *            either NOP, ACONST_NULL, ICONST_M1, ICONST_0, ICONST_1,
+     *            ICONST_2, ICONST_3, ICONST_4, ICONST_5, LCONST_0, LCONST_1,
+     *            FCONST_0, FCONST_1, FCONST_2, DCONST_0, DCONST_1, IALOAD,
+     *            LALOAD, FALOAD, DALOAD, AALOAD, BALOAD, CALOAD, SALOAD,
+     *            IASTORE, LASTORE, FASTORE, DASTORE, AASTORE, BASTORE, CASTORE,
+     *            SASTORE, POP, POP2, DUP, DUP_X1, DUP_X2, DUP2, DUP2_X1,
+     *            DUP2_X2, SWAP, IADD, LADD, FADD, DADD, ISUB, LSUB, FSUB, DSUB,
+     *            IMUL, LMUL, FMUL, DMUL, IDIV, LDIV, FDIV, DDIV, IREM, LREM,
+     *            FREM, DREM, INEG, LNEG, FNEG, DNEG, ISHL, LSHL, ISHR, LSHR,
+     *            IUSHR, LUSHR, IAND, LAND, IOR, LOR, IXOR, LXOR, I2L, I2F, I2D,
+     *            L2I, L2F, L2D, F2I, F2L, F2D, D2I, D2L, D2F, I2B, I2C, I2S,
+     *            LCMP, FCMPL, FCMPG, DCMPL, DCMPG, IRETURN, LRETURN, FRETURN,
+     *            DRETURN, ARETURN, RETURN, ARRAYLENGTH, ATHROW, MONITORENTER,
+     *            or MONITOREXIT.
      */
     public abstract void visitInsn(final int opcode);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitIntInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitIntInsn}.
+     *
+     * @param opcode
+     *            the opcode of the instruction to be visited. This opcode is
+     *            either BIPUSH, SIPUSH or NEWARRAY.
+     * @param operand
+     *            the operand of the instruction to be visited.<br>
+     *            When opcode is BIPUSH, operand value should be between
+     *            Byte.MIN_VALUE and Byte.MAX_VALUE.<br>
+     *            When opcode is SIPUSH, operand value should be between
+     *            Short.MIN_VALUE and Short.MAX_VALUE.<br>
+     *            When opcode is NEWARRAY, operand value should be one of
+     *            {@link Opcodes#T_BOOLEAN}, {@link Opcodes#T_CHAR},
+     *            {@link Opcodes#T_FLOAT}, {@link Opcodes#T_DOUBLE},
+     *            {@link Opcodes#T_BYTE}, {@link Opcodes#T_SHORT},
+     *            {@link Opcodes#T_INT} or {@link Opcodes#T_LONG}.
      */
     public abstract void visitIntInsn(final int opcode, final int operand);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitVarInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitVarInsn}.
+     *
+     * @param opcode
+     *            the opcode of the local variable instruction to be visited.
+     *            This opcode is either ILOAD, LLOAD, FLOAD, DLOAD, ALOAD,
+     *            ISTORE, LSTORE, FSTORE, DSTORE, ASTORE or RET.
+     * @param var
+     *            the operand of the instruction to be visited. This operand is
+     *            the index of a local variable.
      */
     public abstract void visitVarInsn(final int opcode, final int var);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTypeInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitTypeInsn}.
+     *
+    /**
+     * Visits a type instruction. A type instruction is an instruction that
+     * takes the internal name of a class as parameter.
+     *
+     * @param opcode
+     *            the opcode of the type instruction to be visited. This opcode
+     *            is either NEW, ANEWARRAY, CHECKCAST or INSTANCEOF.
+     * @param type
+     *            the operand of the instruction to be visited. This operand
+     *            must be the internal name of an object or array class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public abstract void visitTypeInsn(final int opcode, final String type);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitFieldInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitFieldInsn}.
+     *
+     * @param opcode
+     *            the opcode of the type instruction to be visited. This opcode
+     *            is either GETSTATIC, PUTSTATIC, GETFIELD or PUTFIELD.
+     * @param owner
+     *            the internal name of the field's owner class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * @param name
+     *            the field's name.
+     * @param desc
+     *            the field's descriptor (see {@link scala.tools.asm.Type Type}).
      */
-    public abstract void visitFieldInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc);
+    public abstract void visitFieldInsn(final int opcode, final String owner,
+            final String name, final String desc);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMethodInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitMethodInsn}.
+     *
+     * @param opcode
+     *            the opcode of the type instruction to be visited. This opcode
+     *            is either INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
+     *            INVOKEINTERFACE.
+     * @param owner
+     *            the internal name of the method's owner class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * @param name
+     *            the method's name.
+     * @param desc
+     *            the method's descriptor (see {@link scala.tools.asm.Type Type}).
      */
-    public abstract void visitMethodInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc);
+    @Deprecated
+    public void visitMethodInsn(final int opcode, final String owner,
+            final String name, final String desc) {
+        if (api >= Opcodes.ASM5) {
+            boolean itf = opcode == Opcodes.INVOKEINTERFACE;
+            visitMethodInsn(opcode, owner, name, desc, itf);
+            return;
+        }
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitInvokeDynamicInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitMethodInsn}.
+     *
+     * @param opcode
+     *            the opcode of the type instruction to be visited. This opcode
+     *            is either INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
+     *            INVOKEINTERFACE.
+     * @param owner
+     *            the internal name of the method's owner class (see
+     *            {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * @param name
+     *            the method's name.
+     * @param desc
+     *            the method's descriptor (see {@link scala.tools.asm.Type Type}).
+     * @param itf
+     *            if the method's owner class is an interface.
      */
-    public abstract void visitInvokeDynamicInsn(
-        String name,
-        String desc,
-        Handle bsm,
-        Object... bsmArgs);
+    public void visitMethodInsn(final int opcode, final String owner,
+            final String name, final String desc, final boolean itf) {
+        if (api < Opcodes.ASM5) {
+            if (itf != (opcode == Opcodes.INVOKEINTERFACE)) {
+                throw new IllegalArgumentException(
+                        "INVOKESPECIAL/STATIC on interfaces require ASM 5");
+            }
+            visitMethodInsn(opcode, owner, name, desc);
+            return;
+        }
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitJumpInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitInvokeDynamicInsn}.
+     *
+     * Visits an invokedynamic instruction.
+     *
+     * @param name
+     *            the method's name.
+     * @param desc
+     *            the method's descriptor (see {@link scala.tools.asm.Type Type}).
+     * @param bsm
+     *            the bootstrap method.
+     * @param bsmArgs
+     *            the bootstrap method constant arguments. Each argument must be
+     *            an {@link Integer}, {@link Float}, {@link Long},
+     *            {@link Double}, {@link String}, {@link scala.tools.asm.Type} or {@link Handle}
+     *            value. This method is allowed to modify the content of the
+     *            array so a caller should expect that this array may change.
+     */
+    public abstract void visitInvokeDynamicInsn(String name, String desc,
+            Handle bsm, Object... bsmArgs);
+
+    /**
+     * Method jump instruction.
+     * See {@link scala.tools.asm.MethodVisitor#visitJumpInsn}.
+     *
+     * @param opcode
+     *            the opcode of the type instruction to be visited. This opcode
+     *            is either IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE, IF_ICMPEQ,
+     *            IF_ICMPNE, IF_ICMPLT, IF_ICMPGE, IF_ICMPGT, IF_ICMPLE,
+     *            IF_ACMPEQ, IF_ACMPNE, GOTO, JSR, IFNULL or IFNONNULL.
+     * @param label
+     *            the operand of the instruction to be visited. This operand is
+     *            a label that designates the instruction to which the jump
+     *            instruction may jump.
      */
     public abstract void visitJumpInsn(final int opcode, final Label label);
 
     /**
      * Method label.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLabel}.
+     * See {@link scala.tools.asm.MethodVisitor#visitLabel}.
+     *
+     * @param label
+     *            a {@link Label Label} object.
      */
     public abstract void visitLabel(final Label label);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLdcInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitLdcInsn}.
+     *
+     * Visits a LDC instruction. Note that new constant types may be added in
+     * future versions of the Java Virtual Machine. To easily detect new
+     * constant types, implementations of this method should check for
+     * unexpected constant types, like this:
+     *
+     * <pre>
+     * if (cst instanceof Integer) {
+     *     // ...
+     * } else if (cst instanceof Float) {
+     *     // ...
+     * } else if (cst instanceof Long) {
+     *     // ...
+     * } else if (cst instanceof Double) {
+     *     // ...
+     * } else if (cst instanceof String) {
+     *     // ...
+     * } else if (cst instanceof Type) {
+     *     int sort = ((Type) cst).getSort();
+     *     if (sort == Type.OBJECT) {
+     *         // ...
+     *     } else if (sort == Type.ARRAY) {
+     *         // ...
+     *     } else if (sort == Type.METHOD) {
+     *         // ...
+     *     } else {
+     *         // throw an exception
+     *     }
+     * } else if (cst instanceof Handle) {
+     *     // ...
+     * } else {
+     *     // throw an exception
+     * }
+     * </pre>
+     *
+     * @param cst
+     *            the constant to be loaded on the stack. This parameter must be
+     *            a non null {@link Integer}, a {@link Float}, a {@link Long}, a
+     *            {@link Double}, a {@link String}, a {@link scala.tools.asm.Type}
+     *            of OBJECT or ARRAY sort for <tt>.class</tt> constants, for classes whose
+     *            version is 49.0, a {@link scala.tools.asm.Type} of METHOD sort or a
+     *            {@link Handle} for MethodType and MethodHandle constants, for
+     *            classes whose version is 51.0.
      */
     public abstract void visitLdcInsn(final Object cst);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitIincInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitIincInsn}.
+     *
+     * @param var
+     *            index of the local variable to be incremented.
+     * @param increment
+     *            amount to increment the local variable by.
      */
     public abstract void visitIincInsn(final int var, final int increment);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTableSwitchInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitTableSwitchInsn}.
+     *
+     * @param min
+     *            the minimum key value.
+     * @param max
+     *            the maximum key value.
+     * @param dflt
+     *            beginning of the default handler block.
+     * @param labels
+     *            beginnings of the handler blocks. <tt>labels[i]</tt> is the
+     *            beginning of the handler block for the <tt>min + i</tt> key.
      */
-    public abstract void visitTableSwitchInsn(
-        final int min,
-        final int max,
-        final Label dflt,
-        final Label... labels);
+    public abstract void visitTableSwitchInsn(final int min, final int max,
+            final Label dflt, final Label... labels);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLookupSwitchInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitLookupSwitchInsn}.
+     *
+     * @param dflt
+     *            beginning of the default handler block.
+     * @param keys
+     *            the values of the keys.
+     * @param labels
+     *            beginnings of the handler blocks. <tt>labels[i]</tt> is the
+     *            beginning of the handler block for the <tt>keys[i]</tt> key.
      */
-    public abstract void visitLookupSwitchInsn(
-        final Label dflt,
-        final int[] keys,
-        final Label[] labels);
+    public abstract void visitLookupSwitchInsn(final Label dflt,
+            final int[] keys, final Label[] labels);
 
     /**
      * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMultiANewArrayInsn}.
+     * See {@link scala.tools.asm.MethodVisitor#visitMultiANewArrayInsn}.
+     *
+     * @param desc
+     *            an array type descriptor (see {@link scala.tools.asm.Type Type}).
+     * @param dims
+     *            number of dimensions of the array to allocate.
      */
-    public abstract void visitMultiANewArrayInsn(
-        final String desc,
-        final int dims);
+    public abstract void visitMultiANewArrayInsn(final String desc,
+            final int dims);
+
+    /**
+     * Instruction type annotation.
+     * See {@link scala.tools.asm.MethodVisitor#visitInsnAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link scala.tools.asm.TypeReference#INSTANCEOF INSTANCEOF},
+     *            {@link scala.tools.asm.TypeReference#NEW NEW},
+     *            {@link scala.tools.asm.TypeReference#CONSTRUCTOR_REFERENCE CONSTRUCTOR_REFERENCE},
+     *            {@link scala.tools.asm.TypeReference#METHOD_REFERENCE METHOD_REFERENCE},
+     *            {@link scala.tools.asm.TypeReference#CAST CAST},
+     *            {@link scala.tools.asm.TypeReference#CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT},
+     *            {@link scala.tools.asm.TypeReference#METHOD_INVOCATION_TYPE_ARGUMENT METHOD_INVOCATION_TYPE_ARGUMENT},
+     *            {@link scala.tools.asm.TypeReference#CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT},
+     *            or {@link scala.tools.asm.TypeReference#METHOD_REFERENCE_TYPE_ARGUMENT METHOD_REFERENCE_TYPE_ARGUMENT}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitInsnAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method exception handler.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTryCatchBlock}.
+     * See {@link scala.tools.asm.MethodVisitor#visitTryCatchBlock}.
+     *
+     * @param start
+     *            beginning of the exception handler's scope (inclusive).
+     * @param end
+     *            end of the exception handler's scope (exclusive).
+     * @param handler
+     *            beginning of the exception handler's code.
+     * @param type
+     *            internal name of the type of exceptions handled by the
+     *            handler, or <tt>null</tt> to catch any exceptions (for
+     *            "finally" blocks).
+     * @throws IllegalArgumentException
+     *             if one of the labels has already been visited by this visitor
+     *             (by the {@link #visitLabel visitLabel} method).
      */
-    public abstract void visitTryCatchBlock(
-        final Label start,
-        final Label end,
-        final Label handler,
-        final String type);
+    public abstract void visitTryCatchBlock(final Label start, final Label end,
+            final Label handler, final String type);
+
+    /**
+     * Try catch block type annotation.
+     * See {@link scala.tools.asm.MethodVisitor#visitTryCatchAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link scala.tools.asm.TypeReference#EXCEPTION_PARAMETER
+     *            EXCEPTION_PARAMETER}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitTryCatchAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method debug info.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLocalVariable}.
+     * See {@link scala.tools.asm.MethodVisitor#visitLocalVariable}.
+     *
+     * @param name
+     *            the name of a local variable.
+     * @param desc
+     *            the type descriptor of this local variable.
+     * @param signature
+     *            the type signature of this local variable. May be
+     *            <tt>null</tt> if the local variable type does not use generic
+     *            types.
+     * @param start
+     *            the first instruction corresponding to the scope of this local
+     *            variable (inclusive).
+     * @param end
+     *            the last instruction corresponding to the scope of this local
+     *            variable (exclusive).
+     * @param index
+     *            the local variable's index.
+     * @throws IllegalArgumentException
+     *             if one of the labels has not already been visited by this
+     *             visitor (by the {@link #visitLabel visitLabel} method).
      */
-    public abstract void visitLocalVariable(
-        final String name,
-        final String desc,
-        final String signature,
-        final Label start,
-        final Label end,
-        final int index);
+    public abstract void visitLocalVariable(final String name,
+            final String desc, final String signature, final Label start,
+            final Label end, final int index);
+
+    /**
+     * Local variable type annotation.
+     * See {@link scala.tools.asm.MethodVisitor#visitTryCatchAnnotation}.
+     *
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link scala.tools.asm.TypeReference#LOCAL_VARIABLE
+     *            LOCAL_VARIABLE} or {@link scala.tools.asm.TypeReference#RESOURCE_VARIABLE
+     *            RESOURCE_VARIABLE}.
+     *            See {@link scala.tools.asm.TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param start
+     *            the fist instructions corresponding to the continuous ranges
+     *            that make the scope of this local variable (inclusive).
+     * @param end
+     *            the last instructions corresponding to the continuous ranges
+     *            that make the scope of this local variable (exclusive). This
+     *            array must have the same size as the 'start' array.
+     * @param index
+     *            the local variable's index in each range. This array must have
+     *            the same size as the 'start' array.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return the printer
+     */
+    public Printer visitLocalVariableAnnotation(final int typeRef,
+            final TypePath typePath, final Label[] start, final Label[] end,
+            final int[] index, final String desc, final boolean visible) {
+        throw new RuntimeException("Must be overridden");
+    }
 
     /**
      * Method debug info.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLineNumber}.
+     * See {@link scala.tools.asm.MethodVisitor#visitLineNumber}.
+     *
+     * @param line
+     *            a line number. This number refers to the source file from
+     *            which the class was compiled.
+     * @param start
+     *            the first instruction corresponding to this line number.
+     * @throws IllegalArgumentException
+     *             if <tt>start</tt> has not already been visited by this
+     *             visitor (by the {@link #visitLabel visitLabel} method).
      */
     public abstract void visitLineNumber(final int line, final Label start);
 
     /**
      * Method max stack and max locals.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMaxs}.
+     * See {@link scala.tools.asm.MethodVisitor#visitMaxs}.
+     *
+     * @param maxStack
+     *            maximum stack size of the method.
+     * @param maxLocals
+     *            maximum number of local variables for the method.
      */
     public abstract void visitMaxs(final int maxStack, final int maxLocals);
 
     /**
      * Method end.
-     * See {@link org.objectweb.asm.MethodVisitor#visitEnd}.
+     * See {@link scala.tools.asm.MethodVisitor#visitEnd}.
      */
     public abstract void visitMethodEnd();
 
@@ -497,7 +1133,8 @@ public abstract class Printer {
     /**
      * Prints the text constructed by this visitor.
      *
-     * @param pw the print writer to be used.
+     * @param pw
+     *            the print writer to be used.
      */
     public void print(final PrintWriter pw) {
         printList(pw, text);
@@ -506,8 +1143,10 @@ public abstract class Printer {
     /**
      * Appends a quoted string to a given buffer.
      *
-     * @param buf the buffer where the string must be added.
-     * @param s the string to be added.
+     * @param buf
+     *            the buffer where the string must be added.
+     * @param s
+     *            the string to be added.
      */
     public static void appendString(final StringBuffer buf, final String s) {
         buf.append('\"');
@@ -541,9 +1180,11 @@ public abstract class Printer {
     /**
      * Prints the given string tree.
      *
-     * @param pw the writer to be used to print the tree.
-     * @param l a string tree, i.e., a string list that can contain other string
-     *        lists, and so on recursively.
+     * @param pw
+     *            the writer to be used to print the tree.
+     * @param l
+     *            a string tree, i.e., a string list that can contain other
+     *            string lists, and so on recursively.
      */
     static void printList(final PrintWriter pw, final List<?> l) {
         for (int i = 0; i < l.size(); ++i) {

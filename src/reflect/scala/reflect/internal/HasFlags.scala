@@ -81,6 +81,7 @@ trait HasFlags {
   def hasAbstractFlag    = hasFlag(ABSTRACT)
   def hasAccessorFlag    = hasFlag(ACCESSOR)
   def hasDefault         = hasAllFlags(DEFAULTPARAM | PARAM)
+  def hasJavaAnnotationFlag = hasFlag(JAVA_ANNOTATION)
   def hasLocalFlag       = hasFlag(LOCAL)
   def hasModuleFlag      = hasFlag(MODULE)
   def hasPackageFlag     = hasFlag(PACKAGE)

@@ -896,7 +896,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
      *  this one bypasses the cache.
      */
-    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = {
+    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = if (fullname == "") EmptyPackage else {
       val split = fullname lastIndexOf '.'
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
