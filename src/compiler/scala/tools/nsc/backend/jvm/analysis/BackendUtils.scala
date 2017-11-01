@@ -69,10 +69,10 @@ abstract class BackendUtils extends PerRunInit {
 
   lazy val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(this)(majorVersion.get >= 50)
 
-  lazy val extraProc: LazyVar[Int] = perRunLazy(this)(GenBCode.mkFlags(
-    asm.ClassWriter.COMPUTE_MAXS,
-    if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0
-  ))
+  lazy val extraProc: LazyVar[Int] = perRunLazy(this)(
+    asm.ClassWriter.COMPUTE_MAXS |
+      (if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0)
+  )
 
   /**
    * A wrapper to make ASM's Analyzer a bit easier to use.

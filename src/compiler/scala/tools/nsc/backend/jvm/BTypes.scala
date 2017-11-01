@@ -695,10 +695,9 @@ abstract class BTypes {
           internalName,
           outerName.orNull,
           innerName.orNull,
-          GenBCode.mkFlags(
-            // the static flag in the InnerClass table has a special meaning, see InnerClass comment
-            i.flags & ~Opcodes.ACC_STATIC,
-            if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
+          // the static flag in the InnerClass table has a special meaning, see InnerClass comment
+          ( i.flags & ~Opcodes.ACC_STATIC |
+              (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
           ) & BCodeHelpers.INNER_CLASSES_FLAGS
         )
     })

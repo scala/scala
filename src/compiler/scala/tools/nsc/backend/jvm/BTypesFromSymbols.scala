@@ -288,19 +288,17 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         val hasAbstractMethod = classSym.info.decls.exists(s => s.isMethod && s.isDeferred)
         if (hasAbstractMethod) ACC_ABSTRACT else 0
       }
-      GenBCode.mkFlags(
         // scala/bug#9393: the classfile / java source parser make java annotation symbols look like classes.
         // here we recover the actual classfile flags.
-        if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
-        if (classSym.isPublic)                                     ACC_PUBLIC    else 0,
-        if (classSym.isFinal)                                      ACC_FINAL     else 0,
-        // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
-        if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER,
-        // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags)
-        if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
-        if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0,
-        if (classSym.hasJavaEnumFlag)                              enumFlags     else 0
-      )
+        ( if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0) |
+      ( if (classSym.isPublic)                                     ACC_PUBLIC    else 0) |
+      ( if (classSym.isFinal)                                      ACC_FINAL     else 0) |
+       // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.)
+      ( if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER) |
+       // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags))
+      ( if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0) |
+      ( if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0) |
+      ( if (classSym.hasJavaEnumFlag)                              enumFlags     else 0)
     }
 
     // Check for hasAnnotationFlag for scala/bug#9393: the classfile / java source parsers add
@@ -731,27 +729,24 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // illegal combination of modifiers at the bytecode level so
     // suppress final if abstract is present.
     import asm.Opcodes._
-    GenBCode.mkFlags(
-      if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
-      if ((sym.isDeferred && !sym.hasFlag(symtab.Flags.JAVA_DEFAULTMETHOD))|| sym.hasAbstractFlag) ACC_ABSTRACT else 0,
-      if (sym.isTraitOrInterface) ACC_INTERFACE else 0,
-      if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
-      if (sym.isStaticMember) ACC_STATIC else 0,
-      if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
-      if (sym.isArtifact) ACC_SYNTHETIC else 0,
-      if (sym.isClass && !sym.isTraitOrInterface) ACC_SUPER else 0,
-      if (sym.hasJavaEnumFlag) ACC_ENUM else 0,
-      if (sym.isVarargsMethod) ACC_VARARGS else 0,
-      if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0,
-      if (sym.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0
-    )
+      ( if (privateFlag) ACC_PRIVATE else ACC_PUBLIC) |
+        ( if ((sym.isDeferred && !sym.hasFlag(symtab.Flags.JAVA_DEFAULTMETHOD))|| sym.hasAbstractFlag) ACC_ABSTRACT else 0) |
+        ( if (sym.isTraitOrInterface) ACC_INTERFACE else 0) |
+        ( if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0) |
+        ( if (sym.isStaticMember) ACC_STATIC else 0) |
+        ( if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0) |
+        ( if (sym.isArtifact) ACC_SYNTHETIC else 0) |
+        ( if (sym.isClass && !sym.isTraitOrInterface) ACC_SUPER else 0) |
+        ( if (sym.hasJavaEnumFlag) ACC_ENUM else 0) |
+        ( if (sym.isVarargsMethod) ACC_VARARGS else 0) |
+        ( if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0) |
+        ( if (sym.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0)
   }
 
   def javaFieldFlags(sym: Symbol) = {
-    javaFlags(sym) | GenBCode.mkFlags(
-      if (sym hasAnnotation TransientAttr) asm.Opcodes.ACC_TRANSIENT else 0,
-      if (sym hasAnnotation VolatileAttr)  asm.Opcodes.ACC_VOLATILE  else 0,
-      if (sym.isMutable) 0 else asm.Opcodes.ACC_FINAL
-    )
+    javaFlags(sym) |
+      ( if (sym hasAnnotation TransientAttr) asm.Opcodes.ACC_TRANSIENT else 0) |
+      ( if (sym hasAnnotation VolatileAttr)  asm.Opcodes.ACC_VOLATILE  else 0) |
+      ( if (sym.isMutable) 0 else asm.Opcodes.ACC_FINAL)
   }
 }
