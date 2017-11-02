@@ -371,9 +371,12 @@ trait Infer extends Checkable {
       }
       def solve() = solvedTypes(tvars, tparams, tparams map varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
 
-      if (conforms)
+      if (conforms) {
+        // If conforms has just solved a tvar as a singleton type against pt, then we need to
+        // prevent it from being widened later by adjustTypeArgs
+        tvars.foreach(_.constr.stopWideningIfPrecluded)
         try solve() catch { case _: NoInstance => null }
-      else
+      } else
         null
     }
     /** Overload which allocates fresh type vars.

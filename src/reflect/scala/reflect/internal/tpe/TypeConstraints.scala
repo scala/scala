@@ -95,6 +95,9 @@ private[internal] trait TypeConstraints {
     def avoidWiden: Boolean = avoidWidening
     def stopWidening(): Unit = avoidWidening = true
 
+    def stopWideningIfPrecluded(): Unit =
+      if (instValid && TypeVar.precludesWidening(inst)) stopWidening
+
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       // For some reason which is still a bit fuzzy, we must let Nothing through as
       // a lower bound despite the fact that Nothing is always a lower bound.  My current

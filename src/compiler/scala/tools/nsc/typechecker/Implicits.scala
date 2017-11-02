@@ -1363,7 +1363,7 @@ trait Implicits {
       }
     }
 
-    /** Creates a tree will produce a ValueOf instance for the requested type.
+    /** Creates a tree that will produce a ValueOf instance for the requested type.
       * An EmptyTree is returned if materialization fails.
       */
     private def valueOfType(tp: Type): SearchResult = {
@@ -1373,6 +1373,7 @@ trait Implicits {
         case ConstantType(c: Constant) => success(Literal(c))
         case SingleType(p, v) => success(gen.mkAttributedRef(p, v) setType tp)
         case UnitTpe => success(Literal(Constant(())))
+        case TypeRef(pre, sym, Nil) if sym.isModuleClass => success(gen.mkAttributedRef(pre, sym.sourceModule) setType tp)
         case _ => SearchFailure
       }
     }
