@@ -27,8 +27,7 @@ trait WrapAsScala extends LowPriorityWrapAsScala {
   implicit def `deprecated asScalaBuffer`[A](l: ju.List[A]): mutable.Buffer[A] = asScalaBuffer(l)
   implicit def `deprecated asScalaSet`[A](s: ju.Set[A]): mutable.Set[A] = asScalaSet(s)
   implicit def `deprecated mapAsScalaMap`[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap(m)
-  //TODO Add concurrent maps back
-  //implicit def `deprecated mapAsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = mapAsScalaConcurrentMap(m)
+  implicit def `deprecated mapAsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = mapAsScalaConcurrentMap(m)
   implicit def `deprecated dictionaryAsScalaMap`[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = dictionaryAsScalaMap(p)
   implicit def `deprecated propertiesAsScalaMap`(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
 }
@@ -176,8 +175,6 @@ private[convert] trait LowPriorityWrapAsScala {
     case _                          => new JMapWrapper(m)
   }
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Implicitly converts a Java ConcurrentMap to a Scala mutable ConcurrentMap.
    * The returned Scala ConcurrentMap is backed by the provided Java
@@ -196,7 +193,6 @@ private[convert] trait LowPriorityWrapAsScala {
     case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
-  */
 
   /**
    * Implicitly converts a Java `Dictionary` to a Scala mutable

@@ -31,8 +31,7 @@ trait WrapAsJava extends LowPriorityWrapAsJava {
   implicit def `deprecated mutableMapAsJavaMap`[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap(m)
   implicit def `deprecated asJavaDictionary`[A, B](m: mutable.Map[A, B]): ju.Dictionary[A, B] = asJavaDictionary(m)
   implicit def `deprecated mapAsJavaMap`[A, B](m: Map[A, B]): ju.Map[A, B] = mapAsJavaMap(m)
-  //TODO Add concurrent maps back
-  //implicit def `deprecated mapAsJavaConcurrentMap`[A, B](m: concurrent.Map[A, B]): juc.ConcurrentMap[A, B] = mapAsJavaConcurrentMap(m)
+  implicit def `deprecated mapAsJavaConcurrentMap`[A, B](m: concurrent.Map[A, B]): juc.ConcurrentMap[A, B] = mapAsJavaConcurrentMap(m)
 }
 
 private[convert] trait LowPriorityWrapAsJava {
@@ -266,8 +265,6 @@ private[convert] trait LowPriorityWrapAsJava {
     case _                    => new MapWrapper(m)
   }
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Implicitly converts a Scala mutable `concurrent.Map` to a Java
    * `ConcurrentMap`.
@@ -288,7 +285,6 @@ private[convert] trait LowPriorityWrapAsJava {
     case JConcurrentMapWrapper(wrapped) => wrapped
     case _                              => new ConcurrentMapWrapper(m)
   }
-  */
 }
 
 @deprecated("use JavaConverters or consider ImplicitConversionsToJava", since="2.12.0")
