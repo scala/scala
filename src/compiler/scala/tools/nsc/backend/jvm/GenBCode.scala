@@ -77,8 +77,6 @@ abstract class GenBCode extends SubComponent {
 }
 
 object GenBCode {
-  def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
-
   final val PublicStatic = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
   final val PublicStaticFinal = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
 
