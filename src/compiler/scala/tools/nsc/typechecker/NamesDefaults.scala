@@ -288,7 +288,7 @@ trait NamesDefaults { self: Analyzer =>
         case _ =>
           val byName   = isByNameParamType(paramTpe)
           val repeated = isScalaRepeatedParamType(paramTpe)
-          val argTpe = (
+          val argTpe0 = (
             if (repeated) arg match {
               case WildcardStarArg(expr) => expr.tpe
               case _                     => seqType(arg.tpe)
@@ -299,7 +299,11 @@ trait NamesDefaults { self: Analyzer =>
               //      which is important for (at least) macros.
               arg.tpe
             }
-          ).widen // have to widen or types inferred from literal defaults will be singletons
+          )
+          // If literal types are disabled then we have to widen or types inferred from literal defaults will be singletons
+          // and these will blow up in TreeCheckers
+          val argTpe = if(settings.YliteralTypes) argTpe0 else argTpe0.widen
+
           val s = context.owner.newValue(unit.freshTermName(nme.NAMEDARG_PREFIX), arg.pos, newFlags = ARTIFACT) setInfo {
             val tp = if (byName) functionType(Nil, argTpe) else argTpe
             uncheckedBounds(tp)
