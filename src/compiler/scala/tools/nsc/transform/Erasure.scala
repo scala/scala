@@ -556,7 +556,7 @@ abstract class Erasure extends InfoTransform
       // end up with two module symbols with the same name in the same scope, which is surprising
       // when implementing later phases.
       if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
-      val bridge = other.cloneSymbolImpl(root, newFlags) setPos root.pos
+      val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
 
       debuglog("generating bridge from %s (%s): %s to %s: %s".format(
         other, flagsToString(newFlags),
