@@ -23,7 +23,8 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
 
   val additionalUnimports = Map(
     "augmentString" -> "wrapString",
-    "wrapString" -> "augmentString"
+    "wrapString" -> "augmentString",
+    "intArrayOps" -> "genericArrayOps"
   )
 
   def replaceExtensionMethods(ctx: RewriteCtx): Patch = {
@@ -33,8 +34,7 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       out <- unimports.get(in).toList
     } yield {
       val name = in.name
-      val names = name :: additionalUnimports
-        .get(name)
+      val names = name :: additionalUnimports.get(name)
         .fold(List.empty[String])(_ :: Nil)
       ctx.addGlobalImport(out) +
         ctx.addGlobalImport(
@@ -94,7 +94,6 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
       s("Traversable", Some("Iterable")),
       "scala.Iterable" -> "strawman.collection.Iterable",
       "scala.Traversable" -> "strawman.collection.Iterable",
-      "scala.collection.TraversableLike.toIterator" -> "iterator",
       "scala.`#::`" -> "strawman.collection.immutable.LazyList.`#::`",
       s("Vector"),
       i("Vector"),
@@ -126,13 +125,14 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     Symbol("_root_.scala.collection.TraversableLike.to.")
   )
   val iterator = SymbolMatcher(
-    Symbol("_root_.scala.collection.LinearSeqLike.iterator.")
+    Symbol("_root_.scala.collection.LinearSeqLike.iterator."),
+    Symbol("_root_.scala.collection.TraversableLike.toIterator.")
   )
 
   def replaceToList(ctx: RewriteCtx) =
     ctx.tree.collect {
       case iterator(n: Name, _) =>
-        ctx.addRight(n.tokens.last, "()")
+        ctx.replaceTree(n, "iterator()")
       case toImmutableX(n: Name, s) =>
         ctx.replaceTree(n, s"to(strawman.collection.immutable.${s.name.stripPrefix("to")})")
       case toGenericX(n: Name, s) =>
