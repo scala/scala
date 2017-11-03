@@ -143,11 +143,15 @@ abstract class TreeGen {
 
   /** Builds a reference to given symbol with given stable prefix. */
   def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
-    val qual = mkAttributedQualifier(pre)
-    qual match {
-      case EmptyTree                                  => mkAttributedIdent(sym)
-      case This(clazz) if qual.symbol.isEffectiveRoot => mkAttributedIdent(sym)
-      case _                                          => mkAttributedSelect(qual, sym)
+    pre match {
+      case TypeRef(NoPrefix, _: TypeSkolem, Nil) => mkAttributedIdent(sym)
+      case _ =>
+        val qual = mkAttributedQualifier(pre)
+        qual match {
+          case EmptyTree                                  => mkAttributedIdent(sym)
+          case This(clazz) if qual.symbol.isEffectiveRoot => mkAttributedIdent(sym)
+          case _                                          => mkAttributedSelect(qual, sym)
+        }
     }
   }
 

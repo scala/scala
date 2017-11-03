@@ -1,0 +1,4 @@
+t5946.scala:6: error: No TypeTag available for Int
+  Ops(scala.reflect.runtime.universe).op[Int]
+                                        ^
+one error found
