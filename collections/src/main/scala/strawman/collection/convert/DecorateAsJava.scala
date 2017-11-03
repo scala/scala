@@ -100,13 +100,10 @@ trait DecorateAsJava extends AsJavaConverters {
   implicit def mapAsJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
     new AsJava(mapAsJavaMap(m))
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable `concurrent.Map` to a Java `ConcurrentMap`.
    * @see [[mapAsJavaConcurrentMap]].
    */
   implicit def mapAsJavaConcurrentMapConverter[A, B](m: concurrent.Map[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
     new AsJava(mapAsJavaConcurrentMap(m))
-  */
 }

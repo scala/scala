@@ -66,15 +66,12 @@ trait DecorateAsScala extends AsScalaConverters {
   implicit def mapAsScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(mapAsScalaMap(m))
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Adds an `asScala` method that implicitly converts a Java `ConcurrentMap` to a Scala mutable `concurrent.Map`.
    * @see [[mapAsScalaConcurrentMap]]
    */
   implicit def mapAsScalaConcurrentMapConverter[A, B](m: juc.ConcurrentMap[A, B]): AsScala[concurrent.Map[A, B]] =
     new AsScala(mapAsScalaConcurrentMap(m))
-   */
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Dictionary` to a Scala mutable `Map`.

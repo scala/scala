@@ -342,8 +342,6 @@ private[collection] trait Wrappers {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
-  //TODO Add concurrent maps back
-  /*
   class ConcurrentMapWrapper[A, B](override val underlying: concurrent.Map[A, B]) extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
 
     override def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
@@ -384,7 +382,6 @@ private[collection] trait Wrappers {
     def replace(k: A, oldvalue: B, newvalue: B): Boolean =
       underlying.replace(k, oldvalue, newvalue)
   }
-  */
 
   case class DictionaryWrapper[A, B](underlying: mutable.Map[A, B]) extends ju.Dictionary[A, B] {
     def size: Int = underlying.size

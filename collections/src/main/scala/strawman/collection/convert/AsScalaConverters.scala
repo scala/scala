@@ -152,8 +152,6 @@ trait AsScalaConverters {
     case _                          => new JMapWrapper(m)
   }
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Converts a Java `ConcurrentMap` to a Scala mutable `ConcurrentMap`.
    *
@@ -173,7 +171,6 @@ trait AsScalaConverters {
     case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
-  */
 
   /**
    * Converts a Java `Dictionary` to a Scala mutable `Map`.

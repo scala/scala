@@ -240,8 +240,6 @@ trait AsJavaConverters {
     case _                    => new MapWrapper(m)
   }
 
-  //TODO Add concurrent maps back
-  /*
   /**
    * Converts a Scala mutable `concurrent.Map` to a Java `ConcurrentMap`.
    *
@@ -261,5 +259,4 @@ trait AsJavaConverters {
     case JConcurrentMapWrapper(wrapped) => wrapped
     case _                              => new ConcurrentMapWrapper(m)
   }
-  */
 }
