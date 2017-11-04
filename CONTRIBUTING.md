@@ -140,7 +140,7 @@ expected output files:
 > tests/test
 ~~~
 
-Fix the implementation of the rewrite (in the
-`rewrites/src/main/scala/fix/Collectionstrawman_v0.scala` file) until the
+Fix the implementation of the rule (in the
+`rules/src/main/scala/fix/Collectionstrawman_v0.scala` file) until the
 tests are green. You can find more help about the scalafix API in its
-[documentation](https://scalacenter.github.io/scalafix/#Creatingyourownrewrite).
+[documentation](https://scalacenter.github.io/scalafix/docs/rule-authors/setup).
