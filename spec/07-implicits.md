@@ -155,7 +155,7 @@ sort(yss)
 The call above will be completed by passing two nested implicit arguments:
 
 ```scala
-sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered))
+sort(yss)((xs: List[Int]) => list2ordered[Int](xs)(int2ordered))
 ```
 
 The possibility of passing implicit arguments to implicit arguments
