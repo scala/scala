@@ -1021,17 +1021,28 @@ self =>
        *  }}}
        */
       def simpleType(): Tree = {
-        val start = in.offset
-        simpleTypeRest(in.token match {
-          case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
-          case USCORE   => wildcardType(in.skipToken())
-          case tok if settings.YliteralTypes && isLiteralToken(tok) => atPos(start){SingletonTypeTree(literal())}
-          case _        =>
-            path(thisOK = false, typeOK = true) match {
-              case r @ SingletonTypeTree(_) => r
-              case r => convertToTypeId(r)
-            }
-        })
+        def simpleNonLiteralType(): Tree = {
+          val start = in.offset
+          simpleTypeRest(in.token match {
+            case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
+            case USCORE   => wildcardType(in.skipToken())
+            case _        =>
+              path(thisOK = false, typeOK = true) match {
+                case r @ SingletonTypeTree(_) => r
+                case r => convertToTypeId(r)
+              }
+          })
+        }
+
+        if (settings.YliteralTypes) {
+          if (isLiteralToken(in.token))
+            atPos(in.offset){SingletonTypeTree(literal())}
+          else if (in.name == raw.MINUS && lookingAhead(isNumericLit)) {
+            val start = in.offset
+            in.nextToken()
+            atPos(start){ SingletonTypeTree(literal(isNegated = true, start = start)) }
+          } else simpleNonLiteralType
+        } else simpleNonLiteralType
       }
 
       private def typeProjection(t: Tree): Tree = {
@@ -1107,14 +1118,7 @@ self =>
           else
             mkOp(infixType(InfixMode.RightOp))
         }
-        def isNegatedLiteralType = settings.YliteralTypes && (
-          t match { // the token for `t` (Ident("-")) has already been read, thus `isLiteral` below is looking at next token (must be a literal)
-            case Ident(name) if isLiteral => name == nme.MINUS.toTypeName
-            case _ => false
-          }
-        )
         if (isIdent) checkRepeatedParam orElse asInfix
-        else if (isNegatedLiteralType) atPos(t.pos.start){SingletonTypeTree(literal(isNegated = true, start = t.pos.start))}
         else t
       }
 
