@@ -95,6 +95,9 @@ private[concurrent] object ExecutionContextImpl {
       case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
       case other => other.toInt
     }
+    def getBool(name: String) = try java.lang.Boolean.getBoolean(name) catch {
+      case e: SecurityException => false
+    }
 
     def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
     val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
@@ -111,8 +114,16 @@ private[concurrent] object ExecutionContextImpl {
     // The thread factory must provide additional threads to support managed blocking.
     val maxExtraThreads = getInt("scala.concurrent.context.maxExtraThreads", "256")
 
+    val interruptible = getBool("scala.concurrent.context.interruptible")
+
     val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
-      override def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
+      override def uncaughtException(thread: Thread, cause: Throwable): Unit = {
+        if (interruptible) (thread, cause) match {
+          case (fjw: ForkJoinWorkerThread, _: InterruptedException) => fjw.getPool.shutdownNow()
+          case _ =>
+        }
+        reporter(cause)
+      }
     }
 
     val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
@@ -120,7 +131,7 @@ private[concurrent] object ExecutionContextImpl {
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
-    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true) {
+    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, /*asyncMode=*/ true) {
       override def execute(runnable: Runnable): Unit = {
         val fjt: ForkJoinTask[_] = runnable match {
           case t: ForkJoinTask[_] => t
