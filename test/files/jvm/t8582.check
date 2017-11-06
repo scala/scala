@@ -1,6 +1,3 @@
-t8582.scala:17: warning: class BeanInfo in package beans is deprecated (since 2.12.0): the generation of BeanInfo classes is no longer supported
-    class C1
-          ^
 getClass on module gives module class
  class p1.p2.Singleton$Singleton$
 
@@ -29,10 +26,6 @@ A nested class has an InnerClass attribute for itself (and also for its nested c
  className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
 C1 is a nested class, so it has an InnerClass attribute for itself.
 Because that attribute leads to an entry for B1 in the constant pool, C1 needs an InnerClass attribute for B1.
- className[A1$B1] outerClassName[A1] innerName[B1] access[1]
- className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
-
-The BeanInfo class has the same InnerClass attributes as the corresponding bean
  className[A1$B1] outerClassName[A1] innerName[B1] access[1]
  className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
 

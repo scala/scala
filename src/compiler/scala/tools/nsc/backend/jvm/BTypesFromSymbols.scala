@@ -628,21 +628,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     })
   }
 
-  def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
-    val internalName = mainClass.javaBinaryNameString + "BeanInfo"
-    cachedClassBType(internalName).getOrElse({
-      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
-      c.info = Right(ClassInfo(
-        superClass = Some(sbScalaBeanInfoRef),
-        interfaces = Nil,
-        flags = javaFlags(mainClass),
-        nestedClasses = Lazy(Nil),
-        nestedInfo = Lazy(None),
-        inlineInfo = EmptyInlineInfo))
-      c
-    })
-  }
-
   /**
    * True for module classes of package level objects. The backend will generate a mirror class for
    * such objects.

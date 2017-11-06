@@ -13,9 +13,8 @@ package scalasig
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
-import scala.tools.scalap.scalax.util.StringUtil
 import scala.reflect.NameTransformer
-import java.lang.String
+
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
@@ -346,7 +345,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
-          val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
+          val path = symbol.path.replace(".package", "") //remove package object reference
           (processName(path) + typeArgString(typeArgs)).stripPrefix("<empty>.")
         }
       })
