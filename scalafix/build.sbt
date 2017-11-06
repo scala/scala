@@ -7,9 +7,9 @@ inScope(Global)(
 
 lazy val root = project
   .in(file("."))
-  .aggregate(rewrites, input, output, tests)
+  .aggregate(rules, input, output, tests)
 
-lazy val rewrites = project.settings(
+lazy val rules = project.settings(
   libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalafixVersion
 )
 
@@ -41,5 +41,5 @@ lazy val tests = project
         classDirectory.in(input, Compile).value
     )
   )
-  .dependsOn(input, rewrites)
+  .dependsOn(input, rules)
   .enablePlugins(BuildInfoPlugin)

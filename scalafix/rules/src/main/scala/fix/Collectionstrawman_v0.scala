@@ -2,10 +2,11 @@ package fix
 
 import scalafix._
 import scalafix.syntax._
+import scalafix.util._
 import scala.meta._
 
-case class Collectionstrawman_v0(sctx: SemanticCtx)
-    extends SemanticRewrite(sctx) {
+case class Collectionstrawman_v0(index: SemanticdbIndex)
+  extends SemanticRule(index, "Collectionstrawman_v0") {
 
   implicit class XtensionSymbolCollection(symbol: Symbol) {
     def name = symbol match {
@@ -27,10 +28,10 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     "intArrayOps" -> "genericArrayOps"
   )
 
-  def replaceExtensionMethods(ctx: RewriteCtx): Patch = {
+  def replaceExtensionMethods(ctx: RuleCtx): Patch = {
     val toImport = for {
-      r <- ctx.semanticCtx.names
-      in = r.sym.normalized
+      r <- ctx.index.names
+      in = r.symbol.normalized
       out <- unimports.get(in).toList
     } yield {
       val name = in.name
@@ -51,20 +52,20 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     "_root_.scala.runtime.RichInt#to(I)Lscala/collection/immutable/Range/Inclusive;.")
   val rangeSymbol = Symbol(
     "_root_.scala.runtime.RichInt#until(I)Lscala/collection/immutable/Range;.")
-  def replaceRange(ctx: RewriteCtx): Patch = {
+  def replaceRange(ctx: RuleCtx): Patch = {
     ctx.tree.collect {
-      case tree @ Term.ApplyInfix(lhs, op, targs, arg :: Nil)
+      case tree @ Term.ApplyInfix(lhs, op, _, arg :: Nil)
           if op.symbol.contains(inclusiveRange) =>
         ctx.replaceTree(tree, q"Range.inclusive($lhs, $arg)".syntax) +
           ctx.addGlobalImport(rangeImport)
-      case tree @ Term.ApplyInfix(lhs, op, targs, arg :: Nil)
+      case tree @ Term.ApplyInfix(lhs, op, _, arg :: Nil)
           if op.symbol.contains(rangeSymbol) =>
         ctx.replaceTree(tree, q"Range($lhs, $arg)".syntax) +
           ctx.addGlobalImport(rangeImport)
     }
   }.asPatch
 
-  def replaceSymbols(ctx: RewriteCtx): Patch = {
+  def replaceSymbols(ctx: RuleCtx): Patch = {
     def p(name: String) =
       s"scala.Predef.$name" -> s"strawman.collection.immutable.$name"
     def s(name: String, rename: Option[String] = None) =
@@ -101,57 +102,40 @@ case class Collectionstrawman_v0(sctx: SemanticCtx)
     )
   }
 
-  case class SymbolMatcher(symbols: Symbol*) {
-    def unapply(arg: Tree): Option[(Tree, Symbol)] =
-      sctx.symbol(arg.pos).flatMap { sym =>
-        if (symbols.exists(_.isSameNormalized(sym))) Some(arg -> sym)
-        else None
-      }
-  }
-
-  object WithSymbol {
-    def unapply(arg: Tree): Option[(Tree, Symbol)] =
-      sctx.symbol(arg.pos).map(x => arg -> x)
-  }
-
-  val toGenericX = SymbolMatcher(
+  val toGenericX = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.TraversableOnce.toMap.")
   )
-  val toImmutableX = SymbolMatcher(
+  val toImmutableX = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.TraversableOnce.toList."),
     Symbol("_root_.scala.collection.TraversableOnce.toSet.")
   )
-  val toTpe = SymbolMatcher(
+  val toTpe = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.TraversableLike.to.")
   )
-  val iterator = SymbolMatcher(
+  val iterator = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.LinearSeqLike.iterator."),
     Symbol("_root_.scala.collection.TraversableLike.toIterator.")
   )
 
-  def replaceToList(ctx: RewriteCtx) =
+  def replaceToList(ctx: RuleCtx) =
     ctx.tree.collect {
-      case iterator(n: Name, _) =>
-        ctx.replaceTree(n, "iterator()")
-      case toImmutableX(n: Name, s) =>
-        ctx.replaceTree(n, s"to(strawman.collection.immutable.${s.name.stripPrefix("to")})")
-      case toGenericX(n: Name, s) =>
-        ctx.replaceTree(n, s"to(strawman.collection.${s.name.stripPrefix("to")})")
-      case toTpe(n: Name, _) =>
-        ctx.debug(n)
+      case iterator(t: Name) =>
+        ctx.replaceTree(t, "iterator()")
+      case toImmutableX(t @ Name(n)) =>
+        ctx.replaceTree(t, s"to(strawman.collection.immutable.${n.stripPrefix("to")})")
+      case toGenericX(t @ Name(n)) =>
+        ctx.replaceTree(t, s"to(strawman.collection.${n.stripPrefix("to")})")
+      case toTpe(n: Name) =>
         (for {
           name <- n.tokens.lastOption
-          _ = ctx.debug(name)
           open <- ctx.tokenList.find(name)(t => t.is[Token.LeftBracket])
-          _ = ctx.debug(open)
-          close <- ctx.matching.close(open.asInstanceOf[Token.LeftBracket])
-          replacedTokens = ctx.tokenList.slice(open, close)
+          close <- ctx.matchingParens.close(open.asInstanceOf[Token.LeftBracket])
         } yield
           ctx.replaceToken(open, "(") +
             ctx.replaceToken(close, ")")).getOrElse(Patch.empty)
     }.asPatch
 
-  def rewrite(ctx: RewriteCtx): Patch = {
+  override def fix(ctx: RuleCtx): Patch = {
     replaceToList(ctx) +
       replaceSymbols(ctx) +
       replaceExtensionMethods(ctx) +

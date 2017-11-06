@@ -5,8 +5,8 @@ import scalafix.testkit._
 import scalafix._
 
 class Collectionstrawman_Tests
-  extends SemanticRewriteSuite(
-    SemanticCtx.load(Classpath(AbsolutePath(BuildInfo.inputClassdirectory))),
+  extends SemanticRuleSuite(
+    SemanticdbIndex.load(Classpath(AbsolutePath(BuildInfo.inputClassdirectory))),
     AbsolutePath(BuildInfo.inputSourceroot),
     Seq(AbsolutePath(BuildInfo.outputSourceroot))
   ) {
