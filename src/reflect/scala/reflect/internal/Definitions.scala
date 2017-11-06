@@ -376,8 +376,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
     lazy val JavaNumberClass       = requiredClass[java.lang.Number]
     lazy val JavaEnumClass         = requiredClass[java.lang.Enum[_]]
-    lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
-    lazy val RemoteExceptionClass  = requiredClass[java.rmi.RemoteException]
     lazy val JavaUtilMap           = requiredClass[java.util.Map[_, _]]
     lazy val JavaUtilHashMap       = requiredClass[java.util.HashMap[_, _]]
 
@@ -1141,7 +1139,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val DeprecatedInheritanceAttr  = requiredClass[scala.deprecatedInheritance]
     lazy val DeprecatedOverridingAttr   = requiredClass[scala.deprecatedOverriding]
     lazy val NativeAttr                 = requiredClass[scala.native]
-    lazy val RemoteAttr                 = requiredClass[scala.remote]
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]

@@ -261,8 +261,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaCloneableClass
     definitions.JavaNumberClass
     definitions.JavaEnumClass
-    definitions.RemoteInterfaceClass
-    definitions.RemoteExceptionClass
     definitions.JavaUtilMap
     definitions.JavaUtilHashMap
     definitions.ByNameParamClass
@@ -399,7 +397,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DeprecatedInheritanceAttr
     definitions.DeprecatedOverridingAttr
     definitions.NativeAttr
-    definitions.RemoteAttr
     definitions.ScalaInlineClass
     definitions.ScalaNoInlineClass
     definitions.SerialVersionUIDAttr

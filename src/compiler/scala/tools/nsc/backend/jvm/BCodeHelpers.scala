@@ -710,34 +710,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
   trait BCForwardersGen extends BCAnnotGen with BCJGenSigGen {
 
-    /* Adds a @remote annotation, actual use unknown.
-     *
-     * Invoked from genMethod() and addForwarder().
-     *
-     * must-single-thread
-     */
-    def addRemoteExceptionAnnot(isRemoteClass: Boolean, isJMethodPublic: Boolean, meth: Symbol) {
-      def hasThrowsRemoteException = meth.annotations.exists {
-        case ThrownException(exc) => exc.typeSymbol == definitions.RemoteExceptionClass
-        case _ => false
-      }
-      val needsAnnotation = {
-        (isRemoteClass ||
-          isRemote(meth) && isJMethodPublic
-          ) && !hasThrowsRemoteException
-      }
-      if (needsAnnotation) {
-        val c   = Constant(definitions.RemoteExceptionClass.tpe)
-        val arg = Literal(c) setType c.tpe
-        meth.addAnnotation(appliedType(definitions.ThrowsClass, c.tpe), arg)
-      }
-    }
 
     /* Add a forwarder for method m. Used only from addForwarders().
      *
      * must-single-thread
      */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
+    private def addForwarder(jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
       def staticForwarderGenericSignature: String = {
         // scala/bug#3452 Static forwarder generation uses the same erased signature as the method if forwards to.
         // By rights, it should use the signature as-seen-from the module class, and add suitable
@@ -768,7 +746,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
       val jgensig = staticForwarderGenericSignature
-      addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
+
       val (throws, others) = m.annotations partition (_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
 
@@ -812,7 +790,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    def addForwarders(isRemoteClass: Boolean, jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
+    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass, moduleClass)
       debuglog(s"Dumping mirror class for object: $moduleClass")
 
@@ -831,7 +809,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
           log(s"No forwarder for non-public member $m")
         else {
           log(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
-          addForwarder(isRemoteClass, jclass, moduleClass, m)
+          addForwarder(jclass, moduleClass, m)
         }
       }
     }
@@ -922,7 +900,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       mirrorClass.visitAttribute(if (ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(mirrorClass, moduleClass.annotations ++ ssa)
 
-      addForwarders(isRemote(moduleClass), mirrorClass, bType.internalName, moduleClass)
+      addForwarders(mirrorClass, bType.internalName, moduleClass)
 
       mirrorClass.visitEnd()
 
