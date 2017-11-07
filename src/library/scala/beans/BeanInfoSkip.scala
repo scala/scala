@@ -15,4 +15,5 @@ package scala.beans
  *
  *  @author Ross Judson (rjudson@managedobjects.com)
  */
+@deprecated(message = "the generation of BeanInfo classes is no longer supported", since = "2.12.5")
 class BeanInfoSkip extends scala.annotation.Annotation
