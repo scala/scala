@@ -251,6 +251,13 @@ private[internal] trait GlbLubs {
   private val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def glbResults = _glbResults
 
+  private def refinedToDecls(t: Type): List[Scope] = t match {
+    case RefinedType(ps, decls) =>
+      val dss = ps flatMap refinedToDecls
+      if (decls.isEmpty) dss else decls :: dss
+    case _ => List()
+  }
+
   def lub(ts: List[Type]): Type = ts match {
     case Nil      => NothingTpe
     case t :: Nil => t
@@ -339,7 +346,7 @@ private[internal] trait GlbLubs {
               val symtypes =
                 map2(narrowts, syms)((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
               if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
-                proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, depth.decr))
+                proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, depth))
               else if (symtypes.tail forall (symtypes.head =:= _))
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
@@ -360,6 +367,14 @@ private[internal] trait GlbLubs {
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
           for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
+            try lubsym(sym) andAlso (addMember(lubThisType, lubRefined, _, depth))
+            catch {
+              case ex: NoCommonType =>
+            }
+          }
+          // add a refinement symbol, which is refined by every type in ts
+          val dss = ts flatMap refinedToDecls
+          for (ds <- dss; sym <- ds.iterator) {
             try lubsym(sym) andAlso (addMember(lubThisType, lubRefined, _, depth))
             catch {
               case ex: NoCommonType =>
@@ -473,12 +488,6 @@ private[internal] trait GlbLubs {
         def refinedToParents(t: Type): List[Type] = t match {
           case RefinedType(ps, _) => ps flatMap refinedToParents
           case _ => List(t)
-        }
-        def refinedToDecls(t: Type): List[Scope] = t match {
-          case RefinedType(ps, decls) =>
-            val dss = ps flatMap refinedToDecls
-            if (decls.isEmpty) dss else decls :: dss
-          case _ => List()
         }
         val ts1 = ts flatMap refinedToParents
         val glbBase = intersectionType(ts1, glbOwner)
