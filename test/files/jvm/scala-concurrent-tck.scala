@@ -22,7 +22,7 @@ trait TestBase {
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
-    assert(q.poll(2000, TimeUnit.MILLISECONDS).get)
+    assert(Option(q.poll(2000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
     // Check that we don't get more than one completion
     assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
   }
@@ -737,6 +737,8 @@ trait Exceptions extends TestBase {
 }
 
 trait GlobalExecutionContext extends TestBase {
+  import ExecutionContext.Implicits._
+  
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId
@@ -860,6 +862,32 @@ trait CustomExecutionContext extends TestBase {
     assert(count >= 1)
   }
 
+  def testUncaughtExceptionReporting(): Unit = once {
+    done =>
+      import java.util.concurrent.TimeUnit.SECONDS
+      val example = new InterruptedException()
+      val latch = new java.util.concurrent.CountDownLatch(1)
+      @volatile var thread: Thread = null
+      @volatile var reported: Throwable = null
+      val ec = ExecutionContext.fromExecutorService(null, t => {
+        reported = t
+        latch.countDown()
+      })
+
+      try {
+        ec.execute(() => {
+          thread = Thread.currentThread
+          throw example
+        })
+        latch.await(2, SECONDS)
+        Thread.sleep(1000)
+        done((reported eq example) && (thread ne null) && thread.isAlive == false)
+      } finally {
+        ec.shutdown()
+      }
+  }
+
+  testUncaughtExceptionReporting()
   testOnSuccessCustomEC()
   testKeptPromiseCustomEC()
   testCallbackChainCustomEC()
