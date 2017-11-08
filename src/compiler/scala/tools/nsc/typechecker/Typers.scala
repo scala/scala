@@ -821,7 +821,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
-      def hasUndets           = context.undetparams.nonEmpty
+      def hasUndets           = !context.undetparams.isEmpty
       def hasUndetsInMonoMode = hasUndets && !mode.inPolyMode
 
       def adaptToImplicitMethod(mt: MethodType): Tree = {
@@ -2479,7 +2479,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         treeCopy.Block(block, statsTyped, expr1)
-          .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
+          .setType(if (!phase.erasedTypes && treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
         // transient flag
@@ -3245,7 +3245,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedArg(arg: Tree, mode: Mode, newmode: Mode, pt: Type): Tree = {
       val typedMode = mode.onlySticky | newmode
       val t = withCondConstrTyper(mode.inSccMode)(_.typed(arg, typedMode, pt))
-      checkDead.inMode(typedMode, t)
+      if (mode.typingMonoExprByValue) checkDead(t) else t
     }
 
     def typedArgs(args: List[Tree], mode: Mode) =
@@ -3614,7 +3614,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else
                   constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
               }
-              checkDead.updateExpr(fun) {
+              updateExpr(fun) {
                 handleMonomorphicCall
               }
             } else if (needsInstantiation(tparams, formals, args)) {

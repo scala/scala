@@ -24,8 +24,8 @@ class CallGraphTest extends BytecodeTesting {
 
 
   compiler.keepPerRunCachesAfterRun(List(
-    bTypes.classBTypeCacheFromSymbol,
-    bTypes.classBTypeCacheFromClassfile,
+    bTypes.classBTypeCacheFromSymbolClearable,
+    bTypes.classBTypeCacheFromClassfileClearable,
     postProcessor.byteCodeRepository.compilingClasses,
     postProcessor.byteCodeRepository.parsedClasses,
     postProcessor.callGraph.callsites))

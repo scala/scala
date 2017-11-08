@@ -979,7 +979,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
        definitions.isDefinitionsInitialized
     && rootMirror.isMirrorInitialized
   )
-  override def isPastTyper = isPast(currentRun.typerPhase)
+  override def isPastTyper = _isPastTyper
+  private[this] var _isPastTyper = false
   def isPast(phase: Phase) = (
        (curRun ne null)
     && isGlobalInitialized // defense against init order issues
@@ -1127,10 +1128,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
-    val symSource = new mutable.HashMap[Symbol, AbstractFile]
+    val symSource = new mutable.AnyRefMap[Symbol, AbstractFile]
 
     /** A map from compiled top-level symbols to their picklers */
-    val symData = new mutable.HashMap[Symbol, PickleBuffer]
+    val symData = new mutable.AnyRefMap[Symbol, PickleBuffer]
 
     private var phasec: Int  = 0   // phases completed
     private var unitc: Int   = 0   // units completed this phase
@@ -1435,6 +1436,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =  compileUnitsInternal(units,fromPhase)
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
+      _isPastTyper = false
       units foreach addUnit
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
@@ -1475,6 +1477,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         if (settings.browse containsPhase globalPhase)
           treeBrowser browse (phase.name, units)
 
+        if (globalPhase == typerPhase)
+          _isPastTyper = true
         // move the pointer
         globalPhase = globalPhase.next
 

@@ -7,11 +7,11 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
-import scala.util.control.ControlThrowable
+import scala.util.control.{ControlThrowable, NoStackTrace}
 import scala.annotation.tailrec
 import util.{Statistics, StatisticsStatics}
 import util.ThreeValues._
@@ -410,7 +410,7 @@ trait Types
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (parents.nonEmpty) parents.head else ObjectTpe
+    def firstParent = if (!parents.isEmpty) parents.head else ObjectTpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -1196,6 +1196,13 @@ trait Types
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
+    //OPT specialize hashCode
+    override final def computeHashCode = {
+      import scala.util.hashing.MurmurHash3._
+      var h = productSeed
+      h = mix(h, sym.hashCode)
+      finalizeHash(h, 1)
+    }
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
@@ -1258,6 +1265,14 @@ trait Types
       else pre.prefixString + sym.nameString + "."
     )
     override def kind = "SingleType"
+    //OPT specialize hashCode
+    override final def computeHashCode = {
+      import scala.util.hashing.MurmurHash3._
+      var h = productSeed
+      h = mix(h, pre.hashCode)
+      h = mix(h, sym.hashCode)
+      finalizeHash(h, 2)
+    }
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
@@ -2503,7 +2518,7 @@ trait Types
 
     private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
       case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
+        p.tpe.isTrivial && !symTpesContain(params, p) && !(resultType contains p) &&
         areTrivialParams(rest)
       case _ =>
         true
@@ -2599,7 +2614,7 @@ trait Types
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type with PolyTypeApi {
     //assert(!(typeParams contains NoSymbol), this)
-    assert(typeParams.nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
+    assert(typeParams ne Nil, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss
@@ -3906,12 +3921,12 @@ trait Types
   def typeParamsToExistentials(clazz: Symbol): List[Symbol] =
     typeParamsToExistentials(clazz, clazz.typeParams)
 
-  def isRawIfWithoutArgs(sym: Symbol) = sym.isClass && sym.typeParams.nonEmpty && sym.isJavaDefined
+  def isRawIfWithoutArgs(sym: Symbol) = sym.isClass && !sym.typeParams.isEmpty && sym.isJavaDefined
   /** Is type tp a ''raw type''? */
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
   def isRawType(tp: Type) = !phase.erasedTypes && (tp match {
-    case TypeRef(_, sym, Nil) => isRawIfWithoutArgs(sym)
+    case TypeRef(_, sym, args) if args eq Nil => isRawIfWithoutArgs(sym)
     case _                    => false
   })
 
@@ -4046,7 +4061,11 @@ trait Types
 
   def normalizePlus(tp: Type): Type = {
     if (isRawType(tp)) rawToExistential(tp)
-    else tp.normalize match {
+    else normalizePlusNonRaw(tp)
+  }
+
+  def normalizePlusNonRaw(tp: Type): Type = {
+    tp.normalize match {
       // Unify the representations of module classes
       case st@SingleType(_, sym) if sym.isModule => st.underlying.normalize
       case st@ThisType(sym) if sym.isModuleClass => normalizePlus(st.underlying)
@@ -4332,20 +4351,20 @@ trait Types
             else matchesType(tp1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
-          case TypeRef(_, sym, Nil) =>
+          case TypeRef(_, sym, args) if args eq Nil =>
             params1.isEmpty && sym.isModuleClass && matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             false
         }
       case mt1 @ NullaryMethodType(res1) =>
         tp2 match {
-          case mt2 @ MethodType(Nil, res2)  => // could never match if params nonEmpty, and !mt2.isImplicit is implied by empty param list
+          case mt2 @ MethodType(params, res2) if params eq Nil  => // could never match if params nonEmpty, and !mt2.isImplicit is implied by empty param list
             matchesType(res1, res2, alwaysMatchSimple)
           case NullaryMethodType(res2) =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
-          case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+          case TypeRef(_, sym, args) if (args eq Nil) && sym.isModuleClass =>
             matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             matchesType(res1, tp2, alwaysMatchSimple)
@@ -4370,7 +4389,7 @@ trait Types
             if (alwaysMatchSimple) matchesType(res1, tp2, alwaysMatchSimple = true)
             else lastTry
         }
-      case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+      case TypeRef(_, sym, args) if (args eq Nil) && sym.isModuleClass =>
         tp2 match {
           case MethodType(Nil, res2)   => matchesType(tp1, res2, alwaysMatchSimple)
           case NullaryMethodType(res2) => matchesType(tp1, res2, alwaysMatchSimple)
@@ -4627,7 +4646,7 @@ trait Types
 // Errors and Diagnostics -----------------------------------------------------
 
   /** A throwable signalling a type error */
-  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) {
+  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) with NoStackTrace {
     def this(msg: String) = this(NoPosition, msg)
   }
 
@@ -4790,6 +4809,10 @@ trait Types
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)
+    case _ => false
+  }
+  @tailrec private def symTpesContain(tps: List[Symbol], sym: Symbol): Boolean = tps match {
+    case sym :: rest => (sym.tpe contains sym) || symTpesContain(rest, sym)
     case _ => false
   }
 

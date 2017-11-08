@@ -6,6 +6,9 @@
 package scala.tools.nsc
 package ast
 
+import scala.reflect.internal.Flags
+import scala.reflect.internal.Flags.PARAMACCESSOR
+
 /** This class ...
  *
  *  @author Martin Odersky
@@ -47,8 +50,10 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     // B.unbox. Returns B.
     object Unbox {
       def unapply(t: Tree): Option[Tree] = t match {
-        case Apply(sel @ Select(ref, _), Nil) if valueUnbox(ref.tpe) == sel.symbol => Some(ref)
-        case _                                                                     => None
+        case Apply(sel @ Select(ref, _), Nil)
+          if sel.symbol.hasAllFlags(Flags.PARAMACCESSOR | Flags.METHOD) && valueUnbox(ref.tpe) == sel.symbol =>
+            Some(ref)
+        case _ => None
       }
     }
     // new B(v). Returns B and v.

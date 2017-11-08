@@ -701,10 +701,10 @@ trait TypeDiagnostics {
       }
     }
 
-    object checkDead {
-      private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+    private object checkDeadImpl {
+      var exprStack: List[Symbol] = ListOfNoSymbol
       // The method being applied to `tree` when `apply` is called.
-      private def expr = exprStack.top
+      private def expr = exprStack.head
 
       private def exprOK =
         (expr != Object_synchronized) &&
@@ -715,20 +715,20 @@ trait TypeDiagnostics {
         tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
       }
 
-      @inline def updateExpr[A](fn: Tree)(f: => A) = {
-        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
-          exprStack push fn.symbol
-          try f finally exprStack.pop()
-        } else f
-      }
       def apply(tree: Tree): Tree = {
-        if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
+        if (context.unit.exists && treeOK(tree) && exprOK)
           context.warning(tree.pos, "dead code following this construct")
         tree
       }
-
       // The checkDead call from typedArg is more selective.
-      def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
+    }
+
+    final def checkDead(tree: Tree): Tree = if (settings.warnDeadCode) checkDeadImpl.apply(tree) else tree
+    @inline final def updateExpr[A](fn: Tree)(f: => A) = {
+      if (settings.warnDeadCode && fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+        checkDeadImpl.exprStack ::= fn.symbol
+        try f finally checkDeadImpl.exprStack = checkDeadImpl.exprStack.tail
+      } else f
     }
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
@@ -797,4 +797,5 @@ trait TypeDiagnostics {
       }
     }
   }
+  private val ListOfNoSymbol = List(NoSymbol)
 }

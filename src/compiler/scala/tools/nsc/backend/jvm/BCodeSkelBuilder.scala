@@ -416,6 +416,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      *  Details in `emitFinalizer()`, which is invoked from `genLoadTry()` and `genSynchronized()`.
      */
     var labelDefsAtOrUnder: scala.collection.Map[Tree, List[LabelDef]] = null
+    var labelDefsAtOrUnderRhs: List[LabelDef] = null
     var labelDef: scala.collection.Map[Symbol, LabelDef] = null// (LabelDef-sym -> LabelDef)
 
     // bookkeeping the scopes of non-synthetic local vars, to emit debug info (`emitVars`).
@@ -462,6 +463,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val ldf = new LabelDefsFinder(dd.rhs)
       ldf(dd.rhs)
       labelDefsAtOrUnder = ldf.result
+      labelDefsAtOrUnderRhs = ldf.directResult
       labelDef = ldf.directResult.map(ld => (ld.symbol -> ld)).toMap
       // check previous invocation of genDefDef exited as many varsInScope as it entered.
       assert(varsInScope == null, "Unbalanced entering/exiting of GenBCode's genBlock().")
@@ -589,7 +591,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
        * but the same vars (given by the LabelDef's params) can be reused,
        * because no LabelDef ends up nested within itself after such duplication.
        */
-      for(ld <- labelDefsAtOrUnder.getOrElse(dd.rhs, Nil); ldp <- ld.params; if !locals.contains(ldp.symbol)) {
+      for(ld <- labelDefsAtOrUnderRhs; ldp <- ld.params; if !locals.contains(ldp.symbol)) {
         // the tail-calls xform results in symbols shared btw method-params and labelDef-params, thus the guard above.
         locals.makeLocal(ldp.symbol)
       }

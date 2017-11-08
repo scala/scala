@@ -70,7 +70,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    * The original owner of a symbol is needed in some places in the backend. Ideally, owners should
    * be versioned like the type history.
    */
-  private val originalOwnerMap = perRunCaches.newMap[Symbol, Symbol]()
+  private val originalOwnerMap = perRunCaches.newAnyRefMap[Symbol, Symbol]()
 
   // TODO - don't allow the owner to be changed without checking invariants, at least
   // when under some flag. Define per-phase invariants for owner/owned relationships,
@@ -738,6 +738,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       (flags & mask) != 0
     }
+    final def hasRawFlag(mask: Long): Boolean = {
+      (_rawflags & mask) != 0
+    }
     def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
 
     /** Does symbol have ALL the flags in `mask` set? */
@@ -814,7 +817,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
     final def isThisSym = isTerm && owner.thisSym == this
-    final def isError = hasFlag(IS_ERROR)
+    final def isError = hasRawFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe_*.isErroneous
 
     def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
@@ -2171,7 +2174,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The package class containing this symbol, or NoSymbol if there
      *  is not one. */
-    def enclosingRootClass: Symbol = enclosingSuchThat(_.isRoot)
+    def enclosingRootClass: Symbol = if (isCompilerUniverse) rootMirror.RootClass else enclosingSuchThat(_.isRoot)
 
     /** The package containing this symbol, or NoSymbol if there
      *  is not one. */
@@ -2814,11 +2817,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def isLocalDummy       = nme.isLocalDummyName(name)
 
-    override def isClassConstructor = name == nme.CONSTRUCTOR
-    override def isMixinConstructor = name == nme.MIXIN_CONSTRUCTOR
-    override def isConstructor      = isClassConstructor || isMixinConstructor
+    override final def isClassConstructor = _rawname == nme.CONSTRUCTOR
+    override final def isMixinConstructor = _rawname == nme.MIXIN_CONSTRUCTOR
+    override final def isConstructor      = isClassConstructor || isMixinConstructor
 
-    override def isPackageObject    = isModule && (name == nme.PACKAGE)
+    override def isPackageObject    = isModule && (_rawname == nme.PACKAGE)
 
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
