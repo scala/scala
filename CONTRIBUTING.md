@@ -30,7 +30,7 @@ quickly know which issues are ready and which are already in progress.
 - `collectionsJVM`/`collectionsJS` (in the `collections/` directory): contains the implementation
   of the collections;
 - `junit` (in `test/junit/` directory): unit tests;
-- `scalacheck` (in `test/scalacheck/` directory): properties (not currently used);
+- `scalacheck` (in `test/scalacheck/` directory): properties;
 - `timeBenchmark` (in `benchmarks/time/` directory): benchmarks measuring
   execution time;
 - `memoryBenchmark` (in `benchmarks/memory/` directory): benchmarks measuring
@@ -46,7 +46,7 @@ quickly know which issues are ready and which are already in progress.
 - Compile the collections and run the tests:
   
   ~~~
-  >; compile; test; junit/test
+  >; compile; test; junit/test; scalacheck/test
   ~~~
 - Run the memory benchmark:
   
