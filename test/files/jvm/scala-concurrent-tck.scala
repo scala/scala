@@ -2,17 +2,17 @@ import scala.concurrent.{
   Future,
   Promise,
   TimeoutException,
-  SyncVar,
   ExecutionException,
   ExecutionContext,
   CanAwait,
-  Await
+  Await,
+  blocking
 }
-import scala.concurrent.blocking
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.reflect.{ classTag, ClassTag }
 import scala.tools.partest.TestUtil.intercept
+import scala.annotation.tailrec
 
 trait TestBase {
   trait Done { def apply(proof: => Boolean): Unit }
@@ -874,14 +874,21 @@ trait CustomExecutionContext extends TestBase {
         latch.countDown()
       })
 
+      @tailrec def waitForThreadDeath(turns: Int): Boolean =
+          if (turns <= 0) false
+          else if ((thread ne null) && thread.isAlive == false) true
+          else {
+            Thread.sleep(10)
+            waitForThreadDeath(turns - 1)
+          }
+
       try {
         ec.execute(() => {
           thread = Thread.currentThread
           throw example
         })
         latch.await(2, SECONDS)
-        Thread.sleep(1000)
-        done((reported eq example) && (thread ne null) && thread.isAlive == false)
+        done(waitForThreadDeath(turns = 100) && (reported eq example))
       } finally {
         ec.shutdown()
       }
