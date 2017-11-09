@@ -42,23 +42,17 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
     case _ => it.iterator().foreach(f)
   }
 
-  @deprecated("Use ArrayBuffer.fromIterable(it) instead of it.toBuffer on Iterable (wrap Iterators with View.fromIterator first)", "2.13.0")
-  def toBuffer[B >: A]: mutable.Buffer[B] = it match {
-    case it: Iterable[_] => mutable.ArrayBuffer.from(it)
-    case _ => mutable.ArrayBuffer.from(View.fromIteratorProvider(() => it.iterator()))
-  }
+  @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
+  def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(it)
 
-  @deprecated("Use ArrayBuffer.fromIterable(it).toArray instead of it.toArray on Iterable (wrap Iterators with View.fromIterator first)", "2.13.0")
+  @deprecated("Use ArrayBuffer.from(it).toArray", "2.13.0")
   def toArray[B >: A: ClassTag]: Array[B] = it match {
-    case it: Iterable[_] => it.asInstanceOf[Iterable[B]].toArray[B]
-    case _ => mutable.ArrayBuffer.from(View.fromIteratorProvider(() => it.iterator())).toArray
+    case it: Iterable[B] => it.toArray[B]
+    case _ => mutable.ArrayBuffer.from(it).toArray
   }
 
-  @deprecated("Use List.fromIterable(it) instead of it.toList on Iterable (wrap Iterators with View.fromIterator first)", "2.13.0")
-  def toList[B >: A]: immutable.List[B] = it match {
-    case it: Iterable[_] => immutable.List.from(it.asInstanceOf[Iterable[B]])
-    case _ => immutable.List.from(View.fromIteratorProvider(() => it.iterator()))
-  }
+  @deprecated("Use List.from(it) instead of it.toList", "2.13.0")
+  def toList[B >: A]: immutable.List[B] = immutable.List.from(it)
 
   @deprecated("Use .iterator().isEmpty instead of .isEmpty on IterableOnce", "2.13.0")
   def isEmpty: Boolean = it match {
