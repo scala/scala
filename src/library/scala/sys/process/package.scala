@@ -202,6 +202,7 @@ package scala.sys {
     */
   package object process extends ProcessImplicits {
     /** The arguments passed to `java` when creating this process */
+    @deprecated(message = "to adhere to the compact1 profile this method will be removed", since = "2.12.5") // https://github.com/scala/scala-dev/issues/437
     def javaVmArguments: List[String] = {
       import scala.collection.JavaConverters._
 
