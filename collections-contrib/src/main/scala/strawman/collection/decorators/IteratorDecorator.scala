@@ -1,7 +1,7 @@
 package strawman.collection
 package decorators
 
-class IteratorDecorator[A](`this`: Iterator[A]) {
+class IteratorDecorator[A](val `this`: Iterator[A]) extends AnyVal {
 
   def intersperse[B >: A](sep: B): Iterator[B] = new Iterator[B] {
     var intersperseNext = false
@@ -37,6 +37,17 @@ class IteratorDecorator[A](`this`: Iterator[A]) {
       } else {
         throw new NoSuchElementException("next on empty iterator")
       }
+  }
+
+  def foldSomeLeft[B](z: B)(op: (B, A) => Option[B]): B = {
+    var result: B = z
+    while (`this`.hasNext) {
+      op(result, `this`.next()) match {
+        case Some(v) => result = v
+        case None => return result
+      }
+    }
+    result
   }
 
 }

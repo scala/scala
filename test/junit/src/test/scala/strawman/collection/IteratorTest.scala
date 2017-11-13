@@ -171,16 +171,6 @@ class IteratorTest {
     assertSameElements(List(21), results)
   }
   
-  @Test def foldSomeLeft(): Unit = {
-    val r = Range(0, 100)
-    assertEquals(0, r.foldSomeLeft(0)((x, y) => None))
-    assertEquals(10, r.foldSomeLeft(0)((x, y) => if (y > 10) None else Some(y)))
-    assertEquals(55, r.foldSomeLeft(0)((x, y) => if (y > 10) None else Some(x + y)))
-    assertEquals(4950, r.foldSomeLeft(0)((x, y) => Some(x + y)))
-    
-    assertEquals(10, List[Int]().foldSomeLeft(10)((x, y) => Some(x + y)))
-  }
-
   // scala/bug#8552
   @Test def indexOfShouldWorkForTwoParams(): Unit = {
     assertEquals(1, List(1, 2, 3).iterator().indexOf(2, 0))
