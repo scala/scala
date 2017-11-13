@@ -2574,9 +2574,10 @@ trait Trees { self: Universe =>
     /** Transforms a list of lists of `ValDef` nodes. */
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
       treess mapConserve (transformValDefs(_))
-    /** Transforms a list of `CaseDef` nodes. */
+    /** Transforms a list of `MemberDef` nodes. */
     def transformMemberDefs(trees: List[MemberDef]): List[MemberDef] =
       trees mapConserve (tree => transform(tree).asInstanceOf[MemberDef])
+    /** Transforms a list of `CaseDef` nodes. */
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
       trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef])
     /** Transforms a list of `Ident` nodes. */
