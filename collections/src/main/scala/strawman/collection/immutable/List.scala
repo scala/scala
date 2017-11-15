@@ -71,7 +71,6 @@ import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, N
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(-6084104484083858598L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 sealed trait List[+A]
   extends LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
@@ -401,6 +400,7 @@ sealed trait List[+A]
   }
 }
 
+@SerialVersionUID(6493291385232469459L) // value computed for strawman 0.6.0, scala 2.13.0-M2
 case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
@@ -410,6 +410,7 @@ case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance])
   override def tail: List[A] = next
 }
 
+@SerialVersionUID(-5302509162483950757L) // value computed for strawman 0.6.0, scala 2.13.0-M2
 case object Nil extends List[Nothing] {
   override def isEmpty: Boolean = true
   override def nonEmpty: Boolean = false
