@@ -2,7 +2,7 @@ package strawman.collection
 package decorators
 
 import org.junit.{Assert, Test}
-import strawman.collection.immutable.{List, Range}
+import strawman.collection.immutable.{LazyList, List, Range}
 
 class IterableDecoratorTest {
 
@@ -16,5 +16,12 @@ class IterableDecoratorTest {
 
       Assert.assertEquals(10, List[Int]().foldSomeLeft(10)((x, y) => Some(x + y)))
     }
+
+  @Test def lazyFoldRightIsLazy(): Unit = {
+    val xs = LazyList.from(0)
+    def chooseOne(x: Int): Either[Int, Int => Int]= if (x < (1 << 16)) Right(identity) else Left(x)
+
+    Assert.assertEquals(1 << 16, xs.lazyFoldRight(0)(chooseOne))
+  }
 
 }

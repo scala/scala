@@ -1,6 +1,8 @@
 package strawman.collection
 package decorators
 
+import scala.annotation.tailrec
+
 class IteratorDecorator[A](val `this`: Iterator[A]) extends AnyVal {
 
   def intersperse[B >: A](sep: B): Iterator[B] = new Iterator[B] {
@@ -48,6 +50,26 @@ class IteratorDecorator[A](val `this`: Iterator[A]) extends AnyVal {
       }
     }
     result
+  }
+
+  def lazyFoldRight[B](z: B)(op: A => Either[B, B => B]): B = {
+
+    def chainEval(x: B, fs: immutable.List[B => B]): B =
+      fs.foldLeft(x)((x, f) => f(x))
+
+    @tailrec
+    def loop(fs: immutable.List[B => B]): B = {
+      if (`this`.hasNext) {
+        op(`this`.next()) match {
+          case Left(v) => chainEval(v, fs)
+          case Right(g) => loop(g :: fs)
+        }
+      } else {
+        chainEval(z, fs)
+      }
+    }
+
+    loop(immutable.List.empty)
   }
 
 }

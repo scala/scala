@@ -355,26 +355,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     reversed.foldLeft(z)((b, a) => op(a, b))
   }
   
-  def lazyFoldRight[B](z: B)(op: A => Either[B, B => B]): B = {
-    
-    def chainEval(x: B, fs: immutable.List[B => B]): B =
-      fs.foldLeft(x)((x, f) => f(x))
-    
-    @tailrec
-    def loop(fs: immutable.List[B => B]): B = {
-      if (hasNext) {
-        op(next()) match {
-          case Left(v) => chainEval(v, fs)
-          case Right(g) => loop(g :: fs)
-        }
-      } else {
-        chainEval(z, fs)
-      }
-    }
-    
-    loop(immutable.List.empty)
-  }
-
   /** Produces a collection containing cumulative results of applying the
    *  operator going left to right.
    *

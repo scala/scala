@@ -77,11 +77,6 @@ class IteratorTest {
     assertEquals(10000,  View.fromIteratorProvider(() => mk(10000)).sum)
     assertEquals(100000, View.fromIteratorProvider(() => mk(100000)).sum)
   }
-  
-  @Test def lazyFoldRight(): Unit = {
-    assertEquals(true, LazyList.continually(true).lazyFoldRight(false)(x => if (x) Left(true) else Right(identity[Boolean])))
-    assertEquals(55, Iterator.range(0, 11).lazyFoldRight(0)(x => Right(_ + x)))
-  }
 
   @Test def from(): Unit = {
     val it1 = Iterator.from(-1)
@@ -176,13 +171,6 @@ class IteratorTest {
     assertSameElements(List(21), results)
   }
   
-  @Test def lazyFoldRightIsLazy(): Unit = {
-    val xs = LazyList.from(0)
-    def chooseOne(x: Int): Either[Int, Int => Int]= if (x < (1 << 16)) Right(identity) else Left(x)
-    
-    assertEquals(1 << 16, xs.lazyFoldRight(0)(chooseOne))
-  }
-
   // scala/bug#8552
   @Test def indexOfShouldWorkForTwoParams(): Unit = {
     assertEquals(1, List(1, 2, 3).iterator().indexOf(2, 0))
