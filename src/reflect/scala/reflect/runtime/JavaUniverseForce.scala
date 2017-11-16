@@ -85,6 +85,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.Throw
     this.New
     this.Typed
+    this.MethodValue
     this.TypeApply
     this.Apply
     this.ApplyDynamic

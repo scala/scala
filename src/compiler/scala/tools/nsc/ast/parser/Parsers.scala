@@ -1745,7 +1745,7 @@ self =>
           }
           simpleExprRest(app, canApply = true)
         case USCORE =>
-          atPos(t.pos.start, in.skipToken()) { makeMethodValue(stripParens(t)) }
+          atPos(t.pos.start, in.skipToken()) { MethodValue(stripParens(t)) }
         case _ =>
           t
       }
