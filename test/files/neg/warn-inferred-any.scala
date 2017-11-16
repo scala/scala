@@ -25,3 +25,12 @@ trait Zs {
   def za = f(1, "one")
   def zu = g(1, "one")
 }
+
+class C1
+class C2
+
+trait Cs {
+  val cs = List(new C1)
+  cs.contains[AnyRef](new C2) // doesn't warn
+  cs.contains(new C2) // warns
+}
