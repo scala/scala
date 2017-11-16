@@ -1268,6 +1268,11 @@ abstract class Erasure extends InfoTransform
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
             case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: _) =>
               tree
+            case _: Apply if tree1 ne tree =>
+              /* some Apply trees get replaced (in `preEraseApply`) with one of
+               * their subtrees, which needs to be `preErase`d in its entirety,
+               * not just recursed over by super.transform(). */
+              transform(tree1)
             case _ =>
               super.transform(tree1).clearType()
           }
