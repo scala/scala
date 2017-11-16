@@ -3352,9 +3352,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             def funArgTypes(tpAlts: List[(Type, Symbol)]) = tpAlts.map { case (tp, alt) =>
               val relTp = tp.asSeenFrom(pre, alt.owner)
-              val argTps = functionOrPfOrSamArgTypes(relTp)
-              //println(s"funArgTypes $argTps from $relTp")
-              argTps.map(approximateAbstracts)
+              functionOrPfOrSamArgTypes(relTp)
             }
 
             def functionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
@@ -3376,7 +3374,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // do not receive special treatment: they are typed under WildcardType.)
             val altArgPts =
               if (settings.isScala212 && args.exists(t => treeInfo.isFunctionMissingParamType(t) || treeInfo.isPartialFunctionMissingParamType(t)))
-                try alts.map(alt => formalTypes(alt.info.paramTypes, argslen).map(ft => (ft, alt))).transpose // do least amount of work up front
+                try alts.map { alt =>
+                  val paramTypes = pre.memberType(alt) match {
+                    case mt @ MethodType(_, _) => mt.paramTypes
+                    case PolyType(_, mt @ MethodType(_, _)) => mt.paramTypes
+                    case t => throw new RuntimeException("Expected MethodType or PolyType of MethodType, got "+t)
+                  }
+                  formalTypes(paramTypes, argslen).map(ft => (ft, alt))
+                }.transpose // do least amount of work up front
                 catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
               else args.map(_ => Nil) // will type under argPt == WildcardType
 
