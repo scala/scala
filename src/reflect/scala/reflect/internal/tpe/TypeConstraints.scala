@@ -241,7 +241,8 @@ private[internal] trait TypeConstraints {
 
         //println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
         val newInst = (
-          if (up) {
+          if (up || tvar.constr.hiBounds.exists(isSingleType)) {
+            // If we have a singleton upper bound then we should use it.
             if (depth.isAnyDepth) glb(tvar.constr.hiBounds)
             else glb(tvar.constr.hiBounds, depth)
           }
