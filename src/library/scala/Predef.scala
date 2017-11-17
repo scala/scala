@@ -139,7 +139,7 @@ object Predef extends LowPriorityImplicits {
    * }}}
    * @group utilities
    */
-  @inline def valueOf[T](implicit vt: ValueOf[T]): T {} = vt.value
+  @inline def valueOf[T](implicit vt: ValueOf[T]): T = vt.value
 
   /** The `String` type in Scala has methods that come either from the underlying
    *  Java String (see the documentation corresponding to your Java version, for
