@@ -1,0 +1,3 @@
+t10610.scala:2: warning: @SerialVersionUID has no effect on traits
+trait T
+      ^

@@ -103,7 +103,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       }
 
       val optSerial: Option[Long] = serialVUID(claszSymbol)
-      if (optSerial.isDefined) { addSerialVUID(optSerial.get, cnode)}
+      /* serialVersionUID can't be put on interfaces (it's a private field).
+       * this is fine because it wouldn't do anything anyways. */
+      if (optSerial.isDefined && !claszSymbol.isTrait) {
+        addSerialVUID(optSerial.get, cnode)
+      }
 
       addClassFields()
 

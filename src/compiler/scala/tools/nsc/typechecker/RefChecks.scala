@@ -1432,7 +1432,7 @@ abstract class RefChecks extends Transform {
 
           if (sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
             def warn(what: String) =
-              reporter.warning(tree.pos, s"@serialVersionUID has no effect on $what")
+              reporter.warning(tree.pos, s"@SerialVersionUID has no effect on $what")
 
             if (sym.isTrait) warn("traits")
             else if (!sym.isSerializable) warn("non-serializable classes")
