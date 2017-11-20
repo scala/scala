@@ -4,7 +4,7 @@ package collection
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.{Any, Array, Boolean, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, AnyRef}
+import scala.{Any, AnyRef, Array, Boolean, Either, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
 

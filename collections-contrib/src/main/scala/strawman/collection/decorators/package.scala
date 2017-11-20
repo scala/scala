@@ -4,8 +4,11 @@ import scala.language.implicitConversions
 
 package object decorators {
 
-  implicit def IteratorDecorator[A](it: Iterator[A]): IteratorDecorator[A] =
+  implicit def iteratorDecorator[A](it: Iterator[A]): IteratorDecorator[A] =
     new IteratorDecorator[A](it)
+
+  implicit def iterableDecorator[A](it: Iterable[A]): IterableDecorator[A] =
+    new IterableDecorator(it)
 
   implicit def SeqDecorator[A, CC[X] <: SeqOps[X, CC, _]](seq: CC[A]): SeqDecorator[A, CC] =
     new SeqDecorator[A, CC](seq)
