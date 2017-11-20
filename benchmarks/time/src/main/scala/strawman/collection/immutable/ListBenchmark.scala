@@ -11,8 +11,8 @@ import scala.Predef.intWrapper
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(1)
-@Warmup(iterations = 12)
-@Measurement(iterations = 12)
+@Warmup(iterations = 8)
+@Measurement(iterations = 8)
 @State(Scope.Benchmark)
 class ListBenchmark {
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
@@ -49,18 +49,18 @@ class ListBenchmark {
     bh.consume(ys)
   }
 
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def expand_prependTail(bh: Blackhole): Unit = {
-    var ys = xs
-    var i = 0L
-    while (i < 1000) {
-      ys = i :: ys
-      i += 1
-      ys = ys.tail
-    }
-    bh.consume(ys)
-  }
+//  @Benchmark
+//  @OperationsPerInvocation(1000)
+//  def expand_prependTail(bh: Blackhole): Unit = {
+//    var ys = xs
+//    var i = 0L
+//    while (i < 1000) {
+//      ys = i :: ys
+//      i += 1
+//      ys = ys.tail
+//    }
+//    bh.consume(ys)
+//  }
 
   @Benchmark
   @OperationsPerInvocation(1000)
@@ -74,31 +74,31 @@ class ListBenchmark {
     bh.consume(ys)
   }
 
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def expand_appendInit(bh: Blackhole): Unit = {
-    var ys = xs
-    var i = 0L
-    while (i < 1000) {
-      ys = ys :+ i
-      i += 1
-      ys = ys.init
-    }
-    bh.consume(ys)
-  }
+//  @Benchmark
+//  @OperationsPerInvocation(1000)
+//  def expand_appendInit(bh: Blackhole): Unit = {
+//    var ys = xs
+//    var i = 0L
+//    while (i < 1000) {
+//      ys = ys :+ i
+//      i += 1
+//      ys = ys.init
+//    }
+//    bh.consume(ys)
+//  }
 
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def expand_prependAppend(bh: Blackhole): Unit = {
-    var ys = xs
-    var i = 0L
-    while (i < 1000) {
-      if ((i & 1) == 1) ys = ys :+ i
-      else ys = i :: ys
-      i += 1
-    }
-    bh.consume(ys)
-  }
+//  @Benchmark
+//  @OperationsPerInvocation(1000)
+//  def expand_prependAppend(bh: Blackhole): Unit = {
+//    var ys = xs
+//    var i = 0L
+//    while (i < 1000) {
+//      if ((i & 1) == 1) ys = ys :+ i
+//      else ys = i :: ys
+//      i += 1
+//    }
+//    bh.consume(ys)
+//  }
 
   @Benchmark
   @OperationsPerInvocation(1000)
@@ -124,18 +124,18 @@ class ListBenchmark {
     bh.consume(ys)
   }
 
-  @Benchmark
-  @OperationsPerInvocation(1000)
-  def expand_prependAllAppendAll(bh: Blackhole): Unit = {
-    var ys = xs
-    var i = 0L
-    while (i < 1000) {
-      if ((i & 1) == 1) ys = ys :++ zs
-      else ys = zs ++: ys
-      i += 1
-    }
-    bh.consume(ys)
-  }
+//  @Benchmark
+//  @OperationsPerInvocation(1000)
+//  def expand_prependAllAppendAll(bh: Blackhole): Unit = {
+//    var ys = xs
+//    var i = 0L
+//    while (i < 1000) {
+//      if ((i & 1) == 1) ys = ys :++ zs
+//      else ys = zs ++: ys
+//      i += 1
+//    }
+//    bh.consume(ys)
+//  }
 
   @Benchmark
   def expand_padTo(bh: Blackhole): Unit = bh.consume(xs.padTo(size * 2, 42))
@@ -143,23 +143,23 @@ class ListBenchmark {
   @Benchmark
   def traverse_foreach(bh: Blackhole): Unit = xs.foreach(x => bh.consume(x))
 
-  @Benchmark
-  def traverse_headTail(bh: Blackhole): Unit = {
-    var ys = xs
-    while (ys.nonEmpty) {
-      bh.consume(ys.head)
-      ys = ys.tail
-    }
-  }
-
-  @Benchmark
-  def traverse_initLast(bh: Blackhole): Unit = {
-    var ys = xs
-    while (ys.nonEmpty) {
-      bh.consume(ys.last)
-      ys = ys.init
-    }
-  }
+//  @Benchmark
+//  def traverse_headTail(bh: Blackhole): Unit = {
+//    var ys = xs
+//    while (ys.nonEmpty) {
+//      bh.consume(ys.head)
+//      ys = ys.tail
+//    }
+//  }
+//
+//  @Benchmark
+//  def traverse_initLast(bh: Blackhole): Unit = {
+//    var ys = xs
+//    while (ys.nonEmpty) {
+//      bh.consume(ys.last)
+//      ys = ys.init
+//    }
+//  }
 
   @Benchmark
   def traverse_iterator(bh: Blackhole): Unit = {
@@ -255,8 +255,8 @@ class ListBenchmark {
   @Benchmark
   def transform_distinct(bh: Blackhole): Unit = bh.consume(xs.distinct)
 
-  @Benchmark
-  def transform_distinctBy(bh: Blackhole): Unit = bh.consume(xs.distinctBy(_ % 2))
+//  @Benchmark
+//  def transform_distinctBy(bh: Blackhole): Unit = bh.consume(xs.distinctBy(_ % 2))
 
   @Benchmark
   def transform_map(bh: Blackhole): Unit = bh.consume(xs.map(x => x + 1))
@@ -276,17 +276,17 @@ class ListBenchmark {
   @Benchmark
   def transform_zip(bh: Blackhole): Unit = bh.consume(xs.zip(xs))
 
-  @Benchmark
-  def transform_zipMapTupled(bh: Blackhole): Unit = {
-    val f = (a: Long, b: Long) => (a, b)
-    bh.consume(xs.zip(xs).map(f.tupled))
-  }
-
-  @Benchmark
-  def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
-
-  @Benchmark
-  def transform_lazyZip(bh: Blackhole): Unit = bh.consume(xs.lazyZip(xs).map((_, _)))
+//  @Benchmark
+//  def transform_zipMapTupled(bh: Blackhole): Unit = {
+//    val f = (a: Long, b: Long) => (a, b)
+//    bh.consume(xs.zip(xs).map(f.tupled))
+//  }
+//
+//  @Benchmark
+//  def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
+//
+//  @Benchmark
+//  def transform_lazyZip(bh: Blackhole): Unit = bh.consume(xs.lazyZip(xs).map((_, _)))
 
   @Benchmark
   def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
@@ -299,4 +299,8 @@ class ListBenchmark {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
+
+  @Benchmark
+  def access_find(bh: Blackhole): Unit =
+    xs.find(x => x > size / 2)
 }
