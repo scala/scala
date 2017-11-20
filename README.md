@@ -94,6 +94,11 @@ The following operations are provided:
     - `zipByKey` / `join` / `zipByKeyWith`
     - `mergeByKey` / `fullOuterJoin` / `mergeByKeyWith` / `leftOuterJoin` / `rightOuterJoin`
 
+The following collections are provided:
+
+- `MultiSet` (both mutable and immutable)
+- `SortedMultiSet` (both mutable and immutable)
+
 ## Roadmap
 
 1. September 2017: release targeting Scala 2.13 and Dotty.
