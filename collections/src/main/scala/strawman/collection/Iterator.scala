@@ -484,7 +484,8 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     var first = true
     var acc: B = 0.asInstanceOf[B]
 
-    for (x <- this) {
+    while (hasNext) {
+      val x = next()
       if (first) {
         acc = x
         first = false

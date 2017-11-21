@@ -47,8 +47,10 @@ sealed trait HashMap[K, +V]
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
 
-  def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] =
+  final def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] =
     updated0(key, computeHash(key), 0, value, null, null)
+
+  @`inline` override final def +[V1 >: V](kv: (K, V1)): HashMap[K, V1] = updated(kv._1, kv._2)
 
   def empty: HashMap[K, V] = HashMap.empty[K, V]
 

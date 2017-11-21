@@ -6,7 +6,7 @@ import strawman.collection.{IterableOnce, Iterator, SeqFactory, StrictOptimizedS
 
 import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws}
 import scala.runtime.ScalaRunTime
-import scala.Predef.{???, intWrapper}
+import scala.Predef.intWrapper
 
 /**
   * An immutable array.
@@ -89,11 +89,6 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
         fromIterable(View.Zip(toIterable, that))
     }
 
-  override def partition(p: A => Boolean): (ImmutableArray[A], ImmutableArray[A]) = {
-    val pn = View.Partition(toIterable, p)
-    (fromIterable(pn.first), fromIterable(pn.second))
-  }
-
   override def take(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n)(apply)
 
   override def takeRight(n: Int): ImmutableArray[A] = ImmutableArray.tabulate(n min length)(i => apply(length - (n min length) + i))
@@ -101,6 +96,11 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
   override def drop(n: Int): ImmutableArray[A] = ImmutableArray.tabulate((length - n) max 0)(i => apply(n + i))
 
   override def dropRight(n: Int): ImmutableArray[A] = ImmutableArray.tabulate((length - n) max 0)(apply)
+
+  override def slice(from: Int, until: Int): ImmutableArray[A] = {
+    val lo = scala.math.max(from, 0)
+    ImmutableArray.tabulate(until - lo)(i => apply(i + lo))
+  }
 
   override def tail: ImmutableArray[A] =
     if (length > 0) {
@@ -146,7 +146,7 @@ object ImmutableArray extends StrictOptimizedSeqFactory[ImmutableArray] {
   override def fill[A](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 
   override def tabulate[A](n: Int)(f: Int => A): ImmutableArray[A] = {
-    val elements = scala.Array.ofDim[Any](n)
+    val elements = scala.Array.ofDim[Any](scala.math.max(n, 0))
     var i = 0
     while (i < n) {
       ScalaRunTime.array_update(elements, i, f(i))

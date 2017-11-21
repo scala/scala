@@ -4,7 +4,7 @@ package immutable
 
 import strawman.collection.mutable.Builder
 
-import scala.{Boolean, Int, Option, Ordering, Serializable}
+import scala.{Boolean, `inline`, Int, Option, Ordering, Serializable}
 
 trait SortedMap[K, +V]
   extends Map[K, V]
@@ -40,7 +40,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
     // We override these methods to fix their return type (which would be `Map` otherwise)
     def updated[V1 >: V](key: K, value: V1): CC[K, V1]
-    override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+    @`inline` final override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
     override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = {
         var result: CC[K, V2] = coll

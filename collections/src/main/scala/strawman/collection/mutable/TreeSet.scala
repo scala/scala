@@ -1,7 +1,7 @@
 package strawman
 package collection.mutable
 
-import collection.{SortedIterableFactory, StrictOptimizedIterableOps}
+import collection.{SortedIterableFactory, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
 import collection.mutable.{RedBlackTree => RB}
 
 import scala.{Boolean, Int, None, Null, NullPointerException, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
@@ -26,6 +26,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   extends SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
     with Serializable {
 
   if (ordering eq null)

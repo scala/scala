@@ -55,7 +55,7 @@ class ListBuffer[A]
 
   /** Convert to list; avoids copying where possible. */
   override def toList: List[A] = {
-    aliased = true
+    aliased = nonEmpty
     first
   }
 
