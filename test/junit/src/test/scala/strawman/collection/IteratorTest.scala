@@ -170,7 +170,7 @@ class IteratorTest {
     results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
     assertSameElements(List(21), results)
   }
-
+  
   // scala/bug#8552
   @Test def indexOfShouldWorkForTwoParams(): Unit = {
     assertEquals(1, List(1, 2, 3).iterator().indexOf(2, 0))
