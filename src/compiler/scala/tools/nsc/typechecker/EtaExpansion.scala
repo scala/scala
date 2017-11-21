@@ -56,16 +56,22 @@ trait EtaExpansion { self: Analyzer =>
         else {
           val vname: Name = freshName()
           // Problem with ticket #2351 here
+          val valSym = typer.context.owner.newValue(vname.toTermName, tree.pos.focus, SYNTHETIC)
           defs += atPos(tree.pos) {
             val rhs = if (byName) {
-              val res = typer.typed(Function(List(), tree))
-              new ChangeOwnerTraverser(typer.context.owner, res.symbol) traverse tree // scala/bug#6274
-              res
-            } else tree
-            ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), rhs)
+              val funSym = valSym.newAnonymousFunctionValue(tree.pos.focus)
+              val tree1 = tree.changeOwner(typer.context.owner -> funSym)
+              val funType = definitions.functionType(Nil, tree1.tpe)
+              funSym.setInfo(funType)
+              Function(List(), tree1).setSymbol(funSym).setType(funType)
+            } else {
+              tree.changeOwner(typer.context.owner -> valSym)
+            }
+            valSym.setInfo(rhs.tpe)
+            ValDef(valSym, rhs)
           }
           atPos(tree.pos.focus) {
-            if (byName) Apply(Ident(vname), List()) else Ident(vname)
+            if (byName) Apply(Ident(valSym), List()) else Ident(valSym)
           }
         }
       val tree1 = tree match {
