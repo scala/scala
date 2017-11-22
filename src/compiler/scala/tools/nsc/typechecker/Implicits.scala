@@ -1372,6 +1372,7 @@ trait Implicits {
       tp.dealias match {
         case ConstantType(c: Constant) => success(Literal(c))
         case SingleType(p, v) => success(gen.mkAttributedRef(p, v) setType tp)
+        case ThisType(sym) => success(gen.mkAttributedThis(sym) setType tp)
         case UnitTpe => success(Literal(Constant(())))
         case TypeRef(pre, sym, Nil) if sym.isModuleClass => success(gen.mkAttributedRef(pre, sym.sourceModule) setType tp)
         case _ => SearchFailure
