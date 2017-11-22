@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
-import PartialFunction._
+import PartialFunction.{condOpt => whenever}
 import scala.annotation.tailrec
 
 /** An interface to enable higher configurability of diagnostic messages
@@ -524,24 +524,27 @@ trait TypeDiagnostics {
             case Bind(_, _) if atBounded(t)            => atBounds += sym
             case _                                     =>
           }
-          // Only record type references which don't originate within the
-          // definition of the class being referenced.
           if (t.tpe ne null) {
-            for (tp <- t.tpe if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
-              tp match {
+            for (tp <- t.tpe if !treeTypes(tp)) {
+              // Include references to private/local aliases (which might otherwise refer to an enclosing class)
+              val isAlias = {
+                val td = tp.typeSymbolDirect
+                td.isAliasType && (td.isLocal || td.isPrivate)
+              }
+              // Ignore type references to an enclosing class. A reference to C must be outside C to avoid warning.
+              if (isAlias || !currentOwner.hasTransOwner(tp.typeSymbol)) tp match {
                 case NoType | NoPrefix    =>
                 case NullaryMethodType(_) =>
                 case MethodType(_, _)     =>
                 case SingleType(_, _)     =>
                 case _                    =>
-                  log(s"$tp referenced from $currentOwner")
+                  log(s"${if (isAlias) "alias " else ""}$tp referenced from $currentOwner")
                   treeTypes += tp
               }
             }
             // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-            t.tpe.prefix foreach {
+            for (p <- t.tpe.prefix) whenever(p) {
               case SingleType(_, sym) => targets += sym
-              case _                 =>
             }
           }
           super.traverse(t)
@@ -550,7 +553,7 @@ trait TypeDiagnostics {
               m.isType
           && !m.isTypeParameterOrSkolem // would be nice to improve this
           && (m.isPrivate || m.isLocalToBlock)
-          && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
+          && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
         )
         def isSyntheticWarnable(sym: Symbol) = (
           sym.isDefaultGetter 
@@ -737,14 +740,13 @@ trait TypeDiagnostics {
     /** Returns Some(msg) if the given tree is untyped apparently due
      *  to a cyclic reference, and None otherwise.
      */
-    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
-      case ValDef(_, _, TypeTree(), _)       => "recursive "+sym+" needs type"
-      case DefDef(_, _, _, _, TypeTree(), _) => List(cyclicAdjective(sym), sym, "needs result type") mkString " "
+    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = whenever(tree) {
+      case ValDef(_, _, TypeTree(), _)       => s"recursive $sym needs type"
+      case DefDef(_, _, _, _, TypeTree(), _) => s"${cyclicAdjective(sym)} $sym needs result type"
       case Import(expr, selectors)           =>
-        ( "encountered unrecoverable cycle resolving import." +
-          "\nNote: this is often due in part to a class depending on a definition nested within its companion." +
-          "\nIf applicable, you may wish to try moving some members into another object."
-        )
+        """encountered unrecoverable cycle resolving import.
+          |Note: this is often due in part to a class depending on a definition nested within its companion.
+          |If applicable, you may wish to try moving some members into another object.""".stripMargin
     }
 
     // warn about class/method/type-members' type parameters that shadow types already in scope

@@ -100,6 +100,9 @@ warn-unused-privates.scala:121: warning: local type OtherThing is never used
 warn-unused-privates.scala:216: warning: private class for your eyes only in object not even using companion privates is never used
   private implicit class `for your eyes only`(i: Int) {  // warn
                          ^
+warn-unused-privates.scala:232: warning: private class D in class nonprivate alias is enclosing is never used
+  private class D extends C2   // warn
+                ^
 warn-unused-privates.scala:201: warning: pattern var z in method f is never used; `z@_' suppresses this warning
     case z => "warn"
          ^
@@ -116,5 +119,5 @@ warn-unused-privates.scala:138: warning: parameter value i in method y_= is neve
   private def y_=(i: Int): Unit = ???
                   ^
 error: No warnings can be incurred under -Xfatal-warnings.
-39 warnings found
+40 warnings found
 one error found

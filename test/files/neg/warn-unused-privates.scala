@@ -224,3 +224,10 @@ class `no warn in patmat anonfun isDefinedAt` {
     case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
   }
 }
+
+// this is the ordinary case, as AnyRef is an alias of Object
+class `nonprivate alias is enclosing` {
+  class C
+  type C2 = C
+  private class D extends C2   // warn
+}
