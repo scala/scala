@@ -8,7 +8,8 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.interpreter.{ ILoop, IMain, InteractiveReader }
+import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.shell.{ ILoop, ShellConfig, ReplReporterImpl }
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
@@ -38,20 +39,18 @@ class ConsoleInterface {
     log.info(Message("Starting scala interpreter..."))
     log.info(Message(""))
 
-    val loop = new ILoop {
-      override def createInterpreter() = {
+    val loop = new ILoop(ShellConfig(interpreterSettings)) {
+      override def createInterpreter(interpreterSettings: Settings) = {
         if (loader ne null) {
-          in = InteractiveReader.apply()
-          intp = new IMain(settings) {
+          val reporter = new ReplReporterImpl(interpreterSettings)
+          intp = new IMain(interpreterSettings, reporter) {
             override protected def parentClassLoader =
-              if (loader eq null) super.parentClassLoader else loader
-
-            override protected def newCompiler(settings: Settings, reporter: Reporter) =
-              super.newCompiler(compilerSettings, reporter)
+              if (loader eq null) super.parentClassLoader
+              else loader
           }
           intp.setContextClassLoader()
         } else
-          super.createInterpreter()
+          super.createInterpreter(interpreterSettings)
 
         for ((id, value) <- bindNames zip bindValues)
           intp.beQuietDuring(intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value))
@@ -69,9 +68,7 @@ class ConsoleInterface {
       }
     }
 
-    loop.process(if (loader eq null) compilerSettings else interpreterSettings)
-
-    ()
+    loop.run(compilerSettings)
   }
 }
 

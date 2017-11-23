@@ -1,5 +1,6 @@
 package xsbt
 
+import java.io.PrintWriter
 import xsbti.compile.Output
 import scala.reflect.{ internal => sri }
 import scala.reflect.internal.{ util => sriu }
@@ -150,6 +151,12 @@ trait ZincGlobalCompat {
 }
 
 object Compat {
+  // IR is renamed to Results
+  val Results = scala.tools.nsc.interpreter.IR
+
+  // IMain in 2.13 accepts ReplReporter
+  def replReporter(settings: Settings, writer: PrintWriter) = writer
+
   implicit final class TreeOps(val tree: sri.Trees#Tree) extends AnyVal {
     // Introduced in 2.11
     @inline final def hasSymbolField: Boolean = tree.hasSymbol

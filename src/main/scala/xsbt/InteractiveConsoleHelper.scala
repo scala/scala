@@ -7,14 +7,14 @@
 
 package xsbt
 
-import scala.tools.nsc.interpreter.IR
+import Compat._
 import xsbti.InteractiveConsoleResult
 
 object InteractiveConsoleHelper {
-  implicit def toConsoleResult(ir: IR.Result): InteractiveConsoleResult =
+  implicit def toConsoleResult(ir: Results.Result): InteractiveConsoleResult =
     ir match {
-      case IR.Success    => InteractiveConsoleResult.Success
-      case IR.Incomplete => InteractiveConsoleResult.Incomplete
-      case IR.Error      => InteractiveConsoleResult.Error
+      case Results.Success    => InteractiveConsoleResult.Success
+      case Results.Incomplete => InteractiveConsoleResult.Incomplete
+      case Results.Error      => InteractiveConsoleResult.Error
     }
 }
