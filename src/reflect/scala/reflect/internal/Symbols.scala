@@ -2219,17 +2219,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else owner.enclosingTopLevelClassOrDummy
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
-    def isCoDefinedWith(that: Symbol) = (
-         !rawInfoIsNoType
-      && (this.effectiveOwner == that.effectiveOwner)
-      && (   !this.effectiveOwner.isPackageClass
-          || (this.associatedFile eq NoAbstractFile)
-          || (that.associatedFile eq NoAbstractFile)
-          || (this.associatedFile.path == that.associatedFile.path)  // Cheap possibly wrong check, then expensive normalization
-          || (this.associatedFile.canonicalPath == that.associatedFile.canonicalPath)
-         )
-    )
-
+    def isCoDefinedWith(that: Symbol) = {
+      !rawInfoIsNoType                               &&
+        (this.effectiveOwner == that.effectiveOwner) &&
+        (!this.effectiveOwner.isPackageClass             || { val thisFile = this.associatedFile
+          (thisFile eq NoAbstractFile)                   || { val thatFile = that.associatedFile
+          (thatFile eq NoAbstractFile)                   ||
+          (thisFile.path == thatFile.path)               ||      // Cheap possibly wrong check
+          (thisFile.canonicalPath == thatFile.canonicalPath)
+          }}
+          )
+    }
     /** The internal representation of classes and objects:
      *
      *  class Foo is "the class" or sometimes "the plain class"
@@ -2509,8 +2509,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // file to also store the classfile, but without changing the behavior
     // of sourceFile (which is expected at least in the IDE only to
     // return actual source code.) So sourceFile has classfiles filtered out.
-    final def sourceFile: AbstractFile =
-      if ((associatedFile eq NoAbstractFile) || (associatedFile.path endsWith ".class")) null else associatedFile
+    final def sourceFile: AbstractFile = {
+      val file = associatedFile
+      if ((file eq NoAbstractFile) || (file.path endsWith ".class")) null else file
+    }
 
     /** Overridden in ModuleSymbols to delegate to the module class.
      *  Never null; if there is no associated file, returns NoAbstractFile.
