@@ -86,7 +86,7 @@ object JarJar {
     val excluded = excludes.map { name =>
       val f: File = outdir / name
       if(f.exists && !f.delete())
-        throw new IOException("Failed to delete excluded file $f")
+        throw new IOException(s"Failed to delete excluded file $f")
       f
     }
     (processed -- excluded).toSeq
