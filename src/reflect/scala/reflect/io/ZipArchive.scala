@@ -66,6 +66,8 @@ import ZipArchive._
 abstract class ZipArchive(override val file: JFile) extends AbstractFile with Equals {
   self =>
 
+  override lazy val canonicalPath = super.canonicalPath
+
   override def underlyingSource = Some(this)
   def isDirectory = true
   def lookupName(name: String, directory: Boolean) = unsupported()
