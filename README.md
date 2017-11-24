@@ -264,6 +264,10 @@ before the commit's PR has been merged. That commit is then used to
 build a large number of open-source projects from source and run their
 test suites.
 
+To request a community build run on your PR, just ask in a comment on
+the PR and a Scala team member will take care of
+it. ([details](https://github.com/scala/community-builds/wiki#can-i-run-it-against-a-pull-request-in-scalascala))
+
 Community builds run on the Scala Jenkins instance.  The jobs are
 named `..-integrate-community-build`. See the
 [scala/community-builds](https://github.com/scala/community-builds)
