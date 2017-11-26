@@ -72,7 +72,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def unconstrained: collection.Set[A] = this
 
-  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = new TreeSetView(from, until)
+  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = new TreeSetProjection(from, until)
 
   override def className: String = "TreeSet"
 
@@ -101,7 +101,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     *              bound.
     */
   @SerialVersionUID(7087824939194006086L)
-  private[this] final class TreeSetView(from: Option[A], until: Option[A]) extends TreeSet[A](tree) {
+  private[this] final class TreeSetProjection(from: Option[A], until: Option[A]) extends TreeSet[A](tree) {
 
     /**
       * Given a possible new lower bound, chooses and returns the most constraining one (the maximum).
@@ -131,7 +131,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     }
 
     override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] =
-      new TreeSetView(pickLowerBound(from), pickUpperBound(until))
+      new TreeSetProjection(pickLowerBound(from), pickUpperBound(until))
 
     override def contains(key: A) = isInsideViewBounds(key) && RB.contains(tree, key)
 

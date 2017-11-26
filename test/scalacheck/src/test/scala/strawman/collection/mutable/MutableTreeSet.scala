@@ -104,7 +104,7 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
   }
 }
 
-object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
+object MutableTreeSetProjectionProperties extends Properties("mutable.TreeSetProjection") {
   type K = String
 
   implicit val ord = implicitly[Ordering[K]]

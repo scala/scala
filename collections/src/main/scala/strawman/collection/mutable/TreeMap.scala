@@ -76,7 +76,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
     *              bound.
     */
-  def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMapView(from, until)
+  def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMapProjection(from, until)
 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 
@@ -107,7 +107,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     *              bound.
     */
   @SerialVersionUID(2219159283273389116L)
-  private[this] final class TreeMapView(from: Option[K], until: Option[K]) extends TreeMap[K, V](tree) {
+  private[this] final class TreeMapProjection(from: Option[K], until: Option[K]) extends TreeMap[K, V](tree) {
 
     /**
       * Given a possible new lower bound, chooses and returns the most constraining one (the maximum).
@@ -137,7 +137,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     }
 
     override def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] =
-      new TreeMapView(pickLowerBound(from), pickUpperBound(until))
+      new TreeMapProjection(pickLowerBound(from), pickUpperBound(until))
 
     override def get(key: K) = if (isInsideViewBounds(key)) RB.get(tree, key) else None
 
