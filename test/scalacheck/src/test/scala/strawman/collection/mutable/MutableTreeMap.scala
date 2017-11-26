@@ -195,7 +195,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
   }
 }
 
-object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") with Generators {
+object MutableTreeMapProjectionProperties extends Properties("mutable.TreeMapProjection") with Generators {
   type K = String
   type V = Int
 
