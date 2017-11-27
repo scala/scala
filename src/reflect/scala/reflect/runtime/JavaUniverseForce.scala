@@ -42,6 +42,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.BackquotedIdentifierAttachment
     this.AtBoundIdentifierAttachment
     this.ForAttachment
+    this.CoforAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
     this.NoInlineCallsiteAttachment
