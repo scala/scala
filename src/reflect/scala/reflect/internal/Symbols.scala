@@ -217,7 +217,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
-    assert(isCompilerUniverse || isSynchronized || isAprioriThreadsafe, s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
+
+    if (!(isCompilerUniverse || isSynchronized || isAprioriThreadsafe))
+      throw new AssertionError(s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
 
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
