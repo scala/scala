@@ -2,7 +2,7 @@ package strawman
 package collection
 package decorators
 
-class ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.MapOps[X, Y, CC, CC[X, Y]]](`this`: CC[K, V]) {
+class ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.Map[X, Y]](`this`: CC[K, V]) {
 
   /**
     * Updates an existing binding or create a new one according to the
@@ -23,15 +23,15 @@ class ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.MapOps[X, Y, CC, CC[X, 
     *
     * @return A new updated `Map`
     */
-  def updatedWith(key: K)(f: PartialFunction[Option[V], Option[V]]): CC[K, V] = {
+  def updatedWith[C](key: K)(f: PartialFunction[Option[V], Option[V]])(implicit bf: BuildFrom[CC[K, V], (K, V), C]): C = {
     val pf = f.lift
     val previousValue = `this`.get(key)
     pf(previousValue) match {
-      case None => `this`
+      case None => bf.fromSpecificIterable(`this`)(`this`)
       case Some(result) =>
         result match {
-          case None => `this` - key
-          case Some(v) => `this` + (key -> v)
+          case None => bf.fromSpecificIterable(`this`)(`this` - key)
+          case Some(v) => bf.fromSpecificIterable(`this`)(`this` + (key -> v))
         }
     }
   }
