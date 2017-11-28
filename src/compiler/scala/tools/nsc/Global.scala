@@ -1330,7 +1330,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
-      else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClassOrDummy)
+      else if (!sym.isTopLevel) compiles(sym.originalEnclosingTopLevelClassOrDummy)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
