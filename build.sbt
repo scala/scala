@@ -1008,7 +1008,6 @@ intellij := {
     // `sbt projects` lists all modules in the build
     buildModule :: List(
       moduleDeps(compilerP).value,
-      // moduleDeps(dist).value,                // No sources, therefore no module in IntelliJ
       moduleDeps(interactive).value,
       moduleDeps(junit).value,
       moduleDeps(library).value,
@@ -1018,8 +1017,6 @@ intellij := {
       moduleDeps(reflect).value,
       moduleDeps(repl).value,
       moduleDeps(replFrontend).value,
-      // moduleDeps(root).value,                // No sources
-      // moduleDeps(scalaDist).value,           // No sources
       moduleDeps(scalacheck, config = Test).value,
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
