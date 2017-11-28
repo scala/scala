@@ -95,6 +95,16 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
 
+  override def minAfter(key: A): Option[A] = {
+    val v = RB.minAfter(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
+  }
+
+  override def maxBefore(key: A): Option[A] = {
+    val v = RB.maxBefore(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
+  }
+
   def iterator(): Iterator[A] = RB.keysIterator(tree)
 
   def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))

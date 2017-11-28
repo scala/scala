@@ -166,6 +166,28 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     map.lastOption == Try(map.iterator().max).toOption
   }
 
+  property("minAfter") = forAll { (allEntries: Map[K, V]) =>
+    val entries = allEntries.take(allEntries.size / 2)
+
+    val map = mutable.TreeMap[K, V]()
+    map ++= entries
+
+    allEntries.forall { case (k, v) =>
+      map.minAfter(k) == map.rangeImpl(Some(k), None).headOption
+    }
+  }
+
+  property("maxBefore") = forAll { (allEntries: Map[K, V]) =>
+    val entries = allEntries.take(allEntries.size / 2)
+
+    val map = mutable.TreeMap[K, V]()
+    map ++= entries
+
+    allEntries.forall { case (k, v) =>
+      map.maxBefore(k) == map.rangeImpl(None, Some(k)).lastOption
+    }
+  }
+
   property("clear") = forAll { (map: mutable.TreeMap[K, V]) =>
     map.clear()
     map.isEmpty && map.size == 0

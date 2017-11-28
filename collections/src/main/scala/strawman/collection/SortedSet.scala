@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Boolean, Ordering, `inline`}
+import scala.{Boolean, Ordering, `inline`, None, Option, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
@@ -26,6 +26,18 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 
   def firstKey: A = head
   def lastKey: A = last
+
+  /** Find the smallest element larger than or equal to a given key.
+    * @param key The given key.
+    * @return `None` if there is no such node.
+    */
+  def minAfter(key: A): Option[A] = from(key).headOption
+
+  /** Find the largest element less than a given key.
+    * @param key The given key.
+    * @return `None` if there is no such node.
+    */
+  def maxBefore(key: A): Option[A] = until(key).lastOption
 
   def rangeTo(to: A): C = {
     val i = from(to).iterator()

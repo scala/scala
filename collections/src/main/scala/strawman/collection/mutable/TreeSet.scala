@@ -84,6 +84,10 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   override def last: A = RB.maxKey(tree).get
 
+  override def minAfter(key: A): Option[A] = RB.minKeyAfter(tree, key)
+
+  override def maxBefore(key: A): Option[A] = RB.maxKeyBefore(tree, key)
+
   override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
 
 

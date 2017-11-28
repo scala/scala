@@ -94,6 +94,31 @@ private[collection] object RedBlackTree {
     result
   }
 
+  /**
+    * Returns the smallest node with a key larger than or equal to `x`. Returns `null` if there is no such node.
+    */
+  def minAfter[A, B](tree: Tree[A, B], x: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq null) null else {
+    val cmp = ordering.compare(x, tree.key)
+    if (cmp == 0) tree
+    else if (cmp < 0) {
+      val l = minAfter(tree.left, x)
+      if (l != null) l else tree
+    } else minAfter(tree.right, x)
+  }
+
+  /**
+    * Returns the largest node with a key smaller than `x`. Returns `null` if there is no such node.
+    */
+  def maxBefore[A, B](tree: Tree[A, B], x: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq null) null else {
+    val cmp = ordering.compare(x, tree.key)
+    if (cmp <= 0) maxBefore(tree.left, x)
+    else {
+      val r = maxBefore(tree.right, x)
+      if (r != null) r else tree
+    }
+  }
+
+
 
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
 
