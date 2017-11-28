@@ -891,52 +891,114 @@ abstract class BTypes {
   def isCompilingPrimitive: Boolean
 
   // The [[Lazy]] and [[LazyVar]] classes would conceptually be better placed within
-  // PostProcessorFrontendAccess (they access the `frontendLock` defined in that class). However,
+  // PostProcessorFrontendAccess (they may access the `frontendLock` defined in that class). However,
   // for every component in which we define nested classes, we need to make sure that the compiler
   // knows that all component instances (val frontendAccess) in various classes are all the same,
   // otherwise the prefixes don't match and we get type mismatch errors.
   // Since we already do this dance (val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes)
   // for BTypes, it's easier to add those nested classes to BTypes.
 
-  object Lazy {
-    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
+  abstract sealed class Lazy[+T] {
+    /** get the result of the lazy value, calculating the result and performing the additional actions if the value
+      * is not already known.
+      */
+    def force: T
+
+    /** add an accumulating action, which is performed when the result is forced.
+      * If the result is already known at the time of this call then perform the action immediately
+      *
+      * If the result is not known the action will be performed after the value is force.
+      * The order of application of multiple onForce definitions is undefined
+      */
+    def onForce(f: T => Unit): Unit
   }
+  object Lazy {
 
-  /**
-   * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
-   * to be executed when it's forced.
-   */
-  final class Lazy[T <: AnyRef](t: () => T) {
-    @volatile private var value: T = _
+    /**
+      * create a Lazy, whose calculation is performed with `frontendLock`
+      */
+    def withLock[T <: AnyRef](t: => T): Lazy[T] = new LazyWithLock[T](() => t)
 
-    private var initFunction = {
-      val tt = t // prevent allocating a field for t
-      () => { value = tt() }
+    /**
+      * create a Lazy, whose calculation is conditionally performed with `frontendLock` or eagerly evaluated
+      */
+    def withLockOrEager[T <: AnyRef](beLazy:Boolean, t: => T): Lazy[T] =
+      if (beLazy) new LazyWithLock[T](() => t)
+      else eager(t)
+    /**
+      * create a Lazy where the result is pre-determined, typically a constant, e.g. Nil None etc
+      */
+    def eager[T <: AnyRef](value: T): Lazy[T] = new Eager[T](value)
+
+    /**
+      * create a Lazy, whose calculation is performed on demand
+      */
+    def withoutLock[T <: AnyRef](t: => T): Lazy[T] = new LazyWithoutLock[T](() => t)
+
+    val eagerNil = eager(Nil)
+    val eagerNone = eager(None)
+
+    private final class Eager[T](val force: T) extends Lazy[T] {
+      def onForce(f: T => Unit): Unit = f(force)
+
+      override def toString = force.toString
     }
 
-    override def toString = if (value == null) "<?>" else value.toString
+    private abstract class AbstractLazy[T <: AnyRef](private var t: () => T) extends Lazy[T] {
+      // value need be volatile to ensure that init doesn't expose incomplete results
+      // due to JVM inlining of init
+      @volatile protected var value: T = _
 
-    def onForce(f: T => Unit): Unit = {
-      if (value != null) f(value)
-      else frontendSynch {
+      override def toString = if (value == null) "<?>" else value.toString
+
+      private var postForce: List[T => Unit] = Nil
+
+      def onForce(f: T => Unit): Unit = {
         if (value != null) f(value)
-        else {
-          val prev = initFunction
-          initFunction = () => {
-            prev()
-            f(value)
-          }
+        else this.synchronized {
+          if (value != null) f(value)
+          else postForce = f :: postForce
         }
+      }
+
+      def force: T = {
+        // assign to local var to avoid volatile reads and associated memory barriers
+        var result = value
+        if (result != null) result
+        else {
+          result = init(t)
+          t = null
+          this.synchronized {
+            postForce foreach (_.apply (result))
+            postForce = Nil
+          }
+          result
+        }
+      }
+
+      def init(t: () => T): T
+    }
+
+    /**
+      * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
+      * to be executed when it's forced.
+      */
+    private final class LazyWithLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
+
+      def init(t: () => T): T = frontendSynch {
+        if (value == null) value = t()
+        value
       }
     }
 
-    def force: T = {
-      if (value != null) value
-      else frontendSynch {
-        if (value == null) {
-          initFunction()
-          initFunction = null
-        }
+    /**
+      * A lazy value that doesn't synchronize on the `frontendLock`, and supports accumulating actions
+      * to be executed when it's forced.
+      */
+    private final class LazyWithoutLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
+
+      def init(t: () => T): T = this.synchronized {
+        if (value == null) value = t()
         value
       }
     }
