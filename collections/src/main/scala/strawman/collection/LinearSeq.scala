@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Any, Boolean, IndexOutOfBoundsException, Int, None, Option, Some, math, throws}
+import scala.{Any, Boolean, IndexOutOfBoundsException, Int, None, Option, Some, Unit, math, throws}
 import scala.annotation.tailrec
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
@@ -75,14 +75,13 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
     skipped.head
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var these: LinearSeq[A] = coll
     while (!these.isEmpty) {
       f(these.head)
       these = these.tail
     }
   }
-
 
   override def forall(p: A => Boolean): Boolean = {
     var these: LinearSeq[A] = coll

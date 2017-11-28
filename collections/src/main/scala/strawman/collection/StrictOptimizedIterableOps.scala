@@ -87,11 +87,11 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def flatten[B](implicit ev: A => IterableOnce[B]): CC[B] = {
+  override def flatten[B](implicit toIterableOnce: A => IterableOnce[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
     val it = iterator()
     while (it.hasNext) {
-      b ++= it.next()
+      b ++= toIterableOnce(it.next())
     }
     b.result()
   }
