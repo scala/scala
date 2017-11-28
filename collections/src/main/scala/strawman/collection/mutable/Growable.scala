@@ -46,18 +46,10 @@ trait Growable[-A] extends Clearable {
    *  @return  the $coll itself.
    */
   def addAll(xs: IterableOnce[A]): this.type = {
-    @tailrec def loop(xs: collection.LinearSeq[A]): Unit = {
-      if (xs.nonEmpty) {
-        this += xs.head
-        loop(xs.tail)
-      }
+    val it = xs.iterator()
+    while (it.hasNext) {
+      add(it.next())
     }
-    xs match {
-      case xs: collection.LinearSeq[A] => loop(xs)
-      case xs => xs.iterator() foreach += // Deviation: IterableOnce does not define `foreach`.
-    }
-    // @ichoran writes: Right now, this actually isn't any faster than using an iterator
-    // for List. Maybe we should just simplify the code by deferring to iterator foreach?
     this
   }
 

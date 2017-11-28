@@ -733,14 +733,18 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
     val m = mutable.Map.empty[K, Builder[A, C]]
-    for (elem <- this) {
+    val it = iterator()
+    while (it.hasNext) {
+      val elem = it.next()
       val key = f(elem)
       val bldr = m.getOrElseUpdate(key, newSpecificBuilder())
       bldr += elem
     }
-    var result = immutable.Map.empty[K, C]
-    m.foreach { case (k, v) =>
-      result = result + ((k, v.result()))
+    var result = immutable.HashMap.empty[K, C]
+    val mapIt = m.iterator()
+    while (mapIt.hasNext) {
+      val (k, v) = mapIt.next()
+      result = result.updated(k, v.result())
     }
     result
   }

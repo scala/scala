@@ -11,8 +11,8 @@ import scala.Predef.intWrapper
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(1)
-@Warmup(iterations = 12)
-@Measurement(iterations = 12)
+@Warmup(iterations = 8)
+@Measurement(iterations = 8)
 @State(Scope.Benchmark)
 class HashSetBenchmark {
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
