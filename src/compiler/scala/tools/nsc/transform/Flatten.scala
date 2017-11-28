@@ -57,8 +57,9 @@ abstract class Flatten extends InfoTransform {
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if isFlattenablePrefix(pre) =>
-        assert(args.isEmpty && sym.enclosingTopLevelClass != NoSymbol, sym.ownerChain)
-        typeRef(sym.enclosingTopLevelClass.owner.thisType, sym, Nil)
+        val top = sym.enclosingTopLevelClass
+        assert(args.isEmpty && top != NoSymbol, sym.ownerChain)
+        typeRef(top.owner.thisType, sym, Nil)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
         val decls1 = scopeTransform(clazz) {

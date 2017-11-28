@@ -2206,17 +2206,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isMethod || isClass || this == NoSymbol) this
       else owner.logicallyEnclosingMember
 
-    /** The top-level class containing this symbol. */
+    /** The top-level class containing this symbol, using the current owner chain. */
     def enclosingTopLevelClass: Symbol =
       if (isTopLevel) {
         if (isClass) this else moduleClass
       } else owner.enclosingTopLevelClass
 
-    /** The top-level class or local dummy symbol containing this symbol. */
-    def enclosingTopLevelClassOrDummy: Symbol =
+    /** The top-level class or local dummy symbol containing this symbol, using the original owner chain. */
+    def originalEnclosingTopLevelClassOrDummy: Symbol =
       if (isTopLevel) {
         if (isClass) this else moduleClass.orElse(this)
-      } else owner.enclosingTopLevelClassOrDummy
+      } else originalOwner.originalEnclosingTopLevelClassOrDummy
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = {
@@ -3555,7 +3555,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclClassChain = Nil
     override def enclClass: Symbol = this
     override def enclosingTopLevelClass: Symbol = this
-    override def enclosingTopLevelClassOrDummy: Symbol = this
+    override def originalEnclosingTopLevelClassOrDummy: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile
