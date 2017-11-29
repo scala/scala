@@ -1,0 +1,29 @@
+1. defining
+foo 1
+foo 2
+foo 3
+1. forcing
+bar 1
+bar 2
+bar 3
+2. defining
+2. forcing
+hi
+1
+hi
+1
+3. defining
+3. forcing
+hi
+1
+4. defining
+4. forcing
+1
+1
+1
+5. defining
+Int 1
+Int 3
+5. forcing
+String 4
+String 2

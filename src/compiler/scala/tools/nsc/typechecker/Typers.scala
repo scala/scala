@@ -45,6 +45,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   final val shortenImports = false
 
+  // All typechecked RHS of ValDefs for right-associative operator desugaring
+  private val rightAssocValDefs = new mutable.AnyRefMap[Symbol, Tree]
+  // Symbols of ValDefs for right-associative operator desugaring which are passed by name and have been inlined
+  private val inlinedRightAssocValDefs = new mutable.HashSet[Symbol]
+
   // allows override of the behavior of the resetTyper method w.r.t comments
   def resetDocComments() = clearDocComments()
 
@@ -53,6 +58,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     resetContexts()
     resetImplicits()
     resetDocComments()
+    rightAssocValDefs.clear()
+    inlinedRightAssocValDefs.clear()
   }
 
   sealed abstract class SilentResult[+T] {
@@ -2067,7 +2074,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else tpt1.tpe
           transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
-      treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(rhs1)) setType NoType
+      val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(rhs1)) setType NoType
+      if (sym.isSynthetic && sym.name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX))
+        rightAssocValDefs += ((sym, vdef1.rhs))
+      vdef1
     }
 
     /** Enter all aliases of local parameter accessors.
@@ -2478,7 +2488,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (result0.nonEmpty) checkPure(result0, supple = true)
         }
 
-        treeCopy.Block(block, statsTyped, expr1)
+        // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
+        val statsTyped2 = statsTyped match {
+          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs remove vd.symbol => Nil
+          case _ => statsTyped
+        }
+
+        treeCopy.Block(block, statsTyped2, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
@@ -3611,6 +3627,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ => tp
                 }
 
+                // Inline RHS of ValDef for right-associative by-value operator desugaring
+                val args2 = (args1, mt.params) match {
+                  case ((ident: Ident) :: Nil, param :: Nil) if param.isByNameParam && rightAssocValDefs.contains(ident.symbol) =>
+                    inlinedRightAssocValDefs += ident.symbol
+                    val rhs = rightAssocValDefs.remove(ident.symbol).get
+                    rhs.changeOwner(ident.symbol -> context.owner) :: Nil
+                  case _ => args1
+                }
+
                 /*
                  * This is translating uses of List() into Nil.  This is less
                  *  than ideal from a consistency standpoint, but it shouldn't be
@@ -3622,7 +3647,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
-                  constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
+                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe))
               }
               checkDead.updateExpr(fun) {
                 handleMonomorphicCall
