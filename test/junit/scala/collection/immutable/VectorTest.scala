@@ -27,4 +27,21 @@ class VectorTest {
     assertEquals(v, v drop Int.MinValue)
     assertEquals(v, v dropRight Int.MinValue)
   }
+
+  @Test
+  def builderConcat() = {
+    val builder = Vector.newBuilder[Int]
+
+    builder ++= Vector()
+    assertEquals(builder.result(), Vector.empty[Int])
+
+    builder ++= Vector(0)
+    assertEquals(builder.result(), Vector(0))
+
+    builder ++= Vector(1, 2, 3)
+    assertEquals(builder.result(), Vector(0, 1, 2, 3))
+
+    builder ++= Vector()
+    assertEquals(builder.result(), Vector(0, 1, 2, 3))
+  }
 }
