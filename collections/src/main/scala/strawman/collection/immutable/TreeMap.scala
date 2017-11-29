@@ -68,6 +68,16 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMap[K, V](RB.rangeImpl(tree, from, until))
 
+  override def minAfter(key: K): Option[(K, V)] = RB.minAfter(tree, key) match {
+    case null => Option.empty
+    case x => Some(x.key, x.value)
+  }
+
+  override def maxBefore(key: K): Option[(K, V)] = RB.maxBefore(tree, key) match {
+    case null => Option.empty
+    case x => Some(x.key, x.value)
+  }
+
   override def range(from: K, until: K): TreeMap[K,V] = new TreeMap[K, V](RB.range(tree, from, until))
 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)

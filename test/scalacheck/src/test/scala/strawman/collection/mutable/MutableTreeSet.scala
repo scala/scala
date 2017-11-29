@@ -75,6 +75,20 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
     set.lastOption == Try(set.iterator().max).toOption
   }
 
+  property("minAfter") = forAll { (set: mutable.TreeSet[K]) =>
+    val half = set.take(set.size / 2)
+    set.forall { x =>
+      half.minAfter(x) == half.rangeImpl(Some(x), None).headOption
+    }
+  }
+
+  property("maxBefore") = forAll { (set: mutable.TreeSet[K]) =>
+    val half = set.take(set.size / 2)
+    set.forall { x =>
+      half.maxBefore(x) == half.rangeImpl(None, Some(x)).lastOption
+    }
+  }
+
   property("clear") = forAll { (set: mutable.TreeSet[K]) =>
     set.clear()
     set.isEmpty && set.size == 0

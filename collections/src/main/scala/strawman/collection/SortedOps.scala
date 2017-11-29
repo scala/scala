@@ -51,5 +51,4 @@ trait SortedOps[A, +C] {
     *  @param to The upper-bound (inclusive) of the ranged projection.
     */
   def rangeTo(to: A): C
-
 }

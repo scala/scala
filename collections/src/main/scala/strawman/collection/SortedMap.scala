@@ -59,6 +59,18 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   def firstKey: K = head._1
   def lastKey: K = last._1
 
+  /** Find the element with smallest key larger than or equal to a given key.
+    * @param key The given key.
+    * @return `None` if there is no such node.
+    */
+  def minAfter(key: K): Option[(K, V)] = from(key).headOption
+
+  /** Find the element with largest key less than a given key.
+    * @param key The given key.
+    * @return `None` if there is no such node.
+    */
+  def maxBefore(key: K): Option[(K, V)] = until(key).lastOption
+
   def rangeTo(to: K): C = {
     val i = keySet.from(to).iterator()
     if (i.isEmpty) return coll

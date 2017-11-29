@@ -90,6 +90,10 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def last: (K, V) = RB.max(tree).get
 
+  override def minAfter(key: K): Option[(K, V)] = RB.minAfter(tree, key)
+
+  override def maxBefore(key: K): Option[(K, V)] = RB.maxBefore(tree, key)
+
   override def className: String = "TreeMap"
 
 
