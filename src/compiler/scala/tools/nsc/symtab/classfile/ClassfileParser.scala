@@ -1082,7 +1082,12 @@ abstract class ClassfileParser {
         case Some(scalaSig) if scalaSig.atp == ScalaLongSignatureAnnotation.tpe =>
           scalaSigAnnot = Some(scalaSig)
         case Some(annot) =>
-          sym.addAnnotation(annot)
+          /* `sym.addAnnotation(annot)` adds the annotation to the front of the list,
+           * so if we parsed in classfile order we would wind up with the annotations
+           * in reverse order in `sym.annotations`. Instead we just read them out the
+           * other way around, for now. TODO: sym.addAnnotation add to the end?
+           */
+          sym.setAnnotations(sym.annotations :+ annot)
         case None =>
       }
       scalaSigAnnot
