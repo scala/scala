@@ -607,7 +607,7 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final case class ClassBType(internalName: InternalName)(cache: mutable.Map[InternalName, ClassBType]) extends RefBType {
+  final class ClassBType private (val internalName: InternalName) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -615,20 +615,19 @@ abstract class BTypes {
      *   B.info.nestedInfo.outerClass == A
      *   A.info.nestedClasses contains B
      */
-    private var _info: Either[NoClassBTypeInfo, ClassInfo] = null
+    // volatile is required to ensure no early initialisation in apply
+    // like classic double checked lock in java
+    @volatile private var _info: Either[NoClassBTypeInfo, ClassInfo] = null
 
     def info: Either[NoClassBTypeInfo, ClassInfo] = {
+      if (_info eq null)
+        // synchronization required to ensure the apply is finished
+        // which populates info. ClassBType doesnt escape apart from via the map
+        // and the object mutex is locked prior to insertion. See apply
+        this.synchronized()
       assert(_info != null, s"ClassBType.info not yet assigned: $this")
       _info
     }
-
-    def info_=(i: Either[NoClassBTypeInfo, ClassInfo]): Unit = {
-      assert(_info == null, s"Cannot set ClassBType.info multiple times: $this")
-      _info = i
-      checkInfoConsistency()
-    }
-
-    cache(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
       if (info.isLeft) return
@@ -783,6 +782,15 @@ abstract class BTypes {
       } while (fcs == null)
       fcs
     }
+
+    // equallity and hashcode is based on internalName
+    override def equals(obj: scala.Any): Boolean = obj match {
+      case o:ClassBType => internalName == o.internalName
+      case _ => false
+    }
+
+    // equallity and hashcode is based on internalName
+    override def hashCode(): Int = internalName.hashCode
   }
 
   object ClassBType {
@@ -804,6 +812,19 @@ abstract class BTypes {
       "scala/Null",
       "scala/Nothing"
     )
+    def unapply(cr:ClassBType) = Some(cr.internalName)
+
+    def apply(internalName: InternalName, cache: mutable.Map[InternalName, ClassBType])(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
+      val res = new ClassBType(internalName)
+      // synchronized s required to ensure proper initialisation if info.
+      // see comment on def info
+      res.synchronized {
+        cache(internalName) = res
+        res._info = init(res)
+        res.checkInfoConsistency()
+      }
+      res
+    }
   }
 
   /**
