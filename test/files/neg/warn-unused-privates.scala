@@ -231,3 +231,8 @@ class `nonprivate alias is enclosing` {
   type C2 = C
   private class D extends C2   // warn
 }
+
+object `classof something` {
+  private class intrinsically
+  def f = classOf[intrinsically].toString()
+}
