@@ -156,8 +156,7 @@ private[scala] trait PropertiesTrait {
 
   private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
     case "auto" => System.console() != null && !isWin
-    case a if a.toLowerCase() == "true" => true
-    case _ => false
+    case s      => s == "" || "true".equalsIgnoreCase(s)
   }
 
   // This is looking for javac, tools.jar, etc.
@@ -222,6 +221,11 @@ private[scala] trait PropertiesTrait {
       case i  => i >= 0
     }
   }
+
+  /** Compares the given specification version to the major version of the platform.
+   *  @param version a specification major version number
+   */
+  def isJavaAtLeast(version: Int): Boolean = isJavaAtLeast(math.max(version, 0).toString)
 
   // provide a main method so version info can be obtained by running this
   def main(args: Array[String]) {
