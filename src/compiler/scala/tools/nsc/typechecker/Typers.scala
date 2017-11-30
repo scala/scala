@@ -1433,7 +1433,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case Some(acc) if acc.isProtectedLocal =>
                 context.error(paramAccessor.pos, "value class parameter must not be protected[this]")
               case Some(acc) =>
-                if (acc.tpe.typeSymbol.isDerivedValueClass)
+                /* check all base classes, since derived value classes might lurk in refinement parents */
+                if (acc.tpe.typeSymbol.baseClasses exists (_.isDerivedValueClass))
                   context.error(acc.pos, "value class may not wrap another user-defined value class")
                 checkEphemeral(clazz, body filterNot (stat => stat.symbol != null && stat.symbol.accessedOrSelf == paramAccessor))
             }
