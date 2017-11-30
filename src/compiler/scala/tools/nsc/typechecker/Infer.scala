@@ -551,18 +551,18 @@ trait Infer extends Checkable {
         }
       }
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      // Can warn about inferring Any/AnyVal as long as they don't appear
+      // Can warn about inferring Any/AnyVal/Object as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
       def canWarnAboutAny = {
         val loBounds = tparams map (_.info.bounds.lo)
-        def containsAny(t: Type) = (t contains AnyClass) || (t contains AnyValClass)
+        def containsAny(t: Type) = (t contains AnyClass) || (t contains AnyValClass) || (t contains ObjectClass)
         val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
         !hasAny
       }
       if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
         targs.foreach(_.typeSymbol match {
-          case sym @ (AnyClass | AnyValClass) =>
+          case sym @ (AnyClass | AnyValClass | ObjectClass) =>
             reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
           case _ =>
         })
