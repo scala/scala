@@ -501,6 +501,7 @@ trait TypeDiagnostics {
 
         override def traverse(t: Tree): Unit = {
           val sym = t.symbol
+          var bail = false
           t match {
             case m: MemberDef if qualifies(t.symbol)   =>
               defnTrees += m
@@ -508,22 +509,24 @@ trait TypeDiagnostics {
                 case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
                   if (sym.isPrimaryConstructor)
                     for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
-                  else if (sym.isSynthetic && sym.isImplicit) return
+                  else if (sym.isSynthetic && sym.isImplicit) bail = true
                   else if (!sym.isConstructor)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                 case _ =>
               }
-            case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars
-                                                       => pat.foreach {
-                                                            // TODO don't warn in isDefinedAt of $anonfun
-                                                            case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
-                                                            case _ =>
-                                                          }
+            case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars    =>
+              pat.foreach {
+                case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
+                case _ =>
+              }
             case _: RefTree if sym ne null             => targets += sym
             case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
             case Bind(_, _) if atBounded(t)            => atBounds += sym
+            case Apply(Select(_, nme.withFilter), Function(vparams, _) :: Nil) =>
+              bail = vparams.exists(_.name startsWith nme.CHECK_IF_REFUTABLE_STRING)
             case _                                     =>
           }
+          if (bail) return
           if (t.tpe ne null) {
             for (tp <- t.tpe if !treeTypes(tp)) {
               // Include references to private/local aliases (which might otherwise refer to an enclosing class)
