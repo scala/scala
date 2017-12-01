@@ -49,16 +49,6 @@ test("all s", 8, testAllS(1, 5, 78, 89))
 
 // test currying
 
-def testC00()(): Int = 1
-test("c00", 1, testC00()())
-
-val testC00R = testC00 _
-test("c00 r", 1, testC00R()())
-
-val testC00RR = testC00() _
-test("c00 rr", 1, testC00RR())
-
-
 def testCBB(a: => Int)(b: => Int) = a + b
 test("cbb", 3, testCBB(1)(2))
 
