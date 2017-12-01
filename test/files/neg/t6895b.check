@@ -1,9 +1,0 @@
-t6895b.scala:20: error: could not find implicit value for parameter e: Foo[[X]Bar[[X]Or[String,X],X]]
-  implicitly[Foo[({type L[X] = Bar[StringOr, X]})#L]]
-            ^
-t6895b.scala:23: error: polymorphic expression cannot be instantiated to expected type;
- found   : [F[_]]Foo[[X(in type L)]Bar[F,X(in type L)]]
- required: Foo[[X(in type L)]Bar[[X]Or[String,X],X(in type L)]]
-  barFoo(null) : Foo[({type L[X] = Bar[StringOr, X]})#L]
-        ^
-two errors found
