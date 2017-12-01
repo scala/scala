@@ -2,15 +2,15 @@ import annotation._
 import elidable._
 
 trait T {
-  @elidable(FINEST) def f1()
-  @elidable(SEVERE) def f2()
+  @elidable(FINEST) def f1(): Unit = ???
+  @elidable(SEVERE) def f2(): Unit = ???
   @elidable(FINEST) def f3() = assert(false, "Should have been elided.")
   def f4()
 }
 
 class C extends T {
-  def f1() = println("Good for me, I was not elided. C.f1")
-  def f2() = println("Good for me, I was not elided. C.f2")
+  override def f1() = println("Good for me, I was not elided. C.f1")
+  override def f2() = println("Good for me, I was not elided. C.f2")
   @elidable(FINEST) def f4() = assert(false, "Should have been elided.")
 }
 

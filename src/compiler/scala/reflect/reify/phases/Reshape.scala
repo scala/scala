@@ -227,7 +227,7 @@ trait Reshape {
           case NestedAnnotArg(ann)    => toPreTyperAnnotation(ann)
         }
 
-        ann.assocs map { case (nme, arg) => AssignOrNamedArg(Ident(nme), toScalaAnnotation(arg)) }
+        ann.assocs map { case (nme, arg) => NamedArg(Ident(nme), toScalaAnnotation(arg)) }
       }
 
       def extractOriginal: PartialFunction[Tree, Tree] = { case Apply(Select(New(tpt), _), _) => tpt }

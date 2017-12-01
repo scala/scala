@@ -65,7 +65,7 @@ trait Overloads {
   def test(x: UnApply) = "UnApply"
   def test(x: Function) = "Function"
   def test(x: Assign) = "Assign"
-  def test(x: AssignOrNamedArg) = "AssignOrNamedArg"
+  def test(x: NamedArg) = "NamedArg"
   def test(x: If) = "If"
   def test(x: Match) = "Match"
   def test(x: Return) = "Return"
@@ -179,7 +179,7 @@ object Test extends App with Overloads {
   record(test(null: UnApply))
   record(test(null: Function))
   record(test(null: Assign))
-  record(test(null: AssignOrNamedArg))
+  record(test(null: NamedArg))
   record(test(null: If))
   record(test(null: Match))
   record(test(null: Return))

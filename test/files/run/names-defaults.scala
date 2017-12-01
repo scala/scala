@@ -29,7 +29,7 @@ object Test extends App {
     doMod(var1 = _)
     println(var1)
 
-    synchronized(var1 = 30)
+    synchronized { var1 = 30 }
     println(var1)
 
     var var2 = 0

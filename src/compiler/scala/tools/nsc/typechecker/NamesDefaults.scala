@@ -50,9 +50,9 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
+  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case NamedArg(Ident(name), _) => name }
   def isNamedArg(arg: Tree) = arg match {
-    case AssignOrNamedArg(Ident(_), _) => true
+    case NamedArg(Ident(_), _) => true
     case _                             => false
   }
 
@@ -452,7 +452,7 @@ trait NamesDefaults { self: Analyzer =>
               Apply(tree, args.map(_.duplicate)))
             Some(atPos(pos) {
               if (positional) default2
-              else AssignOrNamedArg(Ident(p.name), default2)
+              else NamedArg(Ident(p.name), default2)
             })
           }
         })
@@ -484,78 +484,6 @@ trait NamesDefaults { self: Analyzer =>
         }
       }
     } else NoSymbol
-  }
-
-  /** A full type check is very expensive; let's make sure there's a name
-   *  somewhere which could potentially be ambiguous before we go that route.
-   */
-  private def isAmbiguousAssignment(typer: Typer, param: Symbol, arg: Tree) = {
-    import typer.context
-    (context isNameInScope param.name) && {
-      // for named arguments, check whether the assignment expression would
-      // typecheck. if it does, report an ambiguous error.
-      val paramtpe = param.tpe.cloneInfo(param)
-      // replace type parameters by wildcard. in the below example we need to
-      // typecheck (x = 1) with wildcard (not T) so that it succeeds.
-      //   def f[T](x: T) = x
-      //   var x = 0
-      //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
-      val udp = context.undetparams
-      context.savingUndeterminedTypeParams(reportAmbiguous = false) {
-        val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
-          override def apply(tp: Type): Type = super.apply(dropByName(tp))
-        }
-        // This throws an exception which is caught in `tryTypedApply` (as it
-        // uses `silent`) - unfortunately, tryTypedApply recovers from the
-        // exception if you use errorTree(arg, ...) and conforms is allowed as
-        // a view (see tryImplicit in Implicits) because it tries to produce a
-        // new qualifier (if the old one was P, the new one will be
-        // conforms.apply(P)), and if that works, it pretends nothing happened.
-        //
-        // To make sure tryTypedApply fails, we would like to pass EmptyTree
-        // instead of arg, but can't do that because eventually setType(ErrorType)
-        // is called, and EmptyTree can only be typed NoType.  Thus we need to
-        // disable conforms as a view...
-        val errsBefore = reporter.ERROR.count
-        try typer.silent { tpr =>
-          val res = tpr.typed(arg.duplicate, subst(paramtpe))
-          // better warning for scala/bug#5044: if `silent` was not actually silent give a hint to the user
-          // [H]: the reason why `silent` is not silent is because the cyclic reference exception is
-          // thrown in a context completely different from `context` here. The exception happens while
-          // completing the type, and TypeCompleter is created/run with a non-silent Namer `context`
-          // and there is at the moment no way to connect the two unless we go through some global state.
-          if (errsBefore < reporter.ERROR.count)
-            WarnAfterNonSilentRecursiveInference(param, arg)(context)
-          res
-        } match {
-          case SilentResultValue(t)  =>
-            !t.isErroneous // #4041
-          case SilentTypeError(e: NormalTypeErrorFromCyclicReference) =>
-            // If we end up here, the CyclicReference was reported in a silent context. This can
-            // happen for local definitions, when the completer for a definition is created during
-            // type checking in silent mode. ContextErrors.TypeSigError catches that cyclic reference
-            // and transforms it into a NormalTypeErrorFromCyclicReference.
-            // The cycle needs to be reported, because the program cannot be typed: we don't know
-            // if we have an assignment or a named arg.
-            context.issue(e)
-            // 'err = true' is required because we're in a silent context
-            WarnAfterNonSilentRecursiveInference(param, arg)(context)
-            false
-          case _        =>
-            // We got a type error, so it cannot be an assignment (it doesn't type check as one).
-            false
-        }
-        catch {
-          // `silent` only catches and returns TypeErrors which are not
-          // CyclicReferences.  Fix for #3685
-          case cr @ CyclicReference(sym, _) =>
-            (sym.name == param.name) && sym.accessedOrSelf.isVariable && {
-              NameClashError(sym, arg)(context)
-              true
-            }
-        }
-      }
-    }
   }
 
   /** Removes name assignments from args. Additionally, returns an array mapping
@@ -590,23 +518,18 @@ trait NamesDefaults { self: Analyzer =>
     val argPos       = Array.fill(args.length)(-1)
     val namelessArgs = {
       var positionalAllowed = true
-      def stripNamedArg(arg: AssignOrNamedArg, argIndex: Int): Tree = {
-        val AssignOrNamedArg(Ident(name), rhs) = arg
+      def stripNamedArg(arg: NamedArg, argIndex: Int): Tree = {
+        val NamedArg(Ident(name), rhs) = arg
         params indexWhere (p => matchesName(p, name, argIndex)) match {
-          case -1 if positionalAllowed =>
-            // prevent isNamed from being true when calling doTypedApply recursively,
-            // treat the arg as an assignment of type Unit
-            Assign(arg.lhs, rhs) setPos arg.pos
           case -1 =>
-            UnknownParameterNameNamesDefaultError(arg, name)
+            val warnVariableInScope = !settings.isScala214 && context0.lookupSymbol(name, _.isVariable).isSuccess
+            UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope)
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
             val otherName = Some(args(paramPos)) collect {
-              case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
+              case NamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
-          case paramPos if isAmbiguousAssignment(typer, params(paramPos), arg) =>
-            AmbiguousReferenceInNamesDefaultError(arg, name)
           case paramPos if paramPos != argIndex =>
             positionalAllowed = false    // named arg is not in original parameter order: require names after this
             argPos(argIndex)  = paramPos // fix up the arg position
@@ -615,7 +538,7 @@ trait NamesDefaults { self: Analyzer =>
         }
       }
       mapWithIndex(args) {
-        case (arg: AssignOrNamedArg, argIndex) =>
+        case (arg: NamedArg, argIndex) =>
           val t = stripNamedArg(arg, argIndex)
           if (!t.isErroneous && argPos(argIndex) < 0) argPos(argIndex) = argIndex
           t

@@ -327,7 +327,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
           EmptyTree
       }
       def reverseEngineerArgs(jargs: List[(Name, ClassfileAnnotArg)]): List[Tree] = jargs match {
-        case (name, jarg) :: rest => AssignOrNamedArg(Ident(name), reverseEngineerArg(jarg)) :: reverseEngineerArgs(rest)
+        case (name, jarg) :: rest => NamedArg(Ident(name), reverseEngineerArg(jarg)) :: reverseEngineerArgs(rest)
         case Nil => Nil
       }
       if (ann.javaArgs.isEmpty) ann.scalaArgs
@@ -350,8 +350,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
       }
       def encodeJavaArgs(args: List[Tree]): List[(Name, ClassfileAnnotArg)] = args match {
-        case AssignOrNamedArg(Ident(name), arg) :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
-        case arg :: rest => throw new Exception(s"unexpected java argument shape $arg: only AssignOrNamedArg trees are supported")
+        case NamedArg(Ident(name), arg) :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
+        case arg :: rest => throw new Exception(s"unexpected java argument shape $arg: only NamedArg trees are supported")
         case Nil => Nil
       }
       val atp = tpt.tpe

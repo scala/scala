@@ -60,9 +60,9 @@ trait ArbitraryTreesAndNames {
     for(lhs <- genTree(size - 1); rhs <- genTree(size - 1))
       yield Assign(lhs, rhs)
 
-  def genAssignOrNamedArg(size: Int) =
+  def genNamedArg(size: Int) =
     for(lhs <- genTree(size - 1); rhs <- genTree(size - 1))
-      yield AssignOrNamedArg(lhs, rhs)
+      yield NamedArg(lhs, rhs)
 
   def genBind(size: Int, nameGen: Gen[Name]) =
     for(name <- nameGen; body <- genTree(size - 1))
@@ -237,7 +237,7 @@ trait ArbitraryTreesAndNames {
     else oneOf(genTreeIsTerm(1), genBind(size - 1, genTermName),
                genAnnotated(size - 1, genTreeIsTerm), genSelect(size - 1, genTermName),
                genAlternative(size - 1), genApply(size - 1), genAssign(size - 1),
-               genAssignOrNamedArg(size - 1), genBlock(size - 1), genFunction(size - 1),
+               genNamedArg(size - 1), genBlock(size - 1), genFunction(size - 1),
                genIf(size - 1), genLabelDef(size - 1), genMatch(size - 1), genNew(size - 1),
                genReturn(size - 1), genStar(size - 1), genSuper(size - 1), genThis(size - 1),
                genThrow(size - 1), genTry(size - 1), genTypeApply(size - 1),

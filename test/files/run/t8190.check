@@ -60,7 +60,7 @@ Bind
 UnApply
 Function
 Assign
-AssignOrNamedArg
+NamedArg
 If
 Match
 Return

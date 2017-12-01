@@ -315,7 +315,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       if (in.token == LT) {
         in.nextToken()
         val t1 = convertToTypeId(t)
-        val args = repsep(typeArg, COMMA)
+        val args = repsep(() => typeArg(), COMMA)
         acceptClosingAngle()
         atPos(t1.pos) {
           val t2: Tree = AppliedTypeTree(t1, args)
@@ -401,7 +401,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def typeParams(): List[TypeDef] =
       if (in.token == LT) {
         in.nextToken()
-        val tparams = repsep(typeParam, COMMA)
+        val tparams = repsep(() => typeParam(), COMMA)
         acceptClosingAngle()
         tparams
       } else List()
@@ -428,7 +428,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def formalParams(): List[ValDef] = {
       accept(LPAREN)
-      val vparams = if (in.token == RPAREN) List() else repsep(formalParam, COMMA)
+      val vparams = if (in.token == RPAREN) List() else repsep(() => formalParam(), COMMA)
       accept(RPAREN)
       vparams
     }
@@ -449,7 +449,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def optThrows() {
       if (in.token == THROWS) {
         in.nextToken()
-        repsep(typ, COMMA)
+        repsep(() => typ(), COMMA)
       }
     }
 
@@ -679,7 +679,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def interfacesOpt() =
       if (in.token == IMPLEMENTS) {
         in.nextToken()
-        repsep(typ, COMMA)
+        repsep(() => typ(), COMMA)
       } else {
         List()
       }
@@ -711,7 +711,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val parents =
         if (in.token == EXTENDS) {
           in.nextToken()
-          repsep(typ, COMMA)
+          repsep(() => typ(), COMMA)
         } else {
           List(javaLangObject())
         }

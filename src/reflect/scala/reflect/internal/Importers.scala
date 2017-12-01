@@ -347,8 +347,8 @@ trait Importers { to: SymbolTable =>
         new Function(vparams map importValDef, importTree(body))
       case from.Assign(lhs, rhs) =>
         new Assign(importTree(lhs), importTree(rhs))
-      case from.AssignOrNamedArg(lhs, rhs) =>
-        new AssignOrNamedArg(importTree(lhs), importTree(rhs))
+      case from.NamedArg(lhs, rhs) =>
+        new NamedArg(importTree(lhs), importTree(rhs))
       case from.If(cond, thenp, elsep) =>
         new If(importTree(cond), importTree(thenp), importTree(elsep))
       case from.Match(selector, cases) =>

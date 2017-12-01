@@ -405,7 +405,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case Assign(lhs, rhs) =>
           print(lhs, " = ", rhs)
 
-        case AssignOrNamedArg(lhs, rhs) =>
+        case NamedArg(lhs, rhs) =>
           print(lhs, " = ", rhs)
 
         case If(cond, thenp, elsep) =>

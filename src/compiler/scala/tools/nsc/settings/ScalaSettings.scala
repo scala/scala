@@ -89,6 +89,8 @@ trait ScalaSettings extends AbsScalaSettings
   def isScala212: Boolean = source.value >= version212
   private[this] val version213 = ScalaVersion("2.13.0")
   def isScala213: Boolean = source.value >= version213
+  private[this] val version214 = ScalaVersion("2.14.0")
+  def isScala214: Boolean = source.value >= version214
 
   /**
    * -X "Advanced" settings
@@ -133,7 +135,7 @@ trait ScalaSettings extends AbsScalaSettings
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.12"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.13"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")

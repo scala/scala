@@ -193,7 +193,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     cmd("line", "<id>|<line>", "place line(s) at the end of history", lineCommand),
     cmd("load", "<path>", "interpret lines in a file", loadCommand, fileCompletion),
     cmd("paste", "[-raw] [path]", "enter paste mode or paste a file", pasteCommand, fileCompletion),
-    nullary("power", "enable power user mode", powerCmd),
+    nullary("power", "enable power user mode", () => powerCmd()),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     cmd("replay", "[options]", "reset the repl and replay all previous commands", replayCommand, settingsCompletion),
     cmd("require", "<path>", "add a jar to the classpath", require),
@@ -201,10 +201,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     cmd("save", "<path>", "save replayable session to a file", saveCommand, fileCompletion),
     shCommand,
     cmd("settings", "<options>", "update compiler options, if possible; see reset", changeSettings, settingsCompletion),
-    nullary("silent", "disable/enable automatic printing of results", verbosity),
+    nullary("silent", "disable/enable automatic printing of results", () => verbosity()),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
     cmdWithHelp("kind", kindUsage, "display the kind of a type. see also :help kind", Some(kindCommandDetailedHelp), kindCommand),
-    nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
+    nullary("warnings", "show the suppressed warnings from the most recent line which had any", () => warningsCommand())
   )
 
   /** Power user commands */

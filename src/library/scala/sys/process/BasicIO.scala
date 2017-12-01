@@ -162,7 +162,7 @@ object BasicIO {
     */
   def processFully(processLine: String => Unit): InputStream => Unit = in => {
     val reader = new BufferedReader(new InputStreamReader(in))
-    try processLinesFully(processLine)(reader.readLine)
+    try processLinesFully(processLine)(() => reader.readLine())
     finally reader.close()
   }
 

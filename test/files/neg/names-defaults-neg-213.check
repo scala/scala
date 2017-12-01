@@ -1,0 +1,16 @@
+names-defaults-neg-213.scala:7: warning: a pure expression does nothing in statement position
+    f1(x = 1) // named arg in 2.13 (value discard), not ambiguous
+           ^
+names-defaults-neg-213.scala:8: error: unknown parameter name: x
+Note that assignments in argument position are no longer allowed since Scala 2.13.
+To express the assignment expression, wrap it in brackets, e.g., `{ x = ... }`.
+    f2(x = 1) // error, no parameter named x. error message mentions change in 2.13
+         ^
+names-defaults-neg-213.scala:13: warning: a pure expression does nothing in statement position
+    f1(x = 1) // ok, named arg (value discard)
+           ^
+names-defaults-neg-213.scala:14: error: unknown parameter name: x
+    f2(x = 1) // error (no such parameter). no mention of new semantics in 2.13
+         ^
+two warnings found
+two errors found

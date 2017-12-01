@@ -63,7 +63,7 @@ trait ImplicitTags {
   implicit val AnnotatedTag: ClassTag[Annotated]
   implicit val AppliedTypeTreeTag: ClassTag[AppliedTypeTree]
   implicit val ApplyTag: ClassTag[Apply]
-  implicit val AssignOrNamedArgTag: ClassTag[AssignOrNamedArg]
+  implicit val NamedArgTag: ClassTag[NamedArg]
   implicit val AssignTag: ClassTag[Assign]
   implicit val BindTag: ClassTag[Bind]
   implicit val BlockTag: ClassTag[Block]

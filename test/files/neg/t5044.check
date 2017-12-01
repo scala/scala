@@ -1,9 +1,0 @@
-t5044.scala:7: error: recursive value a needs type
-    val id = m(a)
-               ^
-t5044.scala:6: warning: failed to determine if 'id = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-    val a = foo(id = 1)
-                   ^
-one warning found
-one error found

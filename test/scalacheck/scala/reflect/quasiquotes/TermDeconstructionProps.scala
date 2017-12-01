@@ -140,7 +140,7 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     def matches(tree: Tree) { val q"$rhs = $lhs" = tree }
     matches(parse("left = right"))
     matches(parse("arr(1) = 2"))
-    matches(AssignOrNamedArg(EmptyTree, EmptyTree))
+    matches(NamedArg(EmptyTree, EmptyTree))
   }
 
   property("deconstruct update 1") = test {
