@@ -224,3 +224,8 @@ class `no warn in patmat anonfun isDefinedAt` {
     case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
   }
 }
+
+object `classof something` {
+  private class intrinsically
+  def f = classOf[intrinsically].toString()
+}

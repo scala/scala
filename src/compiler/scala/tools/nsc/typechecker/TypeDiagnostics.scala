@@ -533,6 +533,9 @@ trait TypeDiagnostics {
                 case NullaryMethodType(_) =>
                 case MethodType(_, _)     =>
                 case SingleType(_, _)     =>
+                case ConstantType(Constant(k: Type)) =>
+                  log(s"classOf $k referenced from $currentOwner")
+                  treeTypes += k
                 case _                    =>
                   log(s"$tp referenced from $currentOwner")
                   treeTypes += tp
