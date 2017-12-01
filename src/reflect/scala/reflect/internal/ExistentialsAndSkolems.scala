@@ -62,8 +62,8 @@ trait ExistentialsAndSkolems {
     // Hanging onto lower bound in case anything interesting
     // happens with it.
     mapFrom(hidden)(s => s.existentialBound match {
-      case TypeBounds(lo, hi) => TypeBounds(lo, hiBound(s))
-      case _                  => hiBound(s)
+      case GenPolyType(tparams, TypeBounds(lo, _)) => GenPolyType(tparams, TypeBounds(lo, hiBound(s)))
+      case _ => hiBound(s)
     })
   }
 
