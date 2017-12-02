@@ -574,7 +574,6 @@ trait TypeDiagnostics {
           && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization methods
           && !isConstantType(m.info.resultType)     // subject to constant inlining
           && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
-          //&& !(m.isVal && m.info.resultType =:= typeOf[Unit])      // Unit val is uninteresting
         )
         def isUnusedParam(m: Symbol): Boolean = (
              isUnusedTerm(m)
@@ -632,6 +631,7 @@ trait TypeDiagnostics {
         unusedPrivates.traverse(body)
 
         if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
+          val valAdvice = "is never updated: consider using immutable val"
           for (defn: DefTree <- unusedPrivates.unusedTerms) {
             val sym = defn.symbol
             val pos = (
@@ -643,6 +643,7 @@ trait TypeDiagnostics {
               }
             )
             val why = if (sym.isPrivate) "private" else "local"
+            var cond = "is never used"
             val what = (
               if (sym.isDefaultGetter) "default argument"
               else if (sym.isConstructor) "constructor"
@@ -655,15 +656,15 @@ trait TypeDiagnostics {
                || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE)))
                || sym.isLazy
               ) s"val ${sym.name.decoded}"
-              else if (sym.isSetter) s"setter of ${sym.name.getterName.decoded}"
+              else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.name.getterName.decoded}" }
               else if (sym.isMethod) s"method ${sym.name.decoded}"
               else if (sym.isModule) s"object ${sym.name.decoded}"
               else "term"
             )
-            context.warning(pos, s"$why $what in ${sym.owner} is never used")
+            context.warning(pos, s"$why $what in ${sym.owner} $cond")
           }
           for (v <- unusedPrivates.unsetVars) {
-            context.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set: consider using immutable val")
+            context.warning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}")
           }
           for (t <- unusedPrivates.unusedTypes) {
             val sym = t.symbol

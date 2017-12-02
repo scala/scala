@@ -28,7 +28,7 @@ warn-unused-privates.scala:45: warning: private var v3 in trait Accessors is nev
 warn-unused-privates.scala:56: warning: private var s1 in class StableAccessors is never used
   private var s1: Int = 0 // warn
               ^
-warn-unused-privates.scala:57: warning: private setter of s2 in class StableAccessors is never used
+warn-unused-privates.scala:57: warning: private var s2 in class StableAccessors is never updated: consider using immutable val
   private var s2: Int = 0 // warn, never set
               ^
 warn-unused-privates.scala:58: warning: private var s3 in class StableAccessors is never used
@@ -79,7 +79,7 @@ warn-unused-privates.scala:166: warning: local val x in method v is never used
 warn-unused-privates.scala:170: warning: local val x in method w is never used
     val D(x @ _) = d                      // warn, fixme (valdef pos is different)
          ^
-warn-unused-privates.scala:97: warning: local var x in method f2 is never set: consider using immutable val
+warn-unused-privates.scala:97: warning: local var x in method f2 is never updated: consider using immutable val
     var x = 100 // warn about it being a var
         ^
 warn-unused-privates.scala:104: warning: private class Bar1 in object Types is never used
