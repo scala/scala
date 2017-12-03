@@ -96,12 +96,12 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       cachedClassBType(internalName) match {
         case Some(bType) =>
           if (currentRun.compiles(classSym))
-            assert(classBTypeCacheFromSymbol.contains(internalName), s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+            assert(bType fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
           bType
         case None =>
           // The new ClassBType is added to the map via its apply, before we set its info. This
           // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-          ClassBType(internalName, classBTypeCacheFromSymbol) { res:ClassBType =>
+          ClassBType(internalName, true) { res:ClassBType =>
             if (completeSilentlyAndCheckErroneous(classSym))
               Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
             else computeClassInfo(classSym, res)
@@ -624,7 +624,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
     cachedClassBType(internalName).getOrElse {
-      ClassBType(internalName, classBTypeCacheFromSymbol) { c: ClassBType =>
+      ClassBType(internalName, true) { c: ClassBType =>
         val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
         val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
         Right(ClassInfo(
@@ -641,7 +641,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
     val internalName = mainClass.javaBinaryNameString + "BeanInfo"
     cachedClassBType(internalName).getOrElse {
-      ClassBType(internalName, classBTypeCacheFromSymbol) { c: ClassBType =>
+      ClassBType(internalName, true) { c: ClassBType =>
         Right(ClassInfo(
           superClass = Some(sbScalaBeanInfoRef),
           interfaces = Nil,

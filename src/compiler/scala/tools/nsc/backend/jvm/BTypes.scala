@@ -36,12 +36,12 @@ abstract class BTypes {
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
   def cachedClassBType(internalName: InternalName): Option[ClassBType] =
-    classBTypeCacheFromSymbol.get(internalName).orElse(classBTypeCacheFromClassfile.get(internalName))
+    classBTypeCache.get(internalName)
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
-  val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
-  val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
+  // Note usage should be private to this file, except for tests
+  val classBTypeCache: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -607,7 +607,8 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final class ClassBType private (val internalName: InternalName) extends RefBType {
+  sealed abstract class ClassBType protected(val internalName: InternalName) extends RefBType {
+    def fromSymbol: Boolean
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -814,17 +815,27 @@ abstract class BTypes {
     )
     def unapply(cr:ClassBType) = Some(cr.internalName)
 
-    def apply(internalName: InternalName, cache: mutable.Map[InternalName, ClassBType])(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
-      val res = new ClassBType(internalName)
+    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
+      val newRes = if (fromSymbol) new ClassBTypeFromSymbol(internalName) else new ClassBTypeFromClassfile(internalName)
       // synchronized s required to ensure proper initialisation if info.
       // see comment on def info
-      res.synchronized {
-        cache(internalName) = res
-        res._info = init(res)
-        res.checkInfoConsistency()
+      newRes.synchronized {
+        classBTypeCache.putIfAbsent(internalName, newRes) match {
+          case None =>
+            newRes._info = init(newRes)
+            newRes.checkInfoConsistency()
+            newRes
+          case Some(old) =>
+            old
+        }
       }
-      res
     }
+  }
+  private final class ClassBTypeFromSymbol(internalName: InternalName) extends ClassBType(internalName) {
+    override def fromSymbol: Boolean = true
+  }
+  private final class ClassBTypeFromClassfile(internalName: InternalName) extends ClassBType(internalName) {
+    override def fromSymbol: Boolean = false
   }
 
   /**

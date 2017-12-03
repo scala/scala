@@ -30,8 +30,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
   }
 
   def clearCache() = {
-    bTypes.classBTypeCacheFromSymbol.clear()
-    bTypes.classBTypeCacheFromClassfile.clear()
+    bTypes.classBTypeCache.clear()
   }
 
   def sameBType(fromSym: ClassBType, fromClassfile: ClassBType, checked: Set[InternalName] = Set.empty): Set[InternalName] = {

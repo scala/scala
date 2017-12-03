@@ -47,7 +47,7 @@ abstract class BTypesFromClassfile {
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
     cachedClassBType(internalName).getOrElse{
-      ClassBType(internalName, classBTypeCacheFromClassfile){ res:ClassBType =>
+      ClassBType(internalName, false){ res:ClassBType =>
         byteCodeRepository.classNode(internalName) match {
           case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
           case Right(c) => computeClassInfoFromClassNode(c, res)
@@ -61,7 +61,7 @@ abstract class BTypesFromClassfile {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     cachedClassBType(classNode.name).getOrElse {
-      ClassBType(classNode.name, classBTypeCacheFromClassfile) { res: ClassBType =>
+      ClassBType(classNode.name, false) { res: ClassBType =>
         computeClassInfoFromClassNode(classNode, res)
       }
     }
