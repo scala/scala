@@ -147,7 +147,7 @@ package object partest {
   def readOptionsFile(file: File): List[String] = {
     file.fileLines match {
       case x :: Nil   => words(x)
-      case xs         => xs map (_.trim)
+      case xs         => xs
     }
   }
 

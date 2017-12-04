@@ -152,9 +152,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   private def assembleTestCommand(outDir: File, logFile: File): List[String] = {
     // check whether there is a ".javaopts" file
     val argsFile  = testFile changeExtension "javaopts"
-    val argString = file2String(argsFile)
-    if (argString != "")
-      nestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
+    val javaopts = readOptionsFile(argsFile)
+    if (javaopts.nonEmpty)
+      nestUI.verbose(s"Found javaopts file '$argsFile', using options: '${javaopts.mkString(",")}'")
 
     val testFullPath = testFile.getAbsolutePath
 
@@ -186,7 +186,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
     javaCmdPath +: (
-      (suiteRunner.javaOpts.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
+      (suiteRunner.javaOpts.split(' ') ++ extraJavaOptions ++ javaopts).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
       ) ++ propertyOptions ++ Seq(
@@ -445,10 +445,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
 
   // snort or scarf all the contributing flags files
   def flagsForCompilation(sources: List[File]): List[String] = {
-    def argsplitter(s: String) = words(s) filter (_.nonEmpty)
-    val perTest  = argsplitter(flagsFile.fileContents)
+    val perTest  = readOptionsFile(flagsFile)
     val perGroup = if (testFile.isDirectory) {
-      sources flatMap { f => SFile(Path(f) changeExtension "flags").safeSlurp map argsplitter getOrElse Nil }
+      sources.flatMap(f => readOptionsFile(f changeExtension "flags"))
     } else Nil
     perTest ++ perGroup
   }
