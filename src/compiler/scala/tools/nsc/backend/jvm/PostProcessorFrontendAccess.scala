@@ -5,6 +5,7 @@ import scala.collection.generic.Clearable
 import scala.reflect.internal.util.Position
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import java.util.{Map => JMap, Collection => JCollection}
 
 /**
  * Functionality needed in the post-processor whose implementation depends on the compiler
@@ -29,6 +30,10 @@ sealed abstract class PostProcessorFrontendAccess {
   def javaDefinedClasses: Set[InternalName]
 
   def recordPerRunCache[T <: Clearable](cache: T): T
+
+  def recordPerRunJavaMapCache[T <: JMap[_,_]](cache: T): T
+
+  def recordPerRunJavaCache[T <: JCollection[_]](cache: T): T
 }
 
 object PostProcessorFrontendAccess {
@@ -163,5 +168,18 @@ object PostProcessorFrontendAccess {
 
 
     def recordPerRunCache[T <: Clearable](cache: T): T = frontendSynch(perRunCaches.recordCache(cache))
+
+    def recordPerRunJavaMapCache[T <: JMap[_,_]](cache: T): T = {
+      recordPerRunJavaCache(cache.keySet())
+      cache
+    }
+
+    def recordPerRunJavaCache[T <: JCollection[_]](cache: T): T = {
+      recordPerRunCache(new JavaClearable(cache))
+      cache
+    }
+    private class JavaClearable(data: JCollection[_]) extends Clearable {
+      override def clear(): Unit = data.clear
+    }
   }
 }
