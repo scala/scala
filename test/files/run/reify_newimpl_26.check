@@ -10,6 +10,6 @@ scala> def foo[T]{
 foo: [T]=> Unit
 
 scala> foo[Int]
-WeakTypeTag[scala.List[T]]
+WeakTypeTag[List[T]]
 
 scala> :quit

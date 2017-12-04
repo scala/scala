@@ -1,5 +1,5 @@
 
 scala> scala.reflect.runtime.universe.typeOf[List[Nothing]]
-res0: reflect.runtime.universe.Type = scala.List[Nothing]
+res0: reflect.runtime.universe.Type = List[Nothing]
 
 scala> :quit

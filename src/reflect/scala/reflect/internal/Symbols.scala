@@ -872,10 +872,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Conditions where we omit the prefix when printing a symbol, to avoid
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
-    final def isOmittablePrefix = /*!settings.debug.value &&*/ (
-         UnqualifiedOwners(skipPackageObject)
-      || isEmptyPrefix
-    )
+    final def isOmittablePrefix = /*!settings.debug.value &&*/ {
+      // scala/bug#5941 runtime reflection can have distinct symbols representing `package scala` (from different mirrors)
+      // We check equality by FQN here to make sure we omit prefixes uniformly for all of them.
+      def matches(sym1: Symbol, sym2: Symbol) = (sym1 eq sym2) || (sym1.hasPackageFlag && sym2.hasPackageFlag && sym1.name == sym2.name && sym1.fullNameString == sym2.fullNameString)
+      val skipped = skipPackageObject
+      UnqualifiedOwners.exists((sym: Symbol) => matches(sym, skipped)) || isEmptyPrefix
+    }
     def isEmptyPrefix = (
          isEffectiveRoot                      // has no prefix for real, <empty> or <root>
       || isAnonOrRefinementClass              // has uninteresting <anon> or <refinement> prefix
