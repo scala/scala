@@ -761,6 +761,15 @@ object BackendUtils {
       private def skipUntil(isDelimiter: CharBooleanFunction): Unit = {
         while (!isDelimiter(current)) { index += 1 }
       }
+      private def skipUntilDelimiter(delimiter: Char): Unit = {
+        sig.indexOf(delimiter, index) match {
+          case -1 =>
+            raiseError(s"Out of bounds", sig)
+            abort() // Don't continue, even if `notifyInvalidSignature` returns
+          case i =>
+            index = i
+        }
+      }
 
       private def appendUntil(builder: java.lang.StringBuilder, isDelimiter: CharBooleanFunction): Unit = {
         val start = index
@@ -804,7 +813,7 @@ object BackendUtils {
           accept(';')
 
         case 'T' =>
-          skipUntil(_ == ';')
+          skipUntilDelimiter(';')
           skip()
 
         case '[' =>
@@ -815,7 +824,7 @@ object BackendUtils {
       private def typeParameters(): Unit = if (current == '<') {
         skip()
         while (current != '>') {
-          skipUntil(_ == ':'); skip()
+          skipUntilDelimiter(':'); skip()
           val c = current
           // The ClassBound can be missing, but only if there's an InterfaceBound after.
           // This is an assumption that's not in the spec, see https://stackoverflow.com/q/44284928
