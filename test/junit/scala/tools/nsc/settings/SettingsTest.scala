@@ -172,7 +172,7 @@ class SettingsTest {
       assert(residual.isEmpty)
       assertTrue(s.source.value == ScalaVersion(expected))
     }
-    check(expected = "2.12.0") // default
+    check(expected = "2.13.0") // default
     check(expected = "2.11.0", "-Xsource:2.11")
     check(expected = "2.10",   "-Xsource:2.10.0")
     check(expected = "2.12",   "-Xsource:2.12")

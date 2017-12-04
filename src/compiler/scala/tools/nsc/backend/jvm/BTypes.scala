@@ -974,7 +974,7 @@ abstract class BTypes {
       }
     }
 
-    def reInitialize(): Unit = frontendSynch(isInit = false)
+    def reInitialize(): Unit = frontendSynch { isInit = false }
   }
 }
 

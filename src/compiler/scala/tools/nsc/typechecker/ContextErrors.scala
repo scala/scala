@@ -45,14 +45,6 @@ trait ContextErrors {
   case class NormalTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
 
-  /**
-   * Marks a TypeError that was constructed from a CyclicReference (under silent).
-   * This is used for named arguments, where we need to know if an assignment expression
-   * failed with a cyclic reference or some other type error.
-   */
-  class NormalTypeErrorFromCyclicReference(underlyingTree: Tree, errMsg: String)
-    extends NormalTypeError(underlyingTree, errMsg)
-
   case class AccessTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
 
@@ -565,7 +557,7 @@ trait ContextErrors {
             }
           }
           val unknowns = (namelessArgs zip args) collect {
-            case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
+            case (_: Assign, NamedArg(Ident(name), _)) => name
           }
           val suppl = 
             unknowns.size match {
@@ -1128,9 +1120,8 @@ trait ContextErrors {
             // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
             // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits
             throw ex
-          case c @ CyclicReference(sym, info: TypeCompleter) =>
-            val error = new NormalTypeErrorFromCyclicReference(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage)
-            issueTypeError(error)
+          case CyclicReference(sym, info: TypeCompleter) =>
+            issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage)
           case _ =>
             contextNamerErrorGen.issue(TypeErrorWithUnderlyingTree(tree, ex))
         }
@@ -1322,23 +1313,12 @@ trait ContextErrors {
       issueSymbolTypeError(sym, errMsg)
     }
 
-    def AmbiguousReferenceInNamesDefaultError(arg: Tree, name: Name)(implicit context: Context) = {
-      if (!arg.isErroneous) { // check if name clash wasn't reported already
-        issueNormalTypeError(arg,
-          "reference to "+ name +" is ambiguous; it is both a method parameter "+
-          "and a variable in scope.")
-        setError(arg)
-      } else arg
-    }
-
-    def WarnAfterNonSilentRecursiveInference(param: Symbol, arg: Tree)(implicit context: Context) = {
-      val note = "failed to determine if '"+ param.name + " = ...' is a named argument or an assignment expression.\n"+
-                 "an explicit type is required for the definition mentioned in the error message above."
-      context.warning(arg.pos, note)
-    }
-
-    def UnknownParameterNameNamesDefaultError(arg: Tree, name: Name)(implicit context: Context) = {
-      issueNormalTypeError(arg, "unknown parameter name: " + name)
+    def UnknownParameterNameNamesDefaultError(arg: Tree, name: Name, warnVariableInScope: Boolean)(implicit context: Context) = {
+      val suffix =
+        if (warnVariableInScope)
+          s"\nNote that assignments in argument position are no longer allowed since Scala 2.13.\nTo express the assignment expression, wrap it in brackets, e.g., `{ $name = ... }`."
+        else ""
+      issueNormalTypeError(arg, s"unknown parameter name: $name$suffix")
       setError(arg)
     }
 

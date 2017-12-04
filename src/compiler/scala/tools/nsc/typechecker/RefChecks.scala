@@ -1413,8 +1413,10 @@ abstract class RefChecks extends Transform {
       }
 
       def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { level =>
-        if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred)
-          reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
+        if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred) {
+          val rest = if (sym.isDeferred) " The annotation affects only the annotated method, not overriding methods in subclasses." else ""
+          reporter.error(sym.pos, s"${sym.name}: Only concrete methods can be marked @elidable.$rest")
+        }
       }
       if (settings.isScala213) checkIsElidable(tree.symbol)
 

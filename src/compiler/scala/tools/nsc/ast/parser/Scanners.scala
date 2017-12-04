@@ -554,9 +554,9 @@ trait Scanners extends ScannersCommon {
           def fetchSingleQuote() = {
             nextChar()
             if (isIdentifierStart(ch))
-              charLitOr(getIdentRest)
+              charLitOr(() => getIdentRest())
             else if (isOperatorPart(ch) && (ch != '\\'))
-              charLitOr(getOperatorRest)
+              charLitOr(() => getOperatorRest())
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()

@@ -57,7 +57,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
           indent
           printClass(level, c)
         case m: MethodSymbol =>
-          printMethod(level, m, indent)
+          printMethod(level, m, () => indent())
         case a: AliasSymbol =>
           indent
           printAlias(level, a)

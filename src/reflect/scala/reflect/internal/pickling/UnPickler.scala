@@ -152,7 +152,7 @@ abstract class UnPickler {
     }
 
     private def maybeReadSymbol(): Either[Int, Symbol] = readNat() match {
-      case index if isSymbolRef(index) => Right(at(index, readSymbol))
+      case index if isSymbolRef(index) => Right(at(index, () => readSymbol()))
       case index                       => Left(index)
     }
 
@@ -277,7 +277,7 @@ abstract class UnPickler {
 
       // symbols that were pickled with Pickler.writeSymInfo
       val nameref      = readNat()
-      val name         = at(nameref, readName)
+      val name         = at(nameref, () => readName())
       val owner        = readSymbolRef()
       val flags        = pickledToRawFlags(readLongNat())
 
@@ -347,7 +347,7 @@ abstract class UnPickler {
           sym
 
         case MODULEsym =>
-          val moduleClass = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
+          val moduleClass = at(inforef, () => readType()).typeSymbol
           if (isModuleRoot) moduleRoot setFlag pflags
           else owner.newLinkedModule(moduleClass, pflags)
 
@@ -455,9 +455,9 @@ abstract class UnPickler {
      *  as a Constant or a Tree.
      */
     protected def readAnnotArg(i: Int): Tree = bytes(index(i)) match {
-      case TREE => at(i, readTree)
+      case TREE => at(i, () => readTree())
       case _    =>
-        val const = at(i, readConstant)
+        val const = at(i, () => readConstant())
         Literal(const) setType const.tpe
     }
 
@@ -469,9 +469,9 @@ abstract class UnPickler {
       until(end, () => readClassfileAnnotArg(readNat())).toArray(JavaArgumentTag)
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
-      case ANNOTINFO     => NestedAnnotArg(at(i, readAnnotation))
+      case ANNOTINFO     => NestedAnnotArg(at(i, () => readAnnotation()))
       case ANNOTARGARRAY => at(i, () => ArrayAnnotArg(readArrayAnnot()))
-      case _             => LiteralAnnotArg(at(i, readConstant))
+      case _             => LiteralAnnotArg(at(i, () => readConstant()))
     }
 
     /** Read an AnnotationInfo. Not to be called directly, use
@@ -484,7 +484,7 @@ abstract class UnPickler {
       while (readIndex != end) {
         val argref = readNat()
         if (isNameEntry(argref)) {
-          val name = at(argref, readName)
+          val name = at(argref, () => readName())
           val arg = readClassfileAnnotArg(readNat())
           assocs += ((name, arg))
         }
@@ -643,12 +643,12 @@ abstract class UnPickler {
       r.asInstanceOf[Symbol]
     }
 
-    protected def readNameRef(): Name                 = at(readNat(), readName)
-    protected def readTypeRef(): Type                 = at(readNat(), () => readType()) // after the NMT_TRANSITION period, we can leave off the () => ... ()
-    protected def readConstantRef(): Constant         = at(readNat(), readConstant)
-    protected def readAnnotationRef(): AnnotationInfo = at(readNat(), readAnnotation)
-    protected def readModifiersRef(): Modifiers       = at(readNat(), readModifiers)
-    protected def readTreeRef(): Tree                 = at(readNat(), readTree)
+    protected def readNameRef(): Name                 = at(readNat(), () => readName())
+    protected def readTypeRef(): Type                 = at(readNat(), () => readType())
+    protected def readConstantRef(): Constant         = at(readNat(), () => readConstant())
+    protected def readAnnotationRef(): AnnotationInfo = at(readNat(), () => readAnnotation())
+    protected def readModifiersRef(): Modifiers       = at(readNat(), () => readModifiers())
+    protected def readTreeRef(): Tree                 = at(readNat(), () => readTree())
 
     protected def readTypeNameRef(): TypeName         = readNameRef().toTypeName
 
@@ -752,7 +752,7 @@ abstract class UnPickler {
       override def completeInternal(sym: Symbol) = try {
         super.completeInternal(sym)
 
-        var alias = at(j, readSymbol)
+        var alias = at(j, () => readSymbol())
         if (alias.isOverloaded)
           alias = slowButSafeEnteringPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
 

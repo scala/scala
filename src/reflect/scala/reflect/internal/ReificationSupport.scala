@@ -583,7 +583,7 @@ trait ReificationSupport { self: SymbolTable =>
       def apply(lhs: Tree, rhs: Tree): Tree = gen.mkAssign(lhs, rhs)
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
         case Assign(lhs, rhs) => Some((lhs, rhs))
-        case AssignOrNamedArg(lhs, rhs) => Some((lhs, rhs))
+        case NamedArg(lhs, rhs) => Some((lhs, rhs))
         case Apply(Select(fn, nme.update), args :+ rhs) => Some((atPos(fn.pos)(Apply(fn, args)), rhs))
         case _ => None
       }

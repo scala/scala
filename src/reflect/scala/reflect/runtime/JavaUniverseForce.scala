@@ -76,7 +76,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ArrayValue
     this.Function
     this.Assign
-    this.AssignOrNamedArg
+    this.NamedArg
     this.If
     this.Match
     this.Return

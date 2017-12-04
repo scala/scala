@@ -308,7 +308,7 @@ abstract class TreeGen {
 
   /** Wrap an expression in a named argument. */
   def mkNamedArg(name: Name, tree: Tree): Tree = mkNamedArg(Ident(name), tree)
-  def mkNamedArg(lhs: Tree, rhs: Tree): Tree = atPos(rhs.pos)(AssignOrNamedArg(lhs, rhs))
+  def mkNamedArg(lhs: Tree, rhs: Tree): Tree = atPos(rhs.pos)(NamedArg(lhs, rhs))
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
