@@ -10,6 +10,6 @@ On line 3: free type: Ident(TypeName("T")) defined by foo in <console>:1:9
 foo: [T]=> Unit
 
 scala> foo[Int]
-WeakTypeTag[scala.List[T]]
+WeakTypeTag[List[T]]
 
 scala> :quit

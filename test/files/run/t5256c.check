@@ -1,6 +1,6 @@
 class A$1
 Test.A$1
-java.lang.Object {
+Object {
   def foo(): Nothing
   def <init>(): Test.A$1
 }

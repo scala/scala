@@ -112,7 +112,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Int
 method unary_-: => Int
 method unary_~: => Int
@@ -320,7 +320,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Int
 method unary_-: => Int
 method unary_~: => Int
@@ -528,7 +528,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Int
 method unary_-: => Int
 method unary_~: => Int
@@ -736,7 +736,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Int
 method unary_-: => Int
 method unary_~: => Int
@@ -944,7 +944,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Long
 method unary_-: => Long
 method unary_~: => Long
@@ -1136,7 +1136,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Float
 method unary_-: => Float
 testing Float.toByte() with receiver = 2.0 and args = List(): [class java.lang.Byte] =======> 2
@@ -1322,7 +1322,7 @@ method toFloat: => Float
 method toInt: => Int
 method toLong: => Long
 method toShort: => Short
-method toString: ()java.lang.String
+method toString: ()String
 method unary_+: => Double
 method unary_-: => Double
 testing Double.toByte() with receiver = 2.0 and args = List(): [class java.lang.Byte] =======> 2
@@ -1428,7 +1428,7 @@ method equals: (x$1: Any)Boolean
 method getClass: ()Class[Boolean]
 method hashCode: ()Int
 method isInstanceOf: [T0]=> Boolean
-method toString: ()java.lang.String
+method toString: ()String
 method unary_!: => Boolean
 method |: (x: Boolean)Boolean
 method ||: (x: Boolean)Boolean
@@ -1453,4 +1453,4 @@ method equals: (x$1: Any)Boolean
 method getClass: ()Class[Unit]
 method hashCode: ()Int
 method isInstanceOf: [T0]=> Boolean
-method toString: ()java.lang.String
+method toString: ()String
