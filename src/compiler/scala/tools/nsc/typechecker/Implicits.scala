@@ -583,7 +583,7 @@ trait Implicits {
                   var ps = params
                   var as = args
                   if (fast) {
-                    while (ps.nonEmpty && as.nonEmpty) {
+                    while (!(ps.isEmpty || as.isEmpty)) {
                       if (!isPlausiblySubType(as.head, ps.head.tpe))
                         return false
                       ps = ps.tail
