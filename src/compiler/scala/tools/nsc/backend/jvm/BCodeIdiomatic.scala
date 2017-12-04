@@ -629,7 +629,7 @@ abstract class BCodeIdiomatic {
    * The entry-value for a LabelDef entry-key always contains the entry-key.
    *
    */
-  class LabelDefsFinder(rhs: Tree) extends Traverser {
+  class LabelDefsFinder(rhs: Tree) extends InternalTraverser {
     val result = mutable.AnyRefMap.empty[Tree, List[LabelDef]]
     var acc: List[LabelDef] = Nil
     var directResult: List[LabelDef] = Nil
@@ -643,7 +643,7 @@ abstract class BCodeIdiomatic {
     override def traverse(tree: Tree) {
       val saved = acc
       acc = Nil
-      super.traverse(tree)
+      tree.traverse(this)
       // acc contains all LabelDefs found under (but not at) `tree`
       tree match {
         case lblDf: LabelDef => acc ::= lblDf

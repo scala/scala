@@ -50,7 +50,7 @@ trait UnCurry {
         case DesugaredParameterType(desugaredTpe) =>
           apply(desugaredTpe)
         case _ =>
-          expandAlias(mapOver(tp))
+          expandAlias(tp.mapOver(this))
       }
     }
   }
@@ -94,7 +94,7 @@ trait UnCurry {
           } // @MAT normalize in decls??
 
         case PolyType(_, _) =>
-          mapOver(tp)
+          tp.mapOver(this)
 
         case _ =>
           tp

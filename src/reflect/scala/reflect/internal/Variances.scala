@@ -19,7 +19,7 @@ trait Variances {
   /** Used in Refchecks.
    *  TODO - eliminate duplication with varianceInType
    */
-  class VarianceValidator extends Traverser {
+  class VarianceValidator extends InternalTraverser {
     private val escapedLocals = mutable.HashSet[Symbol]()
     // A flag for when we're in a refinement, meaning method parameter types
     // need to be checked.
@@ -125,11 +125,11 @@ trait Variances {
           case _ if isUncheckedVariance(tp)                    =>
           case _ if resultTypeOnly(tp)                         => this(tp.resultType)
           case TypeRef(_, sym, _) if shouldDealias(sym)        => this(tp.normalize)
-          case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
-          case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
+          case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; tp.mapOver(this)
+          case RefinedType(_, _)                               => withinRefinement(tp.mapOver(this))
           case ClassInfoType(parents, _, _)                    => parents foreach this
           case mt @ MethodType(_, result)                      => flipped(mt.paramTypes foreach this) ; this(result)
-          case _                                               => mapOver(tp)
+          case _                                               => tp.mapOver(this)
         }
         // We're using TypeMap here for type traversal only. To avoid wasteful symbol
         // cloning during the recursion, it is important to return the input `tp`, rather
@@ -170,10 +170,10 @@ trait Variances {
           debuglog(s"Skipping variance check of ${sym.defString}")
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(sym)
-          super.traverse(tree)
+          tree.traverse(this)
         case ModuleDef(_, _, _) =>
           validateVariance(sym.moduleClass)
-          super.traverse(tree)
+          tree.traverse(this)
         case ValDef(_, _, _, _) =>
           validateVariance(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>
@@ -181,16 +181,16 @@ trait Variances {
           traverseTrees(tparams)
           traverseTreess(vparamss)
         case Template(_, _, _) =>
-          super.traverse(tree)
+          tree.traverse(this)
         case CompoundTypeTree(templ) =>
-          super.traverse(tree)
+          tree.traverse(this)
 
         // scala/bug#7872 These two cases make sure we don't miss variance exploits
         // in originals, e.g. in `foo[({type l[+a] = List[a]})#l]`
         case tt @ TypeTree() if tt.original != null =>
-          super.traverse(tt.original)
+          tt.original.traverse(this)
         case tt : TypTree =>
-          super.traverse(tt)
+          tt.traverse(this)
 
         case _ =>
       }

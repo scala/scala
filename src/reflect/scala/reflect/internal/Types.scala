@@ -791,7 +791,7 @@ trait Types
 
     /** Apply `f` to each part of this type; children get mapped before their parents */
     def map(f: Type => Type): Type = new TypeMap {
-      def apply(x: Type) = f(mapOver(x))
+      def apply(x: Type) = f(x.mapOver(this))
     } apply this
 
     /** Is there part of this type which satisfies predicate `p`? */
@@ -1064,6 +1064,8 @@ trait Types
 
     /** The kind of this type; used for debugging */
     def kind: String = "unknown type of class "+getClass()
+
+    def mapOver(map: TypeMap): Type = this
   }
 
 // Subclasses ------------------------------------------------------------
@@ -1153,6 +1155,11 @@ trait Types
     override def isWildcard = true
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
+    override def mapOver(map: TypeMap): Type = {
+      val bounds1 = map(bounds)
+      if (bounds1 eq bounds) this
+      else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
+    }
   }
 
   object BoundedWildcardType extends BoundedWildcardTypeExtractor
@@ -1258,6 +1265,14 @@ trait Types
       else pre.prefixString + sym.nameString + "."
     )
     override def kind = "SingleType"
+    override def mapOver(map: TypeMap): Type = {
+      if (sym.isPackageClass) this // short path
+      else {
+        val pre1 = map(pre)
+        if (pre1 eq pre) this
+        else singleType(pre1, sym)
+      }
+    }
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
@@ -1292,6 +1307,12 @@ trait Types
     override def prefixString = thistpe.prefixString.replaceAll("""\bthis\.$""", "super.")
     override def narrow: Type = thistpe.narrow
     override def kind = "SuperType"
+    override def mapOver(map: TypeMap): Type = {
+      val thistp1 = map(thistpe)
+      val supertp1 = map(supertpe)
+      if ((thistp1 eq thistpe) && (supertp1 eq supertpe)) this
+      else SuperType(thistp1, supertp1)
+    }
   }
 
   final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp)
@@ -1335,6 +1356,12 @@ trait Types
       else "(%s, %s)" format (typeString(lo), typeString(hi))
     }
     override def kind = "TypeBoundsType"
+    override def mapOver(map: TypeMap): Type = {
+      val lo1 = map.flipped(map(lo))
+      val hi1 = map(hi)
+      if ((lo1 eq lo) && (hi1 eq hi)) this
+      else TypeBounds(lo1, hi1)
+    }
   }
 
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi)
@@ -1488,13 +1515,13 @@ trait Types
           val varToParam = new TypeMap {
             def apply(tp: Type) = varToParamMap get tp match {
               case Some(sym) => sym.tpe_*
-              case _ => mapOver(tp)
+              case _ => tp.mapOver(this)
             }
           }
           val paramToVar = new TypeMap {
             def apply(tp: Type) = tp match {
               case TypeRef(_, tsym, _) if paramToVarMap.isDefinedAt(tsym) => paramToVarMap(tsym)
-              case _ => mapOver(tp)
+              case _ => tp.mapOver(this)
             }
           }
           val bts = copyRefinedType(tpe.asInstanceOf[RefinedType], tpe.parents map varToParam, varToParam mapOver tpe.decls).baseTypeSeq
@@ -1657,6 +1684,11 @@ trait Types
     }
 
     override def kind = "RefinedType"
+    override def mapOver(map: TypeMap): Type = {
+      val parents1 = parents mapConserve map
+      val decls1 = map.mapOver(decls)
+      copyRefinedType(this, parents1, decls1)
+    }
   }
 
   final class RefinedType0(parents: List[Type], decls: Scope, clazz: Symbol) extends RefinedType(parents, decls) {
@@ -1774,7 +1806,7 @@ trait Types
             }
           case _ =>
         }
-        mapOver(tp)
+        tp.mapOver(this)
       }
       def enter(tparam0: Symbol, parent: Type) {
         this.tparam = tparam0
@@ -2102,6 +2134,22 @@ trait Types
    * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
+    override def mapOver(map: TypeMap): Type = {
+      val pre1 = map(pre)
+      val args1 = (
+        if (map.trackVariance && args.nonEmpty && !map.variance.isInvariant) {
+          val tparams = sym.typeParams
+          if (tparams.isEmpty)
+            args mapConserve map
+          else
+            map.mapOverArgs(args, tparams)
+        } else {
+          args mapConserve map
+        }
+      )
+      if ((pre1 eq pre) && (args1 eq args)) this
+      else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
+    }
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN)
@@ -2554,6 +2602,12 @@ trait Types
         this
 
     override def kind = "MethodType"
+    override def mapOver(map: TypeMap): Type = {
+      val params1 = map.flipped(map.mapOver(params))
+      val result1 = map(resultType)
+      if ((params1 eq params) && (result1 eq resultType)) this
+      else copyMethodType(this, params1, result1.substSym(params, params1))
+    }
   }
 
   object MethodType extends MethodTypeExtractor
@@ -2580,6 +2634,12 @@ trait Types
     override def boundSyms = resultType.boundSyms
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
+    override def mapOver(map: TypeMap): Type = {
+      val result1 = map(resultType)
+      if (result1 eq resultType) this
+      else NullaryMethodType(result1)
+    }
+
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
@@ -2645,6 +2705,13 @@ trait Types
         this
 
     override def kind = "PolyType"
+    override def mapOver(map: TypeMap): Type = {
+      val tparams1 = map.flipped(map.mapOver(typeParams))
+      val result1 = map(resultType)
+      if ((tparams1 eq typeParams) && (result1 eq resultType)) this
+      else PolyType(tparams1, result1.substSym(typeParams, tparams1))
+    }
+
   }
 
   object PolyType extends PolyTypeExtractor
@@ -2819,6 +2886,12 @@ trait Types
         isWithinBounds(NoPrefix, NoSymbol, quantifiedFresh, tvars map (_.inst))
       }
     }
+    override def mapOver(map: TypeMap): Type = {
+      val quantified1 = map.mapOver(quantified)
+      val underlying1 = map(underlying)
+      if ((quantified1 eq quantified) && (underlying1 eq underlying)) this
+      else newExistentialType(quantified1, underlying1.substSym(quantified, quantified1))
+    }
   }
 
   object ExistentialType extends ExistentialTypeExtractor
@@ -2831,6 +2904,11 @@ trait Types
     override def safeToString =
       (alternatives map pre.memberType).mkString("", " <and> ", "")
     override def kind = "OverloadedType"
+    override def mapOver(map: TypeMap): Type = {
+      val pre1 = if (pre.isInstanceOf[ClassInfoType]) pre else map(pre)
+      if (pre1 eq pre) this
+      else OverloadedType(pre1, alternatives)
+    }
   }
 
   /** The canonical creator for OverloadedTypes.
@@ -2855,6 +2933,12 @@ trait Types
 
     override def memberType(sym: Symbol) = appliedType(pre.memberType(sym), targs)
     override def kind = "AntiPolyType"
+    override def mapOver(map: TypeMap): Type = {
+      val pre1 = map(pre)
+      val targs1 = targs mapConserve map
+      if ((pre1 eq pre) && (targs1 eq targs)) this
+      else AntiPolyType(pre1, targs1)
+    }
   }
 
   object HasTypeMember {
@@ -3365,6 +3449,10 @@ trait Types
         TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
+    override def mapOver(map: TypeMap): Type = {
+      if (constr.instValid) map(constr.inst)
+      else this.applyArgs(map.mapOverArgs(this.typeArgs, this.params))  //@M !args.isEmpty implies !typeParams.isEmpty
+    }
   }
 
   /** A type carrying some annotations. Created by the typechecker
@@ -3435,6 +3523,13 @@ trait Types
      }
 
     override def kind = "AnnotatedType"
+    override def mapOver(map: TypeMap): Type = {
+      val annotations1 = map.mapOverAnnotations(annotations)
+      val underlying1 = map(underlying)
+      if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
+      else if (annotations1.isEmpty) underlying1
+      else AnnotatedType(annotations1, underlying1)
+    }
   }
 
   /** Creator for AnnotatedTypes.  It returns the underlying type if annotations.isEmpty
@@ -3459,6 +3554,8 @@ trait Types
    */
   case class NamedType(name: Name, tp: Type) extends Type {
     override def safeToString: String = name.toString +": "+ tp
+    // TODO is this needed? We only seem to get here in ContainsCollector in error message generation
+    // override def mapOver(map: TypeMap): Type = map.apply(tp)
   }
   /** As with NamedType, used only when calling isApplicable.
    *  Records that the application has a wildcard star (aka _*)
@@ -3466,6 +3563,8 @@ trait Types
    */
   case class RepeatedType(tp: Type) extends Type {
     override def safeToString: String = tp + ": _*"
+    // TODO is this needed? We only seem to get here in ContainsCollector in error message generation
+    // override def mapOver(map: TypeMap): Type = map.apply(tp)
   }
 
   /** A temporary type representing the erasure of a user-defined value type.

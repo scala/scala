@@ -280,7 +280,7 @@ abstract class TailCalls extends Transform {
       tree match {
         case dd: DefDef if tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass) =>
           reporter.error(tree.pos, "lazy vals are not tailcall transformed")
-          super.transform(tree)
+          tree.transform(this)
 
         case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if isEligible(dd) =>
           val newCtx = new DefDefTailContext(dd)
@@ -407,7 +407,7 @@ abstract class TailCalls extends Transform {
         case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
           tree
         case _ =>
-          super.transform(tree)
+          tree.transform(this)
       }
     }
 
