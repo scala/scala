@@ -153,7 +153,7 @@ function st_stagingRepoClose() {
 
 sbtBuild() {
   echo "### sbtBuild: "$SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
-  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
+  $SBT_CMD -no-colors $sbtArgs 'set scalacOptions += "-Xfatal-warnings:false"' "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
 }
 
 sbtResolve() {
