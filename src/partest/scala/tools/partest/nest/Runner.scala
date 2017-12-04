@@ -18,7 +18,7 @@ import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
 import scala.util.{ Try, Success, Failure }
-import ClassPath.{ join, split }
+import ClassPath.join
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 import FileManager.{ compareContents, joinPaths, withTempFile }
