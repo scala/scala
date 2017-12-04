@@ -328,8 +328,11 @@ abstract class BackendUtils extends PerRunInit {
       bTypesFromClassfile.classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
 
     def getClassIfNested(internalName: InternalName): Option[ClassBType] = {
-      val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
-      if (c.isNestedClass.get) Some(c) else None
+      if (internalName.indexOf('$') < 0) None
+      else {
+        val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
+        if (c.isNestedClass.get) Some(c) else None
+      }
     }
 
     def raiseError(msg: String, sig: String, e: Option[Throwable]): Unit = {
