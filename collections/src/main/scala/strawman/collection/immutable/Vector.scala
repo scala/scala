@@ -80,6 +80,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   def length: Int = endIndex - startIndex
 
+  override def lengthCompare(len: Int): Int = length - len
+
   private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit = {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
@@ -573,7 +575,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 }
 
 class VectorIterator[+A](_startIndex: Int, endIndex: Int)
-  extends Iterator[A]
+  extends AbstractIterator[A]
     with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
@@ -642,8 +644,6 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     lo += 1
     this
   }
-
-//  override def addAll(xs: IterableOnce[A]): this.type = super.addAll(xs)
 
   def result(): Vector[A] = {
     val size = blockIndex + lo

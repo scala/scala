@@ -29,4 +29,6 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
 
   override def lengthCompare(len: Int): Int = length - len
 
+  final override def knownSize: Int = length
+
 }

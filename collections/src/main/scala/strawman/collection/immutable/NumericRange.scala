@@ -70,7 +70,6 @@ sealed class NumericRange[T](
 
   // See comment in Range for why this must be lazy.
   override lazy val length: Int = NumericRange.count(start, end, step, isInclusive)
-  override def size: Int = length
   override def isEmpty = length == 0
   override def last: T =
     if (length == 0) Nil.head

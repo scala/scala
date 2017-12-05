@@ -146,9 +146,6 @@ sealed abstract class Range(
     */
   def by(step: Int): Range = copy(start, end, step)
 
-  // Override for performance
-  override def size: Int = length
-
   // Check cannot be evaluated eagerly because we have a pattern where
   // ranges are constructed like: "x to y by z" The "x to y" piece
   // should not trigger an exception. So the calculation is delayed,

@@ -186,6 +186,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   // overrides of this method
   @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
+  final override def size: Int = length
+
   /** Selects all the elements of this $coll ignoring the duplicates.
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
