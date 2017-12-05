@@ -1676,8 +1676,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
           if (!symbol.isPackageClass)
             (new CollectMethodBodies)(tree)
-          val parents1 = map2(currentOwner.info.parents, parents)((tpe, parent) =>
-            TypeTree(tpe) setPos parent.pos)
+          val parents1 = map2Conserve(parents, currentOwner.info.parents)((parent, tpe) =>
+            parent match {
+              case tt @ TypeTree() if tpe eq tt.tpe => tt
+              case _ => TypeTree(tpe) setPos parent.pos
+            })
 
           treeCopy.Template(tree,
             parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
