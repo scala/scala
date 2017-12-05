@@ -5,15 +5,12 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, FieldNode, InsnList, MethodNode}
 import java.io.{PrintWriter, StringWriter}
-import java.util
 
-import scala.tools.asm.util.{CheckClassAdapter, Textifier, TraceClassVisitor, TraceMethodVisitor}
-import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.tools.asm.tree._
+import scala.tools.asm.util._
+import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
@@ -150,6 +147,15 @@ object AsmUtils {
     val pw: PrintWriter = new PrintWriter(sw)
     trace.p.print(pw)
     sw.toString.trim
+  }
+
+  def asmify(cnode: ClassNode): String = {
+    val trace = new TraceClassVisitor(null, new ASMifier(), null)
+    cnode.accept(trace)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    trace.p.print(pw)
+    sw.toString
   }
 
   /**
