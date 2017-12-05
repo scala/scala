@@ -1084,7 +1084,12 @@ abstract class RefChecks extends Transform {
           nonSensiblyNew()
         else if (isNew(other) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
           nonSensiblyNew()
-        else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
+        else if (!(receiver.isRefinementClass || actual.isRefinementClass) &&
+                 // Rule out receiver of refinement class because checking receiver.isEffectivelyFinal does not work for them.
+                 // (the owner of the refinement depends on where the refinement was inferred, which has no bearing on the finality of the intersected classes)
+                 // TODO: should we try to decide finality for refinements?
+                 // TODO: Also, is subclassing really the right relationship to detect non-sensible equals between "effectively final" types??
+                 receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
           if (isEitherNullable)
             nonSensible("non-null ", false)
           else
