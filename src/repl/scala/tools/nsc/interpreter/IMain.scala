@@ -287,7 +287,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def backticked(s: String): String = (
     (s split '.').toList map {
-      case "_"                               => "_"
+      case "_"                               => "`_`"
       case s if nme.keywords(newTermName(s)) => s"`$s`"
       case s                                 => s
     } mkString "."
@@ -314,8 +314,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   /** For class based repl mode we use an .INSTANCE accessor. */
   val readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String = {
-    val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
-    p.replaceFirst(readName, readName + readInstanceName)
+    if (isClassBased) {
+      val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
+      p.replaceFirst(readName, readName + readInstanceName)
+    } else p
   }
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
 
