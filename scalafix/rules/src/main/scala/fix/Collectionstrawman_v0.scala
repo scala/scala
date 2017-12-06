@@ -29,17 +29,28 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
   )
 
   def replaceExtensionMethods(ctx: RuleCtx): Patch = {
+    val visited = collection.mutable.Set.empty[String]
     val toImport = for {
       r <- ctx.index.names
       in = r.symbol.normalized
       out <- unimports.get(in).toList
+      if !visited(out.name)
     } yield {
+      visited += out.name
       val name = in.name
-      val names = name :: additionalUnimports.get(name)
-        .fold(List.empty[String])(_ :: Nil)
-      ctx.addGlobalImport(out) +
-        ctx.addGlobalImport(
-          Importer(q"scala.Predef", names.map(n => Importee.Unimport(Name(n)))))
+      def visiting(s: String): List[String] =
+        if (!visited(s)) {
+          visited += s
+          s :: Nil
+        } else Nil
+      val names = visiting(name) ::: additionalUnimports.get(name)
+        .fold(List.empty[String])(visiting)
+      if (names.isEmpty) ctx.addGlobalImport(out)
+      else {
+        ctx.addGlobalImport(out) +
+          ctx.addGlobalImport(
+            Importer(q"scala.Predef", names.map(n => Importee.Unimport(Name(n)))))
+      }
     }
     val predefUnderscore =
       if (toImport.isEmpty) Patch.empty
@@ -102,13 +113,6 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
     )
   }
 
-  val toGenericX = SymbolMatcher.normalized(
-    Symbol("_root_.scala.collection.TraversableOnce.toMap.")
-  )
-  val toImmutableX = SymbolMatcher.normalized(
-    Symbol("_root_.scala.collection.TraversableOnce.toList."),
-    Symbol("_root_.scala.collection.TraversableOnce.toSet.")
-  )
   val toTpe = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.TraversableLike.to.")
   )
@@ -125,10 +129,6 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
     ctx.tree.collect {
       case iterator(t: Name) =>
         ctx.replaceTree(t, "iterator()")
-      case toImmutableX(t @ Name(n)) =>
-        ctx.replaceTree(t, s"to(strawman.collection.immutable.${n.stripPrefix("to")})")
-      case toGenericX(t @ Name(n)) =>
-        ctx.replaceTree(t, s"to(strawman.collection.${n.stripPrefix("to")})")
       case toTpe(n: Name) =>
         (for {
           name <- n.tokens.lastOption
@@ -180,11 +180,19 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
         removeTokensPatch + replaceCommasPatch
     }.asPatch
 
+  def replaceJavaConverters(ctx: RuleCtx): Patch = {
+    ctx.tree.collect {
+      case Import(List(importer)) if importer.syntax.containsSlice("collection.JavaConverters._") =>
+        ctx.replaceTree(importer, "strawman.collection.JavaConverters._")
+    }.asPatch
+  }
+
   override def fix(ctx: RuleCtx): Patch = {
     replaceToList(ctx) +
       replaceSymbols(ctx) +
       replaceExtensionMethods(ctx) +
       replaceRange(ctx) +
-      replaceTupleZipped(ctx)
+      replaceTupleZipped(ctx) +
+      replaceJavaConverters(ctx)
   }
 }
