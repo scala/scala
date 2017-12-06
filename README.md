@@ -26,11 +26,11 @@ are available. If you see something missing, please
 Add the following dependency to your project:
 
 ~~~ scala
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.6.0"
-libraryDependencies += "ch.epfl.scala" %% "collections-contrib" % "0.6.0" // optional
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.7.0"
+libraryDependencies += "ch.epfl.scala" %% "collections-contrib" % "0.7.0" // optional
 ~~~
 
-The 0.6.0 version is compatible with Scala 2.13 and Dotty 0.3. Scala 2.12 is also supported
+The 0.6.0 version is compatible with Scala 2.13 and Dotty 0.5. Scala 2.12 is also supported
 but you might encounter type inference issues with it.
 
 We also automatically publish snapshots on Sonatype:
@@ -38,7 +38,7 @@ We also automatically publish snapshots on Sonatype:
 ~~~ scala
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.6.0-SNAPSHOT"
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.8.0-SNAPSHOT"
 ~~~
 
 The `collections-contrib` artifact provides additional operations on the collections (see the
