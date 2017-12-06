@@ -219,7 +219,7 @@ private[internal] trait GlbLubs {
   def sameWeakLubAsLub(tps: List[Type]) = tps match {
     case Nil       => true
     case tp :: Nil => !typeHasAnnotations(tp)
-    case tps       => !(tps exists typeHasAnnotations) && !shouldUseNumericLub(tps)
+    case tps       => !(tps exists typeHasAnnotations) && !(tps forall isNumericValueType)
   }
 
   /** If the arguments are all numeric value types, the numeric
@@ -231,16 +231,13 @@ private[internal] trait GlbLubs {
   def weakLub(tps: List[Type]): Type = (
     if (tps.isEmpty)
       NothingTpe
-    else if (shouldUseNumericLub(tps))
+    else if (tps forall isNumericValueType)
       numericLub(tps)
     else if (tps exists typeHasAnnotations)
       annotationsLub(lub(tps map (_.withoutAnnotations)), tps)
     else
       lub(tps)
   )
-
-  private def shouldUseNumericLub(tps: List[Type]) =
-    tps forall (tp => isNumericValueType(tp.widen))
 
   def numericLub(ts: List[Type]) =
     ts reduceLeft ((t1, t2) =>
