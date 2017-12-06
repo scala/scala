@@ -180,11 +180,19 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
         removeTokensPatch + replaceCommasPatch
     }.asPatch
 
+  def replaceJavaConverters(ctx: RuleCtx): Patch = {
+    ctx.tree.collect {
+      case Import(List(importer)) if importer.syntax.containsSlice("collection.JavaConverters._") =>
+        ctx.replaceTree(importer, "strawman.collection.JavaConverters._")
+    }.asPatch
+  }
+
   override def fix(ctx: RuleCtx): Patch = {
     replaceToList(ctx) +
       replaceSymbols(ctx) +
       replaceExtensionMethods(ctx) +
       replaceRange(ctx) +
-      replaceTupleZipped(ctx)
+      replaceTupleZipped(ctx) +
+      replaceJavaConverters(ctx)
   }
 }
