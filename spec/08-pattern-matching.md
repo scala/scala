@@ -280,15 +280,11 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
   Pattern   ::=  Pattern1 { ‘|’ Pattern1 }
 ```
 
-A _pattern alternative_ `$p_1$ | $\ldots$ | $p_n$` consists of a number of 
-_alternative patterns_ $p_i$. All alternative patterns are type checked with 
-the expected type of the pattern. The type of the pattern alternative is the 
-[weak least upper bound](03-types.html#weak-conformance) of the types of 
-$p_1 , \ldots , p_n$.
-
-Alternative patterns may not bind variables other than wildcards. 
-The alternative pattern matches a value $v$ if at least one its alternatives 
-matches $v$.
+A _pattern alternative_ `$p_1$ | $\ldots$ | $p_n$`
+consists of a number of alternative patterns $p_i$. All alternative
+patterns are type checked with the expected type of the pattern. They
+may not bind variables other than wildcards. The alternative pattern
+matches a value $v$ if at least one its alternatives matches $v$.
 
 ### XML Patterns
 
