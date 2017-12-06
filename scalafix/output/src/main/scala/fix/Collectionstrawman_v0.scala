@@ -1,7 +1,7 @@
 package fix
 
 import scala.Predef.{ augmentString => _, genericArrayOps => _, intArrayOps => _, wrapString => _, _ }
-import strawman.collection.{ Seq, arrayToArrayOps, stringToStringOps }
+import strawman.collection.{ arrayToArrayOps, stringToStringOps }
 import strawman.collection.immutable.{ ::, HashMap, LazyList, List, Map, Nil, Range, Vector }
 import strawman.collection.immutable.LazyList.#::
 import strawman.collection.mutable.ArrayBuffer

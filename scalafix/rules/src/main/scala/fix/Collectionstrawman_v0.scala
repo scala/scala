@@ -106,7 +106,6 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
       s("Traversable", Some("Iterable")),
       "scala.Iterable" -> "strawman.collection.Iterable",
       "scala.Traversable" -> "strawman.collection.Iterable",
-      "scala.Seq" -> "strawman.collection.Seq",
       "scala.`#::`" -> "strawman.collection.immutable.LazyList.`#::`",
       s("Vector"),
       i("Vector"),
