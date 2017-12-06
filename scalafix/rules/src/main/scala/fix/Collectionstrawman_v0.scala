@@ -102,13 +102,6 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
     )
   }
 
-  val toGenericX = SymbolMatcher.normalized(
-    Symbol("_root_.scala.collection.TraversableOnce.toMap.")
-  )
-  val toImmutableX = SymbolMatcher.normalized(
-    Symbol("_root_.scala.collection.TraversableOnce.toList."),
-    Symbol("_root_.scala.collection.TraversableOnce.toSet.")
-  )
   val toTpe = SymbolMatcher.normalized(
     Symbol("_root_.scala.collection.TraversableLike.to.")
   )
@@ -125,10 +118,6 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
     ctx.tree.collect {
       case iterator(t: Name) =>
         ctx.replaceTree(t, "iterator()")
-      case toImmutableX(t @ Name(n)) =>
-        ctx.replaceTree(t, s"to(strawman.collection.immutable.${n.stripPrefix("to")})")
-      case toGenericX(t @ Name(n)) =>
-        ctx.replaceTree(t, s"to(strawman.collection.${n.stripPrefix("to")})")
       case toTpe(n: Name) =>
         (for {
           name <- n.tokens.lastOption
