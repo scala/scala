@@ -14,17 +14,15 @@ trait SortedMultiSet[A]
 
 }
 
-trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: Iterable[A]]
+trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
   extends MultiSetOps[A, MultiSet, C]
     with SortedOps[A, C] {
-
-  def iterableFactory: IterableFactoryLike[MultiSet] = MultiSet
 
   def sortedIterableFactory: SortedIterableFactory[CC]
 
   protected[this] def sortedFromIterable[B : Ordering](it: Iterable[B]): CC[B]
   protected[this] def sortedFromOccurrences[B : Ordering](it: Iterable[(B, Int)]): CC[B] =
-    sortedFromIterable(it.flatMap { case (b, n) => View.Fill(n)(b) })
+    sortedFromIterable(it.view.flatMap { case (b, n) => View.Fill(n)(b) })
 
   /** `this` sorted multiset upcasted to an unsorted multiset */
   def unordered: MultiSet[A]
@@ -42,8 +40,8 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: Iterable[A]]
   def iteratorFrom(start: A): Iterator[A] =
     occurrences.iteratorFrom(start).flatMap { case (elem, n) => View.Fill(n)(elem) }
 
-  def firstKey: A = head
-  def lastKey: A = last
+  def firstKey: A = occurrences.firstKey
+  def lastKey: A = occurrences.lastKey
 
   def rangeTo(to: A): C = {
     val i = from(to).iterator()
@@ -139,21 +137,27 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: Iterable[A]]
     * @param pf the partial function which filters and map this sorted multiset
     * @tparam B the element type of the returned collection
     */
-  def collect[B : Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
+  def collect[B : Ordering](pf: PartialFunction[A, B]): CC[B] = flatMap(a =>
     if (pf.isDefinedAt(a)) View.Single(pf(a))
     else View.Empty
   )
 
-  // --- Override return type of methods that return an unsorted MultiSet
+  /**
+    * @return a new collection resulting from applying the given partial
+    *         function `pf` to each group of occurrences on which it is defined and
+    *         collecting the results
+    * @param pf the partial function which filters and map this sorted multiset
+    * @tparam B the element type of the returned collection
+    */
+  def collectOccurrences[B : Ordering](pf: PartialFunction[(A, Int), (B, Int)]): CC[B] = flatMapOccurrences(a =>
+    if (pf.isDefinedAt(a)) View.Single(pf(a))
+    else View.Empty
+  )
+
+  // --- Override return type of methods that returned an unsorted MultiSet
 
   override def zipWithIndex: CC[(A, Int)] =
     sortedFromIterable(View.ZipWithIndex(toIterable))
-
-  override def concat(that: Iterable[A]): CC[A] =
-    sortedFromIterable(View.Concat(toIterable, that))
-
-  override def concatOccurrences(that: Iterable[(A, Int)]): CC[A] =
-    sortedFromOccurrences(View.Concat(occurrences, that))
 
 }
 

@@ -31,12 +31,15 @@ trait MultiSet[A]
 
 }
 
-trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C]
+trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
   extends IterableOps[A, CC, C] {
+
+  protected[this] def fromSpecificOccurrences(it: Iterable[(A, Int)]): C =
+    fromSpecificIterable(it.view.flatMap { case (e, n) => View.Fill(n)(e) })
 
   protected[this] def fromOccurrences[E](it: Iterable[(E, Int)]): CC[E] =
     // Note new MultiSet(it.to(Map)) would be more efficient but would also loose duplicates
-    fromIterable(it.flatMap { case (e, n) => View.Fill(n)(e) })
+    fromIterable(it.view.flatMap { case (e, n) => View.Fill(n)(e) })
 
   /**
     * @return All the elements contained in this multiset and their number of occurrences
@@ -64,8 +67,8 @@ trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C]
     *
     * @param that the collection of elements to add to this multiset
     */
-  def concat(that: Iterable[A]): CC[A] =
-    fromIterable(View.Concat(toIterable, that))
+  def concat(that: Iterable[A]): C =
+    fromSpecificIterable(View.Concat(toIterable, that))
 
   /**
     * @return a new multiset summing the occurrences of this multiset
@@ -73,8 +76,8 @@ trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C]
     *
     * @param that the collection of occurrences to add to this multiset
     */
-  def concatOccurrences(that: Iterable[(A, Int)]): CC[A] =
-    fromOccurrences(View.Concat(occurrences, that))
+  def concatOccurrences(that: Iterable[(A, Int)]): C =
+    fromSpecificOccurrences(View.Concat(occurrences, that))
 
   /**
     * @return a new multiset resulting from applying the given function `f`
@@ -86,6 +89,12 @@ trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C]
   def mapOccurrences[B](f: ((A, Int)) => (B, Int)): CC[B] =
     fromOccurrences(View.Map(occurrences, f))
 
+  def collectOccurrences[B](pf: PartialFunction[(A, Int), (B, Int)]): CC[B] =
+    flatMapOccurrences(kvs =>
+      if (pf.isDefinedAt(kvs)) View.Single(pf(kvs))
+      else View.Empty
+    )
+
   /**
     * @return a new multiset resulting from applying the given function `f`
     *         to each pair of element and its number of occurrences of this
@@ -95,6 +104,13 @@ trait MultiSetOps[A, +CC[X] <: MultiSet[X], +C]
     */
   def flatMapOccurrences[B](f: ((A, Int)) => IterableOnce[(B, Int)]): CC[B] =
     fromOccurrences(View.FlatMap(occurrences, f))
+
+  /**
+    * @return a new multiset containing only the occurrences of elements
+    *         of this multiset that satisfy the given predicate `p`
+    */
+  def filterOccurrences(p: ((A, Int)) => Boolean): C =
+    fromSpecificOccurrences(View.Filter(occurrences, p, isFlipped = false))
 
   // TODO Add more multiset operations like union and intersection
 
