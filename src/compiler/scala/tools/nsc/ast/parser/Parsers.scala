@@ -2522,13 +2522,13 @@ self =>
         accept(DOT)
         result
       }
-      /* Walks down import `foo.bar.baz.{ ... }` until it ends at a
+      /* Walks down import `foo.bar.baz.{ ... }` until it ends at
        * an underscore, a left brace, or an undotted identifier.
        */
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent
         val selectors: List[ImportSelector] = in.token match {
-          case USCORE   => List(importSelector()) // import foo.bar._;
+          case USCORE   => List(wildImportSelector()) // import foo.bar._;
           case LBRACE   => importSelectors()      // import foo.bar.{ x, y, z }
           case _        =>
             val nameOffset = in.offset
@@ -2565,10 +2565,7 @@ self =>
      */
     def importSelectors(): List[ImportSelector] = {
       val selectors = inBracesOrNil(commaSeparated(importSelector()))
-      selectors.init foreach {
-        case ImportSelector(nme.WILDCARD, pos, _, _)  => syntaxError(pos, "Wildcard import must be in last position")
-        case _                                        => ()
-      }
+      for (t <- selectors.init if t.isWildcard) syntaxError(t.namePos, "Wildcard import must be in last position")
       selectors
     }
 
@@ -2578,24 +2575,32 @@ self =>
     }
 
     /** {{{
-     *  ImportSelector ::= Id [`=>' Id | `=>' `_']
+     *  ImportSelector ::= Id [`=>` Id | `=>` `_`]
      *  }}}
      */
     def importSelector(): ImportSelector = {
       val start        = in.offset
+      val bbq          = in.token == BACKQUOTED_IDENT
       val name         = wildcardOrIdent()
       var renameOffset = -1
       val rename       = in.token match {
-        case ARROW    =>
+        case ARROW =>
           in.nextToken()
           renameOffset = in.offset
+          if (name == nme.WILDCARD && !bbq) syntaxError(renameOffset, "Wildcard import cannot be renamed")
           wildcardOrIdent()
-        case _ if name == nme.WILDCARD  => null
-        case _ =>
+        case _ if name == nme.WILDCARD && !bbq => null
+        case _     =>
           renameOffset = start
           name
       }
       ImportSelector(name, start, rename, renameOffset)
+    }
+
+    def wildImportSelector(): ImportSelector = {
+      val selector = ImportSelector.wildAt(in.offset)
+      in.nextToken()
+      selector
     }
 
     /** {{{

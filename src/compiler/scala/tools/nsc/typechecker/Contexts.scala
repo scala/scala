@@ -73,16 +73,12 @@ trait Contexts { self: Analyzer =>
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
-        for (sel <- imp.tree.selectors if !isMaskImport(sel) && !used(sel))
+        for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
           reporter.warning(imp.posOf(sel), "Unused import")
       }
       allUsedSelectors --= imps
     }
   }
-
-  def isMaskImport(s: ImportSelector): Boolean = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
-  def isIndividualImport(s: ImportSelector): Boolean = s.name != nme.WILDCARD && s.rename != nme.WILDCARD
-  def isWildcardImport(s: ImportSelector): Boolean = s.name == nme.WILDCARD
 
   var lastAccessCheckDetails: String = ""
 
@@ -1021,16 +1017,16 @@ trait Contexts { self: Analyzer =>
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
           List()
-        case List(ImportSelector(nme.WILDCARD, _, _, _)) =>
+        case sel :: Nil if sel.isWildcard =>
           // Using pre.implicitMembers seems to exposes a problem with out-dated symbols in the IDE,
           // see the example in https://www.assembla.com/spaces/scala-ide/tickets/1002552#/activity/ticket
           // I haven't been able to boil that down the an automated test yet.
           // Looking up implicit members in the package, rather than package object, here is at least
           // consistent with what is done just below for named imports.
           collectImplicits(qual.tpe.implicitMembers, pre, imported = true)
-        case ImportSelector(from, _, to, _) :: sels1 =>
-          var impls = collect(sels1) filter (info => info.name != from)
-          if (to != nme.WILDCARD) {
+        case (sel @ ImportSelector(from, _, to, _)) :: sels1 =>
+          var impls = collect(sels1).filter(info => info.name != from)
+          if (!sel.isMask) {
             withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
               impls = new ImplicitInfo(to, pre, sym) :: impls
             }
@@ -1634,8 +1630,7 @@ trait Contexts { self: Analyzer =>
     }
 
     /** Is name imported explicitly, not via wildcard? */
-    def isExplicitImport(name: Name): Boolean =
-      tree.selectors exists (_.rename == name.toTermName)
+    def isExplicitImport(name: Name): Boolean = tree.selectors.exists(_.introduces(name.toTermName))
 
     /** The symbol with name `name` imported from import clause `tree`. */
     def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false, record = true)
@@ -1656,12 +1651,13 @@ trait Contexts { self: Analyzer =>
       var selectors = tree.selectors
       def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
-        if (current.rename == name.toTermName)
-          result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
-            if (name.isTypeName) current.name.toTypeName else current.name)
-        else if (current.name == name.toTermName)
+        if (current.introduces(name.toTermName))
+          result = qual.tpe.nonLocalMember( // #2733: consider only non-local members for imports
+            if (name.isTypeName) current.name.toTypeName else current.name
+          )
+        else if (!current.isWildcard && current.name == name.toTermName)
           renamed = true
-        else if (current.name == nme.WILDCARD && !renamed && !requireExplicit)
+        else if (current.isWildcard && !renamed && !requireExplicit)
           result = qual.tpe.nonLocalMember(name)
 
         if (result == NoSymbol)
@@ -1680,19 +1676,19 @@ trait Contexts { self: Analyzer =>
       else NoSymbol
     }
     private def selectorString(s: ImportSelector): String = {
-      if (s.name == nme.WILDCARD && s.rename == null) "_"
-      else if (s.name == s.rename) "" + s.name
-      else s.name + " => " + s.rename
+      if (s.isWildcard) "_"
+      else if (s.isRename) s.name + " => " + s.rename
+      else "" + s.name
     }
 
     def allImportedSymbols: Iterable[Symbol] =
       importableMembers(qual.tpe) flatMap (transformImport(tree.selectors, _))
 
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
-      case List() => List()
-      case List(ImportSelector(nme.WILDCARD, _, _, _)) => List(sym)
-      case ImportSelector(from, _, to, _) :: _ if from == sym.name =>
-        if (to == nme.WILDCARD) List()
+      case Nil => Nil
+      case sel :: Nil if sel.isWildcard => List(sym)
+      case (sel @ ImportSelector(from, _, to, _)) :: _ if from == sym.name =>
+        if (sel.isMask) Nil
         else List(sym.cloneSymbol(sym.owner, sym.rawflags, to))
       case _ :: rest => transformImport(rest, sym)
     }

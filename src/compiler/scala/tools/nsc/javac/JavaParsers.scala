@@ -677,7 +677,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         val qual = names.tail.init.foldLeft(Ident(names.head): Tree)(Select(_, _))
         val lastname = names.last
         val selector = lastname match {
-          case nme.WILDCARD => ImportSelector(lastname, lastnameOffset, null, -1)
+          case nme.WILDCARD => ImportSelector.wildAt(lastnameOffset)
           case _            => ImportSelector(lastname, lastnameOffset, lastname, lastnameOffset)
         }
         List(atPos(pos)(Import(qual, List(selector))))

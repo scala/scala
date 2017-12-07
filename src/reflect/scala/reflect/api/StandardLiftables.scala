@@ -154,7 +154,10 @@ trait StandardLiftables { self: Universe =>
       case Apply(ScalaDot(stdnme.Symbol), List(Literal(Constant(name: String)))) => scala.Symbol(name)
     }
 
-    implicit def unliftName[T <: Name : ClassTag]: Unliftable[T] = Unliftable[T] { case Ident(name: T) => name; case Bind(name: T, Ident(stdnme.WILDCARD)) => name }
+    implicit def unliftName[T <: Name : ClassTag]: Unliftable[T] = Unliftable[T] {
+      case Ident(name: T)                        => name
+      case Bind(name: T, Ident(stdnme.WILDCARD)) => name
+    }
     implicit def unliftType: Unliftable[Type]                    = Unliftable[Type] { case tt: TypeTree if tt.tpe != null => tt.tpe }
     implicit def unliftConstant: Unliftable[Constant]            = Unliftable[Constant] { case Literal(const) => const }
 

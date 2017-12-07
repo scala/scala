@@ -852,11 +852,14 @@ abstract class TreeGen {
       case Typed(Ident(x), tpt) if x.toTermName == nme.WILDCARD => Some(tpt)
       case _                                                    => None
     }
-    tree match {
+    (tree match {
       case Ident(name)             => Some((name, TypeTree()))
       case Bind(name, body)        => wildType(body) map (x => (name, x))
       case Typed(Ident(name), tpt) => Some((name, tpt))
       case _                       => None
+    }).filter {
+      case (nme.WILDCARD, _) => false
+      case _                 => true
     }
   }
 
