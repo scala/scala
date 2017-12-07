@@ -43,6 +43,9 @@ import scala.annotation.unchecked.uncheckedVariance
   *  After calling this method, one should discard the iterator it was called
   *  on, as well as the one passed as parameter. Using the old iterators is
   *  undefined and subject to change.
+  *  @define undefinedorder
+  *  The order in which operations are performed on elements is unspecified
+  *  and may be nondeterministic.
   *  @define coll iterator
   */
 trait Iterator[+A] extends IterableOnce[A] { self =>
