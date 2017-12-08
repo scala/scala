@@ -49,9 +49,9 @@ abstract class PostProcessor(statistics: Statistics with BackendStats) extends P
       val bytes = try {
         if (!isArtifact) {
           localOptimizations(classNode)
-          backendUtils.onIndyLambdaImplMethodIfPresent(classNode.name) {
-            methods => if (methods.nonEmpty) backendUtils.addLambdaDeserialize(classNode, methods)
-          }
+          val lambdaImplMethods = backendUtils.getIndyLambdaImplMethods(classNode.name)
+          if (lambdaImplMethods.nonEmpty)
+            backendUtils.addLambdaDeserialize(classNode, lambdaImplMethods)
         }
         setInnerClasses(classNode)
         serializeClass(classNode)
