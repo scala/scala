@@ -767,7 +767,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
@@ -1197,7 +1196,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
     def owner: Symbol = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       rawowner
     }
     final def safeOwner: Symbol   = if (this eq NoSymbol) NoSymbol else owner
@@ -2766,7 +2764,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
     def name = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       _rawname
     }
     override def name_=(name: Name) {
@@ -2900,13 +2897,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def moduleClass = referenced
 
     override def owner = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       // a non-static module symbol gets the METHOD flag in uncurry's info transform -- see isModuleNotMethod
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
     override def name: TermName = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -3038,7 +3033,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def rawname = _rawname
     def name = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       _rawname
     }
     final def asNameType(n: Name) = n.toTypeName
@@ -3325,12 +3319,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def owner: Symbol = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       if (needsFlatClasses) rawowner.owner else rawowner
     }
 
     override def name: TypeName = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = tpnme.flattenedName(rawowner.name, rawname)
@@ -3744,7 +3736,4 @@ trait SymbolsStats {
   val symbolsCount        = newView("#symbols")(symbolTable.getCurrentSymbolIdCount)
   val typeSymbolCount     = newCounter("#type symbols")
   val classSymbolCount    = newCounter("#class symbols")
-  val flagsCount          = newCounter("#flags ops")
-  val ownerCount          = newCounter("#owner ops")
-  val nameCount           = newCounter("#name ops")
 }

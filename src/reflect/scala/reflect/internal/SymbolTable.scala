@@ -188,8 +188,6 @@ abstract class SymbolTable extends macros.Universe
 
   final def atPhaseStack: List[Phase] = List.tabulate(phStackIndex)(i => phStack(i))
   final def phase: Phase = {
-    if (StatisticsStatics.areSomeColdStatsEnabled)
-      statistics.incCounter(statistics.phaseCounter)
     ph
   }
 
@@ -445,7 +443,6 @@ abstract class SymbolTable extends macros.Universe
 trait SymbolTableStats {
   self: TypesStats with Statistics =>
 
-  val phaseCounter = newCounter("#phase calls")
   // Defined here because `SymbolLoaders` is defined in `scala.tools.nsc`
   // and only has access to the `statistics` definition from `scala.reflect`.
   val classReadNanos = newSubTimer("time classfilereading", typerNanos)
