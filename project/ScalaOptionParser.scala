@@ -37,7 +37,7 @@ object ScalaOptionParser {
       MultiChoiceSetting(name, phases)
     }
     def ScalaVersionSetting(name: String): Parser[String] = {
-      concat(concat(token(name ~ Space.string)) ~ token(StringBasic, TokenCompletions.displayOnly("<scala version>")))
+      concat(concat(token(name ~ ":")) ~ token(StringBasic, TokenCompletions.displayOnly("<scala version>")))
     }
     val Property: Parser[String] = {
       val PropName = concat(token("-D" ~ oneOrMore(NotSpaceClass & not('=', "not =")).string, TokenCompletions.displayOnly("-D<property name>")))
