@@ -7,14 +7,27 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws, Serializable, SerialVersionUID}
 import scala.Predef.intWrapper
 
-/** Concrete collection type: ArrayBuffer
+/** An implementation of the `Buffer` class using an array to
+  *  represent the assembled sequence internally. Append, update and random
+  *  access take constant time (amortized time). Prepends and removes are
+  *  linear in the buffer size.
   *
-  * @define coll array buffer
-  * @define Coll `mutable.ArrayBuffer`
-  * @define orderDependent
-  * @define orderDependentFold
-  * @define mayNotTerminateInf
-  * @define willNotTerminateInf
+  *  @author  Matthias Zenger
+  *  @author  Martin Odersky
+  *  @version 2.8
+  *  @since   1
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array_buffers "Scala's Collection Library overview"]]
+  *  section on `Array Buffers` for more information.
+
+  *
+  *  @tparam A    the type of this arraybuffer's elements.
+  *
+  *  @define Coll `mutable.ArrayBuffer`
+  *  @define coll array buffer
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
   */
 @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
@@ -79,7 +92,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     this
   }
 
-  /** Overridden to use array copying for efficiency where possible. */
+  // Overridden to use array copying for efficiency where possible.
   override def addAll(elems: IterableOnce[A]): this.type = {
     elems match {
       case elems: ArrayBuffer[_] =>
@@ -158,7 +171,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   */
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
-  /** Avoid reallocation of buffer if length is known. */
+  // Avoid reallocation of buffer if length is known.
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
       val array = new Array[AnyRef](coll.knownSize)

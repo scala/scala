@@ -222,11 +222,32 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   }
 
+  /** Builds a new map by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given function
+    *                `f` to each element of this $coll and collecting the results.
+    */
   def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(toIterable, f))
 
+  /** Builds a new map by applying a function to all elements of this $coll
+    *  and using the elements of the resulting collections.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given collection-valued function
+    *                `f` to each element of this $coll and concatenating the results.
+    */
   def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(toIterable, f))
 
-  def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(toIterable, xs))
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+    *  the element types of the two operands.
+    *
+    *  @param suffix   the traversable to append.
+    *  @return       a new $coll which contains all elements
+    *                of this $coll followed by all elements of `suffix`.
+    */
+  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(toIterable, suffix))
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)

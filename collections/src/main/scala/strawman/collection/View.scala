@@ -5,7 +5,9 @@ import strawman.collection.mutable.{ArrayBuffer, Builder}
 import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws}
 import scala.Predef.{<:<, intWrapper}
 
-/** Concrete collection type: View
+/** Views are collections whose transformation operations are non strict: the resulting elements
+  * are evaluated only when the view is effectively traversed (e.g. using `foreach` or `foldLeft`),
+  * or when the view is converted to a strict collection type (using the `to` operation).
   * @define coll view
   * @define Coll `View`
   */
