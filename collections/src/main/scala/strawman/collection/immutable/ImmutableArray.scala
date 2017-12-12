@@ -29,8 +29,6 @@ class ImmutableArray[+A] private[collection] (private val elements: scala.Array[
 
   def length: Int = elements.length
 
-  override def knownSize: Int = elements.length
-
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A = ScalaRunTime.array_apply(elements, i).asInstanceOf[A]
 

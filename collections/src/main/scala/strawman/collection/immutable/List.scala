@@ -71,7 +71,7 @@ import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, N
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-sealed trait List[+A]
+sealed abstract class List[+A]
   extends LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
     with StrictOptimizedSeqOps[A, List, List[A]]
@@ -326,7 +326,7 @@ sealed trait List[+A]
     }
   }
 
-  override def reverse: List[A] = {
+  final override def reverse: List[A] = {
     var result: List[A] = Nil
     var these = this
     while (!these.isEmpty) {
@@ -336,8 +336,15 @@ sealed trait List[+A]
     result
   }
 
-  override def foldRight[B](z: B)(op: (A, B) => B): B =
-    reverse.foldLeft(z)((right, left) => op(left, right))
+  final override def foldRight[B](z: B)(op: (A, B) => B): B = {
+    var acc = z
+    var these: List[A] = reverse
+    while (!these.isEmpty) {
+      acc = op(these.head, acc)
+      these = these.tail
+    }
+    acc
+  }
 
   // Create a proxy for Java serialization that allows us to avoid mutation
   // during deserialization.  This is the Serialization Proxy Pattern.

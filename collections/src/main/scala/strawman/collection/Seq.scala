@@ -186,6 +186,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   // overrides of this method
   @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
+  final override def size: Int = length
+
   /** Selects all the elements of this $coll ignoring the duplicates.
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
@@ -636,6 +638,9 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       i - len
     }
   }
+
+  override def isEmpty: Boolean = lengthCompare(0) == 0
+  override def nonEmpty: Boolean = lengthCompare(0) != 0
 
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?

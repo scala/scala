@@ -48,8 +48,6 @@ class StringOps(val s: String)
   @throws[StringIndexOutOfBoundsException]
   def apply(i: Int) = s.charAt(i)
 
-  override def knownSize = s.length
-
   override def className = "String"
 
   /** Overloaded version of `map` that gives back a string, where the inherited

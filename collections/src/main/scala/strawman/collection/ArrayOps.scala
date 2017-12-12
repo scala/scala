@@ -2,7 +2,6 @@ package strawman
 package collection
 
 import scala.{AnyVal, Array, ArrayIndexOutOfBoundsException, Char, Int, throws}
-import scala.Predef.???
 import mutable.{ArrayBuffer, GrowableBuilder}
 
 import scala.reflect.ClassTag
@@ -32,8 +31,6 @@ class ArrayOps[A](val xs: Array[A])
   protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = coll.toArray[A](elemTag)
 
   protected[this] def newSpecificBuilder() = ArrayBuffer.newBuilder[A]().mapResult(_.toArray(elemTag))
-
-  override def knownSize = xs.length
 
   override def className = "Array"
 

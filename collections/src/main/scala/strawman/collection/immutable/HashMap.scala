@@ -27,7 +27,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-sealed trait HashMap[K, +V]
+sealed abstract class HashMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]

@@ -66,7 +66,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def update(n: Int, elem: A): Unit = array(n) = elem.asInstanceOf[AnyRef]
 
   def length = end
-  override def knownSize = length
 
   override def view: ArrayBufferView[A] = new ArrayBufferView(array, end)
 

@@ -105,7 +105,7 @@ class ListBuffer[A]
     this
   }
 
-  def subtract(elem: A): ListBuffer.this.type = {
+  def subtract(elem: A): this.type = {
     ensureUnaliased()
     if (isEmpty) {}
     else if (first.head == elem) {
