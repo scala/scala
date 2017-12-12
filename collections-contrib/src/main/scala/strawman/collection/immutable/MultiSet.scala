@@ -1,6 +1,7 @@
 package strawman
 package collection
 package immutable
+
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
 
 import strawman.collection.decorators.ImmutableMapDecorator

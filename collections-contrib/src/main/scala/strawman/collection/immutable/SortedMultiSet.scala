@@ -11,10 +11,13 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   */
 class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering: Ordering[A])
   extends collection.SortedMultiSet[A]
-    with collection.SortedMultiSetOps[A, SortedMultiSet, SortedMultiSet[A]] {
+    with Iterable[A]
+    with collection.SortedMultiSetOps[A, SortedMultiSet, SortedMultiSet[A]]
+    with collection.IterableOps[A, MultiSet, SortedMultiSet[A]] {
 
   def occurrences: SortedMap[A, Int] = elems
 
+  def iterableFactory: IterableFactory[MultiSet] = MultiSet
   def sortedIterableFactory: SortedIterableFactory[SortedMultiSet] = SortedMultiSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): SortedMultiSet[A] = sortedFromIterable(coll)

@@ -17,6 +17,7 @@ class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering
 
   def occurrences: collection.SortedMap[A, Int] = elems
 
+  def iterableFactory: IterableFactory[MultiSet] = MultiSet
   def sortedIterableFactory: SortedIterableFactory[SortedMultiSet] = SortedMultiSet
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): SortedMultiSet[A] = sortedFromIterable(coll)
@@ -42,7 +43,6 @@ class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering
   }
 
   def clear(): Unit = elems.clear()
-
 }
 
 object SortedMultiSet extends SortedIterableFactory[SortedMultiSet] {

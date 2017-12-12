@@ -10,12 +10,12 @@ class MultiSetTest {
 
   @Test
   def equality(): Unit = {
-    val mm1 = MultiSet("a", "b", "b", "c")
-    val mm2 = MultiSet("a", "b", "b", "c")
+    val ms1 = MultiSet("a", "b", "b", "c")
+    val ms2 = MultiSet("a", "b", "b", "c")
 
-    Assert.assertEquals(mm2, mm1)
-    Assert.assertEquals(mm1, mm2)
-    Assert.assertEquals(mm1.##, mm2.##)
+    Assert.assertEquals(ms2, ms1)
+    Assert.assertEquals(ms1, ms2)
+    Assert.assertEquals(ms1.##, ms2.##)
   }
 
   @Test
