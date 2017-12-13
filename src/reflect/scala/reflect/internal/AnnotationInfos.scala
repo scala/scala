@@ -62,12 +62,14 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     }
   }
 
-  /** Arguments to classfile annotations (which are written to
-   *  bytecode as java annotations) are either:
-   *
+  /**
+   * Arguments to constant annotations (Annotations defined in Java or extending
+   * ConstantAnnotation). Arguments are either:
    *  - constants
    *  - arrays of constants
-   *  - or nested classfile annotations
+   *  - or nested classfile annotations (only for Java annotation)
+   *
+   * TODO: rename to `ConstantAnnotationArg`
    */
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
@@ -349,6 +351,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) => NestedAnnotArg(treeToAnnotation(arg))
         case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
       }
+      // TODO: Java annotations with a single `value` parameter can be created without a named argument.
       def encodeJavaArgs(args: List[Tree]): List[(Name, ClassfileAnnotArg)] = args match {
         case NamedArg(Ident(name), arg) :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
         case arg :: rest => throw new Exception(s"unexpected java argument shape $arg: only NamedArg trees are supported")
@@ -356,7 +359,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       }
       val atp = tpt.tpe
       if (atp != null && (atp.typeSymbol isNonBottomSubClass StaticAnnotationClass)) AnnotationInfo(atp, args, Nil)
-      else if (atp != null && (atp.typeSymbol isNonBottomSubClass ClassfileAnnotationClass)) AnnotationInfo(atp, Nil, encodeJavaArgs(args))
+      else if (atp != null && (atp.typeSymbol.isJavaDefined || atp.typeSymbol.isNonBottomSubClass(ConstantAnnotationClass))) AnnotationInfo(atp, Nil, encodeJavaArgs(args))
       else throw new Exception(s"unexpected annotation type $atp: only subclasses of StaticAnnotation and ClassfileAnnotation are supported")
     case _ =>
       throw new Exception("""unexpected tree shape: only q"new $annType(..$args)" is supported""")

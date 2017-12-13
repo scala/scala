@@ -219,9 +219,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val classParents = {
       val parents = classSym.info.parents
-      // scala/bug#9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
+      // scala/bug#9393: the classfile / java source parsers add Annotation and StaticAnnotation to the
       // parents of a java annotations. undo this for the backend (where we need classfile-level information).
-      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == ClassfileAnnotationClass || c.typeSymbol == AnnotationClass)
+      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == StaticAnnotationClass || c.typeSymbol == AnnotationClass)
       else parents
     }
 

@@ -376,7 +376,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BoxedUnitClass
     definitions.BoxedUnitModule
     definitions.AnnotationClass
-    definitions.ClassfileAnnotationClass
+    definitions.ConstantAnnotationClass
     definitions.StaticAnnotationClass
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr

@@ -223,6 +223,12 @@ trait ContextErrors {
         setError(templ)
       }
 
+      def AuxConstrInConstantAnnotation(constr: Tree, clazz: Symbol) =
+        issueNormalTypeError(constr, s"$clazz cannot have auxiliary constructors because it extends ConstantAnnotation")
+
+      def ConstantAnnotationNeedsSingleArgumentList(constr: Tree, clazz: Symbol) =
+        issueNormalTypeError(constr, s"$clazz needs to have exactly one argument list because it extends ConstantAnnotation")
+
       // additional parentTypes errors
       def ConstrArgsInParentWhichIsTraitError(arg: Tree, parent: Symbol) =
         issueNormalTypeError(arg, parent + " is a trait; does not take constructor arguments")
@@ -490,7 +496,7 @@ trait ContextErrors {
         NormalTypeError(tree, "expected annotation of type " + expected + ", found " + found)
 
       def MultipleArgumentListForAnnotationError(tree: Tree) =
-        NormalTypeError(tree, "multiple argument lists on classfile annotation")
+        NormalTypeError(tree, "multiple argument lists on Java annotation or subclass of ConstantAnnotation")
 
       def UnknownAnnotationNameError(tree: Tree, name: Name) =
         NormalTypeError(tree, "unknown annotation argument name: " + name)
@@ -499,7 +505,7 @@ trait ContextErrors {
         NormalTypeError(tree, "duplicate value for annotation argument " + name)
 
       def ClassfileAnnotationsAsNamedArgsError(tree: Tree) =
-        NormalTypeError(tree, "classfile annotation arguments have to be supplied as named arguments")
+        NormalTypeError(tree, "arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments")
 
       def AnnotationMissingArgError(tree: Tree, annType: Type, sym: Symbol) =
         NormalTypeError(tree, "annotation " + annType.typeSymbol.fullName + " is missing argument " + sym.name)

@@ -1,5 +1,5 @@
 class ann(i: Int) extends scala.annotation.Annotation
-class cfann(x: String) extends annotation.ClassfileAnnotation
+class cfann(x: String) extends annotation.ConstantAnnotation
 
 // annotations on abstract types
 abstract class C2[@deprecated
@@ -90,9 +90,9 @@ trait BeanF {
 }
 
 
-class Ann3(arr: Array[String]) extends annotation.ClassfileAnnotation
-class Ann4(i: Int) extends annotation.ClassfileAnnotation
-class Ann5(value: Class[_]) extends annotation.ClassfileAnnotation
+class Ann3(arr: Array[String]) extends annotation.ConstantAnnotation
+class Ann4(i: Int) extends annotation.ConstantAnnotation
+class Ann5(value: Class[_]) extends annotation.ConstantAnnotation
 
 object Test3 {
   final val i = 1083

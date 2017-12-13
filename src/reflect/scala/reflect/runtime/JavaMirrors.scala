@@ -760,7 +760,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           val jsuperclazz = jclazz.getGenericSuperclass
           val ifaces = jclazz.getGenericInterfaces.toList map typeToScala
           val isAnnotation = JavaAccFlags(jclazz).isAnnotation
-          if (isAnnotation) AnnotationClass.tpe :: ClassfileAnnotationClass.tpe :: ifaces
+          if (isAnnotation) AnnotationClass.tpe :: StaticAnnotationClass.tpe :: ifaces
           else if (jclazz.isInterface) ObjectTpe :: ifaces // interfaces have Object as superclass in the classfile (see jvm spec), but getGenericSuperclass seems to return null
           else (if (jsuperclazz == null) AnyTpe else typeToScala(jsuperclazz)) :: ifaces
         } finally {

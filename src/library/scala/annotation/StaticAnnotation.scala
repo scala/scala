@@ -8,8 +8,13 @@
 
 package scala.annotation
 
-/** A base class for static annotations. These are available
- *  to the Scala type checker, even across different compilation units.
+/**
+ * A base class for static annotations. These are available to the Scala type checker or Scala
+ * reflection, even across different compilation units.
+ *
+ * Annotation classes defined in Scala are not stored in classfiles in a Java-compatible manner
+ * and therefore not visible in Java reflection. In order to achieve this, the annotation has to
+ * be written in Java.
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007

@@ -2,7 +2,7 @@ import scala.reflect.runtime.universe._
 import scala.annotation._
 
 class sann(x: Int, y: List[Int]) extends StaticAnnotation
-class jann(x: Int, y: Array[Int]) extends ClassfileAnnotation
+class jann(x: Int, y: Array[Int]) extends ConstantAnnotation
 
 @sann(1, List(1, 2))
 class S
