@@ -71,3 +71,20 @@ class SortedMapMixed {
   def collect[B](pf: Function1[(String, Int), B]): Int = if(pf.isInstanceOf[PartialFunction[_, _]]) 1 else 0
   def collect[K2 : Ordering, V2](pf: PF[(String, Int), (K2, V2)]): Int = 2
 }
+
+// Test case for https://github.com/scala/bug/issues/10608:
+class IM[T] {
+  def map(f: T => Int): Int = 1
+  def map(f: T => String): String = "a"
+  def map2(f: T => String): String = "a"
+}
+abstract class BTypes { trait Foo }
+class C[BT <: BTypes](val bt: BT) {
+  import bt.Foo
+  val im1: IM[String] = new IM[String]
+  val im2: IM[Foo] = new IM[Foo]
+
+  im1.map { case x => "" } // OK
+  im2.map { case x => "" } // Did not compile
+  im2.map2 { case x => "" } // OK
+}
