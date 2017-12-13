@@ -51,6 +51,6 @@ warning: there were two feature warnings; re-run with -feature for details
                 Seq[Int]
                 Array[Int]
                 scala.collection.AbstractSet[Int]
-                Comparable[java.lang.String]
+                Comparable[String]
                 scala.collection.immutable.LinearSeq[Int]
                 Iterable[Int]

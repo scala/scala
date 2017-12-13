@@ -23,13 +23,13 @@ warning: there was one feature warning; for details, enable `:setting -feature' 
 test: (n: Int)Unit
 
 scala> for (i <- 1 to 8) test(i)
-scala.Int*
-=> scala.Int
-scala.Any
-scala.AnyRef
-scala.AnyVal
-scala.Null
-scala.Nothing
-scala.Singleton
+Int*
+=> Int
+Any
+AnyRef
+AnyVal
+Null
+Nothing
+Singleton
 
 scala> :quit

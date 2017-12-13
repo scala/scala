@@ -2,25 +2,25 @@ x=(), t=TypeTag[Unit], k=TypeRef, s=class Unit
 x=true, t=TypeTag[Boolean], k=TypeRef, s=class Boolean
 x=a, t=TypeTag[Char], k=TypeRef, s=class Char
 x=1, t=TypeTag[Int], k=TypeRef, s=class Int
-x=abc, t=TypeTag[java.lang.String], k=TypeRef, s=class String
+x=abc, t=TypeTag[String], k=TypeRef, s=class String
 x='abc, t=TypeTag[Symbol], k=TypeRef, s=class Symbol
 
 x=List(()), t=TypeTag[List[Unit]], k=TypeRef, s=class List
 x=List(true), t=TypeTag[List[Boolean]], k=TypeRef, s=class List
 x=List(1), t=TypeTag[List[Int]], k=TypeRef, s=class List
-x=List(abc), t=TypeTag[List[java.lang.String]], k=TypeRef, s=class List
+x=List(abc), t=TypeTag[List[String]], k=TypeRef, s=class List
 x=List('abc), t=TypeTag[List[Symbol]], k=TypeRef, s=class List
 
 x=[Z, t=TypeTag[Array[Boolean]], k=TypeRef, s=class Array
 x=[C, t=TypeTag[Array[Char]], k=TypeRef, s=class Array
 x=[I, t=TypeTag[Array[Int]], k=TypeRef, s=class Array
-x=[Ljava.lang.String;, t=TypeTag[Array[java.lang.String]], k=TypeRef, s=class Array
+x=[Ljava.lang.String;, t=TypeTag[Array[String]], k=TypeRef, s=class Array
 x=[Lscala.Symbol;, t=TypeTag[Array[Symbol]], k=TypeRef, s=class Array
 
 x=((),()), t=TypeTag[(Unit, Unit)], k=TypeRef, s=class Tuple2
 x=(true,false), t=TypeTag[(Boolean, Boolean)], k=TypeRef, s=class Tuple2
 x=(1,2), t=TypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
-x=(abc,xyz), t=TypeTag[(java.lang.String, java.lang.String)], k=TypeRef, s=class Tuple2
+x=(abc,xyz), t=TypeTag[(String, String)], k=TypeRef, s=class Tuple2
 x=('abc,'xyz), t=TypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
 
 x=Test$, t=TypeTag[Test.type], k=SingleType, s=object Test

@@ -23,7 +23,7 @@ TypeTag[AnyVal]
 true
 TypeTag[AnyRef]
 true
-TypeTag[java.lang.Object]
+TypeTag[Object]
 true
 TypeTag[Null]
 true
