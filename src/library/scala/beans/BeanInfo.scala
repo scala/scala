@@ -8,14 +8,6 @@
 
 package scala.beans
 
-/** This annotation indicates that a JavaBean-compliant `BeanInfo` class
- *  should be generated for this annotated Scala class.
- *
- *  - A `'''val'''` becomes a read-only property.
- *  - A `'''var'''` becomes a read-write property.
- *  - A `'''def'''` becomes a method.
- *
- *  @author Ross Judson (rjudson@managedobjects.com)
- */
+// TODO: remove in 2.13.0-M4 (once M3 is starr and this class is no longer required to launch the compiler)
 @deprecated(message = "the generation of BeanInfo classes is no longer supported", since = "2.12.0")
 class BeanInfo extends scala.annotation.Annotation

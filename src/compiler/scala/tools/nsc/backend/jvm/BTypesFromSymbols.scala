@@ -208,11 +208,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
-    // Additional interface parents based on annotations and other cues
-    def newParentForAnnotation(ann: AnnotationInfo): Option[Type] = ann.symbol match {
-      case RemoteAttr => Some(RemoteInterfaceClass.tpe)
-      case _          => None
-    }
 
     // scala/bug#9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
     def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
@@ -225,9 +220,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       else parents
     }
 
-    val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
-
-    val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(classSym, allParents)
+    val minimizedParents = if (classSym.isJavaDefined) classParents else erasure.minimizeParents(classSym, classParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D
     //   trait T
@@ -635,21 +628,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     })
   }
 
-  def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
-    val internalName = mainClass.javaBinaryNameString + "BeanInfo"
-    cachedClassBType(internalName).getOrElse({
-      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
-      c.info = Right(ClassInfo(
-        superClass = Some(sbScalaBeanInfoRef),
-        interfaces = Nil,
-        flags = javaFlags(mainClass),
-        nestedClasses = Lazy(Nil),
-        nestedInfo = Lazy(None),
-        inlineInfo = EmptyInlineInfo))
-      c
-    })
-  }
-
   /**
    * True for module classes of package level objects. The backend will generate a mirror class for
    * such objects.
@@ -668,9 +646,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     isOriginallyStaticOwner(sym.originalOwner) // isStaticModuleClass is a source-level property, see comment on isOriginallyStaticOwner
   }
 
-  // legacy, to be removed when the @remote annotation gets removed
-  final def isRemote(s: Symbol) = s hasAnnotation definitions.RemoteAttr
-  final def hasPublicBitSet(flags: Int) = (flags & asm.Opcodes.ACC_PUBLIC) != 0
 
   /**
    * Return the Java modifiers for the given symbol.

@@ -13,7 +13,6 @@ package p1 {
 
 class A1 {
   class B1 {
-    @scala.beans.BeanInfo
     class C1
   }
 }
@@ -67,9 +66,6 @@ object Test extends BytecodeTest {
     println("C1 is a nested class, so it has an InnerClass attribute for itself.\n"+
             "Because that attribute leads to an entry for B1 in the constant pool, C1 needs an InnerClass attribute for B1.")
     printInner("A1$B1$C1")
-
-    nprintln("The BeanInfo class has the same InnerClass attributes as the corresponding bean")
-    printInner("A1$B1$C1BeanInfo")
 
     nprintln("Class A2 mentions class C2 in the constant pool (due to method  f), therefore it needs an InnerClass attribute for C1")
     printInner("A2")

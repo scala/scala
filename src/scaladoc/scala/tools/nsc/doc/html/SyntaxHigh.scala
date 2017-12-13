@@ -35,7 +35,7 @@ private[html] object SyntaxHigh {
     "deprecated", "deprecatedName", "deprecatedOverriding", "deprecatedInheritance",
     "elidable", "field", "getter", "inline",
     "migration", "native", "noinline", "param",
-    "remote", "setter", "specialized", "strictfp", "switch",
+    "setter", "specialized", "strictfp", "switch",
     "tailrec", "throws", "transient",
     "unchecked", "uncheckedStable", "uncheckedVariance",
     "varargs", "volatile").sorted

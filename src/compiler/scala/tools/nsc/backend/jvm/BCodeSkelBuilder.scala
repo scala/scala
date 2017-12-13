@@ -65,7 +65,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var claszSymbol: Symbol        = null
     var isCZParcelable             = false
     var isCZStaticModule           = false
-    var isCZRemote                 = false
 
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
@@ -87,7 +86,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       claszSymbol       = cd.symbol
       isCZParcelable    = isAndroidParcelableClass(claszSymbol)
       isCZStaticModule  = isStaticModuleClass(claszSymbol)
-      isCZRemote        = isRemote(claszSymbol)
       thisBType         = classBTypeFromSymbol(claszSymbol)
 
       cnode = new asm.tree.ClassNode()
@@ -167,7 +165,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
             }
             if (isCandidateForForwarders) {
               log(s"Adding static forwarders from '$claszSymbol' to implementations in '$lmoc'")
-              addForwarders(isRemote(claszSymbol), cnode, thisBType.internalName, lmoc.moduleClass)
+              addForwarders(cnode, thisBType.internalName, lmoc.moduleClass)
             }
           }
         }
@@ -522,7 +520,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def initJMethod(flags: Int, params: List[Symbol]) {
 
       val jgensig = getGenericSignature(methSymbol, claszSymbol)
-      addRemoteExceptionAnnot(isCZRemote, hasPublicBitSet(flags), methSymbol)
+
       val (excs, others) = methSymbol.annotations partition (_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(excs)
 

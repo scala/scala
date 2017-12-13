@@ -15,8 +15,6 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
   // TODO: do we really need a new instance per run? Is there state that depends on the compiler frontend (symbols, types, settings)?
   private[this] lazy val mirrorCodeGen: LazyVar[CodeGenImpl.JMirrorBuilder] = perRunLazy(this)(new CodeGenImpl.JMirrorBuilder())
 
-  private[this] lazy val beanInfoCodeGen: LazyVar[CodeGenImpl.JBeanInfoBuilder] = perRunLazy(this)(new CodeGenImpl.JBeanInfoBuilder())
-
   def genUnit(unit: CompilationUnit): List[GeneratedClass] = {
     val res = mutable.ListBuffer.empty[GeneratedClass]
 
@@ -30,8 +28,6 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
         else
           log(s"No mirror class for module with linked class: ${sym.fullName}")
       }
-      if (sym hasAnnotation coreBTypes.BeanInfoAttr)
-        res += GeneratedClass(genBeanInfoClass(cd, unit), sourceFile, isArtifact = true)
     } catch {
       case ex: Throwable =>
         ex.printStackTrace()
@@ -61,10 +57,6 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
     mirrorCodeGen.get.genMirrorClass(classSym, unit)
   }
 
-  def genBeanInfoClass(cd: ClassDef, unit: CompilationUnit): ClassNode = {
-    val sym = cd.symbol
-    beanInfoCodeGen.get.genBeanInfoClass(sym, unit, CodeGenImpl.fieldSymbols(sym), CodeGenImpl.methodSymbols(cd))
-  }
 
   private def warnCaseInsensitiveOverwrite(cd: ClassDef): Unit = {
     val sym = cd.symbol

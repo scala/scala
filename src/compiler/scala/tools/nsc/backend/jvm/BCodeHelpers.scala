@@ -709,34 +709,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
   trait BCForwardersGen extends BCAnnotGen with BCJGenSigGen {
 
-    /* Adds a @remote annotation, actual use unknown.
-     *
-     * Invoked from genMethod() and addForwarder().
-     *
-     * must-single-thread
-     */
-    def addRemoteExceptionAnnot(isRemoteClass: Boolean, isJMethodPublic: Boolean, meth: Symbol) {
-      def hasThrowsRemoteException = meth.annotations.exists {
-        case ThrownException(exc) => exc.typeSymbol == definitions.RemoteExceptionClass
-        case _ => false
-      }
-      val needsAnnotation = {
-        (isRemoteClass ||
-          isRemote(meth) && isJMethodPublic
-          ) && !hasThrowsRemoteException
-      }
-      if (needsAnnotation) {
-        val c   = Constant(definitions.RemoteExceptionClass.tpe)
-        val arg = Literal(c) setType c.tpe
-        meth.addAnnotation(appliedType(definitions.ThrowsClass, c.tpe), arg)
-      }
-    }
 
     /* Add a forwarder for method m. Used only from addForwarders().
      *
      * must-single-thread
      */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
+    private def addForwarder(jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
       def staticForwarderGenericSignature: String = {
         // scala/bug#3452 Static forwarder generation uses the same erased signature as the method if forwards to.
         // By rights, it should use the signature as-seen-from the module class, and add suitable
@@ -767,7 +745,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
       val jgensig = staticForwarderGenericSignature
-      addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
+
       val (throws, others) = m.annotations partition (_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
 
@@ -811,7 +789,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    def addForwarders(isRemoteClass: Boolean, jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
+    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass, moduleClass)
       debuglog(s"Dumping mirror class for object: $moduleClass")
 
@@ -830,7 +808,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
           log(s"No forwarder for non-public member $m")
         else {
           log(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
-          addForwarder(isRemoteClass, jclass, moduleClass, m)
+          addForwarder(jclass, moduleClass, m)
         }
       }
     }
@@ -921,7 +899,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       mirrorClass.visitAttribute(if (ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(mirrorClass, moduleClass.annotations ++ ssa)
 
-      addForwarders(isRemote(moduleClass), mirrorClass, bType.internalName, moduleClass)
+      addForwarders(mirrorClass, bType.internalName, moduleClass)
 
       mirrorClass.visitEnd()
 
@@ -931,114 +909,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     }
 
   } // end of class JMirrorBuilder
-
-  /* builder of bean info classes */
-  class JBeanInfoBuilder extends BCInnerClassGen {
-
-    /*
-     * Generate a bean info class that describes the given class.
-     *
-     * @author Ross Judson (ross.judson@soletta.com)
-     *
-     * must-single-thread
-     */
-    def genBeanInfoClass(cls: Symbol, cunit: CompilationUnit, fieldSymbols: List[Symbol], methodSymbols: List[Symbol]): asm.tree.ClassNode = {
-
-      def javaSimpleName(s: Symbol): String = { s.javaSimpleName.toString }
-
-      val beanInfoType = beanInfoClassClassBType(cls)
-
-      val beanInfoClass = new asm.tree.ClassNode
-      beanInfoClass.visit(
-        backendUtils.classfileVersion.get,
-        beanInfoType.info.get.flags,
-        beanInfoType.internalName,
-        null, // no java-generic-signature
-        sbScalaBeanInfoRef.internalName,
-        EMPTY_STRING_ARRAY
-      )
-
-      beanInfoClass.visitSource(
-        cunit.source.toString,
-        null /* SourceDebugExtension */
-      )
-
-      var fieldList = List[String]()
-
-      for (f <- fieldSymbols if f.hasGetter;
-                 g = f.getterIn(cls);
-                 s = f.setterIn(cls);
-	         if g.isPublic && !(f.name startsWith "$")
-          ) {
-             // inserting $outer breaks the bean
-             fieldList = javaSimpleName(f) :: javaSimpleName(g) :: (if (s != NoSymbol) javaSimpleName(s) else null) :: fieldList
-      }
-
-      val methodList: List[String] =
-	     for (m <- methodSymbols
-	          if !m.isConstructor &&
-	          m.isPublic &&
-	          !(m.name startsWith "$") &&
-	          !m.isGetter &&
-	          !m.isSetter)
-       yield javaSimpleName(m)
-
-      val constructor = beanInfoClass.visitMethod(
-        asm.Opcodes.ACC_PUBLIC,
-        INSTANCE_CONSTRUCTOR_NAME,
-        "()V",
-        null, // no java-generic-signature
-        EMPTY_STRING_ARRAY // no throwable exceptions
-      )
-
-      val stringArrayJType: BType = ArrayBType(StringRef)
-      val conJType: BType = MethodBType(
-        classBTypeFromSymbol(definitions.ClassClass) :: stringArrayJType :: stringArrayJType :: Nil,
-        UNIT
-      )
-
-      def push(lst: List[String]) {
-        var fi = 0
-        for (f <- lst) {
-          constructor.visitInsn(asm.Opcodes.DUP)
-          constructor.visitLdcInsn(new java.lang.Integer(fi))
-          if (f == null) { constructor.visitInsn(asm.Opcodes.ACONST_NULL) }
-          else           { constructor.visitLdcInsn(f) }
-          constructor.visitInsn(StringRef.typedOpcode(asm.Opcodes.IASTORE))
-          fi += 1
-        }
-      }
-
-      constructor.visitCode()
-
-      constructor.visitVarInsn(asm.Opcodes.ALOAD, 0)
-      // push the class
-      constructor.visitLdcInsn(classBTypeFromSymbol(cls).toASMType)
-
-      // push the string array of field information
-      constructor.visitLdcInsn(new java.lang.Integer(fieldList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringRef.internalName)
-      push(fieldList)
-
-      // push the string array of method information
-      constructor.visitLdcInsn(new java.lang.Integer(methodList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringRef.internalName)
-      push(methodList)
-
-      // invoke the superclass constructor, which will do the
-      // necessary java reflection and create Method objects.
-      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.descriptor, false)
-      constructor.visitInsn(asm.Opcodes.RETURN)
-
-      constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
-      constructor.visitEnd()
-
-      beanInfoClass.visitEnd()
-
-      beanInfoClass
-    }
-
-  } // end of class JBeanInfoBuilder
 
   trait JAndroidBuilder {
     self: BCInnerClassGen =>

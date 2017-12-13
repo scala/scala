@@ -1,17 +1,6 @@
 
 import scala.language.{ higherKinds, reflectiveCalls }
 
-object Test1 {
-  class Foo {
-    @remote
-    def foo: Unit = ()
-  }
-  def run {
-    val method = classOf[Foo].getMethod("foo")
-    method.getExceptionTypes foreach println
-  }
-}
-
 object Test2 {
   import java.io.{BufferedReader,FileReader, IOException}
   class Reader(fname: String) {
@@ -215,7 +204,6 @@ class A3345(@volatile private var i:Int)
 
 object Test {
   def main(args: Array[String]) {
-    Test1.run
     Test2.run
     Test3.run     // requires the use of -target:jvm-1.5
     Test4.run
