@@ -23,7 +23,7 @@ class StringLikeTest {
       // make sure we can match a literal character done by Java's split
       val jSplit = jString.split("\\Q" + c.toString + "\\E")
       val sSplit = s.split(c)
-      AssertUtil.assertSameElements(jSplit, sSplit, s"Not same result as Java split for char $c in string $s")
+      AssertUtil.assertSameElements(jSplit, sSplit)
     }
   }
 
@@ -33,7 +33,7 @@ class StringLikeTest {
     val low = 0xDF62.toChar
     val surrogatepair = List(high, low).mkString
     val twopairs = surrogatepair + "_" + surrogatepair
-    
+
     AssertUtil.assertSameElements("abcd".split('d'), Array("abc")) // not Array("abc", "")
     AssertUtil.assertSameElements("abccc".split('c'), Array("ab")) // not Array("ab", "", "", "")
     AssertUtil.assertSameElements("xxx".split('x'), Array[String]()) // not Array("", "", "", "")

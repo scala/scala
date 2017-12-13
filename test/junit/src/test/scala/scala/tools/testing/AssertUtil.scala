@@ -53,7 +53,7 @@ object AssertUtil {
 
   /** JUnit-style assertion for `IterableLike.sameElements`.
    */
-  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: GenIterable[B], message: String = ""): Unit =
+  def legacyAssertSameElements[A, B >: A](expected: IterableLike[A, _], actual: GenIterable[B], message: String = ""): Unit =
     if (!(expected sameElements actual))
       fail(
         f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
@@ -61,8 +61,8 @@ object AssertUtil {
 
   /** Convenient for testing iterators.
    */
-  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
-    assertSameElements(expected, actual.toList, "")
+  def legacyAssertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
+    legacyAssertSameElements(expected, actual.toList, "")
 
   /** Convenient for testing iterators.
     */

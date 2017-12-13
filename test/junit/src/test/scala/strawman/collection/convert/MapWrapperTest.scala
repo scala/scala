@@ -18,16 +18,16 @@ class MapWrapperTest {
     // Before the fix for scala/bug#7883, calling MapWrapper.containsKey() used to
     // iterate through every element of the wrapped Map, and thus would crash
     // in this case.
-    val scalaMap = new strawman.collection.mutable.HashMap[String, String] {
+    class ScalaMap extends strawman.collection.mutable.HashMap[String, String] {
       var containsCounter = 0  // keep track of how often contains() has been called.
-      override def iterator = throw new UnsupportedOperationException
+      override def iterator() = throw new UnsupportedOperationException
 
       override def contains(key: String): Boolean = {
         containsCounter += 1
         super.contains(key)
       }
     }
-
+    val scalaMap = new ScalaMap
     val javaMap = scalaMap.asJava
 
     scalaMap("hello") = "world"
