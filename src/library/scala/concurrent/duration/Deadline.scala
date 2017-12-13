@@ -19,7 +19,7 @@ package scala.concurrent.duration
  *
  * Its main purpose is to manage repeated attempts to achieve something (like
  * awaiting a condition) by offering the methods `hasTimeLeft` and `timeLeft`.  All
- * durations are measured according to `System.nanoTime` aka wall-time; this
+ * durations are measured according to `System.nanoTime`; this
  * does not take into account changes to the system clock (such as leap
  * seconds).
  */
