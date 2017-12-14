@@ -1067,18 +1067,20 @@ trait Implicits {
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
-          infoMap get sym match {
+          infoMap.get(sym) match {
             case Some(infos1) =>
               if (infos1.nonEmpty && !(pre =:= infos1.head.pre.prefix)) {
                 log(s"Ignoring implicit members of $pre#$sym as it is also visible via another prefix: ${infos1.head.pre.prefix}")
                 infoMap(sym) = List() // ambiguous prefix - ignore implicit members
               }
-            case None =>
+
+            case None         =>
               if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
                 val pre1 =
                   if (sym.isPackageClass) sym.packageObject.typeOfThis
                   else singleType(pre, companionSymbolOf(sym, context))
                 val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
+
                 if (infos.nonEmpty)
                   infoMap += (sym -> infos)
               }
@@ -1088,8 +1090,8 @@ trait Implicits {
                 getParts(bts(i))
                 i += 1
               }
-              getParts(pre)
-            }
+            //            getParts(pre)-- let's see what breaks if we don't include the prefix
+          }
       }
 
       /* Populate implicit info map by traversing all parts of type `tp`.
@@ -1135,7 +1137,7 @@ trait Implicits {
                 args foreach getParts
 
                 //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-                getParts(pre)
+//                getParts(pre)
               }
             }
           case ThisType(_) =>

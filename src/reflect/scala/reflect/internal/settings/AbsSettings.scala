@@ -12,13 +12,20 @@ package settings
  *  interchangeably.   Except of course without the mutants.
  */
 
-trait AbsSettings {
-  type Setting <: AbsSettingValue      // Fix to the concrete Setting type
+trait AbsSettingValue {
+  type T <: Any
+  def value: T
+  def isDefault: Boolean
+}
 
-  trait AbsSettingValue {
-    type T <: Any
-    def value: T
-    def isDefault: Boolean
-  }
+object AbsSettingValue {
+  import scala.language.implicitConversions
+  /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */
+  @inline implicit def s2v[U](s: AbsSettingValue { type T = U }): U = s.value
+}
+
+trait AbsSettings {
+  type AbsSettingValue = scala.reflect.internal.settings.AbsSettingValue
+  type Setting <: AbsSettingValue      // Fix to the concrete Setting type
 }
 

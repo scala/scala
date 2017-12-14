@@ -45,3 +45,10 @@ ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map1
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map2.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map3.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map4.serialVersionUID")
+
+
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$Creator$IntProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$Creator$StringProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$Creator$DoubleProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$Creator$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$Creator$FileProp$")

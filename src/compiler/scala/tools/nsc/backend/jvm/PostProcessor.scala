@@ -20,6 +20,7 @@ abstract class PostProcessor extends PerRunInit {
 
   import bTypes._
   import frontendAccess.{backendReporting, compilerSettings, recordPerRunJavaMapCache}
+  import BackendReporting.RightBiasedEither
 
   val backendUtils        : BackendUtils        { val postProcessor: self.type } = new { val postProcessor: self.type = self } with BackendUtils
   val byteCodeRepository  : ByteCodeRepository  { val postProcessor: self.type } = new { val postProcessor: self.type = self } with ByteCodeRepository

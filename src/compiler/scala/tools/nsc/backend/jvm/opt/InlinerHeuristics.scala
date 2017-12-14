@@ -24,6 +24,8 @@ abstract class InlinerHeuristics extends PerRunInit {
   import bTypes._
   import callGraph._
   import frontendAccess.{backendReporting, compilerSettings}
+  import BackendReporting.RightBiasedEither
+
 
   lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 

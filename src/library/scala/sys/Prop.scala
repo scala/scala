@@ -84,10 +84,12 @@ object Prop {
     def apply(key: String): Prop[T]
   }
 
-  implicit object FileProp extends CreatorImpl[java.io.File](s => new java.io.File(s))
-  implicit object StringProp extends CreatorImpl[String](s => s)
-  implicit object IntProp extends CreatorImpl[Int](_.toInt)
-  implicit object DoubleProp extends CreatorImpl[Double](_.toDouble)
+  object Creator {
+    implicit object FileProp extends CreatorImpl[java.io.File](s => new java.io.File(s))
+    implicit object StringProp extends CreatorImpl[String](s => s)
+    implicit object IntProp extends CreatorImpl[Int](_.toInt)
+    implicit object DoubleProp extends CreatorImpl[Double](_.toDouble)
+  }
 
   def apply[T: Creator](key: String): Prop[T] = implicitly[Creator[T]] apply key
 }

@@ -58,6 +58,8 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   import global._
   import definitions._
   import rootMirror.{getClassIfDefined, getRequiredClass, requiredClass}
+  import BackendReporting.RightBiasedEither
+
 
   /**
    * This method is used to lazily initialize the core BTypes. The computation is synchronized on
