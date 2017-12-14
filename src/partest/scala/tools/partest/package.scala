@@ -6,7 +6,6 @@ package scala.tools
 
 import java.util.concurrent.{ Callable, ExecutorService }
 import scala.concurrent.duration.Duration
-import scala.sys.process.javaVmArguments
 import scala.tools.nsc.util.Exceptional
 
 package object partest {
@@ -170,11 +169,16 @@ package object partest {
     "%02d:%02d:%02d".format(elapsedHrs, dispMins, dispSecs)
   }
 
-  def vmArgString = javaVmArguments.mkString(
-    "Java VM started with arguments: '",
-    " ",
-    "'"
-  )
+  def vmArgString = {
+    import scala.collection.JavaConverters._
+    val javaVmArguments =
+      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.asScala.toList
+    javaVmArguments.mkString(
+      "Java VM started with arguments: '",
+      " ",
+      "'"
+    )
+  }
 
   def allPropertiesString = {
     import scala.collection.JavaConverters._
