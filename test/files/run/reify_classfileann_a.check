@@ -8,7 +8,7 @@
   ()
 }
 {
-  @Ann(bar = "1", quux = ["2", "3"], baz = java.lang.SuppressWarnings(value = ["hups"])) class C extends AnyRef {
+  @Ann(bar = "1", quux = ["2", "3"], baz = SuppressWarnings(value = ["hups"])) class C extends AnyRef {
     def <init>(): C = {
       C.super.<init>();
       ()
