@@ -1111,7 +1111,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // Annotation base classes
     lazy val AnnotationClass            = requiredClass[scala.annotation.Annotation]
-    lazy val ConstantAnnotationClass    = getRequiredClass("scala.annotation.ConstantAnnotation")
+    lazy val ConstantAnnotationClass    = getClassIfDefined("scala.annotation.ConstantAnnotation")
     lazy val StaticAnnotationClass      = requiredClass[scala.annotation.StaticAnnotation]
 
     // Java retention annotations
