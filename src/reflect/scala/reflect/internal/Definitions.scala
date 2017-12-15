@@ -1505,11 +1505,6 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       lazy val List_apply = DefinitionsClass.this.List_apply
 
-      /**
-       * Is the given symbol `List.apply`?
-       * To to avoid bootstrapping cycles, this return false if the given symbol or List itself is not initialized.
-       */
-      def isListApply(sym: Symbol) = sym.isInitialized && ListModule.hasCompleteInfo && sym == List_apply
       def isPredefClassOf(sym: Symbol) = if (PredefModule.hasCompleteInfo) sym == Predef_classOf else isPredefMemberNamed(sym, nme.classOf)
 
       lazy val TagMaterializers = Map[Symbol, Symbol](
