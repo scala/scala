@@ -14,7 +14,7 @@
       C.super.<init>();
       ()
     };
-    def x: Int = (2: Int(2) @Ann(bar = "1", quux = ["2", "3"], baz = java.lang.SuppressWarnings(value = ["hups"])))
+    def x: Int = (2: Int(2) @Ann(bar = "1", quux = ["2", "3"], baz = SuppressWarnings(value = ["hups"])))
   };
   ()
 }
