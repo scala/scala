@@ -1,6 +1,0 @@
-# xsbti Java interfaces must be defined in the compiler interface, not the bridge.
-# Bridge implementations are compiled per Zinc, so these are safe to change.
-ProblemFilters.exclude[MissingClassProblem]("xsbti.InteractiveConsoleFactory")
-ProblemFilters.exclude[MissingClassProblem]("xsbti.InteractiveConsoleResult")
-ProblemFilters.exclude[MissingClassProblem]("xsbti.InteractiveConsoleInterface")
-ProblemFilters.exclude[MissingClassProblem]("xsbti.InteractiveConsoleResponse")
