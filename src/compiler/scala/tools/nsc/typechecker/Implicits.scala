@@ -818,11 +818,13 @@ trait Implicits {
           } else !(owner hasTransOwner sym)) // faster than owner.ownerChain contains sym
       }
 
-      sym.isInitialized ||
-      sym.sourceFile == null ||
-      (sym.sourceFile ne context.unit.source.file) ||
-      hasExplicitResultType(sym) ||
-      comesBefore(sym, context.owner)
+      sym.isInitialized || {
+        val sourceFile = sym.sourceFile
+        sourceFile == null ||
+        (sourceFile ne context.unit.source.file) ||
+        hasExplicitResultType(sym) ||
+        comesBefore(sym, context.owner)
+      }
     }
 
     /** Prune ImplicitInfos down to either all the eligible ones or the best one.
