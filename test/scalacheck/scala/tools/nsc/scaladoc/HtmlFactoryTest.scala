@@ -770,7 +770,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
     createTemplates("t9599.scala")("X.html") match {
-      case node: scala.xml.Node => node.text.contains("todo3todo2todo1")
+      case node: scala.xml.Node => node.text.contains("todo1todo2todo3")
       case _ => false
     }
   }
