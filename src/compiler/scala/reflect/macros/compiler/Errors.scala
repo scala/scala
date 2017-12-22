@@ -49,7 +49,7 @@ trait Errors extends Traces {
 
     def MacroImplWrongNumberOfTypeArgumentsError() = {
       val diagnostic = if (macroImpl.typeParams.length > targs.length) "has too few type arguments" else "has too many arguments"
-      implRefError(s"macro implementation reference $diagnostic for " + treeSymTypeMsg(macroImplRef))
+      implRefError(s"macro implementation reference $diagnostic for " + treeSymTypeMsg(macroImplRef)(context))
     }
 
     private def macroImplementationWording =

@@ -52,18 +52,6 @@ trait TypeDiagnostics {
   private val addendums = perRunCaches.newMap[Position, () => String]()
   private var isTyperInPattern = false
 
-  /** Devising new ways of communicating error info out of
-   *  desperation to work on error messages.  This is used
-   *  by typedPattern to wrap its business so we can generate
-   *  a sensible error message when things go south.
-   */
-  def typingInPattern[T](body: => T): T = {
-    val saved = isTyperInPattern
-    isTyperInPattern = true
-    try body
-    finally isTyperInPattern = saved
-  }
-
   def setAddendum(pos: Position, msg: () => String) =
     if (pos != NoPosition)
       addendums(pos) = msg
@@ -152,7 +140,7 @@ trait TypeDiagnostics {
       getter.owner.newValue(getter.name.toTermName, getter.pos, flags) setInfo getter.tpe.resultType
     }
 
-  def treeSymTypeMsg(tree: Tree): String = {
+  def treeSymTypeMsg(tree: Tree)(implicit context: Context): String = {
     val sym               = tree.symbol
     def hasParams         = tree.tpe.paramSectionCount > 0
     def preResultString   = if (hasParams) ": " else " of type "
@@ -165,7 +153,7 @@ trait TypeDiagnostics {
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
     if (!tree.hasExistingSymbol) {
-      if (isTyperInPattern) patternMessage
+      if (context.isWithinPattern) patternMessage
       else exprMessage
     }
     else if (sym.isOverloaded) overloadedMessage

@@ -1,4 +1,4 @@
-t7877.scala:6: error: not found: value Y
+t7877.scala:6: error: method Y is not a case class, nor does it have an unapply/unapplySeq member
     case Y() => ()             // not allowed
          ^
 t7877.scala:7: error: OnNext[Any] does not take parameters

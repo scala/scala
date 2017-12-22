@@ -1,0 +1,13 @@
+t10474.scala:9: error: Unapplied method Foo is not allowed inside a pattern.
+Selections in patterns must be from stable values.
+    case Foo.Bar ⇒ true
+         ^
+t10474.scala:13: error: Unapplied method Foo is not allowed inside a type expression.
+Selections in types must be from stable values or other types.
+  type Crash = Foo.type
+               ^
+t10474.scala:17: error: Unapplied method bingo is not allowed inside a pattern.
+Selections in patterns must be from stable values.
+  val `bingo`.Fuzz = 1
+      ^
+three errors found
