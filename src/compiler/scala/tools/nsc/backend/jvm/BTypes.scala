@@ -48,39 +48,23 @@ abstract class BTypes {
    * referring to BTypes.
    */
   sealed trait BType {
-    final override def toString: String = {
-      val builder = new java.lang.StringBuilder(64)
-      buildString(builder)
-      builder.toString
-    }
 
-    final def buildString(builder: java.lang.StringBuilder): Unit = this match {
-      case UNIT   => builder.append('V')
-      case BOOL   => builder.append('Z')
-      case CHAR   => builder.append('C')
-      case BYTE   => builder.append('B')
-      case SHORT  => builder.append('S')
-      case INT    => builder.append('I')
-      case FLOAT  => builder.append('F')
-      case LONG   => builder.append('J')
-      case DOUBLE => builder.append('D')
-      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
-      case ArrayBType(component)    => builder.append('['); component.buildString(builder)
-      case MethodBType(args, res)   =>
-        builder.append('(')
-        args.foreach(_.buildString(builder))
-        builder.append(')')
-        res.buildString(builder)
-    }
+    final override def toString: String = descriptor
 
     /**
-     * @return The Java descriptor of this type. Examples:
-     *  - int: I
-     *  - java.lang.String: Ljava/lang/String;
-     *  - int[]: [I
-     *  - Object m(String s, double d): (Ljava/lang/String;D)Ljava/lang/Object;
-     */
-    final def descriptor = toString
+      * @return The Java descriptor of this type. Examples:
+      *  - int: I
+      *  - java.lang.String: Ljava/lang/String;
+      *  - int[]: [I
+      *  - Object m(String s, double d): (Ljava/lang/String;D)Ljava/lang/Object;
+      */
+    def descriptor : String
+
+    /**
+      * generally used by descriptor to help build the descriptor. Allows several descriptors to be build from the same stringbuilder
+      * @param sb
+      */
+    private[BTypes] def buildDescriptor(sb: java.lang.StringBuilder): Unit
 
     /**
      * @return 0 for void, 2 for long and double, 1 otherwise
@@ -237,20 +221,7 @@ abstract class BTypes {
      *  - for an OBJECT type, the 'L' and ';' are not part of the range of the created Type
      *  - for an ARRAY type, the full descriptor is part of the range
      */
-    def toASMType: asm.Type = this match {
-      case UNIT   => asm.Type.VOID_TYPE
-      case BOOL   => asm.Type.BOOLEAN_TYPE
-      case CHAR   => asm.Type.CHAR_TYPE
-      case BYTE   => asm.Type.BYTE_TYPE
-      case SHORT  => asm.Type.SHORT_TYPE
-      case INT    => asm.Type.INT_TYPE
-      case FLOAT  => asm.Type.FLOAT_TYPE
-      case LONG   => asm.Type.LONG_TYPE
-      case DOUBLE => asm.Type.DOUBLE_TYPE
-      case ClassBType(internalName) => asm.Type.getObjectType(internalName) // see (*) above
-      case a: ArrayBType            => asm.Type.getObjectType(a.descriptor)
-      case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
-    }
+    def toASMType: asm.Type
 
     def asRefBType       : RefBType       = this.asInstanceOf[RefBType]
     def asArrayBType     : ArrayBType     = this.asInstanceOf[ArrayBType]
@@ -258,7 +229,12 @@ abstract class BTypes {
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed trait PrimitiveBType extends BType {
+  sealed abstract class PrimitiveBType(
+      override val descriptor:String,
+      override val toASMType: asm.Type) extends BType {
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = {
+      sb.append(descriptor)
+    }
 
     /**
      * The upper bound of two primitive types. The `other` type has to be either a primitive
@@ -323,15 +299,15 @@ abstract class BTypes {
     }
   }
 
-  case object UNIT   extends PrimitiveBType
-  case object BOOL   extends PrimitiveBType
-  case object CHAR   extends PrimitiveBType
-  case object BYTE   extends PrimitiveBType
-  case object SHORT  extends PrimitiveBType
-  case object INT    extends PrimitiveBType
-  case object FLOAT  extends PrimitiveBType
-  case object LONG   extends PrimitiveBType
-  case object DOUBLE extends PrimitiveBType
+  case object UNIT   extends PrimitiveBType("V",asm.Type.VOID_TYPE)
+  case object BOOL   extends PrimitiveBType("Z",asm.Type.BOOLEAN_TYPE)
+  case object CHAR   extends PrimitiveBType("C",asm.Type.CHAR_TYPE)
+  case object BYTE   extends PrimitiveBType("B",asm.Type.BYTE_TYPE)
+  case object SHORT  extends PrimitiveBType("S",asm.Type.SHORT_TYPE)
+  case object INT    extends PrimitiveBType("I",asm.Type.INT_TYPE)
+  case object FLOAT  extends PrimitiveBType("F",asm.Type.FLOAT_TYPE)
+  case object LONG   extends PrimitiveBType("J",asm.Type.LONG_TYPE)
+  case object DOUBLE extends PrimitiveBType("D",asm.Type.DOUBLE_TYPE)
 
   sealed trait RefBType extends BType {
     /**
@@ -608,6 +584,34 @@ abstract class BTypes {
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
   final case class ClassBType(internalName: InternalName)(cache: mutable.Map[InternalName, ClassBType]) extends RefBType {
+
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(internalName.length + 2)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('L')
+      sb.append(internalName)
+      sb.append(';')
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
+
+    /**
+      * The asm.Type corresponding to this BType.
+      *
+      * Note about asm.Type.getObjectType (*): For class types, the method expects the internal
+      * name, i.e. without the surrounding 'L' and ';'.
+      */
+    override lazy val toASMType = asm.Type.getObjectType(internalName)
+
+
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -857,6 +861,31 @@ abstract class BTypes {
   final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
   final case class ArrayBType(componentType: BType) extends RefBType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+    private var descriptorCache : String = _
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('[')
+      componentType.buildDescriptor(sb)
+
+      descriptorCache = sb.substring(start)
+    } else sb.append(descriptorCache)
+
+
+    /**
+      * For array types on the other hand, the method expects a full descriptor,
+      * for example "[Ljava/lang/String;".
+      *
+      */
+    override lazy val toASMType = asm.Type.getObjectType(descriptor)
+
+
     def dimension: Int = componentType match {
       case a: ArrayBType => 1 + a.dimension
       case _ => 1
@@ -868,7 +897,29 @@ abstract class BTypes {
     }
   }
 
-  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType {
+    override def descriptor: String = {
+      if (descriptorCache eq null) {
+        val sb = new java.lang.StringBuilder(256)
+        buildDescriptor(sb)
+      }
+      descriptorCache
+    }
+
+    private var descriptorCache: String = _
+
+    private[BTypes] override def buildDescriptor(sb: java.lang.StringBuilder): Unit = if (descriptorCache eq null) {
+      val start = sb.length()
+      sb.append('(')
+      argumentTypes foreach (_.buildDescriptor(sb))
+      sb.append(')')
+      returnType.buildDescriptor(sb)
+      descriptorCache = sb.substring(start)
+
+    } else sb.append(descriptorCache)
+
+    override lazy val toASMType = asm.Type.getMethodType(descriptor)
+  }
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
    * initializing them requires information from types / symbols, which is not accessible here in
