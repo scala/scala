@@ -24,7 +24,7 @@ import scala.annotation.unchecked.{ uncheckedVariance=> uV }
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#hash_tries "Scala's Collection Library overview"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#hash-tries "Scala's Collection Library overview"]]
  *  section on `Hash Tries` for more information.
  *  @define Coll `immutable.HashMap`
  *  @define coll immutable hash map

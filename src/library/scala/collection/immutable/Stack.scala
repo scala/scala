@@ -35,7 +35,7 @@ object Stack extends SeqFactory[Stack] {
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  *  @since   1
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable_stacks "Scala's Collection Library overview"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable-stacks "Scala's Collection Library overview"]]
  *  section on `Immutable stacks` for more information.
  *
  *  @define Coll `immutable.Stack`
