@@ -29,7 +29,7 @@ import scala.collection.parallel.Task
  *  @define coll parallel hash map
  *
  *  @author Aleksandar Prokopec
- *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_hash_tables Scala's Parallel Collections Library overview]]
+ *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel-hash-tables Scala's Parallel Collections Library overview]]
  *  section on Parallel Hash Tables for more information.
  */
 @SerialVersionUID(1L)

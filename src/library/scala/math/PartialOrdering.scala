@@ -14,7 +14,7 @@ package math
  *  of partial ordering on some type.  This trait is for representing the
  *  latter.
  *
- *  A [[http://en.wikipedia.org/wiki/Partial_order partial ordering]] is a
+ *  A [[http://en.wikipedia.org/wiki/Partially_ordered_set partial ordering]] is a
  *  binary relation on a type `T`, exposed as the `lteq` method of this trait.
  *  This relation must be:
  *
