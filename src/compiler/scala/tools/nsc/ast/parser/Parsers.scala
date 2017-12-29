@@ -1786,8 +1786,10 @@ self =>
      */
     def block(): Tree = makeBlock(blockStatSeq())
 
-    def caseClause(): CaseDef =
-      atPos(in.offset)(makeCaseDef(pattern(), guard(), caseBlock()))
+    def caseClause(): CaseDef = {
+      def casePattern() = if (in.token == IF) atPos(in.offset, in.offset)(Ident(nme.WILDCARD)) else pattern()
+      atPos(in.offset)(makeCaseDef(casePattern(), guard(), caseBlock()))
+    }
 
     /** {{{
      *  CaseClauses ::= CaseClause {CaseClause}
