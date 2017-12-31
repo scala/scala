@@ -179,11 +179,12 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      */
     private def addModuleInstanceField() {
       // TODO confirm whether we really don't want ACC_SYNTHETIC nor ACC_DEPRECATED
-      // SD-194 This can't be FINAL on JVM 1.9+ because we assign it from within the
-      //        instance constructor, not from <clinit> directly. Assignment from <clinit>,
-      //        after the constructor has completely finished, seems like the principled
-      //        thing to do, but it would change behaviour when "benign" cyclic references
-      //        between modules exist.
+      // scala/scala-dev#194:
+      //   This can't be FINAL on JVM 1.9+ because we assign it from within the
+      //   instance constructor, not from <clinit> directly. Assignment from <clinit>,
+      //   after the constructor has completely finished, seems like the principled
+      //   thing to do, but it would change behaviour when "benign" cyclic references
+      //   between modules exist.
       val mods = GenBCode.PublicStatic
       val fv =
         cnode.visitField(mods,

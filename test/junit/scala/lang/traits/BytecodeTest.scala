@@ -321,7 +321,7 @@ class BytecodeTest extends BytecodeTesting {
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
 
 
-    // used to crash in the backend (SD-210) under `-Xmixin-force-forwarders:true`
+    // used to crash in the backend (scala/scala-dev#210) under `-Xmixin-force-forwarders:true`
     val code1 =
       """trait B1 extends A // called "B1" not "B" due to scala-dev#214
         |class C extends B1
