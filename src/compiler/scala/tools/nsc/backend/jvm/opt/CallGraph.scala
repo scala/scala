@@ -313,7 +313,7 @@ abstract class CallGraph {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
-            isNonVirtualCall(call) || // SD-86: super calls (invokespecial) can be inlined -- TODO: check if that's still needed, and if it's correct: scala-dev#143
+            isNonVirtualCall(call) || // scala/scala-dev#86: super calls (invokespecial) can be inlined -- TODO: check if that's still needed, and if it's correct: scala-dev#143
             methodInlineInfo.effectivelyFinal ||
               receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
           }
