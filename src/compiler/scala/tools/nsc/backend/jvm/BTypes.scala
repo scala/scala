@@ -783,15 +783,6 @@ abstract class BTypes {
       } while (fcs == null)
       fcs
     }
-
-    // equallity and hashcode is based on internalName
-    override def equals(obj: scala.Any): Boolean = obj match {
-      case o:ClassBType => internalName == o.internalName
-      case _ => false
-    }
-
-    // equallity and hashcode is based on internalName
-    override def hashCode(): Int = internalName.hashCode
   }
 
   object ClassBType {

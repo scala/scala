@@ -36,7 +36,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
   def sameBType(fromSym: ClassBType, fromClassfile: ClassBType, checked: Set[InternalName] = Set.empty): Set[InternalName] = {
     if (checked(fromSym.internalName)) checked
     else {
-      assert(fromSym == fromClassfile, s"$fromSym != $fromClassfile")
+      assert(fromSym.internalName == fromClassfile.internalName, s"${fromSym.internalName} != ${fromClassfile.internalName}")
       sameInfo(fromSym.info.get, fromClassfile.info.get, checked + fromSym.internalName)
     }
   }
