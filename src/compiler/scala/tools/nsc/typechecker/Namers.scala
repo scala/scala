@@ -1063,7 +1063,11 @@ trait Namers extends MethodSynthesis {
       // Are we inferring the result type of a stable symbol, whose type doesn't refer to a hidden symbol?
       // If we refer to an inaccessible symbol, let's hope widening will result in an expressible type.
       // (A LiteralType should be widened because it's too precise for a definition's type.)
-      val mayKeepSingletonType = !tpe.isInstanceOf[ConstantType] && sym.isStable && !refersToSymbolLessAccessibleThan(tpe, sym)
+      val mayKeepSingletonType =
+        tpe match {
+          case ConstantType(_) | AnnotatedType(_, ConstantType(_)) => false
+          case _ => sym.isStable && !refersToSymbolLessAccessibleThan(tpe, sym)
+        }
 
       // Only final vals may be constant folded, so deconst inferred type of other members.
       @inline def keepSingleton = if (sym.isFinal) tpe else tpe.deconst

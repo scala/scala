@@ -48,4 +48,9 @@ sip23-widen.scala:62: error: type mismatch;
  required: 4
   f13 = 5
         ^
-10 errors found
+sip23-widen.scala:75: error: type mismatch;
+ found   : Test.annot0.type (with underlying type Int)
+ required: 1 @unchecked
+  annot0: 1 @unchecked
+  ^
+11 errors found
