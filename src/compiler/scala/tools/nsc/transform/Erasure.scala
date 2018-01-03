@@ -958,13 +958,18 @@ abstract class Erasure extends InfoTransform
       // code is somewhat buried in and entangled with the pattern matching mechanics
       // which makes this fiddly to do now.
       object SingletonInstanceCheck {
-        def unapply(pt: Type): Option[(TermSymbol, Tree)] = pt.dealias match {
-          case SingleType(_, _) | ConstantType(_) | ThisType(_) | SuperType(_, _) =>
+        def unapply(pt: Type): Option[(TermSymbol, Tree)] = {
+          def containsSingleton(tp: Type): Boolean =
+            tp.dealias match {
+              case SingleType(_, _) | ConstantType(_) | ThisType(_) | SuperType(_, _) => true
+              case RefinedType(parents, _) => parents.exists(containsSingleton)
+              case _ => false
+            }
+          if(containsSingleton(pt)) {
             val cmpOp  = if (pt.typeSymbol.isSubClass(AnyValClass)) Any_equals else Object_eq
             val cmpArg = gen.mkAttributedQualifier(pt)
             Some((cmpOp, cmpArg))
-          case _ =>
-            None
+          } else None
         }
       }
 
@@ -999,11 +1004,6 @@ abstract class Erasure extends InfoTransform
                             nonNullTest)
                         else nonNullTest
                       }
-                  }
-                case TypeRef(_, SingletonClass, _) =>
-                  qual.tpe match {
-                    case SingletonInstanceCheck(_, _) => tree
-                    case _ => Throw(ClassCastExceptionClass.tpe_*)
                   }
                 case argTp if qual.tpe <:< argTp =>
                   atPos(tree.pos) { Typed(qual, TypeTree(argTp)) }

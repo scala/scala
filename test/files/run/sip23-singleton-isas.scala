@@ -1,33 +1,36 @@
 object Test extends App {
-  def check[T](body: => T, ok: Boolean): Unit =
-    try {
-      body
-      assert(ok)
-    } catch {
-      case cce: ClassCastException =>
-        assert(!ok)
-    }
+
+  // expr.isInstanceOf[Singleton] is true iff the expression has a singleton type
+  // However, expr.asInstanceOf[Singleton] is erased to expr.asInstanceOf[Any] so it never throws
+  // as discussed in http://docs.scala-lang.org/sips/minutes/2017-12-06-sip-minutes.html
 
   val foo: String = "foo"
   assert(foo.isInstanceOf[Singleton])
   assert(!(foo: String).isInstanceOf[Singleton])
-  check(foo.asInstanceOf[Singleton], true)
-  check((foo: String).asInstanceOf[Singleton], false)
+  foo.asInstanceOf[Singleton]
+  (foo: String).asInstanceOf[Singleton]
 
   val bar: "foo" = "foo"
   assert(bar.isInstanceOf[Singleton])
   assert(!(bar: String).isInstanceOf[Singleton])
-  check(bar.asInstanceOf[Singleton], true)
-  check((bar: String).asInstanceOf[Singleton], false)
+  bar.asInstanceOf[Singleton]
+  (bar: String).asInstanceOf[Singleton]
 
   final val baz = "foo"
   assert(baz.isInstanceOf[Singleton])
   assert(!(baz: String).isInstanceOf[Singleton])
-  check(baz.asInstanceOf[Singleton], true)
-  check((baz: String).asInstanceOf[Singleton], false)
+  baz.asInstanceOf[Singleton]
+  (baz: String).asInstanceOf[Singleton]
 
   assert("foo".isInstanceOf[Singleton])
   assert(!("foo": String).isInstanceOf[Singleton])
-  check("foo".asInstanceOf[Singleton], true)
-  check(("foo": String).asInstanceOf[Singleton], false)
+  "foo".asInstanceOf[Singleton]
+  ("foo": String).asInstanceOf[Singleton]
+
+  val x = 1
+  val y: x.type = x
+  assert((y: (x.type with y.type)).isInstanceOf[Singleton])
+  assert((y: (x.type with Int)).isInstanceOf[Singleton])
+  type A = x.type
+  assert((y: A).isInstanceOf[Singleton])
 }
