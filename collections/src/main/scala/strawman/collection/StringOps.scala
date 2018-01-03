@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Array, Char, Int, StringIndexOutOfBoundsException, AnyVal, throws, AnyRef, Boolean, Double, Float, Long, Short, Any, Byte}
+import scala.{Array, Char, `inline`, Int, StringIndexOutOfBoundsException, AnyVal, throws, AnyRef, Boolean, Double, Float, Long, Short, Any, Byte}
 import scala.Predef.{String, intWrapper, charWrapper, classOf}
 import java.lang.IllegalArgumentException
 import java.util.NoSuchElementException
@@ -20,7 +20,7 @@ object StringOps {
 
 import StringOps._
 
-class StringOps(val s: String)
+final class StringOps(val s: String)
   extends AnyVal
     with IterableOnce[Char]
     with collection.IndexedSeqOps[Char, immutable.IndexedSeq, String]
@@ -50,8 +50,13 @@ class StringOps(val s: String)
 
   override def className = "String"
 
-  /** Overloaded version of `map` that gives back a string, where the inherited
-    *  version gives back a sequence.
+  // Overloaded version of `map` that gives back a string, where the inherited
+  //  version gives back a sequence.
+  /** Builds a new collection by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new String resulting from applying the given function
+    *                `f` to each element of this String and collecting the results.
     */
   def map(f: Char => Char): String = {
     val sb = new StringBuilder
@@ -59,8 +64,14 @@ class StringOps(val s: String)
     sb.result()
   }
 
-  /** Overloaded version of `flatMap` that gives back a string, where the inherited
-    *  version gives back a sequence.
+  // Overloaded version of `flatMap` that gives back a string, where the inherited
+  // version gives back a sequence.
+  /** Builds a new collection by applying a function to all elements of this String
+    *  and using the elements of the resulting collections.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new String resulting from applying the given string-valued function
+    *                `f` to each element of this String and concatenating the results.
     */
   def flatMap(f: Char => String): String = {
     val sb = new StringBuilder
@@ -68,17 +79,48 @@ class StringOps(val s: String)
     sb.result()
   }
 
-  /** Overloaded version of `++` that gives back a string, where the inherited
-    *  version gives back a sequence.
+  // Overloaded version of `++` that gives back a string, where the inherited
+  //  version gives back a sequence.
+  /** Returns a new String containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand.
+    *
+    *  @param suffix   the traversable to append.
+    *  @return       a new String which contains all elements
+    *                of this String followed by all elements of `suffix`.
     */
-  def ++(xs: IterableOnce[Char]): String = {
+  def concat(suffix: IterableOnce[Char]): String = {
     val sb = new StringBuilder() ++= s
-    for (ch <- xs.iterator()) sb += ch
+    for (ch <- suffix.iterator()) sb += ch
     sb.result()
   }
 
+  /** Alias for `concat` */
+  @`inline` def ++ (suffix: IterableOnce[Char]): String = concat(suffix)
+
   /** Another overloaded version of `++`. */
   def ++(xs: String): String = s + xs
+
+  /** A copy of the String with an element prepended */
+  def prepended(c: Char): String = {
+    val b = new StringBuilder
+    b += c
+    b ++= s
+    b.result()
+  }
+
+  /** Alias for `prepended` */
+  @`inline` def +: (c: Char): String = prepended(c)
+
+  /** A copy of the String with an element appended */
+  def appended(c: Char): String = {
+    val b = new StringBuilder
+    b ++= s
+    b += c
+    b.result()
+  }
+
+  /** Alias for `appended` */
+  @`inline` def :+ (c: Char): String = appended(c)
 
   override def toString = s
 
