@@ -64,11 +64,6 @@ object AssertUtil {
   def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
     assertSameElements(expected, actual.toList, "")
 
-  /** Convenient for testing iterators.
-    */
-  def assertSameElements[A, B >: A](expected: strawman.collection.IterableOnce[A], actual: strawman.collection.IterableOnce[B]): Unit =
-    if (!expected.iterator().sameElements(actual)) fail(f"expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>")
-
   /** Value is not strongly reachable from roots after body is evaluated.
    */
   def assertNotReachable[A <: AnyRef](a: => A, roots: AnyRef*)(body: => Unit): Unit = {

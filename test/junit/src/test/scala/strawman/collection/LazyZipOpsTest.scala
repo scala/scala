@@ -1,4 +1,5 @@
-package strawman.collection
+package strawman
+package collection
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
@@ -64,7 +65,7 @@ class LazyZipOpsTest {
 
   @Test
   def lazyZip2_toIterable(): Unit = {
-    val iter: Iterable[(Int, Int)] = zipped2
+    val iter: collection.Iterable[(Int, Int)] = zipped2
 
     assertEquals(List((1, 1), (2, 2), (3, 3)), iter.to(List))
   }
@@ -142,7 +143,7 @@ class LazyZipOpsTest {
 
   @Test
   def lazyZip3_toIterable(): Unit = {
-    val iter: Iterable[(Int, Int, String)] = zipped3
+    val iter: collection.Iterable[(Int, Int, String)] = zipped3
 
     assertEquals(List((1, 1, "a"), (2, 2, "b"), (3, 3, "c")), iter.to(List))
   }
@@ -221,7 +222,7 @@ class LazyZipOpsTest {
 
   @Test
   def lazyZip4_toIterable(): Unit = {
-    val iter: Iterable[(Int, Int, String, Boolean)] = zipped4
+    val iter: collection.Iterable[(Int, Int, String, Boolean)] = zipped4
 
     assertEquals(List((1, 1, "a", true), (2, 2, "b", false), (3, 3, "c", true)), iter.to(List))
   }

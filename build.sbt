@@ -3,7 +3,7 @@ import org.scalajs.sbtplugin.cross.CrossProject
 
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
-dotty in ThisBuild := "0.5.0-RC1"
+dotty in ThisBuild := "0.6.0-bin-20171212-9de3905-NIGHTLY"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
@@ -111,8 +111,6 @@ val `collection-strawman` = project.in(file("."))
 val junit = project.in(file("test") / "junit")
   .dependsOn(collectionsJVM)
   .settings(commonSettings ++ disablePublishing)
-   // Dotty 0.3.0-RC1 crashes when trying to compile this project
-  .settings(disableDotty)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",

@@ -18,7 +18,7 @@ class ReusableBuildersTest {
     b.clear()
     assert(!b.isInstanceOf[mutable.ReusableBuilder[_,_]])
     assert(b.isInstanceOf[mutable.GrowableBuilder[_,_]])
-    assert(b.result == Set[Int]())
+    assert(b.result() == Set[Int]())
   }
 
   // ArrayBuilders ARE reusable, regardless of whether they returned their internal array or not

@@ -221,7 +221,7 @@ class SetMapConsistencyTest {
     def get(n: Int, a: A) = if (m(a)) 0 else -1
     def fiddlers: Int = 0
     def fiddle(n: Int): Unit = { oor("fiddle", n) }
-    def keys = m.iterator
+    def keys = m.iterator()
     def has(a: A) = m(a)
     override def toString = m.toString
   }

@@ -176,8 +176,12 @@ class RangeConsistencyTest {
 
   @Test
   def test_SI10086(): Unit =  {
-    implicit val customIntegral =
-      new Numeric.IntIsIntegral with Ordering.IntOrdering {}
+    implicit val customIntegral = new Numeric.IntIsIntegral {
+      def compare(x: Int, y: Int) = java.lang.Integer.compare(x, y)
+    }
+    // new Numeric.IntIsIntegral with Ordering.IntOrdering {}
+    // Does not compile with Dotty: cannot merge class Ops in trait Ordering with class Ops in trait Numeric
+    // Note that having same-named member classes in types of a mixin composition is no longer allowed
 
     val nr = NumericRange(1, 10, 1)
     assert(nr.min == 1)

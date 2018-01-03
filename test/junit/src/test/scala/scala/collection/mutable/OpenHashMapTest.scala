@@ -56,7 +56,8 @@ class OpenHashMapTest {
       override def hashCode() = 42
     }
 
-    val counter = new GraphVisitor() {
+
+    class Counter extends GraphVisitor() {
       private[this] var instanceCount: Int = _
 
       def countInstances(obj: AnyRef) = {
@@ -71,6 +72,7 @@ class OpenHashMapTest {
         if (record.klass() == classOf[MyClass])  instanceCount += 1
       }
     }
+    val counter = new Counter
 
     val m = OpenHashMap.empty[MyClass, Int]
     val obj = new MyClass

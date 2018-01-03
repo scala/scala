@@ -569,7 +569,7 @@ package IndexedTestImpl {
   class VectorTest extends ImmutableIndexedSeqTest[Vector[String], String]  with StringTestData {
 
     override protected def underTest(size: Int): Vector[String] = {
-      var res = Vector.newBuilder[String]
+      var res = Vector.newBuilder[String]()
       for (i <- 0 until size)
         res += expectedValueAtIndex(i)
       res.result()

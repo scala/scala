@@ -9,30 +9,31 @@ import org.junit.runners.JUnit4
 import scala.tools.testing.AssertUtil._
 
 import strawman.collection.immutable.{Range, List, LazyList}
+import scala.Predef.{ genericArrayOps => _, intArrayOps => _, genericWrapArray => _, wrapIntArray => _, _ }
 
 @RunWith(classOf[JUnit4])
 class IteratorTest {
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
     var counter = 0
-    val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next = { i += 1; i } }
+    val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2
-    slidingIt.next
+    slidingIt.next()
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 
   @Test def groupedIteratorIsLazyWhenPadded(): Unit = {
     var counter = 0
-    def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next = { i += 1; i } }
+    def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2 withPadding -1
-    slidingIt.next
+    slidingIt.next()
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 
   @Test def dropDoesNotGrowStack(): Unit = {
-    def it = new Iterator[Throwable] { def hasNext = true ; def next = new Throwable }
+    def it = new Iterator[Throwable] { def hasNext = true ; def next() = new Throwable }
 
-    assertEquals(it.drop(1).next.getStackTrace.length, it.drop(1).drop(1).next.getStackTrace.length)
+    assertEquals(it.drop(1).next().getStackTrace.length, it.drop(1).drop(1).next().getStackTrace.length)
   }
 
 // Disabled because we have no syntax for ranges yet and no default Seq
@@ -118,11 +119,11 @@ class IteratorTest {
   // ticket #429
   @Test def fromArray(): Unit = {
     val a = List(1, 2, 3, 4).toArray
-    var xs0 = a.iterator.toList;
-    var xs1 = a.slice(0, 1).iterator
-    var xs2 = a.slice(0, 2).iterator
-    var xs3 = a.slice(0, 3).iterator
-    var xs4 = a.slice(0, 4).iterator
+    var xs0 = List.from(a.iterator())
+    var xs1 = a.slice(0, 1).iterator()
+    var xs2 = a.slice(0, 2).iterator()
+    var xs3 = a.slice(0, 3).iterator()
+    var xs4 = a.slice(0, 4).iterator()
     assertEquals(14, xs0.size + xs1.size + xs2.size + xs3.size + xs4.size)
   }
 
@@ -168,7 +169,7 @@ class IteratorTest {
     val s2 = LazyList.fromIterator(mkInfinite)
     // back and forth without slipping into nontermination.
     results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
-    assertSameElements(List(21), results)
+    assertTrue(List(21).sameElements(results))
   }
   
   // scala/bug#8552
@@ -202,27 +203,27 @@ class IteratorTest {
     var counter = 0
     val exp = List(1,2,3,1,2,3)
     def it: Iterator[Int] = new Iterator[Int] {
-      val parent = List(1,2,3).iterator
-      def next(): Int = parent.next
+      val parent = List(1,2,3).iterator()
+      def next(): Int = parent.next()
       def hasNext: Boolean = { counter += 1; parent.hasNext }
     }
     // Iterate separately
     val res = new mutable.ArrayBuffer[Int]
     it.foreach(res += _)
     it.foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter)
     // JoinIterator
     counter = 0
-    res.clear
+    res.clear()
     (it ++ it).foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter) // was 17
     // ConcatIterator
     counter = 0
-    res.clear
+    res.clear()
     (Iterator.empty ++ it ++ it).foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter) // was 14
   }
 

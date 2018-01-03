@@ -33,7 +33,7 @@ class StringLikeTest {
     val low = 0xDF62.toChar
     val surrogatepair = List(high, low).mkString
     val twopairs = surrogatepair + "_" + surrogatepair
-    
+
     AssertUtil.assertSameElements("abcd".split('d'), Array("abc")) // not Array("abc", "")
     AssertUtil.assertSameElements("abccc".split('c'), Array("ab")) // not Array("ab", "", "", "")
     AssertUtil.assertSameElements("xxx".split('x'), Array[String]()) // not Array("", "", "", "")
