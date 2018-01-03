@@ -53,7 +53,7 @@ object AssertUtil {
 
   /** JUnit-style assertion for `IterableLike.sameElements`.
    */
-  def legacyAssertSameElements[A, B >: A](expected: IterableLike[A, _], actual: GenIterable[B], message: String = ""): Unit =
+  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: GenIterable[B], message: String = ""): Unit =
     if (!(expected sameElements actual))
       fail(
         f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
@@ -61,13 +61,8 @@ object AssertUtil {
 
   /** Convenient for testing iterators.
    */
-  def legacyAssertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
-    legacyAssertSameElements(expected, actual.toList, "")
-
-  /** Convenient for testing iterators.
-    */
-  def assertSameElements[A, B >: A](expected: strawman.collection.IterableOnce[A], actual: strawman.collection.IterableOnce[B]): Unit =
-    if (!expected.iterator().sameElements(actual)) fail(f"expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>")
+  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
+    assertSameElements(expected, actual.toList, "")
 
   /** Value is not strongly reachable from roots after body is evaluated.
    */

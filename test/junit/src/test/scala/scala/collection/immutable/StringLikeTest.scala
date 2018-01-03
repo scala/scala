@@ -23,7 +23,7 @@ class StringLikeTest {
       // make sure we can match a literal character done by Java's split
       val jSplit = jString.split("\\Q" + c.toString + "\\E")
       val sSplit = s.split(c)
-      AssertUtil.assertSameElements(jSplit, sSplit)
+      AssertUtil.assertSameElements(jSplit, sSplit, s"Not same result as Java split for char $c in string $s")
     }
   }
 

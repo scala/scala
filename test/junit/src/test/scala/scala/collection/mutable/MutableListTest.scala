@@ -17,7 +17,7 @@ class MutableListTest {
     assertEquals(tl.length, tl.iterator.length)
     is += 5
     assertEquals(tl.length, tl.iterator.length)
-    legacyAssertSameElements(tl, tl.iterator)
+    assertSameElements(tl, tl.iterator)
   }
   @Test def iteratorMustFailEventually(): Unit = assertThrows[NoSuchElementException] {
     MutableList[Unit]().iterator.next()

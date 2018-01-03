@@ -9,6 +9,7 @@ import org.junit.runners.JUnit4
 import scala.tools.testing.AssertUtil._
 
 import strawman.collection.immutable.{Range, List, LazyList}
+import scala.Predef.{ genericArrayOps => _, intArrayOps => _, genericWrapArray => _, wrapIntArray => _, _ }
 
 @RunWith(classOf[JUnit4])
 class IteratorTest {
@@ -118,7 +119,7 @@ class IteratorTest {
   // ticket #429
   @Test def fromArray(): Unit = {
     val a = List(1, 2, 3, 4).toArray
-    var xs0 = a.iterator().toList;
+    var xs0 = List.from(a.iterator())
     var xs1 = a.slice(0, 1).iterator()
     var xs2 = a.slice(0, 2).iterator()
     var xs3 = a.slice(0, 3).iterator()
@@ -168,7 +169,7 @@ class IteratorTest {
     val s2 = LazyList.fromIterator(mkInfinite)
     // back and forth without slipping into nontermination.
     results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
-    assertSameElements(List(21), results)
+    assertTrue(List(21).sameElements(results))
   }
   
   // scala/bug#8552
@@ -210,19 +211,19 @@ class IteratorTest {
     val res = new mutable.ArrayBuffer[Int]
     it.foreach(res += _)
     it.foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter)
     // JoinIterator
     counter = 0
     res.clear()
     (it ++ it).foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter) // was 17
     // ConcatIterator
     counter = 0
     res.clear()
     (Iterator.empty ++ it ++ it).foreach(res += _)
-    assertSameElements(exp, res)
+    assertTrue(exp.sameElements(res))
     assertEquals(8, counter) // was 14
   }
 
