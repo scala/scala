@@ -7,7 +7,11 @@ import strawman.collection.mutable.Builder
 import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Serializable, SerialVersionUID, Some, Unit}
 
 /** Base trait for immutable set collections */
-trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
+trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
+
+  override final def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
+
+}
 
 /** Base trait for immutable set operations
   *

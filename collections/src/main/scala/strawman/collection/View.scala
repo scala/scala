@@ -308,11 +308,11 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, Ind
   override protected[this] def newSpecificBuilder(): Builder[A, IndexedView[A]] =
     IndexedSeq.newBuilder[A]().mapResult(_.view)
 
-  def iterator(): Iterator[A] = new Iterator[A] {
+  def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
     def hasNext = current < self.length
     def next(): A = {
-      val r = apply(current)
+      val r = self.apply(current)
       current += 1
       r
     }
