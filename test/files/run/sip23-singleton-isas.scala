@@ -6,24 +6,24 @@ object Test extends App {
 
   val foo: String = "foo"
   assert(foo.isInstanceOf[Singleton])
-  assert(!(foo: String).isInstanceOf[Singleton])
+  assert((foo: String).isInstanceOf[Singleton])
   foo.asInstanceOf[Singleton]
   (foo: String).asInstanceOf[Singleton]
 
   val bar: "foo" = "foo"
   assert(bar.isInstanceOf[Singleton])
-  assert(!(bar: String).isInstanceOf[Singleton])
+  assert((bar: String).isInstanceOf[Singleton])
   bar.asInstanceOf[Singleton]
   (bar: String).asInstanceOf[Singleton]
 
   final val baz = "foo"
   assert(baz.isInstanceOf[Singleton])
-  assert(!(baz: String).isInstanceOf[Singleton])
+  assert((baz: String).isInstanceOf[Singleton])
   baz.asInstanceOf[Singleton]
   (baz: String).asInstanceOf[Singleton]
 
   assert("foo".isInstanceOf[Singleton])
-  assert(!("foo": String).isInstanceOf[Singleton])
+  assert(("foo": String).isInstanceOf[Singleton])
   "foo".asInstanceOf[Singleton]
   ("foo": String).asInstanceOf[Singleton]
 
@@ -33,4 +33,5 @@ object Test extends App {
   assert((y: (x.type with Int)).isInstanceOf[Singleton])
   type A = x.type
   assert((y: A).isInstanceOf[Singleton])
+  assert(!(null: String).isInstanceOf[Singleton])
 }

@@ -1052,9 +1052,11 @@ abstract class Erasure extends InfoTransform
                     }
                   }
                 case TypeRef(_, SingletonClass, _) =>
-                  qual.tpe match {
-                    case SingletonInstanceCheck(_, _) => Literal(Constant(true))
-                    case _ => Literal(Constant(false))
+                  atPos(tree.pos) {
+                    if(qual.tpe <:< AnyRefTpe)
+                      Apply(Select(qual, Object_ne), List(Literal(Constant(null)) setType NullTpe))
+                    else
+                      Literal(Constant(true))
                   }
                 case _ => tree
               }
