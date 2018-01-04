@@ -2886,9 +2886,8 @@ self =>
       val name = ident()
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
-        val mods1 = if (in.token == SUBTYPE) mods | Flags.DEFERRED else mods
-        val template = templateOpt(mods1, name, NoMods, Nil, tstart)
-        ModuleDef(mods1, name.toTermName, template)
+        val template = templateOpt(mods, name, NoMods, Nil, tstart)
+        ModuleDef(mods, name.toTermName, template)
       }
     }
 
@@ -2990,13 +2989,17 @@ self =>
 
     /** {{{
      *  ClassTemplateOpt ::= `extends' ClassTemplate | [[`extends'] TemplateBody]
-     *  TraitTemplateOpt ::= TraitExtends TraitTemplate | [[`extends'] TemplateBody] | `<:' TemplateBody
-     *  TraitExtends     ::= `extends' | `<:'
+     *  TraitTemplateOpt ::= TraitExtends TraitTemplate | [[TraitExtends] TemplateBody]
+     *  TraitExtends     ::= `extends' | `<:' (deprecated)
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Offset): Template = {
+      def deprecatedUsage(): Boolean = {
+        deprecationWarning(in.offset, "Using `<:` for `extends` is deprecated", since = "2.12.5")
+        true
+      }
       val (parents, self, body) = (
-        if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait) {
+        if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait && deprecatedUsage()) {
           in.nextToken()
           template()
         }
