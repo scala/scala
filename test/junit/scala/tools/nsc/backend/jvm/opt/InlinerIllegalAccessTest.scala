@@ -26,8 +26,7 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
     throw new AssertionError(textify(i))
 
   def clearClassBTypeCaches(): Unit = {
-    classBTypeCacheFromSymbol.clear()
-    classBTypeCacheFromClassfile.clear()
+    classBTypeCache.clear()
   }
 
   @Test
