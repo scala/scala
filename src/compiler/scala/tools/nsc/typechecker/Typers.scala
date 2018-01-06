@@ -4105,14 +4105,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else None
 
       def isDynamicallyUpdatable(tree: Tree) = tree match {
-        case DynamicUpdate(qual, name) =>
-          // if the qualifier is a Dynamic, that's all we need to know
-          acceptsApplyDynamic(qual.tpe)
+        // if the qualifier is a Dynamic, that's all we need to know
+        case DynamicUpdate(qual, name) => acceptsApplyDynamic(qual.tpe)
         case _ => false
       }
 
       def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
-        case DynamicApplicationNamed(qual, _) if acceptsApplyDynamic(qual.tpe.widen) => true
+        case DynamicApplicationNamed(qual, _) => acceptsApplyDynamic(qual.tpe.widen)
         case _ => false
           // look deeper?
           // val treeInfo.Applied(methPart, _, _) = fun
@@ -4169,10 +4168,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
           // here - it is for scala-virtualized, where tp will be passed as an argument (for
           // selection on a staged Struct)
-          def hasNamed(args: List[Tree]): Boolean = args exists (_.isInstanceOf[AssignOrNamedArg])
-          // not supported: foo.bar(a1,..., an: _*)
-          def hasStar(args: List[Tree]) = treeInfo.isWildcardStarArgList(args)
-          def applyOp(args: List[Tree]) = if (hasNamed(args)) nme.applyDynamicNamed else nme.applyDynamic
           def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
 
           /* Note that the trees which arrive here are potentially some distance from
@@ -4184,22 +4179,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * See scala/bug#6731 among others.
            */
           def findSelection(t: Tree): Option[(TermName, Tree)] = t match {
-            case Apply(fn, args) if hasStar(args) => DynamicVarArgUnsupported(tree, applyOp(args)) ; None
-            case Apply(fn, args) if matches(fn)   => Some((applyOp(args), fn))
-            case Assign(lhs, _) if matches(lhs)   => Some((nme.updateDynamic, lhs))
-            case _ if matches(t)                  => Some((nme.selectDynamic, t))
-            case _                                => (t.children flatMap findSelection).headOption
+            case Apply(fn, args) if matches(fn) =>
+              val op = if(args.exists(_.isInstanceOf[AssignOrNamedArg])) nme.applyDynamicNamed else nme.applyDynamic
+              // not supported: foo.bar(a1,..., an: _*)
+              val fn1 = if(treeInfo.isWildcardStarArgList(args)) DynamicVarArgUnsupported(fn, op) else fn
+              Some((op, fn))
+            case Assign(lhs, _) if matches(lhs) => Some((nme.updateDynamic, lhs))
+            case _ if matches(t)                => Some((nme.selectDynamic, t))
+            case _                              => t.children.flatMap(findSelection).headOption
           }
-          findSelection(cxTree) match {
-            case Some((opName, treeInfo.Applied(_, targs, _))) =>
-              val fun = gen.mkTypeApply(Select(qual, opName), targs)
-              if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
-              val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
-                Literal(Constant(name.decode))
-              }
-              markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
-            case _ =>
-              setError(tree)
+          findSelection(cxTree) map { case (opName, treeInfo.Applied(_, targs, _)) =>
+            val fun = gen.mkTypeApply(Select(qual, opName), targs)
+            if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
+            val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
+             Literal(Constant(name.decode))
+            }
+            markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+          } getOrElse {
+            // While there may be an error in the found tree itself, it should not be possible to *not find* it at all.
+            devWarning(s"Tree $tree not found in the context $cxTree while trying to do a dynamic application")
+            setError(tree)
           }
         }
       }
