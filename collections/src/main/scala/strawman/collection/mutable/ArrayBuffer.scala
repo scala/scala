@@ -31,10 +31,10 @@ import scala.Predef.intWrapper
   */
 @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
-  extends Buffer[A]
+  extends AbstractBuffer[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with IndexedOptimizedSeq[A]
+    with IndexedOptimizedBuffer[A]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with Serializable {
 

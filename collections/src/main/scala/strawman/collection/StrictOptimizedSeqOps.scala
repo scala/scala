@@ -1,13 +1,14 @@
 package strawman.collection
 
-import scala.{Int, math}
+import scala.{Int, math, Any}
 
 /**
   * Trait that overrides operations on sequences in order
   * to take advantage of strict builders.
   */
 trait StrictOptimizedSeqOps [+A, +CC[_], +C]
-  extends SeqOps[A, CC, C]
+  extends Any
+    with SeqOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {

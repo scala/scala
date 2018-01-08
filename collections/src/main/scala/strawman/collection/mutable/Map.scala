@@ -53,6 +53,7 @@ trait Map[K, V]
 trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C]
+    with Growable[(K, V)]
     with Shrinkable[K] {
 
   def iterableFactory = Iterable
