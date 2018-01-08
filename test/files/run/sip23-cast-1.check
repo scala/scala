@@ -1,0 +1,36 @@
+sip23-cast-1.scala:14: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  0.asInstanceOf[0]
+                ^
+sip23-cast-1.scala:15: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  1.asInstanceOf[0]
+                ^
+sip23-cast-1.scala:19: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  0L.asInstanceOf[0L]
+                 ^
+sip23-cast-1.scala:20: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  1L.asInstanceOf[0L]
+                 ^
+sip23-cast-1.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  0.0.asInstanceOf[0.0]
+                  ^
+sip23-cast-1.scala:25: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  1.0.asInstanceOf[0.0]
+                  ^
+sip23-cast-1.scala:29: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  0.0F.asInstanceOf[0.0F]
+                   ^
+sip23-cast-1.scala:30: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  1.0F.asInstanceOf[0.0F]
+                   ^
+sip23-cast-1.scala:34: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  true.asInstanceOf[true]
+                   ^
+sip23-cast-1.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  true.asInstanceOf[false]
+                   ^
+sip23-cast-1.scala:39: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  'f'.asInstanceOf['f']
+                  ^
+sip23-cast-1.scala:40: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  'f'.asInstanceOf['b']
+                  ^

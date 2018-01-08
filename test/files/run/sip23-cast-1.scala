@@ -1,60 +1,55 @@
 object Test extends App {
-  def check[T](body: => T, ok: Boolean): Unit =
-    try {
-      body
-      assert(ok)
-    } catch {
-      case cce: ClassCastException =>
-        assert(!ok)
-    }
-
   trait Global
   final val global0 = new Global {}
   final val global1 = new Global {}
 
+  // asInstanceOf should do the minimum required to satisfy the verifier, in particular
+  // it should not assert equalities.
+  // isInstanceOf should check equalities.
+
   // asInstanceOf
-  check(global0.asInstanceOf[global0.type], true)
-  check(global0.asInstanceOf[global1.type], false)
+  global0.asInstanceOf[global0.type]
+  global0.asInstanceOf[global1.type]
 
-  check(0.asInstanceOf[0], true)
-  check(1.asInstanceOf[0], false)
-  check(null.asInstanceOf[0], false)
-  check(null.asInstanceOf[1], false)
+  0.asInstanceOf[0]
+  1.asInstanceOf[0]
+  null.asInstanceOf[0]
+  null.asInstanceOf[1]
 
-  check(0L.asInstanceOf[0L], true)
-  check(1L.asInstanceOf[0L], false)
-  check(null.asInstanceOf[0L], false)
-  check(null.asInstanceOf[1L], false)
+  0L.asInstanceOf[0L]
+  1L.asInstanceOf[0L]
+  null.asInstanceOf[0L]
+  null.asInstanceOf[1L]
 
-  check(0.0.asInstanceOf[0.0], true)
-  check(1.0.asInstanceOf[0.0], false)
-  check(null.asInstanceOf[0.0], false)
-  check(null.asInstanceOf[1.0], false)
+  0.0.asInstanceOf[0.0]
+  1.0.asInstanceOf[0.0]
+  null.asInstanceOf[0.0]
+  null.asInstanceOf[1.0]
 
-  check(0.0F.asInstanceOf[0.0F], true)
-  check(1.0F.asInstanceOf[0.0F], false)
-  check(null.asInstanceOf[0.0F], false)
-  check(null.asInstanceOf[1.0F], false)
+  0.0F.asInstanceOf[0.0F]
+  1.0F.asInstanceOf[0.0F]
+  null.asInstanceOf[0.0F]
+  null.asInstanceOf[1.0F]
 
-  check(true.asInstanceOf[true], true)
-  check(true.asInstanceOf[false], false)
-  check(null.asInstanceOf[true], false)
-  check(null.asInstanceOf[false], false)
+  true.asInstanceOf[true]
+  true.asInstanceOf[false]
+  null.asInstanceOf[true]
+  null.asInstanceOf[false]
 
-  check('f'.asInstanceOf['f'], true)
-  check('f'.asInstanceOf['b'], false)
-  check(null.asInstanceOf['f'], false)
-  check(null.asInstanceOf['\u0000'], false)
+  'f'.asInstanceOf['f']
+  'f'.asInstanceOf['b']
+  null.asInstanceOf['f']
+  null.asInstanceOf['\u0000']
 
   // Spec requires null to be an inhabitant of all subtypes of AnyRef,
   // non-null singleton types included.
-  check("foo".asInstanceOf["foo"], true)
-  check("foo".asInstanceOf["bar"], false)
-  check(null.asInstanceOf["foo"], true)
+  "foo".asInstanceOf["foo"]
+  "foo".asInstanceOf["bar"]
+  null.asInstanceOf["foo"]
 
-  check('foo.asInstanceOf['foo], true)
-  check('foo.asInstanceOf['bar], false)
-  check(null.asInstanceOf['foo], true)
+  'foo.asInstanceOf['foo]
+  'foo.asInstanceOf['bar]
+  null.asInstanceOf['foo]
 
   // isInstanceOf
   assert(global0.isInstanceOf[global0.type])

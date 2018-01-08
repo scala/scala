@@ -990,21 +990,6 @@ abstract class Erasure extends InfoTransform
           (fn: @unchecked) match {
             case TypeApply(Select(qual, _), List(targ)) =>
               targ.tpe match {
-                case argTp@SingletonInstanceCheck(cmpOp, cmpArg) if settings.YliteralTypes =>
-                  atPos(tree.pos) {
-                      gen.evalOnce(qual, currentOwner, currentUnit) { qual =>
-                        val nonNullTest =
-                          If(Apply(Select(cmpArg, cmpOp), List(qual())),
-                             Typed(cmpArg, TypeTree(argTp)),
-                             Throw(ClassCastExceptionClass.tpe_*))
-                         // spec requires that null is an inhabitant of all subtypes of AnyRef, even non-null singleton types!
-                        if(argTp <:< AnyRefTpe)
-                          If(Apply(Select(qual(), Object_eq), List(Literal(Constant(null)))),
-                            Typed(qual(), TypeTree(argTp)),
-                            nonNullTest)
-                        else nonNullTest
-                      }
-                  }
                 case argTp if qual.tpe <:< argTp =>
                   atPos(tree.pos) { Typed(qual, TypeTree(argTp)) }
                 case argTp if isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(argTp.typeSymbol) =>
