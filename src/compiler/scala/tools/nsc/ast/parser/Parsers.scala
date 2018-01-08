@@ -3217,11 +3217,12 @@ self =>
      *  }}}
      */
     def blockStatSeq(): List[Tree] = checkNoEscapingPlaceholders {
+      def acceptStatSepOptOrEndCase() = if (!isCaseDefEnd) acceptStatSepOpt()
       val stats = new ListBuffer[Tree]
       while (!isStatSeqEnd && !isCaseDefEnd) {
         if (in.token == IMPORT) {
           stats ++= importClause()
-          acceptStatSepOpt()
+          acceptStatSepOptOrEndCase()
         }
         else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
@@ -3231,11 +3232,11 @@ self =>
           } else {
             stats ++= localDef(0)
           }
-          acceptStatSepOpt()
+          acceptStatSepOptOrEndCase()
         }
         else if (isExprIntro) {
           stats += statement(InBlock)
-          if (!isCaseDefEnd) acceptStatSep()
+          acceptStatSepOptOrEndCase()
         }
         else if (isStatSep) {
           in.nextToken()
