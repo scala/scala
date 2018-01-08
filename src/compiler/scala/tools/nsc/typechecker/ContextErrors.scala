@@ -750,7 +750,12 @@ trait ContextErrors {
 
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {
-        issueNormalTypeError(tree, sym.kindString + " " + sym.fullName + " is not a value")
+        /* Give a better error message for `val thread = java.lang.Thread`. */
+        val betterKindString =
+          if (sym.isJavaDefined && sym.isTrait) "Java interface"
+          else if (sym.isJavaDefined && (sym.isClass || sym.isModule)) "Java class"
+          else sym.kindString
+        issueNormalTypeError(tree, s"$betterKindString ${sym.fullName} is not a value")
         setError(tree)
       }
 
