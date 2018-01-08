@@ -88,7 +88,7 @@ object test1 {
     println("16. " + r.m(Array("one", "two")))
     println("17. " + r.n(Array(t1, t2)))
     println("18. " + (r.o(0) + 1))
-    println("19. " + (r.p(0).hashCode() > 0))
+    println("19. " + (r.p(0).toString == "ohone"))
     println("20. " + r.q(0))
     println("21. " + r.r(0))
     println("22. " + r.m(r.s))
