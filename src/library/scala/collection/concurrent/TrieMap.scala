@@ -622,7 +622,7 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
  *  iterator and clear operations. The cost of evaluating the (lazy) snapshot is
  *  distributed across subsequent updates, thus making snapshot evaluation horizontally scalable.
  *
- *  For details, see: http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf
+ *  For details, see: [[http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf]]
  *
  *  @author Aleksandar Prokopec
  *  @since 2.10

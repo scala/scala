@@ -415,7 +415,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *  $orderDependent
    *  @return  a $coll consisting of all elements of this $coll
    *           except the first one.
-   *  @throws `UnsupportedOperationException` if the $coll is empty.
+   *  @throws java.lang.UnsupportedOperationException if the $coll is empty.
    */
   override def tail: Repr = {
     if (isEmpty) throw new UnsupportedOperationException("empty.tail")

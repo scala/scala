@@ -23,7 +23,7 @@ import immutable.List
  *  @since   1
  *  @define Coll `mutable.MutableList`
  *  @define coll mutable list
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_lists "Scala's Collection Library overview"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable-lists "Scala's Collection Library overview"]]
  *  section on `Mutable Lists` for more information.
  */
 @SerialVersionUID(5938451523372603072L)

@@ -135,7 +135,7 @@ object ScalaRunTime {
     arr
   }
 
-  // Java bug: http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4071957
+  // Java bug: https://bugs.java.com/view_bug.do?bug_id=4071957
   // More background at ticket #2318.
   def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 

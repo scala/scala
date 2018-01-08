@@ -30,7 +30,7 @@ import scala.collection.concurrent.TrieMapIterator
  *
  *  @author Aleksandar Prokopec
  *  @since 2.10
- *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel_concurrent_tries Scala's Parallel Collections Library overview]]
+ *  @see  [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#parallel-concurrent-tries Scala's Parallel Collections Library overview]]
  *  section on `ParTrieMap` for more information.
  */
 final class ParTrieMap[K, V] private[collection] (private val ctrie: TrieMap[K, V])
