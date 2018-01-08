@@ -64,7 +64,7 @@ scala> :kind ({type l[F[-_]] = F ~> List})#l
 Nat[?,[+A]List[A]]'s kind is X[-F[A]]
 
 scala> :kind 5
-<console>: error: type 5 was not found
+5's kind is A
 
 scala> :kind Nonexisting
 <console>: error: type Nonexisting was not found
