@@ -55,7 +55,11 @@ object Seq extends SeqFactory.Delegate[Seq](List)
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A]
                         with collection.IndexedSeq[A]
-                        with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
+                        with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+
+  final override def toIndexedSeq: IndexedSeq[A] = this
+
+}
 
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
 

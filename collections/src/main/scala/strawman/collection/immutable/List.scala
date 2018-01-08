@@ -405,6 +405,9 @@ sealed abstract class List[+A]
     }
     loop(null, null, this, this)
   }
+
+  final override def toList: List[A] = this
+
 }
 
 @SerialVersionUID(6493291385232469459L) // value computed for strawman 0.6.0, scala 2.13.0-M2

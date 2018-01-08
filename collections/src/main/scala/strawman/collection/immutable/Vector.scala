@@ -572,6 +572,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.cleanRightEdge(cutIndex - shift)
     s
   }
+
+  override def toVector: Vector[A] = this
 }
 
 class VectorIterator[+A](_startIndex: Int, endIndex: Int)

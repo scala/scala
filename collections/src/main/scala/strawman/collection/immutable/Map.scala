@@ -5,6 +5,7 @@ package immutable
 import strawman.collection.mutable.Builder
 
 import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing, Option, Some, Serializable, Unit}
+import scala.Predef.<:<
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -33,6 +34,9 @@ trait Map[K, +V]
     *  @return      a wrapper of the map with a default value
     */
   def withDefaultValue[V1 >: V](d: V1): Map[K, V1] = new Map.WithDefault[K, V1](this, x => d)
+
+  override final def toMap[K2, V2](implicit ev: (K, V) <:< (K2, V2)): Map[K2, V2] = this.asInstanceOf[Map[K2, V2]]
+
 }
 
 /** Base trait of immutable Maps implementations
