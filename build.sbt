@@ -7,7 +7,7 @@
  *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
  *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
  *   - Building all scaladoc sets ("doc")
- *   - Publishing ("publishDists" and standard sbt tasks like "publish" and "publishLocal")
+ *   - Publishing (standard sbt tasks like "publish" and "publishLocal")
  *
  * You'll notice that this build definition is much more complicated than your typical sbt build.
  * The main reason is that we are not benefiting from sbt's conventions when it comes project
@@ -51,7 +51,6 @@ val scalacheckDep     = "org.scala-lang.modules" % "scalacheck_2.13.0-M4-pre-20d
 val jolDep            = "org.openjdk.jol"        % "jol-core"                         % "0.5"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"                            % versionProps("jline.version")
-val antDep            = "org.apache.ant"         % "ant"                              % "1.9.4"
 
 val partestDependencies =  Seq(
   "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
@@ -66,29 +65,7 @@ val partestDependencies =  Seq(
   bootstrapDep("test/files/speclib")("instrumented" -> "9d6d56916c54219a33370fd9bb40a47b22566938") % "test"
 )
 
-/** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
-  * can be used to compare the output of the sbt and Ant builds during the transition period. Any
-  * real publishing should be done with sbt's standard `publish` task. */
-lazy val publishDists = taskKey[Unit]("Publish to ./dists/maven-sbt.")
-
 lazy val publishSettings : Seq[Setting[_]] = Seq(
-  publishDists := {
-    val artifacts = (packagedArtifacts in publish).value
-    val ver = VersionUtil.versionProperties.value.canonicalVersion
-    val log = streams.value.log
-    val mappings = artifacts.toSeq.map { case (a, f) =>
-      val typeSuffix = a.`type` match {
-        case "pom" => "-pom.xml"
-        case "jar" => ".jar"
-        case "doc" => "-docs.jar"
-        case tpe => s"-$tpe.${a.extension}"
-      }
-      val to = file("dists/maven-sbt") / ver / a.name / (a.name + typeSuffix)
-      log.info(s"Publishing $f to $to")
-      (f, to)
-    }
-    IO.copy(mappings)
-  },
   credentials ++= {
     val file = Path.userHome / ".credentials"
     if (file.exists && !file.isDirectory) List(Credentials(file))
@@ -245,7 +222,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
 ) ++ removePomDependencies
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
-  * are equivalent to the ones from the Ant build. In the long term this should be removed and
+  * are equivalent to the ones from the old Ant build. In the long term this should be removed and
   * POMs, scaladocs, OSGi manifests, etc. should all use the same metadata. */
 def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   /** Find elements in an XML document by a simple XPath and replace them */
@@ -432,7 +409,7 @@ lazy val compiler = configureAsSubproject(project)
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
-    libraryDependencies ++= Seq(antDep, asmDep),
+    libraryDependencies += asmDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= Seq(scalaXmlDep, jlineDep),
@@ -474,13 +451,12 @@ lazy val compiler = configureAsSubproject(project)
     ),
     Osgi.headers ++= Seq(
       "Import-Package" -> ("jline.*;resolution:=optional," +
-                           "org.apache.tools.ant.*;resolution:=optional," +
                            "scala.xml.*;version=\"${range;[====,====];"+versionNumber("scala-xml")+"}\";resolution:=optional," +
                            "scala.*;version=\"${range;[==,=+);${ver}}\"," +
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
     ),
-    // Generate the ScriptEngineFactory service definition. The Ant build does this when building
+    // Generate the ScriptEngineFactory service definition. The old Ant build did this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
     generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.shell.Scripted$Factory"),
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
@@ -490,7 +466,7 @@ lazy val compiler = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     apiURL := None,
-    pomDependencyExclusions ++= List(("org.apache.ant", "ant"), ("org.scala-lang.modules", "scala-asm"))
+    pomDependencyExclusions += (("org.scala-lang.modules", "scala-asm"))
   )
   .dependsOn(library, reflect)
 
@@ -729,7 +705,7 @@ lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    libraryDependencies ++= Seq(scalaXmlDep, antDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
+    libraryDependencies ++= Seq(scalaXmlDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
     classDirectory in Compile := (target in Compile).value / "classes"
   )
 
@@ -762,7 +738,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
         // Generated manpages should always use LF only. There doesn't seem to be a good reason
         // for generating them with the platform EOL first and then converting them but that's
-        // what the Ant build does.
+        // what the old Ant build did.
         IO.write(out, IO.readBytes(in).filterNot(_ == '\r'))
       }
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get

@@ -12,10 +12,6 @@
 #
 # JARs aren't checked in, they are fetched by sbt
 #
-# We could be more concise with /lib/**/*.jar but that assumes
-# a late-model git.
-#
-/lib/ant/*.jar
 /lib/*.jar
 /test/files/codelib/*.jar
 /test/files/lib/*.jar
