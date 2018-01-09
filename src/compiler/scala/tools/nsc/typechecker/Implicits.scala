@@ -1339,15 +1339,15 @@ trait Implicits {
             // with the new strategy-based reporting, a BufferingReporter buffers instead of throwing
             // it would be good to rework this logic to fit into the regular context.error mechanism
             throw new TypeError(pos,
-              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-                  |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
-                  |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
+              sm0"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+                   |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
+                   |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
           }
           if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
             throw new TypeError(pos,
-              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-                  |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
-                  |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
+              sm0"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+                   |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
+                   |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
           }
           val cm = typed(Ident(ReflectRuntimeCurrentMirror))
           val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)

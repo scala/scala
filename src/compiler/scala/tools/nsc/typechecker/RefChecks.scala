@@ -1256,8 +1256,8 @@ abstract class RefChecks extends Transform {
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
         def defaultMsg =
-          sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
-              |it should have been processed and eliminated during expansion of an enclosing macro."""
+          sm0"""Reference to ${sym.fullLocationString} should not have survived past type checking,
+               |it should have been processed and eliminated during expansion of an enclosing macro."""
         // The getOrElse part should never happen, it's just here as a backstop.
         reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
       }

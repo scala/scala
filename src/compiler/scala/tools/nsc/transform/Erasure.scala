@@ -497,20 +497,20 @@ abstract class Erasure extends InfoTransform
       val clashErrors = mutable.Buffer[(Position, String)]()
       def clashError(what: String) = {
         val pos = if (member.owner == root) member.pos else root.pos
-        val msg = sm"""bridge generated for member ${fulldef(member)}
-                      |which overrides ${fulldef(other)}
-                      |clashes with definition of $what;
-                      |both have erased type ${exitingPostErasure(bridge.tpe)}"""
+        val msg = sm0"""bridge generated for member ${fulldef(member)}
+                       |which overrides ${fulldef(other)}
+                       |clashes with definition of $what;
+                       |both have erased type ${exitingPostErasure(bridge.tpe)}"""
         clashErrors += Tuple2(pos, msg)
       }
       for (bc <- root.baseClasses) {
         if (settings.debug)
           exitingPostErasure(println(
-            sm"""check bridge overrides in $bc
-                |${bc.info.nonPrivateDecl(bridge.name)}
-                |${site.memberType(bridge)}
-                |${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
-                |${(bridge.matchingSymbol(bc, site))}"""))
+            sm0"""check bridge overrides in $bc
+                 |${bc.info.nonPrivateDecl(bridge.name)}
+                 |${site.memberType(bridge)}
+                 |${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
+                 |${(bridge.matchingSymbol(bc, site))}"""))
 
         def overriddenBy(sym: Symbol) =
           sym.matchingSymbol(bc, site).alternatives filter (sym => !sym.isBridge)

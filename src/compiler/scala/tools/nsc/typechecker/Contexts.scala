@@ -640,7 +640,7 @@ trait Contexts { self: Analyzer =>
     }
 
     override def toString =
-      sm"""|Context($unit) {
+      sm0"""|Context($unit) {
            |   owner       = $owner
            |   tree        = $treeString
            |   scope       = ${scope.size} decls
@@ -713,10 +713,10 @@ trait Contexts { self: Analyzer =>
         val c = enclosingSubClassContext(sym.owner)
         if (c == NoContext)
           lastAccessCheckDetails =
-            sm"""
-                | Access to protected $target not permitted because
-                | enclosing ${this.enclClass.owner}${this.enclClass.owner.locationString} is not a subclass of
-                | ${sym.owner}${sym.owner.locationString} where target is defined"""
+            sm0"""
+                 | Access to protected $target not permitted because
+                 | enclosing ${this.enclClass.owner}${this.enclClass.owner.locationString} is not a subclass of
+                 | ${sym.owner}${sym.owner.locationString} where target is defined"""
         c != NoContext &&
         {
           target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
@@ -726,10 +726,10 @@ trait Contexts { self: Analyzer =>
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
             if (!res)
               lastAccessCheckDetails =
-                sm"""
-                    | Access to protected $target not permitted because
-                    | prefix type ${pre.widen} does not conform to
-                    | ${c.owner}${c.owner.locationString} where the access takes place"""
+                sm0"""
+                     | Access to protected $target not permitted because
+                     | prefix type ${pre.widen} does not conform to
+                     | ${c.owner}${c.owner.locationString} where the access takes place"""
               res
           }
         }

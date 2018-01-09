@@ -74,7 +74,7 @@ abstract class SymbolPairs {
     def lowString  = memberDefString(low, where = true)
     def highString = memberDefString(high, where = true)
 
-    override def toString = sm"""
+    override def toString = sm0"""
       |Cursor(in $base) {
       |   high  $highString
       | erased  $highErased

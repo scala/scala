@@ -10,6 +10,7 @@ package scala
 
 import java.lang.{ StringBuilder => JLSBuilder }
 import scala.annotation.tailrec
+import language.experimental.macros
 
 /** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users
@@ -32,7 +33,7 @@ import scala.annotation.tailrec
  *   StringContext("Hello, ", "").s(name)
  * }}}
  *
- * By default, this class provides the `raw`, `s` and `f` methods as
+ * By default, this class provides the `raw`, `s`, `sm`, and `f` methods as
  * available interpolators.
  *
  * To provide your own string interpolator, create an implicit class
@@ -56,14 +57,14 @@ case class StringContext(parts: String*) {
   import StringContext._
 
   /** Checks that the length of the given argument `args` is one less than the number
-   *  of `parts` supplied to the enclosing `StringContext`.
-   *  @param `args` The arguments to be checked.
-   *  @throws IllegalArgumentException  if this is not the case.
-   */
+    *  of `parts` supplied to the enclosing `StringContext`.
+    *  @param  args The arguments to be checked.
+    *  @throws IllegalArgumentException  if this is not the case.
+    */
   def checkLengths(args: Seq[Any]): Unit =
     if (parts.length != args.length + 1)
-      throw new IllegalArgumentException("wrong number of arguments ("+ args.length
-        +") for interpolated string with "+ parts.length +" parts")
+      throw new IllegalArgumentException(
+        s"wrong number of arguments (${args.length}) for interpolated string with ${parts.length} parts")
 
 
   /** The simple string interpolator.
@@ -84,7 +85,7 @@ case class StringContext(parts: String*) {
    *  }}}
    *  will print the string `1 + 1 = 2`.
    *
-   *  @param `args` The arguments to be inserted into the resulting string.
+   *  @param  args The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
@@ -109,7 +110,7 @@ case class StringContext(parts: String*) {
    *    res0: String = #
    *  }}}
    *
-   *  @param `args` The arguments to be inserted into the resulting string.
+   *  @param  args The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
@@ -144,7 +145,7 @@ case class StringContext(parts: String*) {
    *    println(f"$name%s is $height%2.2f meters tall")  // James is 1.90 meters tall
    *  }}}
    *
-   *  @param `args` The arguments to be inserted into the resulting string.
+   *  @param  args The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
@@ -163,9 +164,51 @@ case class StringContext(parts: String*) {
    *   2. Any `%` characters not in formatting positions must begin one of the conversions
    *      `%%` (the literal percent) or `%n` (the platform-specific line separator).
    */
-  // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
+  // The implementation is hardwired to `scala.tools.reflect.Interpolators.macro_StringInterpolation_f`
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def f[A >: Any](args: A*): String = macro ???
+
+  /** The margin-stripping string interpolator.
+    *
+    * A safe combination of [[scala.collection.immutable.StringLike#stripMargin]]
+    * and [[scala.StringContext#raw]].
+    *
+    * The margin of each line is defined by whitespace leading up to a '|' character.
+    * This margin is stripped '''before''' the arguments are interpolated into to string.
+    *
+    * String escape sequences are '''not''' processed; this interpolator is designed to
+    * be used with triple quoted Strings.
+    *
+    * {{{
+    * scala> val foo = "f|o|o"
+    * foo: String = f|o|o
+    * scala> sm"""|${foo}
+    *             |"""
+    * res0: String =
+    * "f|o|o
+    * "
+    * }}}
+    *
+    * @param args The arguments to be inserted into the resulting string.
+    * @since 2.13.0
+    */
+  // The implementation is hardwired to `scala.tools.reflect.Interpolators.macro_StringInterpolation_sm`
+  // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
+  def sm(args: Any*): String = macro ???
+
+  /* here as a crutch for reflect/compiler until reSTARR... I should not be in 2.13.0! */
+  private[scala] def sm0(args: Any*): String = {
+    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+    def stripTrailingPart(s: String) = {
+      val (pre, post) = s.span(c => !isLineBreak(c))
+      pre + post.stripMargin
+    }
+    val stripped: List[String] = parts.toList match {
+      case head :: tail => head.stripMargin :: (tail map stripTrailingPart)
+      case Nil => Nil
+    }
+    new StringContext(stripped: _*).raw(args: _*)
+  }
 }
 
 object StringContext {
@@ -173,7 +216,7 @@ object StringContext {
   /** An exception that is thrown if a string contains a backslash (`\`) character
    *  that does not start a valid escape sequence.
    *  @param  str   The offending string
-   *  @param  index   The index of the offending backslash character in `str`.
+   *  @param  index The index of the offending backslash character in `str`.
    */
   class InvalidEscapeException(str: String, val index: Int) extends IllegalArgumentException(
     s"""invalid escape ${

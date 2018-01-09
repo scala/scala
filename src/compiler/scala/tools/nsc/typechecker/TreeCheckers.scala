@@ -350,9 +350,9 @@ abstract class TreeCheckers extends Analyzer {
               if (sym.owner != currentOwner) {
                 val expected = currentOwner.ownerChain find (x => cond(x)) getOrElse { fail("DefTree can't find owner: ") ; NoSymbol }
                 if (sym.owner != expected)
-                  fail(sm"""|
-                            | currentOwner chain: ${currentOwner.ownerChain take 3 mkString " -> "}
-                            |       symbol chain: ${sym.ownerChain mkString " -> "}"""
+                  fail(sm0"""|
+                             | currentOwner chain: ${currentOwner.ownerChain take 3 mkString " -> "}
+                             |       symbol chain: ${sym.ownerChain mkString " -> "}"""
                       )
               }
           }

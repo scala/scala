@@ -678,10 +678,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
         if(!isValidSignature) {
           reporter.warning(sym.pos,
-            sm"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
-                 |signature: $sig
-                 |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+            sm0"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
+                  |signature: $sig
+                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
+               """.trim)
           return null
         }
       }
@@ -691,13 +691,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
           reporter.warning(sym.pos,
-            sm"""|compiler bug: created generic signature for $sym in ${sym.owner.skipPackageObject.fullName} that does not conform to its erasure
-                 |signature: $sig
-                 |original type: $memberTpe
-                 |normalized type: $normalizedTpe
-                 |erasure type: $bytecodeTpe
-                 |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+            sm0"""|compiler bug: created generic signature for $sym in ${sym.owner.skipPackageObject.fullName} that does not conform to its erasure
+                  |signature: $sig
+                  |original type: $memberTpe
+                  |normalized type: $normalizedTpe
+                  |erasure type: $bytecodeTpe
+                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
+               """.trim)
            return null
         }
       }

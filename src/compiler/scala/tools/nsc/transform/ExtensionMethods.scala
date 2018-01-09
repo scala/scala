@@ -71,19 +71,19 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
-      sm"""|no extension method found for:
-           |
-           |  $imeth:${imeth.tpe}
-           |
-           | Candidates:
-           |
-           | ${candidates.map(c => c.name+":"+c.tpe).mkString("\n")}
-           |
-           | Candidates (signatures normalized):
-           |
-           | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
-           |
-           | Eligible Names: ${extensionNames(imeth).mkString(",")}" """)
+      sm0"""|no extension method found for:
+            |
+            |  $imeth:${imeth.tpe}
+            |
+            | Candidates:
+            |
+            | ${candidates.map(c => c.name+":"+c.tpe).mkString("\n")}
+            |
+            | Candidates (signatures normalized):
+            |
+            | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
+            |
+            | Eligible Names: ${extensionNames(imeth).mkString(",")}" """)
     matching.head
   }
 

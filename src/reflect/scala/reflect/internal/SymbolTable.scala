@@ -435,11 +435,6 @@ abstract class SymbolTable extends macros.Universe
   @deprecated("use enteringPhase", "2.10.0") // Used in sbt 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
 
-
-  /**
-   * Adds the `sm` String interpolator to a [[scala.StringContext]].
-   */
-  implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
 }
 
 trait SymbolTableStats {

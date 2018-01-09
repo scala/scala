@@ -97,7 +97,7 @@ trait MatchTranslation {
       private def translatedAlts(alts: List[Tree])           = alts map (alt => rebindTo(alt).translate())
       private def noStep()                                   = step()()
 
-      private def unsupportedPatternMsg = sm"""
+      private def unsupportedPatternMsg = sm0"""
         |unsupported pattern: ${tree.shortClass} / $this (this is a scalac bug.)
         |""".trim
 

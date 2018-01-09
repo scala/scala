@@ -59,8 +59,6 @@ object PrinterHelper {
       assertResultCode(source)(source, source, wrapCode)
     else assertResultCode(source)(parsedCode = source, wrap = wrapCode)
   }
-
-  implicit class StrContextStripMarginOps(val stringContext: StringContext) extends util.StripMarginInterpolator
 }
 
 import PrinterHelper._

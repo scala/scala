@@ -371,9 +371,9 @@ trait TypeComparers {
     def isSubHKTypeVar(tp1: Type, tp2: Type) = (tp1, tp2) match {
       case (tv1 @ TypeVar(_, _), tv2 @ TypeVar(_, _)) =>
         reporter.warning(tv1.typeSymbol.pos,
-          sm"""|compiler bug: Unexpected code path: testing two type variables for subtype relation:
-               |  ${tv1} <:< ${tv2}
-               |Please report bug at https://github.com/scala/bug/issues
+          sm0"""|compiler bug: Unexpected code path: testing two type variables for subtype relation:
+                |  ${tv1} <:< ${tv2}
+                |Please report bug at https://github.com/scala/bug/issues
             """.trim)
         false
       case (tp1, tv2 @ TypeVar(_, _)) =>

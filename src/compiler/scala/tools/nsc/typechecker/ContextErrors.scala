@@ -117,9 +117,9 @@ trait ContextErrors {
         s"$name extends Any, not AnyRef"
     )
     if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else "\n" +
-       sm"""|Note that $what.
-            |Such types can participate in value classes, but instances
-            |cannot appear in singleton types or in reference comparisons."""
+       sm0"""|Note that $what.
+             |Such types can participate in value classes, but instances
+             |cannot appear in singleton types or in reference comparisons."""
   }
 
   import ErrorUtils._
@@ -444,9 +444,9 @@ trait ContextErrors {
               val example = analyzer.exampleTuplePattern(params map (_.name))
               (pt baseType FunctionClass(1)) match {
                 case TypeRef(_, _, arg :: _) if arg.typeSymbol == TupleClass(funArity) && funArity > 1 =>
-                  sm"""|
-                       |Note: The expected type requires a one-argument function accepting a $funArity-Tuple.
-                       |      Consider a pattern matching anonymous function, `{ case $example =>  ... }`"""
+                  sm0"""|
+                        |Note: The expected type requires a one-argument function accepting a $funArity-Tuple.
+                        |      Consider a pattern matching anonymous function, `{ case $example =>  ... }`"""
                 case _ => ""
               }
             case _ => ""
@@ -1252,9 +1252,9 @@ trait ContextErrors {
                                (isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context) = {
       if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
         def coreMsg =
-           sm"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
-                | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
-                | $trailer"""
+           sm0"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
+                 | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
+                 | $trailer"""
         def viewMsg = {
           val found :: req :: _ = pt.typeArgs
           def explanation = {
@@ -1265,19 +1265,19 @@ trait ContextErrors {
             // involving Any, are further explained from foundReqMsg.
             if (AnyRefTpe <:< req) (
               if (sym == AnyClass || sym == UnitClass) (
-                 sm"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
-                      |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so."""
+                 sm0"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
+                       |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so."""
               )
               else boxedClass get sym map (boxed =>
-                 sm"""|Note: an implicit exists from ${sym.fullName} => ${boxed.fullName}, but
-                      |methods inherited from Object are rendered ambiguous.  This is to avoid
-                      |a blanket implicit which would convert any ${sym.fullName} to any AnyRef.
-                      |You may wish to use a type ascription: `x: ${boxed.fullName}`."""
+                 sm0"""|Note: an implicit exists from ${sym.fullName} => ${boxed.fullName}, but
+                       |methods inherited from Object are rendered ambiguous.  This is to avoid
+                       |a blanket implicit which would convert any ${sym.fullName} to any AnyRef.
+                       |You may wish to use a type ascription: `x: ${boxed.fullName}`."""
               ) getOrElse ""
             )
             else
-               sm"""|Note that implicit conversions are not applicable because they are ambiguous:
-                    |${coreMsg}are possible conversion functions from $found to $req"""
+               sm0"""|Note that implicit conversions are not applicable because they are ambiguous:
+                     |${coreMsg}are possible conversion functions from $found to $req"""
           }
           typeErrorMsg(found, req) + (
             if (explanation == "") "" else "\n" + explanation

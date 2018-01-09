@@ -1,14 +1,13 @@
 package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context
-import scala.collection.mutable.{ ListBuffer, Stack }
+import scala.collection.mutable.{ListBuffer, Stack}
 import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
 import scala.util.matching.Regex.Match
-
 import java.util.Formattable
 
-abstract class FormatInterpolator {
+abstract class Interpolators {
   val c: Context
   val global: c.universe.type = c.universe
 
@@ -20,24 +19,57 @@ abstract class FormatInterpolator {
   @inline private def falsely(body: => Unit): Boolean = { body ; false }
 
   private def bail(msg: String) = global.abort(msg)
+  private def lit(str: String) =
+    Literal(Constant(str)) setType ConstantType(Constant(str))
 
-  def interpolate: Tree = c.macroApplication match {
-    //case q"$_(..$parts).f(..$args)" =>
-    case Applied(Select(Apply(_, parts), _), _, argss) =>
-      val args = argss.flatten
-      def badlyInvoked = (parts.length != args.length + 1) && truly {
-        def because(s: String) = s"too $s arguments for interpolated string"
-        val (p, msg) =
-          if (parts.length == 0) (c.prefix.tree.pos, "there are no parts")
-          else if (args.length + 1 < parts.length)
-            (if (args.isEmpty) c.enclosingPosition else args.last.pos, because("few"))
-          else (args(parts.length-1).pos, because("many"))
-        c.abort(p, msg)
-      }
-      if (badlyInvoked) c.macroApplication else interpolated(parts, args)
+  object StringContextInvocation {
+    def unapply(appl: Tree): Option[(List[Tree], List[Tree])] = appl match {
+      //case q"$_(..$parts).f(..$args)" =>
+      case Applied(Select(Apply(_, parts), _), _, argss)  =>
+        // assert(argss.length == 1)
+        val args = argss.flatten
+        if (parts.length == args.length + 1)
+          Some((parts, argss.flatten))
+        else {
+          def because(s: String) = s"too $s arguments for interpolated string"
+          val (p, msg) =
+            if (parts.isEmpty) (c.prefix.tree.pos, "there are no parts")
+            else if (args.length + 1 < parts.length)
+              (if (args.isEmpty) c.enclosingPosition else args.last.pos, because("few"))
+            else (args(parts.length-1).pos, because("many"))
+          c.abort(p, msg)
+        }
+      case _ =>
+        None
+    }
+  }
+
+  def interpolate_f: Tree = c.macroApplication match {
+    case StringContextInvocation(parts, args) =>
+      f_interpolated(parts, args)
     case other =>
       bail(s"Unexpected application ${showRaw(other)}")
-      other
+  }
+
+  def interpolate_sm: Tree = c.macroApplication match {
+    case StringContextInvocation(partTrees, args) =>
+      val parts = partTrees map {
+        case Literal(Constant(part: String)) => part
+        case wrong =>
+          bail(s"Unexpected non-literal part ${showRaw(wrong)} (in ${showRaw(c.macroApplication)})")
+      }
+      def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+      def stripTrailingPart(s: String) = {
+        val (pre, post) = s.span(c => !isLineBreak(c))
+        lit(pre + post.stripMargin)
+      }
+      val stripped: List[Tree] = parts match {
+        case head :: tail => lit(head.stripMargin) :: (tail map stripTrailingPart)
+        case Nil => Nil
+      }
+      Apply(Select(New(StringContextClass, stripped: _*), nme.raw_), args)
+    case other =>
+      bail(s"Unexpected application ${showRaw(other)}")
   }
 
   /** Every part except the first must begin with a conversion for
@@ -60,7 +92,7 @@ abstract class FormatInterpolator {
    *  7) "...${smth}[%illegalJavaConversion]" => error
    *  *Legal according to [[http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html]]
    */
-  def interpolated(parts: List[Tree], args: List[Tree]) = {
+  def f_interpolated(parts: List[Tree], args: List[Tree]) = {
     val fstring  = new StringBuilder
     val evals    = ListBuffer[ValDef]()
     val ids      = ListBuffer[Ident]()
@@ -183,7 +215,7 @@ abstract class FormatInterpolator {
 
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
     val format = fstring.toString
-    if (ids.isEmpty && !format.contains("%")) Literal(Constant(format))
+    if (ids.isEmpty && !format.contains("%")) lit(format)
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(
@@ -196,7 +228,7 @@ abstract class FormatInterpolator {
           Select(
             Apply(
               newStringOps,
-              List(Literal(Constant(format)))),
+              List(lit(format))),
             TermName("format")),
           ids.toList
         )

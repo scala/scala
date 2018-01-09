@@ -340,7 +340,7 @@ trait PatternTypers {
       // but an arbitrary tree as is the case here
       val res = doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
 
-      log(sm"""
+      log(sm0"""
         |wrapClassTagUnapply {
         |  pattern: $uncheckedPattern
         |  extract: $classTagExtractor
