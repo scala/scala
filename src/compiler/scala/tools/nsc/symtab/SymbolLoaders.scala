@@ -138,9 +138,9 @@ abstract class SymbolLoaders {
       // Diagnostic for scala/bug#7147
       def msg: String = {
         def symLocation(sym: Symbol) = if (sym == null) "null" else s"${clazz.fullLocationString} (from ${clazz.associatedFile})"
-        sm0"""Inconsistent class/module symbol pair for `$name` loaded from ${symLocation(root)}.
-             |clazz = ${symLocation(clazz)}; clazz.companionModule = ${clazz.companionModule}
-             |module = ${symLocation(module)}; module.companionClass = ${module.companionClass}"""
+        sm"""Inconsistent class/module symbol pair for `$name` loaded from ${symLocation(root)}.
+            |clazz = ${symLocation(clazz)}; clazz.companionModule = ${clazz.companionModule}
+            |module = ${symLocation(module)}; module.companionClass = ${module.companionClass}"""
       }
       assert(clazz.companionModule == module, msg)
       assert(module.companionClass == clazz, msg)

@@ -468,10 +468,10 @@ private[internal] trait TypeMaps {
         // mention when not doing so, see above) so let's provide a standout error.
         def own_s(s: Symbol) = s.nameString + " in " + s.owner.nameString
         def explain =
-          sm0"""|   sought  ${own_s(lhsSym)}
-                | classSym  ${own_s(rhsSym)}
-                |  tparams  ${rhsSym.typeParams map own_s mkString ", "}
-                |"""
+          sm"""|   sought  ${own_s(lhsSym)}
+               | classSym  ${own_s(rhsSym)}
+               |  tparams  ${rhsSym.typeParams map own_s mkString ", "}
+               |"""
 
         if (!rhsArgs.isDefinedAt(argIndex))
           abort(s"Something is wrong: cannot find $lhs in applied type $rhs\n" + explain)

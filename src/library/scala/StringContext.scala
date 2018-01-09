@@ -196,19 +196,19 @@ case class StringContext(parts: String*) {
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def sm(args: Any*): String = macro ???
 
-  /* here as a crutch for reflect/compiler until reSTARR... I should not be in 2.13.0! */
-  private[scala] def sm0(args: Any*): String = {
-    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
-    def stripTrailingPart(s: String) = {
-      val (pre, post) = s.span(c => !isLineBreak(c))
-      pre + post.stripMargin
-    }
-    val stripped: List[String] = parts.toList match {
-      case head :: tail => head.stripMargin :: (tail map stripTrailingPart)
-      case Nil => Nil
-    }
-    new StringContext(stripped: _*).raw(args: _*)
-  }
+ // /* here as a crutch for reflect/compiler until reSTARR... I should not be in 2.13.0! */
+ // private[scala] def sm0(args: Any*): String = {
+ //   def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+ //   def stripTrailingPart(s: String) = {
+ //     val (pre, post) = s.span(c => !isLineBreak(c))
+ //     pre + post.stripMargin
+ //   }
+ //   val stripped: List[String] = parts.toList match {
+ //     case head :: tail => head.stripMargin :: (tail map stripTrailingPart)
+ //     case Nil => Nil
+ //   }
+ //   new StringContext(stripped: _*).raw(args: _*)
+ // }
 }
 
 object StringContext {

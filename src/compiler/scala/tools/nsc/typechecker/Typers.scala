@@ -1051,7 +1051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case ExistentialType(qs, _) => qs
           case _                      => Nil
         }
-        def msg = sm0"""
+        def msg = sm"""
           |Recovering from existential or skolem type error in
           |  $tree
           |with type: ${tree.tpe}

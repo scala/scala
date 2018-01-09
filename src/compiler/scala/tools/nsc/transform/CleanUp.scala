@@ -353,10 +353,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           def paramsToString(xs: Any*) = xs map (_.toString) mkString ", "
           val mstr = ad.symbol.tpe match {
             case MethodType(mparams, resType) =>
-              sm0"""|  with
-                    |  - declared parameter types: '${paramsToString(mparams)}'
-                    |  - passed argument types:    '${paramsToString(params)}'
-                    |  - result type:              '${resType.toString}'"""
+              sm"""|  with
+                   |  - declared parameter types: '${paramsToString(mparams)}'
+                   |  - passed argument types:    '${paramsToString(params)}'
+                   |  - result type:              '${resType.toString}'"""
             case _ => ""
           }
           log(s"""Dynamically application '$qual.${ad.symbol.name}(${paramsToString(params)})' $mstr - resulting code: '$t'""")

@@ -1694,7 +1694,7 @@ trait Trees extends api.Trees {
             def update(sym: Symbol) = {
               val newInfo = symSubst(sym.info)
               if (!(newInfo =:= sym.info)) {
-                debuglog(sm0"""
+                debuglog(sm"""
                   |TreeSymSubstituter: updated info of symbol ${sym}
                   |  Old: ${showRaw(sym.info, printTypes = true, printIds = true)}
                   |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")

@@ -160,9 +160,9 @@ trait Infer extends Checkable {
    */
   def normalize(tp: Type): Type = tp match {
     case PolyType(_, restpe) =>
-      logResult(sm0"""|Normalizing PolyType in infer:
-                      |  was: $restpe
-                      |  now""")(normalize(restpe))
+      logResult(sm"""|Normalizing PolyType in infer:
+                     |  was: $restpe
+                     |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
       if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
@@ -1118,11 +1118,11 @@ trait Infer extends Checkable {
       def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
 
       if (enclCase.savedTypeBounds.nonEmpty) log(
-        sm0"""|instantiateTypeVar with nonEmpty saved type bounds {
-              |  enclosing  $enclCase_s
-              |      saved  ${enclCase.savedTypeBounds}
-              |     tparam  ${tparam.shortSymbolClass} ${tparam.defString}
-              |}""")
+        sm"""|instantiateTypeVar with nonEmpty saved type bounds {
+             |  enclosing  $enclCase_s
+             |      saved  ${enclCase.savedTypeBounds}
+             |     tparam  ${tparam.shortSymbolClass} ${tparam.defString}
+             |}""")
 
       if (lo1 <:< hi1) {
         if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved

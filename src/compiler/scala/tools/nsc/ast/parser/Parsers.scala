@@ -758,10 +758,10 @@ self =>
           val arity = as.length
           val example = analyzer.exampleTuplePattern(as map { case Ident(name) => name; case _ => nme.EMPTY })
           val msg =
-            sm0"""|not a legal formal parameter.
-                  |Note: Tuples cannot be directly destructured in method or function parameters.
-                  |      Either create a single parameter accepting the Tuple${arity},
-                  |      or consider a pattern matching anonymous function: `{ case $example => ... }"""
+            sm"""|not a legal formal parameter.
+                 |Note: Tuples cannot be directly destructured in method or function parameters.
+                 |      Either create a single parameter accepting the Tuple${arity},
+                 |      or consider a pattern matching anonymous function: `{ case $example => ... }"""
           syntaxError(tree.pos, msg, skipIt = false)
           errorParam
         case _ =>

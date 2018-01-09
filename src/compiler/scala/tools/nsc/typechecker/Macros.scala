@@ -402,7 +402,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     val prefix = core match { case Select(qual, _) => qual; case _ => EmptyTree }
     val context = expandee.attachments.get[MacroRuntimeAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefix, expandee))
 
-    macroLogVerbose(sm0"""
+    macroLogVerbose(sm"""
       |context: $context
       |prefix: $prefix
       |targs: $targs

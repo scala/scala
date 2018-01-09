@@ -41,8 +41,7 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
     }
   }
 
-  /** A map from a set of pre-established
-    * macro symbols to their implementations. */
+  /** A map from a set of pre-established macro symbols to their implementations. */
   private val fastTrackCache = perRunCaches.newGeneric[Map[Symbol, FastTrackEntry]] {
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._

@@ -23,10 +23,10 @@ case class PluginDescription(name: String, classname: String) {
    *  It should be stored inside the jar archive file.
    */
   def toXML: String =
-    sm0"""<plugin>
-          | <name>${name}</name>
-          | <classname>${classname}</classname>
-          |</plugin>"""
+    sm"""<plugin>
+        | <name>${name}</name>
+        | <classname>${classname}</classname>
+        |</plugin>"""
 }
 
 /** Utilities for the PluginDescription class.
