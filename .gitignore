@@ -33,9 +33,7 @@
 /bin/
 /sandbox/
 
-# eclipse, intellij
-/.classpath
-/.project
+# intellij
 /src/intellij*/*.iml
 /src/intellij*/*.ipr
 /src/intellij*/*.iws
