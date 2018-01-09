@@ -89,6 +89,7 @@ object ShowPickled extends Names {
     case LITERALnull    => "LITERALnull"
     case LITERALclass   => "LITERALclass"
     case LITERALenum    => "LITERALenum"
+    case LITERALsymbol  => "LITERALsymbol"
     case SYMANNOT       => "SYMANNOT"
     case CHILDREN       => "CHILDREN"
     case ANNOTATEDtpe   => "ANNOTATEDtpe"
@@ -238,6 +239,8 @@ object ShowPickled extends Names {
         case LITERALdouble  =>
           out.print(" " + longBitsToDouble(buf.readLong(len)))
         case LITERALstring  =>
+          printNameRef()
+        case LITERALsymbol  =>
           printNameRef()
         case LITERALenum    =>
           printSymbolRef()
