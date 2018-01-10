@@ -702,7 +702,7 @@ self =>
 
     def isExprIntro: Boolean = isExprIntroToken(in.token)
 
-    def isTypeIntroToken(token: Token): Boolean = (settings.YliteralTypes && isLiteralToken(token) && token != NULL) || (token match {
+    def isTypeIntroToken(token: Token): Boolean = (isLiteralToken(token) && token != NULL) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT | THIS |
            SUPER | USCORE | LPAREN | AT => true
       case _ => false
@@ -1021,7 +1021,13 @@ self =>
        *  }}}
        */
       def simpleType(): Tree = {
-        def simpleNonLiteralType(): Tree = {
+        if (isLiteralToken(in.token) && in.token != NULL)
+          atPos(in.offset){SingletonTypeTree(literal())}
+        else if (in.name == raw.MINUS && lookingAhead(isNumericLit)) {
+          val start = in.offset
+          in.nextToken()
+          atPos(start){ SingletonTypeTree(literal(isNegated = true, start = start)) }
+        } else {
           val start = in.offset
           simpleTypeRest(in.token match {
             case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
@@ -1033,16 +1039,6 @@ self =>
               }
           })
         }
-
-        if (settings.YliteralTypes) {
-          if (isLiteralToken(in.token) && in.token != NULL)
-            atPos(in.offset){SingletonTypeTree(literal())}
-          else if (in.name == raw.MINUS && lookingAhead(isNumericLit)) {
-            val start = in.offset
-            in.nextToken()
-            atPos(start){ SingletonTypeTree(literal(isNegated = true, start = start)) }
-          } else simpleNonLiteralType
-        } else simpleNonLiteralType
       }
 
       private def typeProjection(t: Tree): Tree = {
@@ -1274,12 +1270,7 @@ self =>
      */
     def literal(isNegated: Boolean = false, inPattern: Boolean = false, start: Offset = in.offset): Tree = atPos(start) {
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
-      if (in.token == SYMBOLLIT) {
-        if(settings.YliteralTypes)
-          finish(Symbol(in.strVal.intern()))
-        else
-          Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
-      } else if (in.token == INTERPOLATIONID)
+      if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
       else finish(in.token match {
         case CHARLIT                => in.charVal
@@ -1288,6 +1279,7 @@ self =>
         case FLOATLIT               => in.floatVal(isNegated)
         case DOUBLELIT              => in.doubleVal(isNegated)
         case STRINGLIT | STRINGPART => in.strVal.intern()
+        case SYMBOLLIT              => Symbol(in.strVal.intern())
         case TRUE                   => true
         case FALSE                  => false
         case NULL                   => null

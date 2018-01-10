@@ -95,7 +95,6 @@ trait Types
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
    */
-  private final val propagateParameterBoundsToTypeVars = System.getProperty("scalac.debug.prop-constraints") != null
   private final val sharperSkolems = System.getProperty("scalac.experimental.sharper-skolems") != null
 
   /** Caching the most recent map has a 75-90% hit rate. */
@@ -1894,7 +1893,7 @@ trait Types
    */
   abstract case class FoldableConstantType(value: Constant) extends ConstantType {
     override def underlying: Type =
-      if (settings.YliteralTypes && value.isSuitableLiteralType) LiteralType(value) else value.tpe
+      if (value.isSuitableLiteralType) LiteralType(value) else value.tpe
     override def deconst: Type = underlying.deconst
     override def safeToString: String = underlying.widen.toString + "(" + value.escapedStringValue + ")"
   }
@@ -3028,7 +3027,7 @@ trait Types
        * any results.
        */
       val constr =
-        if ((propagateParameterBoundsToTypeVars || settings.YliteralTypes) && !isPastTyper) {
+        if (!isPastTyper) {
           // Test for typer phase is questionable, however, if it isn't present bounds will be created
           // during patmat and this causes an SOE compiling test/files/pos/t9018.scala. TypeVars are
           // Supposed to have been eliminated by the typer anyway, so it's unclear why we reach this
@@ -3041,7 +3040,7 @@ trait Types
         }
         else new TypeConstraint
 
-      if (settings.YliteralTypes && precludesWidening(bounds.hi)) constr.stopWidening()
+      if (precludesWidening(bounds.hi)) constr.stopWidening()
 
       constr
     }

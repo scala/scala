@@ -327,8 +327,6 @@ class TypesTest {
 
   @Test
   def testSameTypesLub(): Unit = {
-    settings.YliteralTypes.value = true
-
     def testSameType(tpe: Type, num: Int = 5) = assert(lub(List.fill(num)(tpe)) =:= tpe)
 
     testSameType(IntTpe)
@@ -340,8 +338,6 @@ class TypesTest {
 
   @Test
   def testTypesLub(): Unit = {
-    settings.YliteralTypes.value = true
-
     val interestingCombos: Map[Type, List[List[Type]]] = Map(
       IntTpe -> List(
         List(ConstantType(Constant(0)), IntTpe),

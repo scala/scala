@@ -5460,9 +5460,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
-        // If literal types are enabled we don't require AnyRef for 1.type etc
-        val pt = if (settings.YliteralTypes) WildcardType else AnyRefTpe
-        val refTyped = typedTypeSelectionQualifier(tree.ref, pt)
+        val refTyped = typedTypeSelectionQualifier(tree.ref, WildcardType )
 
         if (refTyped.isErrorTyped) setError(tree)
         else {
