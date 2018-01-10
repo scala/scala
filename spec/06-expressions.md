@@ -1571,7 +1571,7 @@ parameters $a_i$ such that
 
 - None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
   unless it is a singleton type corresponding to an object or a constant value
-  definition.
+  definition or the corresponding bound $U_i$ is a subtype of `scala.Singleton`.
 - All type parameter bounds are respected, i.e.
   $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The expression's type conforms to the expected type, i.e.
@@ -1610,7 +1610,7 @@ $a_i$ such that
 
 - None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
   unless it is a singleton type corresponding to an object or a constant value
-  definition.
+  definition or the corresponding bound $U_i$ is a subtype of `scala.Singleton`.
 - All type parameter bounds are respected, i.e. $\sigma L_i <: \sigma a_i$ and
   $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' <: \sigma \mathit{pt}$.
