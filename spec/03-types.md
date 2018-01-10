@@ -133,13 +133,6 @@ Literal types are available for all types for which there is dedicated syntax
 except `Unit`. This includes the numeric types (other than `Byte` and `Short`
 which don't currently have syntax), `Boolean`, `Char`, `String` and `Symbol`.
 
-<!-- TODO: use eq when we lift it up to Any -->
-
-<!-- TODO: add Byte when Byte literals are added -->
-
-<!-- TODO: there is a relationship with constant folding but the latter
-     isn't currently specified at all -->
-
 ### Stable Types
 A _stable type_ is a singleton type, a literal type,
 or a type that is declared to be a subtype of trait `scala.Singleton`.
