@@ -184,7 +184,7 @@ TODO:
 
   <property name="dists.dir"               value="${basedir}/dists"/>
 
-  <property name="copyright.string"        value="Copyright 2002-2017, LAMP/EPFL"/>
+  <property name="copyright.string"        value="Copyright 2002-2018, LAMP/EPFL"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
