@@ -1871,8 +1871,9 @@ trait Types
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
   extends ClassInfoType(List(), decls, clazz)
 
-  /** A class representing a constant type. Constant types are constant-folded during type checking.
-   *  To avoid constant folding, use the type returned by `deconst` instead.
+  /** A class representing a constant type. A constant type is either the inferred type of a constant
+   *  value or an explicit or inferred literal type. Both may be constant folded at the type level,
+   *  however literal types are not folded at the term level and do not elide effects.
    */
   abstract class ConstantType extends SingletonType with ConstantTypeApi {
     //assert(underlying.typeSymbol != UnitClass)
@@ -1887,6 +1888,10 @@ trait Types
     def unapply(tpe: ConstantType): Option[Constant] = Some(tpe.value)
   }
 
+  /** A class representing the inferred type of a constant value. Constant types and their
+   *  corresponding terms are constant-folded during type checking. To avoid constant folding, use
+   *  the type returned by `deconst` instead.
+   */
   abstract case class FoldableConstantType(value: Constant) extends ConstantType {
     override def underlying: Type =
       if (settings.YliteralTypes && value.isSuitableLiteralType) LiteralType(value) else value.tpe
@@ -1900,6 +1905,10 @@ trait Types
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
+  /** A class representing an explicit or inferred literal type. Literal types may be be folded at
+   *  at the type level during type checking, however they will not be folded at the term level and
+   *  effects will not be elided.
+   */
   abstract case class LiteralType(value: Constant) extends ConstantType {
     override def underlying: Type = value.tpe
     override def deconst: Type = this
