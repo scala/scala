@@ -15,7 +15,6 @@ import scala.collection.{ mutable, immutable, ArrayOps }
 import scala.collection.immutable.{ ImmutableArray, WrappedString }
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
-import scala.io.StdIn
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -183,7 +182,7 @@ object Predef extends LowPriorityImplicits {
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   type OptManifest[T]   = scala.reflect.OptManifest[T]
-  @annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
+  @implicitNotFound(msg = "No Manifest available for ${T}.")
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
@@ -202,12 +201,48 @@ object Predef extends LowPriorityImplicits {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
+
   /** @group utilities */
-  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
-  /** @group utilities */
-  @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
-  /** @group utilities */
-  @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
+  @inline def identity[A](x: A): A = x // see `$conforms` for the implicit version
+
+  /** Summon an implicit value of type `T`. Usually, the argument is not passed explicitly.
+   *
+   *  @tparam T the type of the value to be summoned
+   *  @return the implicit value of type `T`
+   *  @group utilities
+   */
+  @inline def implicitly[T](implicit e: T) = e // TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+
+  /** Used to mark code blocks as being expressions, instead of being taken as part of anonymous classes and the like.
+   *  This is just a different name for [[identity]].
+   *
+   *  @example Separating code blocks from `new`:
+   *           {{{
+   *             val x = new AnyRef
+   *             {
+   *               val y = ...
+   *               println(y)
+   *             }
+   *             // the { ... } block is seen as the body of an anonymous class
+   *
+   *             val x = new AnyRef
+   *
+   *             {
+   *               val y = ...
+   *               println(y)
+   *             }
+   *             // an empty line is a brittle "fix"
+   *
+   *             val x = new AnyRef
+   *             locally {
+   *               val y = ...
+   *               println(y)
+   *             }
+   *             // locally guards the block and helps communicate intent
+   *           }}}
+   *  @group utilities
+   */
+  @inline def locally[T](x: T): T = x
 
   // assertions ---------------------------------------------------------
 
@@ -448,82 +483,222 @@ object Predef extends LowPriorityImplicits {
 
   // Type Constraints --------------------------------------------------------------
 
-  /**
-   * An instance of `A <:< B` witnesses that `A` is a subtype of `B`.
-   * Requiring an implicit argument of the type `A <:< B` encodes
-   * the generalized constraint `A <: B`.
+  /** An instance of `A <:< B` witnesses that `A` is a subtype of `B`.
+   *  Requiring an implicit argument of the type `A <:< B` encodes
+   *  the generalized constraint `A <: B`.
    *
-   * @note we need a new type constructor `<:<` and evidence `conforms`,
-   * as reusing `Function1` and `identity` leads to ambiguities in
-   * case of type errors (`any2stringadd` is inferred)
+   *  To constrain any abstract type `T` that's in scope in a method's
+   *  argument list (not just the method's own type parameters) simply
+   *  add an implicit argument of type `T <:< U`, where `U` is the required
+   *  upper bound; or for lower-bounds, use: `L <:< T`, where `L` is the
+   *  required lower bound.
    *
-   * To constrain any abstract type T that's in scope in a method's
-   * argument list (not just the method's own type parameters) simply
-   * add an implicit argument of type `T <:< U`, where `U` is the required
-   * upper bound; or for lower-bounds, use: `L <:< T`, where `L` is the
-   * required lower bound.
+   *  In case of any confusion over which method goes in what direction, all the "Co" methods (including
+   *  [[apply]]) go from left to right in the type ("with" the type), and all the "Contra" methods go
+   *  from right to left ("against" the type). E.g., [[apply]] turns a `From` into a `To`, and
+   *  [[substituteContra]] replaces the `To`s in a type with `From`s.
    *
-   * In part contributed by Jason Zaugg.
-   * @group type-constraints
+   *  In part contributed by Jason Zaugg.
+   *
+   *  @tparam From a type which is proved a subtype of `To`
+   *  @tparam To a type which is proved a supertype of `From`
+   *
+   *  @example [[scala.Option#flatten]]
+   *           {{{
+   *            sealed trait Option[+A] {
+   *              // def flatten[B, A <: Option[B]]: Option[B] = ...
+   *              // won't work, since the A in flatten shadows the class-scoped A.
+   *              def flatten[B](implicit ev: A <:< Option[B]): Option[B]
+   *                = if(isEmpty) None else ev(get)
+   *              // Because (A <:< Option[B]) <: (A => Option[B]), ev can be called to turn the
+   *              // A from get into an Option[B], and because ev is implicit, that call can be
+   *              // left out and inserted automatically.
+   *            }
+   *           }}}
+   *
+   *  @note We need a new type constructor `<:<` and evidence `$conforms`,
+   *        as reusing `Function1` and `identity` leads to ambiguities in
+   *        case of type errors (`any2stringadd` is inferred)
+   *  @see [[=:=]] for expressing equality constraints
+   *  @group type-constraints
+   *  @define isProof This method is impossible to implement without `throw`ing or otherwise "cheating" unless
+   *                  `From <: To`, so it ensures that this really represents a subtyping relationship.
+   *  @define contraCo contravariant in the first argument and covariant in the second
+   *  @define contraCon a contravariant type constructor
+   *  @define coCon a covariant type constructor
+   *  @define tp <:<
    */
+  // All of these methods are reimplemented unsafely in the singleton to avoid any indirection.
+  // They are here simply for reference as the "correct", safe implementations.
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
-    /** substitute the To in the type F[To] to From
+    /** Substitute `To` for `From` and `From` for `To` in the type `F[To, From]`, given that `F` is $contraCo.
+     *  Essentially swaps `To` and `From` in `ftf`'s type.
+     *
+     *  Equivalent in power to each of [[substituteCo]] and [[substituteContra]].
+     *
+     *  $isProof
      */
-    def substitute[F[-_]](ft: F[To]): F[From]
-    /** create a new evidence for a covariant type F[_]
+    def substituteBoth[F[-_, +_]](ftf: F[To, From]): F[From, To]
+    // = substituteCo[({type G[+T] = F[From, T]})#G](substituteContra[({type G[-T] = F[T, From})#G](ftf))
+    // = substituteContra[({type G[-T] = F[T, To]})#G](substituteCo[({type G[+T] = F[From, T]})#G](ftf))
+    /** Substitute the `From` in the type `F[From]`, where `F` is $coCon, for `To`.
+     *
+     *  Equivalent in power to each of [[substituteBoth]] and [[substituteContra]].
+     *
+     *  $isProof
      */
-    def liftCo[F[+_]]: <:<[F[From], F[To]] = {
-      type G[-T] = F[T] <:< F[To]
-      substitute[G](implicitly[F[To] <:< F[To]])
+    def substituteCo[F[+_]](ff: F[From]): F[To] = {
+      type G[-_, +T] = F[T]
+      substituteBoth[G](ff)
     }
-    /** create a new evidence for a contravariant type F[_]
+    // = substituteContra[({type G[-T] = F[T] => F[To]})#G](identity)(ff)
+    /** Substitute the `To` in the type `F[To]`, where `F` is $contraCon, for `From`.
+     *
+     *  Equivalent in power to each of [[substituteBoth]] and [[substituteCo]].
+     *
+     *  $isProof
      */
-    def liftContra[F[-_]]: <:<[F[To], F[From]] = {
-      type G[-T] = F[To] <:< F[T]
-      substitute[G](implicitly[F[To] <:< F[To]])
+    def substituteContra[F[-_]](ft: F[To]): F[From] = {
+      type G[-T, +_] = F[T]
+      substituteBoth[G](ft)
     }
-  }
-  private[this] final val singleton_<:< = new <:<[Any,Any] {
-    def apply(x: Any): Any = x
-    def substitute[F[-_]](ft: F[Any]): F[Any] = ft
-  }
-  // The dollar prefix is to dodge accidental shadowing of this method
-  // by a user-defined method of the same name (scala/bug#7788).
-  // The collections rely on this method.
-  /** @group type-constraints */
-  implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+    // = substituteCo[({type G[+T] = F[T] => F[From]})#G](identity)(ft)
 
-  /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
-   *
-   * @see `<:<` for expressing subtyping constraints
-   * @group type-constraints
-   */
-  @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
-  sealed abstract class =:=[From, To] extends (From => To) with Serializable {
-    /** substitute the From in the type F[From] to To
+    /** Coerce a `From` into a `To`. This is guaranteed to be the identity function.
+     *
+     *  This method is often called implicitly as an implicit `A $tp B` doubles as an implicit view `A => B`.
+     *
+     *  @param f some value of type `From`
+     *  @return `f`, except with a (potentially) different type.
      */
-    def substitute[F[_]](ff: F[From]): F[To]
-    /** create an instance for a type constructor F[_]
-     */
-    def liftTo[F[_]]: =:=[F[From], F[To]] = {
-      type G[T] = F[From] =:= F[T]
-      substitute[G](implicitly[F[From] =:= F[From]])
+    override def apply(f: From): To = {
+      type Id[+X] = X
+      substituteCo[Id](f)
     }
-    /** flip the order of the type paraemeters
-     */
-    def flip: =:=[To, From] = {
-      type G[T] = T =:= From
-      substitute[G](implicitly[From =:= From])
+
+    /** If `From <: To` and `C <: From`, then `C <: To` (subtyping is transitive) */
+    def compose[C](r: C <:< From): C <:< To = {
+      type G[+T] = C <:< T
+      substituteCo[G](r)
+    }
+
+    /** Lift this evidence over $coCon `F`. */
+    def liftCo[F[+_]]: F[From] <:< F[To] = {
+      type G[+T] = F[From] <:< F[T]
+      substituteCo[G](implicitly[G[From]])
+    }
+    /** Lift this evidence over $contraCon `F`. */
+    def liftContra[F[-_]]: F[To] <:< F[From] = {
+      type G[-T] = F[To] <:< F[T]
+      substituteContra[G](implicitly[G[To]])
     }
   }
-  private[this] final val singleton_=:= = new =:=[Any,Any] {
-    def apply(x: Any): Any = x
-    def substitute[F[_]](ff: F[Any]): F[Any] = ff
+  /** @group type-constraints */
+  object <:< {
+    // instead of making a gazillion identical <:< instances, make one and cast it for every use
+    private[Predef] final val singleton = new <:<[Any,Any] {
+      override def substituteBoth[F[-_, +_]](ftf: F[Any, Any]): F[Any, Any] = ftf
+      override def substituteCo    [F[+_]](ff: F[Any]): F[Any] = ff
+      override def substituteContra[F[-_]](ft: F[Any]): F[Any] = ft
+      override def apply(x: Any): Any = x
+      override def compose[C](r: C <:< Any) = asInstanceOf[C <:< Any]
+      override def liftCo    [F[+_]]: F[Any] <:< F[Any] = asInstanceOf[F[Any] <:< F[Any]]
+      override def liftContra[F[-_]]: F[Any] <:< F[Any] = asInstanceOf[F[Any] <:< F[Any]]
+    }
+    /** If `A <: B` and `B <: A`, then `A = B` (subtyping is antisymmetric) */
+    def antisymm[A, B](implicit l: A <:< B, r: B <:< A): A =:= B = =:=.singleton.asInstanceOf[A =:= B]
+    // = ??? (I don't think this is possible to implement "safely")
+  }
+  /** `A <: A` for all `A` (subtyping is reflexive). This also provides implicit views `A => B`
+   *  when `A <: B`, because `(A <:< A) <: (A <:< B) <: (A => B)`.
+   *
+   *  @group type-constraints
+   */
+  // $ to avoid accidental shadowing (e.g. scala/bug#7788)
+  // ideally implicit def $conforms[A]: A => A, with a <:< implicit in the companion
+  // but $conforms is a bit too magic for that
+  implicit def $conforms[A]: A <:< A = <:<.singleton.asInstanceOf[A <:< A]
+  // = new <:<[A, A] { override def subsituteBoth[F[-_, +_]](faa: F[A, A]): F[A, A] = faa }
+
+  /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal. It also acts as a `A <:< B`,
+   *  but not a `B <:< A` (directly) due to restrictions on subclassing.
+   *
+   *  In case of any confusion over which method goes in what direction, all the "Co" methods (including
+   *  [[apply]]) go from left to right in the type ("with" the type), and all the "Contra" methods go
+   *  from right to left ("against" the type). E.g., [[apply]] turns a `From` into a `To`, and
+   *  [[substituteContra]] replaces the `To`s in a type with `From`s.
+   *
+   *  @tparam From a type which is proved equal to `To`
+   *  @tparam To a type which is proved equal to `From`
+   *
+   *  @example An in-place variant of [[scala.collection.mutable.ArrayBuffer#transpose]] {{{
+   *            implicit class BufOps[A](buf: ArrayBuffer[A]) extends AnyVal {
+   *              def inPlaceTranspose[E]()(implicit ev: A =:= ArrayBuffer[E]) = ???
+   *              // Because ArrayBuffer is invariant, we can't make do with just a A <:< ArrayBuffer[E]
+   *              // Getting buffers *out* from buf would work, but adding them back *in* wouldn't.
+   *            }
+   *           }}}
+   *  @see [[<:<]] for expressing subtyping constraints
+   *  @group type-constraints
+   *  @define isProof This method is impossible to implement without `throw`ing or otherwise "cheating" unless
+   *                  `From = To`, so it ensures that this really represents a type equality.
+   *  @define contraCo a type constructor of two arguments
+   *  @define contraCon any type constructor
+   *  @define coCon any type constructor
+   *  @define tp =:=
+   */
+  // Most of the notes on <:< above apply to =:= as well
+  @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
+  sealed abstract class =:=[From, To] extends (From <:< To) with Serializable {
+    override def substituteBoth[F[_, _]](ftf: F[To, From]): F[From, To]
+    override def substituteCo[F[_]](ff: F[From]): F[To] = {
+      type G[_, T] = F[T]
+      substituteBoth[G](ff)
+    }
+    // = substituteContra[({type G[T] = F[T] => F[To]})#G](identity)(ff)
+    override def substituteContra[F[_]](ft: F[To]): F[From] = {
+      type G[T, _] = F[T]
+      substituteBoth[G](ft)
+    }
+    // = substituteCo[({type G[T] = F[T] => F[From]})#G](identity)(ft)
+
+    /** @inheritdoc */ override def apply(f: From) = super.apply(f)
+
+    /** If `A = B` then `B = A` (equality is reflexive) */
+    def flip: To =:= From = {
+      type G[T, F] = F =:= T
+      substituteBoth[G](this)
+    }
+    /** If `A = B` and `B = C`, then `A = C` (equality is transitive) */
+    def compose[C](r: C =:= From): C =:= To = {
+      type G[T] = C =:= T
+      substituteCo[G](r)
+    }
+
+    override def liftCo[F[_]]: F[From] =:= F[To] = {
+      type G[T] = F[T] =:= F[To]
+      substituteContra[G](implicitly[G[To]])
+    }
+    /** Lift this evidence over the type constructor `F`, but flipped. */
+    override def liftContra[F[_]]: F[To] =:= F[From] = liftCo[F].flip
   }
   /** @group type-constraints */
   object =:= {
-     implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
+    private[Predef] final val singleton = new =:=[Any,Any] {
+      override def substituteBoth[F[_, _]](ftf: F[Any, Any]): F[Any, Any] = ftf
+      override def substituteCo    [F[_]](ff: F[Any]): F[Any] = ff
+      override def substituteContra[F[_]](ff: F[Any]): F[Any] = ff
+      override def apply(x: Any): Any = x
+      override def flip: Any =:= Any = this
+      override def compose[C](r: C <:< Any) = asInstanceOf[C <:< Any]
+      override def compose[C](r: C =:= Any) = asInstanceOf[C =:= Any]
+      override def liftCo    [F[_]]: F[Any] =:= F[Any] = this.asInstanceOf[F[Any] =:= F[Any]]
+      override def liftContra[F[_]]: F[Any] =:= F[Any] = this.asInstanceOf[F[Any] =:= F[Any]]
+    }
+    /** `A = A` for all `A` (equality is reflexive) */
+    implicit def refl[A]: A =:= A = singleton.asInstanceOf[A =:= A]
+    // = new =:=[A, A] { override def substituteBoth[F[_, _]](faa: F[A, A]): F[A, A] = faa }
   }
 
   /** A type for which there is always an implicit value.
