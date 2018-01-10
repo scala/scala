@@ -702,7 +702,7 @@ self =>
 
     def isExprIntro: Boolean = isExprIntroToken(in.token)
 
-    def isTypeIntroToken(token: Token): Boolean = (settings.YliteralTypes && isLiteralToken(token)) || (token match {
+    def isTypeIntroToken(token: Token): Boolean = (settings.YliteralTypes && isLiteralToken(token) && token != NULL) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT | THIS |
            SUPER | USCORE | LPAREN | AT => true
       case _ => false
@@ -1035,7 +1035,7 @@ self =>
         }
 
         if (settings.YliteralTypes) {
-          if (isLiteralToken(in.token))
+          if (isLiteralToken(in.token) && in.token != NULL)
             atPos(in.offset){SingletonTypeTree(literal())}
           else if (in.name == raw.MINUS && lookingAhead(isNumericLit)) {
             val start = in.offset
