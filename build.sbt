@@ -327,7 +327,7 @@ lazy val library = configureAsSubproject(project)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
-    compileOrder := CompileOrder.Mixed, // needed for JFunction classes in scala.runtime.java8
+    javacOptions in Compile ++= Seq("-sourcepath", ((baseDirectory in ThisBuild).value / "src" / "shims").getAbsolutePath),
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
