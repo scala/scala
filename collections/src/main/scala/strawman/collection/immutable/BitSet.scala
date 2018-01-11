@@ -53,8 +53,6 @@ sealed abstract class BitSet
     } else this
   }
 
-  def unordered: Set[Int] = this
-
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
     */
   protected def updateWord(idx: Int, w: Long): BitSet

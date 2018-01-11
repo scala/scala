@@ -10,7 +10,9 @@ import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, `in
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
   extends Map[K, V]
-    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
+    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
+  def unsorted: Map[K, V] = this
+}
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
@@ -19,6 +21,8 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   def sortedMapFactory: SortedMapFactory[CC]
 
   protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2]
+
+  def unsorted: Map[K, V]
 
   /**
     * Creates an iterator over all the key/value pairs

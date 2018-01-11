@@ -10,7 +10,7 @@ trait SortedMultiMap[K, V]
   extends MultiMap[K, V]
     with SortedMultiMapOps[K, V, SortedMultiMap, SortedMultiMap[K, V]] {
 
-  def unordered: MultiMap[K, V] = this
+  def unsorted: MultiMap[K, V] = this
 
 }
 
@@ -26,7 +26,7 @@ trait SortedMultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     sortedFromIterable(it.view.flatMap { case (l, ws) => ws.map(w => (l, w)) })
 
   /** `this` sorted multimap upcasted to an unsorted multimap */
-  def unordered: MultiMap[K, V]
+  def unsorted: MultiMap[K, V]
 
   def sets: SortedMap[K, Set[V]]
 

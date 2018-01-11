@@ -10,7 +10,7 @@ trait SortedMultiSet[A]
   extends MultiSet[A]
     with SortedMultiSetOps[A, SortedMultiSet, SortedMultiSet[A]] {
 
-  def unordered: MultiSet[A] = this
+  def unsorted: MultiSet[A] = this
 
 }
 
@@ -25,7 +25,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     sortedFromIterable(it.view.flatMap { case (b, n) => View.Fill(n)(b) })
 
   /** `this` sorted multiset upcasted to an unsorted multiset */
-  def unordered: MultiSet[A]
+  def unsorted: MultiSet[A]
 
   def occurrences: SortedMap[A, Int]
 

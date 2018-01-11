@@ -4,7 +4,9 @@ import scala.{Boolean, Ordering, `inline`, None, Option, Some}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
-trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]]
+trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] {
+  def unsorted: Set[A] = this
+}
 
 trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
@@ -13,6 +15,8 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   def sortedIterableFactory: SortedIterableFactory[CC]
 
   protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
+
+  def unsorted: Set[A]
 
   /**
     * Creates an iterator that contains all values from this collection

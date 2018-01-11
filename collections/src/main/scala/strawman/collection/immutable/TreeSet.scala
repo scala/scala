@@ -110,8 +110,6 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  def unordered: Set[A] = this
-
   /** Checks if this set contains element `elem`.
     *
     *  @param  elem    the element to check for membership.
