@@ -27,7 +27,7 @@ object VersionUtil {
   )
 
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
-    copyrightString := "Copyright 2002-2017, LAMP/EPFL and Lightbend, Inc.",
+    copyrightString := "Copyright 2002-2018, LAMP/EPFL and Lightbend, Inc.",
     shellWelcomeString := """
       |     ________ ___   / /  ___  
       |    / __/ __// _ | / /  / _ | 
