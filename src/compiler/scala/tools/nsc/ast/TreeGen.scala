@@ -9,6 +9,7 @@ package ast
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import scala.language.postfixOps
+import scala.reflect.internal.util.FreshNameCreator
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -196,20 +197,24 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   /** Used in situations where you need to access value of an expression several times
    */
-  def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = {
+  def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = evalOnce(expr, owner, unit.fresh)(within)
+  def evalOnce(expr: Tree, owner: Symbol, fresh: FreshNameCreator)(within: (() => Tree) => Tree): Tree = {
     var used = false
     if (treeInfo.isExprSafeToInline(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
     }
     else {
-      val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+      val (valDef, identFn) = mkPackedValDef(expr, owner, freshTermName("ev$")(fresh))
       val containing = within(identFn)
       ensureNonOverlapping(containing, List(expr))
       Block(List(valDef), containing) setPos (containing.pos union expr.pos)
     }
   }
 
-  def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree = {
+  def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree =
+    evalOnceAll(exprs, owner, unit.fresh)(within)
+
+  def evalOnceAll(exprs: List[Tree], owner: Symbol, fresh: FreshNameCreator)(within: (List[() => Tree]) => Tree): Tree = {
     val vdefs = new ListBuffer[ValDef]
     val exprs1 = new ListBuffer[() => Tree]
     val used = new Array[Boolean](exprs.length)
@@ -222,7 +227,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
         }
       }
       else {
-        val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+        val (valDef, identFn) = mkPackedValDef(expr, owner, freshTermName("ev$")(fresh))
         vdefs += valDef
         exprs1 += identFn
       }

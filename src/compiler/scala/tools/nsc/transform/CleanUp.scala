@@ -193,7 +193,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           val runDefinitions = currentRun.runDefinitions
           import runDefinitions._
 
-          gen.evalOnce(qual, currentOwner, unit) { qual1 =>
+          gen.evalOnce(qual, currentOwner, localTyper.fresh) { qual1 =>
             /* Some info about the type of the method being called. */
             val methSym       = ad.symbol
             val boxedResType  = toBoxedType(resType)      // Int -> Integer

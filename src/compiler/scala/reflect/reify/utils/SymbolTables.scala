@@ -77,7 +77,7 @@ trait SymbolTables {
         var name = name0.toString
         name = name.replace(".type", "$type")
         name = name.replace(" ", "$")
-        val fresh = typer.context.unit.fresh
+        val fresh = typer.fresh
         newTermName(fresh.newName(name))
       }
       val bindingAttachment = reification.attachments.get[ReifyBindingAttachment].get

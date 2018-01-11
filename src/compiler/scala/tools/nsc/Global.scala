@@ -10,12 +10,13 @@ package nsc
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
 import util.{ClassPath, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
+import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
@@ -26,7 +27,7 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
-import backend.jvm.{GenBCode, BackendStats}
+import backend.jvm.{BackendStats, GenBCode}
 import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
@@ -984,7 +985,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  def currentFreshNameCreator      = currentUnit.fresh
+  def currentFreshNameCreator      = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
+  private[this] var curFreshNameCreator: FreshNameCreator = null
+  private[scala] def currentFreshNameCreator_=(fresh: FreshNameCreator): Unit = curFreshNameCreator = fresh
 
   def isGlobalInitialized = (
        definitions.isDefinitionsInitialized

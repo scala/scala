@@ -681,7 +681,7 @@ abstract class Erasure extends InfoTransform
             else {
               val untyped =
 //                util.trace("new asinstanceof test") {
-                  gen.evalOnce(qual1, context.owner, context.unit) { qual =>
+                  gen.evalOnce(qual1, context.owner, fresh) { qual =>
                     If(Apply(Select(qual(), nme.eq), List(Literal(Constant(null)) setType NullTpe)),
                        Literal(Constant(null)) setType targ.tpe,
                        unbox(qual(), targ.tpe))
@@ -1015,7 +1015,7 @@ abstract class Erasure extends InfoTransform
                     Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                   }
                 case RefinedType(parents, decls) if (parents.length >= 2) =>
-                  gen.evalOnce(qual, currentOwner, unit) { q =>
+                  gen.evalOnce(qual, currentOwner, localTyper.fresh) { q =>
                     // Optimization: don't generate isInstanceOf tests if the static type
                     // conforms, because it always succeeds.  (Or at least it had better.)
                     // At this writing the pattern matcher generates some instance tests
@@ -1062,7 +1062,7 @@ abstract class Erasure extends InfoTransform
 
             global.typer.typedPos(tree.pos) {
               if (level == 1) isArrayTest(qual)
-              else gen.evalOnce(qual, currentOwner, unit) { qual1 =>
+              else gen.evalOnce(qual, currentOwner, localTyper.fresh) { qual1 =>
                 gen.mkAnd(
                   gen.mkMethodCall(
                     qual1(),

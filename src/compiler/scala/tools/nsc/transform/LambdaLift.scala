@@ -9,7 +9,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection.mutable
-import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet, TreeSet }
+import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -50,7 +50,7 @@ abstract class LambdaLift extends InfoTransform {
 
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 
-    private type SymSet = TreeSet[Symbol]
+    private type SymSet = LinkedHashSet[Symbol]
 
     /** A map storing free variables of functions and classes */
     private val free = new LinkedHashMap[Symbol, SymSet]
@@ -64,8 +64,7 @@ abstract class LambdaLift extends InfoTransform {
     /** Symbols that are called from an inner class. */
     private val calledFromInner = new LinkedHashSet[Symbol]
 
-    private val ord = Ordering.fromLessThan[Symbol](_ isLess _)
-    private def newSymSet = TreeSet.empty[Symbol](ord)
+    private def newSymSet: LinkedHashSet[Symbol] = new LinkedHashSet[Symbol]
 
     private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
       f.getOrElseUpdate(sym, newSymSet)

@@ -635,6 +635,18 @@ trait Contexts { self: Analyzer =>
     def nextEnclosing(p: Context => Boolean): Context =
       if (p(this)) this else outer.nextEnclosing(p)
 
+    final def outermostContextAtCurrentPos: Context = {
+      var pos = tree.pos
+      var encl = this
+      while (pos == NoPosition && encl != NoContext) {
+        encl = encl.outer
+        pos = encl.tree.pos
+      }
+      while (encl.outer.tree.pos == pos && encl != NoContext)
+        encl = encl.outer
+      encl
+    }
+
     def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
     private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").lines.mkString("\\n").take(70)
