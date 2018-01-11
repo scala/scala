@@ -55,12 +55,12 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def empty: TreeSet[A] = TreeSet.empty
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     RB.insert(tree, elem, null)
     this
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     RB.delete(tree, elem)
     this
   }

@@ -96,7 +96,7 @@ class ListBuffer[A]
     first = Nil
   }
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
     if (len == 0) first = last1 else last0.next = last1
@@ -105,7 +105,7 @@ class ListBuffer[A]
     this
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     ensureUnaliased()
     if (isEmpty) {}
     else if (first.head == elem) {

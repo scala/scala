@@ -65,7 +65,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
   /** A builder resulting from this builder my mapping the result using `f`. */
   def mapResult[NewTo](f: To => NewTo) = new Builder[A, NewTo] {
-    def add(x: A): this.type = { self += x; this }
+    def addOne(x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
     override def addAll(xs: IterableOnce[A]): this.type = { self ++= xs; this }
     def result(): NewTo = f(self.result())
@@ -79,15 +79,15 @@ class StringBuilder extends Builder[Char, String] {
   //TODO In the old collections, StringBuilder extends Seq -- should it do the same here to get this method?
   def length: Int = sb.length()
 
-  def add(x: Char) = { sb.append(x); this }
+  def addOne(x: Char) = { sb.append(x); this }
 
   def clear() = sb.setLength(0)
 
-  /** Overloaded version of `addAllInPlace` that takes a string */
-  def addAllInPlace(s: String): this.type = { sb.append(s); this }
+  /** Overloaded version of `addAll` that takes a string */
+  def addAll(s: String): this.type = { sb.append(s); this }
 
-  /** Alias for `addAllInPlace` */
-  def ++= (s: String): this.type = addAllInPlace(s)
+  /** Alias for `addAll` */
+  def ++= (s: String): this.type = addAll(s)
 
   def result() = sb.toString
 

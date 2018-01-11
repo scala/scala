@@ -113,9 +113,9 @@ class LinkedHashMap[K, V]
     }
   }
 
-  def add(kv: (K, V)): this.type = { put(kv._1, kv._2); this }
+  def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2); this }
 
-  def subtract(key: K): this.type = { remove(key); this }
+  def subtractOne(key: K): this.type = { remove(key); this }
 
   def iterator(): Iterator[(K, V)] = new Iterator[(K, V)] {
     private var cur = firstEntry

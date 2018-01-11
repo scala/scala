@@ -42,7 +42,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     */
   def get(elem: A): Option[A]
 
-  def insert(elem: A): Boolean =
+  def add(elem: A): Boolean =
     !contains(elem) && {
       coll += elem; true
     }
@@ -61,7 +61,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     *  @param included a flag indicating whether element should be included or excluded.
     */
   def update(elem: A, included: Boolean): Unit = {
-    if (included) insert(elem)
+    if (included) add(elem)
     else remove(elem)
   }
 

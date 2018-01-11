@@ -157,7 +157,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
   def iterableFactory: IterableFactory[Iterable] = Iterable
   protected[this] def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
-      def add(elem: (Long, T)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }
   def mapFactory: MapFactory[Map] = Map
   protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)

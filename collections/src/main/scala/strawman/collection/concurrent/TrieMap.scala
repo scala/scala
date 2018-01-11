@@ -866,7 +866,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     inserthc(k, hc, v)
   }
 
-  def add(kv: (K, V)) = {
+  def addOne(kv: (K, V)) = {
     update(kv._1, kv._2)
     this
   }
@@ -876,7 +876,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     removehc(k, null.asInstanceOf[V], hc)
   }
 
-  def subtract(k: K) = {
+  def subtractOne(k: K) = {
     remove(k)
     this
   }

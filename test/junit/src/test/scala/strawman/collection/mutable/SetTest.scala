@@ -14,8 +14,8 @@ class SetTest {
     protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[String]): MySet = new MySet(fromIterable(coll))
     protected[this] def newSpecificBuilder(): Builder[String, MySet] = iterableFactory.newBuilder[String]().mapResult(new MySet(_))
 
-    def subtract(elem: String) = { self -= elem; this }
-    def add(elem: String) = { self += elem; this }
+    def subtractOne(elem: String) = { self -= elem; this }
+    def addOne(elem: String) = { self += elem; this }
 
     def empty = new MySet(self.empty)
     def iterator() = self.iterator()

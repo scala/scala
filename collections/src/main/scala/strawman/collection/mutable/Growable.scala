@@ -22,14 +22,14 @@ trait Growable[-A] extends Clearable {
    *  @param elem  the element to $add.
    *  @return the $coll itself
    */
-  def add(elem: A): this.type
+  def addOne(elem: A): this.type
 
-  /** Alias for `add` */
-  @`inline` final def += (elem: A): this.type = add(elem)
+  /** Alias for `addOne` */
+  @`inline` final def += (elem: A): this.type = addOne(elem)
 
   //TODO This causes a conflict in StringBuilder; looks like a compiler bug
-  //@deprecated("Use add or += instead of append", "2.13.0")
-  //@`inline` final def append(elem: A): Unit = add(elem)
+  //@deprecated("Use addOne or += instead of append", "2.13.0")
+  //@`inline` final def append(elem: A): Unit = addOne(elem)
 
   /** ${Add}s two or more elements to this $coll.
    *
@@ -48,12 +48,12 @@ trait Growable[-A] extends Clearable {
   def addAll(xs: IterableOnce[A]): this.type = {
     val it = xs.iterator()
     while (it.hasNext) {
-      add(it.next())
+      addOne(it.next())
     }
     this
   }
 
-  /** Alias for `addAllInPlace` */
+  /** Alias for `addAll` */
   @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
 }
 

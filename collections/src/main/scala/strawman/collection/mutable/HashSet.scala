@@ -37,11 +37,11 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   protected[this] def newSpecificBuilder(): Builder[A, HashSet[A]] = HashSet.newBuilder()
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     table.addElem(elem)
     this
   }
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     table.removeElem(elem)
     this
   }

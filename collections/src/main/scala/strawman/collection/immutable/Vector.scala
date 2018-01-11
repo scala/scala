@@ -635,7 +635,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   private var blockIndex = 0
   private var lo = 0
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32
       gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)

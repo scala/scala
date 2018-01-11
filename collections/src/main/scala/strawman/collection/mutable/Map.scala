@@ -189,8 +189,8 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
     override def empty = new WithDefault(underlying.empty, d)
 
     def clear(): Unit = underlying.clear()
-    def add(elem: (K, V)): this.type = { underlying.add(elem); this }
-    def subtract(elem: K): this.type = { underlying.subtract(elem); this }
+    def addOne(elem: (K, V)): this.type = { underlying.addOne(elem); this }
+    def subtractOne(elem: K): this.type = { underlying.subtractOne(elem); this }
     override def put(key: K, value: V): Option[V] = underlying.put(key, value)
     override def update(key: K, value: V): Unit = underlying.update(key, value)
     override def remove(key: K): Option[V] = underlying.remove(key)

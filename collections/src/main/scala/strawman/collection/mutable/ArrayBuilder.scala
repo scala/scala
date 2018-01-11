@@ -80,7 +80,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: T): this.type = {
+    def addOne(elem: T): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -129,7 +129,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Byte): this.type = {
+    def addOne(elem: Byte): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -178,7 +178,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Short): this.type = {
+    def addOne(elem: Short): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -227,7 +227,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Char): this.type = {
+    def addOne(elem: Char): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -276,7 +276,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Int): this.type = {
+    def addOne(elem: Int): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -325,7 +325,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Long): this.type = {
+    def addOne(elem: Long): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -374,7 +374,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Float): this.type = {
+    def addOne(elem: Float): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -423,7 +423,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Double): this.type = {
+    def addOne(elem: Double): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -472,7 +472,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def add(elem: Boolean): this.type = {
+    def addOne(elem: Boolean): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -508,7 +508,7 @@ object ArrayBuilder {
   /** A class for array builders for arrays of `Unit` type. It can be reused. */
   final class ofUnit extends ArrayBuilder[Unit] {
 
-    def add(elem: Unit): this.type = {
+    def addOne(elem: Unit): this.type = {
       size += 1
       this
     }
