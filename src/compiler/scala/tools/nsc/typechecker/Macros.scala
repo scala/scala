@@ -754,7 +754,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
    *  @see DefMacroExpander
    */
-  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = pluginsMacroExpand(typer, expandee, mode, pt)
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
+    // By default, use the current typer's fresh name creator in macros. The compiler option
+    // allows people to opt in to the old behaviour of Scala 2.12, which used a global fresh creator.
+    if (!settings.YmacroFresh.value) currentFreshNameCreator = typer.fresh
+    pluginsMacroExpand(typer, expandee, mode, pt)
+  }
 
   /** Default implementation of `macroExpand`.
    *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroExpand for more details)

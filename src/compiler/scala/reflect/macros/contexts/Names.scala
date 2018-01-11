@@ -6,7 +6,7 @@ trait Names {
 
   import global._
 
-  def freshNameCreator = globalFreshNameCreator
+  def freshNameCreator = self.callsiteTyper.fresh
 
   def fresh(): String =
     freshName()

@@ -14,7 +14,7 @@ package tools.nsc
 package typechecker
 
 import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.{ListOfNil, Statistics, StatisticsStatics}
+import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
@@ -188,10 +188,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
   }
 
+  private final val typerFreshNameCreators = perRunCaches.newAnyRefMap[Symbol, FreshNameCreator]()
+  def freshNameCreatorFor(context: Context) = typerFreshNameCreators.getOrElseUpdate(context.outermostContextAtCurrentPos.enclClassOrMethod.owner, new FreshNameCreator)
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     private def unit = context.unit
     import typeDebug.ptTree
     import TyperErrorGen._
+    implicit def fresh: FreshNameCreator = freshNameCreatorFor(context)
 
     private def transformed: mutable.Map[Tree, Tree] = unit.transformed
 
@@ -3460,7 +3464,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val args1 = typedArgs(args, forArgMode(fun, mode))
           val pts = args1.map(_.tpe.deconst)
           val clone = fun.symbol.cloneSymbol.withoutAnnotations
-          val cloneParams = pts map (pt => clone.newValueParameter(currentUnit.freshTermName()).setInfo(pt))
+          val cloneParams = pts map (pt => clone.newValueParameter(freshTermName()).setInfo(pt))
           val resultType = if (isFullyDefined(pt)) pt else ObjectTpe
           clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
           val fun1 = fun.setSymbol(clone).setType(clone.info)
@@ -4499,14 +4503,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val cases = tree.cases
         if (selector == EmptyTree) {
           if (pt.typeSymbol == PartialFunctionClass)
-            synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, paramSynthetic = true, tree, mode, pt)
+            synthesizePartialFunction(newTermName(fresh.newName("x")), tree.pos, paramSynthetic = true, tree, mode, pt)
           else {
             val arity = functionArityFromType(pt) match { case -1 => 1 case arity => arity } // scala/bug#8429: consider sam and function type equally in determining function arity
 
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),
-                       unit.freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
+                       freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
               }
             val ids = for (p <- params) yield Ident(p.name)
             val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
@@ -4846,7 +4850,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           ) setPos tree.pos
 
         def mkUpdate(table: Tree, indices: List[Tree], args_? : Option[List[Tree]]) =
-          gen.evalOnceAll(table :: indices, context.owner, context.unit) {
+          gen.evalOnceAll(table :: indices, context.owner, fresh) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
                 Apply(
@@ -4869,7 +4873,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             mkAssign(qual)
 
           case Select(qualqual, vname) =>
-            gen.evalOnce(qualqual, context.owner, context.unit) { qq =>
+            gen.evalOnce(qualqual, context.owner, fresh) { qq =>
               val qq1 = qq()
               mkAssign(Select(qq1, vname) setPos qual.pos)
             }
@@ -5046,7 +5050,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
 
               if (insertionContext != NoContext) {
-                val vsym = insertionContext.owner.newValue(unit.freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
+                val vsym = insertionContext.owner.newValue(freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
                 vsym.setInfo(uncheckedBounds(qual.tpe))
                 insertionContext.scope enter vsym
                 val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
