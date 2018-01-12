@@ -2497,12 +2497,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // This adjustment is awfully specific to continuations, but AFAICS the
       // whole AnnotationChecker framework is.
       val pat1 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
-      // When case classes have more than two parameter lists, the pattern ends
-      // up typed as a method.  We only pattern match on the first parameter
-      // list, so substitute the final result type of the method, i.e. the type
-      // of the case class.
-      if (pat1.tpe.paramSectionCount > 0)
-        pat1 modifyType (_.finalResultType)
 
       for (bind @ Bind(name, _) <- cdef.pat) {
         val sym = bind.symbol
@@ -4758,6 +4752,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           normalTypedApply(tree, fun, args) match {
             case ArrayInstantiation(tree1)                                           => if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
             case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //scala/bug#5696
+            case tree1 if mode.inPatternMode && tree1.tpe.paramSectionCount > 0 =>
+              // For a case class C with more than two parameter lists,
+              // C(_) is typed as C(_)() which is a method type like ()C.
+              // In a pattern, just use the final result type, C in this case.
+              // The enclosing context may be case c @ C(_) => or val c @ C(_) = v.
+              tree1 modifyType (_.finalResultType)
+              tree1
             case tree1                                                               => tree1
           }
       }
