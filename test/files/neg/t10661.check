@@ -1,0 +1,4 @@
+t10661.scala:3: error: class type required but A found
+  def f[A] = new C with A
+                        ^
+one error found

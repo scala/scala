@@ -1117,7 +1117,7 @@ trait Namers extends MethodSynthesis {
       val pending = mutable.ListBuffer[AbsTypeError]()
       parentTrees foreach { tpt =>
         val ptpe = tpt.tpe
-        if(!ptpe.isError) {
+        if (!ptpe.isError) {
           val psym = ptpe.typeSymbol
           val sameSourceFile = context.unit.source.file == psym.sourceFile
 
@@ -1126,7 +1126,7 @@ trait Namers extends MethodSynthesis {
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(tpt, psym)
-          if (psym.isLocalToBlock && !phase.erasedTypes)
+          if (psym.isLocalToBlock && psym.isClass && !phase.erasedTypes)
             psym addChild context.owner
         }
       }
