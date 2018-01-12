@@ -122,7 +122,7 @@ object HashMap extends MapFactory[HashMap] {
 
   def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] =
     new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
-      def add(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
   private[collection] abstract class Merger[A, B] {

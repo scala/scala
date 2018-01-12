@@ -78,14 +78,14 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def clear(): Unit =
     end = 0
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     ensureSize(end + 1)
     this(end) = elem
     end += 1
     this
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     val i = indexOf(elem)
     if (i != -1) remove(i)
     this

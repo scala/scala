@@ -112,7 +112,7 @@ class BuildFromTest {
     val left = bfLeft.newBuilder(coll)
     val right = bfRight.newBuilder(coll)
     for (a <- coll)
-      f(a).fold(left.add, right.add)
+      f(a).fold(left.addOne, right.addOne)
     (left.result(), right.result())
   }
 

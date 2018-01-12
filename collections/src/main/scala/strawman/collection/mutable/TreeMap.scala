@@ -54,9 +54,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def empty: TreeMap[K, V] = TreeMap.empty
 
-  def add(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
+  def addOne(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
 
-  def subtract(elem: K): this.type = { RB.delete(tree, elem); this }
+  def subtractOne(elem: K): this.type = { RB.delete(tree, elem); this }
 
   def clear(): Unit = RB.clear(tree)
 

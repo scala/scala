@@ -74,7 +74,7 @@ object HashSet extends IterableFactory[HashSet] {
 
   def newBuilder[A](): Builder[A, HashSet[A]] =
     new ImmutableBuilder[A, HashSet[A]](empty) {
-      def add(elem: A): this.type = { elems = elems + elem; this }
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
   private object EmptyHashSet extends HashSet[Any] {

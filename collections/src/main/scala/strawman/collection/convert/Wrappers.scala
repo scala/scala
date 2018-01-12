@@ -94,7 +94,7 @@ private[collection] trait Wrappers {
     def apply(i: Int) = underlying.get(i)
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
-    def add(elem: A): this.type = { underlying add elem; this }
+    def addOne(elem: A): this.type = { underlying add elem; this }
     def insert(idx: Int,elem: A): Unit = underlying.subList(0, idx).add(elem)
     def insertAll(i: Int, elems: IterableOnce[A]) = {
       val ins = underlying.subList(0, i)
@@ -135,7 +135,7 @@ private[collection] trait Wrappers {
     protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
     def iterableFactory = mutable.ArrayBuffer
     protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
-    def subtract(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
+    def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
   }
 
   @SerialVersionUID(1L)
@@ -187,8 +187,8 @@ private[collection] trait Wrappers {
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
-    def add(elem: A): this.type = { underlying add elem; this }
-    def subtract(elem: A): this.type = { underlying remove elem; this }
+    def addOne(elem: A): this.type = { underlying add elem; this }
+    def subtractOne(elem: A): this.type = { underlying remove elem; this }
 
     //TODO Should Set.remove return the canonical element? There is no efficient way to support this for wrapped Java Sets
     override def remove(elem: A): Option[A] = if(underlying remove elem) Some(elem) else None
@@ -306,8 +306,8 @@ private[collection] trait Wrappers {
         None
     }
 
-    def add(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtract(key: K): this.type = { underlying remove key; this }
+    def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
+    def subtractOne(key: K): this.type = { underlying remove key; this }
 
     override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
 
@@ -415,8 +415,8 @@ private[collection] trait Wrappers {
 
     def get(k: A) = Option(underlying get k)
 
-    def add(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtract(key: A): this.type = { underlying remove key; this }
+    def addOne(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
+    def subtractOne(key: A): this.type = { underlying remove key; this }
 
     override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v))
 
@@ -445,8 +445,8 @@ private[collection] trait Wrappers {
       if (v != null) Some(v.asInstanceOf[String]) else None
     }
 
-    def add(kv: (String, String)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtract(key: String): this.type = { underlying remove key; this }
+    def addOne(kv: (String, String)): this.type = { underlying.put(kv._1, kv._2); this }
+    def subtractOne(key: String): this.type = { underlying remove key; this }
 
     override def put(k: String, v: String): Option[String] = {
       val r = underlying.put(k, v)

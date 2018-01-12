@@ -156,7 +156,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def newBuilder[K : Ordering, V](): Builder[(K, V), TreeMap[K, V]] =
     new ImmutableBuilder[(K, V), TreeMap[K, V]](empty) {
-      def add(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
 }

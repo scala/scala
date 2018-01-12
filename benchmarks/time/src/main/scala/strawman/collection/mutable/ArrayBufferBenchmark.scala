@@ -68,7 +68,7 @@ class ArrayBufferBenchmark {
     var ys = xs
     var i = 0L
     while (i < 1000) {
-      ys.add(i)
+      ys.addOne(i)
       i += 1
     }
     bh.consume(ys)
@@ -80,7 +80,7 @@ class ArrayBufferBenchmark {
     var ys = xs
     var i = 0L
     while (i < 1000) {
-      ys.add(i)
+      ys.addOne(i)
       i += 1
       ys = ys.init
     }
@@ -93,7 +93,7 @@ class ArrayBufferBenchmark {
     val ys = xs
     var i = 0L
     while (i < 1000) {
-      if ((i & 1) == 1) ys.add(i)
+      if ((i & 1) == 1) ys.addOne(i)
       else ys.insert(0, i)
       i += 1
     }

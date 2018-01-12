@@ -55,7 +55,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = new BitSet(elems)
 
-  def add(elem: Int): this.type = {
+  def addOne(elem: Int): this.type = {
     require(elem >= 0)
     if (!contains(elem)) {
       val idx = elem >> LogWL
@@ -64,7 +64,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     this
   }
 
-  def subtract(elem: Int): this.type = {
+  def subtractOne(elem: Int): this.type = {
     require(elem >= 0)
     if (contains(elem)) {
       val idx = elem >> LogWL

@@ -77,7 +77,7 @@ object IntMap {
 
   def newBuilder[V](): Builder[(Int, V), IntMap[V]] =
     new ImmutableBuilder[(Int, V), IntMap[V]](empty) {
-      def add(elem: (Int, V)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (Int, V)): this.type = { elems = elems + elem; this }
     }
 }
 
@@ -171,7 +171,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
   def iterableFactory: IterableFactoryLike[Iterable] = Iterable
   protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
-      def add(elem: (Int, T)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
   def mapFactory: MapFactory[Map] = Map
   protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)

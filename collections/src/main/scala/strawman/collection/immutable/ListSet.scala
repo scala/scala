@@ -127,7 +127,7 @@ object ListSet extends IterableFactory[ListSet] {
 
   def newBuilder[A](): Builder[A, ListSet[A]] =
     new ImmutableBuilder[A, ListSet[A]](empty) {
-      def add(elem: A): this.type = { elems = elems + elem; this }
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 }
 

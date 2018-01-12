@@ -341,9 +341,9 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   /** Adds a new key/value pair to this map and returns the map. */
   def +=(key: Long, value: V): this.type = { update(key, value); this }
 
-  override def add(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
+  override def addOne(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
 
-  def subtract(key: Long): this.type = {
+  def subtractOne(key: Long): this.type = {
     if (key == -key) {
       if (key == 0L) {
         extraKeys &= 0x2
@@ -541,7 +541,7 @@ object LongMap {
     */
   final class LongMapBuilder[V] extends ReusableBuilder[(Long, V), LongMap[V]] {
     private[collection] var elems: LongMap[V] = new LongMap[V]
-    override def add(entry: (Long, V)): this.type = {
+    override def addOne(entry: (Long, V)): this.type = {
       elems += entry
       this
     }

@@ -22,6 +22,6 @@ class GrowableBuilder[Elem, To <: Growable[Elem]](protected val elems: To)
 
   def result(): To = elems
 
-  def add(elem: Elem): this.type = { elems += elem; this }
+  def addOne(elem: Elem): this.type = { elems += elem; this }
 
 }

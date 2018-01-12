@@ -22,10 +22,10 @@ trait Shrinkable[-A] {
     *  @param elem  the element to remove.
     *  @return the $coll itself
     */
-  def subtract(elem: A): this.type
+  def subtractOne(elem: A): this.type
 
-  /** Alias for `subtract` */
-  @`inline` final def -= (elem: A): this.type = subtract(elem)
+  /** Alias for `subtractOne` */
+  @`inline` final def -= (elem: A): this.type = subtractOne(elem)
 
   /** Removes two or more elements from this $coll.
     *
@@ -34,14 +34,11 @@ trait Shrinkable[-A] {
     *  @param elems the remaining elements to remove.
     *  @return the $coll itself
     */
-  def subtract(elem1: A, elem2: A, elems: A*): this.type = {
+  def -= (elem1: A, elem2: A, elems: A*): this.type = {
     this -= elem1
     this -= elem2
     this --= elems.toStrawman
   }
-
-  /** Alias for `subtract` */
-  @`inline` final def -= (elem1: A, elem2: A, elems: A*): this.type = subtract(elem1, elem2, elems: _*)
 
   /** Removes all elements produced by an iterator from this $coll.
     *
@@ -51,13 +48,13 @@ trait Shrinkable[-A] {
   def subtractAll(xs: collection.IterableOnce[A]): this.type = {
     @tailrec def loop(xs: collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
-        subtract(xs.head)
+        subtractOne(xs.head)
         loop(xs.tail)
       }
     }
     xs match {
       case xs: collection.LinearSeq[A] => loop(xs)
-      case xs => xs.iterator().foreach(subtract)
+      case xs => xs.iterator().foreach(subtractOne)
     }
     this
   }
