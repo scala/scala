@@ -4133,12 +4133,13 @@ trait Types
         throw new MatchError((tp1, tp2))
     }
 
-    def check(tp1: Type, tp2: Type) = (
-      if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
-        tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
+    def check(tp1: Type, tp2: Type) = {
+      val sym1 = tp1.typeSymbol
+      if (sym1.isClass && sym1.hasFlag(FINAL) && sym1 != SingletonClass)
+        tp1 <:< tp2 || isNumericValueClass(sym1) && isNumericValueClass(tp2.typeSymbol)
       else tp1.baseClasses forall (bc =>
         tp2.baseTypeIndex(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
-    )
+    }
 
     check(tp1, tp2) && check(tp2, tp1)
   }
