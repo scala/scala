@@ -451,7 +451,7 @@ abstract class Erasure extends InfoTransform
 
   override def newTyper(context: Context) = new Eraser(context)
 
-  class ComputeBridges(unit: CompilationUnit, root: Symbol) {
+  class EnterBridges(unit: CompilationUnit, root: Symbol) {
 
     class BridgesCursor(root: Symbol) extends overridingPairs.Cursor(root) {
       override def parents              = root.info.firstParent :: Nil
@@ -462,22 +462,19 @@ abstract class Erasure extends InfoTransform
       override def exclude(sym: Symbol) = !sym.isMethod || super.exclude(sym)
     }
 
-    var toBeRemoved  = immutable.Set[Symbol]()
     val site         = root.thisType
     val bridgesScope = newScope
     val bridgeTarget = mutable.HashMap[Symbol, Symbol]()
-    var bridges      = List[Tree]()
 
     val opc = enteringExplicitOuter { new BridgesCursor(root) }
 
-    def compute(): (List[Tree], immutable.Set[Symbol]) = {
+    def computeAndEnter(): Unit = {
       while (opc.hasNext) {
         if (enteringExplicitOuter(!opc.low.isDeferred))
-          checkPair(opc.currentPair)
+          checkPair(opc. currentPair)
 
         opc.next()
       }
-      (bridges, toBeRemoved)
     }
 
     /** Check that a bridge only overrides members that are also overridden by the original member.
@@ -581,17 +578,35 @@ abstract class Erasure extends InfoTransform
 
       if (shouldAdd) {
         exitingErasure(root.info.decls enter bridge)
-        if (other.owner == root) {
-          exitingErasure(root.info.decls.unlink(other))
-          toBeRemoved += other
-        }
 
         bridgesScope enter bridge
-        bridges ::= makeBridgeDefDef(bridge, member, other)
+        addBridge(bridge, member, other)
+        //bridges ::= makeBridgeDefDef(bridge, member, other)
       }
     }
 
-    def makeBridgeDefDef(bridge: Symbol, member: Symbol, other: Symbol) = exitingErasure {
+    protected def addBridge(bridge: Symbol, member: Symbol, other: Symbol) {} // hook for GenerateBridges
+  }
+
+  class GenerateBridges(unit: CompilationUnit, root: Symbol) extends EnterBridges(unit, root) {
+
+    var bridges      = List.empty[Tree]
+    var toBeRemoved  = immutable.Set.empty[Symbol]
+
+    def generate(): (List[Tree], immutable.Set[Symbol]) = {
+      super.computeAndEnter()
+      (bridges, toBeRemoved)
+    }
+
+    override def addBridge(bridge: Symbol, member: Symbol, other: Symbol): Unit = {
+      if (other.owner == root) {
+        exitingErasure(root.info.decls.unlink(other))
+        toBeRemoved += other
+      }
+      bridges ::= makeBridgeDefDef(bridge, member, other)
+    }
+
+    final def makeBridgeDefDef(bridge: Symbol, member: Symbol, other: Symbol) = exitingErasure {
       // type checking ensures we can safely call `other`, but unless `member.tpe <:< other.tpe`,
       // calling `member` is not guaranteed to succeed in general, there's
       // nothing we can do about this, except for an unapply: when this subtype test fails,
@@ -627,6 +642,7 @@ abstract class Erasure extends InfoTransform
       }
       DefDef(bridge, rhs)
     }
+
   }
 
   /** The modifier typer which retypes with erased types. */
@@ -795,7 +811,7 @@ abstract class Erasure extends InfoTransform
       tree1 match {
         case fun: Function =>
           fun.attachments.get[SAMFunction] match {
-            case Some(SAMFunction(samTp, _)) => fun setType specialScalaErasure(samTp)
+            case Some(SAMFunction(samTp, _, _)) => fun setType specialScalaErasure(samTp)
             case _ => fun
           }
 
@@ -923,16 +939,22 @@ abstract class Erasure extends InfoTransform
      */
     private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
       assert(phase == currentRun.erasurePhase, phase)
-      new ComputeBridges(unit, owner) compute()
+      new GenerateBridges(unit, owner).generate()
     }
 
-    def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
+    def addBridgesToTemplate(stats: List[Tree], base: Symbol): List[Tree] =
       if (base.isTrait) stats
       else {
         val (bridges, toBeRemoved) = bridgeDefs(base)
         if (bridges.isEmpty) stats
         else (stats filterNot (stat => toBeRemoved contains stat.symbol)) ::: bridges
       }
+
+    def addBridgesToLambda(lambdaClass: Symbol): Unit = {
+      assert(phase == currentRun.erasurePhase, phase)
+      assert(lambdaClass.isClass, lambdaClass)
+      new EnterBridges(unit, lambdaClass).computeAndEnter()
+    }
 
     /**  Transform tree at phase erasure before retyping it.
      *   This entails the following:
@@ -1210,7 +1232,7 @@ abstract class Erasure extends InfoTransform
         case Template(parents, self, body) =>
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
-          treeCopy.Template(tree, parents, noSelfType, addBridges(body, currentOwner))
+          treeCopy.Template(tree, parents, noSelfType, addBridgesToTemplate(body, currentOwner))
 
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)
@@ -1234,6 +1256,12 @@ abstract class Erasure extends InfoTransform
           copyDefDef(tree)(tparams = Nil)
         case TypeDef(_, _, _, _) =>
           EmptyTree
+
+        case fun: Function =>
+          fun.attachments.get[SAMFunction] foreach {
+            samf => addBridgesToLambda(samf.synthCls)
+          }
+          fun
 
         case _ =>
           tree

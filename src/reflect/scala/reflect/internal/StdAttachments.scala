@@ -51,10 +51,11 @@ trait StdAttachments {
     *
     * @param samTp the expected type that triggered sam conversion (may be a subtype of the type corresponding to sam's owner)
     * @param sam the single abstract method implemented by the Function we're attaching this to
+    * @param synthCls the (synthetic) class representing the eventual implementation class (spun at runtime by LMF on the JVM)
     *
     * @since 2.12.0-M4
     */
-  case class SAMFunction(samTp: Type, sam: Symbol) extends PlainAttachment
+  case class SAMFunction(samTp: Type, sam: Symbol, synthCls: Symbol) extends PlainAttachment
 
   case object DelambdafyTarget extends PlainAttachment
 

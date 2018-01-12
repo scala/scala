@@ -626,7 +626,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Apply(fun, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
           val attachment = app.attachments.get[delambdafy.LambdaMetaFactoryCapable].get
           genLoadArguments(args, paramTKs(app))
-          genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface, attachment.sam, attachment.isSerializable, attachment.addScalaSerializableMarker)
+          genInvokeDynamicLambda(attachment)
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
@@ -1332,7 +1332,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genSynchronized(tree: Apply, expectedType: BType): BType
     def genLoadTry(tree: Try): BType
 
-    def genInvokeDynamicLambda(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol, isSerializable: Boolean, addScalaSerializableMarker: Boolean) {
+    def genInvokeDynamicLambda(canLMF: delambdafy.LambdaMetaFactoryCapable) = {
+      import canLMF._
+
       val isStaticMethod = lambdaTarget.hasFlag(Flags.STATIC)
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
@@ -1349,23 +1351,36 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
-      visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, isSerializable, markers)
+      val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
+      visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable, markers)
       if (isSerializable)
         addIndyLambdaImplMethod(cnode.name, implMethodHandle)
     }
   }
 
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
-                                        implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type,
-                                        serializable: Boolean, markerInterfaces: Seq[asm.Type]) = {
+                                        implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type, overriddenMethodTypes: Seq[asm.Type],
+                                        serializable: Boolean, markerInterfaces: Seq[asm.Type]): Unit = {
     import java.lang.invoke.LambdaMetafactory.{FLAG_BRIDGES, FLAG_MARKERS, FLAG_SERIALIZABLE}
     // scala/bug#10334: make sure that a lambda object for `T => U` has a method `apply(T)U`, not only the `(Object)Object`
     // version. Using the lambda a structural type `{def apply(t: T): U}` causes a reflective lookup for this method.
-    val needsBridge = samMethodType != instantiatedMethodType
-    val bridges = if (needsBridge) Seq(Int.box(1), instantiatedMethodType) else Nil
+    val needsGenericBridge = samMethodType != instantiatedMethodType
+    // scala/bug#10512: any methods which `samMethod` overrides need bridges made for them
+    // this is done automatically during erasure for classes we generate, but LMF needs to have them explicitly mentioned
+    // so we have to compute them at this relatively late point.
+    val bridges = (
+      if (needsGenericBridge)
+        instantiatedMethodType +: overriddenMethodTypes
+      else overriddenMethodTypes
+    ).distinct.filterNot(_ == samMethodType)
+
+    /* We're saving on precious BSM arg slots by not passing 0 as the bridge count */
+    val bridgeArgs = if (bridges.nonEmpty) Int.box(bridges.length) +: bridges else Nil
+
     def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
-    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(needsBridge, FLAG_BRIDGES)
-    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces ++ bridges
+    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(bridges.nonEmpty, FLAG_BRIDGES)
+    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces ++ bridgeArgs
+
     jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
   }
 
