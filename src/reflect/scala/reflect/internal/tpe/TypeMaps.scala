@@ -964,11 +964,13 @@ private[internal] trait TypeMaps {
             // We can just map over the components and wait until we see the underlying type before we call
             // normalize.
             tp.mapOver(this)
+          case TypeRef(_, sym1, _) if (sym == sym1) => result = true // catch aliases before normalization
           case _ =>
             tp.normalize match {
               case TypeRef(_, sym1, _) if (sym == sym1) => result = true
               case refined: RefinedType =>
-                tp.prefix.mapOver(this)
+                tp.prefix.mapOver(this) // Assumption is that tp was a TypeRef prior to normalization so we should
+                                        // mapOver its prefix
                 refined.mapOver(this)
               case SingleType(_, sym1) if (sym == sym1) => result = true
               case _ => tp.mapOver(this)
