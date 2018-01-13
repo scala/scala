@@ -1,9 +1,11 @@
 object Test {
+  type Id[T] = T
+
   def one[T <: 1](t: T): T = t
   final val o = one(1)
   o: 1
 
-  def narrow[T <: Singleton](t: T): T {} = t
+  def narrow[T <: Singleton](t: T): Id[T] = t
   final val fn0 = narrow(23)
   fn0: 23
 
@@ -16,7 +18,7 @@ object Test {
   fi0: Int
   final val fi1 = id[23](23)
   fi1: 23
-  final val fi2 = id(23: 23 {})
+  final val fi2 = id(23: Id[23])
   fi2: 23
   final val fi3 = id(narrow(23))
   fi3: 23
@@ -25,7 +27,7 @@ object Test {
   i0: Int
   val i1 = id[23](23)
   i1: Int
-  val i2 = id(23: 23 {})
+  val i2 = id(23: Id[23])
   i2: 23
   val i3 = id(narrow(23))
   i3: 23
@@ -36,7 +38,7 @@ object Test {
   fo0: Option[Int]
   final val fo1 = opt[23](23)
   fo1: Option[23]
-  final val fo2 = opt(23: 23 {})
+  final val fo2 = opt(23: Id[23])
   fo2: Option[23]
   final val fo3 = opt(narrow(23))
   fo3: Option[23]
@@ -45,7 +47,7 @@ object Test {
   o0: Option[Int]
   val o1 = opt[23](23)
   o1: Option[23]
-  val o2 = opt(23: 23 {})
+  val o2 = opt(23: Id[23])
   o2: Option[23]
   val o3 = opt(narrow(23))
   o3: Option[23]
@@ -72,12 +74,7 @@ object Test {
 
   trait Skidoo[T] { type T <: Boolean }
   object Skidoo extends Skidoo0 {
-    // Ideally we would have,
-    //   implicit def twentyThree: Skidoo[23] { type T = true } = ???
-    // however this the empty refinement returned by narrow interferes
-    // with the commented example below. Using Id instead of and {}
-    // solves this problem.
-    implicit def twentyThree[T <: 23]: Skidoo[T] { type T = true } = ???
+    implicit def twentyThree: Skidoo[23] { type T = true } = ???
   }
   trait Skidoo0 {
     implicit def default[T <: Int]: Skidoo[T] { type T = false } = ???
@@ -86,7 +83,7 @@ object Test {
   def skidoo1(i: Int)(implicit s: Skidoo[i.type]): s.T = ???
   skidoo1(23): true
   skidoo1(13): false
-  skidoo1(narrow(23)): true // This requires the <: 23 bound
+  skidoo1(narrow(23)): true
   skidoo1(narrow(13)): false
 
   def skidoo2[T](t: T)(implicit s: Skidoo[T]): s.T = ???
@@ -102,7 +99,7 @@ object Test {
   skidoo3(narrow(13)): false
 
   implicit class NarrowSyntax[T <: Singleton](val t: T) extends AnyVal {
-    def narrow: T {} = t
+    def narrow: Id[T] = t
   }
 
   val ns0 = 23.narrow
@@ -161,7 +158,7 @@ object Test {
   u3: Int :: Int :: Int :: HNil
 
   type SInt = Int with Singleton
-  def narrowAliased[A <: SInt](x: A): A {} = x
+  def narrowAliased[A <: SInt](x: A): Id[A] = x
   val na = narrowAliased(5)
   na: 5
 }
