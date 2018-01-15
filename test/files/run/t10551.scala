@@ -8,17 +8,22 @@ package test {
 
 object Test extends App {
   import test.NotNoPrefix._
+  
+  def check[A](cls: Class[A])(implicit tag: reflect.ClassTag[A]): Unit = {
+    val suffix = if (cls != tag.runtimeClass) " != " + tag.runtimeClass else ""
+    println(cls + suffix)
+  }
 
-  println(classOf[Id[Int]])
-  println(classOf[Id[_]])
+  check(classOf[Id[Int]])
+  check(classOf[Id[_]])
 
-  println(classOf[Ids[Int]])
-  println(classOf[Ids[_]])
+  check(classOf[Ids[Int]])
+  check(classOf[Ids[_]])
 
-  println(classOf[Bid[Int, Int]])
-  println(classOf[Bid[Int, _]])
-  println(classOf[Bid[_, Int]])
-  println(classOf[Bid[_, _]])
+  check(classOf[Bid[Int, Int]])
+  check(classOf[Bid[Int, _]])
+  check(classOf[Bid[_, Int]])
+  check(classOf[Bid[_, _]])
 
   type Iddy[A] = Id[A]
   type Idsy[A] = Ids[A]
@@ -27,22 +32,22 @@ object Test extends App {
   type Bixt[L] = Biddouble[_]
   type Bixty = Bixt[_]
 
-  println(classOf[Iddy[Int]])
-  println(classOf[Iddy[_]])
+  check(classOf[Iddy[Int]])
+  check(classOf[Iddy[_]])
 
-  println(classOf[Idsy[Int]])
-  println(classOf[Idsy[_]])
+  check(classOf[Idsy[Int]])
+  check(classOf[Idsy[_]])
 
-  println(classOf[Biddy[Int, Int]])
-  println(classOf[Biddy[Int, _]])
-  println(classOf[Biddy[_, Int]])
-  println(classOf[Biddy[_, _]])
+  check(classOf[Biddy[Int, Int]])
+  check(classOf[Biddy[Int, _]])
+  check(classOf[Biddy[_, Int]])
+  check(classOf[Biddy[_, _]])
 
-  println(classOf[Biddouble[Int]])
-  println(classOf[Biddouble[_]])
+  check(classOf[Biddouble[Int]])
+  check(classOf[Biddouble[_]])
 
-  println(classOf[Bixt[Int]])
-  println(classOf[Bixt[_]])
+  check(classOf[Bixt[Int]])
+  check(classOf[Bixt[_]])
 
-  println(classOf[Bixty])
+  check(classOf[Bixty])
 }
