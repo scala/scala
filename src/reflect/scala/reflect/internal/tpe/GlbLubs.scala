@@ -167,7 +167,14 @@ private[internal] trait GlbLubs {
       case Nil => Nil
     }
 
-    loop(ts)
+    // The order here matters because type variables and
+    // wildcards can act both as subtypes and supertypes.
+    val (ts2, ts1) = ts.partition(_ exists {
+      case tv: TypeVar => !tv.isGround
+      case t => t.isWildcard
+    })
+
+    loop(ts1 ::: ts2)
   }
 
   /** Eliminate from list of types all elements which are a supertype
