@@ -113,6 +113,7 @@ object Test {
 
     whatis(extract(Nil))
     whatis(extract(Vector()))
+    whatis(extract(scala.collection.immutable.Iterable[(Int, Int)]()))
     whatis(extract(Map[Int,Int]()))
     whatis(extract(Set[Int]()))
     whatis(extract(Seq[Int]()))

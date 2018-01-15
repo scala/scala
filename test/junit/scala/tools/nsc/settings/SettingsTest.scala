@@ -26,18 +26,6 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
 
-  @Test def userSettingsHavePrecedenceOverExperimental() {
-    def check(args: String*): MutableSettings#BooleanSetting = {
-      val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
-      val (ok, residual) = s.processArguments(args.toList, processAll = true)
-      assert(residual.isEmpty)
-      s.YpartialUnification // among -Xexperimental
-    }
-    assertTrue(check("-Xexperimental").value)
-    assertFalse(check("-Xexperimental", "-Ypartial-unification:false").value)
-    assertFalse(check("-Ypartial-unification:false", "-Xexperimental").value)
-  }
-
   // for the given args, select the desired setting
   private def check(args: String*)(b: MutableSettings => Boolean): Boolean = {
     val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))

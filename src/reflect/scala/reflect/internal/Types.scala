@@ -3333,7 +3333,7 @@ trait Types
               // This is a higher-kinded type var with same arity as tp.
               // If so (see scala/bug#7517), side effect: adds the type constructor itself as a bound.
               isSubArgs(lhs, rhs, params, AnyDepth) && {addBound(tp.typeConstructor); true}
-            } else if (settings.YpartialUnification && numCaptured > 0) {
+            } else if (settings.isScala213 && numCaptured > 0) {
               // Simple algorithm as suggested by Paul Chiusano in the comments on scala/bug#2712
               //
               //   https://github.com/scala/bug/issues/2712#issuecomment-292374655
