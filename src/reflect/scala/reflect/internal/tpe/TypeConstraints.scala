@@ -127,10 +127,7 @@ private[internal] trait TypeConstraints {
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
       // My current test case only demonstrates the need to let Nothing through as
       // a lower bound, but I suspect the situation is symmetrical.
-      val mustConsider = tp.typeSymbol match {
-        case AnyClass => true
-        case _        => !(hibounds contains tp)
-      }
+      val mustConsider = typeIsAny(tp) || !(hibounds contains tp)
       if (mustConsider) {
         checkWidening(tp)
         if (isNumericBound && isNumericValueType(tp)) {
