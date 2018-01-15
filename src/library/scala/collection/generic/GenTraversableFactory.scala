@@ -68,13 +68,16 @@ extends GenericCompanion[CC] {
    *  @return the concatenation of all the collections.
    */
   def concat[A](xss: Traversable[A]*): CC[A] = {
-    val b = newBuilder[A]
-    // At present we're using IndexedSeq as a proxy for "has a cheap size method".
-    if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
-      b.sizeHint(xss.map(_.size).sum)
+    if (xss.forall(_.isEmpty)) empty[A]
+    else {
+      val b = newBuilder[A]
+      // At present we're using IndexedSeq as a proxy for "has a cheap size method".
+      if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
+        b.sizeHint(xss.map(_.size).sum)
 
-    for (xs <- xss.seq) b ++= xs
-    b.result()
+      for (xs <- xss.seq) b ++= xs
+      b.result()
+    }
   }
 
   /** Produces a $coll containing the results of some element computation a number of times.
@@ -83,14 +86,17 @@ extends GenericCompanion[CC] {
    *  @return  A $coll that contains the results of `n` evaluations of `elem`.
    */
   def fill[A](n: Int)(elem: => A): CC[A] = {
-    val b = newBuilder[A]
-    b.sizeHint(n)
-    var i = 0
-    while (i < n) {
-      b += elem
-      i += 1
+    if (n == 0) empty[A]
+    else {
+      val b = newBuilder[A]
+      b.sizeHint(n)
+      var i = 0
+      while (i < n) {
+        b += elem
+        i += 1
+      }
+      b.result()
     }
-    b.result()
   }
 
   /** Produces a two-dimensional $coll containing the results of some element computation a number of times.
@@ -141,14 +147,17 @@ extends GenericCompanion[CC] {
    *  @return A $coll consisting of elements `f(0), ..., f(n -1)`
    */
   def tabulate[A](n: Int)(f: Int => A): CC[A] = {
-    val b = newBuilder[A]
-    b.sizeHint(n)
-    var i = 0
-    while (i < n) {
-      b += f(i)
-      i += 1
+    if (n == 0) empty[A]
+    else {
+      val b = newBuilder[A]
+      b.sizeHint(n)
+      var i = 0
+      while (i < n) {
+        b += f(i)
+        i += 1
+      }
+      b.result()
     }
-    b.result()
   }
 
   /** Produces a two-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
@@ -216,14 +225,19 @@ extends GenericCompanion[CC] {
     import num._
 
     if (step == zero) throw new IllegalArgumentException("zero step")
-    val b = newBuilder[T]
-    b sizeHint immutable.NumericRange.count(start, end, step, isInclusive = false)
-    var i = start
-    while (if (step < zero) end < i else i < end) {
-      b += i
-      i += step
+
+    val size = immutable.NumericRange.count(start, end, step, isInclusive = false)
+    if (size == 0) empty[T]
+    else {
+      val b = newBuilder[T]
+      b sizeHint size
+      var i = start
+      while (if (step < zero) end < i else i < end) {
+        b += i
+        i += step
+      }
+      b.result()
     }
-    b.result()
   }
 
   /** Produces a $coll containing repeated applications of a function to a start value.
@@ -234,19 +248,22 @@ extends GenericCompanion[CC] {
    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
    */
   def iterate[A](start: A, len: Int)(f: A => A): CC[A] = {
-    val b = newBuilder[A]
-    if (len > 0) {
-      b.sizeHint(len)
-      var acc = start
-      var i = 1
-      b += acc
-
-      while (i < len) {
-        acc = f(acc)
-        i += 1
+    if (len == 0) empty[A]
+    else {
+      val b = newBuilder[A]
+      if (len > 0) {
+        b.sizeHint(len)
+        var acc = start
+        var i = 1
         b += acc
+
+        while (i < len) {
+          acc = f(acc)
+          i += 1
+          b += acc
+        }
       }
+      b.result()
     }
-    b.result()
   }
 }
