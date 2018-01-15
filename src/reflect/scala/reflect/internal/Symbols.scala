@@ -219,7 +219,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
 
     if (!(isCompilerUniverse || isSynchronized || isAprioriThreadsafe))
-      throw new AssertionError(s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
+      throw new AssertionError(s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe") // Not an assert to avoid retention of `initOwner` as a field!
 
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
@@ -2395,6 +2395,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     final def isOverridingSymbol: Boolean = {
       val curRunId = currentRunId
+      // TODO this cache can lead to incorrect answers if the overrider/overridee relationship changes
+      // with the passage of compiler phases. Details: https://github.com/scala/scala/pull/6197#discussion_r161427280
+      // When fixing this problem (e.g. by ignoring the cache after erasure?), be mindful of performance
       if (isOverridingSymbolCache == curRunId) true
       else if (isOverridingSymbolCache == -curRunId) false
       else {
