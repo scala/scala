@@ -54,7 +54,8 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def next(): A
   def iterator() = this
 
-  final def knownSize: Int = -1
+  /** @return the ''remaining'' number of elements, if it can be computed in O(1) time, otherwise -1 */
+  def knownSize: Int = -1
 
   /** Tests whether this iterator is empty.
     *
