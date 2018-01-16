@@ -1751,7 +1751,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val sameSourceFile = context.unit.source.file == psym.sourceFile
 
           if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation &&
-            !sameSourceFile && !context.owner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
+            !sameSourceFile && !context.owner.ownerChain.exists(_.isDeprecated)) {
             val version = psym.deprecatedInheritanceVersion.getOrElse("")
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = psym.deprecatedInheritanceMessage.map(msg => s": $msg").getOrElse("")
@@ -3147,8 +3147,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 && (inBlock || !(sym.isMethod || sym1.isMethod) || (sym.tpe matches sym1.tpe))
                 // default getters are defined twice when multiple overloads have defaults.
                 // The error for this is deferred until RefChecks.checkDefaultsInOverloaded
-                && (!sym.isErroneous && !sym1.isErroneous && !sym.hasDefault &&
-                    !sym.hasAnnotation(BridgeClass) && !sym1.hasAnnotation(BridgeClass))) {
+                && !sym.isErroneous && !sym1.isErroneous && !sym.hasDefault) {
               log("Double definition detected:\n  " +
                   ((sym.getClass, sym.info, sym.ownerChain)) + "\n  " +
                   ((sym1.getClass, sym1.info, sym1.ownerChain)))

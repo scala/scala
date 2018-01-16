@@ -378,7 +378,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StaticAnnotationClass
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr
-    definitions.BridgeClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
     definitions.ImplicitAmbiguousClass
