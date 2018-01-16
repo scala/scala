@@ -64,7 +64,28 @@ class ListBenchmark {
   @Benchmark def mapConserve_modifyAll: Any = {
     values.mapConserve(x => replacement)
   }
+
   @Benchmark def mapConserve_modifyMid: Any = {
     values.mapConserve(x => if (x == mid) replacement else x)
+  }
+
+  @Benchmark def concat_raw: Any = {
+    List.concat(values, values)
+  }
+
+  @Benchmark def fill_raw: Any = {
+    List.fill(size)(last)
+  }
+
+  @Benchmark def tabulate_raw: Any = {
+    List.tabulate(size)(values.apply)
+  }
+
+  @Benchmark def range_raw: Any = {
+    List.range(-size, size, 2)
+  }
+
+  @Benchmark def iterate_raw: Any = {
+    List.iterate(last, size)(v => v.copy(value = v.value + 10))
   }
 }
