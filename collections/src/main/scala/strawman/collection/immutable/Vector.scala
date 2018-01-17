@@ -613,6 +613,8 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
 
   private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
 
+  override def knownSize: Int = remainingElementCount
+
   /** Creates a new vector which consists of elements remaining in this iterator.
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */

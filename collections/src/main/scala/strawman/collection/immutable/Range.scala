@@ -3,7 +3,7 @@ package collection.immutable
 
 import collection.{Iterator, SeqFactory}
 
-import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws, AnyVal, Double, BigDecimal, BigInt}
+import scala.{Any, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, NoSuchElementException, math, Numeric, Ordering, SerialVersionUID, Serializable, StringContext, Unit, `inline`, specialized, throws, AnyVal, Double, BigDecimal, BigInt}
 import scala.Predef.augmentString
 import java.lang.String
 
@@ -38,7 +38,6 @@ import strawman.collection.mutable.Builder
   *                     To find the last element inside a non-empty range,
   *                     use `last` instead.
   *  @param step        the step for the range.
-  *  @param isInclusive whether the end of the range is included or not
   *
   *  @define coll range
   *  @define mayNotTerminateInf
@@ -531,6 +530,7 @@ private class RangeIterator(
 ) extends Iterator[Int] {
   private var _hasNext: Boolean = !initiallyEmpty
   private var _next: Int = start
+  override def knownSize: Int = if (_hasNext) (lastElement - _next) / step + 1 else 0
   def hasNext: Boolean = _hasNext
   @throws[NoSuchElementException]
   def next(): Int = {

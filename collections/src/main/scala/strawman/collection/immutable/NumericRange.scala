@@ -44,9 +44,12 @@ sealed class NumericRange[T](
     with Serializable { self =>
 
   override def iterator() = new Iterator[T] {
+    import num.mkNumericOps
+
     private var _hasNext = !self.isEmpty
     private var _next: T = start
     private val lastElement: T = if (_hasNext) last else start
+    override def knownSize: Int = if (_hasNext) num.toInt((lastElement - _next) / step) + 1 else 0
     def hasNext: Boolean = _hasNext
     def next(): T = {
       if (!_hasNext) Iterator.empty.next()

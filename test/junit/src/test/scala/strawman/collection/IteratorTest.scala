@@ -7,9 +7,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.testing.AssertUtil._
+import strawman.collection.immutable.{ImmutableArray, LazyList, List, NumericRange, Range, Vector}
+import strawman.collection.mutable.ArrayBuffer
 
-import strawman.collection.immutable.{Range, List, LazyList}
-import scala.Predef.{ genericArrayOps => _, intArrayOps => _, genericWrapArray => _, wrapIntArray => _, _ }
+import scala.Predef.{genericArrayOps => _, genericWrapArray => _, intArrayOps => _, wrapIntArray => _, _}
 
 @RunWith(classOf[JUnit4])
 class IteratorTest {
@@ -288,4 +289,24 @@ class IteratorTest {
     assertEquals("bbbb", result.next())
     assertFalse(result.hasNext)
   }
+
+  @Test
+  def knownSize: Unit = {
+
+    def indexedSeq[A](xs: IndexedSeq[A]): Unit = {
+      val it = xs.iterator()
+      assertEquals(xs.size, it.knownSize)
+      it.next()
+      assertEquals(xs.size - 1, it.knownSize)
+    }
+
+    indexedSeq(Vector(1, 2, 3))
+    indexedSeq(ArrayBuffer(1, 2, 3))
+    indexedSeq(ImmutableArray(1, 2, 3))
+    indexedSeq(Range(start = 1, end = 3, step = 1))
+    indexedSeq(Range(start = 9, end = 2, step = -2))
+    indexedSeq(NumericRange(start = 1, end = 3, step = 1))
+    indexedSeq(NumericRange(start = -10, end = -5, step = 1))
+  }
+
 }

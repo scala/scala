@@ -310,6 +310,7 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, Ind
 
   def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
+    override def knownSize: Int = self.length - current
     def hasNext = current < self.length
     def next(): A = {
       val r = self.apply(current)
