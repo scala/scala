@@ -603,8 +603,13 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   /** Sorts this $Coll according to the Ordering which results from transforming
    *  an implicitly given Ordering with a transformation function.
-   *  @see [[scala.math.Ordering]]
    *  $willNotTerminateInf
+   *
+   *  The sort is stable. That is, elements that are equal (as determined by
+   *  `ord.compare`) appear in the same order in the sorted sequence as in the original.
+   *
+   *  @see [[scala.math.Ordering]]
+   *
    *  @param   f the transformation function mapping elements
    *           to some other domain `B`.
    *  @param   ord the ordering assumed on domain `B`.
@@ -626,7 +631,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   /** Sorts this $coll according to an Ordering.
    *
    *  The sort is stable. That is, elements that are equal (as determined by
-   *  `lt`) appear in the same order in the sorted sequence as in the original.
+   *  `ord.compare`) appear in the same order in the sorted sequence as in the original.
    *
    *  @see [[scala.math.Ordering]]
    *
