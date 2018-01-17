@@ -414,6 +414,22 @@ class FutureTests extends MinimalScalaTest {
       Await.result(traversedIterator, defaultTimeout).sum mustBe (10000)
     }
 
+    "shouldTraverseAndChangeCollections" in {
+      import scala.collection.breakOut
+
+      val input = Map(1 -> "one", 2 -> "two")
+
+      val traversed: Future[Map[Int,String]] =
+        Future.traverse(input){Future.successful}(breakOut, implicitly)
+
+      Await.result(traversed, defaultTimeout) mustBe input
+
+      val sequenced: Future[Map[Int,String]] =
+        Future.sequence(input.map(Future.successful))(breakOut, implicitly)
+
+      Await.result(sequenced, defaultTimeout) mustBe input
+    }
+
     "shouldBlockUntilResult" in {
       val latch = new TestLatch
 
