@@ -39,6 +39,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.CompoundTypeTreeOriginalAttachment
     this.BackquotedIdentifierAttachment
     this.ForAttachment
+    this.CoforAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
     this.KnownDirectSubclassesCalled
