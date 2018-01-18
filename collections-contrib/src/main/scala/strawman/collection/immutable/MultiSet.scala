@@ -63,7 +63,7 @@ object MultiSet extends IterableFactory[MultiSet] {
 
   def newBuilder[A](): Builder[A, MultiSet[A]] =
     new ImmutableBuilder[A, MultiSet[A]](empty[A]) {
-      def add(elem: A): this.type = { elems = elems + elem; this }
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
 }

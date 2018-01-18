@@ -19,7 +19,7 @@ class MultiSet[A] private (val elems: Map[A, Int])
 
   def occurrences: collection.Map[A, Int] = elems
 
-  def add(elem: A): this.type = {
+  def addOne(elem: A): this.type = {
     elems.updateWith(elem) {
       case None    => Some(1)
       case Some(n) => Some(n + 1)
@@ -27,7 +27,7 @@ class MultiSet[A] private (val elems: Map[A, Int])
     this
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     elems.updateWith(elem) {
       case Some(n) => if (n > 1) Some(n - 1) else None
     }

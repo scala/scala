@@ -27,7 +27,7 @@ class SortedMultiMap[K, V] private (elems: SortedMap[K, Set[V]])(implicit val or
   def rangeImpl(from: Option[K], until: Option[K]): SortedMultiMap[K, V] =
     new SortedMultiMap(elems.rangeImpl(from, until))
 
-  def add(elem: (K, V)): this.type = {
+  def addOne(elem: (K, V)): this.type = {
     val (k, v) = elem
     elems.updateWith(k) {
       case None     => Some(Set(v))
@@ -36,7 +36,7 @@ class SortedMultiMap[K, V] private (elems: SortedMap[K, Set[V]])(implicit val or
     this
   }
 
-  def subtract(elem: (K, V)): this.type = {
+  def subtractOne(elem: (K, V)): this.type = {
     val (k, v) = elem
     elems.updateWith(k) {
       case Some(vs) =>
