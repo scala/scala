@@ -42,7 +42,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     (first.result(), second.result())
   }
 
-  override def unzip[A1, A2](implicit asPair: A <:< (A1, A2)): (CC[A1], CC[A2]) = {
+  override def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
     val first = iterableFactory.newBuilder[A1]()
     val second = iterableFactory.newBuilder[A2]()
     foreach { a =>

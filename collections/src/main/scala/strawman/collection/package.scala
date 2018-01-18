@@ -1,15 +1,45 @@
 package strawman
 
-import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException, PartialFunction, Option, None, Some}
+import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException, PartialFunction, Option, None, Some, deprecated}
 import scala.Predef.{String, ArrowAssoc}
 import scala.reflect.ClassTag
 
 package object collection extends LowPriority {
+  @deprecated("Use Iterable instead of Traversable", "2.13.0")
+  val Traversable = Iterable
+  @deprecated("Use SeqOps instead of SeqLike", "2.13.0")
+  type SeqLike[A, T] = SeqOps[A, Seq, T]
+
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenTraversableOnce[+X] = IterableOnce[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenTraversableOnce = IterableOnce
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenTraversable[+X] = Iterable[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenTraversable = Iterable
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenIterable[+X] = Iterable[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenIterable = Iterable
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenSeq[+X] = Seq[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenSeq = Seq
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenSet[X] = Set[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenSet = Set
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenMap[K, +V] = Map[K, V]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenMap = Map
+
   import scala.language.implicitConversions
   // ------------------ Decorators to add collection ops to existing types -----------------------
 
   /** Decorator to add collection operations to strings. */
-  implicit def stringToStringOps(s: String): immutable.StringOps = new immutable.StringOps(s)
+  implicit def stringToStringOps(s: String): StringOps = new StringOps(s)
 
   /** Decorator to add collection operations to arrays. */
   implicit def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)

@@ -122,6 +122,22 @@ final class StringOps(val s: String)
   /** Alias for `appended` */
   @`inline` def :+ (c: Char): String = appended(c)
 
+  /** Produces a new String where a slice of characters in this String is replaced by another String.
+    *
+    * Patching at negative indices is the same as patching starting at 0.
+    * Patching at indices at or larger than the length of the original String appends the patch to the end.
+    * If more values are replaced than actually exist, the excess is ignored.
+    *
+    *  @param  from     the index of the first replaced char
+    *  @param  other    the replacement String
+    *  @param  replaced the number of chars to drop in the original String
+    *  @return          a new String consisting of all chars of this String
+    *                   except that `replaced` chars starting from `from` are replaced
+    *                   by `other`.
+    */
+  def patch(from: Int, other: String, replaced: Int): String =
+    fromSpecificIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
+
   override def toString = s
 
   override def mkString = toString

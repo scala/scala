@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array}
+import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array, deprecated}
 import scala.Predef.intWrapper
 
 /** A `Buffer` is a growable and shrinkable `Seq`. */
@@ -16,6 +16,9 @@ trait Buffer[A] extends Seq[A]
     *  @return the $coll itself
     */
   def prepend(elem: A): this.type
+
+  @deprecated("Use .addOne or += instead of .append", "2.13.0")
+  @`inline` final def append(elem: A): this.type = addOne(elem)
 
   /** Alias for `prepend` */
   @`inline` final def +=: (elem: A): this.type = prepend(elem)
@@ -54,6 +57,20 @@ trait Buffer[A] extends Seq[A]
   @throws[IndexOutOfBoundsException]
   @throws[IllegalArgumentException]
   def remove(idx: Int, count: Int): Unit
+
+  /** Removes the first ''n'' elements of this buffer.
+    *
+    *  @param n  the number of elements to remove from the beginning
+    *            of this buffer.
+    */
+  def trimStart(n: Int): Unit = remove(0, n)
+
+  /** Removes the last ''n'' elements of this buffer.
+    *
+    *  @param n  the number of elements to remove from the end
+    *            of this buffer.
+    */
+  def trimEnd(n: Int): Unit = remove(length - scala.math.max(n, 0), n)
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type
 
@@ -120,6 +137,8 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
     this
   }
 }
+
+object Buffer extends SeqFactory.Delegate[Buffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
 abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]

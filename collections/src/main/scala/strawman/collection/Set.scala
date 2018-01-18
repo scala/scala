@@ -1,7 +1,7 @@
 package strawman
 package collection
 
-import scala.{Any, Array, Boolean, Equals, Int, NoSuchElementException, `inline`, throws}
+import scala.{Any, Array, Boolean, Equals, Int, NoSuchElementException, `inline`, throws, deprecated}
 import scala.Predef.intWrapper
 import scala.util.hashing.MurmurHash3
 import java.lang.String
@@ -147,6 +147,9 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
 
   /** Alias for `diff` */
   @`inline` final def &~ (that: Set[A]): C = this diff that
+
+  @deprecated("Use &- or diff instead of --", "2.13.0")
+  @`inline` final def -- (that: Set[A]): C = diff(that)
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *

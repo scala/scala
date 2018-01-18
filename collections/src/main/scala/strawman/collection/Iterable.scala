@@ -367,6 +367,15 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
+  @deprecated("Use LazyList.from(it) instead of it.toStream", "2.13.0")
+  @`inline` final def toStream: immutable.LazyList[A] = immutable.LazyList.from(this)
+
+  @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
+  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(this)
+
+  @deprecated("Use .iterator() instead of .toIterator", "2.13.0")
+  @`inline` final def toIterator: Iterator[A] = iterator()
+
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
@@ -1040,17 +1049,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *              value for which it is defined, or `None` if none exists.
     *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
     */
-  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    val i: Iterator[A] = iterator()
-    // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
-    // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
-    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
-    while (i.hasNext) {
-      val x = pf.applyOrElse(i.next(), sentinel)
-      if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
-    }
-    None
-  }
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] =
+    iterator().collectFirst(pf)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -1087,6 +1087,22 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     */
   def zipWithIndex: CC[(A @uncheckedVariance, Int)] = fromIterable(View.ZipWithIndex(toIterable))
 
+  /** Returns a $coll formed from this $coll and another iterable collection
+    *  by combining corresponding elements in pairs.
+    *  If one of the two collections is shorter than the other,
+    *  placeholder elements are used to extend the shorter collection to the length of the longer.
+    *
+    *  @param that     the iterable providing the second half of each result pair
+    *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
+    *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+    *  @return        a new collection of type `That` containing pairs consisting of
+    *                 corresponding elements of this $coll and `that`. The length
+    *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
+    *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
+    *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
+    */
+  def zipAll[A1 >: A, B](that: Iterable[B], thisElem: A1, thatElem: B): CC[(A1, B)] = fromIterable(View.ZipAll(toIterable, that, thisElem, thatElem))
+
   /** Converts this $coll of pairs into two collections of the first and second
     *  half of each pair.
     *
@@ -1106,9 +1122,33 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     *  @return       a pair of ${coll}s, containing the first, respectively second
     *                half of each element pair of this $coll.
     */
-  def unzip[A1, A2](implicit asPair: A <:< (A1, A2)): (CC[A1], CC[A2]) = {
+  def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
     val unzipped = View.Unzip(toIterable)
     (fromIterable(unzipped.first), fromIterable(unzipped.second))
+  }
+
+  /** Iterates over the tails of this $coll. The first value will be this
+    *  $coll and the final one will be an empty $coll, with the intervening
+    *  values the results of successive applications of `tail`.
+    *
+    *  @return   an iterator over all the tails of this $coll
+    *  @example  `List(1,2,3).tails = Iterator(List(1,2,3), List(2,3), List(3), Nil)`
+    */
+  def tails: Iterator[C] = iterateUntilEmpty(_.tail)
+
+  /** Iterates over the inits of this $coll. The first value will be this
+    *  $coll and the final one will be an empty $coll, with the intervening
+    *  values the results of successive applications of `init`.
+    *
+    *  @return  an iterator over all the inits of this $coll
+    *  @example  `List(1,2,3).inits = Iterator(List(1,2,3), List(1,2), List(1), Nil)`
+    */
+  def inits: Iterator[C] = iterateUntilEmpty(_.init)
+
+  // A helper for tails and inits.
+  private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {
+    val it = Iterator.iterate(toIterable)(f).takeWhile(x => !x.isEmpty)
+    (it ++ Iterator(Iterable.empty)).map(fromSpecificIterable)
   }
 }
 
