@@ -1,8 +1,8 @@
 language: scala
 jdk: oraclejdk8
 script:
-  - sbt ++2.12.4 memoryBenchmark/compile +test ++2.13.0-M2 timeBenchmark/compile junit/test scalacheck/test
-  - sbt ++2.12.4 collectionsJS/test ++2.13.0-M2 collectionsJS/test
+  - sbt ++2.12.4 memoryBenchmark/compile +test ++2.13.0-M2 timeBenchmark/compile collections-contribJVM/test junit/test scalacheck/test
+  - sbt ++2.12.4 collectionsJS/test ++2.13.0-M2 collectionsJS/test collections-contribJS/test
 before_script:
   - ./checkCLA.sh
 after_succes:
