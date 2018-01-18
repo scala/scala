@@ -79,7 +79,11 @@ trait TypeDiagnostics {
     prefix + name.decode
   }
 
+  // Bind of pattern var was `x @ _`
   private def atBounded(t: Tree) = t.hasAttachment[AtBoundIdentifierAttachment.type]
+
+  // ValDef was a PatVarDef `val P(x) = ???`
+  private def wasPatVarDef(t: Tree) = t.hasAttachment[PatVarDefAttachment.type]
 
   /** Does the positioned line assigned to t1 precede that of t2?
    */
@@ -478,7 +482,6 @@ trait TypeDiagnostics {
         val targets   = mutable.Set[Symbol]()
         val setVars   = mutable.Set[Symbol]()
         val treeTypes = mutable.Set[Type]()
-        val atBounds  = mutable.Set[Symbol]()
         val params    = mutable.Set[Symbol]()
         val patvars   = mutable.Set[Symbol]()
 
@@ -503,16 +506,19 @@ trait TypeDiagnostics {
           val sym = t.symbol
           var bail = false
           t match {
-            case m: MemberDef if qualifies(t.symbol)   =>
-              defnTrees += m
+            case m: MemberDef if qualifies(sym)   =>
               t match {
+                case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
+                  if (!atBounded(t)) patvars += sym
                 case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
                   if (sym.isPrimaryConstructor)
                     for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
                   else if (sym.isSynthetic && sym.isImplicit) bail = true
                   else if (!sym.isConstructor)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
+                  defnTrees += m
                 case _ =>
+                  defnTrees += m
               }
             case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars    =>
               pat.foreach {
@@ -521,7 +527,6 @@ trait TypeDiagnostics {
               }
             case _: RefTree if sym ne null             => targets += sym
             case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
-            case Bind(_, _) if atBounded(t)            => atBounds += sym
             case Apply(Select(_, nme.withFilter), Function(vparams, _) :: Nil) =>
               bail = vparams.exists(_.name startsWith nme.CHECK_IF_REFUTABLE_STRING)
             case _                                     =>
@@ -562,9 +567,8 @@ trait TypeDiagnostics {
           && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
         )
         def isSyntheticWarnable(sym: Symbol) = (
-          sym.isDefaultGetter 
+          sym.isDefaultGetter
         )
-        
         def isUnusedTerm(m: Symbol): Boolean = (
              m.isTerm
           && (!m.isSynthetic || isSyntheticWarnable(m))
@@ -594,12 +598,14 @@ trait TypeDiagnostics {
         def unusedTerms = {
           val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
 
-          // filter out setters if already warning for getter, indicated by position.
-          // also documentary names in patterns.
-          all.filterNot(v =>
-              v.symbol.isSetter && all.exists(g => g.symbol.isGetter && g.symbol.pos.point == v.symbol.pos.point)
-           || atBounds.exists(x => v.symbol.pos.point == x.pos.point)
-          ).sortBy(treepos)
+          // is this a getter-setter pair? and why is this a difficult question for traits?
+          def sameReference(g: Symbol, s: Symbol) =
+            if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
+            else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
+
+          // filter out setters if already warning for getter.
+          val clean = all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && sameReference(g.symbol, v.symbol)))
+          clean.sortBy(treepos)
         }
         // local vars which are never set, except those already returned in unused
         def unsetVars = localVars.filter(v => !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)

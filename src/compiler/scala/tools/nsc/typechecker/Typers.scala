@@ -4277,11 +4277,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedBind(tree: Bind) = {
-        val name = tree.name
-        val body = tree.body
-        name match {
-          case name: TypeName  =>
+      def typedBind(tree: Bind) =
+        tree match {
+          case Bind(name: TypeName, body)  =>
             assert(body == EmptyTree, s"${context.unit} typedBind: ${name.debugString} ${body} ${body.getClass}")
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
@@ -4297,7 +4295,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             tree setSymbol sym setType sym.tpeHK
 
-          case name: TermName  =>
+          case Bind(name: TermName, body)  =>
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else context.owner.newValue(name, tree.pos)
@@ -4327,7 +4325,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             tree setSymbol sym
             treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
         }
-      }
 
       def typedArrayValue(tree: ArrayValue) = {
         val elemtpt1 = typedType(tree.elemtpt, mode)

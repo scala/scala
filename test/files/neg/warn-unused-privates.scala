@@ -167,7 +167,7 @@ trait Boundings {
     17
   }
   def w() = {
-    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+    val D(x @ _) = d                      // no warn
     17
   }
 
@@ -185,7 +185,7 @@ trait Forever {
     val t = Option((17, 42))
     for {
       ns <- t
-      (i, j) = ns                        // warn, fixme
+      (i, j) = ns                        // no warn
     } yield 42                           // val emitted only if needed, hence nothing unused
   }
 }

@@ -732,11 +732,16 @@ abstract class TreeGen {
   def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
     mkPatDef(Modifiers(0), pat, rhs)
 
+  private def cpAtBoundAttachment(from: Tree, to: ValDef): to.type =
+    if (from.hasAttachment[AtBoundIdentifierAttachment.type]) to.updateAttachment(AtBoundIdentifierAttachment) else to
+  private def cpPatVarDefAttachments(from: Tree, to: ValDef): to.type =
+    cpAtBoundAttachment(from, to).updateAttachment(PatVarDefAttachment)
+
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
       List(atPos(pat.pos union rhs.pos) {
-        ValDef(mods, name.toTermName, tpt, rhs)
+        cpAtBoundAttachment(pat, ValDef(mods, name.toTermName, tpt, rhs))
       })
 
     case None =>
@@ -778,9 +783,9 @@ abstract class TreeGen {
           ))
       }
       vars match {
-        case List((vname, tpt, pos)) =>
+        case List((vname, tpt, pos, original)) =>
           List(atPos(pat.pos union pos union rhs.pos) {
-            ValDef(mods, vname.toTermName, tpt, matchExpr)
+            cpPatVarDefAttachments(original, ValDef(mods, vname.toTermName, tpt, matchExpr))
           })
         case _ =>
           val tmp = freshTermName()
@@ -790,9 +795,9 @@ abstract class TreeGen {
                      tmp, TypeTree(), matchExpr)
             }
           var cnt = 0
-          val restDefs = for ((vname, tpt, pos) <- vars) yield atPos(pos) {
+          val restDefs = for ((vname, tpt, pos, original) <- vars) yield atPos(pos) {
             cnt += 1
-            ValDef(mods, vname.toTermName, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
+            cpPatVarDefAttachments(original, ValDef(mods, vname.toTermName, tpt, Select(Ident(tmp), newTermName("_" + cnt))))
           }
           firstDef :: restDefs
       }
@@ -845,7 +850,7 @@ abstract class TreeGen {
    *  synthetic for all nodes that contain a variable position.
    */
   class GetVarTraverser extends Traverser {
-    val buf = new ListBuffer[(Name, Tree, Position)]
+    val buf = new ListBuffer[(Name, Tree, Position, Tree)]
 
     def namePos(tree: Tree, name: Name): Position =
       if (!tree.pos.isRange || name.containsName(nme.raw.DOLLAR)) tree.pos.focus
@@ -857,7 +862,7 @@ abstract class TreeGen {
 
     override def traverse(tree: Tree): Unit = {
       def seenName(name: Name)     = buf exists (_._1 == name)
-      def add(name: Name, t: Tree) = if (!seenName(name)) buf += ((name, t, namePos(tree, name)))
+      def add(name: Name, t: Tree) = if (!seenName(name)) buf += ((name, t, namePos(tree, name), tree))
       val bl = buf.length
 
       tree match {
@@ -888,10 +893,9 @@ abstract class TreeGen {
   }
 
   /** Returns list of all pattern variables, possibly with their types,
-   *  without duplicates
+   *  without duplicates, plus position and original tree.
    */
-  private def getVariables(tree: Tree): List[(Name, Tree, Position)] =
-    new GetVarTraverser apply tree
+  private def getVariables(tree: Tree): List[(Name, Tree, Position, Tree)] = (new GetVarTraverser)(tree)
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
