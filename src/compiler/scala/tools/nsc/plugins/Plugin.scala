@@ -8,11 +8,12 @@ package plugins
 
 import scala.tools.nsc.io.Jar
 import scala.reflect.internal.util.ScalaClassLoader
-import scala.reflect.io.{ Directory, File, Path }
+import scala.reflect.io.{Directory, File, Path}
 import java.io.InputStream
 
 import scala.collection.mutable
-import scala.util.{ Try, Success, Failure }
+import scala.tools.nsc.classpath.FileBasedCache
+import scala.util.{Failure, Success, Try}
 
 /** Information about a plugin loaded from a jar file.
  *
@@ -85,14 +86,25 @@ object Plugin {
 
   private val PluginXML = "scalac-plugin.xml"
 
+  private val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader]()
+
   /** Create a class loader with the specified locations plus
    *  the loader that loaded the Scala compiler.
+   *
+   *  If the class loader has already been created before and the
+   *  file stamps are the same, the previous loader is returned to
+   *  mitigate the cost of dynamic classloading as it has been
+   *  measured in https://github.com/scala/scala-dev/issues/458.
    */
-  private def loaderFor(locations: Seq[Path]): ScalaClassLoader = {
-    val compilerLoader = classOf[Plugin].getClassLoader
-    val urls = locations map (_.toURL)
+  private def loaderFor(locations: Seq[Path], disableCache: Boolean): ScalaClassLoader = {
+    def newLoader = () => {
+      val compilerLoader = classOf[Plugin].getClassLoader
+      val urls = locations map (_.toURL)
+      ScalaClassLoader fromURLs (urls, compilerLoader)
+    }
 
-    ScalaClassLoader fromURLs (urls, compilerLoader)
+    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) newLoader()
+    else pluginClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
   }
 
   /** Try to load a plugin description from the specified location.
@@ -135,7 +147,8 @@ object Plugin {
   def loadAllFrom(
     paths: List[List[Path]],
     dirs: List[Path],
-    ignoring: List[String]): List[Try[AnyClass]] =
+    ignoring: List[String],
+    disableClassLoaderCache: Boolean): List[Try[AnyClass]] =
   {
     // List[(jar, Try(descriptor))] in dir
     def scan(d: Directory) =
@@ -146,7 +159,7 @@ object Plugin {
     // scan plugin dirs for jars containing plugins, ignoring dirs with none and other jars
     val fromDirs: PDResults = dirs filter (_.isDirectory) flatMap { d =>
       scan(d.toDirectory) collect {
-        case (j, Success(pd)) => Success((pd, loaderFor(Seq(j))))
+        case (j, Success(pd)) => Success((pd, loaderFor(Seq(j), disableClassLoaderCache)))
       }
     }
 
@@ -163,7 +176,7 @@ object Plugin {
       loop(ps)
     }
     val fromPaths: PDResults = paths map (p => (p, findDescriptor(p))) map {
-      case (p, Success(pd)) => Success((pd, loaderFor(p)))
+      case (p, Success(pd)) => Success((pd, loaderFor(p, disableClassLoaderCache)))
       case (_, Failure(e))  => Failure(e)
     }
 
