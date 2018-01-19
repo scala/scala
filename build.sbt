@@ -3,7 +3,7 @@ import org.scalajs.sbtplugin.cross.CrossProject
 
 // Convenient setting that allows writing `set scalaVersion := dotty.value` in sbt shell to switch from Scala to Dotty
 val dotty = settingKey[String]("dotty version")
-dotty in ThisBuild := "0.6.0-bin-20171212-9de3905-NIGHTLY"
+dotty in ThisBuild := "0.6.0-RC1"
 
 val commonSettings = Seq(
   organization := "ch.epfl.scala",
