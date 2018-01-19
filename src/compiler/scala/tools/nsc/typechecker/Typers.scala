@@ -4981,6 +4981,37 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             handleMissing
           }
           else {
+            if ((sym ne NoSymbol) && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
+              // Rewrites "qual.name ..." to "{ val lhs = qual ; lhs.name ... }" in cases where
+              // qual is not stable and name has a method type which depends on its prefix. If
+              // this is the case then hoisting qual out as a stable val means that members of
+              // implicit scopes which are accessible via lhs can be candidates for satisfying
+              // implicit (conversions to) arguments of name.
+
+              // We have to introduce the ValDef before its use here, so we walk up the
+              // context tree and attach it to the original root of this expression. It will
+              // be extracted and inserted by insertStabilizer when typer unwinds out of this
+              // expression.
+              val insertionContext = context.nextEnclosing { ctx =>
+                def isInsertionNode(tree: Tree): Boolean = tree match {
+                  case _: Apply | _: TypeApply | _: Select => true
+                  case _ => false
+                }
+                isInsertionNode(ctx.tree) && !isInsertionNode(ctx.outer.tree)
+              }
+
+              if(insertionContext != NoContext) {
+                val vsym = insertionContext.owner.newValue(unit.freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
+                vsym.setInfo(uncheckedBounds(qual.tpe))
+                insertionContext.scope enter vsym
+                val vdef = atPos(vsym.pos.makeTransparent)(ValDef(vsym, qual))
+                qual.changeOwner(insertionContext.owner -> vsym)
+                insertionContext.tree.updateAttachment(StabilizingDefinition(vdef))
+                val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos
+                return typedSelect(tree, newQual, name)
+              }
+            }
+
             val tree1 = tree match {
               case Select(_, _) => treeCopy.Select(tree, qual, name)
               case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
@@ -5535,11 +5566,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _                => abort(s"unexpected member def: ${tree.getClass}\n$tree")
       }
 
+      // Extract and insert a stabilizing ValDef (if any) which might have been
+      // introduced during the typing of the original expression.
+      def insertStabilizer(tree: Tree, original: Tree): Tree = {
+        original.attachments.get[StabilizingDefinition] match {
+          case Some(StabilizingDefinition(vdef)) =>
+            tree.removeAttachment[StabilizingDefinition]
+            typed(Block(vdef, tree) setPos tree.pos)
+          case _ => tree
+        }
+      }
+
       // Trees not allowed during pattern mode.
       def typedOutsidePatternMode(tree: Tree): Tree = tree match {
         case tree: Block            => typerWithLocalContext(context.makeNewScope(tree, context.owner))(_.typedBlock(tree, mode, pt))
         case tree: If               => typedIf(tree)
-        case tree: TypeApply        => typedTypeApply(tree)
+        case tree: TypeApply        => insertStabilizer(typedTypeApply(tree), tree)
         case tree: Function         => typedFunction(tree)
         case tree: Match            => typedVirtualizedMatch(tree)
         case tree: New              => typedNew(tree)
@@ -5562,8 +5604,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedInAnyMode(tree: Tree): Tree = tree match {
         case tree: Ident   => typedIdentOrWildcard(tree)
         case tree: Bind    => typedBind(tree)
-        case tree: Apply   => typedApply(tree)
-        case tree: Select  => typedSelectOrSuperCall(tree)
+        case tree: Apply   => insertStabilizer(typedApply(tree), tree)
+        case tree: Select  => insertStabilizer(typedSelectOrSuperCall(tree), tree)
         case tree: Literal => typedLiteral(tree)
         case tree: Typed   => typedTyped(tree)
         case tree: This    => typedThis(tree)  // scala/bug#6104

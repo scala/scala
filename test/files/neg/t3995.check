@@ -1,6 +1,0 @@
-t3995.scala:31: error: type mismatch;
- found   : String("")
- required: _1.F0 where val _1: Lift
-  (new Lift).apply("")
-                   ^
-one error found

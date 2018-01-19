@@ -334,6 +334,7 @@ trait StdNames {
     val QUAL_PREFIX                    = "qual$"
     val NAMEDARG_PREFIX                = "x$"
     val RIGHT_ASSOC_OP_PREFIX          = "rassoc$"
+    val STABILIZER_PREFIX              = "stabilizer$"
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
