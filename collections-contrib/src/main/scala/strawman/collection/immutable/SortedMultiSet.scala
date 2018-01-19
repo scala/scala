@@ -69,7 +69,7 @@ object SortedMultiSet extends SortedIterableFactory[SortedMultiSet] {
 
   def newBuilder[A: Ordering](): Builder[A, SortedMultiSet[A]] =
     new ImmutableBuilder[A, SortedMultiSet[A]](empty) {
-      def add(elem: A): this.type = { elems = elems + elem; this }
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
 }

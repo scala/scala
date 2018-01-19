@@ -22,7 +22,7 @@ class MultiMap[K, V] private (elems: Map[K, Set[V]])
 
   def sets: collection.Map[K, collection.Set[V]] = elems
 
-  def add(elem: (K, V)): this.type = {
+  def addOne(elem: (K, V)): this.type = {
     val (k, v) = elem
     elems.updateWith(k) {
       case None     => Some(Set(v))
@@ -31,7 +31,7 @@ class MultiMap[K, V] private (elems: Map[K, Set[V]])
     this
   }
 
-  def subtract(elem: (K, V)): this.type = {
+  def subtractOne(elem: (K, V)): this.type = {
     val (k, v) = elem
     elems.updateWith(k) {
       case Some(vs) =>

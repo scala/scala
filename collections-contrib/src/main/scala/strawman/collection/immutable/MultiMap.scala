@@ -74,7 +74,7 @@ object MultiMap extends MapFactory[MultiMap] {
 
   def newBuilder[K, V](): Builder[(K, V), MultiMap[K, V]] =
     new ImmutableBuilder[(K, V), MultiMap[K, V]](empty[K, V]) {
-      def add(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
 }

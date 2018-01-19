@@ -78,7 +78,7 @@ object SortedMultiMap extends SortedMapFactory[SortedMultiMap] {
 
   def newBuilder[K: Ordering, V](): Builder[(K, V), SortedMultiMap[K, V]] =
     new ImmutableBuilder[(K, V), SortedMultiMap[K, V]](empty[K, V]) {
-      def add(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
 }
