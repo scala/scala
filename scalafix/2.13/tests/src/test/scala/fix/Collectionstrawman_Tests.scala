@@ -11,7 +11,6 @@ class Collectionstrawman_Tests
     Seq(AbsolutePath(BuildInfo.outputSourceroot))
   ) {
   override def assertNoDiff(a: String, b: String, c: String) = {
-    println(a)
     super.assertNoDiff(a, b, c)
   }
   runAllTests()

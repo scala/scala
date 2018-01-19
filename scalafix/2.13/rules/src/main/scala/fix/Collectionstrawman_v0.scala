@@ -86,9 +86,20 @@ case class Collectionstrawman_v0(index: SemanticdbIndex)
         removeTokensPatch + replaceCommasPatch
     }.asPatch
 
+  val copyToBuffer = SymbolMatcher.normalized(
+    Symbol("_root_.scala.collection.TraversableOnce.copyToBuffer.")
+  )
+
+  def replaceCopyToBuffer(ctx: RuleCtx): Patch =
+    ctx.tree.collect {
+      case t @ q"${copyToBuffer(Term.Select(collection, _))}($buffer)" =>
+        ctx.replaceTree(t, q"$buffer ++= $collection".syntax)
+    }.asPatch
+
   override def fix(ctx: RuleCtx): Patch = {
     replaceToList(ctx) +
       replaceSymbols(ctx) +
-      replaceTupleZipped(ctx)
+      replaceTupleZipped(ctx) +
+      replaceCopyToBuffer(ctx)
   }
 }
