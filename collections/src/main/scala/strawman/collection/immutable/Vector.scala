@@ -94,16 +94,6 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s
   }
 
-  override def reverseIterator(): Iterator[A] = new Iterator[A] {
-    private var i = self.length
-    def hasNext: Boolean = 0 < i
-    def next(): A =
-      if (0 < i) {
-        i -= 1
-        self(i)
-      } else Iterator.empty.next()
-  }
-
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
   // In principle, escape analysis could even remove the iterator/builder allocations and do it
   // with local variables exclusively. But we're not quite there yet ...
