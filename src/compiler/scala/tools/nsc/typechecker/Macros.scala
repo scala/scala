@@ -51,6 +51,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
+  private final val macroClassLoadersCache =
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
+
   /** Obtains a `ClassLoader` instance used for macro expansion.
    *
    *  By default a new `ScalaClassLoader` is created using the classpath
@@ -60,8 +63,24 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    */
   protected def findMacroClassLoader(): ClassLoader = {
     val classpath = global.classPath.asURLs
-    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+    def newLoader = () => {
+      macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+    }
+
+    import scala.tools.nsc.io.Jar
+    import scala.reflect.io.{AbstractFile, Path}
+    val locations = classpath.map(u => Path(AbstractFile.getURL(u).file))
+    val disableCache = settings.YdisableMacrosClassLoaderCaching.value
+    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) {
+      if (disableCache) macroLogVerbose("macro classloader: caching is disabled by the user.")
+      else {
+        val offenders = locations.filterNot(!Jar.isJarOrZip(_))
+        macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${offenders.mkString(",")}.")
+      }
+
+      newLoader()
+    } else macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
   }
 
   /** `MacroImplBinding` and its companion module are responsible for
