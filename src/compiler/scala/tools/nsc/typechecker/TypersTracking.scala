@@ -66,7 +66,7 @@ trait TypersTracking {
       if (s1.length < 60 || settings.debug.value) s1 else s1.take(57) + "..."
     }
 
-    private class Frame(val tree: Tree) { }
+    private class Frame(val tree: Tree)
     private def greenType(tp: Type): String = tpe_s(tp, inGreen)
     private def greenType(tree: Tree): String = tree match {
       case null                              => "[exception]"
@@ -91,12 +91,10 @@ trait TypersTracking {
       trees = trees.tail
       depth -= 1
     }
-    def show(s: String)     { if (s != "") out.println(s) }
+    def show(s: String) = if (s != "") out.println(s)
 
-    def showPush(tree: Tree, context: Context) {
-      showPush(tree, NOmode, WildcardType, context)
-    }
-    def showPush(tree: Tree, mode: Mode, pt: Type, context: Context) {
+    def showPush(tree: Tree, context: Context): Unit = showPush(tree, NOmode, WildcardType, context)
+    def showPush(tree: Tree, mode: Mode, pt: Type, context: Context): Unit = {
       def tree_s = truncAndOneLine(ptTree(tree))
       def pt_s = if (pt.isWildcard || context.inTypeConstructorAllowed) "" else s": pt=$pt"
       def all_s = List(tree_s, pt_s, mode, fullSiteString(context)) filterNot (_ == "") mkString " "
@@ -108,7 +106,7 @@ trait TypersTracking {
       show(resetIfEmpty(indented("""\-> """ + s)))
       typedTree
     }
-    def showAdapt(original: Tree, adapted: Tree, pt: Type, context: Context) {
+    def showAdapt(original: Tree, adapted: Tree, pt: Type, context: Context) = {
       if (!noPrintAdapt(original, adapted)) {
         def tree_s1 = inLightCyan(truncAndOneLine(ptTree(original)))
         def pt_s = if (pt.isWildcard) "" else s" based on pt $pt"
@@ -119,7 +117,7 @@ trait TypersTracking {
         show(indented(s"[adapt] $tree_s1 $tree_s2"))
       }
     }
-    def showTyped(tree: Tree) {
+    def showTyped(tree: Tree) = {
       def class_s = tree match {
         case _: RefTree => ""
         case _          => " " + tree.shortClass

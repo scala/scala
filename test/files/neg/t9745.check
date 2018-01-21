@@ -1,0 +1,27 @@
+t9745.scala:3: error: not found: value x
+  val func = Seq { x += 1; 42 } apply _
+                   ^
+t9745.scala:9: error: not found: value y
+  val g = x => f(y += 1)(x)
+                 ^
+t9745.scala:9: error: missing parameter type
+  val g = x => f(y += 1)(x)
+          ^
+t9745.scala:15: error: not found: value x
+  val g = x => f(x += 1)(x)
+                 ^
+t9745.scala:15: error: missing parameter type
+  val g = x => f(x += 1)(x)
+          ^
+t9745.scala:20: error: type mismatch;
+ found   : (z: Any)Int
+ required: (x$1: ?, x$2: ?)?
+  val g = (x, y) => f(42)(x, y)
+                     ^
+t9745.scala:20: error: missing parameter type
+  val g = (x, y) => f(42)(x, y)
+           ^
+t9745.scala:20: error: missing parameter type
+  val g = (x, y) => f(42)(x, y)
+              ^
+8 errors found

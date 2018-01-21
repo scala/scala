@@ -2921,7 +2921,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Type check a function literal.
      *
-     * Based on the expected type pt, potentially synthesize an instance of
+     *  Based on the expected type pt, potentially synthesize an instance of
      *   - PartialFunction,
      *   - a type with a Single Abstract Method (under -Xexperimental for now).
      */
@@ -2980,35 +2980,34 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //
         // Note that method values are a separate thing (`m _`): they have the idiosyncratic shape
         // of `Typed(expr, Function(Nil, EmptyTree))`
-        val ptUnrollingEtaExpansion =
-          if (paramsMissingType.nonEmpty && pt != ErrorType) fun.body match {
+        val (fun2, ptUnrollingEtaExpansion) =
+          if (paramsMissingType.isEmpty || pt == ErrorType) (fun, null)
+          else fun.body match {
             // we can compare arguments and parameters by name because there cannot be a binder between
             // the function's valdefs and the Apply's arguments
             case Apply(meth, args) if (vparams corresponds args) { case (p, Ident(name)) => p.name == name case _ => false } =>
               // We're looking for a method (as indicated by FUNmode in the silent typed below),
               // so let's make sure our expected type is a MethodType
               val methArgs = NoSymbol.newSyntheticValueParams(argpts map { case NoType => WildcardType case tp => tp })
-
-              val result = silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt)))
-              // we can't have results with undetermined type params
-              val resultMono = result filter (_ => context.undetparams.isEmpty)
-              resultMono map { methTyped =>
-                // if context.undetparams is not empty, the method was polymorphic,
-                // so we need the missing arguments to infer its type. See #871
+              val methTyped = typed(meth, mode.forFunMode, MethodType(methArgs, respt))
+              // if context.undetparams is not empty, the method was polymorphic,
+              // so we need the missing arguments to infer its type. See #871
+              val ptu = if (!context.undetparams.isEmpty) null else {
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
-                // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
+                // if (settings.debug) Console.println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
 
                 // If we are sure this function type provides all the necessary info, so that we won't have
-                // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
+                // any undetermined argument types, go ahead and recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
                 // and rest assured we won't end up right back here (and keep recursing)
-                if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt
-                else null
-              } orElse { _ => null }
-            case _ => null
-          } else null
+                if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt else null
+              }
+              // success or fail, use new tree
+              val upgraded = treeCopy.Function(fun, vparams, Apply(methTyped, args) setPos fun.body.pos)
+              (upgraded, ptu)
+            case _ => (fun, null)
+          }
 
-
-        if (ptUnrollingEtaExpansion ne null) typedFunction(fun, mode, ptUnrollingEtaExpansion)
+        if (ptUnrollingEtaExpansion ne null) typedFunction(fun2, mode, ptUnrollingEtaExpansion)
         else {
           // we ran out of things to try, missing parameter types are an irrevocable error
           var issuedMissingParameterTypeError = false
@@ -3018,7 +3017,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             issuedMissingParameterTypeError = true
           }
 
-          fun.body match {
+          fun2.body match {
             // translate `x => x match { <cases> }` : PartialFunction to
             // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
             case Match(sel, cases) if (sel ne EmptyTree) && (pt.typeSymbol == PartialFunctionClass) =>
@@ -3029,7 +3028,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val p = vparams.head
               if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
 
-              outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
+              outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun2.body, mode, pt)
 
             case _ =>
               val vparamSyms = vparams map { vparam =>
@@ -3039,11 +3038,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               val vparamsTyped = vparams mapConserve typedValDef
               val formals = vparamSyms map (_.tpe)
-              val body1 = typed(fun.body, respt)
-              val restpe = packedType(body1, fun.symbol).deconst.resultType
+              val body1 = typed(fun2.body, respt)
+              val restpe = packedType(body1, fun2.symbol).deconst.resultType
               val funtpe = phasedAppliedType(FunctionSymbol, formals :+ restpe)
 
-              treeCopy.Function(fun, vparamsTyped, body1) setType funtpe
+              treeCopy.Function(fun2, vparamsTyped, body1) setType funtpe
           }
         }
       }
@@ -4396,7 +4395,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 //      if (varsym.isVariable ||
 //        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
+//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod))
         if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
