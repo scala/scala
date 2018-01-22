@@ -58,20 +58,34 @@ To use it, add the [scalafix](https://scalacenter.github.io/scalafix/) sbt plugi
 to your build, as explained in
 [its documentation](https://scalacenter.github.io/scalafix/#Installation).
 
-Then run the following sbt task on your project:
+Two situations are supported: (1) migrating a 2.12 code base to a 2.12 code base that
+uses the collection strawman as a library (instead of the standard collections), and
+(2) migrating a 2.12 code base to 2.13 code base.
+
+The migration tool is not exhaustive and we will continue to improve
+it over time. If you encounter a use case that’s not supported, please
+report it as described in the
+[contributing documentation](CONTRIBUTING.md#migration-tool).
+
+#### Migrating a 2.12 code base to a 2.12 code base that uses the collection strawman as a library
+
+Run the following sbt task on your project:
 
 ~~~
-> scalafix github:scala/collection-strawman/v0
+> scalafix https://github.com/scala/collection-strawman/raw/master/scalafix/2.12/rules/src/main/scala/fix/Collectionstrawman_v0.scala
 ~~~
 
 In essence, the migration tool changes the imports in your source code
 so that the strawman definitions are imported. It also rewrites
 expressions that use an API that is different in the strawman.
 
-The migration tool is not exhaustive and we will continue to improve
-it over time. If you encounter a use case that’s not supported, please
-report it as described in the
-[contributing documentation](CONTRIBUTING.md#migration-tool).
+#### Migrating a 2.12 code base to 2.13 code base
+
+Run the following sbt task on your project:
+
+~~~
+> scalafix https://github.com/scala/collection-strawman/raw/master/scalafix/2.13/rules/src/main/scala/fix/Collectionstrawman_v0.scala
+~~~
 
 ### Additional Operations
 
