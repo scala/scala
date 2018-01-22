@@ -1,7 +1,9 @@
 package strawman
 package collection
 
-import scala.{Array, Boolean, `inline`, Int, Long, Option, Ordering, Unit}
+import strawman.collection.mutable.Builder
+
+import scala.{Array, Boolean, Int, Long, Option, Ordering, Unit, `inline`}
 import scala.Predef.{assert, intWrapper}
 
 /** Base type of bitsets.
@@ -17,6 +19,12 @@ import scala.Predef.{assert, intWrapper}
   * @define Coll `BitSet`
   */
 trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
+
+object BitSet extends SpecificIterableFactory[Int, BitSet] {
+  def empty: BitSet = immutable.BitSet.empty
+  def newBuilder(): Builder[Int, BitSet] = immutable.BitSet.newBuilder()
+  def fromSpecific(it: IterableOnce[Int]): BitSet = immutable.BitSet.fromSpecific(it)
+}
 
 /** Base implementation type of bitsets */
 trait BitSetOps[+C <: BitSet with BitSetOps[C]]
