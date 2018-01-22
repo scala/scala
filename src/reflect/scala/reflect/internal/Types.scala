@@ -3618,7 +3618,7 @@ trait Types
         else refinedType(parents, owner)
       val syms1 = decls.toList
       for (sym <- syms1)
-        result.decls.enter(sym.cloneSymbol(result.typeSymbol))
+        result.decls.enter(sym.cloneSymbol(result.typeSymbol).resetFlag(OVERRIDE))
       val syms2 = result.decls.toList
       val resultThis = result.typeSymbol.thisType
       for (sym <- syms2)
