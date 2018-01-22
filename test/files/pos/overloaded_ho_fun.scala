@@ -64,3 +64,11 @@ object SI10194 {
   (null: Y[Int]).map(x => x.toString) // compiled
   (null: Z[Int]).map(x => x.toString) // didn't compile
 }
+
+// Perform eta-expansion of methods passed as functions to overloaded functions
+trait A { def map[T](f: Int => T): Unit = () }
+object B extends A {
+  def map[T: scala.reflect.ClassTag](f: Int => T): Unit = ()
+  def f(x: Int) = x
+  map(f)
+}

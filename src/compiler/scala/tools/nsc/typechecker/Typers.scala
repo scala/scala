@@ -3382,12 +3382,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // and lubbing the argument types (we treat SAM and FunctionN types equally, but non-function arguments
             // do not receive special treatment: they are typed under WildcardType.)
             val altArgPts =
-              if (settings.isScala212 && args.exists(t => treeInfo.isFunctionMissingParamType(t) || treeInfo.isPartialFunctionMissingParamType(t)))
+              if (settings.isScala212)
                 try alts.map { alt =>
                   val paramTypes = pre.memberType(alt) match {
                     case mt @ MethodType(_, _) => mt.paramTypes
                     case PolyType(_, mt @ MethodType(_, _)) => mt.paramTypes
-                    case t => throw new RuntimeException("Expected MethodType or PolyType of MethodType, got "+t)
+                    case t => throw new IllegalArgumentException("Expected MethodType or PolyType of MethodType, got "+t)
                   }
                   formalTypes(paramTypes, argslen).map(ft => (ft, alt))
                 }.transpose // do least amount of work up front
@@ -3409,6 +3409,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     else if (treeInfo.isPartialFunctionMissingParamType(tree)) {
                       if (argPtAlts.exists(ts => isPartialFunctionType(ts._1))) partialFunctionProto(argPtAlts)
                       else functionProto(argPtAlts)
+                    } else if (!treeInfo.isFunctionWithParamType(tree) && argPtAlts.forall { case (t, _) => isFunctionType(t)}) {
+                      functionProto(argPtAlts)
                     } else WildcardType
 
                   val argTyped = typedArg(tree, amode, BYVALmode, argPt)
