@@ -313,19 +313,7 @@ trait ArrayLike[+A] extends Any { self =>
 }
 
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, IndexedView[A]] { self =>
-
-  final override def toSeq: immutable.Seq[A] = to(immutable.IndexedSeq)
-
-  override protected[this] def fromSpecificIterable(it: Iterable[A]): IndexedView[A] =
-    it match {
-      case v: IndexedView[A] => v
-      case i: IndexedSeq[A] => i.view
-      case _ => it.to(IndexedSeq).view
-    }
-
-  override protected[this] def newSpecificBuilder(): Builder[A, IndexedView[A]] =
-    IndexedSeq.newBuilder[A]().mapResult(_.view)
+trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, View[A]] { self =>
 
   def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
