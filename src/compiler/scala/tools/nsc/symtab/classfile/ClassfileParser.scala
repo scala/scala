@@ -323,19 +323,28 @@ abstract class ClassfileParser {
       arr
     }
 
-    def getBytes(index: Int): Array[Byte] = (
+    /**
+     * Get an array of bytes stored in the classfile as a string. The data is encoded in the format
+     * described in object [[ByteCodecs]]. Used for the ScalaSignature annotation argument.
+     */
+    def getBytes(index: Int): Array[Byte] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       else values(index) match {
         case xs: Array[Byte] => xs
-        case _               =>
+        case _ =>
           val start = firstExpecting(index, CONSTANT_UTF8)
-          val len   = (in getChar start).toInt
+          val len = (in getChar start).toInt
           val bytes = new Array[Byte](len)
           System.arraycopy(in.buf, start + 2, bytes, 0, len)
           recordAtIndex(getSubArray(bytes), index)
       }
-    )
+    }
 
+    /**
+     * Get an array of bytes stored in the classfile as an array of strings. The data is encoded in
+     * the format described in object [[ByteCodecs]]. Used for the ScalaLongSignature annotation
+     * argument.
+     */
     def getBytes(indices: List[Int]): Array[Byte] = {
       val head = indices.head
       values(head) match {
@@ -345,7 +354,8 @@ abstract class ClassfileParser {
             if (index <= 0 || ConstantPool.this.len <= index) errorBadIndex(index)
             val start = firstExpecting(index, CONSTANT_UTF8)
             val len   = (in getChar start).toInt
-            in.buf drop start + 2 take len
+            val s     = start + 2
+            in.buf.slice(s, s + len)
           }
           recordAtIndex(getSubArray(arr), head)
       }

@@ -1034,21 +1034,34 @@ object BCodeHelpers {
   }
 
   /**
-   * Contains helpers around converting a Scala signature (array of bytes) into an array of `Long`.
-   *  Details about the storage format of pickles at the bytecode level (classfile annotations) can be found in SIP-10.
+   * Helpers for encoding a Scala signature (array of bytes) into a String or, if too large, an
+   * array of Strings.
+   *
+   * The encoding is as described in [[scala.reflect.internal.pickling.ByteCodecs]]. However, the
+   * special encoding of 0x00 as 0xC0 0x80 is not done here, as the resulting String(s) are passed
+   * as annotation argument to ASM, which will perform this step.
    */
-  class ScalaSigBytes(bytes: Array[Byte]) {
+  final class ScalaSigBytes(bytes: Array[Byte]) {
+    import scala.reflect.internal.pickling.ByteCodecs
+
     override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
-    lazy val sevenBitsMayBeZero: Array[Byte] = {
-      mapToNextModSevenBits(scala.reflect.internal.pickling.ByteCodecs.encode8to7(bytes))
-    }
+
+    /**
+     * The data in `bytes` mapped to 7-bit bytes and then each element incremented by 1 (modulo 0x80).
+     * This implements parts of the encoding documented in [[ByteCodecs]]. 0x00 values are NOT
+     * mapped to the overlong encoding (0xC0 0x80) but left as-is.
+     * When creating a String from this array and writing it to a classfile as annotation argument
+     * using ASM, the ASM library will replace 0x00 values by the overlong encoding. So the data in
+     * the classfile will have the format documented in [[ByteCodecs]].
+     */
+    lazy val sevenBitsMayBeZero: Array[Byte] = mapToNextModSevenBits(ByteCodecs.encode8to7(bytes))
 
     private def mapToNextModSevenBits(src: Array[Byte]): Array[Byte] = {
       var i = 0
       val srclen = src.length
       while (i < srclen) {
         val in = src(i)
-        src(i) = (if (in == 0x7f) 0.toByte else (in + 1).toByte)
+        src(i) = if (in == 0x7f) 0.toByte else (in + 1).toByte
         i += 1
       }
       src
@@ -1068,15 +1081,12 @@ object BCodeHelpers {
         if (sevenBitsMayBeZero(i) == 0) numZeros += 1
         i += 1
       }
-
       (sevenBitsMayBeZero.length + numZeros) <= 65535
     }
-    def strEncode: String = {
-      val ca = ubytesToCharArray(sevenBitsMayBeZero)
-      new java.lang.String(ca)
-    }
 
-    final def arrEncode: Array[String] = {
+    def strEncode: String = new java.lang.String(ubytesToCharArray(sevenBitsMayBeZero))
+
+    def arrEncode: Array[String] = {
       var strs: List[String]  = Nil
       val bSeven: Array[Byte] = sevenBitsMayBeZero
       // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
@@ -1085,7 +1095,7 @@ object BCodeHelpers {
       var encLength  = 0
       while (offset < bSeven.length) {
         val deltaEncLength = if (bSeven(offset) == 0) 2 else 1
-        val newEncLength = encLength.toLong + deltaEncLength
+        val newEncLength = encLength + deltaEncLength
         if (newEncLength >= 65535) {
           val ba     = bSeven.slice(prevOffset, offset)
           strs     ::= new java.lang.String(ubytesToCharArray(ba))
@@ -1105,13 +1115,17 @@ object BCodeHelpers {
       strs.reverse.toArray
     }
 
+    /**
+     * Maps an array of bytes 1:1 to an array of characters, ensuring that each byte is 7-bit.
+     * Therefore no charset is required.
+     */
     private def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
       val ca = new Array[Char](bytes.length)
       var idx = 0
       while(idx < bytes.length) {
         val b: Byte = bytes(idx)
         assert((b & ~0x7f) == 0)
-        ca(idx) = b.asInstanceOf[Char]
+        ca(idx) = b.toChar
         idx += 1
       }
       ca
