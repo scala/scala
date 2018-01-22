@@ -54,7 +54,7 @@ class ListBuffer[A]
   @throws[IndexOutOfBoundsException]
   def apply(i: Int) = first.apply(i)
 
-  def length = len
+  override def size = len
   override def knownSize = len
 
   override def isEmpty: Boolean = len == 0
@@ -274,7 +274,7 @@ class ListBuffer[A]
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
     ensureUnaliased()
     val p = locate(from)
-    removeAfter(p, replaced `min` (length - from))
+    removeAfter(p, replaced `min` (len - from))
     insertAfter(p, patch.iterator())
     this
   }

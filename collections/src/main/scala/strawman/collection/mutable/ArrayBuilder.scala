@@ -89,9 +89,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
       case xs: ImmutableArray.ofRef[_] =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -138,9 +138,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Byte]): this.type = xs match {
       case xs: ImmutableArray.ofByte =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -187,9 +187,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Short]): this.type = xs match {
       case xs: ImmutableArray.ofShort =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -236,9 +236,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Char]): this.type = xs match {
       case xs: ImmutableArray.ofChar =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -285,9 +285,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Int]): this.type = xs match {
       case xs: ImmutableArray.ofInt =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -334,9 +334,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Long]): this.type = xs match {
       case xs: ImmutableArray.ofLong =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -383,9 +383,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Float]): this.type = xs match {
       case xs: ImmutableArray.ofFloat =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -432,9 +432,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Double]): this.type = xs match {
       case xs: ImmutableArray.ofDouble =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)
@@ -481,9 +481,9 @@ object ArrayBuilder {
 
     override def addAll(xs: IterableOnce[Boolean]): this.type = xs match {
       case xs: ImmutableArray.ofBoolean =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
+        ensureSize(this.size + xs.size)
+        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.size)
+        size += xs.size
         this
       case _ =>
         super.addAll(xs)

@@ -25,7 +25,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
     def next() = { val r = current.head; current = current.tail; r }
   }
 
-  def length: Int = {
+  override def size: Int = {
     var these = toIterable
     var len = 0
     while (!these.isEmpty) {

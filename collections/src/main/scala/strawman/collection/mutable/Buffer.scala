@@ -110,7 +110,7 @@ trait Buffer[A]
     if (idx < 0) this else takeInPlace(idx)
   }
   def padToInPlace(len: Int, elem: A): this.type = {
-    while (length < len) +=(elem)
+    while (size < len) +=(elem)
     this
   }
 }
@@ -145,10 +145,10 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type = {
-    val n = patch.length min replaced
+    val n = patch.size min replaced
     var i = 0
     while (i < n) { update(from + i, patch(i)); i += 1 }
-    if (i < patch.length) insertAll(from + i, patch.iterator().drop(i))
+    if (i < patch.size) insertAll(from + i, patch.iterator().drop(i))
     else if (i < replaced) remove(from + i, replaced - i)
     this
   }
