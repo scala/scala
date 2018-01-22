@@ -136,6 +136,6 @@ class LowPriority {
   /** Convert array to WrappedArray. Lower priority than ArrayOps */
   implicit def arrayToWrappedArray[T](xs: Array[T]): mutable.IndexedSeq[T] = mutable.WrappedArray.make[T](xs)
 
-  /** Convert string to iterable via view. Lower priority than StringOps */
-  implicit def stringToView(s: String): immutable.StringView = new immutable.StringView(s)
+  /** Convert String to Seq. Lower priority than StringOps */
+  implicit def stringToSeq(s: String): immutable.WrappedString = new immutable.WrappedString(s)
 }
