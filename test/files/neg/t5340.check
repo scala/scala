@@ -1,6 +1,6 @@
-t5340.scala:17: error: type mismatch;
- found   : MyApp.r.E
- required: MyApp.s.E
-  println(b: s.E)
-          ^
+t5340.scala:15: error: type mismatch;
+ found   : Quux[MyApp.r.E,MyApp.s.E]
+ required: Int
+  (new Quux[r.E, s.E]): Int // fails due to pre-stripping implicits which
+   ^
 one error found

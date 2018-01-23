@@ -1,29 +1,19 @@
+class Quux[T, U]
+
 class Poly {
   class E
   object E {
-    implicit def conv(value: Any): E = sys.error("")
+    implicit def conv[T, U](b: Quux[T, U]): Int = 1
   }
 }
 
 object MyApp {
-  val r: Poly = sys.error("")
-  val s: Poly = sys.error("")
-  val b: r.E = sys.error("")
+  val r: Poly = ???
+  val s: Poly = ???
 
-  // okay
-  s.E.conv(b): s.E
-
-  // compilation fails with error below
-  println(b: s.E)
-
-  // amb prefix: MyApp.s.type#class E MyApp.r.type#class E
-  // amb prefix: MyApp.s.type#class E MyApp.r.type#class E
-  // ../test/pending/run/t5310.scala:17: error: type mismatch;
-  //  found   : MyApp.r.E
-  //  required: MyApp.s.E
-  //   println(b: s.E)
-  //           ^
-
-  // The type error is as expected, but the `amb prefix` should be logged,
-  // rather than printed to standard out.
+  (new Quux[r.E, Int]): Int // ok
+  (new Quux[r.E, s.E]): Int // fails due to pre-stripping implicits which
+                            // are reachable via different prefixes but not
+                            // dependent on the prefix. Ambiguity not
+                            // reported as such.
 }
