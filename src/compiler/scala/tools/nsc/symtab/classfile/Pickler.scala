@@ -33,26 +33,30 @@ abstract class Pickler extends SubComponent {
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
-    def apply(unit: CompilationUnit) {
-      def pickle(tree: Tree) {
-        def add(sym: Symbol, pickle: Pickle) = {
-          if (currentRun.compiles(sym) && !currentRun.symData.contains(sym)) {
-            debuglog("pickling " + sym)
-            pickle putSymbol sym
-            currentRun.symData(sym) = pickle
-          }
-        }
-
+    def apply(unit: CompilationUnit): Unit = {
+      def pickle(tree: Tree): Unit = {
         tree match {
           case PackageDef(_, stats) =>
             stats foreach pickle
           case ClassDef(_, _, _, _) | ModuleDef(_, _, _) =>
             val sym = tree.symbol
-            val pickle = new Pickle(sym)
-            add(sym, pickle)
-            add(sym.companionSymbol, pickle)
-            pickle.writeArray()
-            currentRun registerPickle sym
+            def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
+            if (shouldPickle(sym)) {
+              val pickle = new Pickle(sym)
+              def pickleSym(sym: Symbol) = {
+                pickle.putSymbol(sym)
+                currentRun.symData(sym) = pickle
+              }
+
+              val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
+              val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
+              syms.foreach { sym =>
+                pickle.putSymbol(sym)
+                currentRun.symData(sym) = pickle
+              }
+              pickle.writeArray()
+              currentRun registerPickle sym
+            }
           case _ =>
         }
       }
