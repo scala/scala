@@ -4,7 +4,7 @@ package immutable
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 
-import scala.{Any, AnyRef, Boolean, Int, None, NoSuchElementException, noinline, Nothing, Option, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException}
+import scala.{Any, AnyRef, Boolean, Int, None, NoSuchElementException, noinline, Nothing, Option, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, deprecated}
 import scala.Predef.String
 import scala.annotation.tailrec
 
@@ -205,6 +205,9 @@ sealed abstract class LazyList[+A]
     */
   def lazyAppendAll[B >: A](suffix: => collection.IterableOnce[B]): LazyList[B] =
     if (isEmpty) LazyList.fromIterator(suffix.iterator()) else LazyList.cons(head, tail.lazyAppendAll(suffix))
+
+  @deprecated("append has been renamed to lazyAppendAll", "2.13.0")
+  def append[B >: A](rest: => collection.IterableOnce[B]): LazyList[B] = lazyAppendAll(rest)
 
   override def className = "LazyList"
 
