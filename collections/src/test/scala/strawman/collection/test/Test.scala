@@ -6,7 +6,7 @@ import java.lang.String
 import scala.{Any, Array, Boolean, Char, Either, Int, Left, Nothing, Option, StringContext, Unit}
 import scala.Predef.{assert, charWrapper, identity, println, $conforms}
 import collection._
-import collection.immutable.{ImmutableArray, LazyList, List, Nil, Range, Vector}
+import collection.immutable.{ImmutableArray, List, Nil, Range, Vector, Stream}
 import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
 import org.junit.Assert._
@@ -363,7 +363,7 @@ class StrawmanTest {
     println(xs16)
   }
 
-  def lazyListOps(xs: Seq[Int]): Unit = {
+  /*def lazyListOps(xs: Seq[Int]): Unit = {
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
@@ -455,7 +455,7 @@ class StrawmanTest {
 
     // laziness may differ in dotty, so test only that we are as lazy as Stream
     import scala.collection.{immutable => old}
-    lazy val fibsStream: old.Stream[Int] = 0 #:: 1 #:: fibsStream.zip(fibsStream.tail).map { n => n._1 + n._2 }
+    lazy val fibsStream: Stream[Int] = 0 #:: 1 #:: fibsStream.zip(fibsStream.tail).map { n => n._1 + n._2 }
     if(old.List(0,1,1,2)==fibsStream.take(4).toList) {
       lazy val fibs: LazyList[Int] = 0 #:: 1 #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
       assert(List(0, 1, 1, 2) == fibs.take(4).to(List))
@@ -465,10 +465,10 @@ class StrawmanTest {
     var lazeCountL = 0
     def lazeL(i: Int) = {lazeCountL += 1; i}
     def lazeS(i: Int) = {lazeCountS += 1; i}
-    val xs20 = lazeS(1) #:: lazeS(2) #:: lazeS(3) #:: old.Stream.empty
+    val xs20 = lazeS(1) #:: lazeS(2) #:: lazeS(3) #:: Stream.empty
     val xs21 = lazeL(1) #:: lazeL(2) #:: lazeL(3) #:: LazyList.empty
     assert(lazeCountS==lazeCountL)
-  }
+  }*/
 
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
     iterableOps(xs)
@@ -536,9 +536,9 @@ class StrawmanTest {
   @Test
   def distinct(): Unit = {
     // Lazy collections distinct
-    assert(LazyList[Int]().distinct.isEmpty)
+    /*assert(LazyList[Int]().distinct.isEmpty)
     assert(LazyList(1,1,1,1).distinct.equals(LazyList(1)))
-    assert(LazyList(1,2,3,1).distinct.equals(LazyList(1,2,3)))
+    assert(LazyList(1,2,3,1).distinct.equals(LazyList(1,2,3)))*/
 
     // Strict collections distinct
     assert(List().distinct.equals(List()))
@@ -550,8 +550,8 @@ class StrawmanTest {
   def linearSeqSize(): Unit = {
     val list = 1 :: 2 :: 3 :: Nil
     assert(list.length == list.size && list.size == 3)
-    val lazyList = 1 #:: 2 #:: 3 #:: LazyList.Empty
-    assert(lazyList.length == lazyList.size && lazyList.size == 3)
+    //val lazyList = 1 #:: 2 #:: 3 #:: LazyList.Empty
+    //assert(lazyList.length == lazyList.size && lazyList.size == 3)
   }
 
   @Test
@@ -573,14 +573,14 @@ class StrawmanTest {
   def mainTest(): Unit = {
     val ints = List(1, 2, 3)
     val intsVec = ints.to(Vector)
-    val intsLzy = ints.to(LazyList)
+    //val intsLzy = ints.to(LazyList)
     val intsArr = ints.to(ImmutableArray)
     val intsBuf = ints.to(ArrayBuffer)
     val intsListBuf = ints.to(ListBuffer)
     val intsView = ints.view
     seqOps(ints)
     seqOps(intsVec)
-    seqOps(intsLzy)
+    //seqOps(intsLzy)
     seqOps(intsArr)
     seqOps(intsBuf)
     seqOps(intsListBuf)
@@ -589,10 +589,10 @@ class StrawmanTest {
     arrayOps(Array(1, 2, 3))
     immutableSeqOps(ints)
     immutableSeqOps(intsVec)
-    immutableSeqOps(intsLzy)
+    //immutableSeqOps(intsLzy)
     immutableSeqOps(intsArr)
     immutableArrayOps(intsArr)
-    lazyListOps(intsLzy)
+    //lazyListOps(intsLzy)
     distinct()
     linearSeqSize()
   }
