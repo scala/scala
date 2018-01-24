@@ -1,0 +1,36 @@
+sip23-singleton-isas.scala:8: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert(foo.isInstanceOf[Singleton])
+                         ^
+sip23-singleton-isas.scala:9: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((foo: String).isInstanceOf[Singleton])
+                                   ^
+sip23-singleton-isas.scala:14: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert(bar.isInstanceOf[Singleton])
+                         ^
+sip23-singleton-isas.scala:15: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((bar: String).isInstanceOf[Singleton])
+                                   ^
+sip23-singleton-isas.scala:20: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert(baz.isInstanceOf[Singleton])
+                         ^
+sip23-singleton-isas.scala:21: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((baz: String).isInstanceOf[Singleton])
+                                   ^
+sip23-singleton-isas.scala:25: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert("foo".isInstanceOf[Singleton])
+                           ^
+sip23-singleton-isas.scala:26: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert(("foo": String).isInstanceOf[Singleton])
+                                     ^
+sip23-singleton-isas.scala:32: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((y: (x.type with y.type)).isInstanceOf[Singleton])
+                                               ^
+sip23-singleton-isas.scala:33: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((y: (x.type with Int)).isInstanceOf[Singleton])
+                                            ^
+sip23-singleton-isas.scala:35: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert((y: A).isInstanceOf[Singleton])
+                            ^
+sip23-singleton-isas.scala:36: warning: fruitless type test: every non-null value will be a Singleton dynamically
+  assert(!(null: String).isInstanceOf[Singleton])
+                                     ^

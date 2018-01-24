@@ -235,7 +235,8 @@ trait TypeComparers {
       case PolyType(ps1, res1)        => tp2 match { case PolyType(ps2, res2)        => equalTypeParamsAndResult(ps1, res1, ps2, res2)       ; case _ => false }
       case ExistentialType(qs1, res1) => tp2 match { case ExistentialType(qs2, res2) => equalTypeParamsAndResult(qs1, res1, qs2, res2)       ; case _ => false }
       case ThisType(sym1)             => tp2 match { case ThisType(sym2)             => sym1 eq sym2                                         ; case _ => false }
-      case ConstantType(c1)           => tp2 match { case ConstantType(c2)           => c1 == c2                                             ; case _ => false }
+      case FoldableConstantType(c1)   => tp2 match { case FoldableConstantType(c2)   => c1 == c2                                             ; case _ => false }
+      case LiteralType(c1)            => tp2 match { case LiteralType(c2)            => c1 == c2                                             ; case _ => false }
       case NullaryMethodType(res1)    => tp2 match { case NullaryMethodType(res2)    => res1 =:= res2                                        ; case _ => false }
       case TypeBounds(lo1, hi1)       => tp2 match { case TypeBounds(lo2, hi2)       => lo1 =:= lo2 && hi1 =:= hi2                           ; case _ => false }
       case _                          => false
@@ -417,7 +418,7 @@ trait TypeComparers {
   private def isSubType2(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
 
-    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))
+    if (tp1.isInstanceOf[SingletonType] && tp2.isInstanceOf[SingletonType])
       return (tp1 =:= tp2) || isThisAndSuperSubtype(tp1, tp2) || retry(tp1.underlying, tp2)
 
     if (tp1.isHigherKinded || tp2.isHigherKinded)
@@ -572,7 +573,7 @@ trait TypeComparers {
         case tr1 @ TypeRef(pre1, sym1, _) =>
           def nullOnLeft = tp2 match {
             case TypeRef(_, sym2, _) => sym1 isBottomSubClass sym2
-            case _                   => isSingleType(tp2) && retry(tp1, tp2.widen)
+            case _                   => isSingleType(tp2) && tp2.widen <:< AnyRefTpe && retry(tp1, tp2.widen)
           }
 
           sym1 match {

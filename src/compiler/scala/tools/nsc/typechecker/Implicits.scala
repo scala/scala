@@ -1381,6 +1381,22 @@ trait Implicits {
       }
     }
 
+    /** Creates a tree that will produce a ValueOf instance for the requested type.
+      * An EmptyTree is returned if materialization fails.
+      */
+    private def valueOfType(tp: Type): SearchResult = {
+      def success(t: Tree) = wrapResult(Apply(Select(New(gen.scalaDot(tpnme.ValueOf)), nme.CONSTRUCTOR), List(t)))
+
+      tp.dealias match {
+        case ConstantType(c: Constant) => success(Literal(c))
+        case SingleType(p, v) => success(gen.mkAttributedRef(p, v) setType tp)
+        case ThisType(sym) => success(gen.mkAttributedThis(sym) setType tp)
+        case UnitTpe => success(Literal(Constant(())))
+        case TypeRef(pre, sym, Nil) if sym.isModuleClass => success(gen.mkAttributedRef(pre, sym.sourceModule) setType tp)
+        case _ => SearchFailure
+      }
+    }
+
     def wrapResult(tree: Tree): SearchResult =
       if (tree == EmptyTree) SearchFailure else new SearchResult(atPos(pos.focus)(tree), EmptyTreeTypeSubstituter, Nil)
 
@@ -1395,6 +1411,7 @@ trait Implicits {
           sym match {
             case sym if ManifestSymbols(sym) => manifestOfType(arg, sym)
             case sym if TagSymbols(sym) => tagOfType(pre, arg, sym)
+            case ValueOfClass => valueOfType(arg)
             // as of late ClassManifest is an alias of ClassTag
             // hence we need to take extra care when performing dealiasing
             // because it might destroy the flavor of the manifest requested by the user

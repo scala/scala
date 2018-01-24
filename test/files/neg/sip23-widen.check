@@ -1,0 +1,56 @@
+sip23-widen.scala:4: error: type mismatch;
+ found   : Test.f0.type (with underlying type Int)
+ required: 4
+  f0: 4
+  ^
+sip23-widen.scala:16: error: type mismatch;
+ found   : () => Int
+ required: () => 4
+  f2: (() => 4)
+  ^
+sip23-widen.scala:20: error: type mismatch;
+ found   : () => Int
+ required: () => 4
+  f3: (() => 4)
+  ^
+sip23-widen.scala:28: error: type mismatch;
+ found   : Test.f5.type (with underlying type Int)
+ required: 4
+  f5: 4
+  ^
+sip23-widen.scala:32: error: type mismatch;
+ found   : Test.f6.type (with underlying type Int)
+ required: 4
+  f6: 4
+  ^
+sip23-widen.scala:41: error: type mismatch;
+ found   : Int(5)
+ required: 4
+  val f8 = bar(() => 4)(5)
+                        ^
+sip23-widen.scala:45: error: type mismatch;
+ found   : () => (Int, () => Int)
+ required: () => (4, () => 5)
+  f9: (() => (4, () => 5))
+  ^
+sip23-widen.scala:51: error: type mismatch;
+ found   : Int
+ required: 4
+  f11: 4
+  ^
+sip23-widen.scala:56: error: type mismatch;
+ found   : Int
+ required: 4
+  f12: 4
+  ^
+sip23-widen.scala:62: error: type mismatch;
+ found   : Int(5)
+ required: 4
+  f13 = 5
+        ^
+sip23-widen.scala:75: error: type mismatch;
+ found   : Test.annot0.type (with underlying type Int)
+ required: 1 @unchecked
+  annot0: 1 @unchecked
+  ^
+11 errors found

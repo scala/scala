@@ -98,7 +98,7 @@ names-defaults-neg.scala:79: error: type mismatch;
   def test6[T](x: List[List[T]] = List(1,2)) = x
                                       ^
 names-defaults-neg.scala:82: error: type mismatch;
- found   : Int
+ found   : 1
  required: String
 Error occurred in an application involving default arguments.
   new A2[String]()

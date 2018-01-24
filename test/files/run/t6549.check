@@ -18,7 +18,7 @@ scala> m("").xxx = "\""
 mutated m("").xxx
 
 scala> m('s).xxx = 's
-mutated m(scala.Symbol("s")).xxx
+mutated m('s).xxx
 
 scala> val `"` = 0
 ": Int = 0

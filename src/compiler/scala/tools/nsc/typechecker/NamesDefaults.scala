@@ -299,7 +299,8 @@ trait NamesDefaults { self: Analyzer =>
               //      which is important for (at least) macros.
               arg.tpe
             }
-          ).widen // have to widen or types inferred from literal defaults will be singletons
+          )
+
           val s = context.owner.newValue(unit.freshTermName(nme.NAMEDARG_PREFIX), arg.pos, newFlags = ARTIFACT) setInfo {
             val tp = if (byName) functionType(Nil, argTpe) else argTpe
             uncheckedBounds(tp)

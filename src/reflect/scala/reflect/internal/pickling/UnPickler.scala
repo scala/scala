@@ -434,6 +434,7 @@ abstract class UnPickler {
         case LITERALnull    => Constant(null)
         case LITERALclass   => Constant(readTypeRef())
         case LITERALenum    => Constant(readSymbolRef())
+        case LITERALsymbol  => Constant(scala.Symbol(readNameRef().toString))
         case _              => noSuchConstantTag(tag, len)
       }
     }

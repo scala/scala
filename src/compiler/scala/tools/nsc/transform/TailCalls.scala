@@ -117,7 +117,9 @@ abstract class TailCalls extends Transform {
       def tailLabels: Set[Symbol]
 
       def enclosingType = method.enclClass.typeOfThis
-      def isEligible    = method.isEffectivelyFinalOrNotOverridden
+      def isEligible    = method.isEffectivelyFinalOrNotOverridden && !isExcludedBySingletonArg && !isExcludedBySingletonResult
+      def isExcludedBySingletonArg = mexists(method.paramss)(_.tpe_*.isInstanceOf[SingletonType])
+      def isExcludedBySingletonResult = method.tpe_*.finalResultType.isInstanceOf[SingletonType]
       def isMandatory   = method.hasAnnotation(TailrecClass)
       def isTransformed = isEligible && accessed(label)
 
@@ -256,7 +258,11 @@ abstract class TailCalls extends Transform {
           }
         }
 
-        if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
+        if (ctx.isExcludedBySingletonArg)
+                                        fail("it has a singleton typed argument which cannot be erased correctly")
+        else if (ctx.isExcludedBySingletonResult)
+                                        fail("it has a singleton result type which cannot be erased correctly")
+        else if (!ctx.isEligible)       fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
           if (ctx.isMandatory && receiverIsSuper) // OPT expensive check, avoid unless we will actually report the error
                                         failHere("it contains a recursive call targeting a supertype")

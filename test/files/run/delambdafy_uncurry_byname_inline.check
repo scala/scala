@@ -7,14 +7,14 @@ package <empty> {
     };
     def bar(x: () => Int): Int = x.apply();
     def foo(): Int = Foo.this.bar({
-      @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
-        def <init>(): <$anon: () => Int> = {
+      @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[1] with Serializable {
+        def <init>(): <$anon: () => 1> = {
           $anonfun.super.<init>();
           ()
         };
         final def apply(): Int = 1
       };
-      (new <$anon: () => Int>(): () => Int)
+      (new <$anon: () => 1>(): () => Int)
     })
   }
 }

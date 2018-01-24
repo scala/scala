@@ -1,9 +1,0 @@
-t900.scala:4: error: type mismatch;
- found   : Foo.this.x.type (with underlying type Foo.this.bar)
- required: AnyRef
-Note that bar is unbounded, which means AnyRef is not a known parent.
-Such types can participate in value classes, but instances
-cannot appear in singleton types or in reference comparisons.
-        def break(): x.type
-                     ^
-one error found

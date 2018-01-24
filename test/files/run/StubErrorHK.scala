@@ -12,7 +12,7 @@ object Test extends scala.tools.partest.StubErrorMessageTest {
   def userCode = """
     package stuberrors
     object C extends App {
-      println(new B)
+      println(new B[Nothing])
     }
   """
 

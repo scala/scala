@@ -526,9 +526,9 @@ string literal does not start a valid escape sequence.
 symbolLiteral  ::=  ‘'’ plainid
 ```
 
-A symbol literal `'x` is a shorthand for the expression
-`scala.Symbol("x")`. `Symbol` is a [case class](05-classes-and-objects.html#case-classes),
-which is defined as follows.
+A symbol literal `'x` is a shorthand for the expression `scala.Symbol("x")` and
+is of the [literal type](03-types#literal-types) `'x`. `Symbol` is a [case
+class](05-classes-and-objects.html#case-classes), which is defined as follows.
 
 ```scala
 package scala
