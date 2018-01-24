@@ -9,13 +9,12 @@
 package strawman.collection
 package mutable
 
-import scala.{Unit, Int, Serializable, SerialVersionUID, Option, NoSuchElementException, Boolean, IndexOutOfBoundsException}
+import scala.{deprecated, Unit, Int, Serializable, SerialVersionUID, Option, NoSuchElementException, Boolean, IndexOutOfBoundsException}
 import scala.Predef.require
 import immutable.List
 
 /**
-  *  This class is used internally to represent mutable lists. It is the
-  *  basis for the implementation of the class `Queue`.
+  *  This class is used internally to represent mutable lists.
   *
   *  @author  Matthias Zenger
   *  @author  Martin Odersky
@@ -124,7 +123,8 @@ private[mutable] class MutableList[A]
     this
   }
 
-  def toQueue = new Queue(first0, last0, len)
+  @deprecated("Use to(Queue) instead", "2.13.0")
+  def toQueue: Queue[A] = to(Queue)
 
   /** Is the list empty?
     */

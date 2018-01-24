@@ -63,6 +63,9 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use Set.from(it) instead of it.toSet", "2.13.0")
   @`inline` def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
 
+  @deprecated("Use Iterable.from(it) instead of it.toIterable", "2.13.0")
+  @`inline` final def toIterable: Iterable[A] = Iterable.from(it)
+
   @deprecated("Use Seq.from(it) instead of it.toSeq", "2.13.0")
   @`inline` def toSeq: immutable.Seq[A] = immutable.Seq.from(it)
 

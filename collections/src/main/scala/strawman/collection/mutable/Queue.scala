@@ -9,7 +9,9 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Serializable, SerialVersionUID, deprecated}
+import scala.{Array, AnyRef, Boolean, Int, Option, None, Some, SerialVersionUID, Serializable}
+
+import strawman.collection.toNewSeq
 
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -18,8 +20,26 @@ import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Se
   *
   *  @version 2.13
   *  @since   2.13
+  *
+  *  @define Coll `mutable.Queue`
+  *  @define coll mutable queue
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
   */
-class Queue[A] extends ArrayDeque[A] {
+@SerialVersionUID(3L)
+class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
+  extends ArrayDeque[A](array, start, end)
+    with IndexedSeqOps[A, Queue, Queue[A]]
+    with StrictOptimizedSeqOps[A, Queue, Queue[A]]
+    with Cloneable[Queue[A]]
+    with Serializable {
+
+  def this(initialSize: Int = ArrayDeque.DefaultInitialSize) =
+    this(ArrayDeque.alloc(initialSize), start = 0, end = 0)
+
+  override def iterableFactory: SeqFactory[Queue] = Queue
 
   /**
     * Add elements to the end of this queue
@@ -35,7 +55,7 @@ class Queue[A] extends ArrayDeque[A] {
     *  @param   elems      the element sequence.
     *  @return this
     */
-  def enqueue(elem1: A, elem2: A, elems: A*): this.type = enqueue(elem1).enqueue(elem2).enqueueAll(elems)
+  def enqueue(elem1: A, elem2: A, elems: A*): this.type = enqueue(elem1).enqueue(elem2).enqueueAll(elems.toStrawman)
 
   /** Enqueues all elements in the given traversable object into the queue. The
     *  last element in the traversable object will be on front of the new queue.
@@ -53,12 +73,23 @@ class Queue[A] extends ArrayDeque[A] {
     */
   def dequeue(): A = removeHead()
 
-  /**
-    * Dequeues all elements from this stack and return it
+  /** Returns the first element in the queue which satisfies the
+    *  given predicate, and removes this element from the queue.
     *
-    * @return
+    *  @param p   the predicate used for choosing the first element
+    *  @return the first element of the queue for which p yields true
     */
-  def dequeueAll(): strawman.collection.Seq[A] = removeAll()
+  def dequeueFirst(p: A => Boolean): Option[A] =
+    if (isEmpty) None
+    else if (p(head)) {
+      val res = Some(head)
+      removeHead()
+      res
+    } else {
+      val i = lastIndexWhere(p)
+      if (i < 0) None
+      else Some(remove(i))
+    }
 
   /**
     * Returns and removes all elements from the end of this queue which satisfy the given predicate
@@ -66,5 +97,30 @@ class Queue[A] extends ArrayDeque[A] {
     *  @param f   the predicate used for choosing elements
     *  @return
     */
-  def dequeueWhile(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
+  def dequeueAll(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
+
+  override def clone(): Queue[A] = {
+    val bf = newSpecificBuilder()
+    bf ++= this
+    bf.result()
+  }
+
+  override protected def ofArray(array: Array[AnyRef], end: Int): Queue[A] =
+    new Queue(array, start = 0, end)
+
+}
+
+/**
+  * $factoryInfo
+  * @define coll queue
+  * @define Coll `Queue`
+  */
+object Queue extends StrictOptimizedSeqFactory[Queue] {
+
+  def from[A](source: IterableOnce[A]): Queue[A] = empty ++= source
+
+  def empty[A]: Queue[A] = new Queue
+
+  def newBuilder[A](): Builder[A, Queue[A]] = new GrowableBuilder[A, Queue[A]](empty)
+
 }
