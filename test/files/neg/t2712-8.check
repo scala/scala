@@ -1,0 +1,13 @@
+t2712-8.scala:9: error: no type parameters for method foo: (x: D[D[Boolean]])Nothing exist so that it can be applied to arguments (Test.Quux[Int])
+ --- because ---
+argument expression's type is not compatible with formal parameter type;
+ found   : Test.Quux[Int]
+ required: ?D[?D[Boolean]]
+  foo(bar)
+  ^
+t2712-8.scala:9: error: type mismatch;
+ found   : Test.Quux[Int]
+ required: D[D[Boolean]]
+  foo(bar)
+      ^
+two errors found
