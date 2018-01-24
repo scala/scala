@@ -40,10 +40,10 @@ class ArrayBufferBenchmark {
   @Benchmark
   @OperationsPerInvocation(1000)
   def expand_prepend(bh: Blackhole): Unit = {
-    var ys = xs
+    val ys = xs
     var i = 0L
     while (i < 1000) {
-      ys.insert(0, i)
+      ys.prepend(i)
       i += 1
     }
     bh.consume(ys)
@@ -55,7 +55,7 @@ class ArrayBufferBenchmark {
     var ys = xs
     var i = 0L
     while (i < 1000) {
-      ys.insert(0, i)
+      ys.prepend(i)
       i += 1
       ys = ys.tail
     }
@@ -65,7 +65,7 @@ class ArrayBufferBenchmark {
   @Benchmark
   @OperationsPerInvocation(1000)
   def expand_append(bh: Blackhole): Unit = {
-    var ys = xs
+    val ys = xs
     var i = 0L
     while (i < 1000) {
       ys.addOne(i)
@@ -94,7 +94,7 @@ class ArrayBufferBenchmark {
     var i = 0L
     while (i < 1000) {
       if ((i & 1) == 1) ys.addOne(i)
-      else ys.insert(0, i)
+      else ys.prepend(i)
       i += 1
     }
     bh.consume(ys)
