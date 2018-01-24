@@ -92,6 +92,14 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   /*@`inline` final*/ def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
+  /** This function transforms all the values of mappings contained
+    *  in this map with function `f`.
+    *
+    *  @param f A function over keys and values
+    *  @return  the updated map
+    */
+  def transform[W](f: (K, V) => W): CC[K, W] = map { case (k, v) => (k, f(k, v)) }
+
   override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
     var result: CC[K, V1] = coll
     val it = that.iterator()

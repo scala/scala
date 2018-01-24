@@ -239,7 +239,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
     case LongMap.Nil => LongMap.Nil
   }
 
-  def transform[S](f: (Long, T) => S): LongMap[S] = this match {
+  override def transform[S](f: (Long, T) => S): LongMap[S] = this match {
     case b@LongMap.Bin(prefix, mask, left, right) => b.bin(left.transform(f), right.transform(f))
     case t@LongMap.Tip(key, value) => t.withValue(f(key, value))
     case LongMap.Nil => LongMap.Nil

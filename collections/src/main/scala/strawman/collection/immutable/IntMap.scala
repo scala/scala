@@ -253,7 +253,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     case IntMap.Nil => IntMap.Nil
   }
 
-  def transform[S](f: (Int, T) => S): IntMap[S] = this match {
+  override def transform[S](f: (Int, T) => S): IntMap[S] = this match {
     case b@IntMap.Bin(prefix, mask, left, right) => b.bin(left.transform(f), right.transform(f))
     case t@IntMap.Tip(key, value) => t.withValue(f(key, value))
     case IntMap.Nil => IntMap.Nil
