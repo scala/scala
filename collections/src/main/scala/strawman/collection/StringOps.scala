@@ -138,6 +138,15 @@ final class StringOps(val s: String)
   def patch(from: Int, other: String, replaced: Int): String =
     fromSpecificIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
 
+  /** A copy of this string with one single replaced element.
+    *  @param  index  the position of the replacement
+    *  @param  elem   the replacing element
+    *  @return a new string which is a copy of this string with the element at position `index` replaced by `elem`.
+    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
+    */
+  def updated(index: Int, elem: Char): String =
+    fromSpecificIterable(View.Updated(toIterable, index, elem)) // TODO optimize
+
   override def toString = s
 
   override def mkString = toString

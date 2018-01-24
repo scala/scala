@@ -102,61 +102,6 @@ trait IterableFactoryLike[+CC[_]] {
     */
   def newBuilder[A](): Builder[A, CC[A]]
 
-}
-
-/** Base trait for companion objects of unconstrained collection types that can
-  * build a target collection `CC` from a source collection with a single traversal
-  * of the source.
-  *
-  * @tparam CC Collection type constructor (e.g. `List`)
-  */
-trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] {
-
-  // Since most collection factories can build a target collection instance by performing only one
-  // traversal of a source collection, the type of this source collection can be refined to be
-  // just `IterableOnce`
-  type Source[A] = IterableOnce[A]
-
-  implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
-
-}
-
-object IterableFactory {
-
-  /**
-    * Fixes the element type of `factory` to `A`
-    * @param factory The factory to fix the element type
-    * @tparam A Type of elements
-    * @tparam CC Collection type constructor of the factory (e.g. `Seq`, `List`)
-    * @return A [[Factory]] that uses the given `factory` to build a collection of elements
-    *         of type `A`
-    */
-  implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
-    new Factory[A, CC[A]] {
-      def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
-      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
-    }
-
-  implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
-    new BuildFrom[Any, A, CC[A]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder()
-    }
-
-  class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
-    def empty[A]: CC[A] = delegate.empty
-    def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
-    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
-  }
-}
-
-/**
-  * Introduces factory methods `fill` and `tabulate`.
-  * @tparam CC Collection type constructor (e.g. `List`)
-  */
-trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
-  def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
-
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.
     *  @param   elem the element computation
@@ -257,6 +202,59 @@ trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
+}
+
+/** Base trait for companion objects of unconstrained collection types that can
+  * build a target collection `CC` from a source collection with a single traversal
+  * of the source.
+  *
+  * @tparam CC Collection type constructor (e.g. `List`)
+  */
+trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] {
+
+  // Since most collection factories can build a target collection instance by performing only one
+  // traversal of a source collection, the type of this source collection can be refined to be
+  // just `IterableOnce`
+  type Source[A] = IterableOnce[A]
+
+  implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
+
+}
+
+object IterableFactory {
+
+  /**
+    * Fixes the element type of `factory` to `A`
+    * @param factory The factory to fix the element type
+    * @tparam A Type of elements
+    * @tparam CC Collection type constructor of the factory (e.g. `Seq`, `List`)
+    * @return A [[Factory]] that uses the given `factory` to build a collection of elements
+    *         of type `A`
+    */
+  implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
+    new Factory[A, CC[A]] {
+      def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
+      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
+    }
+
+  implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
+    new BuildFrom[Any, A, CC[A]] {
+      def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder()
+    }
+
+  class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
+    def empty[A]: CC[A] = delegate.empty
+    def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
+    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+  }
+}
+
+/**
+  * @tparam CC Collection type constructor (e.g. `List`)
+  */
+trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
+  def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
 }
 
 object SeqFactory {
