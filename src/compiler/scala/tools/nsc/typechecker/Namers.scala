@@ -358,13 +358,15 @@ trait Namers extends MethodSynthesis {
     }
 
     private def enterClassSymbol(tree: ClassDef, clazz: ClassSymbol): Symbol = {
-      if (clazz.sourceFile != null && clazz.sourceFile != contextFile)
-        devWarning(s"Source file mismatch in $clazz: ${clazz.sourceFile} vs. $contextFile")
+      var sourceFile = clazz.sourceFile
+      if (sourceFile != null && sourceFile != contextFile)
+        devWarning(s"Source file mismatch in $clazz: ${sourceFile} vs. $contextFile")
 
       clazz.associatedFile = contextFile
-      if (clazz.sourceFile != null) {
-        assert(currentRun.canRedefine(clazz) || clazz.sourceFile == currentRun.symSource(clazz), clazz.sourceFile)
-        currentRun.symSource(clazz) = clazz.sourceFile
+      sourceFile = clazz.sourceFile
+      if (sourceFile != null) {
+        assert(currentRun.canRedefine(clazz) || sourceFile == currentRun.symSource(clazz), sourceFile)
+        currentRun.symSource(clazz) = sourceFile
       }
       registerTopLevelSym(clazz)
       assert(clazz.name.toString.indexOf('(') < 0, clazz.name)  // )

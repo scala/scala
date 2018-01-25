@@ -760,6 +760,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         mkArray(thrownExceptions)
       )
 
+      emitParamNames(mirrorMethod, m.info.params)
       emitAnnotations(mirrorMethod, others)
       emitParamAnnotations(mirrorMethod, m.info.params.map(_.annotations))
 

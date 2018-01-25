@@ -152,13 +152,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
         }
 
-        // SD-143: a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
-        //   - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
-        //     would select an overriding method in the direct superclass, rather than A.m.
-        //     We allow this if there are statically no intervening overrides.
-        //     https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
-        //   - A is a java-defined interface and not listed as direct parent of the class. In this
-        //     case, `invokespecial A.m` would be invalid.
+        // scala/scala-dev#143:
+        //   a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
+        //     - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
+        //       would select an overriding method in the direct superclass, rather than A.m.
+        //       We allow this if there are statically no intervening overrides.
+        //       https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
+        //     - A is a java-defined interface and not listed as direct parent of the class. In this
+        //       case, `invokespecial A.m` would be invalid.
         def hasClassOverride(member: Symbol, subclass: Symbol): Boolean = {
           if (subclass == ObjectClass || subclass == member.owner) false
           else if (member.overridingSymbol(subclass) != NoSymbol) true
