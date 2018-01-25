@@ -43,7 +43,7 @@ package scala
  *
  *  @author  Martin Odersky
  */
-@deprecated("DelayedInit semantics can be surprising. Support for `App` will continue. See the release notes for more details: https://github.com/scala/scala/releases/tag/v2.11.0-RC1", "2.11.0")
+@deprecated("DelayedInit semantics can be surprising. Support for `App` will continue. See the release notes for more details: https://github.com/scala/scala/releases/tag/v2.11.0", "2.11.0")
 trait DelayedInit {
   def delayedInit(x: => Unit): Unit
 }

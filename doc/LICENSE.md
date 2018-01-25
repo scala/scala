@@ -2,9 +2,9 @@ Scala is licensed under the [BSD 3-Clause License](http://opensource.org/license
 
 ## Scala License
 
-Copyright (c) 2002-2017 EPFL
+Copyright (c) 2002-2018 EPFL
 
-Copyright (c) 2011-2017 Lightbend, Inc.
+Copyright (c) 2011-2018 Lightbend, Inc.
 
 All rights reserved.
 

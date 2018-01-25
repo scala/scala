@@ -28,7 +28,7 @@ object AsyncHelper {
     val baseGroup = new ThreadGroup(s"scalac-${phase.name}")
     private def childGroup(name: String) = new ThreadGroup(baseGroup, name)
 
-    protected def wrapRunnable(r: Runnable): Runnable
+    protected def wrapRunnable(r: Runnable, shortId:String): Runnable
 
     protected class CommonThreadFactory(shortId: String,
                                         daemon: Boolean = true,
@@ -38,7 +38,7 @@ object AsyncHelper {
       private val namePrefix = s"${baseGroup.getName}-$shortId-"
 
       override def newThread(r: Runnable): Thread = {
-        val wrapped = wrapRunnable(r)
+        val wrapped = wrapRunnable(r, shortId)
         val t: Thread = new Thread(group, wrapped, namePrefix + threadNumber.getAndIncrement, 0)
         if (t.isDaemon != daemon) t.setDaemon(daemon)
         if (t.getPriority != priority) t.setPriority(priority)
@@ -61,7 +61,7 @@ object AsyncHelper {
       new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue[Runnable](maxQueueSize), threadFactory, rejectHandler)
     }
 
-    override protected def wrapRunnable(r: Runnable): Runnable = r
+    override protected def wrapRunnable(r: Runnable, shortId:String): Runnable = r
   }
 
   private class ProfilingAsyncHelper(global: Global, phase: Phase, private val profiler: RealProfiler) extends BaseAsyncHelper(global, phase) {
@@ -78,14 +78,14 @@ object AsyncHelper {
       new SinglePhaseInstrumentedThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue[Runnable](maxQueueSize), threadFactory, rejectHandler)
     }
 
-    override protected def wrapRunnable(r: Runnable): Runnable = () => {
+    override protected def wrapRunnable(r: Runnable, shortId:String): Runnable = () => {
       val data = new ThreadProfileData
       localData.set(data)
 
-      val profileStart = Profiler.emptySnap
+      val profileStart = profiler.snapThread(0)
       try r.run finally {
-        val snap = profiler.snapThread()
-        val threadRange = ProfileRange(profileStart, snap, phase, 0, "", Thread.currentThread())
+        val snap = profiler.snapThread(data.idleNs)
+        val threadRange = ProfileRange(profileStart, snap, phase, shortId, data.taskCount, Thread.currentThread())
         profiler.completeBackground(threadRange)
       }
     }

@@ -46,25 +46,28 @@ abstract class BTypesFromClassfile {
    * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    cachedClassBType(internalName).getOrElse({
-      val res = ClassBType(internalName)(classBTypeCacheFromClassfile)
-      byteCodeRepository.classNode(internalName) match {
-        case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
-        case Right(c)  => setClassInfoFromClassNode(c, res)
+    cachedClassBType(internalName).getOrElse{
+      ClassBType(internalName, false){ res:ClassBType =>
+        byteCodeRepository.classNode(internalName) match {
+          case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
+          case Right(c) => computeClassInfoFromClassNode(c, res)
+        }
       }
-    })
+    }
   }
 
   /**
    * Construct the [[ClassBType]] for a parsed classfile.
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
-    cachedClassBType(classNode.name).getOrElse({
-      setClassInfoFromClassNode(classNode, ClassBType(classNode.name)(classBTypeCacheFromClassfile))
-    })
+    cachedClassBType(classNode.name).getOrElse {
+      ClassBType(classNode.name, false) { res: ClassBType =>
+        computeClassInfoFromClassNode(classNode, res)
+      }
+    }
   }
 
-  private def setClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def computeClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): Right[Nothing, ClassInfo] = {
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")
@@ -119,8 +122,7 @@ abstract class BTypesFromClassfile {
 
     val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
 
-    classBType.info = Right(ClassInfo(superClass, interfaces, flags, Lazy(nestedClasses), Lazy(nestedInfo), inlineInfo))
-    classBType
+    Right(ClassInfo(superClass, interfaces, flags, Lazy.withoutLock(nestedClasses), Lazy.withoutLock(nestedInfo), inlineInfo))
   }
 
   /**

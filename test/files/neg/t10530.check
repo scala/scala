@@ -1,0 +1,25 @@
+t10530.scala:1: error: value class may not wrap another user-defined value class
+class X(val u: Any with X) extends AnyVal
+            ^
+t10530.scala:2: error: value class may not wrap another user-defined value class
+class Y(val u: Y with Y) extends AnyVal
+            ^
+t10530.scala:3: error: value class may not wrap another user-defined value class
+class Z(val u: Z with String) extends AnyVal
+            ^
+t10530.scala:4: error: value class may not wrap another user-defined value class
+class U(val u: U with Int) extends AnyVal
+            ^
+t10530.scala:6: error: value class may not wrap another user-defined value class
+class W(val u: Z with U) extends AnyVal
+            ^
+t10530.scala:7: error: value class may not wrap another user-defined value class
+class R(val u: Z {}) extends AnyVal
+            ^
+t10530.scala:9: error: value class may not wrap another user-defined value class
+class Q(val u: AnyRef with X) extends AnyVal
+            ^
+t10530.scala:12: error: value class may not wrap another user-defined value class
+class B[T <: A](val a: T) extends AnyVal
+                    ^
+8 errors found

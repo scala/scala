@@ -9,12 +9,11 @@
 package scala.concurrent
 
 import scala.language.higherKinds
-
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.util.control.NonFatal
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
@@ -677,8 +676,13 @@ object Future {
    */
   def firstCompletedOf[T](futures: TraversableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
     val p = Promise[T]()
-    val completeFirst: Try[T] => Unit = p tryComplete _
-    futures foreach { _ onComplete completeFirst }
+    val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
+      override def apply(v1: Try[T]): Unit = getAndSet(null) match {
+        case null => ()
+        case some => some tryComplete v1
+      }
+    }
+    futures foreach { _ onComplete firstCompleteHandler }
     p.future
   }
 

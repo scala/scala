@@ -36,18 +36,22 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
     if (existing == NoSymbol) {
       decls enter member
       member
-    } else if (existing.sourceFile == null) {
-      decls unlink existing
-      decls enter member
-      member
     } else {
-      if (member.sourceFile != null) {
-        if (existing.sourceFile != member.sourceFile)
-          error(member+"is defined twice,"+
-                "\n in "+existing.sourceFile+
-                "\n and also in "+member.sourceFile)
+      val existingSourceFile = existing.sourceFile
+      if (existingSourceFile == null) {
+        decls unlink existing
+        decls enter member
+        member
+      } else {
+        val memberSourceFile = member.sourceFile
+        if (memberSourceFile != null) {
+          if (existingSourceFile != memberSourceFile)
+            error(member+"is defined twice,"+
+              "\n in "+existingSourceFile+
+              "\n and also in "+memberSourceFile)
+        }
+        existing
       }
-      existing
     }
   }
 

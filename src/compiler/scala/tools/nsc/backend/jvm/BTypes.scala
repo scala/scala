@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.{concurrent, mutable}
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -37,12 +36,12 @@ abstract class BTypes {
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
   def cachedClassBType(internalName: InternalName): Option[ClassBType] =
-    classBTypeCacheFromSymbol.get(internalName).orElse(classBTypeCacheFromClassfile.get(internalName))
+    classBTypeCache.get(internalName)
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
-  val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
-  val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  // Note usage should be private to this file, except for tests
+  val classBTypeCache: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -608,7 +607,8 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final case class ClassBType(internalName: InternalName)(cache: mutable.Map[InternalName, ClassBType]) extends RefBType {
+  sealed abstract class ClassBType protected(val internalName: InternalName) extends RefBType {
+    def fromSymbol: Boolean
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -616,20 +616,19 @@ abstract class BTypes {
      *   B.info.nestedInfo.outerClass == A
      *   A.info.nestedClasses contains B
      */
-    private var _info: Either[NoClassBTypeInfo, ClassInfo] = null
+    // volatile is required to ensure no early initialisation in apply
+    // like classic double checked lock in java
+    @volatile private var _info: Either[NoClassBTypeInfo, ClassInfo] = null
 
     def info: Either[NoClassBTypeInfo, ClassInfo] = {
+      if (_info eq null)
+        // synchronization required to ensure the apply is finished
+        // which populates info. ClassBType doesnt escape apart from via the map
+        // and the object mutex is locked prior to insertion. See apply
+        this.synchronized()
       assert(_info != null, s"ClassBType.info not yet assigned: $this")
       _info
     }
-
-    def info_=(i: Either[NoClassBTypeInfo, ClassInfo]): Unit = {
-      assert(_info == null, s"Cannot set ClassBType.info multiple times: $this")
-      _info = i
-      checkInfoConsistency()
-    }
-
-    cache(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
       if (info.isLeft) return
@@ -695,10 +694,9 @@ abstract class BTypes {
           internalName,
           outerName.orNull,
           innerName.orNull,
-          GenBCode.mkFlags(
-            // the static flag in the InnerClass table has a special meaning, see InnerClass comment
-            i.flags & ~Opcodes.ACC_STATIC,
-            if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
+          // the static flag in the InnerClass table has a special meaning, see InnerClass comment
+          ( i.flags & ~Opcodes.ACC_STATIC |
+              (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
           ) & BCodeHelpers.INNER_CLASSES_FLAGS
         )
     })
@@ -806,6 +804,29 @@ abstract class BTypes {
       "scala/Null",
       "scala/Nothing"
     )
+    def unapply(cr:ClassBType) = Some(cr.internalName)
+
+    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
+      val newRes = if (fromSymbol) new ClassBTypeFromSymbol(internalName) else new ClassBTypeFromClassfile(internalName)
+      // synchronized s required to ensure proper initialisation if info.
+      // see comment on def info
+      newRes.synchronized {
+        classBTypeCache.putIfAbsent(internalName, newRes) match {
+          case None =>
+            newRes._info = init(newRes)
+            newRes.checkInfoConsistency()
+            newRes
+          case Some(old) =>
+            old
+        }
+      }
+    }
+  }
+  private final class ClassBTypeFromSymbol(internalName: InternalName) extends ClassBType(internalName) {
+    override def fromSymbol: Boolean = true
+  }
+  private final class ClassBTypeFromClassfile(internalName: InternalName) extends ClassBType(internalName) {
+    override def fromSymbol: Boolean = false
   }
 
   /**
@@ -891,52 +912,114 @@ abstract class BTypes {
   def isCompilingPrimitive: Boolean
 
   // The [[Lazy]] and [[LazyVar]] classes would conceptually be better placed within
-  // PostProcessorFrontendAccess (they access the `frontendLock` defined in that class). However,
+  // PostProcessorFrontendAccess (they may access the `frontendLock` defined in that class). However,
   // for every component in which we define nested classes, we need to make sure that the compiler
   // knows that all component instances (val frontendAccess) in various classes are all the same,
   // otherwise the prefixes don't match and we get type mismatch errors.
   // Since we already do this dance (val bTypes: GenBCode.this.bTypes.type = GenBCode.this.bTypes)
   // for BTypes, it's easier to add those nested classes to BTypes.
 
-  object Lazy {
-    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
+  abstract sealed class Lazy[+T] {
+    /** get the result of the lazy value, calculating the result and performing the additional actions if the value
+      * is not already known.
+      */
+    def force: T
+
+    /** add an accumulating action, which is performed when the result is forced.
+      * If the result is already known at the time of this call then perform the action immediately
+      *
+      * If the result is not known the action will be performed after the value is force.
+      * The order of application of multiple onForce definitions is undefined
+      */
+    def onForce(f: T => Unit): Unit
   }
+  object Lazy {
 
-  /**
-   * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
-   * to be executed when it's forced.
-   */
-  final class Lazy[T <: AnyRef](t: () => T) {
-    @volatile private var value: T = _
+    /**
+      * create a Lazy, whose calculation is performed with `frontendLock`
+      */
+    def withLock[T <: AnyRef](t: => T): Lazy[T] = new LazyWithLock[T](() => t)
 
-    private var initFunction = {
-      val tt = t // prevent allocating a field for t
-      () => { value = tt() }
+    /**
+      * create a Lazy, whose calculation is conditionally performed with `frontendLock` or eagerly evaluated
+      */
+    def withLockOrEager[T <: AnyRef](beLazy:Boolean, t: => T): Lazy[T] =
+      if (beLazy) new LazyWithLock[T](() => t)
+      else eager(t)
+    /**
+      * create a Lazy where the result is pre-determined, typically a constant, e.g. Nil None etc
+      */
+    def eager[T <: AnyRef](value: T): Lazy[T] = new Eager[T](value)
+
+    /**
+      * create a Lazy, whose calculation is performed on demand
+      */
+    def withoutLock[T <: AnyRef](t: => T): Lazy[T] = new LazyWithoutLock[T](() => t)
+
+    val eagerNil = eager(Nil)
+    val eagerNone = eager(None)
+
+    private final class Eager[T](val force: T) extends Lazy[T] {
+      def onForce(f: T => Unit): Unit = f(force)
+
+      override def toString = force.toString
     }
 
-    override def toString = if (value == null) "<?>" else value.toString
+    private abstract class AbstractLazy[T <: AnyRef](private var t: () => T) extends Lazy[T] {
+      // value need be volatile to ensure that init doesn't expose incomplete results
+      // due to JVM inlining of init
+      @volatile protected var value: T = _
 
-    def onForce(f: T => Unit): Unit = {
-      if (value != null) f(value)
-      else frontendSynch {
+      override def toString = if (value == null) "<?>" else value.toString
+
+      private var postForce: List[T => Unit] = Nil
+
+      def onForce(f: T => Unit): Unit = {
         if (value != null) f(value)
-        else {
-          val prev = initFunction
-          initFunction = () => {
-            prev()
-            f(value)
-          }
+        else this.synchronized {
+          if (value != null) f(value)
+          else postForce = f :: postForce
         }
+      }
+
+      def force: T = {
+        // assign to local var to avoid volatile reads and associated memory barriers
+        var result = value
+        if (result != null) result
+        else {
+          result = init(t)
+          t = null
+          this.synchronized {
+            postForce foreach (_.apply (result))
+            postForce = Nil
+          }
+          result
+        }
+      }
+
+      def init(t: () => T): T
+    }
+
+    /**
+      * A lazy value that synchronizes on the `frontendLock`, and supports accumulating actions
+      * to be executed when it's forced.
+      */
+    private final class LazyWithLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
+
+      def init(t: () => T): T = frontendSynch {
+        if (value == null) value = t()
+        value
       }
     }
 
-    def force: T = {
-      if (value != null) value
-      else frontendSynch {
-        if (value == null) {
-          initFunction()
-          initFunction = null
-        }
+    /**
+      * A lazy value that doesn't synchronize on the `frontendLock`, and supports accumulating actions
+      * to be executed when it's forced.
+      */
+    private final class LazyWithoutLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
+
+      def init(t: () => T): T = this.synchronized {
+        if (value == null) value = t()
         value
       }
     }
@@ -974,7 +1057,10 @@ abstract class BTypes {
       }
     }
 
-    def reInitialize(): Unit = frontendSynch { isInit = false }
+    def reInitialize(): Unit = frontendSynch{
+      v = null.asInstanceOf[T]
+      isInit = false
+    }
   }
 }
 
@@ -1030,4 +1116,9 @@ object BTypes {
 
   // when inlining, local variable names of the callee are prefixed with the name of the callee method
   val InlinedLocalVariablePrefixMaxLength = 128
+}
+object FlatConcurrentHashMap {
+  import collection.JavaConverters._
+  def empty[K,V]: concurrent.Map[K,V] =
+    new java.util.concurrent.ConcurrentHashMap[K,V].asScala
 }

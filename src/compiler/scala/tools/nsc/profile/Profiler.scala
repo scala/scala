@@ -30,7 +30,7 @@ case class ProfileSnap(threadId: Long, threadName: String, snapTimeNanos : Long,
     copy(heapBytes = heapBytes)
   }
 }
-case class ProfileRange(start: ProfileSnap, end:ProfileSnap, phase:Phase, id:Int, purpose:String, thread:Thread) {
+case class ProfileRange(start: ProfileSnap, end:ProfileSnap, phase:Phase, purpose:String, taskCount:Int, thread:Thread) {
   def allocatedBytes = end.allocatedBytes - start.allocatedBytes
 
   def userNs = end.userTimeNanos - start.userTimeNanos
@@ -103,7 +103,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
 
   private val mainThread = Thread.currentThread()
 
-  private[profile] def snapThread(): ProfileSnap = {
+  private[profile] def snapThread( idleTimeNanos:Long): ProfileSnap = {
     import RealProfiler._
     val current = Thread.currentThread()
 
@@ -111,7 +111,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
       threadId = current.getId,
       threadName = current.getName,
       snapTimeNanos = System.nanoTime(),
-      idleTimeNanos = 0,
+      idleTimeNanos = idleTimeNanos,
       cpuTimeNanos = threadMx.getCurrentThreadCpuTime,
       userTimeNanos = threadMx.getCurrentThreadUserTime,
       allocatedBytes = threadMx.getThreadAllocatedBytes(Thread.currentThread().getId),
@@ -156,13 +156,13 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
         val startTime = info.get("startTime").asInstanceOf[jLong].longValue()
         val endTime = info.get("endTime").asInstanceOf[jLong].longValue()
         val threads = info.get("GcThreadCount").asInstanceOf[jInt].longValue()
-        reporter.reportGc(new GcEventData("", reportNs, startTime, endTime, name, action, cause, threads))
+        reporter.reportGc(GcEventData("", reportNs, startTime, endTime, name, action, cause, threads))
     }
   }
 
   override def afterPhase(phase: Phase, snapBefore: ProfileSnap): Unit = {
     assert(mainThread eq Thread.currentThread())
-    val initialSnap = snapThread()
+    val initialSnap = snapThread(0)
     if (settings.YprofileExternalTool.containsPhase(phase)) {
       println("Profile hook stop")
       ExternalToolHook.after()
@@ -172,7 +172,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
       initialSnap.updateHeap(readHeapUsage())
     } else initialSnap
 
-    reporter.reportForeground(this, new ProfileRange(snapBefore, finalSnap, phase, id, "", Thread.currentThread))
+    reporter.reportForeground(this, ProfileRange(snapBefore, finalSnap, phase, "", 0, Thread.currentThread))
   }
 
   override def beforePhase(phase: Phase): ProfileSnap = {
@@ -183,7 +183,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
       println("Profile hook start")
       ExternalToolHook.before()
     }
-    snapThread()
+    snapThread(0)
   }
 
 }
@@ -231,8 +231,8 @@ object ConsoleProfileReporter extends ProfileReporter {
 
 class StreamProfileReporter(out:PrintWriter) extends ProfileReporter {
   override def header(profiler: RealProfiler): Unit = {
-    out.println(s"info, ${profiler.id}, ${profiler.outDir}")
-    out.println(s"header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize")
+    out.println(s"info, ${profiler.id}, version, 2, output, ${profiler.outDir}")
+    out.println(s"header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize")
     out.println(s"header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads")
   }
 
@@ -243,7 +243,7 @@ class StreamProfileReporter(out:PrintWriter) extends ProfileReporter {
     reportCommon(EventType.MAIN, profiler, threadRange)
   }
   private def reportCommon(tpe:EventType.value, profiler: RealProfiler, threadRange: ProfileRange): Unit = {
-    out.println(s"$tpe,${threadRange.start.snapTimeNanos},${threadRange.end.snapTimeNanos},${profiler.id},${threadRange.phase.id},${threadRange.phase.name},${threadRange.purpose},${threadRange.thread.getId},${threadRange.thread.getName},${threadRange.runNs},${threadRange.idleNs},${threadRange.cpuNs},${threadRange.userNs},${threadRange.allocatedBytes},${if(tpe == EventType.MAIN) threadRange.end.heapBytes else ""}")
+    out.println(s"$tpe,${threadRange.start.snapTimeNanos},${threadRange.end.snapTimeNanos},${profiler.id},${threadRange.phase.id},${threadRange.phase.name},${threadRange.purpose},${threadRange.taskCount},${threadRange.thread.getId},${threadRange.thread.getName},${threadRange.runNs},${threadRange.idleNs},${threadRange.cpuNs},${threadRange.userNs},${threadRange.allocatedBytes},${threadRange.end.heapBytes} ")
   }
 
   override def reportGc(data: GcEventData): Unit = {

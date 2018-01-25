@@ -12,4 +12,3 @@ package scala.beans
 // TODO: remove in 2.13.0-M4 (once M3 is starr and this class is no longer required to launch the compiler)
 @deprecated(message = "the generation of BeanInfo classes is no longer supported", since = "2.12.5")
 abstract class ScalaBeanInfo
-

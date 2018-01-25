@@ -100,10 +100,11 @@ private[tests] trait CoreTestDefs
         else {
           reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + pos.source.file.name)
           val r = new Response[Position]
+          val sourceFile = tree.symbol.sourceFile
           // `tree.symbol.sourceFile` was discovered to be null when testing using virtpatmat on the akka presentation test, where a position had shifted to point to `Int`
           // askHyperlinkPos for `Int` at (73,19) pi.scala --> class Int in package scala has null sourceFile!
-          val treePath = if (tree.symbol.sourceFile ne null) tree.symbol.sourceFile.path else null
-          val treeName = if (tree.symbol.sourceFile ne null) tree.symbol.sourceFile.name else null
+          val treePath = if (sourceFile ne null) sourceFile.path else null
+          val treeName = if (sourceFile ne null) sourceFile.name else null
 
           sourceFiles.find(_.path == treePath) match {
             case Some(source) =>
@@ -112,7 +113,7 @@ private[tests] trait CoreTestDefs
                 case Left(pos) =>
                   val resolvedPos = if (tree.symbol.pos.isDefined) tree.symbol.pos else pos
                   withResponseDelimiter {
-                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + format(resolvedPos) + " " + tree.symbol.sourceFile.name)
+                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + format(resolvedPos) + " " + sourceFile.name)
                   }
                 case Right(ex) =>
                   ex.printStackTrace()
