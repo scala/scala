@@ -94,6 +94,9 @@ class ListBuffer[A]
 
   def clear(): Unit = {
     first = Nil
+    len = 0
+    last0 = null
+    aliased = false
   }
 
   def addOne(elem: A): this.type = {
