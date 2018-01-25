@@ -74,7 +74,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
        *            Reached upon abrupt termination of (2).
        *            Protected by whatever protects the whole synchronized expression.
        *            null => "any" exception in bytecode, like we emit for finally.
-       *            Important not to use j/l/Throwable which dooms the method to a life of interpretation! (SD-233)
+       *            Important not to use j/l/Throwable which dooms the method to a life of interpretation! (scala/scala-dev#233)
        * ------
        */
       protect(startProtected, endProtected, currProgramPoint(), null)

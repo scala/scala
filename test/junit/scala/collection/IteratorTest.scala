@@ -105,6 +105,54 @@ class IteratorTest {
     assertFalse(r3 contains 5)
     assertTrue(r3.isEmpty)
   }
+  @Test def rangeOverflow(): Unit = {
+    val step = 100000000
+    val numExpectedSamples = 22
+    def createIterator = Iterator.range(0, Int.MaxValue, step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, 0)
+    assertEquals(createIterator.max, (numExpectedSamples - 1) * step)
+  }
+  @Test def rangeOverflow2() : Unit = {
+    val step = (Int.MaxValue / 2) + 1
+    val numExpectedSamples = 2
+    def createIterator = Iterator.range(0, Int.MaxValue, step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, 0)
+    assertEquals(createIterator.max, step)
+  }
+  @Test def rangeOverflow3() : Unit = {
+    val step = 1000000000
+    val numExpectedSamples = 5
+    def createIterator = Iterator.range(Int.MinValue +10,Int.MaxValue - 10,step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, Int.MinValue + 10)
+    assertEquals(createIterator.max, Int.MinValue + 10 + (numExpectedSamples - 1) * step)
+  }
+  @Test def rangeUnderflow() : Unit = {
+    val step = -100000000
+    val numExpectedSamples = 22
+    def createIterator = Iterator.range(0, -Int.MaxValue, step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, (numExpectedSamples - 1) * step)
+    assertEquals(createIterator.max, 0)
+  }
+  @Test def rangeUnderflow2() : Unit = {
+    val step = -(Int.MaxValue / 2) - 1
+    val numExpectedSamples = 2
+    def createIterator = Iterator.range(0, -Int.MaxValue, step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, step)
+    assertEquals(createIterator.max, 0)
+  }
+  @Test def rangeUnderflow3() : Unit = {
+    val step = -1000000000
+    val numExpectedSamples = 5
+    def createIterator = Iterator.range(Int.MaxValue -10,Int.MinValue + 10,step)
+    assertEquals(createIterator.size, numExpectedSamples)
+    assertEquals(createIterator.min, Int.MaxValue - 10 + (numExpectedSamples - 1) * step)
+    assertEquals(createIterator.max, Int.MaxValue - 10)
+  }
   @Test def take(): Unit = {
     assertEquals(10, (Iterator from 0 take 10).size)
   }

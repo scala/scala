@@ -1,0 +1,11 @@
+t10678.scala:4: warning: Using `<:` for `extends` is deprecated
+trait U <: T
+        ^
+t10678.scala:6: error: ';' expected but '<:' found.
+class C <: T {
+        ^
+t10678.scala:9: error: ';' expected but '<:' found.
+object O <: T {
+         ^
+one warning found
+two errors found

@@ -298,7 +298,7 @@ quant)
   }
 
   /** Helper for measuring the overhead of a concrete thunk `body`. */
-  final def timed[T](timer: Timer)(body: => T): T = {
+  @inline final def timed[T](timer: Timer)(body: => T): T = {
     val start = startTimer(timer)
     try body finally stopTimer(timer, start)
   }

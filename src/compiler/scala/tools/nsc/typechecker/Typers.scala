@@ -1108,9 +1108,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // TODO: figure out how to avoid partially duplicating typedFunction (samMatchingFunction)
                 // Could we infer the SAM type, assign it to the tree and add the attachment,
                 // all in one fell swoop at the end of typedFunction?
-                val samAttach = inferSamType(tree, pt, mode)
+                val didInferSamType = inferSamType(tree, pt, mode)
 
-                if (samAttach.samTp ne NoType) tree.setType(samAttach.samTp).updateAttachment(samAttach)
+                if (didInferSamType) tree
                 else {  // (15) implicit view application
                   val coercion =
                     if (context.implicitsEnabled) inferView(tree, tree.tpe, pt)
@@ -1440,7 +1440,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case Some(acc) if acc.isProtectedLocal =>
                 context.error(paramAccessor.pos, "value class parameter must not be protected[this]")
               case Some(acc) =>
-                if (acc.tpe.typeSymbol.isDerivedValueClass)
+                /* check all base classes, since derived value classes might lurk in refinement parents */
+                if (acc.tpe.typeSymbol.baseClasses exists (_.isDerivedValueClass))
                   context.error(acc.pos, "value class may not wrap another user-defined value class")
                 checkEphemeral(clazz, body filterNot (stat => stat.symbol != null && stat.symbol.accessedOrSelf == paramAccessor))
             }
@@ -2506,12 +2507,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // This adjustment is awfully specific to continuations, but AFAICS the
       // whole AnnotationChecker framework is.
       val pat1 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
-      // When case classes have more than two parameter lists, the pattern ends
-      // up typed as a method.  We only pattern match on the first parameter
-      // list, so substitute the final result type of the method, i.e. the type
-      // of the case class.
-      if (pat1.tpe.paramSectionCount > 0)
-        pat1 modifyType (_.finalResultType)
 
       for (bind @ Bind(name, _) <- cdef.pat) {
         val sym = bind.symbol
@@ -2859,65 +2854,95 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *     function type is a built-in FunctionN or some SAM type
       *
       */
-    def inferSamType(fun: Tree, pt: Type, mode: Mode): SAMFunction = {
-      val sam =
-        if (fun.isInstanceOf[Function] && !isFunctionType(pt)) {
-          // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
-          // seems like overloading complicates things?
-          val sam = samOf(pt)
-          if (samMatchesFunctionBasedOnArity(sam, fun.asInstanceOf[Function].vparams)) sam
-          else NoSymbol
-        } else NoSymbol
+    def inferSamType(fun: Tree, pt: Type, mode: Mode): Boolean = fun match {
+      case fun@Function(vparams, _) if !isFunctionType(pt) =>
+        // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
+        // seems like overloading complicates things?
+        val sam = samOf(pt)
 
-      def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
-        val samMethType = pt memberInfo sam
-        fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
-      }
-
-      SAMFunction(
-        if (!sam.exists) NoType
-        else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
-        else try {
-          val samClassSym = pt.typeSymbol
-
-          // we're trying to fully define the type arguments for this type constructor
-          val samTyCon = samClassSym.typeConstructor
-
-          // the unknowns
-          val tparams = samClassSym.typeParams
-          // ... as typevars
-          val tvars = tparams map freshVar
-
-          val ptVars = appliedType(samTyCon, tvars)
-
-          // carry over info from pt
-          ptVars <:< pt
-
-          val samInfoWithTVars = ptVars.memberInfo(sam)
-
-          // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
-          fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
-
-          val variances = tparams map varianceInType(sam.info)
-
-          // solve constraints tracked by tvars
-          val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
-
-          debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
-
-          val ptFullyDefined = appliedType(samTyCon, targs)
-          if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
-            debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
-            ptFullyDefined
-          } else {
-            debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
-            NoType
+        if (!samMatchesFunctionBasedOnArity(sam, vparams)) false
+        else {
+          def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
+            val samMethType = pt memberInfo sam
+            fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
           }
-        } catch {
-          case e@(_: NoInstance | _: TypeError) =>
-            debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
-            NoType
-        }, sam)
+
+          val samTp =
+            if (!sam.exists) NoType
+            else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
+            else try {
+              val samClassSym = pt.typeSymbol
+
+              // we're trying to fully define the type arguments for this type constructor
+              val samTyCon = samClassSym.typeConstructor
+
+              // the unknowns
+              val tparams = samClassSym.typeParams
+              // ... as typevars
+              val tvars = tparams map freshVar
+
+              val ptVars = appliedType(samTyCon, tvars)
+
+              // carry over info from pt
+              ptVars <:< pt
+
+              val samInfoWithTVars = ptVars.memberInfo(sam)
+
+              // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
+              fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
+
+              val variances = tparams map varianceInType(sam.info)
+
+              // solve constraints tracked by tvars
+              val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
+
+              debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
+
+              val ptFullyDefined = appliedType(samTyCon, targs)
+              if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
+                debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+                ptFullyDefined
+              } else {
+                debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
+                NoType
+              }
+            } catch {
+              case e@(_: NoInstance | _: TypeError) =>
+                debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
+                NoType
+            }
+
+          if (samTp eq NoType) false
+          else {
+            /* Make a synthetic class symbol to represent the synthetic class that
+             * will be spun up by LMF for this function. This is necessary because
+             * it's possible that the SAM method might need bridges, and they have
+             * to go somewhere. Erasure knows to compute bridges for these classes
+             * just as if they were real templates extending the SAM type. */
+            val synthCls = fun.symbol.owner.newClassWithInfo(
+              name = tpnme.ANON_CLASS_NAME,
+              parents = ObjectTpe :: samTp :: Nil,
+              scope = newScope,
+              pos = sam.pos,
+              newFlags = SYNTHETIC | ARTIFACT
+            )
+
+            synthCls.info.decls.enter {
+              val newFlags = (sam.flags & ~DEFERRED) | SYNTHETIC
+              sam.cloneSymbol(synthCls, newFlags).setInfo(samTp memberInfo sam)
+            }
+
+            fun.setType(samTp)
+
+            /* Arguably I should do `fun.setSymbol(samCls)` rather than leaning
+             * on an attachment, but doing that confounds lambdalift's free var
+             * analysis in a way which does not seem to be trivially reparable. */
+            fun.updateAttachment(SAMFunction(samTp, sam, synthCls))
+
+            true
+          }
+        }
+      case _ => false
     }
 
     /** Type check a function literal.
@@ -4795,6 +4820,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           normalTypedApply(tree, fun, args) match {
             case ArrayInstantiation(tree1)                                           => if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
             case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //scala/bug#5696
+            case tree1 if mode.inPatternMode && tree1.tpe.paramSectionCount > 0 =>
+              // For a case class C with more than two parameter lists,
+              // C(_) is typed as C(_)() which is a method type like ()C.
+              // In a pattern, just use the final result type, C in this case.
+              // The enclosing context may be case c @ C(_) => or val c @ C(_) = v.
+              tree1 modifyType (_.finalResultType)
+              tree1
             case tree1                                                               => tree1
           }
       }

@@ -279,11 +279,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     protected def reprSymbol: Symbol = sym
 
-    def inSource =
-      if (reprSymbol.sourceFile != null && ! reprSymbol.isSynthetic)
-        Some((reprSymbol.sourceFile, reprSymbol.pos.line))
+    def inSource = {
+      val sourceFile = reprSymbol.sourceFile
+      if (sourceFile != null && !reprSymbol.isSynthetic)
+        Some((sourceFile, reprSymbol.pos.line))
       else
         None
+    }
 
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
@@ -878,8 +880,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       override val name = newName
       def defaultValue =
         if (aSym.hasDefault) {
+          val sourceFile = aSym.sourceFile
           // units.filter should return only one element
-          (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
+          (currentRun.units filter (_.source.file == sourceFile)).toList match {
             case List(unit) =>
               // scala/bug#4922 `sym == aSym` is insufficient if `aSym` is a clone of symbol
               //         of the parameter in the tree, as can happen with type parameterized methods.

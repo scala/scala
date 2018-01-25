@@ -81,7 +81,7 @@ abstract class UnCurry extends InfoTransform
     private def mustExpandFunction(fun: Function) = {
       // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
       val canUseLambdaMetaFactory = (fun.attachments.get[SAMFunction] match {
-        case Some(SAMFunction(userDefinedSamTp, sam)) =>
+        case Some(SAMFunction(userDefinedSamTp, sam, _)) =>
           // LambdaMetaFactory cannot mix in trait members for us, or instantiate classes -- only pure interfaces need apply
           erasure.compilesToPureInterface(erasure.javaErasure(userDefinedSamTp).typeSymbol) &&
           // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)

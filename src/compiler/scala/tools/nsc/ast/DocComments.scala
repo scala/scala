@@ -70,9 +70,10 @@ trait DocComments { self: Global =>
    *  the doc comment of the overridden version is copied instead.
    */
   def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.getOrElseUpdate(sym, {
-    var ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
-                       else DocComment(docStr).template
-    ownComment = replaceInheritDocToInheritdoc(ownComment)
+    val ownComment = replaceInheritDocToInheritdoc {
+      if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
+      else DocComment(docStr).template
+    }
 
     superComment(sym) match {
       case None =>
@@ -133,8 +134,12 @@ trait DocComments { self: Global =>
     mapFind(sym :: allInheritedOverriddenSymbols(sym))(docComments get _)
 
   /** The cooked doc comment of an overridden symbol */
-  protected def superComment(sym: Symbol): Option[String] =
-    allInheritedOverriddenSymbols(sym).iterator map (x => cookedDocComment(x)) find (_ != "")
+  protected def superComment(sym: Symbol): Option[String] = {
+    val getter: Symbol = sym.getter
+    allInheritedOverriddenSymbols(getter.orElse(sym)).iterator
+      .map(cookedDocComment(_))
+      .find(_ != "")
+  }
 
   private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] =
     xs collectFirst scala.Function.unlift(f)
