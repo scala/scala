@@ -4069,19 +4069,6 @@ trait Types
   /** Are `tps1` and `tps2` lists of pairwise equivalent types? */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
-  /** True if two lists have the same length.  Since calling length on linear sequences
-   *  is O(n), it is an inadvisable way to test length equality.
-   */
-  final def sameLength(xs1: List[_], xs2: List[_]) = compareLengths(xs1, xs2) == 0
-  @tailrec final def compareLengths(xs1: List[_], xs2: List[_]): Int =
-    if (xs1.isEmpty) { if (xs2.isEmpty) 0 else -1 }
-    else if (xs2.isEmpty) 1
-    else compareLengths(xs1.tail, xs2.tail)
-
-  /** Again avoiding calling length, but the lengthCompare interface is clunky.
-   */
-  final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
-
   private var _basetypeRecursions: Int = 0
   def basetypeRecursions = _basetypeRecursions
   def basetypeRecursions_=(value: Int) = _basetypeRecursions = value

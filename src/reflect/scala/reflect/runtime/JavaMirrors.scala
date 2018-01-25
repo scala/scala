@@ -11,7 +11,7 @@ import java.lang.{Class => jClass, Package => jPackage}
 import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable,
-  Modifier => jModifier, GenericDeclaration, GenericArrayType,
+  Parameter => jParameter, GenericDeclaration, GenericArrayType,
   ParameterizedType, WildcardType, AnnotatedElement }
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
@@ -1143,8 +1143,8 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       field
     }
 
-    private def setMethType(meth: Symbol, tparams: List[Symbol], paramtpes: List[Type], restpe: Type) = {
-      meth setInfo GenPolyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
+    private def setMethType(meth: Symbol, tparams: List[Symbol], params: List[Symbol], restpe: Type) = {
+      meth setInfo GenPolyType(tparams, MethodType(params, restpe))
     }
 
     /**
@@ -1161,9 +1161,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val meth = clazz.newMethod(newTermName(jmeth.getName), NoPosition, jmeth.scalaFlags)
       methodCache enter (jmeth, meth)
       val tparams = jmeth.getTypeParameters.toList map createTypeParameter
-      val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
+      val params = jparamsAsScala(meth, jmeth.getParameters.toList)
       val resulttpe = typeToScala(jmeth.getGenericReturnType)
-      setMethType(meth, tparams, paramtpes, resulttpe)
+      setMethType(meth, tparams, params, resulttpe)
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
       if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
@@ -1187,14 +1187,28 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val constr = clazz.newConstructor(NoPosition, jconstr.scalaFlags)
       constructorCache enter (jconstr, constr)
       val tparams = jconstr.getTypeParameters.toList map createTypeParameter
-      val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
-      setMethType(constr, tparams, paramtpes, clazz.tpe_*)
-      constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
+      val params = jparamsAsScala(constr, jconstr.getParameters.toList)
+      setMethType(constr, tparams, params, clazz.tpe)
       propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
       if (jconstr.javaFlags.isVarargs) constr modifyInfo arrayToRepeated
       markAllCompleted(constr)
       constr
+    }
+
+    /** Transform Java parameters `params` into a list of value parameters
+      * for `meth`.
+      */
+    private def jparamsAsScala(meth: MethodSymbol, params: List[jParameter]): List[Symbol] = {
+      params.zipWithIndex.map {
+        case (param, ix) =>
+          val name =
+            if (param.isNamePresent) TermName(param.getName)
+            else nme.syntheticParamName(ix + 1)
+          meth.owner.newValueParameter(name, meth.pos)
+            .setInfo(objToAny(typeToScala(param.getParameterizedType)))
+            .setFlag(if (param.isNamePresent) 0 else SYNTHETIC)
+      }
     }
 
 // -------------------- Scala to Java  -----------------------------------

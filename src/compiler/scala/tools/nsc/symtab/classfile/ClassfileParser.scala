@@ -17,6 +17,7 @@ import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
 import scala.reflect.io.NoAbstractFile
+import scala.reflect.internal.util.Collections._
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.util.control.NonFatal
@@ -802,6 +803,7 @@ abstract class ClassfileParser {
   } // sigToType
 
   def parseAttributes(sym: Symbol, symtype: Type, removedOuterParameter: Boolean = false) {
+    var paramNames: ListBuffer[Name] = null // null means we didn't find any
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.typeSymbol == BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
@@ -843,18 +845,16 @@ abstract class ClassfileParser {
               in.skip(4)
               i += 1
             }
-            var remainingParams = sym.paramss.head // Java only has exactly one parameter list
+            paramNames = new ListBuffer()
             while (i < paramCount) {
-              val name = pool.getName(u2)
+              val rawname = pool.getName(u2)
               val access = u2
-              if (remainingParams.nonEmpty) {
-                val param = remainingParams.head
-                remainingParams = remainingParams.tail
-                if ((access & ACC_SYNTHETIC) != ACC_SYNTHETIC) { // name not synthetic
-                  param.name = name.encode
-                  param.resetFlag(SYNTHETIC)
-                }
-              }
+
+              val name =
+                if ((access & ACC_SYNTHETIC) == 0) rawname.encode
+                else nme.NO_NAME
+
+              paramNames += name
               i += 1
             }
           }
@@ -1088,8 +1088,27 @@ abstract class ClassfileParser {
       scalaSigAnnot
     }
 
+    def addParamNames(): Unit =
+      if ((paramNames ne null) && sym.hasRawInfo && sym.isMethod) {
+        val params = sym.rawInfo.params
+        (paramNames zip params).foreach {
+          case (nme.NO_NAME, _) => // param was ACC_SYNTHETIC; ignore
+          case (name, param) =>
+            param.resetFlag(SYNTHETIC)
+            param.name = name
+        }
+        if (isDeveloper && !sameLength(paramNames.toList, params)) {
+          // there's not anything we can do, but it's slightly worrisome
+          devWarning(
+            sm"""MethodParameters length mismatch while parsing $sym:
+                |  rawInfo.params: ${sym.rawInfo.params}
+                |  MethodParameters: ${paramNames.toList}""")
+        }
+      }
+
     // begin parseAttributes
     for (i <- 0 until u2) parseAttribute()
+    addParamNames()
   }
 
   /** Apply `@native`/`@transient`/`@volatile` annotations to `sym`,
