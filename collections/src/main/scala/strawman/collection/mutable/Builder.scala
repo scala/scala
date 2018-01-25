@@ -268,7 +268,8 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
     *  @return       this StringBuilder.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
-  def insertAll(index: Int, xs: IterableOnce[Char]): StringBuilder = insertAll(index, xs.toArray)
+  def insertAll(index: Int, xs: IterableOnce[Char]): StringBuilder =
+    insertAll(index, (ArrayBuilder.make[Char]() ++= xs).result())
 
   /** Inserts the given Array[Char] into this sequence at the given index.
     *

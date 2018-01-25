@@ -10,13 +10,14 @@ package strawman
 package collection
 package convert
 
-import scala.{Some, None, Serializable, AnyRef, Boolean, Option, Int, ClassCastException, SerialVersionUID, Any, Unit}
+import scala.{Any, AnyRef, Boolean, ClassCastException, Int, None, Option, SerialVersionUID, Serializable, Some, Unit}
 import scala.Predef.String
-import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
+import java.{lang => jl, util => ju}
+import java.util.{concurrent => juc}
 import java.util.function.Predicate
-import java.lang.{IllegalStateException, UnsupportedOperationException, Object}
-import WrapAsScala._
-import WrapAsJava._
+import java.lang.{IllegalStateException, Object, UnsupportedOperationException}
+
+import strawman.collection.JavaConverters._
 
 /** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
@@ -52,14 +53,14 @@ private[collection] trait Wrappers {
   case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] { }
 
   case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Iterable[A] {
-    def iterator() = underlying.iterator
+    def iterator() = underlying.asScala.iterator()
     protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
     def iterableFactory = mutable.ArrayBuffer
     protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
   }
 
   case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] with Iterable[A] {
-    def iterator() = underlying.iterator
+    def iterator() = underlying.asScala.iterator()
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
     protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
@@ -90,7 +91,7 @@ private[collection] trait Wrappers {
   case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
-    override def iterator(): Iterator[A] = underlying.iterator
+    override def iterator(): Iterator[A] = underlying.asScala.iterator()
     def apply(i: Int) = underlying.get(i)
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
@@ -108,11 +109,11 @@ private[collection] trait Wrappers {
 
     def flatMapInPlace(f: A => strawman.collection.IterableOnce[A]): this.type = {
       val it = underlying.listIterator()
-      while(it.hasNext()) {
+      while(it.hasNext) {
         val e = it.next()
         it.remove()
         val es = f(e)
-        es.foreach(it.add)
+        es.iterator().foreach(it.add)
       }
       this
     }
@@ -183,7 +184,7 @@ private[collection] trait Wrappers {
 
     override def size = underlying.size
 
-    def iterator() = underlying.iterator
+    def iterator() = underlying.asScala.iterator()
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
@@ -426,7 +427,7 @@ private[collection] trait Wrappers {
 
     def iterator() = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
 
-    override def clear() = underlying.clear()
+    def clear() = iterator().foreach(entry => underlying.remove(entry._1))
 
     protected[this] def fromSpecificIterable(coll: Iterable[(A, B)]) = mutable.HashMap.from(coll)
     protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
