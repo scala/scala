@@ -30,12 +30,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
   import rootMirror.{ RootPackage, EmptyPackage }
-
-  // Defaults for member grouping, that may be overridden by the template
-  val defaultGroup = "Ungrouped"
-  val defaultGroupName = "Ungrouped"
-  val defaultGroupDesc = None
-  val defaultGroupPriority = 1000
+  import ModelFactory._
 
   def templatesCount = docTemplatesCache.count(_._2.isDocTemplate) - droppedPackages.size
 
@@ -1028,4 +1023,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (bSym.isAliasType || bSym.isAbstractType) &&
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
+}
+object ModelFactory {
+  // Defaults for member grouping, that may be overridden by the template
+  val defaultGroup = "Ungrouped"
+  val defaultGroupName = "Ungrouped"
+  val defaultGroupDesc = None
+  val defaultGroupPriority = 1000
 }

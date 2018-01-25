@@ -1869,8 +1869,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
       val parentSyms = template.parents map (_.symbol) filterNot (_ == AnyRefClass)
-      if (parentSyms exists (_.associatedFile != PredefModule.associatedFile))
-        context.error(template.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}.")
+      val PredefModuleFile = PredefModule.associatedFile
+      if (parentSyms exists (_.associatedFile != PredefModuleFile))
+        context.error(template.pos, s"All parents of Predef must be defined in ${PredefModuleFile}.")
     }
     /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
      *  all the time, it is exposed here the module/class typing methods go through it.
