@@ -148,4 +148,7 @@ class BuildFromTest {
     val xs9: immutable.TreeMap[String, Int] = xs7
     val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }
+
+  implicitly[BuildFrom[String, Char, String]]
+  implicitly[BuildFrom[Array[Int], Char, Array[Char]]]
 }

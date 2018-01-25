@@ -97,4 +97,7 @@ class FactoriesTest {
     seqFactories.foreach(tabulate)
   }
 
+  implicitly[Factory[Char, String]]
+  implicitly[Factory[Char, Array[Char]]]
+
 }
