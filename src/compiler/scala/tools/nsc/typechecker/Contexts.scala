@@ -711,25 +711,28 @@ trait Contexts { self: Analyzer =>
       /* Is protected access to target symbol permitted */
       def isProtectedAccessOK(target: Symbol) = {
         val c = enclosingSubClassContext(sym.owner)
+        val preSym = pre.widen.typeSymbol
         if (c == NoContext)
           lastAccessCheckDetails =
             sm"""
                 | Access to protected $target not permitted because
-                | enclosing ${this.enclClass.owner}${this.enclClass.owner.locationString} is not a subclass of
-                | ${sym.owner}${sym.owner.locationString} where target is defined"""
+                | enclosing ${enclClass.owner.fullLocationString} is not a subclass of
+                | ${sym.owner.fullLocationString} where target is defined"""
         c != NoContext &&
         {
-          target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
+          target.isType || { // allow accesses to types from arbitrary subclasses fixes scala/bug#4737
             val res =
-              isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
-              c.owner.isModuleClass &&
-              isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
+              isSubClassOrCompanion(preSym, c.owner) ||
+                (c.owner.isModuleClass
+                  && isSubClassOrCompanion(preSym, c.owner.linkedClassOfClass)) ||
+                (preSym.isJava
+                  && preSym.isModuleClass) // java static members don't care about prefix for accessibility
             if (!res)
               lastAccessCheckDetails =
                 sm"""
                     | Access to protected $target not permitted because
                     | prefix type ${pre.widen} does not conform to
-                    | ${c.owner}${c.owner.locationString} where the access takes place"""
+                    | ${c.owner.fullLocationString} where the access takes place"""
               res
           }
         }

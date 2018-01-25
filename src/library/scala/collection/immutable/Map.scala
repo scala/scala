@@ -92,23 +92,28 @@ object Map extends ImmutableMapFactory[Map] {
     override def withDefaultValue[V1 >: V](d: V1): immutable.Map[K, V1] = new WithDefault[K, V1](underlying, x => d)
   }
 
+  @SerialVersionUID(-5626373049574850357L)
   private object EmptyMap extends AbstractMap[Any, Nothing] with Map[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
+    override def getOrElse [V1](key: Any, default: => V1): V1 = default
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
     def - (key: Any): Map[Any, Nothing] = this
   }
 
+  @SerialVersionUID(-9131943191104946031L)
   class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
       if (key == key1) Some(value1) else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1 else default
     def iterator = Iterator((key1, value1))
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
@@ -121,6 +126,7 @@ object Map extends ImmutableMapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(-85684685400398742L)
   class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size = 2
     override def apply(key: K) =
@@ -132,6 +138,10 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) Some(value1)
       else if (key == key2) Some(value2)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else default
     def iterator = Iterator((key1, value1), (key2, value2))
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
@@ -147,6 +157,7 @@ object Map extends ImmutableMapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(-6400718707310517135L)
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size = 3
     override def apply(key: K) =
@@ -160,6 +171,11 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key2) Some(value2)
       else if (key == key3) Some(value3)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else if (key == key3) value3
+      else default
     def iterator = Iterator((key1, value1), (key2, value2), (key3, value3))
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
@@ -177,6 +193,7 @@ object Map extends ImmutableMapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(-7992135791595275193L)
   class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size = 4
     override def apply(key: K) =
@@ -192,6 +209,12 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key3) Some(value3)
       else if (key == key4) Some(value4)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else if (key == key3) value3
+      else if (key == key4) value4
+      else default
     def iterator = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
