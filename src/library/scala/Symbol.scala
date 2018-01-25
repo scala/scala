@@ -13,7 +13,7 @@ package scala
  *  Instances of `Symbol` can be created easily with Scala's built-in quote
  *  mechanism.
  *
- *  For instance, the [[http://scala-lang.org/#_top Scala]] term `'mysym` will
+ *  For instance, the Scala term `'mysym` will
  *  invoke the constructor of the `Symbol` class in the following way:
  *  `Symbol("mysym")`.
  *

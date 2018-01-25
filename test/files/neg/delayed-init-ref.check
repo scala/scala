@@ -4,7 +4,7 @@ delayed-init-ref.scala:17: warning: Selecting value vall from object O, which ex
 delayed-init-ref.scala:19: warning: Selecting value vall from object O, which extends scala.DelayedInit, is likely to yield an uninitialized value
   println(vall)       // warn
           ^
-delayed-init-ref.scala:28: warning: trait DelayedInit in package scala is deprecated (since 2.11.0): DelayedInit semantics can be surprising. Support for `App` will continue. See the release notes for more details: https://github.com/scala/scala/releases/tag/v2.11.0-RC1
+delayed-init-ref.scala:28: warning: trait DelayedInit in package scala is deprecated (since 2.11.0): DelayedInit semantics can be surprising. Support for `App` will continue. See the release notes for more details: https://github.com/scala/scala/releases/tag/v2.11.0
 trait Before extends DelayedInit {
                      ^
 delayed-init-ref.scala:40: warning: Selecting value foo from trait UserContext, which extends scala.DelayedInit, is likely to yield an uninitialized value
