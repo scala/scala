@@ -79,17 +79,142 @@ class BTypesTest extends BytecodeTesting {
     }
   }
 
-  @Test
-  def lazyForceTest(): Unit = {
+  def lazyLockForceTestCommon(doToString:Boolean, early:Boolean, withLock:Boolean): Unit = {
     val res = new mutable.StringBuilder()
-    val l = Lazy({res append "1"; "hi"})
-    l.onForce(v => res append s"-2:$v")
-    l.onForce(v => res append s"-3:$v:${l.force}") // `force` within `onForce` returns the value
-    assertEquals("<?>", l.toString)
-    assertEquals("hi", l.force)
-    assertEquals("hi", l.toString)
-    assertEquals("1-2:hi-3:hi:hi", res.toString)
+    val l = if (withLock) Lazy.withLock({res append "forced;"; "VALUE"})
+    else Lazy.withoutLock({res append "forced;"; "VALUE"})
+    if (doToString) assertEquals("<?>", l.toString)
+    assertEquals("", res.toString)
+
+    if (early) assertEquals("VALUE", l.force)
+
+    l.onForce(v => res append s"onF1:$v;")
+    l.onForce(v => res append s"onF2:$v:${l.force};") // `force` within `onForce` returns the value
+
+    var expValue = if (early) {
+      "forced;onF1:VALUE;onF2:VALUE:VALUE;"
+    } else {
+      assertEquals("", res.toString)
+      assertEquals("VALUE", l.force)
+      "forced;onF2:VALUE:VALUE;onF1:VALUE;"
+    }
+    assertEquals(expValue, res.toString)
+    l.onForce(v => res append s"onF3:$v;")
+    expValue += "onF3:VALUE;"
+
+    if (doToString) {
+      //no effect from toString
+      assertEquals("VALUE", l.toString)
+      assertEquals(expValue, res.toString)
+    }
+
+    //reforcing should have no effect
+    assertEquals("VALUE", l.force)
+    assertEquals(expValue, res.toString)
+
+    assertEquals("VALUE", l.toString)
+    lazyLockAcquired(withLock)
   }
+  def lazyLockAcquired(withLock:Boolean): Unit = {
+    val res = new mutable.StringBuilder()
+    val l = if (withLock) Lazy.withLock({res append s"forced:${Thread.holdsLock(frontendAccess.frontendLock)};"; "VALUE"})
+    else Lazy.withoutLock({res append s"forced:${Thread.holdsLock(frontendAccess.frontendLock)};"; "VALUE"})
+
+    l.onForce(v => res append s"onF1:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    l.onForce(v => res append s"onF2:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    assertEquals("", res.toString)
+
+    l.force
+    assertEquals(s"forced:$withLock;onF2:VALUE:false;onF1:VALUE:false;", res.toString)
+    l.onForce(v => res append s"onF3:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    assertEquals(s"forced:$withLock;onF2:VALUE:false;onF1:VALUE:false;onF3:VALUE:false;", res.toString)
+  }
+
+  @Test
+  def lazyLockForceTest1(): Unit =
+    lazyLockForceTestCommon(doToString = true, early = true, withLock = true)
+  @Test
+  def lazyLockForceTest2(): Unit =
+    lazyLockForceTestCommon(doToString = false, early = true, withLock = true)
+  @Test
+  def lazyLockForceTest3(): Unit =
+    lazyLockForceTestCommon(doToString = true, early = false, withLock = true)
+  @Test
+  def lazyLockForceTest4(): Unit =
+    lazyLockForceTestCommon(doToString = false, early = false, withLock = true)
+
+  @Test
+  def lazyNoLockForceTest1(): Unit =
+    lazyLockForceTestCommon(doToString = true, early = true, withLock = false)
+  @Test
+  def lazyNoLockForceTest2(): Unit =
+    lazyLockForceTestCommon(doToString = false, early = true, withLock = false)
+  @Test
+  def lazyNoLockForceTest3(): Unit =
+    lazyLockForceTestCommon(doToString = true, early = false, withLock = false)
+  @Test
+  def lazyNoLockForceTest4(): Unit =
+    lazyLockForceTestCommon(doToString = false, early = false, withLock = false)
+
+  def lazyEagerTestCommon(doToString:Boolean, early:Boolean): Unit = {
+    val res = new mutable.StringBuilder()
+    val l = Lazy.eager({res append "forced;"; "VALUE"})
+    if (doToString) assertEquals("VALUE", l.toString)
+    assertEquals("forced;", res.toString)
+
+    if (early) assertEquals("VALUE", l.force)
+
+    l.onForce(v => res append s"onF1:$v;")
+    l.onForce(v => res append s"onF2:$v:${l.force};") // `force` within `onForce` returns the value
+
+    var expValue = "forced;onF1:VALUE;onF2:VALUE:VALUE;"
+    if (!early) {
+      assertEquals(expValue, res.toString)
+      assertEquals("VALUE", l.force)
+    }
+    assertEquals(expValue, res.toString)
+    l.onForce(v => res append s"onF3:$v;")
+    expValue += "onF3:VALUE;"
+
+    if (doToString) {
+      //no effect from toString
+      assertEquals("VALUE", l.toString)
+      assertEquals(expValue, res.toString)
+    }
+
+    //reforcing should have no effect
+    assertEquals("VALUE", l.force)
+    assertEquals(expValue, res.toString)
+
+    assertEquals("VALUE", l.toString)
+    lazyEagerAcquired()
+  }
+  def lazyEagerAcquired(): Unit = {
+    val res = new mutable.StringBuilder()
+    val l = Lazy.eager({res append s"forced:${Thread.holdsLock(frontendAccess.frontendLock)};"; "VALUE"})
+    assertEquals(s"forced:false;", res.toString)
+    l.onForce(v => res append s"onF1:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    l.onForce(v => res append s"onF2:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;", res.toString)
+
+    l.force
+    assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;", res.toString)
+    l.onForce(v => res append s"onF3:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
+    assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;onF3:VALUE:false;", res.toString)
+  }
+  @Test
+  def lazyEagerForceTest1(): Unit =
+    lazyEagerTestCommon(doToString = true, early = true)
+  @Test
+  def lazyEagerForceTest2(): Unit =
+    lazyEagerTestCommon(doToString = false, early = true)
+  @Test
+  def lazyEagerForceTest3(): Unit =
+    lazyEagerTestCommon(doToString = true, early = false)
+  @Test
+  def lazyEagerForceTest4(): Unit =
+    lazyEagerTestCommon(doToString = false, early = false)
+
 
   // TODO @lry do more tests
   @Test

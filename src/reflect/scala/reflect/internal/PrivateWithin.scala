@@ -20,8 +20,9 @@ trait PrivateWithin {
   // protected in java means package protected. #3946
   // See ticket #1687 for an example of when the enclosing top level class is NoSymbol;
   // it apparently occurs when processing v45.3 bytecode.
-  def setPackageAccessBoundary(sym: Symbol): Symbol = (
-    if (sym.enclosingTopLevelClass eq NoSymbol) sym
-    else sym setPrivateWithin sym.enclosingTopLevelClass.owner
-  )
+  def setPackageAccessBoundary(sym: Symbol): Symbol = {
+    val topLevel = sym.enclosingTopLevelClass
+    if (topLevel eq NoSymbol) sym
+    else sym setPrivateWithin topLevel.owner
+  }
 }

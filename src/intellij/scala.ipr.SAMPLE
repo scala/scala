@@ -22,6 +22,16 @@
     </profile>
     <version value="1.0" />
   </component>
+  <component name="IssueNavigationConfiguration">
+    <option name="links">
+      <list>
+        <IssueNavigationLink>
+          <option name="issueRegexp" value="scala/([\w.-]+)#([0-9]+)" />
+          <option name="linkRegexp" value="https://github.com/scala/$1/pull/$2" />
+        </IssueNavigationLink>
+      </list>
+    </option>
+  </component>
   <component name="Palette2">
     <group name="Swing">
       <item class="com.intellij.uiDesigner.HSpacer" tooltip-text="Horizontal Spacer" icon="/com/intellij/uiDesigner/icons/hspacer.png" removable="false" auto-create-binding="false" can-attach-label="false">

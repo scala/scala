@@ -1,14 +1,13 @@
 /* NSC -- new Scala compiler
  *
- * Copyright 2011-2013 LAMP/EPFL
+ * Copyright 2011-2017 LAMP/EPFL
  * @author Adriaan Moors
  */
 
 package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable.ArrayBuffer
-import scala.language.postfixOps
-import scala.collection.mutable
+import scala.collection.{immutable,mutable}
 import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.StatisticsStatics
@@ -57,7 +56,8 @@ trait Solving extends Logic {
 
       val symForVar: Map[Int, Sym] = variableForSymbol.map(_.swap)
 
-      val relevantVars: Set[Int] = symForVar.keySet.map(math.abs)
+      val relevantVars: immutable.BitSet =
+        symForVar.keySet.map(math.abs)(collection.breakOut)
 
       def lit(sym: Sym): Lit = Lit(variableForSymbol(sym))
 
@@ -186,7 +186,7 @@ trait Solving extends Logic {
             // (!o \/ op1) /\ (!o \/ op2) ... (!o \/ opx) /\ (!op1 \/ !op2 \/... \/ !opx \/ o)
             val new_bv = bv - constTrue // ignore `True`
             val o = newLiteral() // auxiliary Tseitin variable
-            new_bv.map(op => addClauseProcessed(clause(op, -o)))
+            new_bv.foreach(op => addClauseProcessed(clause(op, -o)))
             o
           }
         }
@@ -374,7 +374,7 @@ trait Solving extends Logic {
 
     def cnfString(f: Array[Clause]): String = {
       val lits: Array[List[String]] = f map (_.map(_.toString).toList)
-      val xss: List[List[String]] = lits toList
+      val xss: List[List[String]] = lits.toList
       val aligned: String = alignAcrossRows(xss, "\\/", " /\\\n")
       aligned
     }
@@ -401,7 +401,7 @@ trait Solving extends Logic {
       // we must take all vars from non simplified formula
       // otherwise if we get `T` as formula, we don't expand the variables
       // that are not in the formula...
-      val relevantVars: Set[Int] = solvable.symbolMapping.relevantVars
+      val relevantVars: immutable.BitSet = solvable.symbolMapping.relevantVars
 
       // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
@@ -455,7 +455,7 @@ trait Solving extends Logic {
      */
     private def dropUnit(clauses: Array[Clause], unitLit: Lit): Array[Clause] = {
       val negated = -unitLit
-      val simplified = new ArrayBuffer[Clause](clauses.size)
+      val simplified = new ArrayBuffer[Clause](clauses.length)
       clauses foreach {
         case trivial if trivial contains unitLit => // drop
         case clause                              => simplified += clause - negated
@@ -468,48 +468,88 @@ trait Solving extends Logic {
     }
 
     def findTseitinModelFor(clauses: Array[Clause]): TseitinModel = {
-      @inline def orElse(a: TseitinModel, b: => TseitinModel) = if (a ne NoTseitinModel) a else b
-
       debug.patmat(s"DPLL\n${cnfString(clauses)}")
 
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
-      val satisfiableWithModel: TseitinModel =
-        if (clauses isEmpty) EmptyTseitinModel
-        else if (clauses exists (_.isEmpty)) NoTseitinModel
-        else clauses.find(_.size == 1) match {
-          case Some(unitClause) =>
-            val unitLit = unitClause.head
-            withLit(findTseitinModelFor(dropUnit(clauses, unitLit)), unitLit)
-          case _ =>
-            // partition symbols according to whether they appear in positive and/or negative literals
-            val pos = new mutable.HashSet[Int]()
-            val neg = new mutable.HashSet[Int]()
-            mforeach(clauses)(lit => if (lit.positive) pos += lit.variable else neg += lit.variable)
-
-            // appearing in both positive and negative
-            val impures = pos intersect neg
-            // appearing only in either positive/negative positions
-            val pures = (pos ++ neg) -- impures
-
-            if (pures nonEmpty) {
-              val pureVar = pures.head
-              // turn it back into a literal
-              // (since equality on literals is in terms of equality
-              //  of the underlying symbol and its positivity, simply construct a new Lit)
-              val pureLit = Lit(if (neg(pureVar)) -pureVar else pureVar)
-              // debug.patmat("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
-              val simplified = clauses.filterNot(_.contains(pureLit))
-              withLit(findTseitinModelFor(simplified), pureLit)
-            } else {
-              val split = clauses.head.head
-              // debug.patmat("split: "+ split)
-              orElse(findTseitinModelFor(clauses :+ clause(split)), findTseitinModelFor(clauses :+ clause(-split)))
-            }
-        }
+      val satisfiableWithModel = findTseitinModel0((clauses, Set.empty[Lit]) :: Nil)
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
+    }
+
+    type TseitinSearch = List[(Array[Clause], Set[Lit])]
+
+    /** An implementation of the DPLL algorithm for checking statisfiability
+      * of a Boolean formula in CNF (conjunctive normal form).
+      *
+      * This is a backtracking, depth-first algorithm, which searches a
+      * (conceptual) decision tree the nodes of which represent assignments
+      * of truth values to variables. The algorithm works like so:
+      *
+      * - If there are any empty clauses, the formula is unsatisifable.
+      * - If there are no clauses, the formula is trivially satisfiable.
+      * - If there is a clause with a single positive (rsp. negated) variable
+      *   in it, any solution must assign it the value `true` (rsp. `false`).
+      *   Therefore, assign it that value, and perform Boolean Constraint
+      *   Propagation on the remaining clauses:
+      *   - Any disjunction containing the variable in a positive (rsp. negative)
+      *     usage is trivially true, and can be dropped.
+      *   - Any disjunction containing the variable in a negative (rsp. positive)
+      *     context will not be satisfied using that variable, so it can be
+      *     removed from the disjunction.
+      * - Otherwise, pick a variable:
+      *   - If it always (rsp. never) appears negated (a pure variable), then
+      *     any solution must assign the value `true` to it (rsp. `false`)
+      *   - Otherwise, try to solve the formula assuming that the variable is
+      *     `true`; if no model is found, try to solve assuming it is `false`.
+      *
+      * See also [[https://en.wikipedia.org/wiki/DPLL_algorithm]].
+      *
+      * This implementation uses a `List` to reify the seach stack, thus making
+      * it run in constant stack space. The stack is composed of pairs of
+      * `(remaining clauses, variable assignments)`, and depth-first search
+      * is achieved by using a stack rather than a queue.
+      *
+      */
+    @annotation.tailrec
+    private def findTseitinModel0(state: TseitinSearch): TseitinModel = {
+      state match {
+        case Nil => NoTseitinModel
+        case (clauses, assignments) :: rest =>
+          if (clauses.isEmpty) assignments
+          else if (clauses exists (_.isEmpty)) findTseitinModel0(rest)
+          else clauses.find(_.size == 1) match {
+            case Some(unitClause) =>
+              val unitLit = unitClause.head
+              findTseitinModel0((dropUnit(clauses, unitLit), assignments + unitLit) :: rest)
+            case _ =>
+              // partition symbols according to whether they appear in positive and/or negative literals
+              val pos = new mutable.BitSet()
+              val neg = new mutable.BitSet()
+              mforeach(clauses)(lit => if (lit.positive) pos += lit.variable else neg += lit.variable)
+
+              // appearing only in either positive/negative positions
+              val pures = pos ^ neg
+
+              if (pures.nonEmpty) {
+                val pureVar = pures.head
+                // turn it back into a literal
+                // (since equality on literals is in terms of equality
+                //  of the underlying symbol and its positivity, simply construct a new Lit)
+                val pureLit = Lit(if (neg(pureVar)) -pureVar else pureVar)
+                // debug.patmat("pure: "+ pureLit +" pures: "+ pures)
+                val simplified = clauses.filterNot(_.contains(pureLit))
+                findTseitinModel0((simplified, assignments + pureLit) :: rest)
+              } else {
+                val split = clauses.head.head
+                // debug.patmat("split: "+ split)
+                val pos = (clauses :+ clause(split), assignments)
+                val neg = (clauses :+ clause(-split), assignments)
+                findTseitinModel0(pos :: neg :: rest)
+              }
+          }
+      }
     }
 
     private def projectToModel(model: TseitinModel, symForVar: Map[Int, Sym]): Model =

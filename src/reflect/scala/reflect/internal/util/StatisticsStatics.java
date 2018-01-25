@@ -48,7 +48,8 @@ public final class StatisticsStatics extends BooleanContainer {
   }
 
   public static void enableColdStats() {
-    COLD_STATS.setValue(new TrueContainer());
+    if (!areSomeColdStatsEnabled())
+      COLD_STATS.setValue(new TrueContainer());
   }
 
   public static void disableColdStats() {
@@ -56,7 +57,8 @@ public final class StatisticsStatics extends BooleanContainer {
   }
 
   public static void enableHotStats() {
-    HOT_STATS.setValue(new TrueContainer());
+    if (!areSomeHotStatsEnabled())
+      HOT_STATS.setValue(new TrueContainer());
   }
 
   public static void disableHotStats() {

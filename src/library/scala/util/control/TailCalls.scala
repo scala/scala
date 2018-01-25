@@ -15,7 +15,7 @@ package util.control
  *  of evaluating a tailcalling function can be retrieved from a `Tailrec`
  *  value using method `result`.
  *  Implemented as described in "Stackless Scala with Free Monads"
- *  http://blog.higher-order.com/assets/trampolines.pdf
+ *  [[http://blog.higher-order.com/assets/trampolines.pdf]]
  *
  *  Here's a usage example:
  *  {{{

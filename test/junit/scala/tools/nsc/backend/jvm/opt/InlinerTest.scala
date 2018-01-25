@@ -26,8 +26,7 @@ class InlinerTest extends BytecodeTesting {
 
 
   compiler.keepPerRunCachesAfterRun(List(
-    bTypes.classBTypeCacheFromSymbol,
-    bTypes.classBTypeCacheFromClassfile,
+    bTypes.classBTypeCache,
     postProcessor.byteCodeRepository.compilingClasses,
     postProcessor.byteCodeRepository.parsedClasses,
     postProcessor.callGraph.callsites))

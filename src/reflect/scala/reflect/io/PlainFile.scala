@@ -22,6 +22,9 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   assert(path ne null)
 
   val file = givenPath.jfile
+
+  override lazy val canonicalPath = super.canonicalPath
+
   override def underlyingSource = Some(this)
 
   private val fpath = givenPath.toAbsolute
@@ -102,6 +105,8 @@ private[scala] class PlainNioFile(nioPath: java.nio.file.Path) extends AbstractF
   } catch {
     case _: UnsupportedOperationException => null
   }
+
+  override lazy val canonicalPath = super.canonicalPath
 
   override def underlyingSource  = Some(this)
 

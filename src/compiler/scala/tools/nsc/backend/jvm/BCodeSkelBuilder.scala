@@ -181,11 +181,12 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      */
     private def addModuleInstanceField() {
       // TODO confirm whether we really don't want ACC_SYNTHETIC nor ACC_DEPRECATED
-      // SD-194 This can't be FINAL on JVM 1.9+ because we assign it from within the
-      //        instance constructor, not from <clinit> directly. Assignment from <clinit>,
-      //        after the constructor has completely finished, seems like the principled
-      //        thing to do, but it would change behaviour when "benign" cyclic references
-      //        between modules exist.
+      // scala/scala-dev#194:
+      //   This can't be FINAL on JVM 1.9+ because we assign it from within the
+      //   instance constructor, not from <clinit> directly. Assignment from <clinit>,
+      //   after the constructor has completely finished, seems like the principled
+      //   thing to do, but it would change behaviour when "benign" cyclic references
+      //   between modules exist.
       val mods = GenBCode.PublicStatic
       val fv =
         cnode.visitField(mods,
@@ -571,12 +572,12 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       val isNative         = methSymbol.hasAnnotation(definitions.NativeAttr)
       val isAbstractMethod = rhs == EmptyTree
-      val flags = GenBCode.mkFlags(
-        javaFlags(methSymbol),
-        if (isAbstractMethod)        asm.Opcodes.ACC_ABSTRACT   else 0,
-        if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0,
-        if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
-      )
+      val flags =
+        javaFlags(methSymbol) |
+        (if (isAbstractMethod)        asm.Opcodes.ACC_ABSTRACT   else 0) |
+        (if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0) |
+        (if (isNative)                asm.Opcodes.ACC_NATIVE     else 0)  // native methods of objects are generated in mirror classes
+
 
       initJMethod(flags, params.map(_.symbol))
 

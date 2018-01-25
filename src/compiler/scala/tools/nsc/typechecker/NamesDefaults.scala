@@ -521,6 +521,10 @@ trait NamesDefaults { self: Analyzer =>
       var positionalAllowed = true
       def stripNamedArg(arg: NamedArg, argIndex: Int): Tree = {
         val NamedArg(Ident(name), rhs) = arg
+        def invokesDefault: Boolean = rhs match {
+          case Select(_, f) => f.startsWith(nme.DEFAULT_GETTER_INIT_STRING) || f.indexOf(nme.DEFAULT_GETTER_STRING) >= 0
+          case _ => false
+        }
         params indexWhere (p => matchesName(p, name, argIndex)) match {
           case -1 =>
             val warnVariableInScope = !settings.isScala214 && context0.lookupSymbol(name, _.isVariable).isSuccess

@@ -141,7 +141,6 @@ codebase and re-compiles too many files, resulting in long build times (check
 meantime you can:
   - Enable "Ant mode" in which sbt only re-compiles source files that were modified.
     Create a file `local.sbt` containing the line `antStyle := true`.
-    Add an entry `local.sbt` to your `~/.gitignore`.
   - Use IntelliJ IDEA for incremental compiles (see [IDE Setup](#ide-setup) below) - its
     incremental compiler is a bit less conservative, but usually correct.
 
@@ -264,6 +263,10 @@ releases. A community build can be launched for any Scala commit, even
 before the commit's PR has been merged. That commit is then used to
 build a large number of open-source projects from source and run their
 test suites.
+
+To request a community build run on your PR, just ask in a comment on
+the PR and a Scala team member will take care of
+it. ([details](https://github.com/scala/community-builds/wiki#can-i-run-it-against-a-pull-request-in-scalascala))
 
 Community builds run on the Scala Jenkins instance.  The jobs are
 named `..-integrate-community-build`. See the

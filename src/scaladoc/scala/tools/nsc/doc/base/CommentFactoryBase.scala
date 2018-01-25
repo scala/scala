@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
+ * Copyright 2007-2017 LAMP/EPFL
  * @author  Manohar Jonnalagedda
  */
 
@@ -343,7 +343,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           }
 
         def allTags(key: SimpleTagKey): List[Body] =
-          (bodyTags remove key).getOrElse(Nil).filterNot(_.blocks.isEmpty)
+          (bodyTags remove key).getOrElse(Nil).filterNot(_.blocks.isEmpty).reverse
 
         def allSymsOneTag(key: TagKey, filterEmpty: Boolean = true): Map[String, Body] = {
           val keys: Seq[SymbolTagKey] =
