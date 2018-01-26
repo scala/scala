@@ -3,6 +3,7 @@ package strawman.collection
 import scala.{Any, Ordering, deprecated, `inline`}
 
 import strawman.collection.mutable.Builder
+import scala.annotation.implicitNotFound
 
 /** Builds a collection of type `C` from elements of type `A` when a source collection of type `From` is available.
   * Implicit instances of `BuildFrom` are available for all collection types.
@@ -11,6 +12,7 @@ import strawman.collection.mutable.Builder
   * @tparam A Type of elements (e.g. `Int`, `Boolean`, etc.)
   * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
   */
+@implicitNotFound(msg = "Cannot construct a collection of type ${C} with elements of type ${A} based on a collection of type ${From}.")
 trait BuildFrom[-From, -A, +C] extends Any {
   def fromSpecificIterable(from: From)(it: Iterable[A]): C
 
