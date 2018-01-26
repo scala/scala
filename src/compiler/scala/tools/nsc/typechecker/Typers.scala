@@ -3364,9 +3364,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               functionOrPfOrSamArgTypes(relTp)
             }
 
-            def functionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
-              try functionType(funArgTypes(argTpWithAlt).transpose.map(lub), WildcardType)
-              catch { case _: IllegalArgumentException => WildcardType }
+            def sameType(tps: List[Type]): Option[Type] = tps match {
+              case t :: ts => if(ts.forall(_ == t)) Some(t) else None
+              case _ => None
+            }
+
+            def functionProto(argTpWithAlt: List[(Type, Symbol)], allowLub: Boolean = true): Type = try {
+              val argTps = funArgTypes(argTpWithAlt).transpose
+              val unified = argTps.map(ts => if(allowLub) lub(ts) else sameType(ts).getOrElse(WildcardType))
+              functionType(unified, WildcardType)
+            } catch { case _: IllegalArgumentException => WildcardType }
+
+            def samProto(argTpWithAlt: List[(Type, Symbol)]): Type = try {
+              // For SAM types we first check if they are all the same, in which case we use the
+              // type directly. Otherwise we replace all type args by WildcardType and check again.
+              // If they are still different, we use WildcardType. This allows for monomorphic and
+              // polymorphic SAM types but won't push argument types down into the SAM.
+              val alts = argTpWithAlt.map { case (tp, alt) => tp.asSeenFrom(pre, alt.owner).dealiasWiden }
+              sameType(alts).getOrElse {
+                sameType(alts.map {
+                  case TypeRef(t, s, args) => TypeRef(t, s, args.map(_ => WildcardType))
+                  case t => t
+                }).getOrElse(WildcardType)
+              }
+            } catch { case _: IllegalArgumentException => WildcardType }
 
             def partialFunctionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
               try appliedType(PartialFunctionClass, funArgTypes(argTpWithAlt).transpose.map(lub) :+ WildcardType)
@@ -3387,7 +3408,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   val paramTypes = pre.memberType(alt) match {
                     case mt @ MethodType(_, _) => mt.paramTypes
                     case PolyType(_, mt @ MethodType(_, _)) => mt.paramTypes
-                    case t => throw new IllegalArgumentException("Expected MethodType or PolyType of MethodType, got "+t)
+                    case t => throw new IllegalArgumentException // expected case; will be caught below
                   }
                   formalTypes(paramTypes, argslen).map(ft => (ft, alt))
                 }.transpose // do least amount of work up front
@@ -3409,9 +3430,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     else if (treeInfo.isPartialFunctionMissingParamType(tree)) {
                       if (argPtAlts.exists(ts => isPartialFunctionType(ts._1))) partialFunctionProto(argPtAlts)
                       else functionProto(argPtAlts)
-                    } else if (!treeInfo.isFunctionWithParamType(tree) && argPtAlts.forall { case (t, _) => isFunctionType(t)}) {
-                      functionProto(argPtAlts)
-                    } else WildcardType
+                    } else tree match {
+                      case Function(_, _) => // Function with existing param type -> typecheck as-is
+                        WildcardType
+                      case _ if argPtAlts.forall { case (t, _) => isFunctionType(t)} => // all overloads are Function types -> use non-lubbed proto
+                        functionProto(argPtAlts, allowLub = false)
+                      case _ if argPtAlts.forall { case (t, _) => samOf(t).exists } => // all overloads are SAM types
+                        samProto(argPtAlts)
+                      case _ =>
+                        WildcardType
+                    }
 
                   val argTyped = typedArg(tree, amode, BYVALmode, argPt)
                   (argTyped, argTyped.tpe.deconst)
