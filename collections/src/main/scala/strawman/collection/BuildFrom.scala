@@ -1,9 +1,11 @@
 package strawman.collection
 
-import scala.{Any, Ordering, deprecated, `inline`}
-
+import scala.{Any, Array, Char, Ordering, `inline`, deprecated}
+import scala.Predef.String
 import strawman.collection.mutable.Builder
 import scala.annotation.implicitNotFound
+
+import scala.reflect.ClassTag
 
 /** Builds a collection of type `C` from elements of type `A` when a source collection of type `From` is available.
   * Implicit instances of `BuildFrom` are available for all collection types.
@@ -43,6 +45,19 @@ object BuildFrom extends BuildFromLowPriority {
     def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]()
     def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.sortedIterableFactory.from(it)
   }
+
+  implicit val buildFromString: BuildFrom[String, Char, String] =
+    new BuildFrom[String, Char, String] {
+      def fromSpecificIterable(from: String)(it: Iterable[Char]): String = Factory.stringFactory.fromSpecific(it)
+      def newBuilder(from: String): Builder[Char, String] = Factory.stringFactory.newBuilder()
+    }
+
+  implicit def buildFromArray[A : ClassTag]: BuildFrom[Array[_], A, Array[A]] =
+    new BuildFrom[Array[_], A, Array[A]] {
+      def fromSpecificIterable(from: Array[_])(it: Iterable[A]): Array[A] = Factory.arrayFactory[A].fromSpecific(it)
+      def newBuilder(from: Array[_]): Builder[A, Array[A]] = Factory.arrayFactory[A].newBuilder()
+    }
+
 }
 
 trait BuildFromLowPriority {

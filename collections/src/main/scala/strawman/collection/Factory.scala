@@ -6,9 +6,10 @@ import strawman.collection.immutable.NumericRange
 import scala.language.implicitConversions
 import strawman.collection.mutable.Builder
 
-import scala.{Any, Int, Integral, Nothing, Ordering, Some}
-import scala.Predef.implicitly
+import scala.{Any, Array, Char, Int, Integral, Nothing, Ordering, Some}
+import scala.Predef.{implicitly, String}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.reflect.ClassTag
 
 /**
   * A factory that builds a collection of type `C` with elements of type `A`.
@@ -32,6 +33,31 @@ trait Factory[-A, +C] extends Any {
   /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
     * Building collections with `fromSpecific` is preferred because it can be lazy for lazy collections. */
   def newBuilder(): Builder[A, C]
+}
+
+object Factory {
+
+  implicit val stringFactory: Factory[Char, String] =
+    new Factory[Char, String] {
+      def fromSpecific(it: IterableOnce[Char]): String = {
+        val b = new mutable.StringBuilder(scala.math.max(0, it.knownSize))
+        b ++= it
+        b.result()
+      }
+      def newBuilder(): Builder[Char, String] = new mutable.StringBuilder()
+    }
+
+  implicit def arrayFactory[A: ClassTag]: Factory[A, Array[A]] =
+    new Factory[A, Array[A]] {
+      def fromSpecific(it: IterableOnce[A]): Array[A] = {
+        val b = newBuilder()
+        b.sizeHint(scala.math.max(0, it.knownSize))
+        b ++= it
+        b.result()
+      }
+      def newBuilder(): Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]()
+    }
+
 }
 
 /** Base trait for companion objects of unconstrained collection types that may require
