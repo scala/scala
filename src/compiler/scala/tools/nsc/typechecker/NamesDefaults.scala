@@ -479,9 +479,8 @@ trait NamesDefaults { self: Analyzer =>
         if (param.owner.owner.isClass) {
           param.owner.owner.info.member(defGetterName)
         } else {
-          // the owner of the method is another method. find the default
-          // getter in the context.
-          context.lookup(defGetterName, param.owner.owner)
+          // the owner of the method is another method. find the default getter in the context.
+          context.lookupSibling(param.owner, defGetterName)
         }
       }
     } else NoSymbol

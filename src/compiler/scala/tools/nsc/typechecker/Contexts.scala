@@ -1065,8 +1065,11 @@ trait Contexts { self: Analyzer =>
         found1
       }
 
-      def lookupInScope(scope: Scope) =
-        (scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
+      def lookupInScope(scope: Scope) = {
+        val entries = scope lookupUnshadowedEntries name
+        val result = entries.filter(e => qualifies(e.sym)).toList
+        result
+      }
 
       def newOverloaded(owner: Symbol, pre: Type, entries: List[ScopeEntry]) =
         logResult(s"overloaded symbol in $pre")(owner.newOverloaded(pre, entries map (_.sym)))
@@ -1198,29 +1201,14 @@ trait Contexts { self: Analyzer =>
       else finish(EmptyTree, NoSymbol)
     }
 
-    /**
-     * Find a symbol in this context or one of its outers.
-     *
-     * Used to find symbols are owned by methods (or fields), they can't be
-     * found in some scope.
-     *
-     * Examples: companion module of classes owned by a method, default getter
-     * methods of nested methods. See NamesDefaults.scala
-     */
-    def lookup(name: Name, expectedOwner: Symbol) = {
-      var res: Symbol = NoSymbol
-      var ctx = this
-      while (res == NoSymbol && ctx.outer != ctx) {
-        val s = ctx.scope lookup name
-        if (s != NoSymbol && s.owner == expectedOwner)
-          res = s
-        else
-          ctx = ctx.outer
-      }
-      res
+    final def lookupCompanionInIncompleteOwner(original: Symbol): Symbol = {
+      // Must have both a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+      def isCompanion(sym: Symbol): Boolean =
+        (original.isModule && sym.isClass || sym.isModule && original.isClass) && sym.isCoDefinedWith(original)
+      lookupSibling(original, original.name.companionName).filter(isCompanion)
     }
 
-    final def lookupCompanionInIncompleteOwner(original: Symbol): Symbol = {
+    final def lookupSibling(original: Symbol, name: Name): Symbol = {
       /* Search scopes in current and enclosing contexts for the definition of `symbol` */
       def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
         var res: ScopeEntry = null
@@ -1235,15 +1223,12 @@ trait Contexts { self: Analyzer =>
         res
       }
 
-      // 1) Must be owned by the same Scope, to ensure that in
-      //   `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
-      // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+      // Must be owned by the same Scope, to ensure that in
+      // `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
       lookupScopeEntry(original) match {
         case null => NoSymbol
         case entry =>
-          def isCompanion(sym: Symbol): Boolean =
-            (original.isModule && sym.isClass || sym.isModule && original.isClass) && sym.isCoDefinedWith(original)
-          entry.owner.lookupNameInSameScopeAs(original, original.name.companionName).filter(isCompanion)
+          entry.owner.lookupNameInSameScopeAs(original, name)
       }
     }
 
