@@ -55,23 +55,23 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   def toList: immutable.List[A] = immutable.List.from(it)
 
   @deprecated("Use Set.from(it) instead of it.toSet", "2.13.0")
-  @`inline` final def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
+  @`inline` def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
 
   @deprecated("Use Seq.from(it) instead of it.toSeq", "2.13.0")
-  @`inline` final def toSeq: immutable.Seq[A] = immutable.Seq.from(it)
+  @`inline` def toSeq: immutable.Seq[A] = immutable.Seq.from(it)
 
   @deprecated("Use LazyList.from(it) instead of it.toStream", "2.13.0")
-  @`inline` final def toStream: immutable.LazyList[A] = immutable.LazyList.from(it)
+  @`inline` def toStream: immutable.LazyList[A] = immutable.LazyList.from(it)
 
   @deprecated("Use Vector.from(it) instead of it.toVector on IterableOnce", "2.13.0")
-  def toVector: immutable.Vector[A] = it match {
-    case it: Iterable[A] => immutable.Vector.from(it)
-    case _ => immutable.Vector.from(View.fromIteratorProvider(() => it.iterator()))
-  }
+  @`inline` def toVector: immutable.Vector[A] = immutable.Vector.from(it)
 
   @deprecated("Use Map.from(it) instead of it.toVector on IterableOnce", "2.13.0")
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
     immutable.Map.from(it.asInstanceOf[IterableOnce[(K, V)]])
+
+  @deprecated("toIterator has been renamed to iterator()", "2.13.0")
+  @`inline` def toIterator: Iterator[A] = it.iterator()
 
   @deprecated("Use .iterator().isEmpty instead of .isEmpty on IterableOnce", "2.13.0")
   def isEmpty: Boolean = it match {
@@ -107,10 +107,10 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @`inline` def foldRight[B](z: B)(op: (A, B) => B): B = it.iterator().foldRight(z)(op)
 
   @deprecated("Use .iterator().foldLeft instead of /: on IterableOnce", "2.13.0")
-  @`inline` final def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
+  @`inline` def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
 
   @deprecated("Use .iterator().foldRight instead of :\\ on IterableOnce", "2.13.0")
-  @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
+  @`inline` def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
 
   @deprecated("Use .iterator().map instead of .map on IterableOnce or consider requiring an Iterable", "2.13.0")
   def map[B](f: A => B): IterableOnce[B] = it match {

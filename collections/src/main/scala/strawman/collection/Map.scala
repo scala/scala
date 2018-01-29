@@ -224,6 +224,22 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     */
   def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(toIterable, f))
 
+  /** Builds a new collection by applying a partial function to all elements of this $coll
+    *  on which the function is defined.
+    *
+    *  @param pf     the partial function which filters and maps the $coll.
+    *  @tparam K2    the key type of the returned $coll.
+    *  @tparam V2    the value type of the returned $coll.
+    *  @return       a new $coll resulting from applying the given partial function
+    *                `pf` to each element on which it is defined and collecting the results.
+    *                The order of the elements is preserved.
+    */
+  def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =
+    flatMap { a =>
+      if (pf.isDefinedAt(a)) View.Single(pf(a))
+      else View.Empty
+    }
+
   /** Builds a new map by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
     *
