@@ -18,6 +18,7 @@ trait Set[A]
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends IterableOps[A, CC, C]
     with collection.SetOps[A, CC, C]
+    with Cloneable[C]
     with Growable[A]
     with Shrinkable[A] {
 

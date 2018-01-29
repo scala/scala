@@ -10,8 +10,7 @@ import scala.{Boolean, None, Option, Some, Unit, `inline`, deprecated}
 trait Map[K, V]
   extends Iterable[(K, V)]
     with collection.Map[K, V]
-    with MapOps[K, V, Map, Map[K, V]]
-    with Shrinkable[K] {
+    with MapOps[K, V, Map, Map[K, V]] {
 
   /*
   //TODO consider keeping `remove` because it returns the removed entry
@@ -53,10 +52,11 @@ trait Map[K, V]
 trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C]
+    with Cloneable[C]
     with Growable[(K, V)]
     with Shrinkable[K] {
 
-  def iterableFactory = Iterable
+  def iterableFactory: IterableFactory[Iterable] = Iterable
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a

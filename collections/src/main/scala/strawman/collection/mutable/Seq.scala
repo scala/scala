@@ -24,7 +24,8 @@ object Seq extends SeqFactory.Delegate[Seq](ArrayBuffer)
   */
 trait SeqOps[A, +CC[X] <: Seq[X], +C <: Seq[A]]
   extends IterableOps[A, CC, C]
-    with collection.SeqOps[A, CC, C] {
+    with collection.SeqOps[A, CC, C]
+    with Cloneable[C] {
 
   override def clone(): C = {
     val b = newSpecificBuilder()
