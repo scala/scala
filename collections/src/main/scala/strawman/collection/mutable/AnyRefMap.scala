@@ -456,7 +456,7 @@ object AnyRefMap {
     var sz = elems.knownSize
     if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
-    elems.foreach{ case (k,v) => arm(k) = v }
+    elems.iterator().foreach{ case (k,v) => arm(k) = v }
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }

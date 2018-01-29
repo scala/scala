@@ -556,7 +556,7 @@ object LongMap {
     var sz = elems.knownSize
     if(sz < 0) sz = 4
     val lm = new LongMap[V](sz * 2)
-    elems.foreach{ case (k,v) => lm(k) = v }
+    elems.iterator().foreach{ case (k,v) => lm(k) = v }
     if (lm.size < (sz>>3)) lm.repack()
     lm
   }
