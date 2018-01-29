@@ -39,6 +39,7 @@ val commonSettings = Seq(
       <developer><id>odersky</id><name>Martin Odersky</name></developer>
       <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
       <developer><id>szeiger</id><name>Stefan Zeiger</name></developer>
+      <developer><id>msteindorfer</id><name>Michael J. Steindorfer</name></developer>
     </developers>,
   // For publishing snapshots
   credentials ++= (

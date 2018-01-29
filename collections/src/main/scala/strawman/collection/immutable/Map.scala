@@ -128,6 +128,9 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   */
 object Map extends MapFactory[Map] {
 
+  private final val useBaseline: Boolean =
+    scala.sys.props.get("strawman.collection.immutable.useBaseline").contains("true")
+
   final class WithDefault[K, +V](underlying: Map[K, V], d: K => V) extends Map[K, V] {
     // These factory methods will lose the default value
     def iterableFactory = underlying.iterableFactory
@@ -159,7 +162,8 @@ object Map extends MapFactory[Map] {
       case _ => (newBuilder[K, V]() ++= it).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), Map[K, V]] = HashMap.newBuilder()
+  def newBuilder[K, V](): Builder[(K, V), Map[K, V]] =
+    if (useBaseline) HashMap.newBuilder() else ChampHashMap.newBuilder()
 
   trait SmallMap[K, +V] extends Map[K, V] {
     def iterableFactory: IterableFactory[Iterable] = Iterable
@@ -272,7 +276,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
-      else HashMap.empty.updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
+      else (if (useBaseline) HashMap.empty[K, V1] else ChampHashMap.empty[K, V1]).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def remove(key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)

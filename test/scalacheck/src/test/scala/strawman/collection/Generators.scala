@@ -27,5 +27,16 @@ object Generators {
     } yield mutable.TreeSet(elements: _*)
   implicit def arbTreeSet[A : Arbitrary : Ordering]: Arbitrary[mutable.TreeSet[A]] = Arbitrary(genTreeSet)
 
+  implicit def arbitraryImmutableHashSet[A](implicit arbitraryOldMutableSet: Arbitrary[scala.collection.mutable.Set[A]]): Arbitrary[immutable.HashSet[A]] =
+    Arbitrary(arbitraryOldMutableSet.arbitrary.map(m => immutable.HashSet.from(m.toSeq.toStrawman)))
+
+  implicit def arbitraryImmutableChampHashSet[A](implicit arbitraryOldMutableSet: Arbitrary[scala.collection.mutable.Set[A]]): Arbitrary[immutable.ChampHashSet[A]] =
+    Arbitrary(arbitraryOldMutableSet.arbitrary.map(m => immutable.ChampHashSet.from(m.toSeq.toStrawman)))
+
+  implicit def arbitraryImmutableHashMap[K, V](implicit arbitraryOldMutableSet: Arbitrary[scala.collection.mutable.Map[K, V]]): Arbitrary[immutable.HashMap[K, V]] =
+    Arbitrary(arbitraryOldMutableSet.arbitrary.map(m => immutable.HashMap.from(m.toSeq.toStrawman)))
+
+  implicit def arbitraryImmutableChampHashMap[K, V](implicit arbitraryOldMutableSet: Arbitrary[scala.collection.mutable.Map[K, V]]): Arbitrary[immutable.ChampHashMap[K, V]] =
+    Arbitrary(arbitraryOldMutableSet.arbitrary.map(m => immutable.ChampHashMap.from(m.toSeq.toStrawman)))
 
 }
