@@ -27,7 +27,7 @@ abstract class ScalaSigSymbol extends Symbol {
   def entry: ScalaSig#Entry
   def index = entry.index
 
-  lazy val children: Seq[Symbol] = applyScalaSigRule(ScalaSigParsers.symbols) filter (sym => sym.parent == Some(this) && !sym.isParam)
+  lazy val children: Seq[Symbol] = applyScalaSigRule(ScalaSigParsers.symbols) filter (sym => sym.parent == Some(this) && (this match { case _: MethodSymbol => true case _ => !sym.isParam}))
   lazy val attributes: Seq[AttributeInfo] = applyScalaSigRule(ScalaSigParsers.attributes) filter (_.symbol == this)
 }
 
