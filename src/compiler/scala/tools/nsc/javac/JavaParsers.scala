@@ -395,6 +395,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             in.nextToken()
           case STRICTFP =>
             addAnnot(ScalaStrictFPAttr)
+            in.nextToken()
           case SYNCHRONIZED =>
             in.nextToken()
           case _ =>
