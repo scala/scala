@@ -80,7 +80,7 @@ CharData      ::=   { CharNoRef } $\textit{ without}$ {CharNoRef}‘{’CharB {C
                                   $\textit{ and without}$ {CharNoRef}‘]]>’{CharNoRef}
 ```
 
-<!-- {% raw  %} stupid liquid borks on the double brace below; brace yourself, liquid! -->
+<!-- {% raw  %} sigh: liquid borks on the double brace below; brace yourself, liquid! -->
 XML expressions may contain Scala expressions as attribute values or
 within nodes. In the latter case, these are embedded using a single opening
 brace `{` and ended by a closing brace `}`. To express a single opening braces

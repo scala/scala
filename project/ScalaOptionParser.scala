@@ -119,7 +119,7 @@ object ScalaOptionParser {
   private def scalaStringSettingNames = List("-i", "-e")
   private def scalaBooleanSettingNames = List("-nc", "-save")
 
-  private def scalaDocBooleanSettingNames = List("-Yuse-stupid-types", "-implicits", "-implicits-debug", "-implicits-show-all", "-implicits-sound-shadowing", "-implicits-hide", "-author", "-diagrams", "-diagrams-debug", "-raw-output", "-no-prefixes", "-no-link-warnings", "-expand-all-types", "-groups")
+  private def scalaDocBooleanSettingNames = List("-implicits", "-implicits-debug", "-implicits-show-all", "-implicits-sound-shadowing", "-implicits-hide", "-author", "-diagrams", "-diagrams-debug", "-raw-output", "-no-prefixes", "-no-link-warnings", "-expand-all-types", "-groups")
   private def scalaDocIntSettingNames = List("-diagrams-max-classes", "-diagrams-max-implicits", "-diagrams-dot-timeout", "-diagrams-dot-restart")
   private def scalaDocChoiceSettingNames = Map("-doc-format" -> List("html"))
   private def scaladocStringSettingNames = List("-doc-title", "-doc-version", "-doc-footer", "-doc-no-compile", "-doc-source-url", "-doc-generator", "-skip-packages")
