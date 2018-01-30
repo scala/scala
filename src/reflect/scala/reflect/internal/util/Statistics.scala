@@ -29,7 +29,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
   }
 
   /** If enabled, increment counter in map `ctrs` at index `key` by one */
-  @inline final def incCounter[K](ctrs: QuantMap[K, Counter], key: K) =
+  @inline final def incCounter[K](ctrs: QuantMap[K, Counter, _], key: K) =
     if (areStatisticsLocallyEnabled && ctrs != null) ctrs(key).value += 1
 
   /** If enabled, start subcounter. While active it will track all increments of
@@ -102,10 +102,10 @@ quant)
 
   /** Create a new quantity map that shows as `prefix` and is active in given phases.
    */
-  def newQuantMap[K, V <% Ordered[V]](prefix: String, phases: String*)(initValue: => V): QuantMap[K, V] = new QuantMap(prefix, phases, initValue)
+  def newQuantMap[K, V, C <: Comparable[C]](prefix: String, sortBy: V => C, phases: String*)(initValue: => V): QuantMap[K, V, C] = new QuantMap[K, V, C](prefix, phases, initValue, sortBy)
 
   /** Same as newQuantMap, where the key type is fixed to be Class[_] */
-  def newByClass[V <% Ordered[V]](prefix: String, phases: String*)(initValue: => V): QuantMap[Class[_], V] = new QuantMap(prefix, phases, initValue)
+  def newByClass[V, C <: Comparable[C]](prefix: String, sortBy: V => C, phases: String*)(initValue: => V): QuantMap[Class[_], V, C] = new QuantMap[Class[_], V, C](prefix, phases, initValue, sortBy)
 
   /** Create a new timer stack */
   def newTimerStack() = new TimerStack()
@@ -117,20 +117,28 @@ quant)
   private def showPercent(x: Long, base: Long) =
     if (base == 0) "" else f" (${x.toDouble / base.toDouble * 100}%2.1f%%)"
 
+  private def showPercent0(x: Long, base: Long) =
+    if (base == 0) "" else f"${x.toDouble / base.toDouble * 100}%2.1f"
+
   /** The base trait for quantities.
    *  Quantities with non-empty prefix are printed in the statistics info.
    */
   trait Quantity {
-    if (prefix.nonEmpty) {
-      val key = s"${if (underlying != this) underlying.prefix else ""}/$prefix"
-      qs(key) = this
-    }
+    val key = if (prefix.nonEmpty) {
+      val key1 = if(underlying ne this) {
+        s"${underlying.prefix.trim}/${prefix.trim()}"
+      } else prefix.trim()
+      qs(key1) = this
+      key1
+    } else ""
     val prefix: String
     val phases: Seq[String]
     def underlying: Quantity = this
     def showAt(phase: String) = phases.isEmpty || (phases contains phase)
-    def line = f"$prefix%-30s: ${this}"
+    def line = f"$prefix%-30s: ${this.toString}"
     val children = new mutable.ListBuffer[Quantity]
+    def csvLabels: List[String] = key :: Nil
+    def csvValues: List[String] = toString :: Nil
   }
 
   trait SubQuantity extends Quantity {
@@ -138,19 +146,11 @@ quant)
     underlying.children += this
   }
 
-  class Counter(val prefix: String, val phases: Seq[String]) extends Quantity with Ordered[Counter] {
+  class Counter(val prefix: String, val phases: Seq[String]) extends Quantity {
     var value: Int = 0
-    def compare(that: Counter): Int =
-      if (this.value < that.value) -1
-      else if (this.value > that.value) 1
-      else 0
-    override def equals(that: Any): Boolean =
-      that match {
-        case that: Counter => (this compare that) == 0
-        case _ => false
-      }
-    override def hashCode = value
     override def toString = value.toString
+    override def csvLabels: List[String] = prefix :: Nil
+    override def csvValues: List[String] = value.toString :: Nil
   }
 
   class View(val prefix: String, val phases: Seq[String], quant: => Any) extends Quantity {
@@ -164,6 +164,7 @@ quant)
         assert(underlying.value != 0, prefix+"/"+underlying.line)
         f"${value.toFloat / underlying.value}%2.1f"
       }
+    override def csvValues: List[String] = value.toString :: Nil
   }
 
   class SubCounter(prefix: String, override val underlying: Counter) extends Counter(prefix, underlying.phases) with SubQuantity {
@@ -174,6 +175,8 @@ quant)
     }
     override def toString =
       value + showPercent(value.toLong, underlying.value.toLong)
+    override def csvLabels: List[String] = List(key, key + " %")
+    override def csvValues: List[String] = List(value.toString, showPercent0(value.toLong, underlying.value.toLong))
   }
 
   class Timer(val prefix: String, val phases: Seq[String]) extends Quantity {
@@ -189,31 +192,26 @@ quant)
     }
     protected def show(ns: Long) = s"${ns/1000000}ms"
     override def toString = s"$timings spans, ${show(nanos)}"
+
+    override def csvLabels: List[String] = List(key + " (spans)", key + " (ms)")
+    override def csvValues: List[String] = List(timings.toString, (nanos.toDouble / 1000000).toString)
   }
 
   class SubTimer(prefix: String, override val underlying: Timer) extends Timer(prefix, underlying.phases) with SubQuantity {
     override protected def show(ns: Long) = super.show(ns) + showPercent(ns, underlying.nanos)
+    override def csvLabels: List[String] = super.csvLabels :+ key + " %"
+    override def csvValues: List[String] = super.csvValues :+ showPercent0(nanos, underlying.nanos)
   }
 
-  class StackableTimer(prefix: String, underlying: Timer) extends SubTimer(prefix, underlying) with Ordered[StackableTimer] {
+  class StackableTimer(prefix: String, underlying: Timer) extends SubTimer(prefix, underlying) {
     var specificNanos: Long = 0
-    def compare(that: StackableTimer): Int =
-      if (this.specificNanos < that.specificNanos) -1
-      else if (this.specificNanos > that.specificNanos) 1
-      else 0
-    override def equals(that: Any): Boolean =
-      that match {
-        case that: StackableTimer => (this compare that) == 0
-        case _ => false
-      }
-    override def hashCode = specificNanos.##
     override def toString = s"${super.toString} aggregate, ${show(specificNanos)} specific"
   }
 
   /** A mutable map quantity where missing elements are automatically inserted
    *  on access by executing `initValue`.
    */
-  class QuantMap[K, V <% Ordered[V]](val prefix: String, val phases: Seq[String], initValue: => V)
+  class QuantMap[K, V, C <: Comparable[C]](val prefix: String, val phases: Seq[String], initValue: => V, sortBy: V => C)
       extends mutable.HashMap[K, V] with mutable.SynchronizedMap[K, V] with Quantity {
     override def default(key: K) = {
       val elem = initValue
@@ -221,7 +219,7 @@ quant)
       elem
     }
     override def toString =
-      this.toSeq.sortWith(_._2 > _._2).map {
+      this.toSeq.sortBy(mapping => sortBy(mapping._2)).map {
         case (cls: Class[_], elem) =>
           s"${cls.toString.substring(cls.toString.lastIndexOf("$") + 1)}: $elem"
         case (key, elem) =>

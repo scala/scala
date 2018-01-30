@@ -5849,7 +5849,7 @@ trait TypersStats {
   val failedApplyNanos    = newSubTimer("  failed apply", typerNanos)
   val failedOpEqNanos     = newSubTimer("  failed op=", typerNanos)
   val isReferencedNanos   = newSubTimer("time spent ref scanning", typerNanos)
-  val visitsByType        = newByClass("#visits by tree node", "typer")(newCounter(""))
-  val byTypeNanos         = newByClass("time spent by tree node", "typer")(newStackableTimer("", typerNanos))
+  val visitsByType        = newByClass("#visits by tree node", (c: Counter) => Int.box(c.value), "typer")(newCounter(""))
+  val byTypeNanos         = newByClass("time spent by tree node", (c: StackableTimer) => Long.box(c.nanos), "typer")(newStackableTimer("", typerNanos))
   val byTypeStack         = newTimerStack()
 }

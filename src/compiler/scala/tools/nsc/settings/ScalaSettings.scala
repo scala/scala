@@ -385,6 +385,7 @@ trait ScalaSettings extends AbsScalaSettings
   override def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
   val YhotStatistics = BooleanSetting("-Yhot-statistics-enabled", s"Enable `${Ystatistics.name}` to print hot statistics.")
+  val YstatisticsDestination = StringSetting("-Ystatistics-destination", "file", "Print statistics in CSV format to the given file", "")
   override def YhotStatisticsEnabled = YhotStatistics.value
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
