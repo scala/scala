@@ -928,12 +928,14 @@ class MutableSettings(val errorFn: String => Unit)
 
     def tryToSet(args: List[String]) =
       if (default == "") errorAndValue("missing phase", None)
-      else tryToSetColon(List(default)) map (_ => args)
+      else tryToSetColon(splitDefault) map (_ => args)
+
+    private def splitDefault = default.split(',').toList
 
     override def tryToSetColon(args: List[String]) = try {
       args match {
         case Nil  => if (default == "") errorAndValue("missing phase", None)
-                     else tryToSetColon(List(default))
+                     else tryToSetColon(splitDefault)
         case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
       }
     } catch { case _: NumberFormatException => None }
