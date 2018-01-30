@@ -6,9 +6,9 @@ import java.lang.{Object, String}
 
 import strawman.collection.immutable.Range
 
-import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
+import Searching.{SearchResult, Found, InsertionPoint}
 
 /** Base trait for sequence collections
   *
@@ -764,6 +764,62 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- sq) occ(y) += 1
     occ
+  }
+
+  /** Search this sorted sequence for a specific element. If the sequence is an
+    * `IndexedSeq`, a binary search is used. Otherwise, a linear search is used.
+    *
+    * The sequence should be sorted with the same `Ordering` before calling; otherwise,
+    * the results are undefined.
+    *
+    * @see [[scala.collection.IndexedSeq]]
+    * @see [[scala.math.Ordering]]
+    * @see [[scala.collection.SeqOps]], method `sorted`
+    *
+    * @param elem the element to find.
+    * @param ord  the ordering to be used to compare elements.
+    *
+    * @return a `Found` value containing the index corresponding to the element in the
+    *         sequence, or the `InsertionPoint` where the element would be inserted if
+    *         the element is not in the sequence.
+    */
+  def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
+    linearSearch(view, elem, 0)(ord)
+
+  /** Search within an interval in this sorted sequence for a specific element. If this
+    * sequence is an `IndexedSeq`, a binary search is used. Otherwise, a linear search
+    * is used.
+    *
+    * The sequence should be sorted with the same `Ordering` before calling; otherwise,
+    * the results are undefined.
+    *
+    * @see [[scala.collection.IndexedSeq]]
+    * @see [[scala.math.Ordering]]
+    * @see [[scala.collection.SeqOps]], method `sorted`
+    *
+    * @param elem the element to find.
+    * @param from the index where the search starts.
+    * @param to   the index following where the search ends.
+    * @param ord  the ordering to be used to compare elements.
+    *
+    * @return a `Found` value containing the index corresponding to the element in the
+    *         sequence, or the `InsertionPoint` where the element would be inserted if
+    *         the element is not in the sequence.
+    */
+  def search[B >: A](elem: B, from: Int, to: Int) (implicit ord: Ordering[B]): SearchResult =
+    linearSearch(view.slice(from, to), elem, from)(ord)
+
+  private[this] def linearSearch[B >: A](c: View[A], elem: B, offset: Int)
+                                        (implicit ord: Ordering[B]): SearchResult = {
+    var idx = offset
+    val it = c.iterator()
+    while (it.hasNext) {
+      val cur = it.next()
+      if (ord.equiv(elem, cur)) return Found(idx)
+      else if (ord.lt(elem, cur)) return InsertionPoint(idx)
+      idx += 1
+    }
+    InsertionPoint(idx)
   }
 }
 

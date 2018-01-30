@@ -345,6 +345,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   /** A view over the elements of this collection. */
   def view: View[A] = View.fromIteratorProvider(() => iterator())
 
+  /** A view over a slice of the elements of this collection. */
+  @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
+  @`inline` final def view(from: Int, until: Int): View[A] = view.slice(from, until)
+
   /** Given a collection factory `factory`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:
     *
