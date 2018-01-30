@@ -440,7 +440,7 @@ lazy val compiler = configureAsSubproject(project)
     ),
     // Generate the ScriptEngineFactory service definition. The Ant build does this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
-    generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.Scripted$Factory"),
+    generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.shell.Scripted$Factory"),
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
     fixPom(
       "/project/name" -> <name>Scala Compiler</name>,
