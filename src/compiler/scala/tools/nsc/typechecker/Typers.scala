@@ -4775,31 +4775,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
-      // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)
-      // where Array HK gets applied (N-1) times
-      object ArrayInstantiation {
-        def unapply(tree: Apply) = tree match {
-          case Apply(Select(New(tpt), name), arg :: Nil) if tpt.tpe != null && tpt.tpe.typeSymbol == ArrayClass =>
-            Some(tpt.tpe) collect {
-              case erasure.GenericArray(level, componentType) =>
-                val tagType = (1 until level).foldLeft(componentType)((res, _) => arrayType(res))
-
-                resolveClassTag(tree.pos, tagType) match {
-                  case EmptyTree => MissingClassTagError(tree, tagType)
-                  case tag       => atPos(tree.pos)(new ApplyToImplicitArgs(Select(tag, nme.newArray), arg :: Nil))
-                }
-            }
-          case _ => None
-        }
-      }
-
       def typedApply(tree: Apply) = tree match {
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
         case Apply(fun, args) =>
           normalTypedApply(tree, fun, args) match {
-            case ArrayInstantiation(tree1)                                           => if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
+            case treeInfo.ArrayInstantiation(level, componentType, arg) =>
+              // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
+              // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)
+              // where Array HK gets applied (N-1) times
+              val tagType = (1 until level).foldLeft(componentType)((res, _) => arrayType(res))
+
+              val tree1: Tree = resolveClassTag(tree.pos, tagType) match {
+                case EmptyTree => MissingClassTagError(tree, tagType)
+                case tag       => atPos(tree.pos)(new ApplyToImplicitArgs(Select(tag, nme.newArray), arg :: Nil))
+              }
+              if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
             case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //scala/bug#5696
             case tree1 if mode.inPatternMode && tree1.tpe.paramSectionCount > 0 =>
               // For a case class C with more than two parameter lists,
