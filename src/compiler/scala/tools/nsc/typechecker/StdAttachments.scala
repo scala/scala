@@ -145,12 +145,13 @@ trait StdAttachments {
    *  typechecks to be a macro application. Then we need to unmark it, expand it and try to treat
    *  its expansion as a macro impl reference.
    */
-  def unmarkMacroImplRef(tree: Tree): Tree = tree.removeAttachment[MacroImplRefAttachment.type]
+  def unmarkMacroImplRef(tree: Tree): Tree = tree.removeAttachment[MacroImplRefAttachment.type](MacroImplRefAttachmentTag)
 
   /** Determines whether a tree should or should not be adapted,
    *  because someone has put MacroImplRefAttachment on it.
    */
-  def isMacroImplRef(tree: Tree): Boolean = tree.hasAttachment[MacroImplRefAttachment.type]
+  def isMacroImplRef(tree: Tree): Boolean = tree.hasAttachment[MacroImplRefAttachment.type](MacroImplRefAttachmentTag)
+  private[this] val MacroImplRefAttachmentTag: reflect.ClassTag[MacroImplRefAttachment.type] = reflect.classTag[MacroImplRefAttachment.type]
 
   /** Since mkInvoke, the applyDynamic/selectDynamic/etc desugarer, is disconnected
    *  from typedNamedApply, the applyDynamicNamed argument rewriter, the latter
@@ -163,8 +164,9 @@ trait StdAttachments {
    */
   case object DynamicRewriteAttachment
   def markDynamicRewrite(tree: Tree): Tree = tree.updateAttachment(DynamicRewriteAttachment)
-  def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type]
-  def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type].isDefined
+  def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type](DynamicRewriteAttachmentTag)
+  def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type](DynamicRewriteAttachmentTag).isDefined
+  private[this] val DynamicRewriteAttachmentTag: reflect.ClassTag[DynamicRewriteAttachment.type] = reflect.classTag[DynamicRewriteAttachment.type]
 
   /**
    * Marks a tree that has been adapted by typer and sets the original tree that was in place before.
@@ -184,23 +186,25 @@ trait StdAttachments {
   case class OriginalTreeAttachment(original: Tree)
 
   case class StabilizingDefinitions(vdefs: List[ValDef])
+  private[this] val StabilizingDefinitionsTag: reflect.ClassTag[StabilizingDefinitions] = reflect.classTag[StabilizingDefinitions]
 
-  def addStabilizingDefinition(tree: Tree, vdef: ValDef): Tree =
+  def addStabilizingDefinition(tree: Tree, vdef: ValDef): Tree = {
     tree.updateAttachment(StabilizingDefinitions(
-      tree.attachments.get[StabilizingDefinitions] match {
+      tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
         case Some(StabilizingDefinitions(vdefs)) => vdef :: vdefs
         case _ => List(vdef)
       }
-    ))
+    ))(StabilizingDefinitionsTag)
+  }
 
   def stabilizingDefinitions(tree: Tree): List[ValDef] =
-    tree.attachments.get[StabilizingDefinitions] match {
+    tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
       case Some(StabilizingDefinitions(vdefs)) => vdefs
       case _ => Nil
     }
 
   def removeStabilizingDefinitions(tree: Tree): Tree =
-    tree.removeAttachment[StabilizingDefinitions]
+    tree.removeAttachment[StabilizingDefinitions](StabilizingDefinitionsTag)
 
   /** Added to trees that appear in a method value, e.g., to `f(x)` in `f(x) _` */
   case object MethodValueAttachment
