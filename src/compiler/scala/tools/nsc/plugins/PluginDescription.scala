@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package plugins
 
-import scala.reflect.internal.util.StringContextStripMarginOps
-
 /** A description of a compiler plugin, suitable for serialization
  *  to XML for inclusion in the plugin's .jar file.
  *
@@ -26,9 +24,9 @@ case class PluginDescription(name: String, classname: String) {
    */
   def toXML: String =
     sm"""<plugin>
-         | <name>${name}</name>
-         | <classname>${classname}</classname>
-         |</plugin>"""
+        | <name>${name}</name>
+        | <classname>${classname}</classname>
+        |</plugin>"""
 }
 
 /** Utilities for the PluginDescription class.
