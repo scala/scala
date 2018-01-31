@@ -45,27 +45,27 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
   // However, I'm afraid it's too late now for such breaking change.
   import HashTable._
 
-  @transient protected var _loadFactor = defaultLoadFactor
+  protected var _loadFactor = defaultLoadFactor
 
   /** The actual hash table.
    */
-  @transient protected[collection] var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
+  protected[collection] var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  @transient protected[collection] var tableSize: Int = 0
+  protected[collection] var tableSize: Int = 0
 
   final def size: Int = tableSize
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  @transient protected[collection] var threshold: Int = initialThreshold(_loadFactor)
+  protected[collection] var threshold: Int = initialThreshold(_loadFactor)
 
   /** The array keeping track of the number of elements in 32 element blocks.
    */
-  @transient protected var sizemap: Array[Int] = null
+  protected var sizemap: Array[Int] = null
 
-  @transient protected var seedvalue: Int = tableSizeSeed
+  protected var seedvalue: Int = tableSizeSeed
 
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
@@ -92,8 +92,6 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
    * entry to be read from the input stream.
    */
   private[collection] def init(in: java.io.ObjectInputStream, readEntry: => Entry): Unit = {
-    in.defaultReadObject
-
     _loadFactor = in.readInt()
     assert(_loadFactor > 0)
 
@@ -125,7 +123,6 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
    * deserialize, `init` should be used.
    */
   private[collection] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit): Unit = {
-    out.defaultWriteObject
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
     out.writeInt(seedvalue)

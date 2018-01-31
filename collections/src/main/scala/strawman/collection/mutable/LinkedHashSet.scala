@@ -34,8 +34,9 @@ class LinkedHashSet[A]
 
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
+  @transient private[this] var table: HashTable[A, AnyRef, Entry] = newHashTable
 
-  private[this] var table: HashTable[A, AnyRef, Entry] =
+  private def newHashTable =
     new HashTable[A, AnyRef, Entry] {
       def createNewEntry(key: A, value: AnyRef) = {
         val e = new Entry(key)
@@ -114,15 +115,15 @@ class LinkedHashSet[A]
   }
 
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
     table.serializeTo(out, { e => out.writeObject(e.key) })
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
-    firstEntry = null
-    lastEntry = null
+    in.defaultReadObject()
+    table = newHashTable
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[A], null))
   }
-
 }
 
 /** $factoryInfo
@@ -148,6 +149,5 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
     var earlier: Entry[A] = null
     var later: Entry[A] = null
   }
-
 }
 

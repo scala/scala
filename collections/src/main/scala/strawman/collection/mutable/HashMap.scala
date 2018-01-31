@@ -3,7 +3,7 @@ package collection.mutable
 
 import strawman.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 
-import scala.{Boolean, Int, None, NoSuchElementException, Option, SerialVersionUID, Serializable, Some, Unit, throws}
+import scala.{Boolean, Int, None, NoSuchElementException, Option, SerialVersionUID, Serializable, Some, throws, transient, Unit}
 import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
@@ -29,16 +29,17 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
 
   def mapFactory = HashMap
 
-  private[this] val table: HashTable[K, V, DefaultEntry[K, V]] =
-    new HashTable[K, V, DefaultEntry[K, V]] {
-      def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
-    }
-
+  @transient private[this] var table: HashTable[K, V, DefaultEntry[K, V]] = newHashTable
   table.initWithContents(contents)
 
   type Entry = DefaultEntry[K, V]
 
   def this() = this(null)
+
+  private def newHashTable =
+    new HashTable[K, V, DefaultEntry[K, V]] {
+      def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
+    }
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
   protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.from(it)
@@ -102,6 +103,7 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
   }
 
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
     table.serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
@@ -109,6 +111,8 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
+    in.defaultReadObject()
+    table = newHashTable
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 
