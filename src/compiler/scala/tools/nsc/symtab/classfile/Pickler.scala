@@ -43,13 +43,15 @@ abstract class Pickler extends SubComponent {
             def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
             if (shouldPickle(sym)) {
               val pickle = new Pickle(sym)
-              def pickleSym(sym: Symbol) = {
-                pickle.putSymbol(sym)
-                currentRun.symData(sym) = pickle
+              def reserveDeclEntries(sym: Symbol): Unit = {
+                pickle.reserveEntry(sym)
+                if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
+                else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
               }
 
               val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
               val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
+              syms.foreach(reserveDeclEntries)
               syms.foreach { sym =>
                 pickle.putSymbol(sym)
                 currentRun.symData(sym) = pickle
@@ -125,6 +127,11 @@ abstract class Pickler extends SubComponent {
     private def isExternalSymbol(sym: Symbol): Boolean = (sym != NoSymbol) && !isLocalToPickle(sym)
 
     // Phase 1 methods: Populate entries/index ------------------------------------
+    private val reserved = mutable.BitSet()
+    final def reserveEntry(sym: Symbol): Unit = {
+      reserved(ep) = true
+      putEntry(sym)
+    }
 
     /** Store entry e in index at next available position unless
      *  it is already there.
@@ -132,7 +139,8 @@ abstract class Pickler extends SubComponent {
      *  @return      true iff entry is new.
      */
     private def putEntry(entry: AnyRef): Boolean = index.get(entry) match {
-      case Some(_) => false
+      case Some(i) =>
+        reserved.remove(i)
       case None =>
         if (ep == entries.length) {
           val entries1 = new Array[AnyRef](ep * 2)
