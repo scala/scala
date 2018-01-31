@@ -309,4 +309,10 @@ class IteratorTest {
     indexedSeq(NumericRange(start = -10, end = -5, step = 1))
   }
 
+  @Test
+  def mkString: Unit = {
+    val it = List("a", null, "b", null, "c", null).iterator()
+
+    assertEquals("a,null,b,null,c,null", it.mkString(","))
+  }
 }
