@@ -1107,18 +1107,18 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     var first = true
 
-    b addAll start
+    b.append(start)
     for (x <- self) {
       if (first) {
-        b addAll x.toString
+        b.append(x)
         first = false
       }
       else {
-        b addAll sep
-        b addAll x.toString
+        b.append(sep)
+        b.append(x)
       }
     }
-    b addAll end
+    b.append(end)
 
     b
   }
