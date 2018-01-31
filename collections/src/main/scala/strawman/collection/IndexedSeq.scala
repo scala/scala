@@ -2,6 +2,10 @@ package strawman
 package collection
 
 import scala.{Any, Boolean, Int}
+import scala.annotation.tailrec
+import scala.math
+import scala.math.Ordering
+import Searching.{SearchResult, Found, InsertionPoint}
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
@@ -41,4 +45,22 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
 
   final override def knownSize: Int = length
 
+  override def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
+    binarySearch(elem, 0, length)(ord)
+
+  override def search[B >: A](elem: B, from: Int, to: Int)(implicit ord: Ordering[B]): SearchResult =
+    binarySearch(elem, from, to)(ord)
+
+  @tailrec
+  private[this] def binarySearch[B >: A](elem: B, from: Int, to: Int)
+                                        (implicit ord: Ordering[B]): SearchResult = {
+    if (to == from) InsertionPoint(from) else {
+      val idx = from+(to-from-1)/2
+      math.signum(ord.compare(elem, apply(idx))) match {
+        case -1 => binarySearch(elem, from, idx)(ord)
+        case  1 => binarySearch(elem, idx + 1, to)(ord)
+        case  _ => Found(idx)
+      }
+    }
+  }
 }

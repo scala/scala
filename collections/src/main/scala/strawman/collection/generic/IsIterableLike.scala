@@ -13,7 +13,7 @@ import scala.Predef.{String, implicitly}
  *  extension methods that work both on collection types and on `String`s (`String`s
  *  do not extend `Iterable`, but can be converted to `Iterable`)
  *
- * `IsIterable` provides two members:
+ * `IsIterableLike` provides two members:
  *
  *  1. type member `A`, which represents the element type of the target `Iterable[A]`
  *  1. value member `conversion`, which provides a way to convert between the type we wish to add extension methods to, `Repr`, and `Iterable[A]`.
