@@ -63,7 +63,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
           fileBuf += createFileEntry(entry)
       }
       ClassPathEntries(pkgBuf, fileBuf)
-    } getOrElse ClassPathEntries(Seq.empty, Seq.empty)
+    } getOrElse ClassPathEntries.empty
   }
 
   private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
