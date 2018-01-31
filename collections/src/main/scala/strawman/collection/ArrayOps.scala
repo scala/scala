@@ -76,4 +76,30 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   def patch[B >: A : ClassTag](from: Int, other: Iterable[B], replaced: Int): Array[B] =
     fromTaggedIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
+
+  /** Converts an array of pairs into an array of first elements and an array of second elements.
+    *
+    *  @tparam A1    the type of the first half of the element pairs
+    *  @tparam A2    the type of the second half of the element pairs
+    *  @param asPair an implicit conversion which asserts that the element type
+    *                of this Array is a pair.
+    *  @param ct1    a class tag for `A1` type parameter that is required to create an instance
+    *                of `Array[A1]`
+    *  @param ct2    a class tag for `A2` type parameter that is required to create an instance
+    *                of `Array[A2]`
+    *  @return       a pair of Arrays, containing, respectively, the first and second half
+    *                of each element pair of this Array.
+    */
+  def unzip[A1, A2](implicit asPair: A => (A1, A2), ct1: ClassTag[A1], ct2: ClassTag[A2]): (Array[A1], Array[A2]) = {
+    val a1 = new Array[A1](length)
+    val a2 = new Array[A2](length)
+    var i = 0
+    while (i < length) {
+      val e = asPair(apply(i))
+      a1(i) = e._1
+      a2(i) = e._2
+      i += 1
+    }
+    (a1, a2)
+  }
 }
