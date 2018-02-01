@@ -238,6 +238,7 @@ trait Contexts { self: Analyzer =>
     def imports: List[ImportInfo] = outer.imports
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
+    protected[Contexts] def importOrNull: ImportInfo = null
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
@@ -294,6 +295,13 @@ trait Contexts { self: Analyzer =>
 
     /** ...or an Apply. */
     def enclosingApply = nextEnclosing(_.tree.isInstanceOf[Apply])
+
+    @tailrec
+    final def enclosingImport: Context = this match {
+      case _: ImportContext => this
+      case NoContext => this
+      case _ => outer.enclosingImport
+    }
 
     def siteString = {
       def what_s  = if (owner.isConstructor) "" else owner.kindString
@@ -1105,12 +1113,8 @@ trait Contexts { self: Analyzer =>
         symbolDepth = cx.depth
 
       var impSym: Symbol = NoSymbol
-      var imports        = Context.this.imports
-      def imp1           = imports.head
-      def imp2           = imports.tail.head
-      def sameDepth      = imp1.depth == imp2.depth
-      def imp1Explicit   = imp1 isExplicitImport name
-      def imp2Explicit   = imp2 isExplicitImport name
+      val importCursor = new ImportCursor(this, name)
+      import importCursor.{imp1, imp2}
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
@@ -1133,10 +1137,10 @@ trait Contexts { self: Analyzer =>
         || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
       )
 
-      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
+      while (!impSym.exists && importCursor.imp1Exists && depthOk(importCursor.imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
-          imports = imports.tail
+          importCursor.advanceImp1Imp2()
       }
 
       if (defSym.exists && impSym.exists) {
@@ -1155,16 +1159,6 @@ trait Contexts { self: Analyzer =>
       if (defSym.exists)
         finishDefSym(defSym, pre)
       else if (impSym.exists) {
-        // We continue walking down the imports as long as the tail is non-empty, which gives us:
-        //   imports  ==  imp1 :: imp2 :: _
-        // And at least one of the following is true:
-        //   - imp1 and imp2 are at the same depth
-        //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
-        def keepLooking = (
-             lookupError == null
-          && imports.tail.nonEmpty
-          && (sameDepth || !imp1Explicit)
-        )
         // If we find a competitor imp2 which imports the same name, possible outcomes are:
         //
         //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
@@ -1176,19 +1170,19 @@ trait Contexts { self: Analyzer =>
         // The ambiguity check is: if we can verify that both imports refer to the same
         // symbol (e.g. import foo.X followed by import foo._) then we discard imp2
         // and proceed. If we cannot, issue an ambiguity error.
-        while (keepLooking) {
+        while (lookupError == null && importCursor.keepLooking) {
           // If not at the same depth, limit the lookup to explicit imports.
           // This is desirable from a performance standpoint (compare to
           // filtering after the fact) but also necessary to keep the unused
           // import check from being misled by symbol lookups which are not
           // actually used.
-          val other = lookupImport(imp2, requireExplicit = !sameDepth)
-          def imp1wins() = { imports = imp1 :: imports.tail.tail }
-          def imp2wins() = { impSym = other ; imports = imports.tail }
+          val other = lookupImport(imp2, requireExplicit = !importCursor.sameDepth)
 
+          def imp1wins() { importCursor.advanceImp2() }
+          def imp2wins() { impSym = other; importCursor.advanceImp1Imp2() }
           if (!other.exists) // imp1 wins; drop imp2 and continue.
             imp1wins()
-          else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
+          else if (importCursor.imp2Wins) // imp2 wins; drop imp1 and continue.
             imp2wins()
           else resolveAmbiguousImport(name, imp1, imp2) match {
             case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
@@ -1244,6 +1238,7 @@ trait Contexts { self: Analyzer =>
     }
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
+    override final def importOrNull = impInfo
     override final def isRootImport = !tree.pos.isDefined
     override final def toString     = s"${super.toString} with ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
@@ -1505,6 +1500,35 @@ trait Contexts { self: Analyzer =>
 
   type ImportType = global.ImportType
   val ImportType = global.ImportType
+
+  /** Walks a pair of references (`imp1` and `imp2`) up the context chain to ImportContexts */
+  private final class ImportCursor(var ctx: Context, name: Name) {
+    private var imp1Ctx = ctx.enclosingImport
+    private var imp2Ctx = imp1Ctx.outer.enclosingImport
+
+    def advanceImp1Imp2(): Unit = {
+      imp1Ctx = imp2Ctx; imp2Ctx = imp1Ctx.outer.enclosingImport
+    }
+    def advanceImp2(): Unit = {
+      imp2Ctx = imp2Ctx.outer.enclosingImport
+    }
+    def imp1Exists: Boolean = imp1Ctx.importOrNull != null
+    def imp1: ImportInfo = imp1Ctx.importOrNull
+    def imp2: ImportInfo = imp2Ctx.importOrNull
+
+    // We continue walking down the imports as long as the tail is non-empty, which gives us:
+    //   imports  ==  imp1 :: imp2 :: _
+    // And at least one of the following is true:
+    //   - imp1 and imp2 are at the same depth
+    //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
+    def keepLooking: Boolean = imp2Exists && (sameDepth || !imp1Explicit)
+    def imp2Wins: Boolean = sameDepth && !imp1Explicit && imp2Explicit
+    def sameDepth: Boolean = imp1.depth == imp2.depth
+
+    private def imp2Exists = imp2Ctx.importOrNull != null
+    private def imp1Explicit = imp1 isExplicitImport name
+    private def imp2Explicit = imp2 isExplicitImport name
+  }
 }
 
 object ContextMode {
