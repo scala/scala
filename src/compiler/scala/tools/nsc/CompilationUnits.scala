@@ -23,8 +23,7 @@ trait CompilationUnits { global: Global =>
   final def warningFreshNameCreator: FreshNameCreator = new FreshNameCreator {
     override def newName(prefix: String): String = {
       if (global.phase == currentRun.typerPhase) {
-        Thread.dumpStack()
-        reporter.error(lastSeenContext.owner.pos, "Typer phase should not use the compilation unit scoped fresh name creator")
+        devWarningDumpStack("Typer phase should not use the compilation unit scoped fresh name creator", 32)
       }
       super.newName(prefix)
     }
