@@ -19,13 +19,24 @@ trait CompilationUnits { global: Global =>
     override def toString() = "NoCompilationUnit"
   }
 
+  /** Creates a `FreshNameCreator` that reports an error if it is used during the typer phase */
+  final def warningFreshNameCreator: FreshNameCreator = new FreshNameCreator {
+    override def newName(prefix: String): String = {
+      if (global.phase == currentRun.typerPhase) {
+        Thread.dumpStack()
+        reporter.error(lastSeenContext.owner.pos, "Typer phase should not use the compilation unit scoped fresh name creator")
+      }
+      super.newName(prefix)
+    }
+  }
+
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
     * error-reporting hooks.  */
-  class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi { self =>
-
+  class CompilationUnit(val source: SourceFile, freshNameCreator: FreshNameCreator) extends CompilationUnitContextApi { self =>
+    def this(source: SourceFile) = this(source, new FreshNameCreator)
     /** the fresh name creator */
-    implicit val fresh: FreshNameCreator                           = new FreshNameCreator
+    implicit val fresh: FreshNameCreator = freshNameCreator
     def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX) = global.freshTermName(prefix)
     def freshTypeName(prefix: String)                              = global.freshTypeName(prefix)
 

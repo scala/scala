@@ -1440,7 +1440,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         reporting.summarizeErrors()
       }
 
-      val units = sources map scripted map (new CompilationUnit(_))
+      val units = sources map scripted map (file => new CompilationUnit(file, warningFreshNameCreator))
 
       units match {
         case Nil => checkDeprecations()   // nothing to compile, report deprecated options
