@@ -10,7 +10,9 @@ import scala.{Boolean, None, Option, Some, Unit, `inline`, deprecated}
 trait Map[K, V]
   extends Iterable[(K, V)]
     with collection.Map[K, V]
-    with MapOps[K, V, Map, Map[K, V]] {
+    with MapOps[K, V, Map, Map[K, V]]
+    with Growable[(K, V)]
+    with Shrinkable[K] {
 
   /*
   //TODO consider keeping `remove` because it returns the removed entry
