@@ -138,7 +138,7 @@ object Map extends MapFactory[Map] {
 
     override def default(key: K): V = defaultValue(key)
 
-    def iterableFactory: IterableFactoryLike[Iterable] = underlying.iterableFactory
+    def iterableFactory: IterableFactory[Iterable] = underlying.iterableFactory
 
     def iterator(): Iterator[(K, V)] = underlying.iterator()
 

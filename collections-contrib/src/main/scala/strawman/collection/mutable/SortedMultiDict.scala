@@ -17,7 +17,7 @@ class SortedMultiDict[K, V] private (elems: SortedMap[K, Set[V]])(implicit val o
 
   def sets: collection.SortedMap[K, collection.Set[V]] = elems
 
-  def iterableFactory: IterableFactoryLike[collection.Iterable] = collection.Iterable
+  def iterableFactory: IterableFactory[collection.Iterable] = collection.Iterable
   def sortedMultiMapFactory: SortedMapFactory[SortedMultiDict] = SortedMultiDict
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): SortedMultiDict[K, V] = sortedMultiMapFactory.from(coll)

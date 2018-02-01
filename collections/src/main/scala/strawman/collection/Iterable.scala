@@ -91,7 +91,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   /**
     * @return The companion object of this ${coll}, providing various factory methods.
     */
-  def iterableFactory: IterableFactoryLike[CC]
+  def iterableFactory: IterableFactory[CC]
 
   /**
     * @return a strict builder for the same collection type.

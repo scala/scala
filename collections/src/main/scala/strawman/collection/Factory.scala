@@ -72,10 +72,7 @@ object Factory {
   * @define coll collection
   * @define Coll `Iterable`
   */
-trait IterableFactoryLike[+CC[_]] {
-
-  /** Type of a source collection to build from */
-  type Source[A] >: Iterable[A]
+trait IterableFactory[+CC[_]] {
 
   /** Creates a target $coll from an existing source collection
     *
@@ -83,7 +80,7 @@ trait IterableFactoryLike[+CC[_]] {
     * @tparam A the type of the collection’s elements
     * @return a new $coll with the elements of `source`
     */
-  def from[A](source: Source[A]): CC[A]
+  def from[A](source: IterableOnce[A]): CC[A]
 
   /** An empty collection
     * @tparam A      the type of the ${coll}'s elements
@@ -227,20 +224,6 @@ trait IterableFactoryLike[+CC[_]] {
     */
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
-}
-
-/** Base trait for companion objects of unconstrained collection types that can
-  * build a target collection `CC` from a source collection with a single traversal
-  * of the source.
-  *
-  * @tparam CC Collection type constructor (e.g. `List`)
-  */
-trait IterableFactory[+CC[_]] extends IterableFactoryLike[CC] {
-
-  // Since most collection factories can build a target collection instance by performing only one
-  // traversal of a source collection, the type of this source collection can be refined to be
-  // just `IterableOnce`
-  type Source[A] = IterableOnce[A]
 
   implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
 
