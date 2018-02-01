@@ -27,8 +27,11 @@ abstract class GenericClassTagCompanion[+CC[X] <: Traversable[X]] {
   def empty[A: ClassTag]: CC[A] = newBuilder[A].result()
 
   def apply[A](elems: A*)(implicit ord: ClassTag[A]): CC[A] = {
-    val b = newBuilder[A]
-    b ++= elems
-    b.result()
+    if (elems.isEmpty) empty[A]
+    else {
+      val b = newBuilder[A]
+      b ++= elems
+      b.result()
+    }
   }
 }

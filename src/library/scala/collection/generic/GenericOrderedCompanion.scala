@@ -27,9 +27,12 @@ abstract class GenericOrderedCompanion[+CC[X] <: Traversable[X]] {
   def empty[A: Ordering]: CC[A] = newBuilder[A].result()
 
   def apply[A](elems: A*)(implicit ord: Ordering[A]): CC[A] = {
-    val b = newBuilder[A]
-    b ++= elems
-    b.result()
+    if (elems.isEmpty) empty[A]
+    else {
+      val b = newBuilder[A]
+      b ++= elems
+      b.result()
+    }
   }
 }
 
