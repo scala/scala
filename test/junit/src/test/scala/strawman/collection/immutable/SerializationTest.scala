@@ -58,11 +58,11 @@ class SerializationTest {
     assertEqualsAfterDeserialization(BitSet(1, 2, 3))
   }
 
-//  @Test
-//  def treeSet(): Unit = {
-//    assertEqualsAfterDeserialization(TreeSet.empty)
-//    assertEqualsAfterDeserialization(TreeSet(1, 2, 3))
-//  }
+  @Test
+  def treeSet(): Unit = {
+    assertEqualsAfterDeserialization(TreeSet.empty[Int])
+    assertEqualsAfterDeserialization(TreeSet(1, 2, 3))
+  }
 
 //  @Test
 //  def lazyList(): Unit = {

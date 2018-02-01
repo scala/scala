@@ -5,7 +5,7 @@ package immutable
 import mutable.{Builder, ImmutableBuilder}
 import immutable.{RedBlackTree => RB}
 
-import scala.{Boolean, Int, math, NullPointerException, Option, Ordering, Some, Unit}
+import scala.{Boolean, Int, math, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit}
 
 /** This class implements immutable sorted sets using a tree.
   *
@@ -25,11 +25,13 @@ import scala.{Boolean, Int, math, NullPointerException, Option, Ordering, Some, 
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(-5685982407650748405L)
 final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
-    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]] {
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
+    with Serializable {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")
 
