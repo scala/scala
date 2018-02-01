@@ -3,7 +3,7 @@ package backend.jvm
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.reflect.internal.util.{NoPosition, Position, SourceFile, Statistics}
+import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
 import scala.tools.asm.tree.ClassNode
@@ -33,7 +33,8 @@ abstract class PostProcessor extends PerRunInit {
 
   var classfileWriter: classfileWriters.ClassfileWriter = _
 
-  private val caseInsensitively = recordPerRunJavaMapCache(new ConcurrentHashMap[String, String])
+  // from lowercase to first-seen name and position thereof
+  private val caseInsensitively = recordPerRunJavaMapCache(new ConcurrentHashMap[String, (String, Position)])
 
   def initialize(global: Global): Unit = {
     this.initialize()
@@ -48,13 +49,13 @@ abstract class PostProcessor extends PerRunInit {
     val internalName = classNode.name
     val bytes = try {
       if (!clazz.isArtifact) {
-        warnCaseInsensitiveOverwrite(clazz)
         localOptimizations(classNode)
         backendUtils.onIndyLambdaImplMethodIfPresent(internalName) {
           methods => if (methods.nonEmpty) backendUtils.addLambdaDeserialize(classNode, methods)
         }
       }
 
+      warnCaseInsensitiveOverwrite(clazz)
       setInnerClasses(classNode)
       serializeClass(classNode)
     } catch {
@@ -75,18 +76,24 @@ abstract class PostProcessor extends PerRunInit {
       classfileWriter.write(internalName, bytes, paths)
     }
   }
+
   private def warnCaseInsensitiveOverwrite(clazz: GeneratedClass): Unit = {
     val name = clazz.classNode.name
     val lowercaseJavaClassName = name.toLowerCase
-    val sourceClassName = clazz.sourceClassName
 
-    val duplicate = caseInsensitively.putIfAbsent(lowercaseJavaClassName, sourceClassName)
-    if (duplicate != null) {
+    val overwrites = caseInsensitively.putIfAbsent(lowercaseJavaClassName, (name, clazz.position))
+    if (overwrites ne null) {
+      val (dupName, dupPos) = overwrites
+      val locationAddendum =
+        if (dupPos.source.path != clazz.position.source.path)
+          s" (defined in ${dupPos.source.file.name})"
+        else ""
+      def nicify(name: String): String = name.replace('/', '.')
       backendReporting.warning(
         clazz.position,
-          s"Class ${sourceClassName} differs only in case from ${duplicate}. " +
-            "Such classes will overwrite one another on case-insensitive filesystems."
-        )
+        sm"""Generated class ${nicify(name)} differs only in case from ${nicify(dupName)}$locationAddendum.
+            |  Such classes will overwrite one another on case-insensitive filesystems."""
+      )
     }
   }
 
