@@ -79,11 +79,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."
   )
 
-  val useStupidTypes = BooleanSetting (
-    "-Yuse-stupid-types",
-    "Print the types of inherited members as seen from their original definition context. Hint: you don't want to do that!"
-  )
-
   val docgenerator = StringSetting (
     "-doc-generator",
     "class-name",
@@ -220,7 +215,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
-    docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
+    docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent,
     docExternalDoc,
     docAuthor, docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
