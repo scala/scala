@@ -2,7 +2,7 @@ package strawman.collection.immutable
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.{Test, Ignore}
 import org.junit.Assert._
 
 import scala.ref.WeakReference
@@ -122,5 +122,13 @@ class LazyListTest {
   def t9886: Unit = {
     assertEquals(LazyList(None, Some(1)), None #:: LazyList(Some(1)))
     assertEquals(LazyList(None, Some(1)), LazyList(None) #::: LazyList(Some(1)))
+  }
+
+  @Test
+  def testLazyListDoesNotForceHead: Unit = {
+    var i = 0
+    def f: Int = { i += 1; i }
+    val s = LazyList.empty.#::(f).#::(f).#::(f)
+    assertEquals(0, i)
   }
 }
