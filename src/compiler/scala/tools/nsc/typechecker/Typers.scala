@@ -40,6 +40,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   final val shortenImports = false
 
+  // For each class, we collect a mapping from constructor param accessors that are aliases of their superclass
+  // param accessors. At the end of the typer phase, when this information is available all the way up the superclass
+  // chain, this is used to determine which are true aliases, ones where the field can be elided from this class.
+  // And yes, if you were asking, this is yet another binary fragility, as we bake knowledge of the super class into
+  // this class.
+  private val superConstructorCalls: mutable.AnyRefMap[Symbol, collection.Map[Symbol, Symbol]] = perRunCaches.newAnyRefMap()
+
   // allows override of the behavior of the resetTyper method w.r.t comments
   def resetDocComments() = clearDocComments()
 
@@ -48,6 +55,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     resetContexts()
     resetImplicits()
     resetDocComments()
+    superConstructorCalls.clear()
   }
 
   sealed abstract class SilentResult[+T] {
@@ -2087,9 +2095,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
     }
 
-    /** Enter all aliases of local parameter accessors.
-     */
-    def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
+    /** Analyze the super constructor call to record information used later to compute parameter aliases */
+    def analyzeSuperConsructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
+      val clazz = meth.owner
       debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       val pending = ListBuffer[AbsTypeError]()
 
@@ -2131,26 +2139,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!superClazz.isJavaDefined) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (sameLength(superParamAccessors, superArgs)) {
+            val accToSuperAcc = mutable.AnyRefMap[Symbol, Symbol]()
             for ((superAcc, superArg@Ident(name)) <- superParamAccessors zip superArgs) {
               if (mexists(vparamss)(_.symbol == superArg.symbol)) {
-                val alias = (
-                  superAcc.initialize.alias
-                  orElse (superAcc getterIn superAcc.owner)
-                  filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
-                  )
-                if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
-                  val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
-                    case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
-                    case acc => acc
-                  }
-                  ownAcc match {
-                    case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
-                      debuglog(s"$acc has alias ${alias.fullLocationString}")
-                      acc setAlias alias
-                    case _ =>
-                  }
+                val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
+                  case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
+                  case acc => acc
+                }
+                ownAcc match {
+                  case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
+                    accToSuperAcc(acc) = superAcc
+                  case _ =>
                 }
               }
+            }
+            if (!accToSuperAcc.isEmpty) {
+              superConstructorCalls(clazz) = accToSuperAcc
             }
           }
         }
@@ -2306,10 +2310,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
         // There are no supercalls for AnyVal or constructors from Java sources, which
-        // would blow up in computeParamAliases; there's nothing to be computed for them
+        // would blow up in analyzeSuperConsructor; there's nothing to be computed for them
         // anyway.
         if (meth.isPrimaryConstructor)
-          computeParamAliases(meth.owner, vparamss1, rhs1)
+          analyzeSuperConsructor(meth, vparamss1, rhs1)
         else
           checkSelfConstructorArgs(ddef, meth.owner)
       }
@@ -5841,6 +5845,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     final def lookupTransformed(tree: Tree): Option[Tree] =
       if (phase.erasedTypes) None // OPT save the hashmap lookup in erasure type and beyond
       else transformed remove tree
+  }
+
+
+  /** Finish computation of param aliases after typechecking is completed */
+  final def finishComputeParamAlias(): Unit = {
+    val classes = superConstructorCalls.keys.toArray
+    // superclasses before subclasses to avoid a data race between `superAcc.alias` and `acc.setAlias` below.
+    scala.util.Sorting.quickSort(classes)(Ordering.fromLessThan((a, b) => b.isLess(a)))
+
+    for (sym <- classes) {
+      for ((ownAcc, superAcc) <- superConstructorCalls.getOrElse(sym, Nil)) {
+        // We have a corresponding paramter in the super class.
+        val superClazz = sym.superClass
+        val alias = (
+          superAcc.initialize.alias // Is the param accessor is an alias for a field further up  the class heirarchy?
+            orElse (superAcc getterIn superAcc.owner) // otherwise, lookup the accessor for the super
+            filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias) // the accessor must be public
+          )
+        if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
+          ownAcc match {
+            case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
+              debuglog(s"$acc has alias ${alias.fullLocationString}")
+              acc setAlias alias
+            case _ =>
+          }
+        }
+      }
+    }
+    superConstructorCalls.clear()
   }
 }
 

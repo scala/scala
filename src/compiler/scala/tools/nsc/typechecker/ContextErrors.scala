@@ -298,7 +298,7 @@ trait ContextErrors {
       def DeprecatedParamNameError(param: Symbol, name: Name) =
         issueSymbolTypeError(param, "deprecated parameter name "+ name +" has to be distinct from any other parameter name (deprecated or not).")
 
-      // computeParamAliases
+      // analyzeSuperConsructor
       def SuperConstrReferenceError(tree: Tree) =
         NormalTypeError(tree, "super constructor cannot be passed a self reference unless parameter is declared by-name")
 
