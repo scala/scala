@@ -2,7 +2,6 @@ package strawman
 
 import scala.{Any, AnyVal, Array, Boolean, Char, IllegalArgumentException, IndexOutOfBoundsException, Int, NoSuchElementException, Unit, UnsupportedOperationException, PartialFunction, Option, None, Some, deprecated}
 import scala.Predef.{String, ArrowAssoc}
-import scala.reflect.ClassTag
 
 package object collection extends LowPriority {
   @deprecated("Use Iterable instead of Traversable", "2.13.0")

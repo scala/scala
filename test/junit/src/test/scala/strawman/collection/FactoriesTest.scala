@@ -79,7 +79,7 @@ class FactoriesTest {
         immutable.List,
         immutable.LazyList,
         immutable.Vector,
-        immutable.ImmutableArray,
+        immutable.ImmutableArray.untagged,
         mutable.ListBuffer: SeqFactory[mutable.ListBuffer], // type ascription needed by dotty
         mutable.ArrayBuffer: SeqFactory[mutable.ArrayBuffer] // type ascription needed by dotty
       )
