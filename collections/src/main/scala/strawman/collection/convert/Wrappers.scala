@@ -53,14 +53,14 @@ private[collection] trait Wrappers {
   case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] { }
 
   case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Iterable[A] {
-    def iterator() = underlying.asScala.iterator()
+    def iterator() = underlying.iterator().asScala
     protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
     def iterableFactory = mutable.ArrayBuffer
     protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
   }
 
   case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] with Iterable[A] {
-    def iterator() = underlying.asScala.iterator()
+    def iterator() = underlying.iterator().asScala
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
     protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
@@ -91,7 +91,7 @@ private[collection] trait Wrappers {
   case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
-    override def iterator(): Iterator[A] = underlying.asScala.iterator()
+    override def iterator(): Iterator[A] = underlying.iterator().asScala
     def apply(i: Int) = underlying.get(i)
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
@@ -184,7 +184,7 @@ private[collection] trait Wrappers {
 
     override def size = underlying.size
 
-    def iterator() = underlying.asScala.iterator()
+    def iterator() = underlying.iterator().asScala
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
