@@ -45,4 +45,22 @@ class SeqTest {
 
     assertEquals(Seq("a", "aa", "aaa", "bbbb"), result)
   }
+
+  @Test
+  def hasCorrectIndexOfSlice(): Unit = {
+    assertEquals(0, Vector(0, 1).indexOfSlice(List(0, 1)))
+    assertEquals(0, Vector(0, 1).indexOfSlice(Vector(0, 1)))
+    assertEquals(1, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(Vector(1, 2)))
+    assertEquals(4, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(Vector(1, 2), from = 2))
+    assertEquals(-1, List(0, 1).indexOfSlice(List(1, 2)))
+  }
+
+  @Test
+  def hasCorrectLastIndexOfSlice(): Unit = {
+    assertEquals(0, Vector(0, 1).lastIndexOfSlice(List(0, 1)))
+    assertEquals(0, Vector(0, 1).lastIndexOfSlice(Vector(0, 1)))
+    assertEquals(4, Vector(0, 1, 2, 0, 1, 2).lastIndexOfSlice(Vector(1, 2)))
+    assertEquals(1, Vector(0, 1, 2, 0, 1, 2).lastIndexOfSlice(Vector(1, 2), end = 3))
+    assertEquals(-1, List(0, 1).lastIndexOfSlice(List(1, 2)))
+  }
 }

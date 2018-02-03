@@ -855,7 +855,7 @@ object SeqOps {
     // Check for redundant case when both sequences are same size
     else if (m1-m0 == n1-n0) {
       // Accepting a little slowness for the uncommon case.
-      if (S.view.slice(m0, m1) == W.view.slice(n0, n1)) m0
+      if (S.iterator().slice(m0, m1).sameElements(W.iterator().slice(n0, n1))) m0
       else -1
     }
     // Now we know we actually need KMP search, so do it
