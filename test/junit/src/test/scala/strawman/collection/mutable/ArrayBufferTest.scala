@@ -65,4 +65,11 @@ class ArrayBufferTest {
 
     assertEquals(ArrayBuffer(els.reverse: _*), buffer)
   }
+
+  @Test
+  def testTakeInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().takeInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).takeInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 100).takeInPlace(10))
+  }
 }

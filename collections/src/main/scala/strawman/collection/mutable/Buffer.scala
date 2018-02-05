@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array, deprecated}
+import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array, deprecated, math}
 import scala.Predef.intWrapper
 
 /** A `Buffer` is a growable and shrinkable `Seq`. */
@@ -85,7 +85,7 @@ trait Buffer[A]
 
   def dropInPlace(n: Int): this.type = { remove(0, n); this }
   def dropRightInPlace(n: Int): this.type = { remove(length - n, n); this }
-  def takeInPlace(n: Int): this.type = { remove(n, length); this }
+  def takeInPlace(n: Int): this.type = { remove(n, length - math.min(math.max(n, 0), length)); this }
   def takeRightInPlace(n: Int): this.type = { remove(0, length - n); this }
   def sliceInPlace(start: Int, end: Int): this.type = takeInPlace(end).dropInPlace(start)
 

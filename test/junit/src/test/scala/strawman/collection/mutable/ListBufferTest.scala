@@ -34,4 +34,11 @@ class ListBufferTest {
     assertEquals(ListBuffer.range(start = 0, end = 100, step = 2), ListBuffer.range(0, 100).filterInPlace(_ % 2 == 0))
     assertEquals(ListBuffer.range(start = 1, end = 100, step = 2), ListBuffer.range(0, 100).filterInPlace(_ % 2 != 0))
   }
+
+  @Test
+  def testTakeInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer().takeInPlace(10))
+    assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).takeInPlace(10))
+    assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 100).takeInPlace(10))
+  }
 }
