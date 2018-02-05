@@ -54,7 +54,9 @@ class LinkedHashMap[K, V]
 
   type Entry = LinkedHashMap.LinkedEntry[K, V]
 
-  private[this] val table: HashTable[K, V, Entry] =
+  @transient private[this] var table: HashTable[K, V, Entry] = newHashTable
+
+  private def newHashTable =
     new HashTable[K, V, Entry] {
       def createNewEntry(key: K, value: V): Entry = {
         val e = new Entry(key, value.asInstanceOf[V])
@@ -162,6 +164,7 @@ class LinkedHashMap[K, V]
   }
 
   private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
     table.serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
@@ -169,10 +172,9 @@ class LinkedHashMap[K, V]
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
-    firstEntry = null
-    lastEntry = null
+    in.defaultReadObject()
+    table = newHashTable
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
-
 }
 

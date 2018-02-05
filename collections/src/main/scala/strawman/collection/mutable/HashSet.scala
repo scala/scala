@@ -2,7 +2,7 @@ package strawman
 package collection
 package mutable
 
-import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, Unit}
+import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, transient, Unit}
 
 /** This class implements mutable sets using a hashtable.
   *
@@ -25,7 +25,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
     with Serializable {
 
-  private[this] val table = new FlatHashTable[A]
+  @transient private[this] var table = new FlatHashTable[A]
 
   def this() = this(null)
 
@@ -65,14 +65,16 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
     }
   }
 
-  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
-    table.serializeTo(s)
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
+    table.serializeTo(out)
   }
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
+    in.defaultReadObject()
+    table = new FlatHashTable[A]
     table.init(in, x => ())
   }
-
 }
 
 /**

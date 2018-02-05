@@ -26,25 +26,25 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
 
   private def tableDebug = false
 
-  @transient private[collection] var _loadFactor = defaultLoadFactor
+  private[collection] var _loadFactor = defaultLoadFactor
 
   /** The actual hash table.
    */
-  @transient var table: Array[AnyRef] = new Array(initialCapacity)
+  var table: Array[AnyRef] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  @transient protected var tableSize = 0
+  protected var tableSize = 0
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  @transient protected var threshold: Int = newThreshold(_loadFactor, initialCapacity)
+  protected var threshold: Int = newThreshold(_loadFactor, initialCapacity)
 
   /** The array keeping track of number of elements in 32 element blocks.
    */
-  @transient protected var sizemap: Array[Int] = null
+  protected var sizemap: Array[Int] = null
 
-  @transient protected var seedvalue: Int = tableSizeSeed
+  protected var seedvalue: Int = tableSizeSeed
 
   protected def capacity(expectedSize: Int) = HashTable.nextPositivePowerOfTwo(expectedSize)
 
@@ -66,8 +66,6 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
    * The serialization format expected is the one produced by `serializeTo`.
    */
   def init(in: java.io.ObjectInputStream, f: A => Unit): Unit = {
-    in.defaultReadObject
-
     _loadFactor = in.readInt()
     assert(_loadFactor > 0)
 
@@ -98,7 +96,6 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
    * to the stream. To deserialize, `init` should be used.
    */
   def serializeTo(out: java.io.ObjectOutputStream) = {
-    out.defaultWriteObject
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
     out.writeInt(seedvalue)
