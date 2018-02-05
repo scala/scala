@@ -19,6 +19,7 @@ class HashSetBenchmark {
   var size: Int = _
 
   var xs: HashSet[Long] = _
+  var ys: HashSet[Long] = _
   var zs: HashSet[Long] = _
   var zipped: HashSet[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
@@ -27,6 +28,7 @@ class HashSetBenchmark {
   @Setup(Level.Trial)
   def initTrial(): Unit = {
     xs = fresh(size)
+    ys = fresh(size)
     zs = fresh((size / 1000) max 2).map(-_)
     zipped = xs.map(x => (x, x))
     if (size > 0) {
@@ -64,14 +66,15 @@ class HashSetBenchmark {
     }
   }
 
-  @Benchmark
-  def traverse_initLast(bh: Blackhole): Unit = {
-    var ys = xs
-    while (ys.nonEmpty) {
-      bh.consume(ys.last)
-      ys = ys.init
-    }
-  }
+//  // TODO: currently disabled, since it does not finish
+//  @Benchmark
+//  def traverse_initLast(bh: Blackhole): Unit = {
+//    var ys = xs
+//    while (ys.nonEmpty) {
+//      bh.consume(ys.last)
+//      ys = ys.init
+//    }
+//  }
 
   @Benchmark
   def traverse_iterator(bh: Blackhole): Unit = {
@@ -158,4 +161,11 @@ class HashSetBenchmark {
     val result = xs.groupBy(_ % 5)
     bh.consume(result)
   }
+
+  @Benchmark
+  def traverse_subsetOf(bh: Blackhole): Unit = bh.consume(ys.subsetOf(xs))
+
+  @Benchmark
+  def traverse_equals(bh: Blackhole): Unit = bh.consume(xs == ys)
+
 }

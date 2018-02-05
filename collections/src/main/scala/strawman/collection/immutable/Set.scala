@@ -64,6 +64,9 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   */
 object Set extends IterableFactory[Set] {
 
+  private final val useBaseline: Boolean =
+    scala.sys.props.get("strawman.collection.immutable.useBaseline").contains("true")
+
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
   def from[E](it: collection.IterableOnce[E]): Set[E] =
@@ -75,7 +78,8 @@ object Set extends IterableFactory[Set] {
       case _               => (newBuilder[E]() ++= it).result()
     }
 
-  def newBuilder[A](): Builder[A, Set[A]] = HashSet.newBuilder()
+  def newBuilder[A](): Builder[A, Set[A]] =
+    if (useBaseline) HashSet.newBuilder() else ChampHashSet.newBuilder()
 
   // Reusable implementations for the small sets defined below
   trait SmallSet[A] extends Set[A] {
@@ -192,7 +196,7 @@ object Set extends IterableFactory[Set] {
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def incl(elem: A): Set[A] =
       if (contains(elem)) this
-      else HashSet.empty[A] + elem1 + elem2 + elem3 + elem4 + elem
+      else (if (useBaseline) HashSet.empty[A] else ChampHashSet.empty[A]) + elem1 + elem2 + elem3 + elem4 + elem
     def excl(elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)

@@ -5,25 +5,22 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.{Any, AnyRef, Int, Long, Tuple2, Unit, math}
-import scala.Predef.{intWrapper, $conforms, tuple2ToZippedOps}
-
 @BenchmarkMode(scala.Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(1)
 @Warmup(iterations = 8)
 @Measurement(iterations = 8)
 @State(Scope.Benchmark)
-class ScalaHashSetBenchmark {
+class ChampHashSetBenchmark {
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
   var size: Int = _
 
-  var xs: scala.collection.immutable.HashSet[Long] = _
-  var ys: scala.collection.immutable.HashSet[Long] = _
-  var zs: scala.collection.immutable.HashSet[Long] = _
-  var zipped: scala.collection.immutable.HashSet[(Long, Long)] = _
+  var xs: ChampHashSet[Long] = _
+  var ys: ChampHashSet[Long] = _
+  var zs: ChampHashSet[Long] = _
+  var zipped: ChampHashSet[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
-  def fresh(n: Int) = scala.collection.immutable.HashSet((1 to n).map(_.toLong): _*)
+  def fresh(n: Int) = ChampHashSet((1 to n).map(_.toLong): _*)
 
   @Setup(Level.Trial)
   def initTrial(): Unit = {
@@ -66,19 +63,18 @@ class ScalaHashSetBenchmark {
     }
   }
 
-//  // TODO: currently disabled, since it does not finish
-//  @Benchmark
-//  def traverse_initLast(bh: Blackhole): Unit = {
-//    var ys = xs
-//    while (ys.nonEmpty) {
-//      bh.consume(ys.last)
-//      ys = ys.init
-//    }
-//  }
+  @Benchmark
+  def traverse_initLast(bh: Blackhole): Unit = {
+    var ys = xs
+    while (ys.nonEmpty) {
+      bh.consume(ys.last)
+      ys = ys.init
+    }
+  }
 
   @Benchmark
   def traverse_iterator(bh: Blackhole): Unit = {
-    val it = xs.iterator
+    val it = xs.iterator()
     while (it.hasNext) {
       bh.consume(it.next())
     }
@@ -151,10 +147,10 @@ class ScalaHashSetBenchmark {
   def transform_zipWithIndex(bh: Blackhole): Unit = bh.consume(xs.zipWithIndex)
 
   @Benchmark
-  def transform_lazyZip(bh: Blackhole): Unit = bh.consume((xs, xs).zipped.map((_, _)))
+  def transform_lazyZip(bh: Blackhole): Unit = bh.consume(xs.lazyZip(xs).map((_, _)))
 
   @Benchmark
-  def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip(t => (t._1, t._2)))
+  def transform_unzip(bh: Blackhole): Unit = bh.consume(zipped.unzip)
 
   @Benchmark
   def transform_groupBy(bh: Blackhole): Unit = {
