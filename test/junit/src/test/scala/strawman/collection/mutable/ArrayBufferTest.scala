@@ -67,6 +67,14 @@ class ArrayBufferTest {
   }
 
   @Test
+  def testFilterInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 100).filterInPlace(_ => false))
+    assertEquals(ArrayBuffer.range(0, 100), ArrayBuffer.range(0, 100).filterInPlace(_ => true))
+    assertEquals(ArrayBuffer.range(start = 0, end = 100, step = 2), ArrayBuffer.range(0, 100).filterInPlace(_ % 2 == 0))
+    assertEquals(ArrayBuffer.range(start = 1, end = 100, step = 2), ArrayBuffer.range(0, 100).filterInPlace(_ % 2 != 0))
+  }
+
+  @Test
   def testTakeInPlace: Unit = {
     assertEquals(ArrayBuffer(), ArrayBuffer().takeInPlace(10))
     assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).takeInPlace(10))

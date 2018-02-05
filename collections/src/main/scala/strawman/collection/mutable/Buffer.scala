@@ -117,17 +117,18 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   }
 
   def filterInPlace(p: A => Boolean): this.type = {
-    var i = 0
-    while (i < size && p(apply(i))) i += 1
-    var j = 1
+    var i, j = 0
     while (i < size) {
       if (p(apply(i))) {
-        this(j) = this(i)
+        if (i != j) {
+          this(j) = this(i)
+        }
         j += 1
       }
       i += 1
     }
-    takeInPlace(j)
+
+    if (i == j) this else takeInPlace(j)
   }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type = {
