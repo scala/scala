@@ -83,6 +83,14 @@ class ArrayBufferTest {
   }
 
   @Test
+  def testTakeRightInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().takeRightInPlace(10))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).takeRightInPlace(-1))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).takeRightInPlace(10))
+    assertEquals(ArrayBuffer.range(90, 100), ArrayBuffer.range(0, 100).takeRightInPlace(10))
+  }
+
+  @Test
   def testDropInPlace: Unit = {
     assertEquals(ArrayBuffer(), ArrayBuffer().dropInPlace(10))
     assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).dropInPlace(-1))

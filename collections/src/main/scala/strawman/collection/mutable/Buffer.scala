@@ -94,7 +94,7 @@ trait Buffer[A]
     remove(norm, length - norm)
     this
   }
-  def takeRightInPlace(n: Int): this.type = { remove(0, length - n); this }
+  def takeRightInPlace(n: Int): this.type = { remove(0, length - normalized(n)); this }
   def sliceInPlace(start: Int, end: Int): this.type = takeInPlace(end).dropInPlace(start)
   private def normalized(n: Int): Int = math.min(math.max(n, 0), length)
 

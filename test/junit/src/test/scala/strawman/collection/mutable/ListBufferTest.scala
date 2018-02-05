@@ -44,6 +44,14 @@ class ListBufferTest {
   }
 
   @Test
+  def testTakeRightInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer().takeRightInPlace(10))
+    assertEquals(ListBuffer(), ListBuffer.range(0, 10).takeRightInPlace(-1))
+    assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).takeRightInPlace(10))
+    assertEquals(ListBuffer.range(90, 100), ListBuffer.range(0, 100).takeRightInPlace(10))
+  }
+
+  @Test
   def testDropInPlace: Unit = {
     assertEquals(ListBuffer(), ListBuffer().dropInPlace(10))
     assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).dropInPlace(-1))
