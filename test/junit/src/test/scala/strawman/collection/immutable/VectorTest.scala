@@ -27,4 +27,16 @@ class VectorTest {
     assertEquals(v, v drop Int.MinValue)
     assertEquals(v, v dropRight Int.MinValue)
   }
+
+  @Test
+  def hasCorrectPrependedAll(): Unit = {
+    val els = Vector(1 to 1000: _*)
+
+    for (i <- 0 until els.size) {
+      val (prefix, suffix) = els.splitAt(i)
+
+      assertEquals(els, prefix ++: suffix)
+      assertEquals(els, prefix.toList ++: suffix)
+    }
+  }
 }
