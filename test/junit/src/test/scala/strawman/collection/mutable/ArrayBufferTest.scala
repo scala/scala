@@ -91,6 +91,14 @@ class ArrayBufferTest {
   }
 
   @Test
+  def testDropRightInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().dropRightInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).dropRightInPlace(-1))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).dropRightInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 90), ArrayBuffer.range(0, 100).dropRightInPlace(10))
+  }
+
+  @Test
   def testRemove: Unit = {
     val b1 = ArrayBuffer(0, 1, 2)
     assertEquals(0, b1.remove(0))

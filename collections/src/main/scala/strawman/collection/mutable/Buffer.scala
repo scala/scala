@@ -83,11 +83,12 @@ trait Buffer[A]
   // def +=:(elem1: A, elem2: A, elems: A*): this.type = elem1 +=: elem2 +=: elems.toStrawman ++=: this
   // def ++=:(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
 
-  def dropInPlace(n: Int): this.type = {
-    remove(0, normalized(n))
+  def dropInPlace(n: Int): this.type = { remove(0, normalized(n)); this }
+  def dropRightInPlace(n: Int): this.type = {
+    val norm = normalized(n)
+    remove(length - norm, norm)
     this
   }
-  def dropRightInPlace(n: Int): this.type = { remove(length - n, n); this }
   def takeInPlace(n: Int): this.type = {
     val norm = normalized(n)
     remove(norm, length - norm)

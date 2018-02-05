@@ -52,6 +52,14 @@ class ListBufferTest {
   }
 
   @Test
+  def testDropRightInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer().dropRightInPlace(10))
+    assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).dropRightInPlace(-1))
+    assertEquals(ListBuffer(), ListBuffer.range(0, 10).dropRightInPlace(10))
+    assertEquals(ListBuffer.range(0, 90), ListBuffer.range(0, 100).dropRightInPlace(10))
+  }
+
+  @Test
   def testRemove: Unit = {
     val b1 = ListBuffer(0, 1, 2)
     assertEquals(0, b1.remove(0))
