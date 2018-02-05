@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Unit, Int, Array, Boolean, Any, Byte, Short, Char, Long, Float, Double, AnyRef, Serializable, specialized, `inline`}
+import scala.{Unit, Int, Array, Boolean, Any, Byte, Short, Char, Long, Float, Double, AnyRef, Serializable, specialized}
 import scala.Predef.{Class, implicitly}
 import scala.runtime.ScalaRunTime
 import scala.reflect.ClassTag
@@ -34,7 +34,7 @@ abstract class WrappedArray[T]
     with StrictOptimizedSeqOps[T, WrappedArray, WrappedArray[T]]
     with Serializable {
 
-  def iterableFactory: strawman.collection.SeqFactory[WrappedArray] = WrappedArray
+  def iterableFactory: strawman.collection.SeqFactory[WrappedArray] = WrappedArray.untagged
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[T]): WrappedArray[T] = {
     val b = ArrayBuilder.make()(elemTag)
@@ -43,7 +43,7 @@ abstract class WrappedArray[T]
     b ++= coll
     WrappedArray.make(b.result())
   }
-  protected[this] def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder(elemTag)
+  protected[this] def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
 
   /** The tag of the element type */
   def elemTag: ClassTag[T]
@@ -70,15 +70,17 @@ abstract class WrappedArray[T]
 
 /** A companion object used to create instances of `WrappedArray`.
   */
-object WrappedArray extends StrictOptimizedSeqFactory[WrappedArray] {
+object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { self =>
+  val untagged: SeqFactory[WrappedArray] = new ClassTagSeqFactory.AnySeqDelegate(self)
+
   // This is reused for all calls to empty.
   private val EmptyWrappedArray  = new ofRef[AnyRef](new Array[AnyRef](0))
-  def empty[T]: WrappedArray[T] = EmptyWrappedArray.asInstanceOf[WrappedArray[T]]
+  def empty[T : ClassTag]: WrappedArray[T] = EmptyWrappedArray.asInstanceOf[WrappedArray[T]]
 
-  def from[A](it: strawman.collection.IterableOnce[A]): WrappedArray[A] = {
+  def from[A : ClassTag](it: strawman.collection.IterableOnce[A]): WrappedArray[A] = {
     val n = it.knownSize
     if (n > -1) {
-      val elements = scala.Array.ofDim[Any](n)
+      val elements = scala.Array.ofDim[A](n)
       val iterator = it.iterator()
       var i = 0
       while (i < n) {
@@ -86,16 +88,10 @@ object WrappedArray extends StrictOptimizedSeqFactory[WrappedArray] {
         i = i + 1
       }
       make(elements)
-    } else fromArrayBuffer(ArrayBuffer.from(it))
+    } else make[A](ArrayBuffer.from(it).toArray)
   }
 
-  @`inline` private def fromArrayBuffer[A](arr: ArrayBuffer[A]): WrappedArray[A] =
-    make[A](arr.asInstanceOf[ArrayBuffer[Any]].toArray)
-
-  def newBuilder[A](): Builder[A, WrappedArray[A]] =
-    ArrayBuffer.newBuilder[A]().mapResult(fromArrayBuffer)
-
-  def newBuilder[A](implicit t: ClassTag[A]): Builder[A, WrappedArray[A]] = ArrayBuilder.make[A]()(t).mapResult(make)
+  def newBuilder[A : ClassTag](): Builder[A, WrappedArray[A]] = ArrayBuilder.make[A]().mapResult(make)
 
   // If make is called explicitly we use whatever we're given, even if it's
   // empty.  This may be unnecessary (if WrappedArray is to honor the collections

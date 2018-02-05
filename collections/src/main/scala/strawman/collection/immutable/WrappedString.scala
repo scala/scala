@@ -26,7 +26,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[Char]): IndexedSeq[Char] =
     WrappedString.fromSpecific(coll)
   protected[this] def newSpecificBuilder(): Builder[Char, IndexedSeq[Char]] = WrappedString.newBuilder()
-  def iterableFactory: SeqFactory[IndexedSeq] = ImmutableArray
+  def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 
   override def slice(from: Int, until: Int): WrappedString = {
     val start = if (from < 0) 0 else from
