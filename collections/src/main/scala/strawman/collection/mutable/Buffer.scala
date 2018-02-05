@@ -65,14 +65,17 @@ trait Buffer[A]
     *  @param n  the number of elements to remove from the beginning
     *            of this buffer.
     */
-  def trimStart(n: Int): Unit = remove(0, n)
+  def trimStart(n: Int): Unit = remove(0, normalized(n))
 
   /** Removes the last ''n'' elements of this buffer.
     *
     *  @param n  the number of elements to remove from the end
     *            of this buffer.
     */
-  def trimEnd(n: Int): Unit = remove(length - math.max(n, 0), n)
+  def trimEnd(n: Int): Unit = {
+    val norm = normalized(n)
+    remove(length - norm, norm)
+  }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type
 

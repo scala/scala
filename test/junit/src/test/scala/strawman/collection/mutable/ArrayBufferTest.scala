@@ -167,4 +167,42 @@ class ArrayBufferTest {
   def testRemoveManyWithTooLargeCount: Unit = {
     ArrayBuffer(0).remove(idx = 0, count = 100)
   }
+
+  @Test
+  def testTrimStart: Unit = {
+    val b1 = ArrayBuffer()
+    b1.trimStart(10)
+    assertEquals(ArrayBuffer(), b1)
+
+    val b2 = ArrayBuffer.range(0, 10)
+    b2.trimStart(-1)
+    assertEquals(ArrayBuffer.range(0, 10), b2)
+
+    val b3 = ArrayBuffer.range(0, 10)
+    b3.trimStart(10)
+    assertEquals(ArrayBuffer(), b3)
+
+    val b4 = ArrayBuffer.range(0, 100)
+    b4.trimStart(10)
+    assertEquals(ArrayBuffer.range(10, 100), b4)
+  }
+
+  @Test
+  def testTrimEnd: Unit = {
+    val b1 = ArrayBuffer()
+    b1.trimEnd(10)
+    assertEquals(ArrayBuffer(), b1)
+
+    val b2 = ArrayBuffer.range(0, 10)
+    b2.trimEnd(-1)
+    assertEquals(ArrayBuffer.range(0, 10), b2)
+
+    val b3 = ArrayBuffer.range(0, 10)
+    b3.trimEnd(10)
+    assertEquals(ArrayBuffer(), b3)
+
+    val b4 = ArrayBuffer.range(0, 100)
+    b4.trimEnd(10)
+    assertEquals(ArrayBuffer.range(0, 90), b4)
+  }
 }

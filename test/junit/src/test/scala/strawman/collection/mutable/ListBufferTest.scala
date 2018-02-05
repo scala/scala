@@ -128,4 +128,42 @@ class ListBufferTest {
   def removeManyWithTooLargeCount: Unit = {
     ListBuffer(0).remove(idx = 0, count = 100)
   }
+
+  @Test
+  def testTrimStart: Unit = {
+    val b1 = ListBuffer()
+    b1.trimStart(10)
+    assertEquals(ListBuffer(), b1)
+
+    val b2 = ListBuffer.range(0, 10)
+    b2.trimStart(-1)
+    assertEquals(ListBuffer.range(0, 10), b2)
+
+    val b3 = ListBuffer.range(0, 10)
+    b3.trimStart(10)
+    assertEquals(ListBuffer(), b3)
+
+    val b4 = ListBuffer.range(0, 100)
+    b4.trimStart(10)
+    assertEquals(ListBuffer.range(10, 100), b4)
+  }
+
+  @Test
+  def testTrimEnd: Unit = {
+    val b1 = ListBuffer()
+    b1.trimEnd(10)
+    assertEquals(ListBuffer(), b1)
+
+    val b2 = ListBuffer.range(0, 10)
+    b2.trimEnd(-1)
+    assertEquals(ListBuffer.range(0, 10), b2)
+
+    val b3 = ListBuffer.range(0, 10)
+    b3.trimEnd(10)
+    assertEquals(ListBuffer(), b3)
+
+    val b4 = ListBuffer.range(0, 100)
+    b4.trimEnd(10)
+    assertEquals(ListBuffer.range(0, 90), b4)
+  }
 }
