@@ -1,8 +1,8 @@
 package strawman.collection.mutable
 
+import org.junit.Assert.{assertEquals, assertTrue}
 import strawman.collection.immutable.Nil
-
-import org.junit.{Assert, Test}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -13,18 +13,25 @@ class ListBufferTest {
   def hasCorrectClear(): Unit = {
     val b = ListBuffer.empty[String]
     b += "a"
-    Assert.assertTrue(b.sameElements("a" :: Nil))
+    assertTrue(b.sameElements("a" :: Nil))
     b.clear()
-    Assert.assertEquals(ListBuffer.empty[String], b)
+    assertEquals(ListBuffer.empty[String], b)
     b += "b"
-    Assert.assertTrue(b.sameElements("b" :: Nil))
+    assertTrue(b.sameElements("b" :: Nil))
 
     val b2 = ListBuffer.empty[String]
     b2 += "a"
     val _ = b2.toList
     b2.clear()
     b2 += "b"
-    Assert.assertTrue(b2.sameElements("b" :: Nil))
+    assertTrue(b2.sameElements("b" :: Nil))
   }
 
+  @Test
+  def testFilterInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer.range(0, 100).filterInPlace(_ => false))
+    assertEquals(ListBuffer.range(0, 100), ListBuffer.range(0, 100).filterInPlace(_ => true))
+    assertEquals(ListBuffer.range(start = 0, end = 100, step = 2), ListBuffer.range(0, 100).filterInPlace(_ % 2 == 0))
+    assertEquals(ListBuffer.range(start = 1, end = 100, step = 2), ListBuffer.range(0, 100).filterInPlace(_ % 2 != 0))
+  }
 }

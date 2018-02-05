@@ -260,8 +260,9 @@ class ListBuffer[A]
       if (!p(cur.head)) {
         setNext(prev, follow)
         len -= 1
+      } else {
+        prev = cur.asInstanceOf[Predecessor[A]]
       }
-      prev = cur.asInstanceOf[Predecessor[A]]
       cur = follow
     }
     this
