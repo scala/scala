@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array, deprecated}
+import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentException, Unit, Boolean, Array, deprecated, math}
 import scala.Predef.intWrapper
 
 /** A `Buffer` is a growable and shrinkable `Seq`. */
@@ -65,14 +65,17 @@ trait Buffer[A]
     *  @param n  the number of elements to remove from the beginning
     *            of this buffer.
     */
-  def trimStart(n: Int): Unit = remove(0, n)
+  def trimStart(n: Int): Unit = remove(0, normalized(n))
 
   /** Removes the last ''n'' elements of this buffer.
     *
     *  @param n  the number of elements to remove from the end
     *            of this buffer.
     */
-  def trimEnd(n: Int): Unit = remove(length - scala.math.max(n, 0), n)
+  def trimEnd(n: Int): Unit = {
+    val norm = normalized(n)
+    remove(length - norm, norm)
+  }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type
 
@@ -83,11 +86,20 @@ trait Buffer[A]
   // def +=:(elem1: A, elem2: A, elems: A*): this.type = elem1 +=: elem2 +=: elems.toStrawman ++=: this
   // def ++=:(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
 
-  def dropInPlace(n: Int): this.type = { remove(0, n); this }
-  def dropRightInPlace(n: Int): this.type = { remove(length - n, n); this }
-  def takeInPlace(n: Int): this.type = { remove(n, length); this }
-  def takeRightInPlace(n: Int): this.type = { remove(0, length - n); this }
+  def dropInPlace(n: Int): this.type = { remove(0, normalized(n)); this }
+  def dropRightInPlace(n: Int): this.type = {
+    val norm = normalized(n)
+    remove(length - norm, norm)
+    this
+  }
+  def takeInPlace(n: Int): this.type = {
+    val norm = normalized(n)
+    remove(norm, length - norm)
+    this
+  }
+  def takeRightInPlace(n: Int): this.type = { remove(0, length - normalized(n)); this }
   def sliceInPlace(start: Int, end: Int): this.type = takeInPlace(end).dropInPlace(start)
+  private def normalized(n: Int): Int = math.min(math.max(n, 0), length)
 
   def dropWhileInPlace(p: A => Boolean): this.type = {
     val idx = indexWhere(!p(_))
@@ -117,17 +129,18 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   }
 
   def filterInPlace(p: A => Boolean): this.type = {
-    var i = 0
-    while (i < size && p(apply(i))) i += 1
-    var j = 1
+    var i, j = 0
     while (i < size) {
       if (p(apply(i))) {
-        this(j) = this(i)
+        if (i != j) {
+          this(j) = this(i)
+        }
         j += 1
       }
       i += 1
     }
-    takeInPlace(j)
+
+    if (i == j) this else takeInPlace(j)
   }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type = {

@@ -65,4 +65,158 @@ class ArrayBufferTest {
 
     assertEquals(ArrayBuffer(els.reverse: _*), buffer)
   }
+
+  @Test
+  def testFilterInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 100).filterInPlace(_ => false))
+    assertEquals(ArrayBuffer.range(0, 100), ArrayBuffer.range(0, 100).filterInPlace(_ => true))
+    assertEquals(ArrayBuffer.range(start = 0, end = 100, step = 2), ArrayBuffer.range(0, 100).filterInPlace(_ % 2 == 0))
+    assertEquals(ArrayBuffer.range(start = 1, end = 100, step = 2), ArrayBuffer.range(0, 100).filterInPlace(_ % 2 != 0))
+  }
+
+  @Test
+  def testTakeInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().takeInPlace(10))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).takeInPlace(-1))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).takeInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 100).takeInPlace(10))
+  }
+
+  @Test
+  def testTakeRightInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().takeRightInPlace(10))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).takeRightInPlace(-1))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).takeRightInPlace(10))
+    assertEquals(ArrayBuffer.range(90, 100), ArrayBuffer.range(0, 100).takeRightInPlace(10))
+  }
+
+  @Test
+  def testTakeWhileInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ListBuffer[Int]().takeWhileInPlace(_ < 50))
+    assertEquals(ArrayBuffer.range(0, 10), ListBuffer.range(0, 10).takeWhileInPlace(_ < 50))
+    assertEquals(ArrayBuffer.range(0, 50), ListBuffer.range(0, 100).takeWhileInPlace(_ < 50))
+  }
+
+  @Test
+  def testDropInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().dropInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).dropInPlace(-1))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).dropInPlace(10))
+    assertEquals(ArrayBuffer.range(10, 100), ArrayBuffer.range(0, 100).dropInPlace(10))
+  }
+
+  @Test
+  def testDropRightInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer().dropRightInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 10), ArrayBuffer.range(0, 10).dropRightInPlace(-1))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).dropRightInPlace(10))
+    assertEquals(ArrayBuffer.range(0, 90), ArrayBuffer.range(0, 100).dropRightInPlace(10))
+  }
+
+  @Test
+  def testDropWhileInPlace: Unit = {
+    assertEquals(ArrayBuffer(), ArrayBuffer[Int]().dropWhileInPlace(_ < 50))
+    assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 10).dropWhileInPlace(_ < 50))
+    assertEquals(ArrayBuffer.range(50, 100), ArrayBuffer.range(0, 100).dropWhileInPlace(_ < 50))
+  }
+
+  @Test
+  def testRemove: Unit = {
+    val b1 = ArrayBuffer(0, 1, 2)
+    assertEquals(0, b1.remove(0))
+    assertEquals(ArrayBuffer(1, 2), b1)
+
+    val b2 = ArrayBuffer(0, 1, 2)
+    assertEquals(1, b2.remove(1))
+    assertEquals(ArrayBuffer(0, 2), b2)
+
+    val b3 = ArrayBuffer(0, 1, 2)
+    assertEquals(2, b3.remove(2))
+    assertEquals(ArrayBuffer(0, 1), b3)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveWithNegativeIndex: Unit = {
+    ArrayBuffer(0, 1, 2).remove(-1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveWithTooLargeIndex: Unit = {
+    ArrayBuffer(0).remove(1)
+  }
+
+  @Test
+  def testRemoveMany: Unit = {
+    def testRemoveMany(idx: Int, count: Int, expectation: ArrayBuffer[Int]): Unit = {
+      val buffer = ArrayBuffer(0, 1, 2)
+      buffer.remove(idx, count)
+      assertEquals(expectation, buffer)
+    }
+
+    testRemoveMany(idx = 0, count = 0, expectation = ArrayBuffer(0, 1, 2))
+    testRemoveMany(idx = 0, count = 1, expectation = ArrayBuffer(1, 2))
+    testRemoveMany(idx = 0, count = 2, expectation = ArrayBuffer(2))
+    testRemoveMany(idx = 0, count = 3, expectation = ArrayBuffer())
+    testRemoveMany(idx = 1, count = 1, expectation = ArrayBuffer(0, 2))
+    testRemoveMany(idx = 1, count = 2, expectation = ArrayBuffer(0))
+    testRemoveMany(idx = 2, count = 1, expectation = ArrayBuffer(0, 1))
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveManyWithNegativeIndex: Unit = {
+    ArrayBuffer(0, 1, 2).remove(idx = -1, count = 1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveManyWithTooLargeIndex: Unit = {
+    ArrayBuffer(0).remove(idx = 1, count = 1)
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def testRemoveManyWithNegativeCount: Unit = {
+    ArrayBuffer(0).remove(idx = 0, count = -1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveManyWithTooLargeCount: Unit = {
+    ArrayBuffer(0).remove(idx = 0, count = 100)
+  }
+
+  @Test
+  def testTrimStart: Unit = {
+    val b1 = ArrayBuffer()
+    b1.trimStart(10)
+    assertEquals(ArrayBuffer(), b1)
+
+    val b2 = ArrayBuffer.range(0, 10)
+    b2.trimStart(-1)
+    assertEquals(ArrayBuffer.range(0, 10), b2)
+
+    val b3 = ArrayBuffer.range(0, 10)
+    b3.trimStart(10)
+    assertEquals(ArrayBuffer(), b3)
+
+    val b4 = ArrayBuffer.range(0, 100)
+    b4.trimStart(10)
+    assertEquals(ArrayBuffer.range(10, 100), b4)
+  }
+
+  @Test
+  def testTrimEnd: Unit = {
+    val b1 = ArrayBuffer()
+    b1.trimEnd(10)
+    assertEquals(ArrayBuffer(), b1)
+
+    val b2 = ArrayBuffer.range(0, 10)
+    b2.trimEnd(-1)
+    assertEquals(ArrayBuffer.range(0, 10), b2)
+
+    val b3 = ArrayBuffer.range(0, 10)
+    b3.trimEnd(10)
+    assertEquals(ArrayBuffer(), b3)
+
+    val b4 = ArrayBuffer.range(0, 100)
+    b4.trimEnd(10)
+    assertEquals(ArrayBuffer.range(0, 90), b4)
+  }
 }

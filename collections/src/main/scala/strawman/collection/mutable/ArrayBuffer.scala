@@ -154,7 +154,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
       Array.copy(array, idx + count, array, idx, end - (idx + count))
       reduceToSize(end - count)
     } else if (count < 0) {
-      throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
+      throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
   override def className = "ArrayBuffer"
