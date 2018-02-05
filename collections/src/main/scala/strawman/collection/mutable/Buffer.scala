@@ -5,9 +5,11 @@ import scala.{Int, `inline`, throws, IndexOutOfBoundsException, IllegalArgumentE
 import scala.Predef.intWrapper
 
 /** A `Buffer` is a growable and shrinkable `Seq`. */
-trait Buffer[A] extends Seq[A]
-  with Growable[A]
-  with Shrinkable[A] {
+trait Buffer[A]
+  extends Seq[A]
+    with SeqOps[A, Buffer, Buffer[A]]
+    with Growable[A]
+    with Shrinkable[A] {
 
   //TODO Prepend is a logical choice for a readable name of `+=:` but it conflicts with the renaming of `append` to `add`
   /** Prepends a single element at the front of this $coll.
