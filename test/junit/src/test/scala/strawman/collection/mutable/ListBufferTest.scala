@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 class ListBufferTest {
 
   @Test
-  def hasCorrectClear(): Unit = {
+  def testClear(): Unit = {
     val b = ListBuffer.empty[String]
     b += "a"
     assertTrue(b.sameElements("a" :: Nil))
@@ -40,5 +40,42 @@ class ListBufferTest {
     assertEquals(ListBuffer(), ListBuffer().takeInPlace(10))
     assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).takeInPlace(10))
     assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 100).takeInPlace(10))
+  }
+
+  @Test
+  def testRemoveMany: Unit = {
+    def testRemoveMany(idx: Int, count: Int, expectation: ListBuffer[Int]): Unit = {
+      val buffer = ListBuffer(0, 1, 2)
+      buffer.remove(idx, count)
+      assertEquals(expectation, buffer)
+    }
+
+    testRemoveMany(idx = 0, count = 0, expectation = ListBuffer(0, 1, 2))
+    testRemoveMany(idx = 0, count = 1, expectation = ListBuffer(1, 2))
+    testRemoveMany(idx = 0, count = 2, expectation = ListBuffer(2))
+    testRemoveMany(idx = 0, count = 3, expectation = ListBuffer())
+    testRemoveMany(idx = 1, count = 1, expectation = ListBuffer(0, 2))
+    testRemoveMany(idx = 1, count = 2, expectation = ListBuffer(0))
+    testRemoveMany(idx = 2, count = 1, expectation = ListBuffer(0, 1))
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def removeManyWithNegativeIndex: Unit = {
+    ListBuffer(0, 1, 2).remove(idx = -1, count = 1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def removeManyWithTooLargeIndex: Unit = {
+    ListBuffer(0).remove(idx = 1, count = 1)
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def removeManyWithNegativeCount: Unit = {
+    ListBuffer(0).remove(idx = 0, count = -1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def removeManyWithTooLargeCount: Unit = {
+    ListBuffer(0).remove(idx = 0, count = 100)
   }
 }

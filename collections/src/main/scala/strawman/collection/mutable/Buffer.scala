@@ -72,7 +72,7 @@ trait Buffer[A]
     *  @param n  the number of elements to remove from the end
     *            of this buffer.
     */
-  def trimEnd(n: Int): Unit = remove(length - scala.math.max(n, 0), n)
+  def trimEnd(n: Int): Unit = remove(length - math.max(n, 0), n)
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type
 

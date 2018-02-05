@@ -8,7 +8,7 @@ import scala.Int._
 import strawman.collection
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
-import java.lang.IndexOutOfBoundsException
+import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
 import scala.Predef.{assert, intWrapper}
 
 /** A `Buffer` implementation backed by a list. It provides constant time
@@ -214,11 +214,13 @@ class ListBuffer[A]
     nx.head
   }
 
-  def remove(idx: Int, n: Int): Unit =
-    if (n > 0) {
+  def remove(idx: Int, count: Int): Unit =
+    if (count > 0) {
       ensureUnaliased()
-      if (idx < 0 || idx + n > len) throw new IndexOutOfBoundsException
-      removeAfter(locate(idx), n)
+      if (idx < 0 || idx + count > len) throw new IndexOutOfBoundsException
+      removeAfter(locate(idx), count)
+    } else if (count < 0) {
+      throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
   private def removeAfter(prev: Predecessor[A], n: Int) = {
