@@ -5,6 +5,7 @@ import strawman.collection.immutable.Nil
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import strawman.collection.immutable.{List, Nil}
 
 @RunWith(classOf[JUnit4])
 class ListBufferTest {
@@ -25,6 +26,16 @@ class ListBufferTest {
     b2.clear()
     b2 += "b"
     assertTrue(b2.sameElements("b" :: Nil))
+  }
+
+  @Test
+  def testFlatMapInPlace: Unit = {
+    val xs = ListBuffer(3, 4, 5)
+    val ys = List(-1, -2, -3, -4, -5, -6)
+
+    val res = xs.flatMapInPlace(i => ys take i)
+
+    assertEquals(ListBuffer(-1, -2, -3, -1, -2, -3, -4, -1, -2, -3, -4, -5), res)
   }
 
   @Test

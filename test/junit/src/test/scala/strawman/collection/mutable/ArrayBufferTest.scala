@@ -67,6 +67,16 @@ class ArrayBufferTest {
   }
 
   @Test
+  def testFlatMapInPlace: Unit = {
+    val xs = ArrayBuffer(3, 4, 5)
+    val ys = List(-1, -2, -3, -4, -5, -6)
+
+    val res = xs.flatMapInPlace(i => ys take i)
+
+    assertEquals(ArrayBuffer(-1, -2, -3, -1, -2, -3, -4, -1, -2, -3, -4, -5), res)
+  }
+
+  @Test
   def testFilterInPlace: Unit = {
     assertEquals(ArrayBuffer(), ArrayBuffer.range(0, 100).filterInPlace(_ => false))
     assertEquals(ArrayBuffer.range(0, 100), ArrayBuffer.range(0, 100).filterInPlace(_ => true))
