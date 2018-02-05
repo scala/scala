@@ -108,6 +108,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     ensureSize(end + 1)
     Array.copy(array, idx, array, idx + 1, end - idx)
     this(idx) = elem
+    end += 1
   }
 
   def prepend(elem: A): this.type = {

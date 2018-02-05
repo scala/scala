@@ -1,10 +1,10 @@
 package strawman.collection.mutable
 
+import org.junit.Assert.assertEquals
 import strawman.collection.immutable.List
-
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{Assert, Test}
+import org.junit.Test
 
 import scala.tools.testing.AssertUtil
 
@@ -23,16 +23,46 @@ class ArrayBufferTest {
     }
 
     // Just insert some at position 0
-    Assert.assertEquals(ArrayBuffer(1, 3, 6, 9, 2, 4, 5, 7), insertAt(0))
+    assertEquals(ArrayBuffer(1, 3, 6, 9, 2, 4, 5, 7), insertAt(0))
 
     // Insert in the middle
-    Assert.assertEquals(ArrayBuffer(2, 4, 1, 3, 6, 9, 5, 7), insertAt(2))
+    assertEquals(ArrayBuffer(2, 4, 1, 3, 6, 9, 5, 7), insertAt(2))
 
     // No strange last position weirdness
-    Assert.assertEquals(ArrayBuffer(2, 4, 5, 7, 1, 3, 6, 9), insertAt(traver.size))
+    assertEquals(ArrayBuffer(2, 4, 5, 7, 1, 3, 6, 9), insertAt(traver.size))
 
     // Overflow is caught
     AssertUtil.assertThrows[IndexOutOfBoundsException] { insertAt(-1) }
     AssertUtil.assertThrows[IndexOutOfBoundsException] { insertAt(traver.size + 10) }
+  }
+
+  @Test
+  def testInsertTop: Unit = {
+    val buffer = ArrayBuffer.empty[Int]
+    val els = 0 until 100
+
+    for (i <- els) buffer.insert(0, i)
+
+    assertEquals(ArrayBuffer(els.reverse: _*), buffer)
+  }
+
+  @Test
+  def testInsertEnd: Unit = {
+    val buffer = ArrayBuffer.empty[Int]
+    val els = 0 until 100
+
+    for (i <- els) buffer.insert(i, i)
+
+    assertEquals(ArrayBuffer(els: _*), buffer)
+  }
+
+  @Test
+  def testPrepend: Unit = {
+    val buffer = ArrayBuffer.empty[Int]
+    val els = 0 until 100
+
+    for (i <- els) i +=: buffer
+
+    assertEquals(ArrayBuffer(els.reverse: _*), buffer)
   }
 }
