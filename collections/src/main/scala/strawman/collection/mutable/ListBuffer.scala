@@ -182,7 +182,7 @@ class ListBuffer[A]
     this
   }
 
-  private def insertAfter(p: Predecessor[A], it: Iterator[A]) = {
+  private def insertAfter(p: Predecessor[A], it: Iterator[A]): Predecessor[A] = {
     var prev = p
     val follow = getNext(prev)
     while (it.hasNext) {
@@ -191,6 +191,7 @@ class ListBuffer[A]
       setNext(prev, next)
       prev = next
     }
+    prev
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
@@ -241,13 +242,13 @@ class ListBuffer[A]
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     ensureUnaliased()
-    val prev: Predecessor[A] = null
+    var prev: Predecessor[A] = null
     var cur: List[A] = first
     while (!cur.isEmpty) {
       val follow = cur.tail
       setNext(prev, follow)
       len -= 1
-      insertAfter(prev, f(cur.head).iterator())
+      prev = insertAfter(prev, f(cur.head).iterator())
       cur = follow
     }
     this

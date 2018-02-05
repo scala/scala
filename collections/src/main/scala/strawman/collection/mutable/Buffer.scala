@@ -120,11 +120,12 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     // There's scope for a better implementation which copies elements in place.
     var i = 0
-    val newElemss = new Array[IterableOnce[A]](size)
-    while (i < size) { newElemss(i) = f(this(i)); i += 1 }
+    val s = size
+    val newElems = new Array[IterableOnce[A]](s)
+    while (i < s) { newElems(i) = f(this(i)); i += 1 }
     clear()
     i = 0
-    while (i < size) { ++=(newElemss(i)); i += 1 }
+    while (i < s) { ++=(newElems(i)); i += 1 }
     this
   }
 
