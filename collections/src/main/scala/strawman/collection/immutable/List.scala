@@ -401,7 +401,6 @@ sealed abstract class List[+A]
 case class :: [+A](override val head: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
-  override def nonEmpty: Boolean = true
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
 }
@@ -409,7 +408,6 @@ case class :: [+A](override val head: A, private[strawman] var next: List[A @unc
 @SerialVersionUID(3L)
 case object Nil extends List[Nothing] {
   override def isEmpty: Boolean = true
-  override def nonEmpty: Boolean = false
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
   override def headOption: None.type = None
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
