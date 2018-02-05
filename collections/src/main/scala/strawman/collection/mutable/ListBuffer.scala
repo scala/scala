@@ -207,10 +207,10 @@ class ListBuffer[A]
   def remove(idx: Int): A = {
     ensureUnaliased()
     if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException
-    len -= 1
     val p = locate(idx)
     val nx = getNext(p)
     setNext(p, nx.tail)
+    len -= 1
     nx.head
   }
 

@@ -43,6 +43,31 @@ class ListBufferTest {
   }
 
   @Test
+  def testRemove: Unit = {
+    val b1 = ListBuffer(0, 1, 2)
+    assertEquals(0, b1.remove(0))
+    assertEquals(ListBuffer(1, 2), b1)
+
+    val b2 = ListBuffer(0, 1, 2)
+    assertEquals(1, b2.remove(1))
+    assertEquals(ListBuffer(0, 2), b2)
+
+    val b3 = ListBuffer(0, 1, 2)
+    assertEquals(2, b3.remove(2))
+    assertEquals(ListBuffer(0, 1), b3)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def removeWithNegativeIndex: Unit = {
+    ListBuffer(0, 1, 2).remove(-1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def removeWithTooLargeIndex: Unit = {
+    ListBuffer(0).remove(1)
+  }
+
+  @Test
   def testRemoveMany: Unit = {
     def testRemoveMany(idx: Int, count: Int, expectation: ListBuffer[Int]): Unit = {
       val buffer = ListBuffer(0, 1, 2)

@@ -82,6 +82,31 @@ class ArrayBufferTest {
   }
 
   @Test
+  def testRemove: Unit = {
+    val b1 = ArrayBuffer(0, 1, 2)
+    assertEquals(0, b1.remove(0))
+    assertEquals(ArrayBuffer(1, 2), b1)
+
+    val b2 = ArrayBuffer(0, 1, 2)
+    assertEquals(1, b2.remove(1))
+    assertEquals(ArrayBuffer(0, 2), b2)
+
+    val b3 = ArrayBuffer(0, 1, 2)
+    assertEquals(2, b3.remove(2))
+    assertEquals(ArrayBuffer(0, 1), b3)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveWithNegativeIndex: Unit = {
+    ArrayBuffer(0, 1, 2).remove(-1)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testRemoveWithTooLargeIndex: Unit = {
+    ArrayBuffer(0).remove(1)
+  }
+
+  @Test
   def testRemoveMany: Unit = {
     def testRemoveMany(idx: Int, count: Int, expectation: ArrayBuffer[Int]): Unit = {
       val buffer = ArrayBuffer(0, 1, 2)
@@ -99,22 +124,22 @@ class ArrayBufferTest {
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
-  def removeManyWithNegativeIndex: Unit = {
+  def testRemoveManyWithNegativeIndex: Unit = {
     ArrayBuffer(0, 1, 2).remove(idx = -1, count = 1)
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
-  def removeManyWithTooLargeIndex: Unit = {
+  def testRemoveManyWithTooLargeIndex: Unit = {
     ArrayBuffer(0).remove(idx = 1, count = 1)
   }
 
   @Test(expected = classOf[IllegalArgumentException])
-  def removeManyWithNegativeCount: Unit = {
+  def testRemoveManyWithNegativeCount: Unit = {
     ArrayBuffer(0).remove(idx = 0, count = -1)
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
-  def removeManyWithTooLargeCount: Unit = {
+  def testRemoveManyWithTooLargeCount: Unit = {
     ArrayBuffer(0).remove(idx = 0, count = 100)
   }
 }
