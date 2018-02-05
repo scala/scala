@@ -156,16 +156,6 @@ sealed abstract class List[+A]
     h
   }
 
-  override def drop(n: Int): List[A] = {
-    var these = this
-    var count = n
-    while (!these.isEmpty && count > 0) {
-      these = these.tail
-      count -= 1
-    }
-    these
-  }
-
   /**
     *  @example {{{
     *  // Given a list
