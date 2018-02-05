@@ -52,6 +52,13 @@ class ListBufferTest {
   }
 
   @Test
+  def testTakeWhileInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer[Int]().takeWhileInPlace(_ < 50))
+    assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).takeWhileInPlace(_ < 50))
+    assertEquals(ListBuffer.range(0, 50), ListBuffer.range(0, 100).takeWhileInPlace(_ < 50))
+  }
+
+  @Test
   def testDropInPlace: Unit = {
     assertEquals(ListBuffer(), ListBuffer().dropInPlace(10))
     assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).dropInPlace(-1))
@@ -65,6 +72,13 @@ class ListBufferTest {
     assertEquals(ListBuffer.range(0, 10), ListBuffer.range(0, 10).dropRightInPlace(-1))
     assertEquals(ListBuffer(), ListBuffer.range(0, 10).dropRightInPlace(10))
     assertEquals(ListBuffer.range(0, 90), ListBuffer.range(0, 100).dropRightInPlace(10))
+  }
+
+  @Test
+  def testDropWhileInPlace: Unit = {
+    assertEquals(ListBuffer(), ListBuffer[Int]().dropWhileInPlace(_ < 50))
+    assertEquals(ListBuffer(), ListBuffer.range(0, 10).dropWhileInPlace(_ < 50))
+    assertEquals(ListBuffer.range(50, 100), ListBuffer.range(0, 100).dropWhileInPlace(_ < 50))
   }
 
   @Test
