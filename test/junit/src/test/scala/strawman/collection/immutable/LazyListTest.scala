@@ -131,4 +131,12 @@ class LazyListTest {
     val s = LazyList.empty.#::(f).#::(f).#::(f)
     assertEquals(0, i)
   }
+
+  def hasCorrectDrop(): Unit = {
+    assertEquals(LazyList(), LazyList().drop(2))
+    assertEquals(LazyList(), LazyList(1).drop(2))
+    assertEquals(LazyList(), LazyList(1, 2).drop(2))
+    assertEquals(LazyList(3), LazyList(1, 2, 3).drop(2))
+    assertEquals(LazyList(3, 4), LazyList(1, 2, 3, 4).drop(2))
+  }
 }
