@@ -3737,7 +3737,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @annotation.tailrec
     def loop(mt: Type): Boolean = {
       mt match {
-        case MethodType(params, restpe) => params.exists(_.info.exists(_ == tt)) || loop(restpe)
+        case MethodType(params, restpe) => params.exists(_.info.dealias.exists(_ == tt)) || loop(restpe)
         case PolyType(tparams, restpe) => loop(restpe)
         case _ => false
       }

@@ -5050,9 +5050,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val vsym = insertionContext.owner.newValue(unit.freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
                 vsym.setInfo(uncheckedBounds(qual.tpe))
                 insertionContext.scope enter vsym
-                val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)))
+                val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
                 qual.changeOwner(insertionContext.owner -> vsym)
-                insertionContext.tree.updateAttachment(StabilizingDefinition(vdef))
+                addStabilizingDefinition(insertionContext.tree, vdef)
                 val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
                 return typedSelect(tree, newQual, name)
               }
@@ -5614,16 +5614,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _                => abort(s"unexpected member def: ${tree.getClass}\n$tree")
       }
 
-      // Extract and insert a stabilizing ValDef (if any) which might have been
+      // Extract and insert stabilizing ValDefs (if any) which might have been
       // introduced during the typing of the original expression.
-      def insertStabilizer(tree: Tree, original: Tree): Tree = {
-        original.attachments.get[StabilizingDefinition] match {
-          case Some(StabilizingDefinition(vdef)) =>
-            tree.removeAttachment[StabilizingDefinition]
-            typed(Block(vdef, tree) setPos tree.pos)
-          case _ => tree
+      def insertStabilizer(tree: Tree, original: Tree): Tree =
+        stabilizingDefinitions(original) match {
+          case Nil => tree
+          case vdefs =>
+            removeStabilizingDefinitions(tree)
+            Block(vdefs.reverse, tree) setType tree.tpe setPos tree.pos
         }
-      }
 
       // Trees not allowed during pattern mode.
       def typedOutsidePatternMode(tree: Tree): Tree = tree match {

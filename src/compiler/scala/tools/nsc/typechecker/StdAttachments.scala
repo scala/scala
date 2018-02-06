@@ -183,5 +183,22 @@ trait StdAttachments {
    */
   case class OriginalTreeAttachment(original: Tree)
 
-  case class StabilizingDefinition(vdef: ValDef)
+  case class StabilizingDefinitions(vdefs: List[ValDef])
+
+  def addStabilizingDefinition(tree: Tree, vdef: ValDef): Tree =
+    tree.updateAttachment(StabilizingDefinitions(
+      tree.attachments.get[StabilizingDefinitions] match {
+        case Some(StabilizingDefinitions(vdefs)) => vdef :: vdefs
+        case _ => List(vdef)
+      }
+    ))
+
+  def stabilizingDefinitions(tree: Tree): List[ValDef] =
+    tree.attachments.get[StabilizingDefinitions] match {
+      case Some(StabilizingDefinitions(vdefs)) => vdefs
+      case _ => Nil
+    }
+
+  def removeStabilizingDefinitions(tree: Tree): Tree =
+    tree.removeAttachment[StabilizingDefinitions]
 }
