@@ -28,7 +28,7 @@ import immutable.List
   */
 private[mutable] class MutableList[A]
   extends AbstractSeq[A]
-    with LinearSeq[A]
+    with strawman.collection.LinearSeq[A]
     with StrictOptimizedSeqOps[A, MutableList, MutableList[A]]
     with LinearSeqOps[A, MutableList, MutableList[A]]
     with Builder[A, MutableList[A]]
@@ -229,7 +229,7 @@ private[mutable] class MutableList[A]
     *
     *  @param elem  the element to append.
     */
-  def add(elem: A): this.type = { appendElem(elem); this }
+  def addOne(elem: A): this.type = { appendElem(elem); this }
 
   def clear(): Unit = {
     first0 = new LinkedList[A]

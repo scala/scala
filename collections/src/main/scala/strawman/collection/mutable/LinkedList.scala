@@ -16,7 +16,7 @@ import scala.annotation.tailrec
 /** A linked list implementation which is used internally in MutableList and Queue.
   */
 private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
-  with LinearSeq[A]
+  with strawman.collection.LinearSeq[A]
   with LinearSeqOps[A, LinkedList, LinkedList[A]]
   with Growable[A]
   with Shrinkable[A]
@@ -57,7 +57,7 @@ private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
     next = this
   }
 
-  def add(elem: A): this.type = { append(LinkedList(elem)); this }
+  def addOne(elem: A): this.type = { append(LinkedList(elem)); this }
 
   // Members declared in strawman.collection.mutable.IterableOps
   def filterInPlace(p: A => Boolean): this.type = {
@@ -112,7 +112,7 @@ private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
     e
   }
 
-  def subtract(elem: A): this.type = {
+  def subtractOne(elem: A): this.type = {
     var these = this
     while (these.nonEmpty) {
       if(these.elem == elem) {
