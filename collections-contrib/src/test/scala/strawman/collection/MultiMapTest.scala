@@ -10,8 +10,8 @@ class MultiMapTest {
 
   @Test
   def equality(): Unit = {
-    val mm1 = MultiMap("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
-    val mm2 = MultiMap("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
+    val mm1 = MultiDict("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
+    val mm2 = MultiDict("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
 
     Assert.assertEquals(mm2, mm1)
     Assert.assertEquals(mm1, mm2)
@@ -20,7 +20,7 @@ class MultiMapTest {
 
   @Test
   def access(): Unit = {
-    val mm = MultiMap("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
+    val mm = MultiDict("a" -> 1, "b" -> 0, "b" -> 1, "c" -> 3)
 
     Assert.assertEquals(Set(0, 1), mm.get("b"))
     Assert.assertEquals(Set.empty, mm.get("d"))
@@ -37,28 +37,28 @@ class MultiMapTest {
   @Test
   def concat(): Unit = {
     Assert.assertEquals(
-      MultiMap(1 -> true, 1 -> false),
-      MultiMap(1 -> true).concat(MultiMap(1 -> false))
+      MultiDict(1 -> true, 1 -> false),
+      MultiDict(1 -> true).concat(MultiDict(1 -> false))
     )
     Assert.assertEquals(
-      MultiMap("a" -> 1, "a" -> 2, "a" -> 3),
-      MultiMap("a" -> 1).concatSets(List("a" -> Set(2, 3)))
+      MultiDict("a" -> 1, "a" -> 2, "a" -> 3),
+      MultiDict("a" -> 1).concatSets(List("a" -> Set(2, 3)))
     )
   }
 
   @Test
   def map(): Unit = {
     Assert.assertEquals(
-      MultiMap("A" -> 1, "B" -> 1, "B" -> 2),
-      MultiMap("a" -> 1, "b" -> 1, "b" -> 2).map { case (k, v) => (k.toUpperCase, v) }
+      MultiDict("A" -> 1, "B" -> 1, "B" -> 2),
+      MultiDict("a" -> 1, "b" -> 1, "b" -> 2).map { case (k, v) => (k.toUpperCase, v) }
     )
     Assert.assertEquals(
-      MultiMap(1 -> true, 1 -> true),
-      MultiMap("a" -> true, "b" -> true).map { case (_, v) => 1 -> v }
+      MultiDict(1 -> true, 1 -> true),
+      MultiDict("a" -> true, "b" -> true).map { case (_, v) => 1 -> v }
     )
     Assert.assertEquals(
-      MultiMap("c" -> 1, "c" -> 2, "c" -> 3, "c" -> 4),
-      MultiMap("a" -> 1, "b" -> 2, "b" -> 3).mapSets { _ => "c" -> Set(1, 2, 3, 4) }
+      MultiDict("c" -> 1, "c" -> 2, "c" -> 3, "c" -> 4),
+      MultiDict("a" -> 1, "b" -> 2, "b" -> 3).mapSets { _ => "c" -> Set(1, 2, 3, 4) }
     )
   }
 
@@ -66,10 +66,10 @@ class MultiMapTest {
   def withFilter(): Unit = {
     val filtered =
       for {
-        (k, v) <- MultiMap("a" -> 1, "b" -> 2)
+        (k, v) <- MultiDict("a" -> 1, "b" -> 2)
         if k == "a" && v % 2 == 0
       } yield (k, v)
-    val filteredT: MultiMap[String, Int] = filtered
+    val filteredT: MultiDict[String, Int] = filtered
     Assert.assertEquals(Seq.empty, filtered.toSeq)
   }
 

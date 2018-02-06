@@ -9,7 +9,7 @@ class MultiMapTest {
 
   @Test
   def multiMap(): Unit = {
-    val mm = MultiMap("a" -> 1, "b" -> 1, "b" -> 2, "c" -> 1)
+    val mm = MultiDict("a" -> 1, "b" -> 1, "b" -> 2, "c" -> 1)
     val m = Map("a" -> Set(1), "b" -> Set(1, 2), "c" -> Set(1))
     Assert.assertEquals(m, mm.sets)
     Assert.assertEquals(mm.sets, m)

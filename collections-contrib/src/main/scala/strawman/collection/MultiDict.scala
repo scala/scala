@@ -1,20 +1,20 @@
 package strawman.collection
 
 /**
-  * A multimap is a map that can associate a set of values to a given key.
+  * A multidict is a map that can associate a set of values to a given key.
   *
   * @tparam K the type of keys
   * @tparam V the type of values
   */
-trait MultiMap[K, V]
+trait MultiDict[K, V]
   extends Iterable[(K, V)]
-    with MultiMapOps[K, V, MultiMap, MultiMap[K, V]]
+    with MultiDictOps[K, V, MultiDict, MultiDict[K, V]]
     with Equals {
 
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
-    case that: MultiMap[K, V] =>
+    case that: MultiDict[K, V] =>
       (this eq that) ||
         (that canEqual this) &&
           (this.size == that.size) && {
@@ -32,7 +32,7 @@ trait MultiMap[K, V]
 }
 
 
-trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
+trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
   extends IterableOps[(K, V), Iterable, C] {
 
   def multiMapFactory: MapFactory[CC]
@@ -47,7 +47,7 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     multiMapFromIterable(it.view.flatMap { case (k, vs) => vs.view.map(v => (k, v)) })
 
   /**
-    * @return All the elements contained in this multimap, grouped by key
+    * @return All the elements contained in this multidict, grouped by key
     */
   def sets: Map[K, Set[V]]
 
@@ -62,13 +62,13 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
   def get(key: K): Set[V] = sets.get(key).getOrElse(Set.empty)
 
   /**
-    * @return Whether `key` has at least one occurrence in this multimap or not
+    * @return Whether `key` has at least one occurrence in this multidict or not
     * @param key the key to test
     */
   def containsKey(key: K): Boolean = sets.contains(key)
 
   /**
-    * @return Whether the binding `kv` is contained in this multimap or not
+    * @return Whether the binding `kv` is contained in this multidict or not
     * @param kv the binding to test
     */
   def containsEntry(kv: (K, V)): Boolean = sets.get(kv._1).exists(_.contains(kv._2))
@@ -82,11 +82,11 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
   /** @return the set of keys */
   def keySet: Set[K] = sets.keySet
 
-  /** @return all the values contained in this multimap */
+  /** @return all the values contained in this multidict */
   def values: Iterable[V] = sets.values.flatten
 
   /**
-    * @return a multimap that contains all the entries of `this` multimap,
+    * @return a multidict that contains all the entries of `this` multidict,
     *         transformed by the function `f`
     *
     * @param f transformation function
@@ -97,7 +97,7 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     multiMapFromIterable(View.Map(toIterable, f))
 
   /**
-    * @return a multimap that contains all the entries of `this` multimap,
+    * @return a multidict that contains all the entries of `this` multidict,
     *         transformed by the function `f` and concatenated
     *
     * @param f transformation function
@@ -108,7 +108,7 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     multiMapFromIterable(View.FlatMap(toIterable, f))
 
   /**
-    * @return a multimap that contains all the entries of `this` multimap
+    * @return a multidict that contains all the entries of `this` multidict
     *         after they have been successfully transformed by the
     *         given partial function `pf`
     *
@@ -122,7 +122,7 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
       else View.Empty
     )
 
-  /** Concatenate the entries given in `that` iterable to `this` multimap */
+  /** Concatenate the entries given in `that` iterable to `this` multidict */
   def concat(that: Iterable[(K, V)]): C =
     fromSpecificIterable(View.Concat(toIterable, that))
 
@@ -142,18 +142,18 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     sets.get(key).exists(_.exists(p))
 
   /**
-    * @return a new multimap resulting from applying the given function `f`
-    *         to each group of values of this multimap and collecting
+    * @return a new multidict resulting from applying the given function `f`
+    *         to each group of values of this multidict and collecting
     *         the results
     * @param f the function to apply
     * @tparam L the new type of keys
-    * @tparam W the type of values of the returned multimap
+    * @tparam W the type of values of the returned multidict
     */
   def mapSets[L, W](f: ((K, Set[V])) => (L, Set[W])): CC[L, W] =
     fromSets(View.Map(sets, f))
 
   /**
-    * @return a multimap that contains all the entries of `this` multimap,
+    * @return a multidict that contains all the entries of `this` multidict,
     *         after they have been successfully transformed by the given
     *         partial function
     *
@@ -168,27 +168,27 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
     )
 
   /**
-    * @return a new multimap resulting from applying the given function `f`
-    *         to each group of values of this multimap and concatenating
+    * @return a new multidict resulting from applying the given function `f`
+    *         to each group of values of this multidict and concatenating
     *         the results
     * @param f the function to apply
     * @tparam L the new type of keys
-    * @tparam W the type of values of the returned multimap
+    * @tparam W the type of values of the returned multidict
     */
   def flatMapSets[L, W](f: ((K, Set[V])) => IterableOnce[(L, Set[W])]): CC[L, W] =
     fromSets(View.FlatMap(sets, f))
 
   /**
-    * @return a new multimap concatenating the values of this multimap
+    * @return a new multidict concatenating the values of this multidict
     *         and `that` collection of values
     *
-    * @param that the collection of values to add to this multimap
+    * @param that the collection of values to add to this multidict
     */
   def concatSets(that: Iterable[(K, Set[V])]): C =
     fromSpecificSets(View.Concat(sets, that))
 
   /**
-    * @return a multimap that contains all the entries of this multimap
+    * @return a multidict that contains all the entries of this multidict
     *         that satisfy the predicate `p`
     */
   def filterSets(p: ((K, Set[V])) => Boolean): C =
@@ -196,4 +196,4 @@ trait MultiMapOps[K, V, +CC[X, Y] <: MultiMap[X, Y], +C <: MultiMap[K, V]]
 
 }
 
-object MultiMap extends MapFactory.Delegate[MultiMap](immutable.MultiMap)
+object MultiDict extends MapFactory.Delegate[MultiDict](immutable.MultiDict)
