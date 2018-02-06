@@ -9,7 +9,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Cloneable, Serializable, deprecated}
+import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Serializable, deprecated}
 
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -40,7 +40,7 @@ class Queue[A]
     with LinearSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedSeqOps[A, Queue, Queue[A]]
     with Builder[A, Queue[A]]
-    with Cloneable
+    with Cloneable[Queue[A]]
     with Serializable
 {
   private[mutable] def this(fst: LinkedList[A], lst: LinkedList[A], lng: Int) = {
