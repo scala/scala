@@ -5038,14 +5038,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 isInsertionNode(ctx.tree) && !isInsertionNode(ctx.outer.tree)
               }
 
-              if(insertionContext != NoContext) {
+              if (insertionContext != NoContext) {
                 val vsym = insertionContext.owner.newValue(unit.freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
                 vsym.setInfo(uncheckedBounds(qual.tpe))
                 insertionContext.scope enter vsym
-                val vdef = atPos(vsym.pos.makeTransparent)(ValDef(vsym, qual))
+                val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)))
                 qual.changeOwner(insertionContext.owner -> vsym)
                 insertionContext.tree.updateAttachment(StabilizingDefinition(vdef))
-                val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos
+                val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
                 return typedSelect(tree, newQual, name)
               }
             }

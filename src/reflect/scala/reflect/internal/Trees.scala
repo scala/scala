@@ -1772,6 +1772,16 @@ trait Trees extends api.Trees {
       t1
     }
   }
+
+  final def focusInPlace(t: Tree): t.type =
+    if (useOffsetPositions) t else { focuser traverse t; t }
+  private object focuser extends InternalTraverser {
+    override def traverse(t: Tree) = {
+      t setPos t.pos.focus
+      t traverse this
+    }
+  }
+
   trait TreeStackTraverser extends InternalTraverser {
     import collection.mutable
     val path: mutable.Stack[Tree] = mutable.Stack()
