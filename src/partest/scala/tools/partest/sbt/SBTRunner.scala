@@ -85,7 +85,8 @@ class SBTRunner(val config: RunnerSpec.Config,
     case Pass(_)          => (Status.Success, new OptionalThrowable)
     case Updated(_)       => (Status.Success, new OptionalThrowable)
     case Skip(_, _)       => (Status.Skipped, new OptionalThrowable)
-    case Fail(_, _, _)    => (Status.Failure, new OptionalThrowable)
+    case Fail(_, reason, transcript)    => (Status.Failure, new OptionalThrowable(new TestFailedThrowable(reason, transcript.mkString("\n"))))
     case Crash(_, e, _)   => (Status.Error, new OptionalThrowable(e))
   }
 }
+class TestFailedThrowable(reason: String, transcript: String) extends Throwable(reason + "\n\n" + transcript)
