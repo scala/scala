@@ -309,16 +309,13 @@ class MutableSettings(val errorFn: String => Unit)
       def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
         src.path.startsWith(srcDir.path)
 
-      singleOutDir match {
-        case Some(d) => d
-        case None =>
-          (outputs find (isBelow _).tupled) match {
-            case Some((_, d)) => d
-            case _ =>
-              throw new FatalError("Could not find an output directory for "
-                                   + src.path + " in " + outputs)
-          }
-      }
+      singleOutDir.getOrElse(outputs.find((isBelow _).tupled) match {
+          case Some((_, d)) => d
+          case _ =>
+            throw new FatalError("Could not find an output directory for "
+                                 + src.path + " in " + outputs)
+        }
+      )
     }
 
     /** Return the source file path(s) which correspond to the given

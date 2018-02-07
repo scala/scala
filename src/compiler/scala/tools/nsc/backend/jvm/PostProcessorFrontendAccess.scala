@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.generic.Clearable
-import scala.reflect.internal.util.{JavaClearable, Position}
+import scala.reflect.internal.util.{JavaClearable, Position, Statistics}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import java.util.{Collection => JCollection, Map => JMap}
@@ -21,9 +21,14 @@ sealed abstract class PostProcessorFrontendAccess {
 
   def compilerSettings: CompilerSettings
 
-  def withLocalReporter[T](reporter: BackendReporting)(fn: => T): T
+  def withThreadLocalReporter[T](reporter: BackendReporting)(fn: => T): T
   def backendReporting: BackendReporting
   def directBackendReporting: BackendReporting
+
+  /**
+   * Statistics are not thread-safe, they can only be used if `compilerSettings.backendThreads == 1`
+   */
+  def unsafeStatistics: Statistics with BackendStats
 
   def backendClassPath: BackendClassPath
 
@@ -44,7 +49,7 @@ object PostProcessorFrontendAccess {
 
     def target: String
 
-    def outputDirectories : Settings#OutputDirs
+    def outputDirectory(source: AbstractFile): AbstractFile
 
     def optAddToBytecodeRepository: Boolean
     def optBuildCallGraph: Boolean
@@ -84,6 +89,65 @@ object PostProcessorFrontendAccess {
     def log(message: String): Unit
   }
 
+  final class BufferingBackendReporting extends BackendReporting {
+    // We optimise access to the buffered reports for the common case - that there are no warning/errors to report
+    // We could use a listBuffer etc - but that would be extra allocation in the common case
+    // Note - all access is externally synchronized, as this allow the reports to be generated in on thread and
+    // consumed in another
+    private var bufferedReports = List.empty[Report]
+
+    def inlinerWarning(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportInlinerWarning(pos, message))
+
+    def error(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportError(pos, message))
+
+    def warning(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportWarning(pos, message))
+
+    def inform(message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportInform(message))
+
+    def log(message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportLog(message))
+
+    def relayReports(toReporting: BackendReporting): Unit = this.synchronized {
+      if (bufferedReports.nonEmpty) {
+        bufferedReports.reverse.foreach(_.relay(toReporting))
+        bufferedReports = Nil
+      }
+    }
+
+    private sealed trait Report {
+      def relay(backendReporting: BackendReporting): Unit
+    }
+
+    private class ReportInlinerWarning(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.inlinerWarning(pos, message)
+    }
+
+    private class ReportError(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.error(pos, message)
+    }
+
+    private class ReportWarning(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.warning(pos, message)
+    }
+
+    private class ReportInform(message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.inform(message)
+    }
+
+    private class ReportLog(message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.log(message)
+    }
+  }
+
   sealed trait BackendClassPath {
     def findClassFile(className: String): Option[AbstractFile]
   }
@@ -102,7 +166,10 @@ object PostProcessorFrontendAccess {
       val debug: Boolean = s.debug
 
       val target: String = s.target.value
-      val outputDirectories = s.outputDirs
+
+      private val singleOutDir = s.outputDirs.getSingleOutput
+      // the call to `outputDirFor` should be frontendSynch'd, but we assume that the setting is not mutated during the backend
+      def outputDirectory(source: AbstractFile): AbstractFile = singleOutDir.getOrElse(s.outputDirs.outputDirFor(source))
 
       val optAddToBytecodeRepository: Boolean = s.optAddToBytecodeRepository
       val optBuildCallGraph: Boolean = s.optBuildCallGraph
@@ -139,7 +206,7 @@ object PostProcessorFrontendAccess {
 
     private lazy val localReporter = perRunLazy(this)(new ThreadLocal[BackendReporting])
 
-    override def withLocalReporter[T](reporter: BackendReporting)(fn: => T): T = {
+    override def withThreadLocalReporter[T](reporter: BackendReporting)(fn: => T): T = {
       val threadLocal = localReporter.get
       val old = threadLocal.get()
       threadLocal.set(reporter)
@@ -156,19 +223,24 @@ object PostProcessorFrontendAccess {
       def inlinerWarning(pos: Position, message: String): Unit = frontendSynch {
         currentRun.reporting.inlinerWarning(pos, message)
       }
+
       def error(pos: Position, message: String): Unit = frontendSynch {
         reporter.error(pos, message)
       }
+
       def warning(pos: Position, message: String): Unit = frontendSynch {
         global.warning(pos, message)
       }
+
       def inform(message: String): Unit = frontendSynch {
         global.inform(message)
       }
+
       def log(message: String): Unit = frontendSynch {
         global.log(message)
       }
     }
+    def unsafeStatistics: Statistics with BackendStats = global.statistics
 
     private lazy val cp = perRunLazy(this)(frontendSynch(optimizerClassPath(classPath)))
     object backendClassPath extends BackendClassPath {

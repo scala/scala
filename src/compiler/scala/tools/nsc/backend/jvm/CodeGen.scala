@@ -23,25 +23,24 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
    */
   def genUnit(unit: CompilationUnit): Unit = {
     val generatedClasses = ListBuffer.empty[GeneratedClass]
-    val sourceFile = unit.source
 
     def genClassDef(cd: ClassDef): Unit = try {
       val sym = cd.symbol
       val position = sym.pos
       val fullSymbolName = sym.javaClassName
       val mainClassNode = genClass(cd, unit)
-      generatedClasses += GeneratedClass(mainClassNode, fullSymbolName, position, sourceFile, isArtifact = false)
+      generatedClasses += GeneratedClass(mainClassNode, fullSymbolName, position, isArtifact = false)
       if (bTypes.isTopLevelModuleClass(sym)) {
         if (sym.companionClass == NoSymbol) {
           val mirrorClassNode = genMirrorClass(sym, unit)
-          generatedClasses += GeneratedClass(mirrorClassNode, fullSymbolName, position, sourceFile, isArtifact = true)
+          generatedClasses += GeneratedClass(mirrorClassNode, fullSymbolName, position, isArtifact = true)
         }
         else
           log(s"No mirror class for module with linked class: ${sym.fullName}")
       }
       if (sym hasAnnotation coreBTypes.BeanInfoAttr) {
         val beanClassNode = genBeanInfoClass(cd, unit)
-        generatedClasses += GeneratedClass(beanClassNode, fullSymbolName, position, sourceFile, isArtifact = true)
+        generatedClasses += GeneratedClass(beanClassNode, fullSymbolName, position, isArtifact = true)
       }
     } catch {
       case ex: Throwable =>

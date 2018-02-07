@@ -1025,7 +1025,7 @@ abstract class BTypes {
 
   /**
    * Create state that lazily evaluated (to work around / not worry about initialization ordering
-   * issues). The state is re-initialized in each compiler run when the component is initialized.
+   * issues). The state is cleared in each compiler run when the component is initialized.
    */
   def perRunLazy[T](component: PerRunInit)(init: => T): LazyVar[T] = {
     val r = new LazyVar(() => init)
@@ -1039,7 +1039,7 @@ abstract class BTypes {
    * be safely initialized in the post-processor.
    *
    * Note that values defined as `LazyVar`s are usually `lazy val`s themselves (created through the
-   * `perRunLazy` method). This ensures that re-initializing a component only re-initializes those
+   * `perRunLazy` method). This ensures that re-initializing a component only clears those
    * `LazyVar`s that have actually been used in the previous compiler run.
    */
   class LazyVar[T](init: () => T) {

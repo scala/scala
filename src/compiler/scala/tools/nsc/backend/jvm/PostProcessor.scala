@@ -14,7 +14,7 @@ import scala.tools.nsc.backend.jvm.opt._
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
  * optimizations, post-processing and classfile serialization and writing.
  */
-abstract class PostProcessor(statistics: Statistics with BackendStats) extends PerRunInit {
+abstract class PostProcessor extends PerRunInit {
   self =>
   val bTypes: BTypes
 
@@ -29,17 +29,21 @@ abstract class PostProcessor(statistics: Statistics with BackendStats) extends P
   val closureOptimizer    : ClosureOptimizer    { val postProcessor: self.type } = new { val postProcessor: self.type = self } with ClosureOptimizer
   val callGraph           : CallGraph           { val postProcessor: self.type } = new { val postProcessor: self.type = self } with CallGraph
   val bTypesFromClassfile : BTypesFromClassfile { val postProcessor: self.type } = new { val postProcessor: self.type = self } with BTypesFromClassfile
+  val classfileWriters    : ClassfileWriters    { val postProcessor: self.type } = new { val postProcessor: self.type = self } with ClassfileWriters
+
+  var classfileWriter: classfileWriters.ClassfileWriter = _
 
   private val caseInsensitively = recordPerRunJavaMapCache(new ConcurrentHashMap[String, String])
 
-  override def initialize(): Unit = {
-    super.initialize()
+  def initialize(global: Global): Unit = {
+    this.initialize()
     backendUtils.initialize()
     inlinerHeuristics.initialize()
     byteCodeRepository.initialize()
+    classfileWriter = classfileWriters.ClassfileWriter(global)
   }
 
-  def sendToDisk(unit:SourceUnit, clazz: GeneratedClass, writer: ClassfileWriter): Unit = {
+  def sendToDisk(clazz: GeneratedClass, paths: CompilationUnitPaths): Unit = {
     val classNode = clazz.classNode
     val internalName = classNode.name
     val bytes = try {
@@ -68,7 +72,7 @@ abstract class PostProcessor(statistics: Statistics with BackendStats) extends P
       if (AsmUtils.traceSerializedClassEnabled && internalName.contains(AsmUtils.traceSerializedClassPattern))
         AsmUtils.traceClass(bytes)
 
-      writer.write(unit, internalName, bytes)
+      classfileWriter.write(internalName, bytes, paths)
     }
   }
   private def warnCaseInsensitiveOverwrite(clazz: GeneratedClass): Unit = {
@@ -105,7 +109,8 @@ abstract class PostProcessor(statistics: Statistics with BackendStats) extends P
   }
 
   def localOptimizations(classNode: ClassNode): Unit = {
-    statistics.timed(statistics.methodOptTimer)(localOpt.methodOptimizations(classNode))
+    val stats = frontendAccess.unsafeStatistics
+    stats.timed(stats.methodOptTimer)(localOpt.methodOptimizations(classNode))
   }
 
   def setInnerClasses(classNode: ClassNode): Unit = {
@@ -145,5 +150,5 @@ abstract class PostProcessor(statistics: Statistics with BackendStats) extends P
 /**
  * The result of code generation. [[isArtifact]] is `true` for mirror and bean-info classes.
  */
-case class GeneratedClass(classNode: ClassNode, sourceClassName: String, position: Position, sourceFile: SourceFile, isArtifact: Boolean)
+case class GeneratedClass(classNode: ClassNode, sourceClassName: String, position: Position, isArtifact: Boolean)
 case class GeneratedCompilationUnit(sourceFile: AbstractFile, classes: List[GeneratedClass])
