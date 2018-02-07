@@ -4,18 +4,10 @@ package collection
 import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws, AnyRef, Array, deprecated, `inline`}
 import scala.Predef.{<:<, intWrapper}
 
-/** A trait representing indexable collections with finite length */
-trait ArrayLike[+A] extends Any {
-  /** The finite size of the collection. */
-  protected def finiteSize: Int
-  @throws[IndexOutOfBoundsException]
-  def apply(i: Int): A
-}
-
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with SeqOps[A, View, View[A]] { self =>
+trait IndexedView[+A] extends View[A] with IndexedSeqOps[A, View, View[A]] { self =>
 
-  def iterator(): Iterator[A] = new AbstractIterator[A] {
+  override def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size
@@ -25,8 +17,6 @@ trait IndexedView[+A] extends View[A] with SeqOps[A, View, View[A]] { self =>
       r
     }
   }
-
-  final override def knownSize: Int = length
 
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def takeRight(n: Int): IndexedView[A] = new IndexedView.TakeRight(this, n)

@@ -374,6 +374,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
   def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(this)
 
+  /**
+    * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
+    */
   def toSeq: immutable.Seq[A] = immutable.Seq.from(this)
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)

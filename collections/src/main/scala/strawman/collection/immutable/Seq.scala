@@ -49,7 +49,7 @@ trait IndexedSeq[+A] extends Seq[A]
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
 
 /** Base trait for immutable indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends SeqOps[A, CC, C] with collection.IndexedSeqOps[A, CC, C]
+trait IndexedSeqOps[+A, +CC[_], +C] extends SeqOps[A, CC, C] with collection.IndexedSeqOps[A, CC, C]
 
 /** Base trait for immutable linear sequences that have efficient `head` and `tail` */
 trait LinearSeq[+A]
