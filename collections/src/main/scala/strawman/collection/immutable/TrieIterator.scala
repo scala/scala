@@ -170,7 +170,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     if (subIter ne null) {
       val buff = ArrayBuffer.empty.++=(subIter)
       subIter = null
-      ((buff.iterator(), buff.length), this)
+      ((buff.iterator(), buff.size), this)
     }
     else {
       // otherwise find the topmost array stack element

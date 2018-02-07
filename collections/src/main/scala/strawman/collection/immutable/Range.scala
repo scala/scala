@@ -89,7 +89,7 @@ sealed abstract class Range(
     }
   }
 
-  def length = if (numRangeElements < 0) fail() else numRangeElements
+  protected def finiteSize: Int = if (numRangeElements < 0) fail() else numRangeElements
 
   // This field has a sensible value only for non-empty ranges
   private val lastElement = step match {

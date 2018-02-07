@@ -43,7 +43,7 @@ final class StringOps(val s: String)
 
   protected[this] def newSpecificBuilder() = new StringBuilder
 
-  def length = s.length
+  protected def finiteSize = s.length
 
   @throws[StringIndexOutOfBoundsException]
   def apply(i: Int) = s.charAt(i)
@@ -153,7 +153,7 @@ final class StringOps(val s: String)
 
   override def slice(from: Int, until: Int): String = {
     val start = from max 0
-    val end   = until min length
+    val end   = until min finiteSize
 
     if (start >= end) newSpecificBuilder().result()
     else (newSpecificBuilder() ++= toString.substring(start, end)).result()
@@ -456,7 +456,7 @@ final class StringOps(val s: String)
 }
 
 case class StringView(s: String) extends IndexedView[Char] {
-  def length = s.length
+  protected def finiteSize = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
   override def className = "StringView"

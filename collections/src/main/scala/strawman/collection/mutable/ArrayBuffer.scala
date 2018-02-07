@@ -65,7 +65,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def update(n: Int, elem: A): Unit = array(n) = elem.asInstanceOf[AnyRef]
 
-  def length = end
+  protected def finiteSize = end
 
   override def view: ArrayBufferView[A] = new ArrayBufferView(array, end)
 
@@ -95,9 +95,9 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def addAll(elems: IterableOnce[A]): this.type = {
     elems match {
       case elems: ArrayBuffer[_] =>
-        ensureSize(length + elems.length)
-        Array.copy(elems.array, 0, array, length, elems.length)
-        end = length + elems.length
+        ensureSize(size + elems.size)
+        Array.copy(elems.array, 0, array, size, elems.size)
+        end = size + elems.size
       case _ => super.addAll(elems)
     }
     this
@@ -121,7 +121,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     elems match {
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
-        ensureSize(length + elemsLength)
+        ensureSize(size + elemsLength)
         Array.copy(array, idx, array, idx + elemsLength, end - idx)
         end = end + elemsLength
         elems match {
@@ -189,7 +189,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 
-class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {
+class ArrayBufferView[A](val array: Array[AnyRef], protected val finiteSize: Int) extends IndexedView[A] {
   @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
   override def className = "ArrayBufferView"
