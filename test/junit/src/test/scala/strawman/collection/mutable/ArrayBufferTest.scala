@@ -237,9 +237,23 @@ class ArrayBufferTest {
     assertEquals(ArrayBuffer(-3, -2, -1, 0, 1, 2, 3), buffer.patch(from = -1, patch, replaced = -1))
     assertEquals(ArrayBuffer(-3, -2, -1, 0, 1, 2, 3), buffer.patch(from = 0, patch, replaced = 0))
     assertEquals(ArrayBuffer(0, -3, -2, -1, 2, 3), buffer.patch(from = 1, patch, replaced = 1))
+    assertEquals(ArrayBuffer(0, -3, -2, -1), buffer.patch(from = 1, patch, replaced = 3))
     assertEquals(ArrayBuffer(0, 1, -3, -2, -1), buffer.patch(from = 2, patch, replaced = 2))
     assertEquals(ArrayBuffer(0, 1, 2, 3, -3, -2, -1), buffer.patch(from = 10, patch, replaced = 10))
     assertEquals(ArrayBuffer(-3, -2, -1), buffer.patch(from = 0, patch, replaced = 100))
   }
 
+  @Test
+  def testPatchInPlace: Unit = {
+    def testPatchInPlace(from: Int, replaced: Int, expectation: ArrayBuffer[Int]) =
+      assertEquals(expectation, ArrayBuffer(0, 1, 2).patchInPlace(from, patch = List(-3, -2, -1), replaced))
+
+    testPatchInPlace(from = -1, replaced = -1, expectation = ArrayBuffer(-3, -2, -1, 0, 1, 2))
+    testPatchInPlace(from = 0, replaced = 0, expectation = ArrayBuffer(-3, -2, -1, 0, 1, 2))
+    testPatchInPlace(from = 1, replaced = 1, expectation = ArrayBuffer(0, -3, -2, -1, 2))
+    testPatchInPlace(from = 1, replaced = 2, expectation = ArrayBuffer(0, -3, -2, -1))
+    testPatchInPlace(from = 2, replaced = 1, expectation = ArrayBuffer(0, 1, -3, -2, -1))
+    testPatchInPlace(from = 10, replaced = 10, expectation = ArrayBuffer(0, 1, 2, -3, -2, -1))
+    testPatchInPlace(from = 0, replaced = 100, expectation = ArrayBuffer(-3, -2, -1))
+  }
 }

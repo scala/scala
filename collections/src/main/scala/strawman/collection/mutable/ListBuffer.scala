@@ -3,7 +3,7 @@ package mutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.{Any, Boolean, Int, Unit, throws, Serializable, SerialVersionUID}
+import scala.{Any, Boolean, Int, math, Unit, throws, Serializable, SerialVersionUID}
 import scala.Int._
 import strawman.collection
 import strawman.collection.immutable.{List, Nil, ::}
@@ -272,9 +272,11 @@ class ListBuffer[A]
   }
 
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
+    val i = math.min(math.max(from, 0), length)
+    val n = math.min(math.max(replaced, 0), length)
     ensureUnaliased()
-    val p = locate(from)
-    removeAfter(p, replaced `min` (len - from))
+    val p = locate(i)
+    removeAfter(p, math.min(n, len - i))
     insertAfter(p, patch.iterator())
     this
   }
