@@ -256,4 +256,30 @@ class ArrayBufferTest {
     testPatchInPlace(from = 10, replaced = 10, expectation = ArrayBuffer(0, 1, 2, -3, -2, -1))
     testPatchInPlace(from = 0, replaced = 100, expectation = ArrayBuffer(-3, -2, -1))
   }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testApplyWhenEmpty: Unit = {
+    new ArrayBuffer().apply(0)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testApplyAfterClearing: Unit = {
+    val buffer = ArrayBuffer(1, 2, 3)
+    buffer.clear()
+
+    buffer(0)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testUpdateWhenEmpty: Unit = {
+    new ArrayBuffer().update(0, 100)
+  }
+
+  @Test(expected = classOf[IndexOutOfBoundsException])
+  def testUpdateAfterClearing: Unit = {
+    val buffer = ArrayBuffer(1, 2, 3)
+    buffer.clear()
+
+    buffer.update(0, 100)
+  }
 }

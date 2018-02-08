@@ -4,7 +4,7 @@ package mutable
 
 import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 
-import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, Long, StringContext, Unit, math, Any, throws, Serializable, SerialVersionUID}
+import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, `inline`, Long, StringContext, Unit, math, Any, throws, Serializable, SerialVersionUID}
 import scala.Predef.intWrapper
 
 /** An implementation of the `Buffer` class using an array to
@@ -30,7 +30,7 @@ import scala.Predef.intWrapper
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(1529165946227428979L)
-class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
+class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
   extends AbstractBuffer[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
@@ -40,34 +40,39 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def this() = this(new Array[AnyRef](16), 0)
 
-  def this(initLength: Int) = this(new Array[AnyRef](initLength), 0)
+  def this(initSize: Int) = this(new Array[AnyRef](initSize), 0)
 
   private var array: Array[AnyRef] = initElems
-  private var end = initLength
+  private var size0 = initSize
 
   /** Ensure that the internal array has at least `n` cells. */
   private def ensureSize(n: Int): Unit =
-    array = RefArrayUtils.ensureSize(array, end, n)
+    array = RefArrayUtils.ensureSize(array, size0, n)
 
   /** Reduce length to `n`, nulling out all dropped elements */
   private def reduceToSize(n: Int): Unit = {
-    RefArrayUtils.nullElems(array, n, end)
-    end = n
+    RefArrayUtils.nullElems(array, n, size0)
+    size0 = n
   }
 
-  private def checkWithinBounds(lo: Int, hi: Int) = {
+  @inline private def checkWithinBounds(lo: Int, hi: Int) = {
     if (lo < 0) throw new IndexOutOfBoundsException(lo.toString)
-    if (hi > end) throw new IndexOutOfBoundsException(hi.toString)
+    if (hi > size0) throw new IndexOutOfBoundsException(hi.toString)
   }
 
-  @throws[ArrayIndexOutOfBoundsException]
-  def apply(n: Int) = array(n).asInstanceOf[A]
+  def apply(n: Int) = {
+    checkWithinBounds(n, n + 1)
+    array(n).asInstanceOf[A]
+  }
 
-  def update(n: Int, elem: A): Unit = array(n) = elem.asInstanceOf[AnyRef]
+  def update(n: Int, elem: A): Unit = {
+    checkWithinBounds(n, n + 1)
+    array(n) = elem.asInstanceOf[AnyRef]
+  }
 
-  protected def finiteSize = end
+  protected def finiteSize = size0
 
-  override def view: ArrayBufferView[A] = new ArrayBufferView(array, end)
+  override def view: ArrayBufferView[A] = new ArrayBufferView(array, size0)
 
   def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
@@ -76,12 +81,13 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   protected[this] def newSpecificBuilder(): Builder[A, ArrayBuffer[A]] = ArrayBuffer.newBuilder()
 
   def clear(): Unit =
-    end = 0
+    size0 = 0
 
   def addOne(elem: A): this.type = {
-    ensureSize(end + 1)
-    this(end) = elem
-    end += 1
+    val i = size0
+    ensureSize(size0 + 1)
+    size0 += 1
+    this(i) = elem
     this
   }
 
@@ -97,7 +103,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
       case elems: ArrayBuffer[_] =>
         ensureSize(size + elems.size)
         Array.copy(elems.array, 0, array, size, elems.size)
-        end = size + elems.size
+        size0 = size + elems.size
       case _ => super.addAll(elems)
     }
     this
@@ -105,10 +111,10 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def insert(idx: Int, elem: A): Unit = {
     checkWithinBounds(idx, idx)
-    ensureSize(end + 1)
-    Array.copy(array, idx, array, idx + 1, end - idx)
+    ensureSize(size0 + 1)
+    Array.copy(array, idx, array, idx + 1, size0 - idx)
+    size0 += 1
     this(idx) = elem
-    end += 1
   }
 
   def prepend(elem: A): this.type = {
@@ -122,8 +128,8 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
         ensureSize(size + elemsLength)
-        Array.copy(array, idx, array, idx + elemsLength, end - idx)
-        end = end + elemsLength
+        Array.copy(array, idx, array, idx + elemsLength, size0 - idx)
+        size0 = size0 + elemsLength
         elems match {
           case elems: ArrayBuffer[_] =>
             Array.copy(elems.array, 0, array, idx, elemsLength)
@@ -143,16 +149,16 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def remove(idx: Int): A = {
     checkWithinBounds(idx, idx + 1)
     val res = this(idx)
-    Array.copy(array, idx + 1, array, idx, end - (idx + 1))
-    reduceToSize(end - 1)
+    Array.copy(array, idx + 1, array, idx, size0 - (idx + 1))
+    reduceToSize(size0 - 1)
     res
   }
 
   def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
       checkWithinBounds(idx, idx + count)
-      Array.copy(array, idx + count, array, idx, end - (idx + count))
-      reduceToSize(end - count)
+      Array.copy(array, idx + count, array, idx, size0 - (idx + count))
+      reduceToSize(size0 - count)
     } else if (count < 0) {
       throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
