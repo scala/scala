@@ -187,11 +187,6 @@ object View extends IterableFactory[View] {
     override def knownSize = underlying.knownSize
   }
 
-  class MapValues[K, V, W](underlying: Iterable[(K, V)], f: V => W) extends View[(K, W)] {
-    def iterator(): Iterator[(K, W)] = underlying.iterator().map(kv => (kv._1, f(kv._2)))
-    override def knownSize: Int = underlying.knownSize
-  }
-
   /** A view that flatmaps elements of the underlying collection. */
   class FlatMap[A, B](underlying: Iterable[A], f: A => IterableOnce[B]) extends View[B] {
     def iterator() = underlying.iterator().flatMap(f)

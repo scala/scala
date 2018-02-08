@@ -54,10 +54,13 @@ trait Map[K, +V]
   * @define coll map
   * @define Coll `Map`
   */
-trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
+// Note: the upper bound constraint on CC is useful only to
+// erase CC to IterableOps instead of Object
+trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   extends IterableOps[(K, V), Iterable, C]
-    with PartialFunction[K, V]
-    with Equals {
+    with PartialFunction[K, V] {
+
+  override def view: MapView[K, V] = new MapView.Id(this)
 
   protected[this] type MapCC[K, V] = CC[K, V]
 
@@ -172,7 +175,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     *  @return a map view which maps every key of this map
     *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
     */
-  def mapValues[W](f: V => W): View[(K, W)] = new View.MapValues(toIterable, f)
+  def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
   /** Defines the default value computation for the map,
     *  returned when a key is not found

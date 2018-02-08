@@ -23,10 +23,20 @@ class ViewTest {
   }
 
   @Test
-  def seqViewReverse(): Unit = {
+  def seqView(): Unit = {
     val xs = List(1, 2, 3).view
     assertEquals(List(3, 2, 1), xs.reverse.to(List))
+    assertEquals(2, xs(1))
 //    assertEquals(xs, xs.reverse.reverse.to(List)) doesn’t compile
+  }
+
+  @Test
+  def mapView(): Unit = {
+    val xs = immutable.Map(1 -> "a", 2 -> "b")
+    assertEquals("a", xs.view(1))
+    val ys = xs.mapValues(s => s.toUpperCase)
+    assertTrue(ys.contains(1))
+    assertEquals("B", ys(2))
   }
 
   @Test
@@ -38,5 +48,7 @@ class ViewTest {
     check(immutable.Set(1, 2, 3)) // View
     check(List(1, 2, 3)) // SeqView
     check(immutable.Vector(1, 2, 3)) // IndexedView
+    check(immutable.Map(1 -> "a", 2 -> "b")) // MapView
   }
+
 }
