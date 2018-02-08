@@ -282,4 +282,12 @@ class ArrayBufferTest {
 
     buffer.update(0, 100)
   }
+
+  @Test
+  def testClear: Unit = {
+    val buffer = ArrayBuffer(1, 2, 3)
+    buffer.clear()
+
+    assertEquals(0, buffer.size)
+  }
 }

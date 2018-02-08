@@ -80,8 +80,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
 
   protected[this] def newSpecificBuilder(): Builder[A, ArrayBuffer[A]] = ArrayBuffer.newBuilder()
 
-  def clear(): Unit =
-    size0 = 0
+  def clear(): Unit = reduceToSize(0)
 
   def addOne(elem: A): this.type = {
     val i = size0
