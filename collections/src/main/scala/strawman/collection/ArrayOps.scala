@@ -12,14 +12,14 @@ object ArrayOps {
     protected def p: A => Boolean
     protected def ao: ArrayOps[A]
     protected def filtered = View.Filter(ao.toIterable, p, isFlipped = false)
-    def map[B](f: A => B): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.Map(filtered, f))
-    def flatMap[B](f: A => IterableOnce[B]): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.FlatMap(filtered, f))
+    def map[B](f: A => B): immutable.IndexedSeq[B] = ao.iterableFactory.from(new View.Map(filtered, f))
+    def flatMap[B](f: A => IterableOnce[B]): immutable.IndexedSeq[B] = ao.iterableFactory.from(new View.FlatMap(filtered, f))
   }
 
   class WithFilter[A](protected val p: A => Boolean, protected val ao: ArrayOps[A]) extends collection.WithFilter[A, immutable.IndexedSeq] with LowPriorityWithFilterOps[A] {
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
-    def map[B: ClassTag](f: A => B): Array[B] = ao.fromTaggedIterable(View.Map(filtered, f))
-    def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = ao.fromTaggedIterable(View.FlatMap(filtered, f))
+    def map[B: ClassTag](f: A => B): Array[B] = ao.fromTaggedIterable(new View.Map(filtered, f))
+    def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = ao.fromTaggedIterable(new View.FlatMap(filtered, f))
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), ao)
   }
 }
@@ -51,7 +51,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   override def className = "Array"
 
-  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(toIterable, f))
+  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(new View.Map(toIterable, f))
 
   def mapInPlace(f: A => A): Array[A] = {
     var i = 0
@@ -62,10 +62,10 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
     xs
   }
 
-  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(View.FlatMap(toIterable, f))
+  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(new View.FlatMap(toIterable, f))
 
   def flatMap[BS, B](f: A => BS)(implicit asIterable: BS => Iterable[B], m: ClassTag[B]): Array[B] =
-    fromTaggedIterable(View.FlatMap(toIterable, (x: A) => asIterable(f(x))))
+    fromTaggedIterable(new View.FlatMap(toIterable, (x: A) => asIterable(f(x))))
 
   def flatten[B](implicit asIterable: A => strawman.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
     val b = WrappedArray.newBuilder[B]().mapResult(_.toArray)
@@ -81,17 +81,17 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   @`inline` final def ++[B >: A : ClassTag](xs: Iterable[B]): Array[B] = appendedAll(xs)
 
-  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(toIterable, that))
+  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(new View.Zip(toIterable, that))
 
-  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(View.ZipWithIndex(toIterable))
+  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(new View.ZipWithIndex(toIterable))
 
-  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(View.Append(toIterable, x))
+  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Appended(toIterable, x))
   @`inline` final def :+ [B >: A : ClassTag](x: B): Array[B] = appended(x)
-  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(View.Prepend(x, toIterable))
+  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Prepended(x, toIterable))
   @`inline` final def +: [B >: A : ClassTag](x: B): Array[B] = prepended(x)
-  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(prefix, toIterable))
+  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(prefix, toIterable))
   @`inline` final def ++: [B >: A : ClassTag](prefix: Iterable[B]): Array[B] = prependedAll(prefix)
-  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(toIterable, suffix))
+  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(toIterable, suffix))
   @`inline` final def :++ [B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
   @`inline` final def concat[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
 

@@ -5,7 +5,9 @@ import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElement
 import scala.Predef.{<:<, intWrapper}
 
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with IndexedSeqOps[A, View, View[A]] { self =>
+trait IndexedView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A] { self =>
+
+  override def view: IndexedView[A] = this
 
   override def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
@@ -23,10 +25,15 @@ trait IndexedView[+A] extends View[A] with IndexedSeqOps[A, View, View[A]] { sel
   override def drop(n: Int): IndexedView[A] = new IndexedView.Drop(this, n)
   override def dropRight(n: Int): IndexedView[A] = new IndexedView.DropRight(this, n)
   override def map[B](f: A => B): IndexedView[B] = new IndexedView.Map(this, f)
-  override def reverse: IndexedView[A] = IndexedView.Reverse(this)
+  override def reverse: IndexedView[A] = new IndexedView.Reverse(this)
 }
 
 object IndexedView {
+
+  class Id[+A](underlying: IndexedSeqOps[A, AnyConstr, _]) extends IndexedView[A] {
+    def length: Int = underlying.length
+    def apply(idx: Int): A = underlying(idx)
+  }
 
   class Take[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
     private[this] val normN = n max 0
@@ -62,7 +69,7 @@ object IndexedView {
     def apply(n: Int) = f(underlying.apply(n))
   }
 
-  case class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
+  class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
     def length = underlying.size
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(size - 1 - i)

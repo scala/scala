@@ -162,7 +162,7 @@ final class StringOps(val s: String)
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated(index: Int, elem: Char): String =
-    fromSpecificIterable(View.Updated(toIterable, index, elem)) // TODO optimize
+    fromSpecificIterable(new View.Updated(toIterable, index, elem)) // TODO optimize
 
   override def toString = s
 

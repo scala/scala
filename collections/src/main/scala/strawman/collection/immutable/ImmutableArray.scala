@@ -74,7 +74,7 @@ sealed abstract class ImmutableArray[+A]
         Array.copy(bs.unsafeArray, 0, dest, length, bs.length)
         ImmutableArray.unsafeWrapArray(dest)
       case _ =>
-        fromIterable(View.Concat(toIterable, xs))
+        fromIterable(new View.Concat(toIterable, xs))
     }
 
   override def prependedAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
@@ -85,7 +85,7 @@ sealed abstract class ImmutableArray[+A]
         Array.copy(unsafeArray, 0, dest, bs.length, length)
         ImmutableArray.unsafeWrapArray(dest)
       case _ =>
-        fromIterable(View.Concat(xs, toIterable))
+        fromIterable(new View.Concat(xs, toIterable))
     }
 
   override def zip[B](that: collection.Iterable[B]): ImmutableArray[(A, B)] =
@@ -95,7 +95,7 @@ sealed abstract class ImmutableArray[+A]
           (apply(i), bs(i))
         }
       case _ =>
-        fromIterable(View.Zip(toIterable, that))
+        fromIterable(new View.Zip(toIterable, that))
     }
 
   override def take(n: Int): ImmutableArray[A] = iterableFactory.tabulate(n)(apply)

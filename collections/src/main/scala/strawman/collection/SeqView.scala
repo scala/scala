@@ -1,0 +1,46 @@
+package strawman
+package collection
+
+import scala.{Int, IndexOutOfBoundsException}
+import scala.Predef.intWrapper
+
+trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
+
+  override def view: SeqView[A] = this
+
+  override def map[B](f: A => B): SeqView[B] = new SeqView.Map(this, f)
+
+  override def prepended[B >: A](elem: B): SeqView[B] = new SeqView.Prepended(elem, this)
+
+  override def take(n: Int): SeqView[A] = new SeqView.Take(this, n)
+
+}
+
+object SeqView {
+
+  type IterableSeqOps[+A] = Iterable[A] with SeqOps[A, AnyConstr, _]
+
+  /** A view that doesn’t apply any transformation to an underlying sequence */
+  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends SeqView[A] {
+    def apply(idx: Int): A = underlying.apply(idx)
+    def length: Int = underlying.length
+    def iterator(): Iterator[A] = underlying.iterator()
+    override def knownSize: Int = underlying.knownSize
+  }
+
+  class Map[+A, +B](underlying: IterableSeqOps[A], f: A => B) extends View.Map[A, B](underlying, f) with SeqView[B] {
+    def apply(idx: Int): B = f(underlying(idx))
+    def length: Int = underlying.length
+  }
+
+  class Prepended[+A](elem: A, underlying: IterableSeqOps[A]) extends View.Prepended(elem, underlying) with SeqView[A] {
+    def apply(idx: Int): A = if (idx == 0) elem else underlying(idx - 1)
+    def length: Int = underlying.length + 1
+  }
+
+  class Take[+A](underlying: IterableSeqOps[A], n: Int) extends View.Take(underlying, n) with SeqView[A] {
+    def apply(idx: Int): A = if (idx < n) underlying(idx) else throw new IndexOutOfBoundsException(idx.toString)
+    def length: Int = underlying.length min normN
+  }
+
+}

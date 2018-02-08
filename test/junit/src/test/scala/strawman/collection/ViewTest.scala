@@ -1,5 +1,7 @@
 package strawman.collection
 
+import strawman.collection.immutable.List
+
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,5 +20,23 @@ class ViewTest {
     assertEquals(Iterable.empty[Int], iter.view takeRight Int.MinValue to Iterable)
     assertEquals(iter, iter.view drop Int.MinValue to Iterable)
     assertEquals(iter, iter.view dropRight Int.MinValue to Iterable)
+  }
+
+  @Test
+  def seqViewReverse(): Unit = {
+    val xs = List(1, 2, 3).view
+    assertEquals(List(3, 2, 1), xs.reverse.to(List))
+//    assertEquals(xs, xs.reverse.reverse.to(List)) doesn’t compile
+  }
+
+  @Test
+  def viewsViewIsNoOp(): Unit = {
+    def check[A](it: Iterable[A]): Unit = {
+      val view = it.view
+      assertTrue(view eq view.view)
+    }
+    check(immutable.Set(1, 2, 3)) // View
+    check(List(1, 2, 3)) // SeqView
+    check(immutable.Vector(1, 2, 3)) // IndexedView
   }
 }

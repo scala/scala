@@ -27,10 +27,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
       } else Iterator.empty.next()
   }
 
-  override def view: IndexedView[A] = new IndexedView[A] {
-    def length: Int = self.length
-    def apply(i: Int): A = self(i)
-  }
+  override def view: IndexedView[A] = new IndexedView.Id[A](this)
 
   override protected[this] def reversed: Iterable[A] = view.reverse
 

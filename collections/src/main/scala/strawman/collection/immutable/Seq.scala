@@ -26,7 +26,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C] {
     *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
-  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(View.Updated(toIterable, index, elem))
+  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(toIterable, index, elem))
 }
 
 /**
