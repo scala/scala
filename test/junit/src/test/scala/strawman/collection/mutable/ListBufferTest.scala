@@ -191,4 +191,16 @@ class ListBufferTest {
     b4.trimEnd(10)
     assertEquals(ListBuffer.range(0, 90), b4)
   }
+
+  @Test
+  def testPatch: Unit = {
+    val buffer = ListBuffer(0, 1, 2, 3)
+    val patch = List(-3, -2, -1)
+    assertEquals(ListBuffer(-3, -2, -1, 0, 1, 2, 3), buffer.patch(from = -1, patch, replaced = -1))
+    assertEquals(ListBuffer(-3, -2, -1, 0, 1, 2, 3), buffer.patch(from = 0, patch, replaced = 0))
+    assertEquals(ListBuffer(0, -3, -2, -1, 2, 3), buffer.patch(from = 1, patch, replaced = 1))
+    assertEquals(ListBuffer(0, 1, -3, -2, -1), buffer.patch(from = 2, patch, replaced = 2))
+    assertEquals(ListBuffer(0, 1, 2, 3, -3, -2, -1), buffer.patch(from = 10, patch, replaced = 10))
+    assertEquals(ListBuffer(-3, -2, -1), buffer.patch(from = 0, patch, replaced = 100))
+  }
 }
