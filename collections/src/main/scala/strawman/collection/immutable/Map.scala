@@ -173,6 +173,7 @@ object Map extends MapFactory[Map] {
   @SerialVersionUID(3L)
   private object EmptyMap extends Map[Any, Nothing] with Serializable {
     override def size: Int = 0
+    override def knownSize: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
@@ -183,7 +184,8 @@ object Map extends MapFactory[Map] {
 
   @SerialVersionUID(3L)
   final class Map1[K, +V](key1: K, value1: V) extends Map[K, V] with Serializable {
-    override def size = 1
+    override def size: Int = 1
+    override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
@@ -201,7 +203,8 @@ object Map extends MapFactory[Map] {
 
   @SerialVersionUID(3L)
   final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends Map[K, V] with Serializable {
-    override def size = 2
+    override def size: Int = 2
+    override def knownSize: Int = 2
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -227,7 +230,8 @@ object Map extends MapFactory[Map] {
 
   @SerialVersionUID(3L)
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends Map[K, V] with Serializable {
-    override def size = 3
+    override def size: Int = 3
+    override def knownSize: Int = 3
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -257,7 +261,8 @@ object Map extends MapFactory[Map] {
 
   @SerialVersionUID(3L)
   final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends Map[K, V] with Serializable {
-    override def size = 4
+    override def size: Int = 4
+    override def knownSize: Int = 4
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
