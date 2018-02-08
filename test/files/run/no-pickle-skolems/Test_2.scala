@@ -28,7 +28,7 @@ object Test {
     }
     loop(m)
 
-    buf.reverse.distinct map (s => s.name + "#" + id(s))
+    buf.reverse.distinct map (s => s"${s.name}#${id(s)}")
   }
 
   def main(args: Array[String]): Unit = {

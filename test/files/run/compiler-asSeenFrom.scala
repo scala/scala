@@ -164,7 +164,7 @@ package ll {
     for (x <- classes ++ terms) {
       afterEachPhase(signaturesIn(x.tpe)) collect {
         case (ph, sigs) if sigs.nonEmpty =>
-          println(sigs.mkString(x + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
+          println(sigs.mkString(x.toString + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
       }
     }
   }

@@ -84,7 +84,7 @@ object Test {
   }
 
   def show(clazz: Class[_]): Unit = {
-    print(clazz + " {")
+    print(clazz.toString + " {")
     clazz.getMethods.sortBy(x => (x.getName, x.isBridge, x.toString)) filter (_.getName.length == 1) foreach { m =>
       print("\n  " + m + flagsString(m))
       if ("" + m != "" + m.toGenericString) {

@@ -10,8 +10,8 @@ object Test extends App {
     println("new test starting with "+empty)
     assert(empty.isEmpty)
     val ten = empty ++ List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    println(ten.size+": "+ten)
-    println(ten.tail.size+": "+ten.tail)
+    println(s"${ten.size}: $ten")
+    println(s"${ten.tail.size}: ${ten.tail}")
     assert(ten == empty ++ (1 to 10))
     assert(ten.size == 10)
     assert(ten forall (_ <= 10))
@@ -43,7 +43,7 @@ object Test extends App {
     assert(ten.last == 10)
     assert(List(ten.head) ++ ten.tail == ten)
     assert(ten.init ++ List(ten.last) == ten, ten.init)
-    assert(vs1 == vs2, vs1+"!="+vs2)
+    assert(vs1 == vs2, s"$vs1!=$vs2")
     assert(vs1 == ten)
     assert((ten take 5) == firstFive)
     assert((ten drop 5) == secondFive)
@@ -185,7 +185,7 @@ object Test extends App {
     assert(m.keySet.size == 26)
     assert(m.size == 26)
     assert(m.keySet == Set() ++ m.keysIterator.to(LazyList))
-    assert(m.keySet == m.keysIterator.toList.toSet, m.keySet.toList+"!="+m.keysIterator.toList.toSet)
+    assert(m.keySet == m.keysIterator.toList.toSet, s"${m.keySet.toList}!=${m.keysIterator.toList.toSet}")
     val m1 = empty ++ m
     val ks = m.keySet
     val mm = m.filterKeys(k => !ks(k))

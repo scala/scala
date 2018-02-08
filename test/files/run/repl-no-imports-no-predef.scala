@@ -27,7 +27,6 @@ s"answer: $answer"
 
 "abc" + true
 
-{ import scala.Predef.any2stringadd; true + "abc" }
 true + "abc"
 
 var x = 10

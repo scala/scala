@@ -7,8 +7,8 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     for (s1 <- all ; s2 <- all) {
-      assert(s1 == s2, s1 + " != " + s2)
-      assert(s1.## == s2.##, s1 + ".## != " + s2 + ".##")
+      assert(s1 == s2, s"$s1 != $s2")
+      assert(s1.## == s2.##, s"$s1.## != $s2.##")
     }
   }
 }

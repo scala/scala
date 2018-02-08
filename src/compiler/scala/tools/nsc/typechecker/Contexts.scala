@@ -853,6 +853,13 @@ trait Contexts { self: Analyzer =>
     private def isQualifyingImplicit(name: Name, sym: Symbol, pre: Type, imported: Boolean) =
       sym.isImplicit &&
       isAccessible(sym, pre) &&
+      !({
+        // [eed3si9n] ideally I'd like to do this: val fd = settings.isScala214 && sym.isDeprecated
+        // but implicit caching currently does not report sym.isDeprecated correctly.
+        val fd = settings.isScala214 && (name ne null) && definitions.isPredefMemberNamed(sym, TermName("any2stringadd"))
+        if (settings.XlogImplicits && fd) echo(sym.pos, sym + " is not a valid implicit value because:\n" + "-Xsource:2.14 removes scala.Predef.any2stringadd")
+        fd
+      }) &&
       !(imported && {
         val e = scope.lookupEntry(name)
         (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
