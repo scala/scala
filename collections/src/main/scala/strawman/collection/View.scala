@@ -1,7 +1,7 @@
 package strawman.collection
 
 import strawman.collection.mutable.{ArrayBuffer, Builder}
-import strawman.collection.immutable.ImmutableArray
+import strawman.collection.immutable.{ImmutableArray, LazyList}
 
 import scala.{Any, Boolean, Equals, IllegalArgumentException, Int, NoSuchElementException, Nothing, annotation, IndexOutOfBoundsException, throws, AnyRef, Array, deprecated, `inline`}
 import scala.Predef.{<:<, intWrapper}
@@ -35,11 +35,7 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   * @define Coll View
   * @define coll view
   */
-object View extends IterableFactoryLike[View] {
-
-  // Views are just forwarders to a source collection’s iterator. Consequently, they have to be
-  // build from an `Iterable` source in order to be themselves `Iterable`
-  type Source[A] = Iterable[A]
+object View extends IterableFactory[View] {
 
   /**
     * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
@@ -56,14 +52,15 @@ object View extends IterableFactoryLike[View] {
   /**
     * @return A view iterating over the given `Iterable`
     *
-    * @param it The `Iterable` to view. It must be an `Iterable` (and not just an `IterableOnce`),
-    *           otherwise an `IllegalArgumentException` is thrown.
+    * @param it The `IterableOnce` to view. A proper `Iterable` is used directly. If it is really only
+    *           `IterableOnce` it gets memoized on the first traversal.
     *
     * @tparam E View element type
     */
-  def from[E](it: Iterable[E]): View[E] = it match {
+  def from[E](it: IterableOnce[E]): View[E] = it match {
     case it: View[E]     => it
-    case _               => View.fromIteratorProvider(() => it.iterator())
+    case it: Iterable[E] => View.fromIteratorProvider(() => it.iterator())
+    case _               => LazyList.from(it).view
   }
 
   def empty[A]: View[A] = Empty
@@ -301,7 +298,6 @@ object View extends IterableFactoryLike[View] {
     }
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
   }
-
 }
 
 /** A trait representing indexable collections with finite length */

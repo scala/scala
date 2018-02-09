@@ -168,7 +168,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     b.addAll(coll)
     b.result()
   }
-  def iterableFactory: IterableFactoryLike[Iterable] = Iterable
+  def iterableFactory: IterableFactory[Iterable] = Iterable
   protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
