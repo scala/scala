@@ -9,7 +9,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Serializable, deprecated}
+import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Serializable, SerialVersionUID, deprecated}
 
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -28,13 +28,7 @@ import scala.{Int, Boolean, Unit, Option, Some, None, NoSuchElementException, Se
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-  /*
-extends Buffer[A]
-with SeqOps[A, ListBuffer, ListBuffer[A]]
-with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
-with ReusableBuilder[A, immutable.List[A]]
-with Serializable {*/
-
+@SerialVersionUID(3L)
 class Queue[A]
   extends MutableList[A]
     with LinearSeqOps[A, Queue, Queue[A]]

@@ -12,6 +12,7 @@ package mutable
 
 import generic._
 import convert.Wrappers._
+import scala.SerialVersionUID
 
 /** A hash map with references to entries which are weakly reachable. Entries are
  *  removed from this map when the key is no longer (strongly) referenced. This class wraps
@@ -38,6 +39,7 @@ import convert.Wrappers._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(3L)
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
 			   with JMapWrapperLike[A, B, WeakHashMap[A, B]] {
   override def empty = new WeakHashMap[A, B]

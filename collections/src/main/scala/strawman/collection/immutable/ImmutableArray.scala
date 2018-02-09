@@ -4,7 +4,7 @@ package collection.immutable
 import strawman.collection.mutable.{ArrayBuffer, Builder}
 import strawman.collection.{IterableOnce, Iterator, SeqFactory, ClassTagSeqFactory, StrictOptimizedClassTagSeqFactory, View}
 
-import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws, Array, AnyRef, `inline`, Serializable, Byte, Short, Long, Double, Unit, Float, Char}
+import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws, Array, AnyRef, `inline`, Serializable, SerialVersionUID, Byte, Short, Long, Double, Unit, Float, Char}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag
@@ -179,6 +179,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     case x: Array[Unit]    => new ofUnit(x)
   }).asInstanceOf[ImmutableArray[T]]
 
+  @SerialVersionUID(3L)
   final class ofRef[T <: AnyRef](val unsafeArray: Array[T]) extends ImmutableArray[T] with Serializable {
     lazy val elemTag = ClassTag[T](unsafeArray.getClass.getComponentType)
     protected def finiteSize: Int = unsafeArray.length
@@ -191,6 +192,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofByte(val unsafeArray: Array[Byte]) extends ImmutableArray[Byte] with Serializable {
     protected[this] def elemTag = ClassTag.Byte
     protected def finiteSize: Int = unsafeArray.length
@@ -203,6 +205,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofShort(val unsafeArray: Array[Short]) extends ImmutableArray[Short] with Serializable {
     protected[this] def elemTag = ClassTag.Short
     protected def finiteSize: Int = unsafeArray.length
@@ -215,6 +218,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofChar(val unsafeArray: Array[Char]) extends ImmutableArray[Char] with Serializable {
     protected[this] def elemTag = ClassTag.Char
     protected def finiteSize: Int = unsafeArray.length
@@ -227,6 +231,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofInt(val unsafeArray: Array[Int]) extends ImmutableArray[Int] with Serializable {
     protected[this] def elemTag = ClassTag.Int
     protected def finiteSize: Int = unsafeArray.length
@@ -239,6 +244,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofLong(val unsafeArray: Array[Long]) extends ImmutableArray[Long] with Serializable {
     protected[this] def elemTag = ClassTag.Long
     protected def finiteSize: Int = unsafeArray.length
@@ -251,6 +257,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofFloat(val unsafeArray: Array[Float]) extends ImmutableArray[Float] with Serializable {
     protected[this] def elemTag = ClassTag.Float
     protected def finiteSize: Int = unsafeArray.length
@@ -263,6 +270,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofDouble(val unsafeArray: Array[Double]) extends ImmutableArray[Double] with Serializable {
     protected[this] def elemTag = ClassTag.Double
     protected def finiteSize: Int = unsafeArray.length
@@ -275,6 +283,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofBoolean(val unsafeArray: Array[Boolean]) extends ImmutableArray[Boolean] with Serializable {
     protected[this] def elemTag = ClassTag.Boolean
     protected def finiteSize: Int = unsafeArray.length
@@ -287,6 +296,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     }
   }
 
+  @SerialVersionUID(3L)
   final class ofUnit(val unsafeArray: Array[Unit]) extends ImmutableArray[Unit] with Serializable {
     protected[this] def elemTag = ClassTag.Unit
     protected def finiteSize: Int = unsafeArray.length

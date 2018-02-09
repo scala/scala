@@ -5,7 +5,7 @@ import strawman.collection.immutable.TreeMap
 import strawman.collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, `inline`}
+import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, `inline`}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -89,6 +89,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   override def keySet: SortedSet[K] = new KeySortedSet
 
   /** The implementation class of the set returned by `keySet` */
+  @SerialVersionUID(3L)
   protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
     def iterableFactory: IterableFactory[Set] = Set
     def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet

@@ -449,10 +449,12 @@ object Range {
     */
   def inclusive(start: Int, end: Int): Range.Inclusive = new Range.Inclusive(start, end, 1)
 
+  @SerialVersionUID(3L)
   final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     def isInclusive = true
   }
 
+  @SerialVersionUID(3L)
   final class Exclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     def isInclusive = false
   }

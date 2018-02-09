@@ -27,6 +27,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed abstract class HashMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]

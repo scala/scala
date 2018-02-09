@@ -77,6 +77,7 @@ object HashSet extends IterableFactory[HashSet] {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
+  @SerialVersionUID(3L)
   private object EmptyHashSet extends HashSet[Any] {
 
     def iterator(): Iterator[Any] = Iterator.empty
@@ -104,6 +105,7 @@ object HashSet extends IterableFactory[HashSet] {
   /**
     * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
     */
+  @SerialVersionUID(3L)
   private[HashSet] sealed abstract class LeafHashSet[A] extends HashSet[A] {
     private[HashSet] def hash:Int
   }
@@ -233,6 +235,7 @@ object HashSet extends IterableFactory[HashSet] {
     * elems: [a,b]
     * children:        ---b----------------a-----------
     */
+  @SerialVersionUID(3L)
   private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
     extends HashSet[A] {
     assert(Integer.bitCount(bitmap) == elems.length)

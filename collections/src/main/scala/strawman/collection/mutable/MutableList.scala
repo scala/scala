@@ -9,7 +9,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Unit, Int, Serializable, Option, NoSuchElementException, Boolean, IndexOutOfBoundsException}
+import scala.{Unit, Int, Serializable, SerialVersionUID, Option, NoSuchElementException, Boolean, IndexOutOfBoundsException}
 import scala.Predef.require
 import immutable.List
 
@@ -26,6 +26,7 @@ import immutable.List
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_lists "Scala's Collection Library overview"]]
   *  section on `Mutable Lists` for more information.
   */
+@SerialVersionUID(3L)
 private[mutable] class MutableList[A]
   extends AbstractSeq[A]
     with strawman.collection.LinearSeq[A]

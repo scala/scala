@@ -4,7 +4,7 @@ package mutable
 
 import strawman.collection.{IterableOnce, MapFactory}
 
-import scala.{Boolean, None, Option, Some, Unit, `inline`, deprecated}
+import scala.{Boolean, None, Option, Serializable, SerialVersionUID, Some, Unit, `inline`, deprecated}
 
 /** Base type of mutable Maps */
 trait Map[K, V]
@@ -173,8 +173,11 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   */
 object Map extends MapFactory.Delegate[Map](HashMap) {
 
+  @SerialVersionUID(3L)
   class WithDefault[K, V](val underlying: Map[K, V], val defaultValue: K => V)
-    extends Map[K, V] with MapOps[K, V, Map, WithDefault[K, V]]{
+    extends Map[K, V]
+      with MapOps[K, V, Map, WithDefault[K, V]]
+      with Serializable {
 
     override def default(key: K): V = defaultValue(key)
 

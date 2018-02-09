@@ -9,7 +9,7 @@
 package strawman.collection
 package immutable
 
-import scala.{Int, Long, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Some, IllegalArgumentException, `inline`}
+import scala.{Int, Long, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
 import java.lang.IllegalStateException
 import strawman.collection.generic.BitOperations
 import strawman.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
@@ -49,6 +49,7 @@ object LongMap {
   def apply[T](elems: (Long, T)*): LongMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
+  @SerialVersionUID(3L)
   private[immutable] case object Nil extends LongMap[Nothing] {
     // Important, don't remove this! See IntMap for explanation.
     override def equals(that : Any) = that match {
@@ -58,11 +59,14 @@ object LongMap {
     }
   }
 
+  @SerialVersionUID(3L)
   private[immutable] case class Tip[+T](key: Long, value: T) extends LongMap[T] {
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[LongMap.Tip[S]]
       else LongMap.Tip(key, s)
   }
+
+  @SerialVersionUID(3L)
   private[immutable] case class Bin[+T](prefix: Long, mask: Long, left: LongMap[T], right: LongMap[T]) extends LongMap[T] {
     def bin[S](left: LongMap[S], right: LongMap[S]): LongMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[LongMap.Bin[S]]
@@ -143,9 +147,11 @@ private[immutable] class LongMapKeyIterator[V](it: LongMap[V]) extends LongMapIt
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed abstract class LongMap[+T] extends Map[Long, T]
   with MapOps[Long, T, Map, LongMap[T]]
-  with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]] {
+  with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]]
+  with Serializable {
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Long, T)]): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?

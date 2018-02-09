@@ -3,7 +3,7 @@ package strawman.collection.immutable
 import strawman.collection
 import strawman.collection.{SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, arrayToArrayOps}
 
-import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, NoSuchElementException, Numeric, Ordering, Serializable, StringContext, Unit, `inline`, math, specialized, throws}
+import scala.{Any, Boolean, ClassCastException, IllegalArgumentException, IndexOutOfBoundsException, Int, Integral, NoSuchElementException, Numeric, Ordering, Serializable, SerialVersionUID, StringContext, Unit, `inline`, math, specialized, throws}
 import scala.Predef.ArrowAssoc
 import java.lang.String
 
@@ -30,6 +30,7 @@ import strawman.collection.mutable.Builder
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed class NumericRange[T](
   val start: T,
   val end: T,
@@ -401,6 +402,7 @@ object NumericRange {
     }
   }
 
+  @SerialVersionUID(3L)
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
     extends NumericRange(start, end, step, true) {
     override def copy(start: T, end: T, step: T): Inclusive[T] =
@@ -409,6 +411,7 @@ object NumericRange {
     def exclusive: Exclusive[T] = NumericRange(start, end, step)
   }
 
+  @SerialVersionUID(3L)
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
     extends NumericRange(start, end, step, false) {
     override def copy(start: T, end: T, step: T): Exclusive[T] =

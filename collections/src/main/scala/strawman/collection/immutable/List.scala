@@ -71,6 +71,7 @@ import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, N
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed abstract class List[+A]
   extends LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]

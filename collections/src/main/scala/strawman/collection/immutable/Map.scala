@@ -4,7 +4,7 @@ package immutable
 
 import strawman.collection.mutable.Builder
 
-import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing, Option, Some, Serializable, Unit}
+import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing, Option, Some, Serializable, SerialVersionUID, Unit}
 import scala.Predef.<:<
 
 /** Base type of immutable Maps */
@@ -109,6 +109,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
+  @SerialVersionUID(3L)
   protected class ImmutableKeySet extends Set[K] with GenKeySet {
     def iterableFactory: IterableFactory[Set] = Set
     protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): Set[K] = fromIterable(coll)
@@ -130,9 +131,11 @@ object Map extends MapFactory[Map] {
   private final val useBaseline: Boolean =
     scala.sys.props.get("strawman.collection.immutable.useBaseline").contains("true")
 
+  @SerialVersionUID(3L)
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
     extends Map[K, V]
-    with MapOps[K, V, Map, WithDefault[K, V]]{
+      with MapOps[K, V, Map, WithDefault[K, V]]
+      with Serializable{
 
     def get(key: K): Option[V] = underlying.get(key)
 
@@ -181,6 +184,7 @@ object Map extends MapFactory[Map] {
     protected[this] def newSpecificBuilder(): Builder[(K, V), Map[K, V]] = mapFactory.newBuilder()
   }
 
+  @SerialVersionUID(3L)
   private object EmptyMap extends Map[Any, Nothing] with SmallMap[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
@@ -191,6 +195,7 @@ object Map extends MapFactory[Map] {
     def remove(key: Any): Map[Any, Nothing] = this
   }
 
+  @SerialVersionUID(3L)
   final class Map1[K, +V](key1: K, value1: V) extends Map[K, V] with SmallMap[K, V] with Serializable {
     override def size = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -208,6 +213,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(3L)
   final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends Map[K, V] with SmallMap[K, V] with Serializable {
     override def size = 2
     override def apply(key: K) =
@@ -233,6 +239,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(3L)
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends Map[K, V] with SmallMap[K, V] with Serializable {
     override def size = 3
     override def apply(key: K) =
@@ -262,6 +269,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(3L)
   final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends Map[K, V] with SmallMap[K, V] with Serializable {
     override def size = 4
     override def apply(key: K) =

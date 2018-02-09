@@ -9,7 +9,7 @@
 package strawman.collection
 package immutable
 
-import scala.{Int, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Some, IllegalArgumentException, `inline`}
+import scala.{Int, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
 import java.lang.IllegalStateException
 import strawman.collection
 import strawman.collection.generic.BitOperations
@@ -51,6 +51,7 @@ object IntMap {
   def apply[T](elems: (Int, T)*): IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
+  @SerialVersionUID(3L)
   private[immutable] case object Nil extends IntMap[Nothing] {
     // Important! Without this equals method in place, an infinite
     // loop from Map.equals => size => pattern-match-on-Nil => equals
@@ -63,11 +64,14 @@ object IntMap {
     }
   }
 
+  @SerialVersionUID(3L)
   private[immutable] case class Tip[+T](key: Int, value: T) extends IntMap[T]{
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[IntMap.Tip[S]]
       else IntMap.Tip(key, s)
   }
+
+  @SerialVersionUID(3L)
   private[immutable] case class Bin[+T](prefix: Int, mask: Int, left: IntMap[T], right: IntMap[T]) extends IntMap[T] {
     def bin[S](left: IntMap[S], right: IntMap[S]): IntMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[IntMap.Bin[S]]
@@ -156,9 +160,11 @@ import IntMap._
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed abstract class IntMap[+T] extends Map[Int, T]
   with MapOps[Int, T, Map, IntMap[T]]
-  with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]] {
+  with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
+  with Serializable {
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
     intMapFromIterable[T](coll)

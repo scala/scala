@@ -778,8 +778,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
     fromIterable(new View.Patched(toIterable, from, other, replaced))
 
-  private[this] def occCounts[B](sq: Seq[B]): mutable.HashMap[B, Int] = {
-    val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
+  private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
+    val occ = mutable.Map.empty[B, Int].withDefaultValue(0)
     for (y <- sq) occ(y) += 1
     occ
   }
