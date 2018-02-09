@@ -133,7 +133,6 @@ object Predef extends LowPriorityImplicits {
    * val foo = valueOf[Foo.type]
    * // foo is Foo.type = Foo
    *
-   * // If -Yliteral-types has been specified
    * val bar = valueOf[23]
    * // bar is 23.type = 23
    * }}}
