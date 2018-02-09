@@ -11,6 +11,8 @@ import scala.annotation.elidable
 import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
+
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 
 abstract class SymbolTable extends macros.Universe
@@ -181,12 +183,11 @@ abstract class SymbolTable extends macros.Universe
   final val NoRunId = 0
 
   // sigh, this has to be public or enteringPhase doesn't inline.
-  var phStack: Array[Phase] = new Array(128)
-  var phStackIndex = 0
+  val phStack: ArrayBuffer[Phase] = new ArrayBuffer(128)
   private[this] var ph: Phase = NoPhase
   private[this] var per = NoPeriod
 
-  final def atPhaseStack: List[Phase] = List.tabulate(phStackIndex)(i => phStack(i))
+  final def atPhaseStack: List[Phase] = phStack.toList
   final def phase: Phase = {
     if (StatisticsStatics.areSomeColdStatsEnabled)
       statistics.incCounter(statistics.phaseCounter)
@@ -207,15 +208,18 @@ abstract class SymbolTable extends macros.Universe
   final def pushPhase(ph: Phase): Phase = {
     val current = phase
     phase = ph
-    phStack(phStackIndex) = ph
-    phStackIndex += 1
+    if (keepPhaseStack) {
+      phStack += ph
+    }
     current
   }
   final def popPhase(ph: Phase) {
-    phStack(phStackIndex) = null
-    phStackIndex -= 1
+    if (keepPhaseStack) {
+      phStack.remove(phStack.size)
+    }
     phase = ph
   }
+  var keepPhaseStack: Boolean = false
 
   /** The current compiler run identifier. */
   def currentRunId: RunId

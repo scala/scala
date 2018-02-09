@@ -1098,6 +1098,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     var currentUnit: CompilationUnit = NoCompilationUnit
 
     val profiler: Profiler = Profiler(settings)
+    keepPhaseStack = settings.log.isSetByUser
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
