@@ -5,20 +5,20 @@ package mutable
 import collection.decorators._
 
 /**
-  * A mutable multimap
+  * A mutable multidict
   * @tparam K the type of keys
   * @tparam V the type of values
   */
-class MultiMap[K, V] private (elems: Map[K, Set[V]])
-  extends collection.MultiMap[K, V]
-    with collection.MultiMapOps[K, V, MultiMap, MultiMap[K, V]]
+class MultiDict[K, V] private (elems: Map[K, Set[V]])
+  extends collection.MultiDict[K, V]
+    with collection.MultiDictOps[K, V, MultiDict, MultiDict[K, V]]
     with Growable[(K, V)]
     with Shrinkable[(K, V)] {
 
   def iterableFactory: IterableFactory[collection.Iterable] = collection.Iterable
-  def multiMapFactory: MapFactory[MultiMap] = MultiMap
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): MultiMap[K, V] = multiMapFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), MultiMap[K, V]] = multiMapFactory.newBuilder()
+  def multiMapFactory: MapFactory[MultiDict] = MultiDict
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): MultiDict[K, V] = multiMapFactory.from(coll)
+  protected[this] def newSpecificBuilder(): Builder[(K, V), MultiDict[K, V]] = multiMapFactory.newBuilder()
 
   def sets: collection.Map[K, collection.Set[V]] = elems
 
@@ -57,12 +57,12 @@ class MultiMap[K, V] private (elems: Map[K, Set[V]])
 
 }
 
-object MultiMap extends MapFactory[MultiMap] {
+object MultiDict extends MapFactory[MultiDict] {
 
-  def empty[K, V]: MultiMap[K, V] = new MultiMap(Map.empty)
+  def empty[K, V]: MultiDict[K, V] = new MultiDict(Map.empty)
 
-  def from[K, V](source: IterableOnce[(K, V)]): MultiMap[K, V] = (newBuilder[K, V]() ++= source).result()
+  def from[K, V](source: IterableOnce[(K, V)]): MultiDict[K, V] = (newBuilder[K, V]() ++= source).result()
 
-  def newBuilder[K, V](): Builder[(K, V), MultiMap[K, V]] = new GrowableBuilder[(K, V), MultiMap[K, V]](empty)
+  def newBuilder[K, V](): Builder[(K, V), MultiDict[K, V]] = new GrowableBuilder[(K, V), MultiDict[K, V]](empty)
 
 }

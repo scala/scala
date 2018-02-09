@@ -11,7 +11,7 @@ class MultiMapTest {
 
   @Test
   def multiMap(): Unit = {
-    val mm = MultiMap.empty[String, Int]
+    val mm = MultiDict.empty[String, Int]
 
     mm += "a" -> 1
     mm += "a" -> 2

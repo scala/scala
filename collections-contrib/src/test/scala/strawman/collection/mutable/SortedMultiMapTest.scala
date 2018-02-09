@@ -9,7 +9,7 @@ class SortedMultiMapTest {
 
   @Test
   def sortedMultiMap(): Unit = {
-    val smm = SortedMultiMap.empty[String, Int]
+    val smm = SortedMultiDict.empty[String, Int]
 
     smm += "a" -> 1
     smm += "b" -> 1
@@ -23,7 +23,7 @@ class SortedMultiMapTest {
     Assert.assertEquals("a", smm.firstKey)
     Assert.assertEquals("c", smm.lastKey)
 
-    Assert.assertEquals(SortedMultiMap("c" -> 1), smm.from("c"))
+    Assert.assertEquals(SortedMultiDict("c" -> 1), smm.from("c"))
 
     smm += "a" -> 2
     Assert.assertEquals(Set(1, 2), smm.get("a"))
