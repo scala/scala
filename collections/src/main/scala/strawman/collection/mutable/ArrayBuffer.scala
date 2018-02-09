@@ -42,12 +42,15 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
 
   def this(initSize: Int) = this(new Array[AnyRef](initSize), 0)
 
-  private var array: Array[AnyRef] = initElems
-  private var size0 = initSize
+  protected var array: Array[AnyRef] = initElems
+  protected var size0 = initSize
 
   /** Ensure that the internal array has at least `n` cells. */
-  private def ensureSize(n: Int): Unit =
+  protected def ensureSize(n: Int): Unit =
     array = RefArrayUtils.ensureSize(array, size0, n)
+
+  def sizeHint(size: Int): Unit =
+    if(size > length && size >= 1) ensureSize(size)
 
   /** Reduce length to `n`, nulling out all dropped elements */
   private def reduceToSize(n: Int): Unit = {
