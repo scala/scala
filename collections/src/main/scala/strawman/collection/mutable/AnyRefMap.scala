@@ -28,7 +28,7 @@ import scala.math
  *  rapidly as 2^30^ is approached.
  *
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
   extends Map[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
@@ -429,7 +429,7 @@ object AnyRefMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
 
-  @SerialVersionUID(1L)
+  @SerialVersionUID(3L)
   private class ExceptionDefault extends (Any => Nothing) with Serializable {
     def apply(k: Any): Nothing = throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
   }

@@ -29,7 +29,7 @@ import scala.{Any, Boolean, Int, NoSuchElementException, SerialVersionUID, Seria
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(-8417059026623606218L)
+@SerialVersionUID(3L)
 sealed class ListSet[A]
   extends Set[A]
     with SetOps[A, ListSet, ListSet[A]]
@@ -67,7 +67,7 @@ sealed class ListSet[A]
   /**
     * Represents an entry in the `ListSet`.
     */
-  @SerialVersionUID(-787710309854855049L)
+  @SerialVersionUID(3L)
   protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
 
     override def size = sizeInternal(this, 0)
@@ -119,7 +119,7 @@ object ListSet extends IterableFactory[ListSet] {
       case _ => (newBuilder[E]() ++= it).result()
     }
 
-  @SerialVersionUID(5010379588739277132L)
+  @SerialVersionUID(3L)
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 

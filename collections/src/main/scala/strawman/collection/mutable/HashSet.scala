@@ -18,7 +18,7 @@ import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, transient, U
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 final class HashSet[A](contents: FlatHashTable.Contents[A])
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]

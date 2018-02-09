@@ -139,7 +139,7 @@ private[collection] trait Wrappers {
     def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
   }
 
-  @SerialVersionUID(1L)
+  @SerialVersionUID(3L)
   class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] with Serializable { self =>
     // Note various overrides to avoid performance gotchas.
     override def contains(o: Object): Boolean = {
@@ -209,7 +209,7 @@ private[collection] trait Wrappers {
     protected[this] def newSpecificBuilder() = mutable.HashSet.newBuilder()
   }
 
-  @SerialVersionUID(1L)
+  @SerialVersionUID(3L)
   class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] with Serializable { self =>
     override def size = underlying.size
 
@@ -489,5 +489,5 @@ private[collection] trait Wrappers {
   }
 }
 
-@SerialVersionUID(0 - 5857859809262781311L)
+@SerialVersionUID(3L)
 object Wrappers extends Wrappers with Serializable

@@ -62,7 +62,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@SerialVersionUID(-1334388273712300479L)
+@SerialVersionUID(3L)
 final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
   extends IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]

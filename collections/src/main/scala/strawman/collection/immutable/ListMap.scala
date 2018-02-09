@@ -42,7 +42,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(301002838095710379L)
+@SerialVersionUID(3L)
 sealed class ListMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
@@ -89,7 +89,7 @@ sealed class ListMap[K, +V]
   /**
     * Represents an entry in the `ListMap`.
     */
-  @SerialVersionUID(-6453056603889598734L)
+  @SerialVersionUID(3L)
   protected class Node[V1 >: V](override protected val key: K,
                                 override protected val value: V1) extends ListMap[K, V1] with Serializable {
 
@@ -159,7 +159,7 @@ object ListMap extends MapFactory[ListMap] {
 
   def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
 
-  @SerialVersionUID(-8256686706655863282L)
+  @SerialVersionUID(3L)
   private object EmptyListMap extends ListMap[Any, Nothing]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =

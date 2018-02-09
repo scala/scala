@@ -29,7 +29,7 @@ import scala.Predef.intWrapper
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(1529165946227428979L)
+@SerialVersionUID(3L)
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
   extends AbstractBuffer[A]
     with IndexedSeq[A]

@@ -46,7 +46,7 @@ import strawman.collection.mutable.Builder
   *    '''Note:''' this method does not use builders to construct a new range,
   *         and its complexity is O(1).
   */
-@SerialVersionUID(7618862778670199309L)
+@SerialVersionUID(3L)
 sealed abstract class Range(
   val start: Int,
   val end: Int,

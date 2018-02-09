@@ -23,7 +23,7 @@ import scala.Predef.{require}
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(8483111450368547763L)
+@SerialVersionUID(3L)
 class BitSet(protected[collection] final var elems: Array[Long])
   extends SortedSet[Int]
     with collection.BitSet

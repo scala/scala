@@ -43,7 +43,7 @@ import strawman.collection.immutable.Nil
   *  @author Aleksandar Prokopec
   *
   */
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   extends AbstractBuffer[T]
     with Buffer[T]

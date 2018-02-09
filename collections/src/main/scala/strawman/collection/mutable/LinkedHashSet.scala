@@ -22,7 +22,7 @@ import scala.{AnyRef, Boolean, Int, None, Option, Serializable, SerialVersionUID
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class LinkedHashSet[A]
   extends Set[A]
     with SetOps[A, LinkedHashSet, LinkedHashSet[A]]

@@ -27,7 +27,7 @@ import scala.{Boolean, Int, math, Option, Ordering, SerialVersionUID, Serializab
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(1234)
+@SerialVersionUID(3L)
 final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]

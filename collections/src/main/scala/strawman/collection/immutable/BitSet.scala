@@ -16,7 +16,7 @@ import scala.Predef.require
   *  @define Coll `immutable.BitSet`
   *  @define coll immutable bitset
   */
-@SerialVersionUID(1611436763290191562L)
+@SerialVersionUID(3L)
 sealed abstract class BitSet
   extends SortedSet[Int]
     with collection.BitSet
@@ -101,7 +101,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else new BitSetN(elems)
   }
 
-  @SerialVersionUID(2260107458435649300L)
+  @SerialVersionUID(3L)
   class BitSet1(val elems: Long) extends BitSet {
     protected[collection] def nwords = 1
     protected[collection] def word(idx: Int) = if (idx == 0) elems else 0L

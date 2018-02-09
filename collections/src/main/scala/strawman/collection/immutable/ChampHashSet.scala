@@ -22,7 +22,7 @@ import java.lang.System.arraycopy
   *  @define Coll `immutable.ChampHashSet`
   *  @define coll immutable champ hash set
   */
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int, val cachedSize: Int)
   extends Set[A]
     with SetOps[A, ChampHashSet, ChampHashSet[A]]
@@ -107,7 +107,7 @@ private[immutable] final object SetNode {
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] with Serializable {
 
   def contains(element: A, hash: Int, shift: Int): Boolean
@@ -136,7 +136,7 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] wit
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends SetNode[A] {
 
   import Node._
@@ -478,7 +478,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A]) extends SetNode[A] {
 
   import Node._

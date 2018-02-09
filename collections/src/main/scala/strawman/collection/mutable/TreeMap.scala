@@ -21,7 +21,7 @@ import java.lang.String
   * @define Coll mutable.TreeMap
   * @define coll mutable tree map
   */
-@SerialVersionUID(-2558985573956740112L)
+@SerialVersionUID(3L)
 sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
@@ -110,7 +110,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
     *              bound.
     */
-  @SerialVersionUID(2219159283273389116L)
+  @SerialVersionUID(3L)
   private[this] final class TreeMapProjection(from: Option[K], until: Option[K]) extends TreeMap[K, V](tree) {
 
     /**

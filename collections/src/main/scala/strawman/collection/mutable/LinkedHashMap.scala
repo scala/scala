@@ -45,7 +45,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class LinkedHashMap[K, V]
   extends Map[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]

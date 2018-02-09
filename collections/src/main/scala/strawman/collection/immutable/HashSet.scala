@@ -22,7 +22,7 @@ import java.lang.Integer
   *  @define Coll `immutable.HashSet`
   *  @define coll immutable hash set
   */
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 sealed abstract class HashSet[A]
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]

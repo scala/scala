@@ -400,7 +400,7 @@ sealed abstract class List[+A]
 
 }
 
-@SerialVersionUID(6493291385232469459L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+@SerialVersionUID(3L)
 case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
@@ -410,7 +410,7 @@ case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance])
   override def tail: List[A] = next
 }
 
-@SerialVersionUID(-5302509162483950757L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+@SerialVersionUID(3L)
 case object Nil extends List[Nothing] {
   override def isEmpty: Boolean = true
   override def nonEmpty: Boolean = false
@@ -442,7 +442,7 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
 
-  @SerialVersionUID(1L)
+  @SerialVersionUID(3L)
   private class SerializationProxy[A](@transient private var orig: List[A]) extends Serializable {
 
     private def writeObject(out: ObjectOutputStream): Unit = {
@@ -476,5 +476,5 @@ object List extends StrictOptimizedSeqFactory[List] {
 
 
 /** Only used for list serialization */
-@SerialVersionUID(0L - 8476791151975527571L)
+@SerialVersionUID(3L)
 private[strawman] case object ListSerializeEnd

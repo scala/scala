@@ -20,7 +20,7 @@ import java.lang.String
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
