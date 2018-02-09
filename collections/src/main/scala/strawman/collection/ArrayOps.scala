@@ -33,7 +33,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
   protected[this] def coll: Array[A] = xs
   override def toSeq: immutable.Seq[A] = fromIterable(toIterable)
 
-  protected def finiteSize = xs.length
+  def length = xs.length
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int) = xs.apply(i)
 

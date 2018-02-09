@@ -130,7 +130,7 @@ private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
   /** Determines the length of this $coll by traversing and counting every
     * node.
     */
-  override def size: Int = size0(this, 0)
+  override def length: Int = size0(this, 0)
 
   @tailrec private def size0(elem: LinkedList[A], acc: Int): Int =
     if (elem.isEmpty) acc else size0(elem.next, acc + 1)

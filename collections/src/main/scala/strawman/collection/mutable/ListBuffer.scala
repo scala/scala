@@ -54,7 +54,7 @@ class ListBuffer[A]
   @throws[IndexOutOfBoundsException]
   def apply(i: Int) = first.apply(i)
 
-  override def size = len
+  def length = len
   override def knownSize = len
 
   override def isEmpty: Boolean = len == 0

@@ -159,7 +159,7 @@ private[mutable] class MutableList[A]
 
   /** Returns the length of this list.
     */
-  override def size: Int = len
+  override def length: Int = len
 
   /** Returns the `n`-th element of this list.
     *  @throws IndexOutOfBoundsException if index does not exist.

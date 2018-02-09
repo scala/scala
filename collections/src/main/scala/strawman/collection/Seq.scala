@@ -82,33 +82,13 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
   * @define Coll `Seq`
   */
 trait SeqOps[+A, +CC[_], +C] extends Any
-  with IterableOps[A, CC, C] {
+  with IterableOps[A, CC, C]
+  with ArrayLike[A] {
 
   /**
     * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
     */
   def toSeq: Seq[A]
-
-  /** Selects an element by its index in the $coll.
-    *
-    * Example:
-    *
-    * {{{
-    *    scala> val x = List(1, 2, 3, 4, 5)
-    *    x: List[Int] = List(1, 2, 3, 4, 5)
-    *
-    *    scala> x(3)
-    *    res1: Int = 4
-    * }}}
-    *
-    *  @param  idx  The index to select.
-    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
-    *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
-    */
-  def apply(idx: Int): A
-
-  /** Alias for `size` */
-  @`inline` final def length: Int = size
 
   /** A copy of the $coll with an element prepended.
     *
@@ -206,6 +186,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   // overrides of this method
   @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
+  final override def size: Int = length
+
   /** Selects all the elements of this $coll ignoring the duplicates.
     *
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
@@ -265,7 +247,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
   def endsWith[B >: A](that: Iterable[B]): Boolean = {
-    val i = iterator().drop(size - that.size)
+    val i = iterator().drop(length - that.size)
     val j = that.iterator()
     while (i.hasNext && j.hasNext)
       if (i.next() != j.next())
@@ -282,7 +264,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @param    idx     the index to test
     * @return   `true` if this $coll contains an element at position `idx`, `false` otherwise.
     */
-  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < size)
+  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
   /** A copy of this $coll with an element value appended until a given target length is reached.
    *
@@ -352,7 +334,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `<= end` of the last element of this $coll that is equal (as determined by `==`)
     *           to `elem`, or `-1`, if none exists.
     */
-  def lastIndexOf[B >: A](elem: B, end: Int = size - 1): Int = lastIndexWhere(elem == _, end)
+  def lastIndexOf[B >: A](elem: B, end: Int = length - 1): Int = lastIndexWhere(elem == _, end)
 
   /** Finds index of last element satisfying some predicate before or at given end index.
     *
@@ -360,8 +342,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def lastIndexWhere(p: A => Boolean, end: Int = size - 1): Int = {
-    var i = size - 1
+  def lastIndexWhere(p: A => Boolean, end: Int = length - 1): Int = {
+    var i = length - 1
     val it = reverseIterator()
     while (it.hasNext && { val elem = it.next(); (i > end || !p(elem)) }) i -= 1
     i
@@ -405,9 +387,9 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int = size - 1): Int = {
-    val l = size
-    val tl = that.size
+  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int = length - 1): Int = {
+    val l = length
+    val tl = that.length
     val clippedL = math.min(l-tl, end)
 
     if (end < 0) -1
@@ -513,7 +495,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   private class CombinationsItr(n: Int) extends Iterator[C] {
     // generating all nums such that:
-    // (1) nums(0) + .. + nums(size-1) = n
+    // (1) nums(0) + .. + nums(length-1) = n
     // (2) 0 <= nums(i) <= cnts(i), where 0 <= i <= cnts.length-1
     private val (elms, cnts, nums) = init()
     private val offs = cnts.scanLeft(0)(_ + _)
@@ -592,7 +574,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *              sorted according to the ordering `ord`.
     */
   def sorted[B >: A](implicit ord: Ordering[B]): C = {
-    val len = this.size
+    val len = this.length
     val b = newSpecificBuilder()
     if (len == 1) b ++= toIterable
     else if (len > 1) {
@@ -647,7 +629,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @example {{{
     *    val words = "The quick brown fox jumped over the lazy dog".split(' ')
     *    // this works because scala.Ordering will implicitly provide an Ordering[Tuple2[Int, Char]]
-    *    words.sortBy(x => (x.size, x.head))
+    *    words.sortBy(x => (x.length, x.head))
     *    res0: Array[String] = Array(The, dog, fox, the, lazy, over, brown, quick, jumped)
     *  }}}
     */
@@ -657,20 +639,20 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *
     *  @return  a `Range` value from `0` to one less than the length of this $coll.
     */
-  def indices: Range = Range(0, size)
+  def indices: Range = Range(0, length)
 
   /** Compares the length of this $coll to a test value.
     *
     *   @param   len   the test value that gets compared with the length.
     *   @return  A value `x` where
     *   {{{
-    *        x <  0       if this.size <  len
-    *        x == 0       if this.size == len
-    *        x >  0       if this.size >  len
+    *        x <  0       if this.length <  len
+    *        x == 0       if this.length == len
+    *        x >  0       if this.length >  len
     *   }}}
-    *  The method as implemented here does not call `size` directly; its running time
-    *  is `O(size min len)` instead of `O(size)`. The method should be overwritten
-    *  if computing `size` is cheap.
+    *  The method as implemented here does not call `length` directly; its running time
+    *  is `O(length min len)` instead of `O(length)`. The method should be overwritten
+    *  if computing `length` is cheap.
     */
   def lengthCompare(len: Int): Int = {
     if (len < 0) 1
@@ -946,13 +928,13 @@ object SeqOps {
   private def kmpOptimizeWord[B](W: Seq[B], n0: Int, n1: Int, forward: Boolean): IndexedView[B] = W match {
     case iso: IndexedSeq[B] =>
       // Already optimized for indexing--use original (or custom view of original)
-      if (forward && n0==0 && n1==W.size) iso.view
+      if (forward && n0==0 && n1==W.length) iso.view
       else if (forward) new IndexedView[B] {
-        protected val finiteSize = n1 - n0
+        val length = n1 - n0
         def apply(x: Int) = iso(n0 + x)
       }
       else new IndexedView[B] {
-        protected val finiteSize = n1 - n0
+        def length = n1 - n0
         def apply(x: Int) = iso(n1 - 1 - x)
       }
     case _ =>
@@ -969,7 +951,7 @@ object SeqOps {
           i += delta
         }
 
-        protected val finiteSize = n1 - n0
+        val length = n1 - n0
         def apply(x: Int) = Warr(x).asInstanceOf[B]
       }
   }
