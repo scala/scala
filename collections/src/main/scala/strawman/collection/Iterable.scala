@@ -399,6 +399,14 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
   /** Defines the prefix of this object's `toString` representation.
     *
+    * It is recommended to return the name of the concrete collection type, but
+    * not implementation subclasses. For example, for `ListMap` this method should
+    * return `"ListMap"`, not `"Map"` (the supertype) or `"Node"` (an implementation
+    * subclass).
+    *
+    * It is recommended to overwrite this method even if the default implementation
+    * returns the correct name, to avoid the implementation using reflection.
+    *
     *  @return  a string representation which starts the result of `toString`
     *           applied to this $coll. By default the string prefix is the
     *           simple name of the collection class $coll.
