@@ -145,11 +145,16 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   }
 
   def patchInPlace(from: Int, patch: strawman.collection.Seq[A], replaced: Int): this.type = {
-    val n = patch.size min replaced
-    var i = 0
-    while (i < n) { update(from + i, patch(i)); i += 1 }
-    if (i < patch.size) insertAll(from + i, patch.iterator().drop(i))
-    else if (i < replaced) remove(from + i, replaced - i)
+    val replaced0 = math.min(math.max(replaced, 0), size)
+    val i = math.min(math.max(from, 0), size)
+    var j = 0
+    val n = math.min(patch.size, replaced0)
+    while (j < n && i + j < size) {
+      update(i + j, patch(j))
+      j += 1
+    }
+    if (j < patch.size) insertAll(i + j, patch.iterator().drop(j))
+    else if (j < replaced0) remove(i + j, replaced0 - j)
     this
   }
 }

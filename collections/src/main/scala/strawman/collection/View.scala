@@ -264,7 +264,6 @@ object View extends IterableFactoryLike[View] {
   }
 
   private[collection] class Patched[A](underlying: Iterable[A], from: Int, other: IterableOnce[A], replaced: Int) extends View[A] {
-    if (from < 0 || (knownSize > -1 && from > knownSize)) throw new IndexOutOfBoundsException(from.toString)
     def iterator(): Iterator[A] = underlying.iterator().patch(from, other.iterator(), replaced)
   }
 
