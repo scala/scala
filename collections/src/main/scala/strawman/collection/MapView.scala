@@ -25,16 +25,19 @@ trait MapView[K, +V]
 
 object MapView {
 
-  class Id[K, +V](underlying: MapOps[K, V, AnyConstr, _]) extends MapView[K, V] {
+  type AnyIterableConstr[X, Y] = IterableOps[_, AnyConstr, _]
+  type AnyMapOps[K, +V] = MapOps[K, V, AnyIterableConstr, _]
+
+  class Id[K, +V](underlying: AnyMapOps[K, V]) extends MapView[K, V] {
     def get(key: K): Option[V] = underlying.get(key)
     def iterator(): Iterator[(K, V)] = underlying.iterator()
     override def knownSize: Int = underlying.knownSize
   }
 
-  class MapValues[K, +V, +W](underlying: MapOps[K, V, AnyConstr, _], f: V => W) extends MapView[K, W] {
+  class MapValues[K, +V, +W](underlying: AnyMapOps[K, V], f: V => W) extends MapView[K, W] {
     def iterator(): Iterator[(K, W)] = underlying.iterator().map(kv => (kv._1, f(kv._2)))
-    override def knownSize: Int = underlying.knownSize
     def get(key: K): Option[W] = underlying.get(key).map(f)
+    override def knownSize: Int = underlying.knownSize
   }
 
 }
