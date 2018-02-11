@@ -12,6 +12,8 @@ import java.util.{ HashSet => JavaSet }
 import java.util.EnumSet
 
 import xsbti.UseScope
+// Left for compatibility
+import Compat._
 
 /**
  * Extracts simple names used in given compilation unit.

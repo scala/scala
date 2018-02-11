@@ -11,6 +11,8 @@ import java.io.File
 import java.util.Optional
 
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
+// Left for compatibility
+import Compat._
 
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
