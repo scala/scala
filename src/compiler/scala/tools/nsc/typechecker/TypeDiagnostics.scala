@@ -502,14 +502,14 @@ trait TypeDiagnostics {
           && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
         )
 
-        override def traverse(t: Tree): Unit = {
+        override def traverse(t: Tree): Unit = if (!t.isErrorTyped) {
           val sym = t.symbol
           var bail = false
           t match {
             case m: MemberDef if qualifies(sym)   =>
               t match {
                 case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
-                  if (!atBounded(t)) patvars += sym
+                  if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
                 case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
                   if (sym.isPrimaryConstructor)
                     for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
@@ -705,7 +705,7 @@ trait TypeDiagnostics {
             context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
         }
       }
-      def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
+      def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !context.reporter.hasErrors) {
         val body = unit.body
         // TODO the message should distinguish whether the unusage is before or after macro expansion.
         settings.warnMacros.value match {
