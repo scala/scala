@@ -13,8 +13,6 @@ import java.util.EnumSet
 
 import xsbti.UseScope
 
-import Compat._
-
 /**
  * Extracts simple names used in given compilation unit.
  *
