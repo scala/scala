@@ -12,7 +12,7 @@ package util.control
 /**
  * Extractor of non-fatal Throwables. Will not match fatal errors like `VirtualMachineError`
  * (for example, `OutOfMemoryError` and `StackOverflowError`, subclasses of `VirtualMachineError`), `ThreadDeath`,
- * `LinkageError`, `InterruptedException`, `ControlThrowable`.
+ * `LinkageError`, `InterruptedException`, `ControlThrowable`, `AssertionError`.
  *
  * Note that [[scala.util.control.ControlThrowable]], an internal Throwable, is not matched by
  * `NonFatal` (and would therefore be thrown).
@@ -34,7 +34,7 @@ object NonFatal {
     */
    def apply(t: Throwable): Boolean = t match {
      // VirtualMachineError includes OutOfMemoryError and other fatal errors
-     case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable => false
+     case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable | _: AssertionError => false
      case _ => true
    }
   /**
