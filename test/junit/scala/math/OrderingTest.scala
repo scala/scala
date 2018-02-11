@@ -5,8 +5,36 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import java.{lang => jl}
+
 @RunWith(classOf[JUnit4])
 class OrderingTest {
+  val floats = Seq(
+    Float.NegativeInfinity,
+    Float.MinValue,
+    -1f,
+    -0f,
+    0f,
+    Float.MinPositiveValue,
+    1f,
+    Float.MaxValue,
+    Float.PositiveInfinity,
+    Float.NaN
+  )
+
+  val doubles = Seq(
+    Double.NegativeInfinity,
+    Double.MinValue,
+    -1d,
+    -0d,
+    0d,
+    Double.MinPositiveValue,
+    1d,
+    Double.MaxValue,
+    Double.PositiveInfinity,
+    Double.NaN
+  )
+
 
   /* Test for scala/bug#9077 */
   @Test
@@ -46,8 +74,8 @@ class OrderingTest {
     checkAll[Char](Char.MinValue, -1.toChar, 0.toChar, 1.toChar, Char.MaxValue)
     checkAll[Short](Short.MinValue, -1, 0, 1, Short.MaxValue)
     checkAll[Int](Int.MinValue, -1, 0, 1, Int.MaxValue)
-    checkAll[Double](Double.MinValue, -1, -0, 0, 1, Double.MaxValue)
-    checkAll[Float](Float.MinValue, -1, -0, 0, 1, Float.MaxValue)
+    checkAll[Double](doubles: _*)
+    checkAll[Float](floats: _*)
 
     checkAll[BigInt](Int.MinValue, -1, 0, 1, Int.MaxValue)
     checkAll[BigDecimal](Int.MinValue, -1, -0, 1, Int.MaxValue)
@@ -75,6 +103,91 @@ class OrderingTest {
 
     check(o1, o2)
     check(o1, o3)
+  }
+
+  /* Test for scala/bug#10511 */
+  @Test
+  def testFloatDoubleOpConsistency(): Unit = {
+    val fNegZeroBits = jl.Float.floatToRawIntBits(-0.0f)
+    val fPosZeroBits = jl.Float.floatToRawIntBits(0.0f)
+
+    val dNegZeroBits = jl.Double.doubleToRawLongBits(-0.0d)
+    val dPosZeroBits = jl.Double.doubleToRawLongBits(0.0d)
+
+    def checkFloats(floats: Float*): Unit = {
+      def same(f1: Float, f2: Float): Boolean = {
+        val thisBits = jl.Float.floatToRawIntBits(f1)
+        if (thisBits == fNegZeroBits) jl.Float.floatToRawIntBits(f2) == fNegZeroBits
+        else if (thisBits == fPosZeroBits) jl.Float.floatToRawIntBits(f2) == fPosZeroBits
+        else f1 == f2 || (jl.Float.isNaN(f1) && jl.Float.isNaN(f2))
+      }
+
+      val O = Ordering[Float]
+      for (i <- floats; j <- floats) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) ^ O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) ^ O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertEquals(msg, 1, Seq(O.lt(i, j), O.equiv(i, j), O.gt(i, j)).count(identity))
+
+        // consistency with `max` and `min`
+        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
+        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        if (!same(i, j)) {
+          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
+          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+        }
+      }
+    }
+
+    def checkDoubles(doubles: Double*): Unit = {
+      def same(d1: Double, d2: Double): Boolean = {
+        val thisBits = jl.Double.doubleToRawLongBits(d1)
+        if (thisBits == dNegZeroBits) jl.Double.doubleToRawLongBits(d2) == dNegZeroBits
+        else if (thisBits == dPosZeroBits) jl.Double.doubleToRawLongBits(d2) == dPosZeroBits
+        else d1 == d2 || (jl.Double.isNaN(d1) && jl.Double.isNaN(d2))
+      }
+
+      val O = Ordering[Double]
+      for (i <- doubles; j <- doubles) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) ^ O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) ^ O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertEquals(msg, 1, Seq(O.lt(i, j), O.equiv(i, j), O.gt(i, j)).count(identity))
+
+        // consistency with `max` and `min`
+        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
+        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        if (!same(i, j)) {
+          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
+          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+        }
+      }
+    }
+
+    checkFloats(floats: _*)
+    checkDoubles(doubles: _*)
   }
 }
 
