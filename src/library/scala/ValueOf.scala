@@ -11,8 +11,7 @@ package scala
 /**
  * `ValueOf[T]` provides the unique value of the type `T` where `T` is a type which has a
  * single inhabitant. Eligible types are singleton types of the form `stablePath.type`,
- * Unit and, if the -Yliteral-types compiler option has been specified, singleton types
- * corresponding to value literals.
+ * Unit and singleton types corresponding to value literals.
  *
  * Instances of `ValueOf[T]` are provided implicitly for all eligible types. Typically
  * an instance would be required where a runtime value corresponding to a type level

@@ -9,7 +9,7 @@ class Bad[X, Y](val v: Int) extends AnyVal {
   }
 
   // The original test case fails with the new is/asInstanceOf semantics
-  // introduced along with -Yliteral-types because the method has a
+  // introduced along with along with SIP-23 implementation because the method has a
   // singleton result type which cannot be erased correctly.
   // See: neg/sip23-tailrec-singleton.scala
   //@annotation.tailrec final def dependent[Z](a: Int)(b: String): b.type = {

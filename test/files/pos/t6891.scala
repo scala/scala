@@ -6,7 +6,7 @@ object O {
     }
 
     // The original test cases fail with the new is/asInstanceOf semantics
-    // introduced along with -Yliteral-types because the method has a
+    // introduced along with SIP-23 implementation because the method has a
     // singleton typed argument which cannot be erased correctly.
     // See: neg/sip23-tailrec-value-class.scala
     //def boppy() = {
