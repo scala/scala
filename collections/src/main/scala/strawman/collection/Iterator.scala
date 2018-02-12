@@ -272,10 +272,10 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         val res = takeDestructively(count)
         // was: extra checks so we don't calculate length unless there's reason
         // but since we took the group eagerly, just use the fast length
-        val shortBy = count - res.size
+        val shortBy = count - res.length
         if (shortBy > 0 && pad.isDefined) res ++ padding(shortBy) else res
       }
-      lazy val len = xs.size
+      lazy val len = xs.length
       lazy val incomplete = len < count
 
       // if 0 elements are requested, or if the number of newly obtained
@@ -1147,7 +1147,7 @@ object Iterator {
   }
 
   def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
-    protected def finiteSize = xs.size
+    val length = xs.length
     def apply(n: Int) = xs(n)
   }.iterator()
 

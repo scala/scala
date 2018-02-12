@@ -300,21 +300,13 @@ object View extends IterableFactory[View] {
   }
 }
 
-/** A trait representing indexable collections with finite length */
-trait ArrayLike[+A] extends Any {
-  /** The finite size of the collection. */
-  protected def finiteSize: Int
-  @throws[IndexOutOfBoundsException]
-  def apply(i: Int): A
-}
-
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, View[A]] { self =>
+trait IndexedView[+A] extends View[A] with SeqOps[A, View, View[A]] { self =>
 
   def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
-    override def knownSize: Int = self.size - current
-    def hasNext = current < self.size
+    override def knownSize: Int = self.length - current
+    def hasNext = current < self.length
     def next(): A = {
       val r = self.apply(current)
       current += 1
@@ -322,7 +314,7 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, Vie
     }
   }
 
-  final override def knownSize: Int = finiteSize
+  final override def knownSize: Int = length
 
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def takeRight(n: Int): IndexedView[A] = new IndexedView.TakeRight(this, n)
@@ -336,41 +328,41 @@ object IndexedView {
 
   class Take[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
     private[this] val normN = n max 0
-    protected def finiteSize = underlying.size min normN
+    def length = underlying.length min normN
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
   }
 
   class TakeRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
-    private[this] val delta = (underlying.size - (n max 0)) max 0
-    protected def finiteSize = underlying.size - delta
+    private[this] val delta = (underlying.length - (n max 0)) max 0
+    def length = underlying.length - delta
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + delta)
   }
 
   class Drop[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
     protected val normN = n max 0
-    protected def finiteSize = (underlying.size - normN) max 0
+    def length = (underlying.length - normN) max 0
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
   class DropRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
-    private[this] val len = (underlying.size - (n max 0)) max 0
-    protected def finiteSize = len
+    private[this] val len = (underlying.length - (n max 0)) max 0
+    def length = len
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
   }
 
   class Map[A, B](underlying: IndexedView[A], f: A => B) extends IndexedView[B] {
-    protected def finiteSize = underlying.size
+    def length = underlying.length
     @throws[IndexOutOfBoundsException]
     def apply(n: Int) = f(underlying.apply(n))
   }
 
   case class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
-    protected def finiteSize = underlying.size
+    def length = underlying.length
     @throws[IndexOutOfBoundsException]
-    def apply(i: Int) = underlying.apply(size - 1 - i)
+    def apply(i: Int) = underlying.apply(length - 1 - i)
   }
 }

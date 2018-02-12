@@ -36,7 +36,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
     val end = if (until > length) length else until
     new WrappedString(self.substring(start, end))
   }
-  def finiteSize = self.length
+  override def length = self.length
   override def toString = self
   override def view: StringView = new StringView(self)
 }

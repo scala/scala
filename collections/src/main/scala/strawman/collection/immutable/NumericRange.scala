@@ -72,11 +72,11 @@ sealed class NumericRange[T](
   import num._
 
   // See comment in Range for why this must be lazy.
-  override protected lazy val finiteSize: Int = NumericRange.count(start, end, step, isInclusive)
-  override def isEmpty = finiteSize == 0
+  override lazy val length: Int = NumericRange.count(start, end, step, isInclusive)
+  override def isEmpty = length == 0
   override def last: T =
-    if (finiteSize == 0) Nil.head
-    else locationAfterN(finiteSize - 1)
+    if (length == 0) Nil.head
+    else locationAfterN(length - 1)
   override def init: NumericRange[T] =
     if (isEmpty) Nil.init
     else new NumericRange(start, end - step, step, isInclusive)
@@ -100,14 +100,14 @@ sealed class NumericRange[T](
 
   @throws[IndexOutOfBoundsException]
   def apply(idx: Int): T = {
-    if (idx < 0 || idx >= finiteSize) throw new IndexOutOfBoundsException(idx.toString)
+    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     else locationAfterN(idx)
   }
 
   override def foreach[@specialized(Unit) U](f: T => U): Unit = {
     var count = 0
     var current = start
-    while (count < finiteSize) {
+    while (count < length) {
       f(current)
       current += step
       count += 1
@@ -135,14 +135,14 @@ sealed class NumericRange[T](
   private def newEmptyRange(value: T) = NumericRange(value, value, step)
 
   override def take(n: Int): NumericRange[T] = {
-    if (n <= 0 || finiteSize == 0) newEmptyRange(start)
-    else if (n >= finiteSize) this
+    if (n <= 0 || length == 0) newEmptyRange(start)
+    else if (n >= length) this
     else new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
   }
 
   override def drop(n: Int): NumericRange[T] = {
-    if (n <= 0 || finiteSize == 0) this
-    else if (n >= finiteSize) newEmptyRange(end)
+    if (n <= 0 || length == 0) this
+    else if (n >= length) newEmptyRange(end)
     else copy(locationAfterN(n), end, step)
   }
 
@@ -276,7 +276,7 @@ sealed class NumericRange[T](
           var acc = num.zero
           var i = head
           var idx = 0
-          while(idx < finiteSize) {
+          while(idx < length) {
             acc = num.plus(acc, i)
             i = i + step
             idx = idx + 1
@@ -290,8 +290,8 @@ sealed class NumericRange[T](
   override lazy val hashCode: Int = super.hashCode()
   override def equals(other: Any): Boolean = other match {
     case x: NumericRange[_] =>
-      (x canEqual this) && (finiteSize == x.finiteSize) && (
-        (finiteSize == 0) ||                      // all empty sequences are equal
+      (x canEqual this) && (length == x.length) && (
+        (length == 0) ||                      // all empty sequences are equal
           (start == x.start && last == x.last)  // same length and same endpoints implies equality
         )
     case _ =>
@@ -340,8 +340,8 @@ object NumericRange {
           val stepint = num.toInt(step)
           if (step == num.fromInt(stepint)) {
             return {
-              if (isInclusive) Range.inclusive(startint, endint, stepint).size
-              else             Range          (startint, endint, stepint).size
+              if (isInclusive) Range.inclusive(startint, endint, stepint).length
+              else             Range          (startint, endint, stepint).length
             }
           }
         }

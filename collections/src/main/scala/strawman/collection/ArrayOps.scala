@@ -22,8 +22,7 @@ object ArrayOps {
 class ArrayOps[A](val xs: Array[A]) extends AnyVal
   with IterableOnce[A]
   with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
-  with StrictOptimizedSeqOps[A, Seq, Array[A]]
-  with ArrayLike[A] {
+  with StrictOptimizedSeqOps[A, Seq, Array[A]] {
 
   protected def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
@@ -33,7 +32,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
   protected[this] def coll: Array[A] = xs
   override def toSeq: immutable.Seq[A] = fromIterable(toIterable)
 
-  protected def finiteSize = xs.length
+  def length = xs.length
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int) = xs.apply(i)
 

@@ -92,7 +92,8 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
   protected[this] def newSpecificBuilder(): strawman.collection.mutable.Builder[Char, IndexedSeq[Char]] =
     iterableFactory.newBuilder()
 
-  protected def finiteSize: Int = sb.length()
+  //TODO In the old collections, StringBuilder extends Seq -- should it do the same here to get this method?
+  def length: Int = sb.length()
 
   def addOne(x: Char) = { sb.append(x); this }
 

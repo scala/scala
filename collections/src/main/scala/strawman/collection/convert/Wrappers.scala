@@ -89,7 +89,7 @@ private[collection] trait Wrappers {
   }
 
   case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
-    override def size = underlying.size
+    def length = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterator(): Iterator[A] = underlying.iterator().asScala
     def apply(i: Int) = underlying.get(i)

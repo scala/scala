@@ -78,9 +78,9 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   private[immutable] var dirty = false
 
-  protected def finiteSize: Int = endIndex - startIndex
+  def length: Int = endIndex - startIndex
 
-  override def lengthCompare(len: Int): Int = finiteSize - len
+  override def lengthCompare(len: Int): Int = length - len
 
   private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit = {
     s.initFrom(this)
@@ -163,7 +163,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def last: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.last")
-    apply(finiteSize - 1)
+    apply(length - 1)
   }
 
   override def init: Vector[A] = {

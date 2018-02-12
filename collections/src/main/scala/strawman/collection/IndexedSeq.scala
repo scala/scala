@@ -13,16 +13,12 @@ trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 
 /** Base trait for indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] with ArrayLike[A] { self =>
+trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   def iterator(): Iterator[A] = view.iterator()
 
-  final override def size: Int = finiteSize
-
-  final override def knownSize: Int = finiteSize
-
   override def reverseIterator(): Iterator[A] = new AbstractIterator[A] {
-    private var i = self.size
+    private var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =
       if (0 < i) {
@@ -32,7 +28,7 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
   }
 
   override def view: IndexedView[A] = new IndexedView[A] {
-    protected def finiteSize: Int = self.size
+    def length: Int = self.length
     def apply(i: Int): A = self(i)
   }
 
@@ -45,7 +41,9 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
     * linear, immutable collections this should avoid making a copy. */
   override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
 
-  override def lengthCompare(len: Int): Int = size - len
+  override def lengthCompare(len: Int): Int = length - len
+
+  final override def knownSize: Int = length
 
   override def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
     binarySearch(elem, 0, length)(ord)

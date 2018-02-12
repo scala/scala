@@ -150,7 +150,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 
   def result() = this
 
-  override def size: Int = sz
+  def length = sz
 
   def apply(idx: Int) =
     if (idx >= 0 && idx < sz) headptr(idx)

@@ -25,7 +25,6 @@ final class StringOps(val s: String)
     with IterableOnce[Char]
     with collection.IndexedSeqOps[Char, immutable.IndexedSeq, String]
     with collection.StrictOptimizedIterableOps[Char, immutable.IndexedSeq, String]
-    with collection.ArrayLike[Char]
     with Ordered[String] {
 
   def toIterable = StringView(s)
@@ -43,7 +42,7 @@ final class StringOps(val s: String)
 
   protected[this] def newSpecificBuilder() = new StringBuilder
 
-  protected def finiteSize = s.length
+  def length = s.length
 
   @throws[StringIndexOutOfBoundsException]
   def apply(i: Int) = s.charAt(i)
@@ -153,7 +152,7 @@ final class StringOps(val s: String)
 
   override def slice(from: Int, until: Int): String = {
     val start = from max 0
-    val end   = until min finiteSize
+    val end   = until min length
 
     if (start >= end) newSpecificBuilder().result()
     else (newSpecificBuilder() ++= toString.substring(start, end)).result()
@@ -456,7 +455,7 @@ final class StringOps(val s: String)
 }
 
 case class StringView(s: String) extends IndexedView[Char] {
-  protected def finiteSize = s.length
+  def length = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
   override def className = "StringView"
