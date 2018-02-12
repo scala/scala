@@ -386,16 +386,39 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
     if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
     else ArrayBuffer.from(this).toArray[B]
 
-  /** Copy all elements of this collection to array `xs`, starting at `start`. */
-  def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
-    var i = start
-    val it = iterator()
-    while (it.hasNext) {
-      xs(i) = it.next()
-      i += 1
-    }
-    xs
-  }
+  /** Copy elements of this collection to an array.
+   *  Fills the given array `xs` starting at index `start`.
+   *  Copying will stop once either the all elements of this collection have been copied,
+   *  or the end of the array is reached.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+   *
+   *    $willNotTerminateInf
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = iterator().copyToArray(xs, start)
+
+  /** Copy elements of this collection to an array.
+   *  Fills the given array `xs` starting at index `start` with at most
+   *  `len` values produced by this iterator.
+   *  Copying will stop once either the all elements of this collection have been copied,
+   *  or the end of the array is reached, or `len` elements have been copied.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @note    Reuse: $consumesIterator
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *
+   *    $willNotTerminateInf
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = iterator().copyToArray(xs, start, len)
 
   /** Defines the prefix of this object's `toString` representation.
     *
