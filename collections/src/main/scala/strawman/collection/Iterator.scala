@@ -1241,6 +1241,13 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     */
   def to[C](factory: Factory[A, C]): C = factory.fromSpecific(self)
 
+  /** Converts this iterator to a string.
+   *
+   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on
+   *           whether or not the iterator is empty.
+   *  @note    Reuse: $preservesIterator
+   */
+  override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
 }
 
 object Iterator extends IterableFactory[Iterator] {
@@ -1508,7 +1515,6 @@ object Iterator extends IterableFactory[Iterator] {
       }
     }
   }
-
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
