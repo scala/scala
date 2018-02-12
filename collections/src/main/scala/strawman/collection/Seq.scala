@@ -82,8 +82,15 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
   * @define Coll `Seq`
   */
 trait SeqOps[+A, +CC[_], +C] extends Any
-  with IterableOps[A, CC, C]
-  with ArrayLike[A] {
+  with IterableOps[A, CC, C] {
+
+  /** Get the element at the specified index. This operation is provided for convenience in `Seq`. It should
+    * not be assumed to be efficient unless you have an `IndexedSeq`. */
+  @throws[IndexOutOfBoundsException]
+  def apply(i: Int): A
+
+  /** The length (number of elements) of the $coll. `size` is an alias for `length` in `Seq` collections. */
+  def length: Int
 
   /**
     * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.

@@ -300,15 +300,8 @@ object View extends IterableFactory[View] {
   }
 }
 
-/** A trait representing indexable collections with finite length */
-trait ArrayLike[+A] extends Any { self =>
-  def length: Int
-  @throws[IndexOutOfBoundsException]
-  def apply(i: Int): A
-}
-
 /** View defined in terms of indexing a range */
-trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, View[A]] { self =>
+trait IndexedView[+A] extends View[A] with SeqOps[A, View, View[A]] { self =>
 
   def iterator(): Iterator[A] = new AbstractIterator[A] {
     private var current = 0
@@ -321,7 +314,7 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] with SeqOps[A, View, Vie
     }
   }
 
-  override def knownSize: Int = length
+  final override def knownSize: Int = length
 
   override def take(n: Int): IndexedView[A] = new IndexedView.Take(this, n)
   override def takeRight(n: Int): IndexedView[A] = new IndexedView.TakeRight(this, n)

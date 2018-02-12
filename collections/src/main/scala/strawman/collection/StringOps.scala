@@ -25,7 +25,6 @@ final class StringOps(val s: String)
     with IterableOnce[Char]
     with collection.IndexedSeqOps[Char, immutable.IndexedSeq, String]
     with collection.StrictOptimizedIterableOps[Char, immutable.IndexedSeq, String]
-    with collection.ArrayLike[Char]
     with Ordered[String] {
 
   def toIterable = StringView(s)

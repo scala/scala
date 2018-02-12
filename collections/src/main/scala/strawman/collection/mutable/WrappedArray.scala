@@ -29,7 +29,6 @@ abstract class WrappedArray[T]
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, WrappedArray, WrappedArray[T]]
-    with ArrayLike[T]
     with IndexedOptimizedSeq[T]
     with StrictOptimizedSeqOps[T, WrappedArray, WrappedArray[T]]
     with Serializable {
