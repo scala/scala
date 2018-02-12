@@ -67,6 +67,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
     def addOne(x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
     override def addAll(xs: IterableOnce[A]): this.type = { self ++= xs; this }
+    override def sizeHint(size: Int): Unit = self.sizeHint(size)
     def result(): NewTo = f(self.result())
   }
 
