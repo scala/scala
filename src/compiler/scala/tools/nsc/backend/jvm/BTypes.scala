@@ -1005,7 +1005,6 @@ abstract class BTypes {
       * to be executed when it's forced.
       */
     private final class LazyWithLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
-
       def init(t: () => T): T = frontendSynch {
         if (value == null) value = t()
         value
@@ -1017,7 +1016,6 @@ abstract class BTypes {
       * to be executed when it's forced.
       */
     private final class LazyWithoutLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
-
       def init(t: () => T): T = this.synchronized {
         if (value == null) value = t()
         value
@@ -1057,7 +1055,7 @@ abstract class BTypes {
       }
     }
 
-    def reInitialize(): Unit = frontendSynch{
+    def reInitialize(): Unit = frontendSynch {
       v = null.asInstanceOf[T]
       isInit = false
     }

@@ -20,9 +20,10 @@ abstract class GenBCode extends SubComponent {
 
   val codeGen: CodeGen[global.type] = new { val bTypes: self.bTypes.type = self.bTypes } with CodeGen[global.type](global)
 
-  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new {
-    val bTypes: self.bTypes.type = self.bTypes
-  } with PostProcessor(statistics)
+  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new { val bTypes: self.bTypes.type = self.bTypes } with PostProcessor(statistics)
+
+  // re-initialized per run, as it depends on compiler settings that may change
+  var generatedClassHandler: GeneratedClassHandler = _
 
   val phaseName = "jvm"
 
@@ -33,29 +34,17 @@ abstract class GenBCode extends SubComponent {
 
     override val erasedTypes = true
 
-    private val globalOptsEnabled = {
-      import postProcessorFrontendAccess._
-      compilerSettings.optInlinerEnabled || compilerSettings.optClosureInvocations
-    }
-
-    def apply(unit: CompilationUnit): Unit = {
-      val generated = statistics.timed(bcodeGenStat) {
-        codeGen.genUnit(unit)
-      }
-      if (globalOptsEnabled) postProcessor.generatedClasses ++= generated
-      else postProcessor.postProcessAndSendToDisk(generated)
-    }
+    def apply(unit: CompilationUnit): Unit = codeGen.genUnit(unit)
 
     override def run(): Unit = {
       statistics.timed(bcodeTimer) {
         try {
           initialize()
           super.run() // invokes `apply` for each compilation unit
-          if (globalOptsEnabled) postProcessor.postProcessAndSendToDisk(postProcessor.generatedClasses)
+          generatedClassHandler.complete()
         } finally {
-          // When writing to a jar, we need to close the jarWriter. Since we invoke the postProcessor
-          // multiple times if (!globalOptsEnabled), we have to do it here at the end.
-          postProcessor.classfileWriter.get.close()
+          // When writing to a jar, we need to close the jarWriter.
+          generatedClassHandler.close()
         }
       }
     }
@@ -71,7 +60,8 @@ abstract class GenBCode extends SubComponent {
       codeGen.initialize()
       postProcessorFrontendAccess.initialize()
       postProcessor.initialize()
-      statistics.stopTimer(bcodeInitTimer, initStart)
+      generatedClassHandler = GeneratedClassHandler(global)
+      statistics.stopTimer(statistics.bcodeInitTimer, initStart)
     }
   }
 }
