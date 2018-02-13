@@ -32,11 +32,13 @@ object Iterator {
     def traversableToColl[B](t: GenTraversable[B]) = t.toIterator
   }
 
-  /** The iterator which produces no values. */
-  val empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
+  private[this] final val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext: Boolean = false
     def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
   }
+
+  /** The iterator which produces no values. */
+  def empty[T]: Iterator[T] = _empty
 
   /** Creates an iterator which produces a single element.
    *  '''Note:''' Equivalent, but more efficient than Iterator(elem)

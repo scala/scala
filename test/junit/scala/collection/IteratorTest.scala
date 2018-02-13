@@ -296,4 +296,16 @@ class IteratorTest {
     assertEquals(v2, v4)
     assertEquals(Some(v1), v2)
   }
+
+  @Test def emptyTypedIteratorsShouldBeEqual(): Unit = {
+    val emptyDoubleIterator = Iterator.empty[Double]
+    val emptyIntIterator = Iterator.empty[Int]
+    assertEquals(emptyDoubleIterator, emptyIntIterator)
+  }
+
+  @Test def emptyIteratorInHigherOrderFunctions(): Unit = {
+    val seqOfIterators = Seq(Seq(1, 2, 3).iterator, Seq(3, 2, 1).iterator, Seq(1, 3, 2).iterator)
+    val unified = seqOfIterators.fold(Iterator.empty[Int])((a, b) => a ++ b)
+    assertEquals(List(1, 2, 3, 3, 2, 1, 1, 3, 2), unified.toList)
+  }
 }
