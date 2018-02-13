@@ -504,15 +504,19 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
   def distinct: Repr = {
-    val b = newBuilder
-    val seen = mutable.HashSet[A]()
-    for (x <- this) {
-      if (!seen(x)) {
-        b += x
-        seen += x
+    val isImmutable = this.isInstanceOf[immutable.Seq[_]]
+    if (isImmutable && lengthCompare(1) <= 0) repr
+    else {
+      val b = newBuilder
+      val seen = new mutable.HashSet[A]()
+      var it = this.iterator
+      var different = false
+      while (it.hasNext) {
+        val next = it.next
+        if (seen.add(next)) b += next else different = true
       }
+      if (different || !isImmutable) b.result() else repr
     }
-    b.result()
   }
 
   def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
