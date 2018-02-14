@@ -38,7 +38,7 @@ object Iterator {
   }
 
   /** The iterator which produces no values. */
-  def empty[T]: Iterator[T] = _empty
+  @inline final def empty[T]: Iterator[T] = _empty
 
   /** Creates an iterator which produces a single element.
    *  '''Note:''' Equivalent, but more efficient than Iterator(elem)
