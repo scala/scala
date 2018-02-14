@@ -46,7 +46,7 @@ import strawman.collection.mutable.Builder
   *    '''Note:''' this method does not use builders to construct a new range,
   *         and its complexity is O(1).
   */
-@SerialVersionUID(7618862778670199309L)
+@SerialVersionUID(3L)
 sealed abstract class Range(
   val start: Int,
   val end: Int,
@@ -449,10 +449,12 @@ object Range {
     */
   def inclusive(start: Int, end: Int): Range.Inclusive = new Range.Inclusive(start, end, 1)
 
+  @SerialVersionUID(3L)
   final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     def isInclusive = true
   }
 
+  @SerialVersionUID(3L)
   final class Exclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     def isInclusive = false
   }

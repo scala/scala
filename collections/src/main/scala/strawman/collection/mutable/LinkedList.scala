@@ -9,12 +9,13 @@
 package strawman.collection
 package mutable
 
-import scala.{Int, Unit, Serializable, Option, NoSuchElementException, IndexOutOfBoundsException, Some, None, Boolean}
+import scala.{Int, Unit, Serializable, SerialVersionUID, Option, NoSuchElementException, IndexOutOfBoundsException, Some, None, Boolean}
 import scala.Predef.require
 import scala.annotation.tailrec
 
 /** A linked list implementation which is used internally in MutableList and Queue.
   */
+@SerialVersionUID(3L)
 private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
   with strawman.collection.LinearSeq[A]
   with LinearSeqOps[A, LinkedList, LinkedList[A]]

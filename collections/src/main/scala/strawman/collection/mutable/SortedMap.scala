@@ -2,7 +2,7 @@ package strawman
 package collection.mutable
 
 import strawman.collection.SortedMapFactory
-import scala.{Option, Ordering}
+import scala.{Option, Ordering, Serializable, SerialVersionUID}
 
 /**
   * Base type for mutable sorted map collections
@@ -45,10 +45,12 @@ trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], 
 
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
+  @SerialVersionUID(3L)
   final class WithDefault[K, V](underlying: SortedMap[K, V], defaultValue: K => V)
     extends Map.WithDefault[K, V](underlying, defaultValue)
       with SortedMap[K, V]
-      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]] {
+      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]]
+      with Serializable {
 
     def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
 

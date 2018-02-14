@@ -63,4 +63,20 @@ class SeqTest {
     assertEquals(1, Vector(0, 1, 2, 0, 1, 2).lastIndexOfSlice(Vector(1, 2), end = 3))
     assertEquals(-1, List(0, 1).lastIndexOfSlice(List(1, 2)))
   }
+
+  @Test
+  def hasCorrectDiff(): Unit = {
+    val s1 = Seq(1, 2, 3, 4, 5)
+    val s2 = Seq(1, 3, 5, 7, 9)
+
+    assertEquals(Seq(2, 4), s1.diff(s2))
+  }
+
+  @Test
+  def hasCorrectIntersect(): Unit = {
+    val s1 = Seq(1, 2, 3, 4, 5)
+    val s2 = Seq(1, 3, 5, 7, 9)
+
+    assertEquals(Seq(1, 3, 5), s1.intersect(s2))
+  }
 }

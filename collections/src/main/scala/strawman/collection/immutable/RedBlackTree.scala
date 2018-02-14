@@ -14,7 +14,7 @@ import collection.Iterator
 import scala.annotation.tailrec
 import scala.annotation.meta.getter
 
-import scala.{Array, Boolean, Int, None, NoSuchElementException, Option, Ordering, Serializable, Some, sys, Unit, `inline`, throws}
+import scala.{Array, Boolean, Int, None, NoSuchElementException, Option, Ordering, Serializable, SerialVersionUID, Some, sys, Unit, `inline`, throws}
 import java.lang.{Integer, String}
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
@@ -456,6 +456,7 @@ private[collection] object RedBlackTree {
    *
    * An alternative is to implement the these classes using plain old Java code...
    */
+  @SerialVersionUID(3L)
   sealed abstract class Tree[A, +B](
     @(`inline` @getter) final val key: A,
     @(`inline` @getter) final val value: B,
@@ -466,6 +467,7 @@ private[collection] object RedBlackTree {
     def black: Tree[A, B]
     def red: Tree[A, B]
   }
+  @SerialVersionUID(3L)
   final class RedTree[A, +B](key: A,
     value: B,
     left: Tree[A, B],
@@ -474,6 +476,7 @@ private[collection] object RedBlackTree {
     override def red: Tree[A, B] = this
     override def toString: String = "RedTree(" + key + ", " + value + ", " + left + ", " + right + ")"
   }
+  @SerialVersionUID(3L)
   final class BlackTree[A, +B](key: A,
     value: B,
     left: Tree[A, B],

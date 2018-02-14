@@ -9,7 +9,7 @@
 package strawman.collection
 package mutable
 
-import scala.{ Int, Unit, AnyRef, Array, Boolean, Serializable, NoSuchElementException }
+import scala.{ Int, Unit, AnyRef, Array, Boolean, Serializable, SerialVersionUID, NoSuchElementException }
 import scala.Predef.intWrapper
 import scala.math.Ordering
 
@@ -47,6 +47,7 @@ import scala.math.Ordering
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   extends AbstractIterable[A]
     with Iterable[A]
@@ -59,6 +60,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
+  @SerialVersionUID(3L)
   private class ResizableArrayAccess[A] extends ArrayBuffer[A] {
     def p_size0 = size0
     def p_size0_=(s: Int) = size0 = s

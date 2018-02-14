@@ -3,7 +3,7 @@ package collection
 
 import collection.mutable.Builder
 
-import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, Some, StringContext, `inline`, throws}
+import scala.{Any, Boolean, ClassCastException, Equals, Int, NoSuchElementException, None, Nothing, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, Some, StringContext, `inline`, throws}
 import scala.Predef.String
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.implicitConversions
@@ -105,6 +105,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
 
   /** The implementation class of the set returned by `keySet`.
     */
+  @SerialVersionUID(3L)
   protected class KeySet extends Set[K] with GenKeySet {
     def iterableFactory: IterableFactory[Set] = Set
     protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = fromIterable(coll)

@@ -16,7 +16,7 @@ import scala.Predef.require
   *  @define Coll `immutable.BitSet`
   *  @define coll immutable bitset
   */
-@SerialVersionUID(1611436763290191562L)
+@SerialVersionUID(3L)
 sealed abstract class BitSet
   extends SortedSet[Int]
     with collection.BitSet
@@ -101,7 +101,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else new BitSetN(elems)
   }
 
-  @SerialVersionUID(2260107458435649300L)
+  @SerialVersionUID(3L)
   class BitSet1(val elems: Long) extends BitSet {
     protected[collection] def nwords = 1
     protected[collection] def word(idx: Int) = if (idx == 0) elems else 0L
@@ -111,6 +111,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
   }
 
+  @SerialVersionUID(3L)
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
     protected[collection] def nwords = 2
     protected[collection] def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
@@ -120,10 +121,10 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
   }
 
+  @SerialVersionUID(3L)
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected[collection] def nwords = elems.length
     protected[collection] def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
     protected[collection] def updateWord(idx: Int, w: Long): BitSet = fromBitMaskNoCopy(updateArray(elems, idx, w))
   }
-
 }

@@ -20,7 +20,7 @@ import java.lang.String
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
@@ -136,6 +136,7 @@ object HashMap extends MapFactory[HashMap] {
 /** Class used internally for default map model.
   *  @since 2.3
   */
+@SerialVersionUID(3L)
 final class DefaultEntry[A, B](val key: A, var value: B)
   extends HashEntry[A, DefaultEntry[A, B]]
     with Serializable {

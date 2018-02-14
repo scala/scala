@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Array, Serializable, Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit, AnyRef, Any}
+import scala.{Array, Serializable, SerialVersionUID, Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit, AnyRef, Any}
 import scala.Predef.implicitly
 import scala.reflect.ClassTag
 import strawman.collection.immutable.ImmutableArray
@@ -12,7 +12,10 @@ import strawman.collection.immutable.ImmutableArray
  *
  *  @tparam T    the type of the elements for the builder.
  */
-sealed abstract class ArrayBuilder[T] extends ReusableBuilder[T, Array[T]] with Serializable {
+@SerialVersionUID(3L)
+sealed abstract class ArrayBuilder[T]
+  extends ReusableBuilder[T, Array[T]]
+    with Serializable {
   protected[this] var capacity: Int = 0
   protected var size: Int = 0
 
@@ -65,6 +68,7 @@ object ArrayBuilder {
    *
    *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassTag` context bound.
    */
+  @SerialVersionUID(3L)
   final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
 
     private var elems: Array[T] = _
@@ -114,6 +118,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `byte`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
@@ -163,6 +168,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `short`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
@@ -212,6 +218,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `char`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
@@ -261,6 +268,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `int`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
@@ -310,6 +318,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `long`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
@@ -359,6 +368,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `float`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
@@ -408,6 +418,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `double`s. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
@@ -457,6 +468,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `boolean`s. It can be reused. */
+  @SerialVersionUID(3L)
   class ofBoolean extends ArrayBuilder[Boolean] {
 
     private var elems: Array[Boolean] = _
@@ -506,6 +518,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `Unit` type. It can be reused. */
+  @SerialVersionUID(3L)
   final class ofUnit extends ArrayBuilder[Unit] {
 
     def addOne(elem: Unit): this.type = {

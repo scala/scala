@@ -28,16 +28,28 @@ class SerializationTest {
     assertEqualsAfterDeserialization(HashMap(1 -> "one", 2 -> "two", 3 -> "three"))
   }
 
-    @Test
-    def intMap(): Unit = {
-      assertEqualsAfterDeserialization(IntMap.empty[String])
-      assertEqualsAfterDeserialization(IntMap(1 -> "one", 2 -> "two", 3 -> "three"))
-    }
+  @Test
+  def intMap(): Unit = {
+    assertEqualsAfterDeserialization(IntMap.empty[String])
+    assertEqualsAfterDeserialization(IntMap(1 -> "one", 2 -> "two", 3 -> "three"))
+  }
 
   @Test
   def longMap(): Unit = {
     assertEqualsAfterDeserialization(LongMap.empty[String])
     assertEqualsAfterDeserialization(LongMap(1L -> "one", 2L -> "two", 3L -> "three"))
+  }
+
+  @Test
+  def mapWithDefault(): Unit = {
+    assertEqualsAfterDeserialization(Map.empty[Int, String].withDefaultValue("none"))
+    assertEqualsAfterDeserialization(Map(1 -> "one").withDefaultValue("none"))
+  }
+
+  @Test
+  def sortedMapWithDefault(): Unit = {
+    assertEqualsAfterDeserialization(SortedMap.empty[Int, String].withDefaultValue("none"))
+    assertEqualsAfterDeserialization(SortedMap(1 -> "one").withDefaultValue("none"))
   }
 
   @Test

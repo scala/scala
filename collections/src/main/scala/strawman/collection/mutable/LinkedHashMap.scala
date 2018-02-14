@@ -23,6 +23,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
   /** Class for the linked hash map entry, used internally.
     *  @since 2.8
     */
+  @SerialVersionUID(3L)
   final class LinkedEntry[K, V](val key: K, var value: V)
     extends HashEntry[K, LinkedEntry[K, V]]
       with Serializable {
@@ -45,7 +46,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(3L)
 class LinkedHashMap[K, V]
   extends Map[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
@@ -127,6 +128,7 @@ class LinkedHashMap[K, V]
       else Iterator.empty.next()
   }
 
+  @SerialVersionUID(3L)
   protected class LinkedKeySet extends KeySet {
     override def iterableFactory: IterableFactory[collection.Set] = LinkedHashSet
   }

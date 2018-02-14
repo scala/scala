@@ -3,7 +3,7 @@ package collection
 package immutable
 
 import strawman.collection.mutable.Builder
-import scala.{Option, Ordering, `inline`}
+import scala.{Option, Ordering, `inline`, Serializable, SerialVersionUID}
 
 trait SortedMap[K, +V]
   extends Map[K, V]
@@ -41,6 +41,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     override def keySet: SortedSet[K] = new ImmutableKeySortedSet
 
     /** The implementation class of the set returned by `keySet` */
+    @SerialVersionUID(3L)
     protected class ImmutableKeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
       def iterableFactory: IterableFactory[Set] = Set
       def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
@@ -73,10 +74,12 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
+  @SerialVersionUID(3L)
   final class WithDefault[K, +V](underlying: SortedMap[K, V], defaultValue: K => V)
     extends Map.WithDefault[K, V](underlying, defaultValue)
-    with SortedMap[K, V]
-    with SortedMapOps[K, V, SortedMap, WithDefault[K, V]]{
+      with SortedMap[K, V]
+      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]]
+      with Serializable {
 
     implicit def ordering: Ordering[K] = underlying.ordering
 

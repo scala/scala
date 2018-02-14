@@ -26,7 +26,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   *  @define coll immutable champ hash map
   */
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V], val cachedJavaKeySetHashCode: Int, val cachedSize: Int)
   extends Map[K, V]
     with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
@@ -117,7 +117,7 @@ private[immutable] object MapNode {
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] with Serializable {
 
   def get(key: K, hash: Int, shift: Int): Option[V]
@@ -150,7 +150,7 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
 
   import Node._
@@ -501,7 +501,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
 }
 
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
 
   import Node._

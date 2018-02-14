@@ -52,6 +52,18 @@ class SerializationTest {
   }
 
   @Test
+  def mapWithDefault(): Unit = {
+    assertEqualsAfterDeserialization(mutable.Map.empty[Int, String].withDefaultValue("none"))
+    assertEqualsAfterDeserialization(mutable.Map(1 -> "one").withDefaultValue("none"))
+  }
+
+  @Test
+  def sortedMapWithDefault(): Unit = {
+    assertEqualsAfterDeserialization(mutable.SortedMap.empty[Int, String].withDefaultValue("none"))
+    assertEqualsAfterDeserialization(mutable.SortedMap(1 -> "one").withDefaultValue("none"))
+  }
+
+  @Test
   def hashSet(): Unit = {
     assertEqualsAfterDeserialization(mutable.HashSet.empty[Int])
     assertEqualsAfterDeserialization(mutable.HashSet(1, 2, 3))
@@ -73,6 +85,18 @@ class SerializationTest {
   def treeSet(): Unit = {
     assertEqualsAfterDeserialization(mutable.TreeSet.empty[Int])
     assertEqualsAfterDeserialization(mutable.TreeSet(1, 2, 3))
+  }
+
+  @Test
+  def priorityQueue(): Unit = {
+    assertEquals(Seq(), serializeDeserialize(mutable.PriorityQueue.empty[Int]).toSeq)
+    assertEquals(Seq(3, 2, 1), serializeDeserialize(mutable.PriorityQueue(1, 2, 3)).toSeq)
+  }
+
+  @Test
+  def queue(): Unit = {
+    assertEquals(Seq(), serializeDeserialize(mutable.Queue.empty[Int]).toSeq)
+    assertEquals(Seq(1, 2, 3), serializeDeserialize(mutable.Queue(1, 2, 3)).toSeq)
   }
 
   private def assertEqualsAfterDeserialization[A](original: mutable.Iterable[A]): Unit = {

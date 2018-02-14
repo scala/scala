@@ -27,6 +27,7 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(3L)
 sealed abstract class HashMap[K, +V]
   extends Map[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
@@ -182,7 +183,7 @@ object HashMap extends MapFactory[HashMap] {
     */
   @`inline` private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
 
-  @SerialVersionUID(3806596116252973913L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+  @SerialVersionUID(3L)
   private object EmptyHashMap extends HashMap[Any, Nothing] {
 
     protected def updated0[V1 >: Nothing](key: Any, hash: Int, level: Int, value: V1, kv: (Any, V1), merger: Merger[Any, V1]): HashMap[Any, V1] =
@@ -214,7 +215,7 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(2971144592070775060L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+  @SerialVersionUID(3L)
   final class HashMap1[K, +V](private[collection] val key: K, private[collection] val hash: Int, private[collection] val value: V, private[collection] var kv: (K, V@uV)) extends HashMap[K, V] {
 
     def iterator(): Iterator[(K, V)] = Iterator.single(ensurePair)
@@ -267,7 +268,7 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(-2790842372316477099L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+  @SerialVersionUID(3L)
   private[collection] class HashMapCollision1[K, +V](private[collection] val hash: Int, val kvs: ListMap[K, V @uV])
     extends HashMap[K, V @uV] {
     // assert(kvs.size > 1)
@@ -339,7 +340,7 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(-6145486889358767209L) // value computed for strawman 0.6.0, scala 2.13.0-M2
+  @SerialVersionUID(3L)
   final class HashTrieMap[K, +V](
     private[collection] val bitmap: Int,
     private[collection] val elems: Array[HashMap[K, V @uV]],

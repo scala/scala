@@ -642,7 +642,7 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   *  @author Aleksandar Prokopec
   *  @since 2.10
   */
-@SerialVersionUID(0L - 6402774413839597105L)
+@SerialVersionUID(3L)
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
   extends strawman.collection.concurrent.Map[K, V]
     with strawman.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]]
@@ -1133,7 +1133,7 @@ private[concurrent] object RestartException extends ControlThrowable
 
 
 /** Only used for ctrie serialization. */
-@SerialVersionUID(0L - 7237891413820527142L)
+@SerialVersionUID(3L)
 private[concurrent] case object TrieMapSerializationEnd
 
 

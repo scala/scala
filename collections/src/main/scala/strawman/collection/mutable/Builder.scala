@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{Boolean, Any, Char, Int, Unit, Array, Byte, Float, Double, Long, Short, `inline`, deprecated, Serializable}
+import scala.{Boolean, Any, Char, Int, Unit, Array, Byte, Float, Double, Long, Short, `inline`, deprecated, Serializable, SerialVersionUID}
 import java.lang.String
 
 import strawman.collection.IterableOnce
@@ -73,6 +73,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
 }
 
+@SerialVersionUID(3L)
 class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Char, String]
   with IndexedSeq[Char]
   with IndexedOptimizedSeq[Char]
