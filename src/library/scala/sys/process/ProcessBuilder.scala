@@ -184,10 +184,6 @@ trait ProcessBuilder extends Source with Sink {
    */
   def lineStream(capacity: Integer): Stream[String]
 
-  /** Deprecated (renamed). Use `lineStream` instead. */
-  @deprecated("use lineStream instead", "2.11.0")
-  def lines: Stream[String] = lineStream
-
   /** Starts the process represented by this builder.  The output is returned as
     * a Stream that blocks when lines are not available but the process has not
     * completed.  Standard error is sent to the provided ProcessLogger.  If the
@@ -206,10 +202,6 @@ trait ProcessBuilder extends Source with Sink {
    * to termination and then throw an exception.
    */
   def lineStream(log: ProcessLogger, capacity: Integer): Stream[String]
-
-  /** Deprecated (renamed).  Use `lineStream(log: ProcessLogger)` instead. */
-  @deprecated("use lineStream instead", "2.11.0")
-  def lines(log: ProcessLogger): Stream[String] = lineStream(log)
 
   /** Starts the process represented by this builder.  The output is returned as
     * a Stream that blocks when lines are not available but the process has not
@@ -230,10 +222,6 @@ trait ProcessBuilder extends Source with Sink {
    */
   def lineStream_!(capacity: Integer): Stream[String]
 
-  /** Deprecated (renamed).  Use `lineStream_!` instead. */
-  @deprecated("use lineStream_! instead", "2.11.0")
-  def lines_! : Stream[String] = lineStream_!
-
   /** Starts the process represented by this builder.  The output is returned as
     * a Stream that blocks when lines are not available but the process has not
     * completed.  Standard error is sent to the provided ProcessLogger. If the
@@ -252,10 +240,6 @@ trait ProcessBuilder extends Source with Sink {
    * to termination but will not throw an exception.
    */
   def lineStream_!(log: ProcessLogger, capacity: Integer): Stream[String]
-
-  /** Deprecated (renamed).  Use `lineStream_!(log: ProcessLogger)` instead. */
-  @deprecated("use lineStream_! instead", "2.11.0")
-  def lines_!(log: ProcessLogger): Stream[String] = lineStream_!(log)
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the console.

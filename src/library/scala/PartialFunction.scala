@@ -242,12 +242,6 @@ object PartialFunction {
     case ff => new Unlifted(ff)
   }
 
-  /** Converts ordinary function to partial one
-   *  @since   2.10
-   */
-  @deprecated("""For converting an ordinary function f to a partial function pf, use `val pf: PartialFunction[A, B] = { case x => f(x) }`. For creating a new PartialFunction, use an explicit type annotation instead, like in `val pf: PartialFunction[Int, String] = { case 1 => "one" }`.""", "2.12.5")
-  def apply[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
-
   private[this] val constFalse: Any => Boolean = { _ => false}
 
   private[this] val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] with Serializable {

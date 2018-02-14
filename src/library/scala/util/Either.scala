@@ -422,11 +422,9 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
+final case class Left[+A, +B](value: A) extends Either[A, B] {
   def isLeft  = true
   def isRight = false
-
-  @deprecated("Use .value instead.", "2.12.0") def a: A = value
 }
 
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
@@ -434,11 +432,9 @@ final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Ei
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
+final case class Right[+A, +B](value: B) extends Either[A, B] {
   def isLeft  = false
   def isRight = true
-
-  @deprecated("Use .value instead.", "2.12.0") def b: B = value
 }
 
 object Either {
@@ -530,7 +526,7 @@ object Either {
      *  Right(12).left.forall(_ > 10) // true
      *  }}}
      */
-    def forall(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def forall(p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => true
     }
@@ -544,7 +540,7 @@ object Either {
      *  Right(12).left.exists(_ > 10) // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def exists(p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => false
     }
@@ -689,7 +685,7 @@ object Either {
      *  Left(12).right.exists(_ > 10)   // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: B => Boolean): Boolean = e match {
+    def exists(p: B => Boolean): Boolean = e match {
       case Right(b) => p(b)
       case _        => false
     }
