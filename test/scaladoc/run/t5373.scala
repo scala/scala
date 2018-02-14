@@ -4,8 +4,6 @@ import scala.tools.partest.ScaladocModelTest
 object Test extends ScaladocModelTest {
 
   override def code = """
-        import scala.annotation.bridge
-
         package scala.test {
 
           trait A {
@@ -13,7 +11,6 @@ object Test extends ScaladocModelTest {
           }
 
           trait B extends A {
-            @bridge()
             def foo = ()
           }
 
