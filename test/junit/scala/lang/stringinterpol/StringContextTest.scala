@@ -53,19 +53,9 @@ class StringContextTest {
     val res = processEscapes(s)
     assertEquals("""hello, "world"""", res)
   }
-  @Test def octal() = {
-    val s = """\123cala"""
-    val res = treatEscapes(s)
-    assertEquals("Scala", res)
-  }
-  @Test def doubled() = {
-    val s = """\123cala\123yntax"""
-    val res = treatEscapes(s)
-    assertEquals("ScalaSyntax", res)
-  }
   @Test def badly() = assertThrows[InvalidEscapeException] {
     val s = """Scala\"""
-    val res = treatEscapes(s)
+    val res = processEscapes(s)
     assertEquals("Scala", res)
   }
   @Test def noOctal() = assertThrows[InvalidEscapeException] {

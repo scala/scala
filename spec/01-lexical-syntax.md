@@ -513,10 +513,6 @@ The following escape sequences are recognized in character and string literals.
 | `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
 | `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |
 
-A character with Unicode between 0 and 255 may also be represented by
-an octal escape, i.e. a backslash `'\'` followed by a
-sequence of up to three octal characters.
-
 It is a compile time error if a backslash character in a character or
 string literal does not start a valid escape sequence.
 

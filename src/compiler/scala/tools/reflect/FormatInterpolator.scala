@@ -107,18 +107,12 @@ abstract class FormatInterpolator {
             }
             val txt =
               if ("" == suggest) ""
-              else s", use $suggest instead"
+              else s"use $suggest instead"
             txt
           }
           def badOctal = {
-            def msg(what: String) = s"Octal escape literals are $what$alt."
-            if (settings.future) {
-              c.error(errPoint, msg("unsupported"))
-              s0
-            } else {
-              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"), "2.11.0")
-              try StringContext.treatEscapes(s0) catch escapeHatch
-            }
+            c.error(errPoint, s"octal escape literals are unsupported: $alt")
+            s0
           }
           if (e.index == s0.length - 1) {
             c.error(errPoint, """Trailing '\' escapes nothing.""")

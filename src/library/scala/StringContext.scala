@@ -92,7 +92,7 @@ case class StringContext(parts: String*) {
    *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
-  def s(args: Any*): String = standardInterpolator(treatEscapes, args)
+  def s(args: Any*): String = standardInterpolator(processEscapes, args)
 
   /** The raw string interpolator.
    *
@@ -187,17 +187,22 @@ object StringContext {
    *  Escape sequences are:
    *   control: `\b`, `\t`, `\n`, `\f`, `\r`
    *   escape:  `\\`, `\"`, `\'`
-   *   octal:   `\d` `\dd` `\ddd` where `d` is an octal digit between `0` and `7`.
    *
    *  @param  str  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */
-  def treatEscapes(str: String): String = treatEscapes0(str, strict = false)
+  @deprecated("use processEscapes", "2.13.0")
+  def treatEscapes(str: String): String = processEscapes(str)
 
-  /** Treats escapes, but disallows octal escape sequences. */
-  def processEscapes(str: String): String = treatEscapes0(str, strict = true)
-
-  private def treatEscapes0(str: String, strict: Boolean): String = {
+  /** Expands standard Scala escape sequences in a string.
+   *  Escape sequences are:
+   *   control: `\b`, `\t`, `\n`, `\f`, `\r`
+   *   escape:  `\\`, `\"`, `\'`
+   *
+   *  @param  str  A string that may contain escape sequences
+   *  @return The string with all escape sequences expanded.
+   */
+  def processEscapes(str: String): String = {
     val len = str.length
     // replace escapes with given first escape
     def replace(first: Int): String = {
@@ -218,21 +223,6 @@ object StringContext {
             case '"'  => '"'
             case '\'' => '\''
             case '\\' => '\\'
-            case o if '0' <= o && o <= '7' =>
-              if (strict) throw new InvalidEscapeException(str, next)
-              val leadch = str(idx)
-              var oct = leadch - '0'
-              idx += 1
-              if (idx < len && '0' <= str(idx) && str(idx) <= '7') {
-                oct = oct * 8 + str(idx) - '0'
-                idx += 1
-                if (idx < len && leadch <= '3' && '0' <= str(idx) && str(idx) <= '7') {
-                  oct = oct * 8 + str(idx) - '0'
-                  idx += 1
-                }
-              }
-              idx -= 1   // retreat
-              oct.toChar
             case _    => throw new InvalidEscapeException(str, next)
           }
           idx += 1       // advance
