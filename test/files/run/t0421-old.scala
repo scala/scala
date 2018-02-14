@@ -1,3 +1,5 @@
+import scala.reflect.ClassManifest
+
 // ticket #421
 
 @deprecated("Suppress warnings", since="2.11")

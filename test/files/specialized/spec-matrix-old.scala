@@ -1,3 +1,5 @@
+import scala.reflect.ClassManifest
+
 /** Test matrix multiplication with specialization.
  */
 

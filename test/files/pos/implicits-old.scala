@@ -1,3 +1,5 @@
+import scala.reflect.ClassManifest
+
 // #1435
 object t1435 {
   implicit def a(s:String):String = sys.error("")
