@@ -9,7 +9,7 @@ class DSep { object P }
 
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -d " + testOutput.path
+  override def extraSettings = s"${super.extraSettings} -d ${testOutput.path} -cp ${testOutput.path}"
   override def sources = List(
     """
     package test { class C { object O } }
