@@ -10,7 +10,7 @@ object Test {
     if (i<0) i
     else xs.length - ys.length - i
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val rng = new scala.util.Random(java.lang.Integer.parseInt("kmp",36))
 
     // Make sure we agree with naive implementation

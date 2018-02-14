@@ -56,11 +56,11 @@ trait B3 {
 }
 
 object Test3 extends B3 {
-  def test { fail() }
+  def test: Unit = { fail() }
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Test1.fail()
     Test2.fail()
     Test3.fail()

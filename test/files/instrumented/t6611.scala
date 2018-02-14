@@ -1,7 +1,7 @@
 import scala.tools.partest.instrumented.Instrumentation._
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     startProfiling()
 
     // tests optimization in Cleanup for varargs reference arrays

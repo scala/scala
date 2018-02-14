@@ -4,5 +4,5 @@ object Scaladoc3 {
    */
   import scala.collection.mutable.ArrayBuffer
 
-  def f {}
+  def f: Unit = {}
 }

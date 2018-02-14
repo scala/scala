@@ -2,7 +2,7 @@ import scala.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test()
   }
 

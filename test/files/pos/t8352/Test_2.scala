@@ -1,5 +1,5 @@
 object Test extends App {
-  def expectUnit() {
+  def expectUnit(): Unit = {
     Macros.foo(true)
   }
 }

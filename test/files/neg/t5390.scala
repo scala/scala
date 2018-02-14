@@ -3,7 +3,7 @@ class A {
 }
 
 object X {
-  def foo {
+  def foo: Unit = {
     val b = a.B("")
     val a = new A
   }

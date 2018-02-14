@@ -1,7 +1,7 @@
 import scala.language.dynamics
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     class Lenser[T] extends Dynamic {
       def selectDynamic(propName: String) = ???
     }

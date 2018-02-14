@@ -13,7 +13,7 @@ def h = g
 assert(h == "h", h)
   """
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     def test(f: Settings => Unit): Unit = {
       val settings = new Settings()
       settings.processArgumentString("-opt:l:inline -opt-inline-from:**")

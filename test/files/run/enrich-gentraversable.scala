@@ -6,7 +6,7 @@ object Test extends App {
   import scala.collection.generic.IsIterableLike
   import scala.collection.{BuildFrom, Iterable, IterableOps}
 
-  def typed[T](t : => T) {}
+  def typed[T](t : => T): Unit = {}
   def testIterableOps = {
     class FilterMapImpl[A, Repr](r: Repr, it: IterableOps[A, Iterable, _]) {
       final def filterMap[B, That](f: A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That =

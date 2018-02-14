@@ -89,7 +89,7 @@ object Test {
     if (s.length() == 0) List()
     else s.charAt(0) :: toCharList(s.substring(1))
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     {
       var t: Tree[String] = Empty
       for (s <- args) {

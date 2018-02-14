@@ -3,6 +3,6 @@
  */
 class C {
 
-  def f[T: Manifest, S: Manifest](x: T, y: S)(implicit p: C) { }
+  def f[T: Manifest, S: Manifest](x: T, y: S)(implicit p: C): Unit = { }
 
 }

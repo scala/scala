@@ -3,7 +3,7 @@ object L extends Enumeration {
 }
 
 class Foo {
-  def foo(xs: List[L.Value]) {
+  def foo(xs: List[L.Value]): Unit = {
     import scala.util.control.Breaks.{break, breakable}
     println("START for " + xs)
     breakable {
@@ -20,7 +20,7 @@ class Foo {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val f = new Foo()
     val l = List(L.Two, L.Two, L.One, L.Three)
     f.foo(l)

@@ -90,7 +90,7 @@ object Test {
     }
     assert({ () => x }.apply == "42")
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
   	lazyVal()
     ident()
     apply()

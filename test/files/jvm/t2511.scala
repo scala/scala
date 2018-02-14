@@ -25,7 +25,7 @@ object Test {
     in.readObject.asInstanceOf[MyMessage]
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = unserialize(serialize)
     // Xcheckinit freaks out here but its nullness is what we're testing
     try println(m.message)

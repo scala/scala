@@ -5,7 +5,7 @@
 object Test {
   import collection._
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = new mutable.HashMap[String, String]
 
     /* Use non hash-based structure for verification */

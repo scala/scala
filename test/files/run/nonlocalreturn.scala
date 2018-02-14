@@ -5,7 +5,7 @@ object Test {
     wrap({ return Some(1) ; None })
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(f())
   }
 }

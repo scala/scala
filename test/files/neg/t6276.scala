@@ -1,5 +1,5 @@
 object Test {
-  def foo(a: Int, b: Int, c: Int) {
+  def foo(a: Int, b: Int, c: Int): Unit = {
     class C {
       def a: Any = a // warn
       val b: Any = b // warn
@@ -8,7 +8,7 @@ object Test {
       def d: Any = C.this.d // warn
     }
 
-    def method {
+    def method: Unit = {
       // method local
       def a: Any = a // warn
     }

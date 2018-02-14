@@ -4,7 +4,7 @@ package t6278
 import language.implicitConversions
 
 object test {
-  def ok() {
+  def ok(): Unit = {
     class Foo(val i: Int) {
       def foo[A](body: =>A): A = body
     }
@@ -14,7 +14,7 @@ object test {
     k foo println("k?")
     val j = 2
   }
-  def nope() {
+  def nope(): Unit = {
     implicit class Foo(val i: Int) {
       def foo[A](body: =>A): A = body
     }
@@ -24,7 +24,7 @@ object test {
     //lazy
     val j = 2
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     ok(); nope()
   }
 }

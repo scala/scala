@@ -131,7 +131,7 @@ class PromiseTests extends MinimalScalaTest {
     futureWithResult(_(future, result))
   }
 
-  def futureWithResult(f: ((Future[Any], Any) => Unit) => Unit) {
+  def futureWithResult(f: ((Future[Any], Any) => Unit) => Unit): Unit = {
 
     "be completed" in { f((future, _) => future.isCompleted mustBe (true)) }
 
@@ -210,7 +210,7 @@ class PromiseTests extends MinimalScalaTest {
 
   }
 
-  def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) => Unit) => Unit) {
+  def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) => Unit) => Unit): Unit = {
 
     "be completed" in {
       f((future, _) => future.isCompleted mustBe (true))

@@ -1,6 +1,6 @@
 abstract class AbsArray[T] {
   def apply(idx: Int): T
-  def update(idx: Int, elem: T)
+  def update(idx: Int, elem: T): Unit
   def length: Int
   def applyByte(idx: Int): Byte = apply(idx).asInstanceOf[Byte]
   def updateByte(idx: Int, elem: Byte) = update(idx, elem.asInstanceOf[T])
@@ -44,8 +44,8 @@ class SpecArray[@specialized T](arr: Array[T]) extends AbsArray[T] {
 
 abstract class Test {
   def sum(): Int
-  def modify(i: Int)
-  def run() {
+  def modify(i: Int): Unit
+  def run(): Unit = {
     var s = 0
     for (i <- 1 to 1000000) {
       s += sum()

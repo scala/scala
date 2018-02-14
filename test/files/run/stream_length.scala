@@ -7,7 +7,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     if (scala.tools.partest.utils.Properties.isAvian) {
       println("!!!TEST SKIPPED!!!")
       println("See scala/bug#7600 for further information.")

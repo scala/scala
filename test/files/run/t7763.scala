@@ -1,7 +1,7 @@
 object Test {
   class A; class B
-  def main(args: Array[String]) {
-    def noExpectedType() {
+  def main(args: Array[String]): Unit = {
+    def noExpectedType(): Unit = {
       a().asInstanceOf[B] // cast elided!
     }
     def withExpectedType(): B = {

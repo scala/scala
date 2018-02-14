@@ -130,7 +130,7 @@ object Test extends App {
       t
   }
 
-  def testRecVal {
+  def testRecVal: Unit = {
     lazy val twos: List[Int] = 2 :: twos
     lazy val ones: LazyList[Int] = LazyList.cons(1, ones)
 
@@ -138,7 +138,7 @@ object Test extends App {
   }
 
   // should compile without error
-  def testMutualRecVal {
+  def testMutualRecVal: Unit = {
     lazy val odd: Int = 1 + even
     lazy val even: Int = 1 + odd
 

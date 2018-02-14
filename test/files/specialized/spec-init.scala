@@ -1,12 +1,12 @@
 class Foo[@specialized(Int) T](_x: T) {
   val x = _x
-  def bar {}
+  def bar: Unit = {}
 
   val y = x
   println(x)
   println(y)
 
-  def baz {}
+  def baz: Unit = {}
   val z = y
   println(z)
 }
@@ -28,7 +28,7 @@ class TouchGlobal[@specialized(Int) T](_x: T) {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new Foo("abc"))
     println("shouldn't see two initialized values and one uninitialized")
     (new Foo(42))

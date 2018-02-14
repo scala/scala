@@ -8,7 +8,7 @@ object Test extends App {
     override def hashCode = value / 5
   }
 
-  def testCorrectness[T : Ordering](n: Int, mkKey: Int => T) {
+  def testCorrectness[T : Ordering](n: Int, mkKey: Int => T): Unit = {
     val o = implicitly[Ordering[T]]
     val s = HashSet.empty[T] ++ (0 until n).map(mkKey)
     for (i <- 0 until n) {
@@ -23,14 +23,14 @@ object Test extends App {
   // this tests the structural sharing of the new filter
   // I could not come up with a simple test that tests structural sharing when only parts are reused, but
   // at least this fails with the old and passes with the new implementation
-  def testSharing() {
+  def testSharing(): Unit = {
     val s = HashSet.empty[Int] ++ (0 until 100)
     require(s.filter(_ => true) eq s)
     require(s.filterNot(_ => false) eq s)
   }
 
   // this tests that neither hashCode nor equals are called during filter
-  def testNoHashing() {
+  def testNoHashing(): Unit = {
     var hashCount = 0
     var equalsCount = 0
     case class HashCounter(value:Int) extends Ordered[HashCounter] {

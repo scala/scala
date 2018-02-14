@@ -10,7 +10,7 @@ object Winners {
   @tailrec def loopsucc1(x: Int): Int = loopsucc1(x - 1)
   @tailrec def loopsucc2[T](x: Int): Int = loopsucc2[T](x - 1)
 
-  def ding() {
+  def ding(): Unit = {
     object dong {
       @tailrec def loopsucc3(x: Int): Int = loopsucc3(x)
     }

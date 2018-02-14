@@ -62,7 +62,7 @@ trait HOSeq {
      *
      *  @param x  the element to append.
      */
-    def += (x: A) {
+    def += (x: A): Unit = {
       if (exported) copy
       if (start.isEmpty) {
         last = new HOSeq.this.:: (x, Nil)
@@ -83,13 +83,13 @@ trait HOSeq {
 
     /** Clears the buffer contents.
      */
-    def clear {
+    def clear: Unit = {
       start = Nil
       exported = false
     }
 
     /** Copy contents of this buffer */
-    private def copy {
+    private def copy: Unit = {
       var cursor = start
       val limit = last.tail
       clear

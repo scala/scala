@@ -1,7 +1,7 @@
 // Some iterator grouped/sliding unit tests
 object Test {
   def it = (1 to 10).iterator
-  def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(it: Iterator[Seq[T]]) {
+  def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(it: Iterator[Seq[T]]): Unit = {
     val xs = it.toList
     def fail(msg: String) = "assertion failed on %s: %s".format(xs, msg)
     assert(xs.size == expectedLength, fail("expected length " + expectedLength))

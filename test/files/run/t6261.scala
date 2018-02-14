@@ -2,7 +2,7 @@ import scala.collection.immutable._
 
 object Test extends App {
 
-  def test1() {
+  def test1(): Unit = {
     // test that a HashTrieMap with one leaf element is not created!
     val x = HashMap.empty + (1->1) + (2->2)
     if(x.getClass.getSimpleName != "HashTrieMap")
@@ -13,7 +13,7 @@ object Test extends App {
       println("A hash map containing one element should always use HashMap1")
   }
 
-  def test2() {
+  def test2(): Unit = {
     // class that always causes hash collisions
     case class Collision(value:Int) { override def hashCode = 0 }
 
@@ -27,10 +27,10 @@ object Test extends App {
     if(y.getClass.getSimpleName != "HashMap1")
       println("HashMap of size 1 should use HashMap1" + y.getClass)
   }
-  def test3() {
+  def test3(): Unit = {
     // finds an int x such that improved(x) differs in the first bit to improved(0),
     // which is the worst case for the HashTrieSet
-    def findWorstCaseInts() {
+    def findWorstCaseInts(): Unit = {
       // copy of improve from HashSet
       def improve(hcode: Int) = {
         var h: Int = hcode + ~(hcode << 9)
@@ -94,7 +94,7 @@ object Test extends App {
 
 package scala.collection.immutable {
   object StructureTests {
-    def printStructure(x:HashMap[_,_], prefix:String="") {
+    def printStructure(x:HashMap[_,_], prefix:String=""): Unit = {
       x match {
         case m:HashMap.HashTrieMap[_,_] =>
           println(prefix+m.getClass.getSimpleName + " " + m.size)
@@ -108,7 +108,7 @@ package scala.collection.immutable {
       }
     }
 
-    def validate(x:HashMap[_,_]) {
+    def validate(x:HashMap[_,_]): Unit = {
       x match {
         case m:HashMap.HashTrieMap[_,_] =>
           require(m.elems.size>1 || (m.elems.size==1 && m.elems(0).isInstanceOf[HashMap.HashTrieMap[_,_]]))

@@ -87,7 +87,7 @@ object Test {
   val failures = new mutable.ListBuffer[String]
   var testCount = 0
 
-  def assertOne(op1: Any, op2: Any, res: Boolean, str: String) {
+  def assertOne(op1: Any, op2: Any, res: Boolean, str: String): Unit = {
     testCount += 1
     val resStr = str.format(op1, op2)
     // println(resStr)
@@ -111,7 +111,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     runSeqs()
 
     assert(failures.isEmpty, failures mkString "\n")

@@ -1,5 +1,5 @@
 class ForSomeVsUnapply {
-  def test {
+  def test: Unit = {
     def makeWrap: Wrap = ???
     def useRep[e](rep: (e, X[e])) = ()
 

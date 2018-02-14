@@ -1,7 +1,7 @@
 trait Bar2[T]
 
 object Test2 {
-  def wrap {
+  def wrap: Unit = {
     object Foo {
       implicit def fooBar: Bar2[Foo.type] = ???
     }

@@ -45,7 +45,7 @@ object Test {
 class BeanPropertyTests {
   @scala.beans.BeanProperty lazy val lv1 = 0
 
-  def foo() {
+  def foo(): Unit = {
     val bp1 = new BeanPropertyTests1
 
     println(lv1)
@@ -69,7 +69,7 @@ class BeanPropertyTests1 {
 // test mixin of getters / setters, and implementing abstract
 // methods using @BeanProperty
 class C extends T with BeanF {
-  def foo() {
+  def foo(): Unit = {
     setF("doch!")
     setG(true)
     this.getF()
@@ -105,5 +105,5 @@ class Test4 {
   @Ann4(i = Test3.i)
   @Ann5(value = classOf[Int])
   @Ann5(Test3.cls)
-  def foo {}
+  def foo: Unit = {}
 }

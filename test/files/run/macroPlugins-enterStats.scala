@@ -11,7 +11,7 @@ object Test extends DirectTest {
     }
   """.trim
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     import global._
     import analyzer._

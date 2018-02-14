@@ -7,7 +7,7 @@ object Value {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val term = Add(Num(1), Add(Num(2), Num(3)))
     val res = term match {
       case Add(Num(x), Num(y))    => "Add(Num, Num)"

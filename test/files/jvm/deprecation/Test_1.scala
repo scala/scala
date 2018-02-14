@@ -1,5 +1,5 @@
 class Test {
-  def test {
+  def test: Unit = {
     val d = new Defs
     val u = d.i + 1
     d.i = 2
@@ -14,4 +14,4 @@ class Test {
   }
 }
 
-object Test { def main(args: Array[String]) { } }
+object Test { def main(args: Array[String]): Unit = { } }

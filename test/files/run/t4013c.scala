@@ -4,7 +4,7 @@ class Suba[@specialized(Int) B](val data: Array[B]) {
 
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new Suba[Int](Array(0))
   }
 }

@@ -5,7 +5,7 @@ import scala.tools.reflect.ToolBox
 object Test extends App {
   val toolbox = cm.mkToolBox()
 
-  def printSource[T](expr: Expr[T]) {
+  def printSource[T](expr: Expr[T]): Unit = {
     val ttree = toolbox typecheck expr.tree
     println(ttree.toString)
   }

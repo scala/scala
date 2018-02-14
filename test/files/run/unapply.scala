@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Foo.run()
     Mas.run()
     LisSeqArr.run()
@@ -51,7 +51,7 @@ object Foo {
   def doMatch5(b:Bar) = (b:Any) match {
     case FaaPreciseSome(n:String) => n
   }
-  def run() {
+  def run(): Unit = {
     val b = new Bar
     assert(doMatch1(b) == (50,"medium"))
     assert(doMatch2(b) == null)
@@ -77,7 +77,7 @@ object Mas {
     var size: Int    = 60
     var name: String = "too large"
   }
-  def run() {
+  def run(): Unit = {
     val b = new Baz
     assert((60,"too large") == (b match {
       case Gaz(s:Int, n:String) => (s,n)
@@ -86,7 +86,7 @@ object Mas {
 }
 
 object LisSeqArr {
-  def run() {
+  def run(): Unit = {
     assert((1,2) == ((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}))
     assert((1,2) == ((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}))
   }
@@ -98,7 +98,7 @@ object StreamFoo {
       case LazyList.Empty => 0
       case LazyList.cons(hd, tl) => hd + sum(tl)
     }
-  def run() {
+  def run(): Unit = {
     val str: LazyList[Int] = List(1,2,3).to(LazyList)
     assert(6 == sum(str))
   }
@@ -116,7 +116,7 @@ object Test1256 {
     }
   }
 
-  def run() {
+  def run(): Unit = {
     assert(!(new Buffer).jp.isDefinedAt(42))
   }
 }

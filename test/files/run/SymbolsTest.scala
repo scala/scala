@@ -62,7 +62,7 @@ object Test {
   def aSymbol = 'myFirstSymbol
   val anotherSymbol = 'mySecondSymbol
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     testLiterals
     testForLoop
     testInnerClasses
@@ -77,7 +77,7 @@ object Test {
     testLazyObjects
   }
 
-  def testLiterals {
+  def testLiterals: Unit = {
     val scl = new Slazz
     assert(scl.s1 == aSymbol)
     assert(scl.s2 == anotherSymbol)
@@ -86,22 +86,22 @@ object Test {
     assert(scl.s1 == Symbol("myFirstSymbol"))
   }
 
-  def testForLoop {
+  def testForLoop: Unit = {
     for (i <- 0 until 100) List("Val" + i)
   }
 
-  def testInnerClasses {
+  def testInnerClasses: Unit = {
     val innerPower = new Inner
     assert(innerPower.simba == 'smba)
     assert(innerPower.mfs == 'mfsa)
   }
 
-  def testInnerObjects {
+  def testInnerObjects: Unit = {
     assert(InnerObject.o1 == 'aaa)
     assert(InnerObject.o2 == 'ddd)
   }
 
-  def testWithHashMaps {
+  def testWithHashMaps: Unit = {
     val map = new collection.mutable.HashMap[Symbol, Symbol]
     map.put(InnerObject.o1, 'smba)
     map.put(InnerObject.o2, 'mfsa)
@@ -119,7 +119,7 @@ object Test {
     assert(map('symKey91) == 'symVal91)
   }
 
-  def testLists {
+  def testLists: Unit = {
     var lst: List[Symbol] = Nil
     for (i <- 0 until 100) lst ::= Symbol("lsym" + (99 - i))
     assert(lst(0) == 'lsym0)
@@ -130,7 +130,7 @@ object Test {
     assert(lst(90) == 'lsym90)
   }
 
-  def testAnonymous { // TODO complaints classdef can't be found for some reason, runs fine in my case
+  def testAnonymous: Unit = { // TODO complaints classdef can't be found for some reason, runs fine in my case
     // val anon = () => {
     //   val simba = 'smba
     //   simba
@@ -157,7 +157,7 @@ object Test {
     // assert(an3() == Symbol("layered" + ""))
   }
 
-  def testNestedObject {
+  def testNestedObject: Unit = {
     object nested {
       def sign = 'sign
       def insignia = 'insignia
@@ -167,7 +167,7 @@ object Test {
     assert(('insignia).toString == "'insignia")
   }
 
-  def testInheritance {
+  def testInheritance: Unit = {
     val base = new Base
     val sub = new Sub
     assert(base.basesymbol == 'symbase)
@@ -190,7 +190,7 @@ object Test {
     assert(('symbase).toString == "'symbase")
   }
 
-  def testTraits {
+  def testTraits: Unit = {
     val fromTrait = new AnyRef with Signs {
       def traitsymbol = 'traitSymbol
     }
@@ -240,7 +240,7 @@ object Test {
     assert(('s8).toString == "'s8")
   }
 
-  def testLazyTraits {
+  def testLazyTraits: Unit = {
     val l1 = new AnyRef with Lazy1
     val l2 = new AnyRef with Lazy2
     val l3 = new AnyRef with Lazy3
@@ -253,7 +253,7 @@ object Test {
     assert(l3.s3 == 'lazySymbol3)
   }
 
-  def testLazyObjects {
+  def testLazyObjects: Unit = {
     assert(SingletonOfLazyness.lazysym == 'lazySymbol)
     assert(SingletonOfLazyness.another == Symbol("ano" + "ther"))
     assert((SingletonOfLazyness.lastone).toString == "'lastone")

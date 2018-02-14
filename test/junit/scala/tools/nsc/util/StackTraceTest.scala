@@ -70,7 +70,7 @@ class StackTraceTest extends Expecting {
     }
   }
 
-  @Test def showsAllTrace() {
+  @Test def showsAllTrace(): Unit = {
     probe(sampler)(_ => true) { s =>
       val res = s.lines.toList
       /*

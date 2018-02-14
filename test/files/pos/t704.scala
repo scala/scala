@@ -16,7 +16,7 @@ trait E extends D {
 }
 class C extends E {}
 object Go extends D {
-  def main(args : Array[String]) {
+  def main(args : Array[String]): Unit = {
     new C().f()
     new C().f()
   }

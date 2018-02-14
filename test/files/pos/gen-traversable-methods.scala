@@ -7,7 +7,7 @@ import collection._
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val gen: GenTraversable[Int] = List(1, 2, 3)
     gen.head
     gen.headOption

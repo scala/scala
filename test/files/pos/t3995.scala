@@ -1,5 +1,5 @@
 class Lift {
-  def apply(f: F0) {}
+  def apply(f: F0): Unit = {}
 
   class F0
   object F0 {

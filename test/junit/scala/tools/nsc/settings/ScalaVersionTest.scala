@@ -10,7 +10,7 @@ import scala.tools.testing.AssertUtil.assertThrows
 @RunWith(classOf[JUnit4])
 class ScalaVersionTest {
   // scala/bug#8711
-  @Test def versionUnparse() {
+  @Test def versionUnparse(): Unit = {
     val v = "2.11.3"
 
     assertEquals(v, ScalaVersion(v).unparse)
@@ -18,7 +18,7 @@ class ScalaVersionTest {
   }
 
   // scala/bug#9167
-  @Test def `version parses with rigor`() {
+  @Test def `version parses with rigor`(): Unit = {
     import settings.{ SpecificScalaVersion => V }
     import ScalaVersion._
 
@@ -63,7 +63,7 @@ class ScalaVersionTest {
   }
 
   // scala/bug#9377
-  @Test def `missing version is as good as none`() {
+  @Test def `missing version is as good as none`(): Unit = {
     assertEquals(NoScalaVersion, ScalaVersion(""))
   }
 }

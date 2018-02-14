@@ -12,7 +12,7 @@ package object buffer {
 package buffer {
   object Main {
     // ArrayVec2 can be compiled, instantiated and used.
-    def main(args: Array[String]) { println(works) }
+    def main(args: Array[String]): Unit = { println(works) }
   }
 
   trait ElemType { type Element; type Component <: ElemType }

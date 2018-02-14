@@ -4,7 +4,7 @@ object Test extends App {
 
   // finds an int x such that improved(x) differs in the first bit to improved(0),
   // which is the worst case for the HashTrieSet
-  def findWorstCaseInts() {
+  def findWorstCaseInts(): Unit = {
     // copy of improve from HashSet
     def improve(hcode: Int) = {
       var h: Int = hcode + ~(hcode << 9)
@@ -63,7 +63,7 @@ object Test extends App {
 
 package scala.collection.immutable {
   object StructureTests {
-    def printStructure(x:HashSet[_], prefix:String="") {
+    def printStructure(x:HashSet[_], prefix:String=""): Unit = {
       x match {
         case m:HashSet.HashTrieSet[_] =>
           println(prefix+m.getClass.getSimpleName + " " + m.size)
@@ -77,7 +77,7 @@ package scala.collection.immutable {
       }
     }
 
-    def validate(x:HashSet[_]) {
+    def validate(x:HashSet[_]): Unit = {
       x match {
         case m:HashSet.HashTrieSet[_] =>
           require(m.elems.size>1 || (m.elems.size==1 && m.elems(0).isInstanceOf[HashSet.HashTrieSet[_]]))

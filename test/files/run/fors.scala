@@ -14,7 +14,7 @@ object Test extends App {
 
   /////////////////// old syntax ///////////////////
 
-  def testOld {
+  def testOld: Unit = {
     println("\ntestOld")
 
     // lists
@@ -46,7 +46,7 @@ object Test extends App {
 
   /////////////////// new syntax ///////////////////
 
-  def testNew {
+  def testNew: Unit = {
     println("\ntestNew")
 
     // lists

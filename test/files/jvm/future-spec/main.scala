@@ -9,7 +9,7 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new FutureTests).check()
     (new PromiseTests).check()
     (new TryTests).check()
@@ -37,7 +37,7 @@ trait MinimalScalaTest extends Output with Features {
 
   val throwables = mutable.ArrayBuffer[Throwable]()
 
-  def check() {
+  def check(): Unit = {
     if (throwables.nonEmpty) println(buffer.toString)
   }
 

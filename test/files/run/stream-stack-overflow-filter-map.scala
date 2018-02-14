@@ -1,7 +1,7 @@
 import collection.{IterableOps, BuildFrom}
 
 object Test extends App {
-  def testStreamPred(s: LazyList[Int])(p: Int => Boolean) {
+  def testStreamPred(s: LazyList[Int])(p: Int => Boolean): Unit = {
     val res1 = s withFilter p
     val res2 = s filter p
 
@@ -20,7 +20,7 @@ object Test extends App {
     assert((res1 map identity).toSeq == res2.toSeq)
   }
 
-  def testStream(s: LazyList[Int]) {
+  def testStream(s: LazyList[Int]): Unit = {
     testStreamPred(s)(_ => false)
     testStreamPred(s)(_ => true)
     testStreamPred(s)(_ % 2 == 0)

@@ -2727,18 +2727,20 @@ self =>
         val vparamss = paramClauses(name, contextBoundBuf.toList, ofCaseClass = false)
         newLineOptWhenFollowedBy(LBRACE)
         var restype = fromWithinReturnType(typedOpt())
+        def msg(what: String, instead: String) =
+          s"procedure syntax is $what: instead, add `$instead` to explicitly declare `$name`'s return type"
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (settings.future)
-                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.", "2.12.0")
+              if (settings.isScala214) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
+              else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (settings.future)
-              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.", "2.12.0")
+            if (settings.isScala214) syntaxError(in.offset, msg("unsupported", ": Unit ="))
+            else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
             restype = scalaUnitConstr
             blockExpr()
           } else {

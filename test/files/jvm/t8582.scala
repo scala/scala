@@ -36,7 +36,7 @@ object Test extends BytecodeTest {
     println(cnode.innerClasses.asScala.toList.map(i => s"className[${i.name}] outerClassName[${i.outerName}] innerName[${i.innerName}] access[${i.access}]").mkString(" ", "\n ", ""))
   }
 
-  def show() {
+  def show(): Unit = {
 
     println("getClass on module gives module class")
     println(" " + Singleton.Singleton.getClass)

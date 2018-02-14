@@ -8,7 +8,7 @@ object Test {
     i + 1
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     assert(foo(None) == -1)
   }
 }

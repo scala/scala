@@ -9,7 +9,7 @@ object Test {
     }
   }
 
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     // a prime number
     //val num = 623456789
     val num = 2796203

@@ -16,7 +16,7 @@ import scala.annotation.tailrec
 
 trait TestBase {
   trait Done { def apply(proof: => Boolean): Unit }
-  def once(body: Done => Unit) {
+  def once(body: Done => Unit): Unit = {
     import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {

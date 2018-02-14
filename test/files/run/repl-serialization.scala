@@ -8,7 +8,7 @@ import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     run()
   }
 

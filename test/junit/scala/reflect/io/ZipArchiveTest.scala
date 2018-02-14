@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 class ZipArchiveTest {
 
   @Test
-  def corruptZip {
+  def corruptZip: Unit = {
     val f = JFile.createTempFile("test", ".jar")
     val fza = new FileZipArchive(f)
     try {
@@ -24,7 +24,7 @@ class ZipArchiveTest {
   }
 
   @Test
-  def missingFile {
+  def missingFile: Unit = {
     val f = new JFile("xxx.does.not.exist")
     val fza = new FileZipArchive(f)
     try {

@@ -5,7 +5,7 @@ object Test {
   var xs: CharSequence = new runtime.ArrayCharSequence(arr, 0, arr.length)
   val hash = xs.hashCode
 
-  def check(chars: CharSequence) {
+  def check(chars: CharSequence): Unit = {
     println("\n[check '" + chars + "'] len = " + chars.length)
     chars match {
       case x: runtime.ArrayCharSequence => assert(x.xs eq arr, ((x.xs, arr)))

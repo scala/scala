@@ -13,7 +13,7 @@ import ExecutionContext.Implicits.global
   */
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val arrSz = 50 * 10000
     val numFutures = 4000
 

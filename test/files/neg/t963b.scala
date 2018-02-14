@@ -5,7 +5,7 @@ trait A {
 }
 
 object B {
-  def f(x : { val y : A }) { x.y.v = x.y.v }
+  def f(x : { val y : A }): Unit = { x.y.v = x.y.v }
 
   var a : A = _
   var b : Boolean = false

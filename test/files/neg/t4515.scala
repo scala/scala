@@ -30,7 +30,7 @@ object Main {
       Nil
   }
 
-  def onTimer(target: Target) {
+  def onTimer(target: Target): Unit = {
     val pushService = TimerPushService.get
     for ((node, handler) <- handlers) {
       for (ctx <- pushService.pollEvents(node)) {

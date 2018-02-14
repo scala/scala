@@ -26,13 +26,13 @@ object TestThrows {
     def readNoEx(): Int
   }
 
-  def checkMethod(cls: Class[_], name: String) {
+  def checkMethod(cls: Class[_], name: String): Unit = {
     val method = cls.getMethod(name)
     println(name + " throws: " + method.getExceptionTypes.mkString("", ", ", ""))
     println(name + " annotations: " + method.getDeclaredAnnotations.mkString("", ", ", ""))
   }
 
-  def run(cls: Class[_]) {
+  def run(cls: Class[_]): Unit = {
     checkMethod(cls, "read")
     checkMethod(cls, "readWith2")
     checkMethod(cls, "readMixed")
@@ -66,7 +66,7 @@ object TL {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     TestThrows.run(classOf[TestThrows.Foo])
     println("Testing mirror class")
     TestThrows.run(Class.forName("TL"))

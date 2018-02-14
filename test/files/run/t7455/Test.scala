@@ -12,7 +12,7 @@ import scala.tools.partest._
 object Test extends DirectTest {
   override def code = ""
 
-  def show {
+  def show: Unit = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
     val compiler = newCompiler("-cp", classpath, "-d", testOutput.path)
     import compiler._, definitions._

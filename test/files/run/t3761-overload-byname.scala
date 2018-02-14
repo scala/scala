@@ -21,7 +21,7 @@ class OverTheTop {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val top = new OverTheTop
     println(top.info0("hello"))
     println(top.info0("hello","working","world"))

@@ -43,7 +43,7 @@ object Test extends App {
   assert((new b.L).bar eq b)
   assert((new c.M).bar eq c)
 
-  def checkOuterFields[C: ClassTag](expected: Int) {
+  def checkOuterFields[C: ClassTag](expected: Int): Unit = {
     val cls = implicitly[ClassTag[C]].runtimeClass
     val outerFields = cls.getDeclaredFields().filter(_.getName.contains("$outer"))
     assert(outerFields.size == expected, outerFields.map(_.getName))

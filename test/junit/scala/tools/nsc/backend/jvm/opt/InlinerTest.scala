@@ -257,7 +257,7 @@ class InlinerTest extends BytecodeTesting {
     val code =
       """// can't use the `compat.Platform.arraycopy` from the std lib for now, because the classfile doesn't have a ScalaInlineInfo attribute
         |object Platform {
-        |  @inline def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
+        |  @inline def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
         |    System.arraycopy(src, srcPos, dest, destPos, length)
         |  }
         |}

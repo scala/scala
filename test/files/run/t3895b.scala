@@ -11,7 +11,7 @@ class DryRun {
    lazy val test2 = 1
    object test3
   }
-  def test {
+  def test: Unit = {
     compiler.test1
     compiler.test2
     compiler.test3
@@ -21,7 +21,7 @@ class DryRun {
 }
 
 object Test {
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         new DryRun().test
     }
 }

@@ -26,6 +26,6 @@ object Test {
 
   def rep[T](p: => Base[T]): Base[T] = null // whatever
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
   }
 }

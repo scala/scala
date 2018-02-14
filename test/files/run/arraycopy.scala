@@ -1,7 +1,7 @@
 
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a = new Array[Int](10)
     val b = new Array[Any](10)
     for (i <- 0 until 10) b(i) = i

@@ -3,7 +3,7 @@
 // ticked #3444
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val it = (1 to 12).toSeq.iterator
 
     assert(it.next == 1)

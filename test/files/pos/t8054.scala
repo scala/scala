@@ -18,7 +18,7 @@ object D2 extends D {
 
 object Hello {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // 2.10.3 - ok
     // 2.11.0-M7 - type mismatch; found : Seq[DB1.MANIFEST.Entry]
     // required: Seq[DB1.MANIFEST.Entry]

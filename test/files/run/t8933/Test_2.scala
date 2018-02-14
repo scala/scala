@@ -3,7 +3,7 @@ class MotherClass extends MixinWithSymbol {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val symbol = (new MotherClass).symbolFromTrait
     println(symbol)
   }

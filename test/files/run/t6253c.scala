@@ -26,7 +26,7 @@ object Test extends App {
     }
   }
 
-  def testDiff[T](sizes: Seq[Int], offsets: Seq[Double], keyType: String, mkKey: Int => T) {
+  def testDiff[T](sizes: Seq[Int], offsets: Seq[Double], keyType: String, mkKey: Int => T): Unit = {
     for {
       i <- sizes
       o <- offsets

@@ -1,6 +1,6 @@
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val d: Double = (BigInt(1) << 64).toDouble
     val f: Float = d.toFloat
     val n: java.lang.Number = d.toFloat

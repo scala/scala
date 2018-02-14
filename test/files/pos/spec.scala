@@ -49,7 +49,7 @@ class Foo[@specialized(Int, AnyRef) A](val a: Array[A]) {
 
 // instantiation and selection
 object Test {
-  def main(arg: Array[String]) {
+  def main(arg: Array[String]): Unit = {
     val f = new Foo(new Array[String](5))
     f.id("")
 

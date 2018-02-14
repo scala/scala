@@ -8,7 +8,7 @@ object Test extends App {
 
   def sum[A](xs: Iterable[Int]) = xs.foldLeft(0)((x, y) => x + y)
 
-  def time(op: => Unit) {
+  def time(op: => Unit): Unit = {
     val start = currentTime
     op
     if (printTime) println("  time = "+(currentTime - start)+"ms")

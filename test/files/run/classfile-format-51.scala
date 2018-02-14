@@ -18,7 +18,7 @@ import Opcodes._
 object Test extends DirectTest {
   override def extraSettings: String = "-opt:l:inline -opt-inline-from:** -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
-  def generateClass() {
+  def generateClass(): Unit = {
     val invokerClassName =  "DynamicInvoker"
     val bootstrapMethodName = "bootstrap"
     val bootStrapMethodType = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"

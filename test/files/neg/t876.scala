@@ -16,7 +16,7 @@ object AssertionError extends AnyRef with App
     }
 
 
-    def test[T](f: => T) { f }
+    def test[T](f: => T): Unit = { f }
 
     test {
         val manager = new Manager

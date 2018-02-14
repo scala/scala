@@ -2,7 +2,7 @@ class Exception1 extends RuntimeException
 class Exception2 extends RuntimeException
 
 class Foo_1 {
-  def foo(baz: Baz) {
+  def foo(baz: Baz): Unit = {
     try {
       baz.bar
     } catch {

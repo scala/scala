@@ -8,7 +8,7 @@ object Test extends CompilerTest {
        |  val one = 1 toString
        |}""".stripMargin
   )
-  def check(source: String, unit: CompilationUnit) {
+  def check(source: String, unit: CompilationUnit): Unit = {
     for (ClassDef(_, _, _, Template(_, _, stats)) <- unit.body ; stat <- stats ; t <- stat) {
       t match {
         case _: Select | _ : Apply | _:This => println("%-15s %s".format(t.pos.toString, t))

@@ -20,7 +20,7 @@ class DivergenceTest {
                                           u2: Shape2[_ <: Level, M2, U2]
                                 ): Shape2[Level, (M1,M2), (U1,U2)] = ???
  
-  def foo {
+  def foo: Unit = {
     class Coffees extends ColumnBase[Int]
  
     def map1[F, T](f: F)(implicit shape: Shape2[_ <: Flat, F, T]) = ???

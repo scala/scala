@@ -42,7 +42,7 @@ object Test {
     case Ex2(result) => result
   }
 
-  def collectTest() {
+  def collectTest(): Unit = {
     val xs = 1 to 100
     resetCnt()
 
@@ -63,17 +63,17 @@ object Test {
     println(cntRW)
   }
 
-  def orElseTest() {
+  def orElseTest(): Unit = {
     val pf0 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("0:apply") }
+      def apply(u: Unit): Unit = { println("0:apply") }
       def isDefinedAt(u: Unit) = { println("0:isDefinedAt"); false }
     }
     val pf1 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("1:apply") }
+      def apply(u: Unit): Unit = { println("1:apply") }
       def isDefinedAt(u: Unit) = { println("1:isDefinedAt"); false }
     }
     val pf2 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("2:apply") }
+      def apply(u: Unit): Unit = { println("2:apply") }
       def isDefinedAt(u: Unit) = { println("2:isDefinedAt"); true }
     }
 

@@ -1,11 +1,11 @@
 object Test {
-  def f {
+  def f: Unit = {
     var b = false
     if (b) return 5
   }
 
   // no warning
-  def g {
+  def g: Unit = {
     return println("hello")
   }
 }

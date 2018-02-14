@@ -16,7 +16,7 @@ case class RS(self: String) {
 
 object Test {
   def expect = List("a","b")
-  def test(f: => Array[String], which: String) {
+  def test(f: => Array[String], which: String): Unit = {
     try {
       val ret = f.toList
       if (ret != expect)
@@ -28,7 +28,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val badChars = "?*{+([\\^.$"
 
     for (c <- badChars)

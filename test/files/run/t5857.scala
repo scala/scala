@@ -11,7 +11,7 @@ object Test {
     end - start
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val sz = 1000000000
 
     val range = 1 to sz
@@ -31,7 +31,7 @@ object Test {
     check { assert(numdesc.max == sz.toDouble) }
   }
 
-  def check[U](b: =>U) {
+  def check[U](b: =>U): Unit = {
     val exectime = time {
       b
     }

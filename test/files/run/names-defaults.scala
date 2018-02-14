@@ -24,7 +24,7 @@ object Test extends App {
 
   // anonymous functions
   {
-    def doMod(f: Int => Unit) { f(20) }
+    def doMod(f: Int => Unit): Unit = { f(20) }
     var var1 = 0
     doMod(var1 = _)
     println(var1)
@@ -265,7 +265,7 @@ object Test extends App {
 
   // #2290
   def spawn(a: Int, b: => Unit) = { () }
-  def t {
+  def t: Unit = {
     spawn(b = { val ttt = 1; ttt }, a = 0)
   }
 
@@ -276,8 +276,8 @@ object Test extends App {
   case class A2390[T](x: Int) { def copy(a: Int)(b: Int = 0) = 0 }
 
   // #2489
-  class A2489 { def foo { def bar(a: Int = 1) = a; bar(); val u = 0 } }
-  class A2489x2 { def foo { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
+  class A2489 { def foo: Unit = { def bar(a: Int = 1) = a; bar(); val u = 0 } }
+  class A2489x2 { def foo: Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
 
   // a bug reported on the mailing lists, related to #2489
   class Test2489 {

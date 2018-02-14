@@ -22,7 +22,7 @@ object test {
     """bad
     """
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Console.println(ok1 + ok2 + ok3 + ok4 + bad)
   }
 }

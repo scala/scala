@@ -36,7 +36,7 @@ object Test {
     structural.bar
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // figuring this will otherwise break on windows
     try t1()
     catch { case _: java.io.IOException => () }

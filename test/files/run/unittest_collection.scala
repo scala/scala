@@ -2,12 +2,12 @@ object Test {
 
   import scala.collection.mutable.{ArrayBuffer, Buffer, ListBuffer}
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test(collection.mutable.ArrayBuffer[String]())
     test(collection.mutable.ListBuffer[String]())
   }
 
-  def test(x: Buffer[String]) {
+  def test(x: Buffer[String]): Unit = {
     // testing method +=
     x += "one"
     assert(x(0) == "one", "retrieving 'one'")

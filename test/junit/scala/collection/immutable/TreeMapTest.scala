@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 class TreeMapTest {
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     val tree = TreeMap(1 -> "a", 2 -> "b", 3 -> "c")
 
     assertEquals(TreeMap.empty[Int, String], tree take Int.MinValue)

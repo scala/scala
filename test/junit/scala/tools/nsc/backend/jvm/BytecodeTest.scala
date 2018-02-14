@@ -20,7 +20,7 @@ class BytecodeTest extends BytecodeTesting {
     val code =
       """object Case3 {                                 // 01
         | def unapply(z: Any): Option[Int] = Some(-1)   // 02
-        | def main(args: Array[String]) {               // 03
+        | def main(args: Array[String]): Unit = {       // 03
         |    ("": Any) match {                          // 04
         |      case x : String =>                       // 05
         |        println("case 0")                      // 06 println and jump at 6

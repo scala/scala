@@ -1,10 +1,10 @@
 class Bad[X, Y](val v: Int) extends AnyVal {
   def vv = v
-  @annotation.tailrec final def foo[Z](a: Int)(b: String) {
+  @annotation.tailrec final def foo[Z](a: Int)(b: String): Unit = {
     this.foo[Z](a)(b)
   }
 
-  @annotation.tailrec final def differentReceiver {
+  @annotation.tailrec final def differentReceiver: Unit = {
     {(); new Bad[X, Y](0)}.differentReceiver
   }
 
@@ -21,7 +21,7 @@ class Bad[X, Y](val v: Int) extends AnyVal {
     this.dependent[Z](a)(b)
   }
 
-  @annotation.tailrec final def differentTypeArgs {
+  @annotation.tailrec final def differentTypeArgs: Unit = {
     {(); new Bad[String, Unit](0)}.differentTypeArgs
   }
 }

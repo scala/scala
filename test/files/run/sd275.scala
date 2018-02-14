@@ -48,7 +48,7 @@ class Test {
     assert(storeReporter.infos.isEmpty, storeReporter.infos.mkString("\n")) // Included a MissingRequirementError before.
   }
 
-  def deletePackage(name: String) {
+  def deletePackage(name: String): Unit = {
     val directory = new File(testOutput.path, name)
     for (f <- directory.listFiles()) {
       assert(f.getName.endsWith(".class"))

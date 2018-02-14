@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
  *  after it is created and the test should complete without problems.
  */
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     def loop(i: Int, arraySize: Int): Future[Unit] = {
       val array = new Array[Byte](arraySize)
       Future.successful(i).flatMap { i =>

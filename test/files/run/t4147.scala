@@ -7,19 +7,19 @@ import scala.collection._
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     checkElementsAreSorted()
     checkRangedImpl()
   }
 
-  def checkElementsAreSorted() {
+  def checkElementsAreSorted(): Unit = {
     val tree = mutable.SortedSet[Int]()
     tree ++= List(4, 3, 1, 6, 7, 5, 2)
     assert(tree == immutable.SortedSet(1, 2, 3, 4, 5, 6, 7))
     assert(tree.size == 7)
   }
 
-  def checkRangedImpl() {
+  def checkRangedImpl(): Unit = {
     val tree = mutable.SortedSet[Int](3, 1, 6, 7, 5, 2)
     val projection = tree.rangeImpl(Some(3), Some(6))
     assert(projection == immutable.SortedSet(3, 5))

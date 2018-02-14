@@ -3,7 +3,7 @@ import scala.language.{ postfixOps }
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     ApplyFromJcl.run()
     Bug1093.run()
     Bug1094.run()
@@ -40,11 +40,11 @@ object Test {
     Ticket44.run()
   }
 
-  def assertEquals(a: Any, b: Any) { assert(a == b) }
-  def assertEquals(msg: String, a: Any, b: Any) { assert(a == b, msg) }
+  def assertEquals(a: Any, b: Any): Unit = { assert(a == b) }
+  def assertEquals(msg: String, a: Any, b: Any): Unit = { assert(a == b, msg) }
 
   object SimpleUnapply {
-    def run() { // from sortedmap, old version
+    def run(): Unit = { // from sortedmap, old version
       List((1, 2)).head match {
         case kv@(key, _) => kv.toString + " " + key.toString
       }
@@ -54,7 +54,7 @@ object Test {
 
   object SeqUnapply {
     case class SFB(i: Int, xs: List[Int])
-    def run() {
+    def run(): Unit = {
       List(1, 2) match {
         case List(1) => assert(false, "wrong case")
         case List(1, 2, xs@_*) => assert(xs.isEmpty, "not empty")
@@ -68,7 +68,7 @@ object Test {
   }
 
   object ApplyFromJcl {
-    def run() {
+    def run(): Unit = {
       val p = (1, 2)
       Some(2) match {
         case Some(p._2) =>
@@ -78,7 +78,7 @@ object Test {
   }
 
   object TestSimpleIntSwitch {
-    def run() {
+    def run(): Unit = {
       assertEquals("s1", 1, 1 match {
         case 3 => 3
         case 2 => 2
@@ -112,7 +112,7 @@ object Test {
     }
     val foo1 = new Foo(1)
     val foo2 = new Foo(2)
-    def run() {
+    def run(): Unit = {
       val res = (foo1.Bar(2): Any) match {
 
         case foo1.Bar(2) => true
@@ -141,7 +141,7 @@ object Test {
   // multiple guards for same pattern
   object TestGuards extends Shmeez {
     val tree: Tree = Beez(2)
-    def run() {
+    def run(): Unit = {
       val res = tree match {
         case Beez(x) if x == 3 => false
         case Beez(x) if x == 2 => true
@@ -158,7 +158,7 @@ object Test {
   // test EqualsPatternClass in combination with MixTypes opt, bug #1276
   object TestEqualsPatternOpt {
     val NoContext = new Object
-    def run() {
+    def run(): Unit = {
       assertEquals(1, ((NoContext: Any) match {
         case that: AnyRef if this eq that => 0
         case NoContext => 1
@@ -175,7 +175,7 @@ object Test {
     def doMatch2(xs: List[String]): List[String] = xs match {
       case List(_, rest@_*) => rest.toList
     }
-    def run() {
+    def run(): Unit = {
       val list1 = List()
       assertEquals(doMatch(list1), "ok")
       val list2 = List("1", "2", "3")
@@ -190,7 +190,7 @@ object Test {
     def doMatch(l: Seq[String]): String = l match {
       case Seq(_*) => "ok"
     }
-    def run() {
+    def run(): Unit = {
       val list1 = List()
       assertEquals(doMatch(list1), "ok")
       val list2 = List("1", "2", "3")
@@ -208,7 +208,7 @@ object Test {
       case List(_, _, _, _*) => "ok"
       case _ => "not ok"
     }
-    def run() {
+    def run(): Unit = {
       val list1 = List()
       assertEquals(doMatch(list1), "not ok")
       val list2 = List("1", "2", "3")
@@ -222,7 +222,7 @@ object Test {
   object TestSequence04 {
     case class Foo(i: Int, chars: Char*)
 
-    def run() {
+    def run(): Unit = {
       val a = Foo(0, 'a') match {
         case Foo(i, c, chars@_*) => c
         case _ => null
@@ -244,7 +244,7 @@ object Test {
     case class Foo() extends Con
     case class Bar(xs: Con*) extends Con
 
-    def run() {
+    def run(): Unit = {
       val res = (Bar(Foo()): Con) match {
         case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
         case _ => Nil
@@ -264,7 +264,7 @@ object Test {
       case A(A(1)) => 2
     }
 
-    def run() {
+    def run(): Unit = {
       assertEquals(doMatch(A(null), 1), 0)
       assertEquals(doMatch(A(1), 2), 1)
       assertEquals(doMatch(A(A(1)), 2), 2)
@@ -289,7 +289,7 @@ object Test {
       case Seq(x, y, z@_*) => z.toList
     }
 
-    def run() {
+    def run(): Unit = {
       assertEquals(List('a', 'b'), doMatch1(List('a', 'b', 'c', 'd')))
       assertEquals(List('c', 'd'), doMatch2(List('a', 'b', 'c', 'd')))
       assertEquals(List('a', 'b'), doMatch3(List('a', 'b', 'c', 'd')))
@@ -299,7 +299,7 @@ object Test {
 
   // backquoted identifiers in pattern
   object TestSequence08 {
-    def run() {
+    def run(): Unit = {
       val xs = List(2, 3)
       val ys = List(1, 2, 3) match {
         case x :: `xs` => xs
@@ -319,7 +319,7 @@ object Test {
 
     val str: LazyList[Int] = List(1, 2, 3).to(LazyList)
 
-    def run() { assertEquals(sum(str), 6) }
+    def run(): Unit = { assertEquals(sum(str), 6) }
   }
 
   // bug#1163 order of temps must be preserved
@@ -341,11 +341,11 @@ object Test {
       case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
     }
 
-    def run() { assertEquals("both", (Var("x"), Var("y")), f) }
+    def run(): Unit = { assertEquals("both", (Var("x"), Var("y")), f) }
   }
 
   object TestUnbox {
-    def run() {
+    def run(): Unit = {
       val xyz: (Int, String, Boolean) = (1, "abc", true)
       xyz._1 match {
         case 1 => "OK"
@@ -368,7 +368,7 @@ object Test {
         else
           Some(p.father)
     }
-    def run() {
+    def run(): Unit = {
       val p1 = new Person("p1", null)
       val p2 = new Person("p2", p1)
       assertEquals((p2.name, p1.name), p2 match {
@@ -389,7 +389,7 @@ object Test {
     class Foo(j: Int) {
       case class Bar(i: Int)
     }
-    def run() {
+    def run(): Unit = {
       "baz" match {
         case Foo1(x) =>
           Foo1.p(x)
@@ -453,7 +453,7 @@ object Test {
         case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack
       }
     }
-    def run() {
+    def run(): Unit = {
       assert(!(new Buffer).ps.isDefinedAt(42))
     }
   }
@@ -471,7 +471,7 @@ object Test {
         case Get(xs) => // the argDummy <unapply-selector> should have proper arg.tpe (Int in this case)
       }
     }
-    def run() {
+    def run(): Unit = {
       assert(!(new Buffer).jp.isDefinedAt(40))
       assert(!(new Buffer).jp.isDefinedAt(42))
     }
@@ -482,7 +482,7 @@ object Test {
       case x :: xs if xs.forall { y => y.hashCode() > 0 } => 1
     }
 
-    def run() {
+    def run(): Unit = {
       val s: PartialFunction[Any, Any] = {
         case List(4 :: xs) => 1
         case List(5 :: xs) => 1
@@ -527,7 +527,7 @@ object Test {
       }
     }
 
-    def run() {
+    def run(): Unit = {
       method1();
       method2();
     }
@@ -544,7 +544,7 @@ object Test {
       case (EQ, 1) => "1"
       case (EQ, 2) => "2"
     }
-    def run() {
+    def run(): Unit = {
       val x = (EQ, 0);
       assertEquals("0", analyze(x)); // should print "0"
       val y = (EQ, 1);
@@ -580,7 +580,7 @@ object Test {
       case _ => "n.a."
     }
 
-    def run() {
+    def run(): Unit = {
       // make up some class that has a size
       class MyNode extends SizeImpl
       assertEquals("!size 42", info(new MyNode))
@@ -596,13 +596,13 @@ object Test {
       case a: AnyRef if runtime.ScalaRunTime.isArray(a) => "Array"
       case _ => v.toString
     }
-    def run() { assertEquals("Array", foo(Array(0))) }
+    def run(): Unit = { assertEquals("Array", foo(Array(0))) }
   }
 
   // bug#1093 (contribution #460)
 
   object Bug1093 {
-    def run() {
+    def run(): Unit = {
       assert((Some(3): @unchecked) match {
         case Some(1 | 2) => false
         case Some(3) => true
@@ -619,7 +619,7 @@ object Test {
       X("a", "b") match {
         case X(p, ps@_*) => foo(ps: _*)
       }
-    def run() { assertEquals("Foo", bar) }
+    def run(): Unit = { assertEquals("Foo", bar) }
   }
 
   // #2
@@ -634,7 +634,7 @@ object Test {
   }
 
   object Ticket2 {
-    def run() {
+    def run(): Unit = {
       val o1 = new Outer_2; val o2 = new Outer_2; val x: Any = o1.Foo(1, 2); val y: Any = o2.Foo(1, 2)
       assert(x != y, "equals test returns true (but should not)")
       assert(x match {
@@ -657,7 +657,7 @@ object Test {
   class MyException2 extends MyException1 with SpecialException
 
   object Ticket11 {
-    def run() {
+    def run(): Unit = {
       Array[Throwable](new Exception("abc"),
         new MyException1,
         new MyException2).foreach { e =>
@@ -678,9 +678,9 @@ object Test {
   // #37
 
   object Ticket37 {
-    def foo() {}
+    def foo(): Unit = {}
     val (a, b) = { foo(); (2, 3) }
-    def run() { assertEquals(this.a, 2) }
+    def run(): Unit = { assertEquals(this.a, 2) }
   }
 
   // #44
@@ -699,11 +699,11 @@ object Test {
     }
   }
   object Ticket44 {
-    def run() { assert(Y.toString ne null) /*instantiate Y*/ }
+    def run(): Unit = { assert(Y.toString ne null) /*instantiate Y*/ }
   }
 
   object Ticket211 {
-    def run() {
+    def run(): Unit = {
       (Some(123): Option[Int]) match {
         case (x: Option[a]) if false => {};
         case (y: Option[b]) => {};
@@ -755,7 +755,7 @@ object Test {
       case _ => false
     }
 
-    def run() {
+    def run(): Unit = {
       assert(empty(new L(Nil)))
       assert(singleton(new L(List(1))))
     }

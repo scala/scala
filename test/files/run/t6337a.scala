@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val x = X(XX(3))
     assert(x.q.x.x + 9 == 13)
   }

@@ -38,7 +38,7 @@ class ThePlugin(val global: Global) extends Plugin {
   }
 
   private class ThePhase(prev: Phase, val name: String) extends Phase(prev) {
-    def run {}
+    def run: Unit = {}
   }
 }
 

@@ -144,7 +144,7 @@ object M3 {
     placeQueens(n)
   }
 
-  def test {
+  def test: Unit = {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -189,7 +189,7 @@ object M4 {
     placeQueens(n);
   }
 
-  def test {
+  def test: Unit = {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -201,7 +201,7 @@ object M4 {
 //############################################################################
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;
     M2.test;

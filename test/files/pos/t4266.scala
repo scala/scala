@@ -7,7 +7,7 @@ object Test {
   ] {
     def domain: D;
 
-    def checkKey(k1: A1) {
+    def checkKey(k1: A1): Unit = {
       domain._1.contains(k1)
     }
   }

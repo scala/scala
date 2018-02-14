@@ -25,7 +25,7 @@ object Test {
    case _ => "default"
  })
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test(true)
     test(42.toByte)
     test(42.toShort)

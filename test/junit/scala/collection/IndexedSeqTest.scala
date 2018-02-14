@@ -223,7 +223,7 @@ abstract class IndexedTest[T, E] {
     }
   }
 
-  protected def intercept[EX <: Exception : Manifest](fn: => Any) {
+  protected def intercept[EX <: Exception : Manifest](fn: => Any): Unit = {
     try {
       val res = fn
       fail(s"expected exception was not thrown: $res")
@@ -261,7 +261,7 @@ abstract class IndexedTest[T, E] {
 
   //helpers
   //delegate equals check for support arrays
-  def doAssertEquals(txt: String, expected: T, actual: T)
+  def doAssertEquals(txt: String, expected: T, actual: T): Unit
 
 }
 package IndexedTestImpl {

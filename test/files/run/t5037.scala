@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val t = new Test
     t.inner.foo()
   }
@@ -7,7 +7,7 @@ object Test {
 
 class Test {
   class Inner {
-    def foo() {
+    def foo(): Unit = {
       println(bar)
       bar = false
       println(bar)

@@ -4,7 +4,7 @@
  */
 import scala.language.{ postfixOps }
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Test1.run() //ctor, reverse
     Test2.run() //append
     Test3.run() //insert
@@ -13,7 +13,7 @@ object Test {
 }
 
 object Test1 {
-  def run() {
+  def run(): Unit = {
     val j0 = new java.lang.StringBuilder("abc")
     val s0 = new StringBuilder("abc")
     println("s0 equals j0 = " + (s0 equals j0))
@@ -38,7 +38,7 @@ Scala is a general purpose programming language designed to express common progr
 }
 
 object Test2 {
-  def run() {
+  def run(): Unit = {
     val j0 = new java.lang.StringBuilder("abc")
     val s0 = new StringBuilder("abc")
     j0 append true append (1.toByte) append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
@@ -54,7 +54,7 @@ object Test2 {
 }
 
 object Test3 {
-  def run() {
+  def run(): Unit = {
     val j0 = new java.lang.StringBuilder("abc")
     val s0 = new StringBuilder("abc")
     j0 insert (0, true) insert (0, 1.toByte) insert (0, 'a') insert (0, 88.toShort) insert (0, 9) insert (0, -1L)
@@ -72,7 +72,7 @@ object Test3 {
 }
 
 object Test4 {
-  def run() {
+  def run(): Unit = {
     val j0 = new java.lang.StringBuilder("abc") // Java 1.5+
     val s0 = new StringBuilder("abc")
 

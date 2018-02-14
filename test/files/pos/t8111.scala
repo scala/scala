@@ -1,6 +1,6 @@
 trait T {
 
-  def crashy(ma: Any) {
+  def crashy(ma: Any): Unit = {
     // okay
     val f1 = (u: Unit) => ma
     foo(f1)()

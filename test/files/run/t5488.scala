@@ -3,7 +3,7 @@ class B0[@specialized(Int, AnyRef) A, @specialized(Int, AnyRef) B]()
 class C0[@specialized(Int, AnyRef) A, @specialized(Int, AnyRef) B, @specialized(Int, AnyRef) C]()
 
 object Test {
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     def show(x: Any) = println(x.getClass.getName)
 
     show(new A0[Int]())

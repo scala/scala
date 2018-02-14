@@ -1,5 +1,5 @@
 object Test extends App {
-  def foo[T <% Ordered[T]](x: T){ Console.println(""+(x < x)+" "+(x <= x)) }
+  def foo[T <% Ordered[T]](x: T): Unit ={ Console.println(""+(x < x)+" "+(x <= x)) }
   def bar(x: Unit   ): Unit = foo(x);
   def bar(x: Boolean): Unit = foo(x);
   def bar(x: Byte   ): Unit = foo(x);

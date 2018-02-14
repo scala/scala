@@ -64,7 +64,7 @@ class Eq(a: Quantity, b: Quantity) extends Constraint {
     case (Some(x), _      ) => b.setValue(x, this);
     case (_      , Some(y)) => a.setValue(y, this);
   }
-  def dropValue {
+  def dropValue: Unit = {
     a.forgetValue(this); b.forgetValue(this);
   }
   a connect this;
@@ -81,7 +81,7 @@ class Constant(q: Quantity, v: Double) extends Constraint {
 class Probe(name: String, q: Quantity) extends Constraint {
   def newValue: Unit = printProbe(q.getValue);
   def dropValue: Unit = printProbe(None);
-  private def printProbe(v: Option[Double]) {
+  private def printProbe(v: Option[Double]): Unit = {
     val vstr = v match {
       case Some(x) => x.toString()
       case None => "?"
@@ -320,7 +320,7 @@ object M3 {
 //############################################################################
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;
     M2.test;

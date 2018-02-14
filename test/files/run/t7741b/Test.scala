@@ -16,7 +16,7 @@ object Test extends StoreReporterDirectTest {
     println(filteredInfos.mkString("\n"))
   }
 
-  def deleteClass(name: String) {
+  def deleteClass(name: String): Unit = {
     val classFile = new File(testOutput.path, name + ".class")
     assert(classFile.exists)
     assert(classFile.delete())

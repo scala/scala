@@ -1,7 +1,7 @@
 object TailrecAfterTryCatch {
 
   @annotation.tailrec
-  final def good1() {
+  final def good1(): Unit = {
     1 match {
       case 2 => {
         try {
@@ -15,7 +15,7 @@ object TailrecAfterTryCatch {
   }
 
   @annotation.tailrec
-  final def good2() {
+  final def good2(): Unit = {
     //1 match {
     //  case 2 => {
         try {
@@ -29,7 +29,7 @@ object TailrecAfterTryCatch {
   }
 
   @annotation.tailrec
-  final def good3() {
+  final def good3(): Unit = {
     val 1 = 2
     try {
       return
@@ -40,7 +40,7 @@ object TailrecAfterTryCatch {
   }
 
   @annotation.tailrec
-  final def bad() {
+  final def bad(): Unit = {
     1 match {
       case 2 => {
         try {

@@ -8,7 +8,7 @@ object Test {
 
   def map(x: String, f: String => String) = f(x)
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
      println(map("hello", Test.moduleMethod))
   }
 }

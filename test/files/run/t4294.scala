@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // Skip test on Avian, see scala/bug#7600 for further information
     if (!scala.tools.partest.utils.Properties.isAvian)
       run()

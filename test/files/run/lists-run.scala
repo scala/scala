@@ -5,7 +5,7 @@
 import scala.language.postfixOps
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Test_multiset.run() // multiset operations: :::, intersect, diff
     Test1.run() //count, exists, filter, ..
     Test2.run() //#468
@@ -16,7 +16,7 @@ object Test {
 }
 
 object Test_multiset {
-  def run() {
+  def run(): Unit = {
     def isSubListOf[A](thiz: List[A], that: List[A]): Boolean =
       thiz forall (that contains _)
     val xs = List(1, 1, 2)
@@ -80,7 +80,7 @@ min cardinality(ys, e)))
 }
 
 object Test1 {
-  def run() {
+  def run(): Unit = {
     val xs1 = List(1, 2, 3)
     val xs2 = List('a', 'b')
     val xs3 = List(List(1, 2), List(4, 5))
@@ -132,7 +132,7 @@ object Test1 {
 }
 
 object Test2 {
-  def run() {
+  def run(): Unit = {
     val xs1 = List(1, 2, 3)
     val xs2 = List(0)
 
@@ -150,7 +150,7 @@ object Test2 {
 }
 
 object Test3 {
-  def run() {
+  def run(): Unit = {
     try {
       List.range(1, 10, 0)
     } catch {
@@ -162,7 +162,7 @@ object Test3 {
 }
 
 object Test4 {
-  def run() {
+  def run(): Unit = {
     assert(List(1,2,3).endsWith(List(2,3)))
     assert(!List(1,2,3).endsWith(List(1,3)))
     assert(List(1,2,3).endsWith(List()))
@@ -179,7 +179,7 @@ object Test5 {
     case List(x) => x.toString
     case Nil => "Nil"
   }
-  def run() {
+  def run(): Unit = {
     assert(show(List()) == "Nil")
     assert(show(List("a")) == "a")
     assert(show(List("foo", "b")) == "List(b)")

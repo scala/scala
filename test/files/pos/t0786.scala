@@ -17,7 +17,7 @@ object ImplicitProblem {
 
   def depth[T <% Rep[T]](n: T) = n.eval
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(depth(nullval[M[Int]]))  // (1) this works
     println(nullval[M[Int]].eval)    // (2) this works
 

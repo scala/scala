@@ -80,7 +80,7 @@ class PipedProcessTest {
 
   // PipedProcesses need not to release resources when it normally end
   @Test
-  def normallyEnd() {
+  def normallyEnd(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
@@ -98,7 +98,7 @@ class PipedProcessTest {
   }
 
   @Test
-  def shouldSyncRunAndExitValue() {
+  def shouldSyncRunAndExitValue(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock {
       override def run(): Unit = {
@@ -117,7 +117,7 @@ class PipedProcessTest {
 
   // PipedProcesses must release resources when b.run() failed
   @Test
-  def bFailed() {
+  def bFailed(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
@@ -138,7 +138,7 @@ class PipedProcessTest {
 
   // PipedProcesses must release resources when a.run() failed
   @Test
-  def aFailed() {
+  def aFailed(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
@@ -159,7 +159,7 @@ class PipedProcessTest {
 
   // PipedProcesses must release resources when interrupted during waiting for first.exitValue()
   @Test
-  def firstInterrupted() {
+  def firstInterrupted(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
@@ -178,7 +178,7 @@ class PipedProcessTest {
 
   // PipedProcesses must release resources when interrupted during waiting for second.exitValue()
   @Test
-  def secondInterrupted() {
+  def secondInterrupted(): Unit = {
     val io = BasicIO(false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
@@ -252,7 +252,7 @@ class PipeSourceSinkTest {
 
   // PipeSource and PipeSink must release resources when it normally end
   @Test
-  def normallyEnd() {
+  def normallyEnd(): Unit = {
     val in = new DebugInputStream("aaa")
     val (source, sink) = sourceSink()
     val out = new DebugOutputStream
@@ -271,7 +271,7 @@ class PipeSourceSinkTest {
 
   // PipeSource and PipeSink must release resources when interrupted during waiting for source.take()
   @Test
-  def sourceInterrupted() {
+  def sourceInterrupted(): Unit = {
     val (source, sink) = sourceSink()
     val out = new DebugOutputStream
     sink connectOut out
@@ -288,7 +288,7 @@ class PipeSourceSinkTest {
 
   // PipeSource and PipeSink must release resources when interrupted during waiting for sink.take()
   @Test
-  def sinkInterrupted() {
+  def sinkInterrupted(): Unit = {
     val in = new DebugInputStream("aaa")
     val (source, sink) = sourceSink()
     source connectIn in
@@ -305,7 +305,7 @@ class PipeSourceSinkTest {
 
   // PipeSource and PipeSink must release resources when interrupted during copy streams
   @Test
-  def runloopInterrupted() {
+  def runloopInterrupted(): Unit = {
     val in = new DebugInfinityInputStream
     val (source, sink) = sourceSink()
     val out = new DebugOutputStream

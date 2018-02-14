@@ -1,6 +1,6 @@
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val x = (new test.ScalaBipp).make.get.asInstanceOf[test.ScalaBipp].f()
     println(x)
     val y = (new test.ScalaBipp).make.get.f()

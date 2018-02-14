@@ -14,7 +14,7 @@ class Baz[S] extends Foo[S] {
 
 object Test {
 
-  def main(a: Array[String]) {
+  def main(a: Array[String]): Unit = {
     val b = new Baz[Any]
     println(b.A.foo())
     println(Modifier.isFinal(classOf[Baz[Any]].getModifiers()))

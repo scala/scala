@@ -10,7 +10,7 @@ import scala.tools.testing.AssertUtil._
 @RunWith(classOf[JUnit4])
 class HtmlDocletTest {
   @Test
-  def testSyntaxHighlightingUnicode() {
+  def testSyntaxHighlightingUnicode(): Unit = {
     val in = "unicode: …"
 
     val out = SyntaxHigh(in).toString

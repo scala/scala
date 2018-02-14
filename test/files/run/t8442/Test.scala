@@ -11,7 +11,7 @@ object Test extends StoreReporterDirectTest {
 
   def app = """
     class C_2 {
-      def foo(b: B_1) {
+      def foo(b: B_1): Unit = {
         b.get()
       }
     }

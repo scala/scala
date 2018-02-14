@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
   @Test
-  def testStringOf() {
+  def testStringOf(): Unit = {
     import ScalaRunTime.stringOf
     import scala.collection._
 
