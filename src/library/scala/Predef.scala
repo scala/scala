@@ -166,6 +166,20 @@ object Predef extends LowPriorityImplicits {
   /**  @group aliases */
   val Set         = immutable.Set
 
+  /**
+   * Allows destructuring tuples with the same syntax as constructing them.
+   *
+   * @example {{{
+   * val tup = "foobar" -> 3
+   *
+   * val c = tup match {
+   *   case str -> i => str.charAt(i)
+   * }
+   * }}}
+   * @group aliases
+   */
+  val ->        = Tuple2
+
   // Manifest types, companions, and incantations for summoning
   @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
   @deprecated("use `scala.reflect.ClassTag` instead", "2.10.0")
