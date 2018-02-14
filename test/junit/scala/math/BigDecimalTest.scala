@@ -151,7 +151,7 @@ class BigDecimalTest {
         BigDecimal(BigInt(1234567890), 1),
         BigDecimal.decimal(123456789),
         BigDecimal.decimal(123456789d),
-        BigDecimal.valueOf(123456789d, mc6) 
+        new BigDecimal(BD valueOf 123456789d, mc6)
       )
     )
     sameRounding.map(_.zipWithIndex).foreach{ case xs => 
@@ -237,9 +237,8 @@ class BigDecimalTest {
       val n = BigDecimal("1.1", MC.UNLIMITED).pow(p)
 
       // BigDecimal(x: Float, mc: MC), which may not do what you want, is deprecated
-      assert(BigDecimal(1.1f, MC.UNLIMITED).pow(p) == BigDecimal(java.lang.Double.toString(1.1f.toDouble), MC.UNLIMITED).pow(p))
       assert(BigDecimal(1.1d, MC.UNLIMITED).pow(p) == n)
-      assert(BigDecimal(new BD("1.1"), MC.UNLIMITED).pow(p) == n)
+      assert(new BigDecimal(new BD("1.1"), MC.UNLIMITED).pow(p) == n)
 
       assert(BigDecimal.decimal(1.1f, MC.UNLIMITED).pow(p) == n)
       assert(BigDecimal.decimal(1.1d, MC.UNLIMITED).pow(p) == n)
@@ -251,7 +250,6 @@ class BigDecimalTest {
 
     def testRounded() {
       // the default rounding mode is HALF_UP
-      assert((BigDecimal(1.23f, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24")) // deprecated api
       assert((BigDecimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
       assert((BigDecimal.decimal(1.23f, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
       assert((BigDecimal.decimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
