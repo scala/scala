@@ -8,10 +8,15 @@ import immutable.ImmutableArray
 import scala.reflect.ClassTag
 
 object ArrayOps {
-  class WithFilter[A](p: A => Boolean, ao: ArrayOps[A]) extends collection.WithFilter[A, immutable.IndexedSeq] {
-    protected[this] def filtered = View.Filter(ao.toIterable, p, isFlipped = false)
+  private[ArrayOps] trait LowPriorityWithFilterOps[A] {
+    protected def p: A => Boolean
+    protected def ao: ArrayOps[A]
+    protected def filtered = View.Filter(ao.toIterable, p, isFlipped = false)
     def map[B](f: A => B): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.Map(filtered, f))
     def flatMap[B](f: A => IterableOnce[B]): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.FlatMap(filtered, f))
+  }
+
+  class WithFilter[A](protected val p: A => Boolean, protected val ao: ArrayOps[A]) extends collection.WithFilter[A, immutable.IndexedSeq] with LowPriorityWithFilterOps[A] {
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
     def map[B: ClassTag](f: A => B): Array[B] = ao.fromTaggedIterable(View.Map(filtered, f))
     def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = ao.fromTaggedIterable(View.FlatMap(filtered, f))
@@ -77,6 +82,8 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
   @`inline` final def ++[B >: A : ClassTag](xs: Iterable[B]): Array[B] = appendedAll(xs)
 
   def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(toIterable, that))
+
+  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(View.ZipWithIndex(toIterable))
 
   def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(View.Append(toIterable, x))
   @`inline` final def :+ [B >: A : ClassTag](x: B): Array[B] = appended(x)
