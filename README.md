@@ -3,21 +3,24 @@
 [![Join the chat at https://gitter.im/scala/collection-strawman](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala/collection-strawman?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Waffle.io board](https://badge.waffle.io/scala/collection-strawman.svg?label=ready&title=Ready+issues)](http://waffle.io/scala/collection-strawman)
 
-Prototype improvements for Scala collections.
+Implementation of the new collections of Scala 2.13.
 
 - [Gitter Discussion](https://gitter.im/scala/collection-strawman)
 - [Dotty Issue](https://github.com/lampepfl/dotty/issues/818)
 - [Scala Center Proposal](https://github.com/scalacenter/advisoryboard/blob/master/proposals/007-collections.md)
 
-## Current status
+## Current Status and Roadmap
 
-The strawman is available as a regular external library (see below usage
+The new collections are available as a regular external library (see below usage
 instructions). The collections live in the `strawman.collection` namespace
 (instead of `scala.collection`).
 
 Almost all operations and collection types of the current standard collections
 are available. If you see something missing, please
 [create an issue](https://github.com/scala/collection-strawman/issues/new).
+
+The new collections will be part of the 2.13.0-M4 Scala distribution, where they will
+replace the standard collections.
 
 ## Use it in your project
 
@@ -50,6 +53,9 @@ The `collections-contrib` artifact provides additional operations on the collect
 - [`collections-contrib`](https://static.javadoc.io/ch.epfl.scala/collections-contrib_2.12/0.8.0/index.html)
 
 ### Migrating from the standard collections to the strawman
+
+There is an [entry in the FAQ](https://github.com/scala/collection-strawman/wiki/FAQ#what-are-the-breaking-changes)
+that aims to list all breaking changes.
 
 A tool is being developed to automatically migrate code that uses the standard
 collection to use the strawman.
@@ -112,28 +118,6 @@ The following collections are provided:
 
 - `MultiSet` (both mutable and immutable)
 - `SortedMultiSet` (both mutable and immutable)
-
-## Roadmap
-
-1. September 2017: release targeting Scala 2.13 and Dotty.
-    - Implement most of the current collections types
-    - Implement most of the current collections operations
-    - Alternative to `CanBuildFrom` to get implicit builders
-    - Include tests for correctness (taken from the current collections
-      and from scala-collections-laws)
-    - Provide a rewriting tool that migrates a code base from the current
-      collections to the strawman
-2. November 2017: move to the `scala` namespace
-    - Create a branch of Scala 2.13 with the strawman instead of the current
-      collections
-3. January 2018: new features and performance improvements
-    - Add Scala.js support
-    - Consider the inclusion of new collection types (such as `Spandex`, `Steque`
-      or `ArrayDeque`)
-    - Consider the introduction of new operations (such as database-like joins,
-      variants of groupBy, etc.)
-    - Java interoperability
-    - Separate project for parallel collections
 
 ## Contributing
 
