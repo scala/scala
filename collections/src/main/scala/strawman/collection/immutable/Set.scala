@@ -7,11 +7,7 @@ import strawman.collection.mutable.Builder
 import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Serializable, SerialVersionUID, Some, Unit}
 
 /** Base trait for immutable set collections */
-trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
-
-  override final def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
-
-}
+trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
 
 /** Base trait for immutable set operations
   *
@@ -53,8 +49,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
-
-  override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
 }
 
 /**

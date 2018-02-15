@@ -51,6 +51,9 @@ object IntMap {
   def apply[T](elems: (Int, T)*): IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
+  def from[V](coll: IterableOnce[(Int, V)]): IntMap[V] =
+    newBuilder[V]().addAll(coll).result()
+
   @SerialVersionUID(3L)
   private[immutable] case object Nil extends IntMap[Nothing] {
     // Important! Without this equals method in place, an infinite

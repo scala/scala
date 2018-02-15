@@ -401,13 +401,12 @@ sealed abstract class List[+A]
 
 }
 
-@SerialVersionUID(3L)
-case class :: [+A](x: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
+@SerialVersionUID(4L)
+case class :: [+A](override val head: A, private[strawman] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
   override def nonEmpty: Boolean = true
-  override def head: A = x
-  override def headOption: Some[A] = Some(x)
+  override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
 }
 

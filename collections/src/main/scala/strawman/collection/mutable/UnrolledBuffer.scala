@@ -377,7 +377,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         // insert everything from iterable to this
         var curr = this
         var appended = 0
-        for (elem <- t) {
+        for (elem <- t.iterator()) {
           curr = curr append elem
           appended += 1
         }
@@ -391,7 +391,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       else if (idx == size || (next eq null)) {
         var curr = this
         var appended = 0
-        for (elem <- t) {
+        for (elem <- t.iterator()) {
           curr = curr append elem
           appended += 1
         }

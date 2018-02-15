@@ -89,7 +89,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     * @tparam V1 the type of the value in the key/value pair.
     * @return A new map with the new binding added to this map.
     */
-  /*@`inline` final*/ def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
   /** This function transforms all the values of mappings contained
     *  in this map with function `f`.

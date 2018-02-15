@@ -2,6 +2,7 @@ package strawman
 package collection
 
 import scala.{Any, Array, Boolean, Equals, Int, NoSuchElementException, `inline`, throws, deprecated}
+import scala.annotation.unchecked.uncheckedVariance
 import scala.Predef.intWrapper
 import scala.util.hashing.MurmurHash3
 import java.lang.String
@@ -165,6 +166,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
   def concat(that: collection.Iterable[A]): C = fromSpecificIterable(View.Concat(toIterable, that))
+
+  @deprecated("Consider requiring an immutable Set or fall back to Set.union ", "2.13.0")
+  @`inline` final def + [B >: A](elem: B): CC[B] = iterableFactory.from(View.Append(toIterable, elem))
+  //TODO We should be able to use `fromIterable` here but Dotty complains about a variance problem with no apparent workaround
 
   /** Alias for `concat` */
   @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)

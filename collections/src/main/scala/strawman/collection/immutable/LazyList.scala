@@ -238,8 +238,6 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   /** Force the evaluation of both the head and the tail of this `LazyList` */
   def force: Option[(A, CC[A])]
 
-  override def nonEmpty: Boolean = !isEmpty
-
   /** The stream resulting from the concatenation of this stream with the argument stream.
     *
     * @param suffix The collection that gets appended to this lazy list

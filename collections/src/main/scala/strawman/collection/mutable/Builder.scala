@@ -39,10 +39,9 @@ trait Builder[-A, +To] extends Growable[A] { self =>
     *  @param coll  the collection which serves as a hint for the result's size.
     *  @param delta a correction to add to the `coll.size` to produce the size hint.
     */
-  final def sizeHint(coll: strawman.collection.Iterable[_], delta: Int = 0): Unit = {
-    if (coll.knownSize != -1) {
-      sizeHint(coll.knownSize + delta)
-    }
+  final def sizeHint(coll: strawman.collection.IterableOnce[_], delta: Int = 0): Unit = {
+    val s = coll.knownSize
+    if (s != -1) sizeHint(s + delta)
   }
 
   /** Gives a hint how many elements are expected to be added

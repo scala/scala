@@ -15,7 +15,7 @@ trait Seq[+A] extends Iterable[A]
   * @define coll immutable sequence
   * @define Coll `immutable.Seq`
   */
-trait SeqOps[+A, +CC[_], +C] extends collection.SeqOps[A, CC, C] {
+trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C] {
 
   /** A copy of this $coll with one single replaced element.
     *  @param  index  the position of the replacement
@@ -54,6 +54,8 @@ trait LinearSeq[+A]
     with collection.LinearSeq[A]
     with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 
+object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)
+
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]]
-  extends SeqOps[A, CC, C]
+  extends Any with SeqOps[A, CC, C]
     with collection.LinearSeqOps[A, CC, C]

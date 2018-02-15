@@ -93,6 +93,24 @@ final class StringOps(val s: String)
     sb.result()
   }
 
+  // Overloaded version of `padTo` that gives back a string, where the inherited
+  //  version gives back a sequence.
+  /** Returns a String with a Char appended until a given target length is reached.
+    *
+    *  @param   len   the target length
+    *  @param   elem  the padding value
+    *  @return a String consisting of
+    *          this String followed by the minimal number of occurrences of `elem` so
+    *          that the resulting String has a length of at least `len`.
+    */
+  def padTo(len: Int, elem: Char): String =
+    if(s.length >= len) s else {
+      val b = new java.lang.StringBuilder(len)
+      b.append(s)
+      while(b.length < len) b.append(elem)
+      b.toString
+    }
+
   /** Alias for `concat` */
   @`inline` def ++ (suffix: IterableOnce[Char]): String = concat(suffix)
 
