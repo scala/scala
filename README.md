@@ -93,32 +93,6 @@ Run the following sbt task on your project:
 > scalafix https://github.com/scala/collection-strawman/raw/master/scalafix/2.13/rules/src/main/scala/fix/Collectionstrawman_v0.scala
 ~~~
 
-### Additional Operations
-
-The `collections-contrib` artifact provides decorators enriching the collections with new operations. You can
-think of this artifact as an incubator: if we get evidence that these operations should be part of the core,
-we might eventually move them.
-
-The new operations are provided via an implicit enrichment. You need to add the following import to make them
-available:
-
-~~~ scala
-import strawman.collection.decorators._
-~~~
-
-The following operations are provided:
-
-- `Seq`
-    - `intersperse`
-- `Map`
-    - `zipByKey` / `join` / `zipByKeyWith`
-    - `mergeByKey` / `fullOuterJoin` / `mergeByKeyWith` / `leftOuterJoin` / `rightOuterJoin`
-
-The following collections are provided:
-
-- `MultiSet` (both mutable and immutable)
-- `SortedMultiSet` (both mutable and immutable)
-
 ## Contributing
 
 We welcome contributions!
