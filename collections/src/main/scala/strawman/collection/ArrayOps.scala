@@ -123,4 +123,23 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
     }
     (a1, a2)
   }
+
+  def transpose[B](implicit asArray: A => Array[B]): Array[Array[B]] = {
+    val aClass = xs.getClass.getComponentType
+    val bb = Array.newBuilder[Array[B]](ClassTag[Array[B]](aClass))
+    if (isEmpty) bb.result()
+    else {
+      def mkRowBuilder() = Array.newBuilder[B](ClassTag[B](aClass.getComponentType))
+      val bs = asArray(head) map ((x: B) => mkRowBuilder())
+      for (xs <- this) {
+        var i = 0
+        for (x <- asArray(xs)) {
+          bs(i) += x
+          i += 1
+        }
+      }
+      for (b <- bs) bb += b.result()
+      bb.result()
+    }
+  }
 }
