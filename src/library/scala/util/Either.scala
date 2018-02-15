@@ -468,6 +468,35 @@ object Either {
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
     if (test) Right(right) else Left(left)
 
+  /**
+   * Creates `FromLeftPartiallyApplied[B]` that given an argument of type `A`
+   * produces a `Left` typed as `Either[A,B]`
+   * {{
+   *   val l = Either.left[Int]("boo")
+   *   //l: Either[String, Int] = Left("boo")
+   * }}
+   */
+  def left[B]: FromLeftPartiallyApplied[B] = new FromLeftPartiallyApplied[B]
+
+  private[util] final class FromLeftPartiallyApplied[B](private val dummy: Unit) extends AnyVal {
+    def apply[A](value: A): Either[A, B] = Left(value)
+  }
+
+  /**
+   * Creates `FromRightPartiallyApplied[A]` that given an argument of type `B`
+   * produces a `Right` typed as `Either[A,B]`
+   * {{
+   *   val r = Either.right[String](5)
+   *   //r: Either[String, Int] = Right(5)
+   * }}
+   */
+  def right[A]: FromRightPartiallyApplied[A] = new FromRightPartiallyApplied[A]
+
+  private[util] final class FromRightPartiallyApplied[A](private val dummy: Unit) extends AnyVal {
+    def apply[B](value: B): Either[A, B] = Right(value)
+  }
+
+
   /** Allows use of a `merge` method to extract values from Either instances
    *  regardless of whether they are Left or Right.
    *
