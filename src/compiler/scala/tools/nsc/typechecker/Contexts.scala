@@ -1306,18 +1306,23 @@ trait Contexts { self: Analyzer =>
       res
     }
 
-    @inline final def propagatingErrorsTo[T](target: ContextReporter)(expr: => T): T = {
-      val res = expr // TODO: make sure we're okay skipping the try/finally overhead
-      if ((this ne target) && hasErrors) { // `this eq target` in e.g., test/files/neg/divergent-implicit.scala
-        // assert(target.errorBuffer ne _errorBuffer)
-        target ++= errors
-        // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
-        // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
-        // so don't clear the buffer, but null out the reference so that a new one will be created when necessary (should be never??)
-        // (we should refactor error buffering to avoid mutation on shared buffers)
-        clearAllErrors()
+    final def propagateErrorsTo[T](target: ContextReporter): Unit = {
+      if (this ne target) {  // `this eq target` in e.g., test/files/neg/divergent-implicit.scala
+        if (hasErrors) {
+          // assert(target.errorBuffer ne _errorBuffer)
+          if (target.isBuffering) {
+            target ++= errors
+          } else {
+            errors.foreach(e => target.handleError(e.errPos, e.errMsg))
+          }
+          // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
+          // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
+          // so don't clear the buffer, but null out the reference so that a new one will be created when necessary (should be never??)
+          // (we should refactor error buffering to avoid mutation on shared buffers)
+          clearAllErrors()
+        }
+        // TODO propagate warnings if no errors, like `silent` does?
       }
-      res
     }
 
     protected final def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
