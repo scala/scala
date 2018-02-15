@@ -7,7 +7,7 @@ script:
 before_script:
   - ./checkCLA.sh
 after_succes:
-- '[[ $TRAVIS_BRANCH == "master" ]] && { sbt publish; }'
+  - '[[ $TRAVIS_BRANCH == "master" ]] && { sbt publish; }'
 env:
   global:
   - secure: tlhqsKV+GjB1SDUHuDixvgRoXsBwcquiaSD7n+6t5uZdTJk+9FFGswprDuLJqOAXYWPI+PSwA1PaVLJ5nV/dfqlKvQAHt7hA9NETpWs/3OhUAEEGpp9OjyCjYYQdefaN7urQ0ApuoUWN3YDimcP4xBdhtaic9ykxqMgeUCTGeqWd5OtKHvYdvaYBYqKInJUHQjhXBWToJcqWg60FEG1E+aiH8kc0QfOMOe4tzuC06CqpNZDGx57xjDgH/uAix7J5OLMHT+xz9TE2V08pfF2E986mWQu7xEbz4j9djmt9apbxsojKYlsnMgGMFmcLAB6B//Sf3OrPj7YpDXCDh/hoFfUUPcXi92zuNxCuKCceqDb6Bd863RTlPNl9z5HaFq4RYnB0038ayLgBrCJKJXbyGdfaR2a7zZ2RuBnyTN7WSp4R9uIzg6qE0oQ34LxPc86i0Ma5H0btxJyj2AahQnmifeg1Akg4empa1OlSNd5d1ZZRINfSaOsbeutJxQYhCdvh5SNon68QBLvE543AghHEhwVViBGecyRolTrxzAdT57dSqUhJ0oJXXqQ2MIgitalwrlOm4uKqXETjFueLYTp+Y/CCjW5WdY1BvC0vPLA04DXcJ3fN4bIlsXOPrhEZ5POrXkCorbgFJBhkN1vZaACOE0tAQw1F7DTcpa2sv50NQ5U=
