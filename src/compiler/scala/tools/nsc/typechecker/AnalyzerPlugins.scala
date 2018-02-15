@@ -302,7 +302,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   private var analyzerPlugins: List[AnalyzerPlugin] = Nil
 
   /** Registers a new analyzer plugin */
-  def addAnalyzerPlugin(plugin: AnalyzerPlugin) {
+  def addAnalyzerPlugin(plugin: AnalyzerPlugin): Unit = {
     if (!analyzerPlugins.contains(plugin))
       analyzerPlugins = plugin :: analyzerPlugins
   }
@@ -385,7 +385,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   private var macroPlugins: List[MacroPlugin] = Nil
 
   /** Registers a new macro plugin */
-  def addMacroPlugin(plugin: MacroPlugin) {
+  def addMacroPlugin(plugin: MacroPlugin): Unit = {
     if (!macroPlugins.contains(plugin))
       macroPlugins = plugin :: macroPlugins
   }

@@ -263,7 +263,7 @@ abstract class RefChecks extends Transform {
      *  4. Check that every member with an `override` modifier
      *     overrides some other member.
      */
-    private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false) {
+    private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false): Unit = {
       val self = clazz.thisType
       def classBoundAsSeen(tp: Type) = {
         tp.typeSymbol.classBound.asSeenFrom(self, tp.typeSymbol.owner)
@@ -273,7 +273,7 @@ abstract class RefChecks extends Transform {
 
       val mixinOverrideErrors = new ListBuffer[MixinOverrideError]()
 
-      def printMixinOverrideErrors() {
+      def printMixinOverrideErrors(): Unit = {
         mixinOverrideErrors.toList match {
           case List() =>
           case List(MixinOverrideError(_, msg)) =>
@@ -319,7 +319,7 @@ abstract class RefChecks extends Transform {
       /* Check that all conditions for overriding `other` by `member`
        * of class `clazz` are met.
        */
-      def checkOverride(pair: SymbolPair) {
+      def checkOverride(pair: SymbolPair): Unit = {
         import pair._
         val member   = low
         val other    = high
@@ -351,17 +351,17 @@ abstract class RefChecks extends Transform {
 
           s"overriding ${infoStringWithLocation(other)};\n ${infoString(member)} $msg$addendum"
         }
-        def emitOverrideError(fullmsg: String) {
+        def emitOverrideError(fullmsg: String): Unit = {
           if (member.owner == clazz) reporter.error(member.pos, fullmsg)
           else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
         }
 
-        def overrideError(msg: String) {
+        def overrideError(msg: String): Unit = {
           if (noErrorType)
             emitOverrideError(overrideErrorMsg(msg))
         }
 
-        def overrideTypeError() {
+        def overrideTypeError(): Unit = {
           if (noErrorType) {
             emitOverrideError(
               if (member.isModule && other.isModule) objectOverrideErrorMsg
@@ -370,7 +370,7 @@ abstract class RefChecks extends Transform {
           }
         }
 
-        def overrideAccessError() {
+        def overrideAccessError(): Unit = {
           val otherAccess = accessFlagsToString(other)
           overrideError("has weaker access privileges; it should be "+ (if (otherAccess == "") "public" else "at least "+otherAccess))
         }
@@ -482,7 +482,7 @@ abstract class RefChecks extends Transform {
         //if (!other.typeParams.isEmpty)  (1.5)   @MAT
         //  overrideError("may not override parameterized type");
         // @M: substSym
-        def checkOverrideAlias() {
+        def checkOverrideAlias(): Unit = {
           // Important: first check the pair has the same kind, since the substitution
           // carries high's type parameter's bounds over to low, so that
           // type equality doesn't consider potentially different bounds on low/high's type params.
@@ -493,7 +493,7 @@ abstract class RefChecks extends Transform {
         }
         //if (!member.typeParams.isEmpty) // (1.7)  @MAT
         //  overrideError("may not be parameterized");
-        def checkOverrideAbstract() {
+        def checkOverrideAbstract(): Unit = {
           if (!(highInfo.bounds containsType lowType)) { // (1.7.1)
             overrideTypeError(); // todo: do an explaintypes with bounds here
             explainTypes(_.bounds containsType _, highInfo, lowType)
@@ -523,7 +523,7 @@ abstract class RefChecks extends Transform {
           else if (low.isAbstractType && lowType.isVolatile && !highInfo.bounds.hi.isVolatile)
             overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
         }
-        def checkOverrideTerm() {
+        def checkOverrideTerm(): Unit = {
           other.cookJavaRawInfo() // #2454
           if (!overridesTypeInPrefix(lowType, highType, rootType, low.isModuleOrModuleClass && high.isModuleOrModuleClass)) { // 8
             overrideTypeError()
@@ -543,13 +543,13 @@ abstract class RefChecks extends Transform {
             }
           }
         }
-        def checkOverrideTypes() {
+        def checkOverrideTypes(): Unit = {
           if (high.isAliasType)         checkOverrideAlias()
           else if (high.isAbstractType) checkOverrideAbstract()
           else if (high.isTerm)         checkOverrideTerm()
         }
 
-        def checkOverrideDeprecated() {
+        def checkOverrideDeprecated(): Unit = {
           if (other.hasDeprecatedOverridingAnnotation && !(member.hasDeprecatedOverridingAnnotation || member.ownerChain.exists(_.isDeprecated))) {
             val version = other.deprecatedOverridingVersion.getOrElse("")
             val since   = if (version.isEmpty) version else s" (since $version)"
@@ -577,7 +577,7 @@ abstract class RefChecks extends Transform {
           if (abstractErrors.size <= 2) abstractErrors mkString " "
           else abstractErrors.tail.mkString(abstractErrors.head + ":\n", "\n", "")
 
-        def abstractClassError(mustBeMixin: Boolean, msg: String) {
+        def abstractClassError(mustBeMixin: Boolean, msg: String): Unit = {
           def prelude = (
             if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
             else if (mustBeMixin) clazz + " needs to be a mixin"
@@ -746,7 +746,7 @@ abstract class RefChecks extends Transform {
         // class D extends C { def m: Int }
         //
         // (3) is violated but not (2).
-        def checkNoAbstractDecls(bc: Symbol) {
+        def checkNoAbstractDecls(bc: Symbol): Unit = {
           for (decl <- bc.info.decls) {
             if (decl.isDeferred && !ignoreDeferred(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
@@ -850,7 +850,7 @@ abstract class RefChecks extends Transform {
      *    </li>
      *  </ol>
      */
-    private def validateBaseTypes(clazz: Symbol) {
+    private def validateBaseTypes(clazz: Symbol): Unit = {
       val seenParents = mutable.HashSet[Type]()
       val seenTypes = new Array[List[Type]](clazz.info.baseTypeSeq.length)
       for (i <- 0 until seenTypes.length)
@@ -900,7 +900,7 @@ abstract class RefChecks extends Transform {
         case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
         case _                                => "type "+tp
       }
-      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance) {
+      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = {
         reporter.error(base.pos,
           s"${sym.variance} $sym occurs in $required position in ${tpString(base.info)} of $base")
       }
@@ -918,15 +918,15 @@ abstract class RefChecks extends Transform {
     private var currentLevel: LevelInfo = null
     private val symIndex = perRunCaches.newMap[Symbol, Int]()
 
-    private def pushLevel() {
+    private def pushLevel(): Unit = {
       currentLevel = new LevelInfo(currentLevel)
     }
 
-    private def popLevel() {
+    private def popLevel(): Unit = {
       currentLevel = currentLevel.outer
     }
 
-    private def enterSyms(stats: List[Tree]) {
+    private def enterSyms(stats: List[Tree]): Unit = {
       var index = -1
       for (stat <- stats) {
         index = index + 1
@@ -940,7 +940,7 @@ abstract class RefChecks extends Transform {
       }
     }
 
-    private def enterReference(pos: Position, sym: Symbol) {
+    private def enterReference(pos: Position, sym: Symbol): Unit = {
       if (sym.isLocalToBlock) {
         val e = currentLevel.scope.lookupEntry(sym.name)
         if ((e ne null) && sym == e.sym) {
@@ -1237,7 +1237,7 @@ abstract class RefChecks extends Transform {
     // I assume that's a consequence of some code trying to avoid noise by suppressing
     // warnings after the first, but I think it'd be better if we didn't have to
     // arbitrarily choose one as more important than the other.
-    private def checkUndesiredProperties(sym: Symbol, pos: Position) {
+    private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
@@ -1297,7 +1297,7 @@ abstract class RefChecks extends Transform {
       if (lessAccessible(other.typeSymbol, memberSym)) other.typeSymbol :: extras
       else extras
     }
-    private def warnLessAccessible(otherSym: Symbol, memberSym: Symbol) {
+    private def warnLessAccessible(otherSym: Symbol, memberSym: Symbol): Unit = {
       val comparison = accessFlagsToString(memberSym) match {
         case ""   => ""
         case acc  => " is " + acc + " but"
@@ -1318,10 +1318,10 @@ abstract class RefChecks extends Transform {
     /** Warn about situations where a method signature will include a type which
      *  has more restrictive access than the method itself.
      */
-    private def checkAccessibilityOfReferencedTypes(tree: Tree) {
+    private def checkAccessibilityOfReferencedTypes(tree: Tree): Unit = {
       val member = tree.symbol
 
-      def checkAccessibilityOfType(tpe: Type) {
+      def checkAccessibilityOfType(tpe: Type): Unit = {
         val inaccessible = lessAccessibleSymsInType(tpe, member)
         // if the unnormalized type is accessible, that's good enough
         if (inaccessible.isEmpty) ()
@@ -1337,7 +1337,7 @@ abstract class RefChecks extends Transform {
       member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
 
-    private def checkByNameRightAssociativeDef(tree: DefDef) {
+    private def checkByNameRightAssociativeDef(tree: DefDef): Unit = {
       tree match {
         case DefDef(_, name, _, params :: _, _, _) =>
           if (settings.warnByNameRightAssociative && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
@@ -1351,7 +1351,7 @@ abstract class RefChecks extends Transform {
       * concrete, non-deprecated method.  If it does, then
       * deprecation is meaningless.
       */
-    private def checkDeprecatedOvers(tree: Tree) {
+    private def checkDeprecatedOvers(tree: Tree): Unit = {
       val symbol = tree.symbol
       if (symbol.isDeprecated) {
         val concrOvers =

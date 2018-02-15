@@ -87,15 +87,15 @@ trait ContextErrors {
     extends AbsTypeError
 
   object ErrorUtils {
-    def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context) {
+    def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context): Unit = {
       issueTypeError(NormalTypeError(tree, msg))
     }
 
-    def issueSymbolTypeError(sym: Symbol, msg: String)(implicit context: Context) {
+    def issueSymbolTypeError(sym: Symbol, msg: String)(implicit context: Context): Unit = {
       issueTypeError(SymbolTypeError(sym, msg))
     }
 
-    def issueTypeError(err: AbsTypeError)(implicit context: Context) { context.issue(err) }
+    def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
     def typeErrorMsg(found: Type, req: Type) = "type mismatch" + foundReqMsg(found, req)
   }
@@ -1201,7 +1201,7 @@ trait ContextErrors {
       def RootImportError(tree: Tree) =
         issueNormalTypeError(tree, "_root_ cannot be imported")
 
-      def SymbolValidationError(sym: Symbol, errKind: SymValidateErrors.Value) {
+      def SymbolValidationError(sym: Symbol, errKind: SymValidateErrors.Value): Unit = {
         val msg = errKind match {
           case ImplicitConstr =>
             "`implicit' modifier not allowed for constructors"

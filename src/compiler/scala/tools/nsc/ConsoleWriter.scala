@@ -17,10 +17,10 @@ class ConsoleWriter extends Writer {
 
   def flush() = Console.flush()
 
-  def write(cbuf: Array[Char], off: Int, len: Int) {
+  def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
     if (len > 0)
       write(new String(cbuf.slice(off, off+len)))
   }
 
-  override def write(str: String) { Console.print(str) }
+  override def write(str: String): Unit = { Console.print(str) }
 }

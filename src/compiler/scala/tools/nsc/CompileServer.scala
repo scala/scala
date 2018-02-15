@@ -42,12 +42,12 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
       override def inform(pos: Position, msg: String) = out.println(msg)
     }
 
-  override def timeout() {
+  override def timeout(): Unit = {
     if (!compileSocket.portFile(port).exists)
       fatal("port file no longer exists; skipping cleanup")
   }
 
-  def printMemoryStats() {
+  def printMemoryStats(): Unit = {
     def mb(bytes: Long) = "%10.2fMB".format(bytes / 1048576.0)
     info("New session: total memory = %s, max memory = %s, free memory = %s".format(
       mb(totalMemory), mb(maxMemory), mb(freeMemory)))
@@ -76,7 +76,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
     (ss1 union ss2) -- (ss1 intersect ss2)
   }
 
-  def session() {
+  def session(): Unit = {
     val password        = compileSocket getPassword port
     val guessedPassword = in.readLine()
     val input           = in.readLine()
@@ -188,7 +188,7 @@ object CompileServer {
     * until the callback is finished. Callbacks should be kept simple and clients should not try to
     * interact with the server while the callback is processing.
     */
-  def execute(startupCallback : () => Unit, args: Array[String]) {
+  def execute(startupCallback : () => Unit, args: Array[String]): Unit = {
     val debug = args contains "-v"
     var port = 0
 

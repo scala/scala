@@ -55,7 +55,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     private var lastErrorPos : Int = -1
 
-    protected def skip() {
+    protected def skip(): Unit = {
       var nparens = 0
       var nbraces = 0
       while (true) {
@@ -81,11 +81,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def warning(pos : Int, msg : String) : Unit
     def syntaxError(pos: Int, msg: String) : Unit
-    def syntaxError(msg: String, skipIt: Boolean) {
+    def syntaxError(msg: String, skipIt: Boolean): Unit = {
       syntaxError(in.currentPos, msg, skipIt)
     }
 
-    def syntaxError(pos: Int, msg: String, skipIt: Boolean) {
+    def syntaxError(pos: Int, msg: String, skipIt: Boolean): Unit = {
       if (pos > lastErrorPos) {
         syntaxError(pos, msg)
         // no more errors on this token.
@@ -140,7 +140,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     // ------------- general parsing ---------------------------
 
     /** skip parent or brace enclosed sequence of things */
-    def skipAhead() {
+    def skipAhead(): Unit = {
       var nparens = 0
       var nbraces = 0
       do {
@@ -162,7 +162,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       } while (in.token != EOF && (nparens > 0 || nbraces > 0))
     }
 
-    def skipTo(tokens: Int*) {
+    def skipTo(tokens: Int*): Unit = {
       while (!(tokens contains in.token) && in.token != EOF) {
         if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
         else if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
@@ -187,7 +187,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       pos
     }
 
-    def acceptClosingAngle() {
+    def acceptClosingAngle(): Unit = {
       val closers: PartialFunction[Int, Int] = {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -336,7 +336,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     /** Annotation ::= TypeName [`(` AnnotationArgument {`,` AnnotationArgument} `)`]
      */
-    def annotation() {
+    def annotation(): Unit = {
       qualId()
       if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
       else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
@@ -446,7 +446,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident().toTermName)
     }
 
-    def optThrows() {
+    def optThrows(): Unit = {
       if (in.token == THROWS) {
         in.nextToken()
         repsep(() => typ(), COMMA)
@@ -796,7 +796,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(LBRACE)
       val buf = new ListBuffer[Tree]
       var enumIsFinal = true
-      def parseEnumConsts() {
+      def parseEnumConsts(): Unit = {
         if (in.token != RBRACE && in.token != SEMI && in.token != EOF) {
           val (const, hasClassBody) = enumConst(enumType)
           buf += const

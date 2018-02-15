@@ -20,7 +20,7 @@ abstract class AbstractReporter extends Reporter {
   private val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
   private val messages  = mutable.Map[Position, List[String]]() withDefaultValue Nil
 
-  override def reset() {
+  override def reset(): Unit = {
     super.reset()
     positions.clear()
     messages.clear()
@@ -31,7 +31,7 @@ abstract class AbstractReporter extends Reporter {
   private def isPromptSet = settings.prompt.value
   private def isDebug     = settings.debug
 
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
     if (severity == INFO) {
       if (isVerbose || force) {
         severity.count += 1

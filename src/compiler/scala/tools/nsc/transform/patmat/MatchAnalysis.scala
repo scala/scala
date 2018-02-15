@@ -815,7 +815,7 @@ trait MatchAnalysis extends MatchApproximation {
         private lazy val cls        = ctor.safeOwner
         private lazy val caseFieldAccs = cls.caseFieldAccessors
 
-        def addField(symbol: Symbol, assign: VariableAssignment) {
+        def addField(symbol: Symbol, assign: VariableAssignment): Unit = {
           // scala/bug#7669 Only register this field if if this class contains it.
           val shouldConstrainField = !symbol.isCaseAccessor || caseFieldAccs.contains(symbol)
           if (shouldConstrainField) fields(symbol) = assign

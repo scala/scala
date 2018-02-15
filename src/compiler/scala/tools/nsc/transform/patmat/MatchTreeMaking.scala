@@ -631,7 +631,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     protected def fixerUpper(origOwner: Symbol, pos: Position) = new InternalTraverser {
       currentOwner = origOwner
 
-      override def traverse(t: Tree) {
+      override def traverse(t: Tree): Unit = {
         if (t != EmptyTree && t.pos == NoPosition) {
           t.setPos(pos)
         }

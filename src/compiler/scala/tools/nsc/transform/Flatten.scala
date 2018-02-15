@@ -32,14 +32,14 @@ abstract class Flatten extends InfoTransform {
     if (old.nonEmpty) debuglog(s"In scope of ${sym.owner}, unlinked $old_s")
   }
 
-  private def liftClass(sym: Symbol) {
+  private def liftClass(sym: Symbol): Unit = {
     if (!sym.isLifted) {
       sym setFlag LIFTED
       debuglog("re-enter " + sym.fullLocationString)
       replaceSymbolInCurrentScope(sym)
     }
   }
-  private def liftSymbol(sym: Symbol) {
+  private def liftSymbol(sym: Symbol): Unit = {
     liftClass(sym)
   }
   // This is a short-term measure partially working around objects being

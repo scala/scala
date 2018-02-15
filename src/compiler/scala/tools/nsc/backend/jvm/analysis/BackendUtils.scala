@@ -152,7 +152,7 @@ abstract class BackendUtils extends PerRunInit {
     val implMethodsArray = implMethods.toArray
 
     val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
-    def emitLambdaDeserializeIndy(targetMethods: Seq[Handle]) {
+    def emitLambdaDeserializeIndy(targetMethods: Seq[Handle]): Unit = {
       mv.visitVarInsn(ALOAD, 0)
       mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, targetMethods: _*)
     }
@@ -360,7 +360,7 @@ abstract class BackendUtils extends PerRunInit {
    *
    * can-multi-thread
    */
-  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
+  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]): Unit = {
     val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
 
     // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler

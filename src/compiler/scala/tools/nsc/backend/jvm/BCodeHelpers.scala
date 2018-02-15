@@ -500,7 +500,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def emitArgument(av:   asm.AnnotationVisitor,
                      name: String,
-                     arg:  ClassfileAnnotArg) {
+                     arg:  ClassfileAnnotArg): Unit = {
       (arg: @unchecked) match {
 
         case LiteralAnnotArg(const) =>
@@ -538,7 +538,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *   must-single-thread
      * but not  necessarily always.
      */
-    def emitAssocs(av: asm.AnnotationVisitor, assocs: List[(Name, ClassfileAnnotArg)]) {
+    def emitAssocs(av: asm.AnnotationVisitor, assocs: List[(Name, ClassfileAnnotArg)]): Unit = {
       for ((name, value) <- assocs) {
         emitArgument(av, name.toString(), value)
       }
@@ -548,7 +548,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def emitAnnotations(cw: asm.ClassVisitor, annotations: List[AnnotationInfo]) {
+    def emitAnnotations(cw: asm.ClassVisitor, annotations: List[AnnotationInfo]): Unit = {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
@@ -560,7 +560,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def emitAnnotations(mw: asm.MethodVisitor, annotations: List[AnnotationInfo]) {
+    def emitAnnotations(mw: asm.MethodVisitor, annotations: List[AnnotationInfo]): Unit = {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
@@ -572,7 +572,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def emitAnnotations(fw: asm.FieldVisitor, annotations: List[AnnotationInfo]) {
+    def emitAnnotations(fw: asm.FieldVisitor, annotations: List[AnnotationInfo]): Unit = {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
@@ -584,7 +584,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]]) {
+    def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]]): Unit = {
       val annotationss = pannotss map (_ filter shouldEmitAnnotation)
       if (annotationss forall (_.isEmpty)) return
       for ((annots, idx) <- annotationss.zipWithIndex;
@@ -785,7 +785,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
+    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol): Unit = {
       assert(moduleClass.isModuleClass, moduleClass)
       debuglog(s"Dumping mirror class for object: $moduleClass")
 
@@ -841,7 +841,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      *  can-multi-thread
      */
-    def addSerialVUID(id: Long, jclass: asm.ClassVisitor) {
+    def addSerialVUID(id: Long, jclass: asm.ClassVisitor): Unit = {
       // add static serialVersionUID field if `clasz` annotated with `@SerialVersionUID(uid: Long)`
       // private for ease of binary compatibility (docs for java.io.Serializable
       // claim that the access modifier can be anything we want).
@@ -926,7 +926,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def legacyAddCreatorCode(clinit: asm.MethodVisitor, cnode: asm.tree.ClassNode, thisName: String) {
+    def legacyAddCreatorCode(clinit: asm.MethodVisitor, cnode: asm.tree.ClassNode, thisName: String): Unit = {
       val androidCreatorType = classBTypeFromSymbol(AndroidCreatorClass)
       val tdesc_creator = androidCreatorType.descriptor
 

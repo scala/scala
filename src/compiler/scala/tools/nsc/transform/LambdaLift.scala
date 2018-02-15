@@ -179,7 +179,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    private def markCalled(sym: Symbol, owner: Symbol) {
+    private def markCalled(sym: Symbol, owner: Symbol): Unit = {
 //      println(s"mark called: $sym of ${sym.owner} is called by $owner")
       symSet(called, owner) += sym
       if (sym.enclClass != owner.enclClass) calledFromInner += sym
@@ -187,7 +187,7 @@ abstract class LambdaLift extends InfoTransform {
 
     /** The traverse function */
     private val freeVarTraverser = new InternalTraverser {
-      override def traverse(tree: Tree) {
+      override def traverse(tree: Tree): Unit = {
 //       try { //debug
         val sym = tree.symbol
         tree match {
@@ -231,7 +231,7 @@ abstract class LambdaLift extends InfoTransform {
      *  value/variable/let that are free in some function or class, and to
      *  all class/function symbols that are owned by some function.
      */
-    private def computeFreeVars() {
+    private def computeFreeVars(): Unit = {
       freeVarTraverser.traverse(unit.body)
 
       do {
@@ -240,7 +240,7 @@ abstract class LambdaLift extends InfoTransform {
           markFree(fv, caller)
       } while (changedFreeVars)
 
-      def renameSym(sym: Symbol) {
+      def renameSym(sym: Symbol): Unit = {
         val originalName = sym.name
         sym setName newName(sym)
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
@@ -567,7 +567,7 @@ abstract class LambdaLift extends InfoTransform {
       super.transformStats(stats, exprOwner) map addLifted
     }
 
-    override def transformUnit(unit: CompilationUnit) {
+    override def transformUnit(unit: CompilationUnit): Unit = {
       computeFreeVars()
       afterOwnPhase {
         super.transformUnit(unit)

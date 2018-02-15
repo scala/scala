@@ -15,7 +15,7 @@ object MainTokenMetric {
 
   private var reporter: ConsoleReporter = _
 
-  def tokenMetric(compiler: Global, fnames: List[String]) {
+  def tokenMetric(compiler: Global, fnames: List[String]): Unit = {
     import compiler.CompilationUnit
     import compiler.syntaxAnalyzer.UnitScanner
     import ast.parser.Tokens.EOF
@@ -34,7 +34,7 @@ object MainTokenMetric {
     Console.println(totale.toString()+" total")
   }
 
-  def process(args: Array[String]) {
+  def process(args: Array[String]): Unit = {
     val settings = new Settings(msg => throw new RuntimeException(msg))
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
@@ -49,7 +49,7 @@ object MainTokenMetric {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     process(args)
     System.exit(if (reporter.hasErrors) 1 else 0)
   }

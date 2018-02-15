@@ -123,7 +123,7 @@ trait Contexts { self: Analyzer =>
   def rootContextPostTyper(unit: CompilationUnit, tree: Tree = EmptyTree): Context =
     rootContext(unit, tree, throwing = true)
 
-  def resetContexts() {
+  def resetContexts(): Unit = {
     startContext.enclosingContextChain foreach { context =>
       context.tree match {
         case Import(qual, _) => qual setType singleType(qual.symbol.owner.thisType, qual.symbol)
@@ -201,7 +201,7 @@ trait Contexts { self: Analyzer =>
     var contextMode: ContextMode = ContextMode.DefaultMode
 
     /** Update all modes in `mask` to `value` */
-    def update(mask: ContextMode, value: Boolean) {
+    def update(mask: ContextMode, value: Boolean): Unit = {
       contextMode = contextMode.set(value, mask)
     }
 
@@ -566,8 +566,8 @@ trait Contexts { self: Analyzer =>
       val argContext = baseContext.makeNewScope(tree, owner, reporter = this.reporter)
       argContext.contextMode = contextMode
       argContext.inSelfSuperCall = true
-      def enterElems(c: Context) {
-        def enterLocalElems(e: ScopeEntry) {
+      def enterElems(c: Context): Unit = {
+        def enterLocalElems(e: ScopeEntry): Unit = {
           if (e != null && e.owner == c.scope) {
             enterLocalElems(e.next)
             argContext.scope enter e.sym
@@ -782,7 +782,7 @@ trait Contexts { self: Analyzer =>
     // Type bound management
     //
 
-    def pushTypeBounds(sym: Symbol) {
+    def pushTypeBounds(sym: Symbol): Unit = {
       sym.info match {
         case tb: TypeBounds => if (!tb.isEmptyBounds) log(s"Saving $sym info=$tb")
         case info           => devWarning(s"Something other than a TypeBounds seen in pushTypeBounds: $info is a ${shortClassOfInstance(info)}")
@@ -825,7 +825,7 @@ trait Contexts { self: Analyzer =>
     private var implicitsCache: List[ImplicitInfo] = null
     private var implicitsRunId = NoRunId
 
-    def resetCache() {
+    def resetCache(): Unit = {
       implicitsRunId = NoRunId
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache()

@@ -35,9 +35,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   abstract class PlainBodyBuilder(cunit: CompilationUnit) extends PlainSkelBuilder(cunit) {
     /* ---------------- helper utils for generating methods and code ---------------- */
 
-    def emit(opc: Int) { mnode.visitInsn(opc) }
+    def emit(opc: Int): Unit = { mnode.visitInsn(opc) }
 
-    def emitZeroOf(tk: BType) {
+    def emitZeroOf(tk: BType): Unit = {
       tk match {
         case BOOL => bc.boolconst(false)
         case BYTE  |
@@ -57,7 +57,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * Two main cases: `tree` is an assignment,
      * otherwise an `adapt()` to UNIT is performed if needed.
      */
-    def genStat(tree: Tree) {
+    def genStat(tree: Tree): Unit = {
       lineNumber(tree)
       tree match {
         case Assign(lhs @ Select(qual, _), rhs) =>
@@ -245,12 +245,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       )
     }
 
-    def genLoad(tree: Tree) {
+    def genLoad(tree: Tree): Unit = {
       genLoad(tree, tpeTK(tree))
     }
 
     /* Generate code for trees that produce values on the stack */
-    def genLoad(tree: Tree, expectedType: BType) {
+    def genLoad(tree: Tree, expectedType: BType): Unit = {
       var generatedType = expectedType
 
       lineNumber(tree)
@@ -332,7 +332,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = tree.symbol
           generatedType = symInfoTK(sym)
           val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
-          def genLoadQualUnlessElidable() { if (!qualSafeToElide) { genLoadQualifier(tree) } }
+          def genLoadQualUnlessElidable(): Unit = { if (!qualSafeToElide) { genLoadQualifier(tree) } }
           // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, scala/bug#4283
           def receiverClass = qualifier.tpe.typeSymbol
           if (sym.isModule) {
@@ -424,7 +424,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      *   must-single-thread
      * Otherwise it's safe to call from multiple threads.
      */
-    def genConstant(const: Constant) {
+    def genConstant(const: Constant): Unit = {
       (const.tag: @switch) match {
 
         case BooleanTag => bc.boolconst(const.booleanValue)
@@ -472,7 +472,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    private def genLabelDef(lblDf: LabelDef, expectedType: BType) {
+    private def genLabelDef(lblDf: LabelDef, expectedType: BType): Unit = {
       // duplication of LabelDefs contained in `finally`-clauses is handled when emitting RETURN. No bookkeeping for that required here.
       // no need to call index() over lblDf.params, on first access that magic happens (moreover, no LocalVariableTable entries needed for them).
       markProgramPoint(programPoint(lblDf.symbol))
@@ -480,7 +480,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       genLoad(lblDf.rhs, expectedType)
     }
 
-    private def genReturn(r: Return) {
+    private def genReturn(r: Return): Unit = {
       val Return(expr) = r
       val returnedKind = tpeTK(expr)
       genLoad(expr, returnedKind)
@@ -560,7 +560,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = genTypeApply()
 
         case Apply(fun @ Select(sup @ Super(superQual, _), _), args) =>
-          def initModule() {
+          def initModule(): Unit = {
             // we initialize the MODULE$ field immediately after the super ctor
             if (!isModuleInitialized &&
               jMethodName == INSTANCE_CONSTRUCTOR_NAME &&
@@ -809,7 +809,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       generatedType
     }
 
-    def genBlock(tree: Block, expectedType: BType) {
+    def genBlock(tree: Block, expectedType: BType): Unit = {
       val Block(stats, expr) = tree
       val savedScope = varsInScope
       varsInScope = Nil
@@ -822,7 +822,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       varsInScope = savedScope
     }
 
-    def adapt(from: BType, to: BType) {
+    def adapt(from: BType, to: BType): Unit = {
       if (!from.conformsTo(to).get) {
         to match {
           case UNIT => bc drop from
@@ -898,7 +898,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emit code to Load the qualifier of `tree` on top of the stack. */
-    def genLoadQualifier(tree: Tree) {
+    def genLoadQualifier(tree: Tree): Unit = {
       lineNumber(tree)
       tree match {
         case Select(qualifier, _) => genLoad(qualifier)
@@ -907,7 +907,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Generate code that loads args into label parameters. */
-    def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) {
+    def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position): Unit = {
 
       val aps = {
         val params: List[Symbol] = lblDef.params.map(_.symbol)
@@ -935,7 +935,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     }
 
-    def genLoadArguments(args: List[Tree], btpes: List[BType]) {
+    def genLoadArguments(args: List[Tree], btpes: List[BType]): Unit = {
       (args zip btpes) foreach { case (arg, btpe) => genLoad(arg, btpe) }
     }
 
@@ -952,7 +952,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       symInfoTK(module)
     }
 
-    def genLoadModule(module: Symbol) {
+    def genLoadModule(module: Symbol): Unit = {
       def inStaticMethod = methSymbol != null && methSymbol.isStaticMember
       if (claszSymbol == module.moduleClass && jMethodName != "readResolve" && !inStaticMethod) {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
@@ -967,7 +967,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    def genConversion(from: BType, to: BType, cast: Boolean) {
+    def genConversion(from: BType, to: BType, cast: Boolean): Unit = {
       if (cast) { bc.emitT2T(from, to) }
       else {
         bc drop from
@@ -975,7 +975,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    def genCast(to: RefBType, cast: Boolean) {
+    def genCast(to: RefBType, cast: Boolean): Unit = {
       if (cast) { bc checkCast  to }
       else      { bc isInstance to }
     }
@@ -984,7 +984,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def isPrimitive(fun: Symbol): Boolean = scalaPrimitives.isPrimitive(fun)
 
     /* Generate coercion denoted by "code" */
-    def genCoercion(code: Int) {
+    def genCoercion(code: Int): Unit = {
       import scalaPrimitives._
       (code: @switch) match {
         case B2B | S2S | C2C | I2I | L2L | F2F | D2D => ()
@@ -1131,7 +1131,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emit code to compare the two top-most stack values using the 'op' operator. */
-    private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false) {
+    private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false): Unit = {
       if (targetIfNoJump == success) genCJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {
         if (tk.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
@@ -1152,7 +1152,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emits code to compare (and consume) stack-top and zero using the 'op' operator */
-    private def genCZJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false) {
+    private def genCZJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false): Unit = {
       if (targetIfNoJump == success) genCZJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {
         if (tk.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
@@ -1203,9 +1203,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * Generate code for conditional expressions.
      * The jump targets success/failure of the test are `then-target` and `else-target` resp.
      */
-    private def genCond(tree: Tree, success: asm.Label, failure: asm.Label, targetIfNoJump: asm.Label) {
+    private def genCond(tree: Tree, success: asm.Label, failure: asm.Label, targetIfNoJump: asm.Label): Unit = {
 
-      def genComparisonOp(l: Tree, r: Tree, code: Int) {
+      def genComparisonOp(l: Tree, r: Tree, code: Int): Unit = {
         val op = testOpForPrimitive(code)
         val nonNullSide = if (scalaPrimitives.isReferenceEqualityOp(code)) ifOneIsNull(l, r) else null
         if (nonNullSide != null) {
@@ -1235,7 +1235,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           lazy val Select(lhs, _) = fun
           val rhs = if (args.isEmpty) EmptyTree else args.head // args.isEmpty only for ZNOT
 
-          def genZandOrZor(and: Boolean) {
+          def genZandOrZor(and: Boolean): Unit = {
             // reaching "keepGoing" indicates the rhs should be evaluated too (ie not short-circuited).
             val keepGoing = new asm.Label
 
@@ -1273,7 +1273,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * @param l       left-hand-side  of the '=='
      * @param r       right-hand-side of the '=='
      */
-    def genEqEqPrimitive(l: Tree, r: Tree, success: asm.Label, failure: asm.Label, targetIfNoJump: asm.Label, pos: Position) {
+    def genEqEqPrimitive(l: Tree, r: Tree, success: asm.Label, failure: asm.Label, targetIfNoJump: asm.Label, pos: Position): Unit = {
 
       /* True if the equality comparison is between values that require the use of the rich equality
        * comparator (scala.runtime.BoxesRunTime.equals). This is the case when either side of the

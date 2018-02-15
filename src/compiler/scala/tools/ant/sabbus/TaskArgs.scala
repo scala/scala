@@ -19,7 +19,7 @@ trait CompilationPathProperty {
 
   protected var compilationPath: Option[Path] = None
 
-  def setCompilationPath(input: Path) {
+  def setCompilationPath(input: Path): Unit = {
     if (compilationPath.isEmpty) compilationPath = Some(input)
     else compilationPath.get.append(input)
   }
@@ -29,7 +29,7 @@ trait CompilationPathProperty {
     compilationPath.get.createPath()
   }
 
-  def setCompilationPathRef(input: Reference) {
+  def setCompilationPathRef(input: Reference): Unit = {
     createCompilationPath.setRefid(input)
   }
 }
@@ -37,11 +37,11 @@ trait CompilationPathProperty {
 trait TaskArgs extends CompilationPathProperty {
   this: Task =>
 
-  def setId(input: String) {
+  def setId(input: String): Unit = {
     id = Some(input)
   }
 
-  def setParams(input: String) {
+  def setParams(input: String): Unit = {
     extraArgs ++= input.split(' ').map { s => val a = new Argument; a.setValue(s); a }
   }
 
@@ -51,11 +51,11 @@ trait TaskArgs extends CompilationPathProperty {
     a
   }
 
-  def setTarget(input: String) {
+  def setTarget(input: String): Unit = {
     compTarget = Some(input)
   }
 
-  def setSrcPath(input: Path) {
+  def setSrcPath(input: Path): Unit = {
     if (sourcePath.isEmpty) sourcePath = Some(input)
     else sourcePath.get.append(input)
   }
@@ -65,11 +65,11 @@ trait TaskArgs extends CompilationPathProperty {
     sourcePath.get.createPath()
   }
 
-  def setSrcPathRef(input: Reference) {
+  def setSrcPathRef(input: Reference): Unit = {
     createSrcPath.setRefid(input)
   }
 
-  def setCompilerPath(input: Path) {
+  def setCompilerPath(input: Path): Unit = {
     if (compilerPath.isEmpty) compilerPath = Some(input)
     else compilerPath.get.append(input)
   }
@@ -79,11 +79,11 @@ trait TaskArgs extends CompilationPathProperty {
     compilerPath.get.createPath()
   }
 
-  def setCompilerPathRef(input: Reference) {
+  def setCompilerPathRef(input: Reference): Unit = {
     createCompilerPath.setRefid(input)
   }
 
-  def setDestdir(input: File) {
+  def setDestdir(input: File): Unit = {
     destinationDir = Some(input)
   }
 

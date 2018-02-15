@@ -166,7 +166,7 @@ trait Implicits {
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
-  def resetImplicits() {
+  def resetImplicits(): Unit = {
     implicitsCache.clear()
     infoMapCache.clear()
     improvesCache.clear()
@@ -854,21 +854,21 @@ trait Implicits {
      */
     class ImplicitComputation(iss: Infoss, isLocalToCallsite: Boolean) {
       abstract class Shadower {
-        def addInfos(infos: Infos)
+        def addInfos(infos: Infos): Unit
         def isShadowed(name: Name): Boolean
       }
       private val shadower: Shadower = {
         /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
         final class LocalShadower extends Shadower {
           val shadowed = util.HashSet[Name](512)
-          def addInfos(infos: Infos) {
+          def addInfos(infos: Infos): Unit = {
             infos.foreach(i => shadowed.addEntry(i.name))
           }
           def isShadowed(name: Name) = shadowed(name)
         }
         /** Used for the implicits of expected type, when no shadowing checks are needed. */
         object NoShadower extends Shadower {
-          def addInfos(infos: Infos) {}
+          def addInfos(infos: Infos): Unit = {}
           def isShadowed(name: Name) = false
         }
         if (isLocalToCallsite) new LocalShadower else NoShadower
@@ -905,11 +905,11 @@ trait Implicits {
       object DivergentImplicitRecovery {
         private var divergentError: Option[DivergentImplicitTypeError] = None
 
-        private def saveDivergent(err: DivergentImplicitTypeError) {
+        private def saveDivergent(err: DivergentImplicitTypeError): Unit = {
           if (divergentError.isEmpty) divergentError = Some(err)
         }
 
-        def issueSavedDivergentError() {
+        def issueSavedDivergentError(): Unit = {
           divergentError foreach (err => context.issue(err))
         }
 
@@ -1123,7 +1123,7 @@ trait Implicits {
        * @param pending  The set of static symbols for which we are currently trying to collect their parts
        *                 in order to cache them in infoMapCache
        */
-      def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) {
+      def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]): Unit = {
         if (seen(tp))
           return
         seen += tp

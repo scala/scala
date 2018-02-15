@@ -230,10 +230,10 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** append Unicode character to "lit" buffer
     */
-    protected def putChar(c: Char) { cbuf.append(c) }
+    protected def putChar(c: Char): Unit = { cbuf.append(c) }
 
     /** Clear buffer and set name */
-    private def setName() {
+    private def setName(): Unit = {
       name = newTermName(cbuf.toString())
       cbuf.setLength(0)
     }
@@ -247,7 +247,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
 // Get next token ------------------------------------------------------------
 
-    def nextToken() {
+    def nextToken(): Unit = {
       if (next.token == EMPTY) {
         fetchToken()
       }
@@ -268,7 +268,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** read next token
      */
-    private def fetchToken() {
+    private def fetchToken(): Unit = {
       if (token == EOF) return
       lastPos = in.cpos - 1
       while (true) {
@@ -612,7 +612,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getIdentRest() {
+    private def getIdentRest(): Unit = {
       while (true) {
         (in.ch: @switch) match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -698,7 +698,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction() {
+    protected def getFraction(): Unit = {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
         putChar(in.ch)
@@ -787,7 +787,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     }
     /** read a number into name and set base
     */
-    protected def getNumber() {
+    protected def getNumber(): Unit = {
       while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
         in.next()
@@ -827,17 +827,17 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** generate an error at the given position
     */
-    def syntaxError(pos: Int, msg: String) {
+    def syntaxError(pos: Int, msg: String): Unit = {
       error(pos, msg)
       token = ERROR
     }
 
     /** generate an error at the current token position
     */
-    def syntaxError(msg: String) { syntaxError(pos, msg) }
+    def syntaxError(msg: String): Unit = { syntaxError(pos, msg) }
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String) {
+    def incompleteInputError(msg: String): Unit = {
       incompleteInputError(pos, msg)
       token = EOF
     }
@@ -867,7 +867,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** INIT: read lookahead character and token.
      */
-    def init() {
+    def init(): Unit = {
       in.next()
       nextToken()
     }

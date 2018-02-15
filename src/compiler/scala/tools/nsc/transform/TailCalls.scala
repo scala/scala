@@ -30,7 +30,7 @@ abstract class TailCalls extends Transform {
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit) {
+    def apply(unit: global.CompilationUnit): Unit = {
       if (!(settings.debuginfo.value == "notailcalls")) {
         newTransformer(unit).transformUnit(unit)
       }
@@ -92,7 +92,7 @@ abstract class TailCalls extends Transform {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason
-    private def tailrecFailure(ctx: TailContext) {
+    private def tailrecFailure(ctx: TailContext): Unit = {
       val method      = ctx.method
       val failReason  = failReasons(ctx)
       val failPos     = failPositions(ctx)

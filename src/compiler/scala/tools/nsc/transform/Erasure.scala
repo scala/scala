@@ -44,7 +44,7 @@ abstract class Erasure extends InfoTransform
   }
 
   private object NeedsSigCollector extends TypeCollector(false) {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (!result) {
         tp match {
           case st: SubType =>
@@ -530,7 +530,7 @@ abstract class Erasure extends InfoTransform
     /** TODO - work through this logic with a fine-toothed comb, incorporating
      *  into SymbolPairs where appropriate.
      */
-    def checkPair(pair: SymbolPair) {
+    def checkPair(pair: SymbolPair): Unit = {
       import pair._
       val member = low
       val other  = high
@@ -586,7 +586,7 @@ abstract class Erasure extends InfoTransform
       }
     }
 
-    protected def addBridge(bridge: Symbol, member: Symbol, other: Symbol) {} // hook for GenerateBridges
+    protected def addBridge(bridge: Symbol, member: Symbol, other: Symbol): Unit = {} // hook for GenerateBridges
   }
 
   class GenerateBridges(unit: CompilationUnit, root: Symbol) extends EnterBridges(unit, root) {
@@ -843,7 +843,7 @@ abstract class Erasure extends InfoTransform
   class ErasureTransformer(unit: CompilationUnit) extends Transformer {
     import overridingPairs.Cursor
 
-    private def doubleDefError(pair: SymbolPair) {
+    private def doubleDefError(pair: SymbolPair): Unit = {
       import pair._
 
       if (!pair.isErroneous) {
@@ -868,7 +868,7 @@ abstract class Erasure extends InfoTransform
       exitingPostErasure(sym1.info =:= sym2.info) && !sym1.isMacro && !sym2.isMacro
 
     /** TODO - adapt SymbolPairs so it can be used here. */
-    private def checkNoDeclaredDoubleDefs(base: Symbol) {
+    private def checkNoDeclaredDoubleDefs(base: Symbol): Unit = {
       val decls = base.info.decls
 
       // scala/bug#8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
@@ -916,7 +916,7 @@ abstract class Erasure extends InfoTransform
      *  - A template inherits two members `m` with different types,
      *    but their erased types are the same.
      */
-    private def checkNoDoubleDefs(root: Symbol) {
+    private def checkNoDoubleDefs(root: Symbol): Unit = {
       checkNoDeclaredDoubleDefs(root)
       def isErasureDoubleDef(pair: SymbolPair) = {
         import pair._
@@ -1369,7 +1369,7 @@ abstract class Erasure extends InfoTransform
     }
   }
 
-  final def resolveAnonymousBridgeClash(sym: Symbol, bridge: Symbol) {
+  final def resolveAnonymousBridgeClash(sym: Symbol, bridge: Symbol): Unit = {
     // TODO reinstate this after Delambdafy generates anonymous classes that meet this requirement.
     // require(sym.owner.isAnonymousClass, sym.owner)
     log(s"Expanding name of ${sym.debugLocationString} as it clashes with bridge. Renaming deemed safe because the owner is anonymous.")

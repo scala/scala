@@ -49,31 +49,31 @@ class FastScalac extends Scalac {
    *
    *  @param input The value for `reset`.
    */
-  def setReset(input: Boolean) { resetCaches = input }
+  def setReset(input: Boolean): Unit = { resetCaches = input }
 
   /** Sets the `server` attribute. Used by [[http://ant.apache.org Ant]].
    *
    *  @param input The value for `server`.
    */
-  def setServer(input: String) { serverAddr = Some(input) }
+  def setServer(input: String): Unit = { serverAddr = Some(input) }
 
   /** Sets the `shutdown` attribute. Used by [[http://ant.apache.org Ant]].
    *
    *  @param input The value for `shutdown`.
    */
-  def setShutdown(input: Boolean) { shutdownServer = input }
+  def setShutdown(input: Boolean): Unit = { shutdownServer = input }
 
   /** Sets the `ipv4` attribute. Used by [[http://ant.apache.org Ant]].
    *
    *  @param input The value for `ipv4`.
    */
-  def setIPv4(input: Boolean) { useIPv4 = input }
+  def setIPv4(input: Boolean): Unit = { useIPv4 = input }
 
   /** Sets the `maxIdle` attribute. Used by [[http://ant.apache.org Ant]].
    *
    *  @param input The value for `maxIdle`.
    */
-  def setMaxIdle(input: Int) { if (0 <= input) idleMinutes = Some(input) }
+  def setMaxIdle(input: Int): Unit = { if (0 <= input) idleMinutes = Some(input) }
 
 /*============================================================================*\
 **                             The execute method                             **
@@ -83,7 +83,7 @@ class FastScalac extends Scalac {
     new FscSettings(error)
 
   /** Performs the compilation. */
-  override def execute() {
+  override def execute(): Unit = {
     val (settings, sourceFiles, javaOnly) = initialize
     if (sourceFiles.isEmpty || javaOnly)
       return

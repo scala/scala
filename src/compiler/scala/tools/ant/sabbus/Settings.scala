@@ -56,7 +56,7 @@ class Settings {
 
   private var optimiseBf: Boolean = false
   def optimise = optimiseBf
-  def optimise_=(b: Boolean) { optimiseBf = b }
+  def optimise_=(b: Boolean): Unit = { optimiseBf = b }
 
   private var extraParamsBf: Seq[String] = Seq()
   def extraParams = extraParamsBf

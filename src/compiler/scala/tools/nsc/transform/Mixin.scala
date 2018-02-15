@@ -172,7 +172,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     newSym
   }
 
-  def publicizeTraitMethods(clazz: Symbol) {
+  def publicizeTraitMethods(clazz: Symbol): Unit = {
     if (treatedClassInfos(clazz) != clazz.info) {
       treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase, phase)
@@ -202,7 +202,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
    *      - for every super accessor in T, add an implementation of that accessor
    *      - for every module in T, add a module
    */
-  def addMixedinMembers(clazz: Symbol, unit: CompilationUnit) {
+  def addMixedinMembers(clazz: Symbol, unit: CompilationUnit): Unit = {
     def cloneAndAddMixinMember(mixinClass: Symbol, mixinMember: Symbol): Symbol = (
       cloneAndAddMember(mixinClass, mixinMember, clazz)
            setPos clazz.pos
@@ -210,7 +210,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     )
 
     /* Mix in members of implementation class mixinClass into class clazz */
-    def mixinTraitForwarders(mixinClass: Symbol) {
+    def mixinTraitForwarders(mixinClass: Symbol): Unit = {
       for (member <- mixinClass.info.decls ; if isImplementedStatically(member)) {
         member overridingSymbol clazz match {
           case NoSymbol =>
@@ -283,7 +283,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 
     /* Mix in members of trait mixinClass into class clazz.
      */
-    def mixinTraitMembers(mixinClass: Symbol) {
+    def mixinTraitMembers(mixinClass: Symbol): Unit = {
       // For all members of a trait's interface do:
       for (mixinMember <- mixinClass.info.decls) {
         if (mixinMember.hasFlag(SUPERACCESSOR)) { // mixin super accessors
@@ -431,7 +431,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
           val usedIn = mutable.HashMap[Symbol, List[Symbol]]() withDefaultValue Nil
 
           object SingleUseTraverser extends InternalTraverser {
-            override def traverse(tree: Tree) {
+            override def traverse(tree: Tree): Unit = {
               tree match {
                 // assignment targets don't count as a dereference -- only check the rhs
                 case Assign(_, rhs) => traverse(rhs)

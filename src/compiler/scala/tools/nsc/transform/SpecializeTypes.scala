@@ -531,7 +531,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Cleans the anyrefSpecCache of all type parameter symbols of a class.
    */
-  private def cleanAnyRefSpecCache(clazz: Symbol, decls: List[Symbol]) {
+  private def cleanAnyRefSpecCache(clazz: Symbol, decls: List[Symbol]): Unit = {
     // remove class type parameters and those of normalized members.
     clazz :: decls foreach (anyrefSpecCache remove _)
   }
@@ -1029,7 +1029,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *   * there is a valid specialization environment that maps the overridden method type to m's type.
      */
     def needsSpecialOverride(overriding: Symbol): (Symbol, TypeEnv) = {
-      def checkOverriddenTParams(overridden: Symbol) {
+      def checkOverriddenTParams(overridden: Symbol): Unit = {
         foreach2(overridden.info.typeParams, overriding.info.typeParams) { (baseTvar, derivedTvar) =>
           val missing = concreteTypes(baseTvar).toSet -- concreteTypes(derivedTvar).toSet
           if (missing.nonEmpty) {
@@ -2028,7 +2028,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  @note This field is part of the specializeTypes subcomponent, so any symbols
    *        that here are not garbage collected at the end of a compiler run!
    */
-  def addConcreteSpecMethod(m: Symbol) {
+  def addConcreteSpecMethod(m: Symbol): Unit = {
     if (currentRun.compiles(m)) concreteSpecMethods += m
   }
 

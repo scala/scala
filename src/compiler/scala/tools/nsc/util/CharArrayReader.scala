@@ -65,7 +65,7 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
    *  This is for use in multi-line strings, so there are no
    *  "potential line ends" here.
    */
-  final def nextRawChar() {
+  final def nextRawChar(): Unit = {
     if (charOffset >= buf.length) {
       ch = SU
     } else {
@@ -121,7 +121,7 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
       }
 
   /** Handle line ends */
-  private def potentialLineEnd() {
+  private def potentialLineEnd(): Unit = {
     if (ch == LF || ch == FF) {
       lastLineStartOffset = lineStartOffset
       lineStartOffset = charOffset

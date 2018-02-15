@@ -39,7 +39,7 @@ trait Analyzer extends AnyRef
       override val checkable = false
       override def keepsTypeParams = false
 
-      def apply(unit: CompilationUnit) {
+      def apply(unit: CompilationUnit): Unit = {
         newNamer(rootContext(unit)).enterSym(unit.body)
       }
     }
@@ -67,7 +67,7 @@ trait Analyzer extends AnyRef
         }
       }
 
-      def apply(unit: CompilationUnit) {
+      def apply(unit: CompilationUnit): Unit = {
         openPackageObjectsTraverser(unit.body)
       }
     }
@@ -87,7 +87,7 @@ trait Analyzer extends AnyRef
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
-      override def run() {
+      override def run(): Unit = {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.typerNanos) else null
         global.echoPhaseSummary(this)
         for (unit <- currentRun.units) {
@@ -98,7 +98,7 @@ trait Analyzer extends AnyRef
         clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
       }
-      def apply(unit: CompilationUnit) {
+      def apply(unit: CompilationUnit): Unit = {
         try {
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)

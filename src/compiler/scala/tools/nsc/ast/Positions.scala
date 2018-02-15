@@ -6,7 +6,7 @@ trait Positions extends scala.reflect.internal.Positions {
 
   class ValidatingPosAssigner extends PosAssigner {
     var pos: Position = _
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       if (t eq EmptyTree) ()
       else if (t.pos == NoPosition) super.traverse(t setPos pos)
       else if (globalPhase.id <= currentRun.picklerPhase.id) {

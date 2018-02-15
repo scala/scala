@@ -29,7 +29,7 @@ class MutableSettings(val errorFn: String => Unit)
     settings
   }
 
-  def copyInto(settings: MutableSettings) {
+  def copyInto(settings: MutableSettings): Unit = {
     allSettings foreach { thisSetting =>
       val otherSetting = settings.allSettings find { _.name == thisSetting.name }
       otherSetting foreach { otherSetting =>
@@ -196,7 +196,7 @@ class MutableSettings(val errorFn: String => Unit)
   * The class loader for `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
-  def embeddedDefaults(loader: ClassLoader) {
+  def embeddedDefaults(loader: ClassLoader): Unit = {
     explicitParentLoader = Option(loader) // for the Interpreter parentClassLoader
     getClasspath("app", loader) foreach { classpath.value = _ }
     getClasspath("boot", loader) foreach { bootclasspath append _ }
@@ -281,7 +281,7 @@ class MutableSettings(val errorFn: String => Unit)
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
      */
-    def setSingleOutput(outDir: String) {
+    def setSingleOutput(outDir: String): Unit = {
       val dst = AbstractFile.getDirectory(outDir)
       setSingleOutput(checkDir(dst, outDir, allowJar = true))
     }
@@ -291,11 +291,11 @@ class MutableSettings(val errorFn: String => Unit)
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
      */
-    def setSingleOutput(dir: AbstractFile) {
+    def setSingleOutput(dir: AbstractFile): Unit = {
       singleOutDir = Some(dir)
     }
 
-    def add(src: AbstractFile, dst: AbstractFile) {
+    def add(src: AbstractFile, dst: AbstractFile): Unit = {
       singleOutDir = None
       outputDirs ::= ((src, dst))
     }
@@ -455,7 +455,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
-    override def tryToSetFromPropertyValue(s : String) { // used from ide
+    override def tryToSetFromPropertyValue(s : String): Unit = { // used from ide
       value = s.equalsIgnoreCase("true")
     }
     override def tryToSetColon(args: List[String]) = args match {
@@ -581,7 +581,7 @@ class MutableSettings(val errorFn: String => Unit)
     default: String)
     extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None) {
       value = default
-      override def value_=(str: String) {
+      override def value_=(str: String): Unit = {
         super.value_=(str)
         try outputDirs.setSingleOutput(str)
         catch { case FatalError(msg) => errorFn(msg) }

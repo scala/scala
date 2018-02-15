@@ -22,7 +22,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   case class DocDef(comment: DocComment, definition: Tree)
        extends Tree {
     override def symbol: Symbol = definition.symbol
-    override def symbol_=(sym: Symbol) { definition.symbol = sym }
+    override def symbol_=(sym: Symbol): Unit = { definition.symbol = sym }
     override def isDef = definition.isDef
     override def isTerm = definition.isTerm
     override def isType = definition.isType
@@ -151,7 +151,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   type ApiTransformer = super.Transformer
   class Transformer extends InternalTransformer {
-    def transformUnit(unit: CompilationUnit) {
+    def transformUnit(unit: CompilationUnit): Unit = {
       try unit.body = transform(unit.body)
       catch {
         case ex: Exception =>
@@ -167,7 +167,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   }
 
   object resetPos extends Traverser {
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       if (t != EmptyTree) t.setPos(NoPosition)
       super.traverse(t)
     }
@@ -219,7 +219,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
     val locals = util.HashSet[Symbol](8)
     val orderedLocals = scala.collection.mutable.ListBuffer[Symbol]()
-    def registerLocal(sym: Symbol) {
+    def registerLocal(sym: Symbol): Unit = {
       if (sym != null && sym != NoSymbol) {
         if (debug && !(locals contains sym)) orderedLocals append sym
         locals addEntry sym
@@ -227,7 +227,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
 
     class MarkLocals extends self.InternalTraverser {
-      def markLocal(tree: Tree) {
+      def markLocal(tree: Tree): Unit = {
         if (tree.symbol != null && tree.symbol != NoSymbol) {
           val sym = tree.symbol
           registerLocal(sym)

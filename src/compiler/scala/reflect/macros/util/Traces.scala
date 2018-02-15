@@ -6,6 +6,6 @@ trait Traces {
 
   val macroDebugLite = globalSettings.YmacrodebugLite.value
   val macroDebugVerbose = globalSettings.YmacrodebugVerbose.value
-  @inline final def macroLogLite(msg: => Any) { if (macroDebugLite || macroDebugVerbose) println(msg) }
-  @inline final def macroLogVerbose(msg: => Any) { if (macroDebugVerbose) println(msg) }
+  @inline final def macroLogLite(msg: => Any): Unit = { if (macroDebugLite || macroDebugVerbose) println(msg) }
+  @inline final def macroLogVerbose(msg: => Any): Unit = { if (macroDebugVerbose) println(msg) }
 }
