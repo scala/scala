@@ -1,8 +1,8 @@
-t7294.scala:4: warning: fruitless type test: a value of type (Int, Int) cannot also be a Seq[A]
+t7294.scala:4: warning: fruitless type test: a value of type (Int, Int) cannot also be a scala.collection.immutable.Seq[A]
   (1, 2) match { case Seq() => 0; case _ => 1 }
                          ^
 t7294.scala:4: error: pattern type is incompatible with expected type;
- found   : Seq[A]
+ found   : scala.collection.immutable.Seq[A]
  required: (Int, Int)
   (1, 2) match { case Seq() => 0; case _ => 1 }
                          ^
