@@ -182,8 +182,7 @@ abstract class SymbolTable extends macros.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  // sigh, this has to be public or enteringPhase doesn't inline.
-  val phStack: ArrayBuffer[Phase] = new ArrayBuffer(128)
+  private val phStack: collection.mutable.ArrayStack[Phase] = new collection.mutable.ArrayStack()
   private[this] var ph: Phase = NoPhase
   private[this] var per = NoPeriod
 
@@ -209,13 +208,13 @@ abstract class SymbolTable extends macros.Universe
     val current = phase
     phase = ph
     if (keepPhaseStack) {
-      phStack += ph
+      phStack.push(ph)
     }
     current
   }
   final def popPhase(ph: Phase) {
     if (keepPhaseStack) {
-      phStack.remove(phStack.size)
+      phStack.pop()
     }
     phase = ph
   }
