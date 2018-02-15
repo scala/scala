@@ -457,6 +457,16 @@ object Either {
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
     if (test) Right(right) else Left(left)
 
+  /**
+   * Creates `Left` typed as `Either`
+   */
+  def left[A, B](value: A): Either[A, B] = Left(value)
+
+  /**
+   * Creates `Right` typed as `Either`
+   */
+  def right[A, B](value: B): Either[A, B] = Right(value)
+
   /** Allows use of a `merge` method to extract values from Either instances
    *  regardless of whether they are Left or Right.
    *
