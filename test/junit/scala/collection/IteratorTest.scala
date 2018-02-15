@@ -300,7 +300,7 @@ class IteratorTest {
   @Test def emptyTypedIteratorsShouldBeEqual(): Unit = {
     val emptyDoubleIterator = Iterator.empty[Double]
     val emptyIntIterator = Iterator.empty[Int]
-    assertEquals(emptyDoubleIterator, emptyIntIterator)
+    assertSame(emptyDoubleIterator, emptyIntIterator)
   }
 
   @Test def emptyIteratorInHigherOrderFunctions(): Unit = {
