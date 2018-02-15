@@ -6,7 +6,7 @@ script:
   - sbt ++2.12.4 collectionsJS/test ++2.13.0-M2 collectionsJS/test collections-contribJS/test
 before_script:
   - ./checkCLA.sh
-after_succes:
+after_success:
   - '[[ $TRAVIS_BRANCH == "master" ]] && { sbt publish; }'
 env:
   global:
