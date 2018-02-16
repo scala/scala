@@ -315,4 +315,40 @@ class IteratorTest {
 
     assertEquals("a,null,b,null,c,null", it.mkString(","))
   }
+
+  @Test
+  def emptyTypedIteratorsShouldBeEqual: Unit = {
+    val emptyDoubleIterator = Iterator.empty[Double]
+    val emptyIntIterator = Iterator.empty[Int]
+    assertSame(emptyDoubleIterator, emptyIntIterator)
+  }
+
+  @Test
+  def emptyIteratorInHigherOrderFunctions: Unit = {
+    val seqOfIterators = Seq(Seq(1, 2, 3).iterator(), Seq(3, 2, 1).iterator(), Seq(1, 3, 2).iterator())
+    val unified = seqOfIterators.foldLeft(Iterator.empty[Int])((a, b) => a ++ b)
+    assertEquals(List(1, 2, 3, 3, 2, 1, 1, 3, 2), List.from(unified))
+  }
+
+  @Test
+  def emptyIteratorBuilder: Unit = {
+    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int]().result())
+  }
+
+  @Test
+  def nonEmptyIteratorBuilder: Unit = {
+    var iteratorBuilder = Iterator.newBuilder[Int]()
+    iteratorBuilder += 5
+    iteratorBuilder += 4
+    iteratorBuilder += 3
+    assertEquals(List(5, 4, 3), List.from(iteratorBuilder.result()))
+  }
+
+  @Test
+  def nonEmptyIteratorAndClearBuilder: Unit = {
+    var iteratorBuilder = Iterator.newBuilder[Int]()
+    iteratorBuilder += 1
+    iteratorBuilder.clear()
+    assertSame(Iterator.empty, iteratorBuilder.result())
+  }
 }

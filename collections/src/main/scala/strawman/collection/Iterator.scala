@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
 import scala.Predef.{identity, intWrapper, require, String}
-import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
+import strawman.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -387,7 +387,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     while (hasNext) reversed = next() :: reversed
     reversed.foldLeft(z)((b, a) => op(a, b))
   }
-  
+
   /** Produces a collection containing cumulative results of applying the
    *  operator going left to right.
    *
@@ -1243,12 +1243,23 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 
 }
 
-object Iterator {
+object Iterator extends IterableFactory[Iterator] {
 
-  val empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
+  private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
   }
+
+  /** Creates a target $coll from an existing source collection
+    *
+    * @param source Source collection
+    * @tparam A the type of the collection’s elements
+    * @return a new $coll with the elements of `source`
+    */
+  override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator()
+
+  /** The iterator which produces no values. */
+  @`inline` final def empty[T]: Iterator[T] = _empty
 
   def single[A](a: A): Iterator[A] = new AbstractIterator[A] {
     private var consumed: Boolean = false
@@ -1256,10 +1267,19 @@ object Iterator {
     def next() = if (consumed) empty.next() else { consumed = true; a }
   }
 
-  def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
+  override def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
     val length = xs.length
     def apply(n: Int) = xs(n)
   }.iterator()
+
+  /**
+    * @return A builder for $Coll objects.
+    * @tparam A the type of the ${coll}’s elements
+    */
+  def newBuilder[A](): Builder[A, Iterator[A]] =
+    new ImmutableBuilder[A, Iterator[A]](empty[A]) {
+      override def addOne(elem: A): this.type = { elems = elems ++ single(elem); this }
+    }
 
   /** Creates iterator that produces the results of some element computation a number of times.
     *
@@ -1267,7 +1287,7 @@ object Iterator {
     *  @param   elem the element computation
     *  @return  An iterator that produces the results of `n` evaluations of `elem`.
     */
-  def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
+  override def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = i < len
     def next(): A =
@@ -1281,7 +1301,7 @@ object Iterator {
     *  @param  f   The function computing element values
     *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
     */
-  def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
+  override def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = i < end
     def next(): A =
