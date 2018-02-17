@@ -12,6 +12,7 @@ import java.util.{ Arrays, Comparator }
 import scala.tools.nsc.symtab.Flags
 import xsbti.api._
 
+import scala.annotation.tailrec
 import scala.tools.nsc.Global
 
 /**
@@ -160,7 +161,7 @@ class ExtractAPI[GlobalType <: Global](
    * Force all lazy structures.  This is necessary so that we see the symbols/types at this phase and
    * so that we don't hold on to compiler objects and classes
    */
-  def forceStructures(): Unit =
+  @tailrec final def forceStructures(): Unit =
     if (pending.isEmpty)
       structureCache.clear()
     else {
