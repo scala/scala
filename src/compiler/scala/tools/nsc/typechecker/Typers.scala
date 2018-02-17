@@ -892,7 +892,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         def cantAdapt =
-          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
+          if (context.implicitsEnabled || context.enrichmentEnabled) MissingArgsForMethodTpeError(tree, meth)
           else setError(tree)
 
         def emptyApplication: Tree = adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)

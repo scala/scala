@@ -1,0 +1,6 @@
+t10731.scala:3: error: missing argument list for method eq in class Object
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `eq _` or `eq(_)` instead of `eq`.
+  val eq.a = 1
+      ^
+one error found
