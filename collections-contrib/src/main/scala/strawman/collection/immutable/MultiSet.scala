@@ -17,9 +17,7 @@ class MultiSet[A] private (elems: Map[A, Int])
 
   def occurrences: Map[A, Int] = elems
 
-  def iterableFactory: IterableFactory[MultiSet] = MultiSet
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): MultiSet[A] = fromIterable(coll)
-  protected[this] def newSpecificBuilder(): Builder[A, MultiSet[A]] = iterableFactory.newBuilder()
+  override def iterableFactory: IterableFactory[MultiSet] = MultiSet
 
   /**
     * @return an immutable multiset containing all the elements of this multiset

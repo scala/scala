@@ -15,12 +15,7 @@ import scala.Predef.{<:<, intWrapper}
 trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def view = this
 
-  def iterableFactory = View
-
-  protected[this] def fromSpecificIterable(coll: Iterable[A]): View[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, View[A]] =
-    immutable.IndexedSeq.newBuilder().mapResult(_.view)
+  override def iterableFactory = View
 
   override def toString = "View(?)"
 

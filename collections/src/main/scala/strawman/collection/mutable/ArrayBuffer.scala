@@ -77,11 +77,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
 
   override def view: ArrayBufferView[A] = new ArrayBufferView(array, size0)
 
-  def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ArrayBuffer[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, ArrayBuffer[A]] = ArrayBuffer.newBuilder()
+  override def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
   def clear(): Unit = reduceToSize(0)
 

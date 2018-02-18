@@ -11,6 +11,11 @@ trait MultiDict[K, V]
     with MultiDictOps[K, V, MultiDict, MultiDict[K, V]]
     with Equals {
 
+  def multiMapFactory: MapFactory[MultiDictCC] = MultiDict
+
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MultiDictCC[K, V] = multiMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MultiDictCC[K, V]] = multiMapFactory.newBuilder[K, V]()
+
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
@@ -35,7 +40,9 @@ trait MultiDict[K, V]
 trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
   extends IterableOps[(K, V), Iterable, C] {
 
-  def multiMapFactory: MapFactory[CC]
+  protected[this] type MultiDictCC[K, V] = CC[K, V]
+
+  def multiMapFactory: MapFactory[MultiDictCC]
 
   protected[this] def multiMapFromIterable[L, W](it: Iterable[(L, W)]): CC[L, W] =
     multiMapFactory.from(it)

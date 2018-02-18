@@ -7,7 +7,10 @@ import scala.{Boolean, deprecated, `inline`}
 
 trait Iterable[A]
   extends collection.Iterable[A]
-    with IterableOps[A, Iterable, Iterable[A]]
+    with IterableOps[A, Iterable, Iterable[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Iterable
+}
 
 /**
   * @define coll mutable collection

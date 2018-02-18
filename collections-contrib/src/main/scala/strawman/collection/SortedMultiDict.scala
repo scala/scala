@@ -12,14 +12,17 @@ trait SortedMultiDict[K, V]
 
   def unsorted: MultiDict[K, V] = this
 
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): SortedMultiDictCC[K, V] = sortedMultiMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMultiDictCC[K, V]] = sortedMultiMapFactory.newBuilder[K, V]()
 }
 
 trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
   extends MultiDictOps[K, V, MultiDict, C]
     with SortedOps[K, C] {
 
-  def multiMapFactory: MapFactory[MultiDict] = MultiDict
-  def sortedMultiMapFactory: SortedMapFactory[CC]
+  protected[this] type SortedMultiDictCC[K, V] = CC[K, V]
+
+  def sortedMultiMapFactory: SortedMapFactory[SortedMultiDictCC]
 
   protected[this] def sortedFromIterable[L : Ordering, W](it: Iterable[(L, W)]): CC[L, W]
   protected[this] def sortedFromSets[L : Ordering, W](it: Iterable[(L, Set[W])]): CC[L, W] =

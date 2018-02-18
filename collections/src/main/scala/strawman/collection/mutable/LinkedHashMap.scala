@@ -83,11 +83,7 @@ class LinkedHashMap[K, V]
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
 
-  def mapFactory = LinkedHashMap
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]) = mapFactory.from(coll)
-
-  protected[this] def newSpecificBuilder() = mapFactory.newBuilder()
+  override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)

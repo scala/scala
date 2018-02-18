@@ -17,12 +17,8 @@ class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering
 
   def occurrences: SortedMap[A, Int] = elems
 
-  def iterableFactory: IterableFactory[MultiSet] = MultiSet
-  def sortedIterableFactory: SortedIterableFactory[SortedMultiSet] = SortedMultiSet
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): SortedMultiSet[A] = sortedFromIterable(coll)
-  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedMultiSet[B] = sortedIterableFactory.from(it)
-  protected[this] def newSpecificBuilder(): Builder[A, SortedMultiSet[A]] = sortedIterableFactory.newBuilder()
+  override def iterableFactory: IterableFactory[MultiSet] = MultiSet
+  override def sortedIterableFactory: SortedIterableFactory[SortedMultiSet] = SortedMultiSet
 
   def rangeImpl(from: Option[A], until: Option[A]): SortedMultiSet[A] =
     new SortedMultiSet(elems.rangeImpl(from, until))

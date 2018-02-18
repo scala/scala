@@ -6,7 +6,10 @@ package immutable
 trait SortedSet[A]
   extends Set[A]
      with collection.SortedSet[A]
-     with SortedSetOps[A, SortedSet, SortedSet[A]]
+     with SortedSetOps[A, SortedSet, SortedSet[A]] {
+
+  override def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
+}
 
 /**
   * @define coll immutable sorted set

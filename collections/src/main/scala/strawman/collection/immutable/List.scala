@@ -78,11 +78,7 @@ sealed abstract class List[+A]
     with StrictOptimizedSeqOps[A, List, List[A]]
     with Serializable {
 
-  def iterableFactory: SeqFactory[List] = List
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): List[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder() = List.newBuilder[A]()
+  override def iterableFactory: SeqFactory[List] = List
 
   /** Adds an element at the beginning of this list.
     *  @param elem the element to prepend.

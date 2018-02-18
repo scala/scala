@@ -33,13 +33,7 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
     with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]]
     with Serializable {
 
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-
-  def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ChampHashMap[K, V] = ChampHashMap.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), ChampHashMap[K, V]] = ChampHashMap.newBuilder()
+  override def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
 
   override def knownSize: Int = cachedSize
 
@@ -79,8 +73,6 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
       ChampHashMap(newRootNode, cachedJavaKeySetHashCode - keyHash, cachedSize - 1)
     else this
   }
-
-  def empty: ChampHashMap[K, V] = ChampHashMap.empty
 
   override def tail: ChampHashMap[K, V] = this - head._1
 

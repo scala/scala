@@ -3,7 +3,10 @@ package mutable
 
 trait IndexedSeq[T] extends Seq[T]
   with strawman.collection.IndexedSeq[T]
-  with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
+  with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]] {
+
+  override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
+}
 
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](ArrayBuffer)
 

@@ -37,14 +37,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  def iterableFactory = List
-  def mapFactory = Map
-  def sortedMapFactory = TreeMap
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    TreeMap.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] = TreeMap.newBuilder()
+  override def sortedMapFactory = TreeMap
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
@@ -75,8 +68,6 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     assert(!RB.contains(tree, key))
     new TreeMap(RB.update(tree, key, value, overwrite = true))
   }
-
-  def empty: TreeMap[K, V] = TreeMap.empty[K, V](ordering)
 
   def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMap[K, V](RB.rangeImpl(tree, from, until))
 

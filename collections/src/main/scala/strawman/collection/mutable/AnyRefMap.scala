@@ -76,8 +76,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     mask = m; _size = sz; _vacant = vc; _hashes = hz; _keys = kz; _values = vz
   }
 
-  def mapFactory: strawman.collection.MapFactory[Map] = Map
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
     var sz = coll.knownSize
     if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
@@ -85,7 +84,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
-  protected[this] def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
+  override protected[this] def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)

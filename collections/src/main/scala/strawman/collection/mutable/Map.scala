@@ -14,6 +14,8 @@ trait Map[K, V]
     with Growable[(K, V)]
     with Shrinkable[K] {
 
+  override def mapFactory: strawman.collection.MapFactory[MapCC] = Map
+
   /*
   //TODO consider keeping `remove` because it returns the removed entry
   @deprecated("Use subtract or -= instead of remove", "2.13.0")
@@ -57,8 +59,6 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     with Cloneable[C]
     with Growable[(K, V)]
     with Shrinkable[K] {
-
-  def iterableFactory: IterableFactory[Iterable] = Iterable
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a
@@ -183,7 +183,7 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     def iterator(): strawman.collection.Iterator[(K, V)] = underlying.iterator()
 
-    def mapFactory: MapFactory[Map] = underlying.mapFactory
+    override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
     def clear(): Unit = underlying.clear()
 
@@ -193,12 +193,12 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
 
-    def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
+    override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
-    protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
       Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 

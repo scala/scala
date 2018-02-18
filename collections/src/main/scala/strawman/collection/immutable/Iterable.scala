@@ -22,6 +22,9 @@ import strawman.collection.IterableFactory
   * @define Coll `immutable.Iterable`
   */
 trait Iterable[+A] extends collection.Iterable[A]
-                      with collection.IterableOps[A, Iterable, Iterable[A]]
+                      with collection.IterableOps[A, Iterable, Iterable[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Iterable
+}
 
 object Iterable extends IterableFactory.Delegate[Iterable](List)

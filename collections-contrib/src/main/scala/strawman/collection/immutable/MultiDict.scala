@@ -18,11 +18,7 @@ class MultiDict[K, V] private (elems: Map[K, Set[V]])
 
   def sets: Map[K, Set[V]] = elems
 
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-  def multiMapFactory: MapFactory[MultiDict] = MultiDict
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): MultiDict[K, V] = multiMapFromIterable(coll)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), MultiDict[K, V]] = multiMapFactory.newBuilder[K, V]()
+  override def multiMapFactory: MapFactory[MultiDict] = MultiDict
 
   /**
     * @return a new multidict that contains all the entries of this multidict

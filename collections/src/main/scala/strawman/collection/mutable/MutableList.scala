@@ -39,9 +39,7 @@ private[mutable] class MutableList[A]
   protected var last0: LinkedList[A] = first0
   protected var len: Int = 0
 
-  def iterableFactory: SeqFactory[MutableList] = MutableList
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): MutableList[A] = iterableFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[A, MutableList[A]] = iterableFactory.newBuilder()
+  override def iterableFactory: SeqFactory[MutableList] = MutableList
 
   def filterInPlace(p: A => Boolean): this.type = {
     var these = first0

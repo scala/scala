@@ -664,9 +664,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   def this() = this(Hashing.default, Equiv.universal)
 
-  def mapFactory: MapFactory[TrieMap] = TrieMap
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TrieMap[K,V] = TrieMap.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), TrieMap[K,V]] = TrieMap.newBuilder[K, V]()
+  override def mapFactory: MapFactory[TrieMap] = TrieMap
 
   /* internal methods */
 

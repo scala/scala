@@ -28,6 +28,7 @@ trait Set[A]
 
   override def hashCode(): Int = Set.setHash(toIterable)
 
+  def empty: IterableCC[A] = iterableFactory.empty
 }
 
 /** Base trait for set operations

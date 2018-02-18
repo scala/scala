@@ -12,6 +12,8 @@ trait SortedMap[K, V]
     with Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
 
+  override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
+
   /** The same sorted map with a given default function.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
     *  are not affected by `withDefault`.
@@ -48,7 +50,7 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
       with SortedMapOps[K, V, SortedMap, WithDefault[K, V]]
       with Serializable {
 
-    def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
+    override def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
 
     def iteratorFrom(start: K): strawman.collection.Iterator[(K, V)] = underlying.iteratorFrom(start)
 

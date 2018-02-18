@@ -26,6 +26,10 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
   protected[this] def coll: this.type = this
 
+  protected[this] def fromSpecificIterable(coll: Iterable[A]): IterableCC[A] = iterableFactory.from(coll)
+  protected[this] def newSpecificBuilder(): Builder[A, IterableCC[A]] = iterableFactory.newBuilder[A]()
+
+  def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
 /** Base trait for Iterable operations
@@ -64,6 +68,8 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   */
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
 
+  protected[this] type IterableCC[X] = CC[X]
+
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
     */
@@ -91,7 +97,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] {
   /**
     * @return The companion object of this ${coll}, providing various factory methods.
     */
-  def iterableFactory: IterableFactory[CC]
+  def iterableFactory: IterableFactory[IterableCC]
 
   /**
     * @return a strict builder for the same collection type.
