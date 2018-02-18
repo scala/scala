@@ -848,10 +848,14 @@ self =>
       }
       if (isExpr) {
         if (rightAssoc) {
+          import symtab.Flags._
           val x = freshTermName(nme.RIGHT_ASSOC_OP_PREFIX)
+          val liftedArg = atPos(left.pos) {
+            ValDef(Modifiers(FINAL | SYNTHETIC | ARTIFACT), x, TypeTree(), stripParens(left))
+          }
           Block(
-            List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
-            Apply(mkSelection(right), List(Ident(x))))
+            liftedArg :: Nil,
+            Apply(mkSelection(right), List(Ident(x) setPos left.pos.focus)))
         } else {
           Apply(mkSelection(left), arguments)
         }
@@ -2275,7 +2279,7 @@ self =>
       val vds   = new ListBuffer[List[ValDef]]
       val start = in.offset
       def paramClause(): List[ValDef] = if (in.token == RPAREN) Nil else {
-        val implicitmod = 
+        val implicitmod =
           if (in.token == IMPLICIT) {
             if (implicitOffset == -1) { implicitOffset = in.offset ; implicitSection = vds.length }
             else if (warnAt == -1) warnAt = in.offset

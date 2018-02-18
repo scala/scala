@@ -7,8 +7,19 @@ object Test extends DirectTest {
 
   override def code = """
     object Test {
+      private[this] val n = 1
+
       1 foo_: C
       1 foo_:[Any] C
+
+      n foo_: C
+      n foo_:[Any] C
+
+      1 bar_: C
+      1 bar_:[Any] C
+
+      n bar_: C
+      n bar_:[Any] C
     }
   """.trim
 
@@ -21,7 +32,6 @@ object Test extends DirectTest {
 
 class C {
   def foo_:[Dummy](i: => Int): Int = i
-  def t(c: C) = 1 foo_: c
-  def u(c: C) = 1 foo_:[Any] c
+  def bar_:[Dummy](i:    Int): Int = i
 }
 object C extends C
