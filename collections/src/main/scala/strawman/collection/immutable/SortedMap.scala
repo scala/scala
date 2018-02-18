@@ -57,9 +57,6 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
       def excl(elem: K): SortedSet[K] = fromSpecificIterable(this).excl(elem)
     }
 
-    protected def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
-      Map.from(it)
-
     // We override these methods to fix their return type (which would be `Map` otherwise)
     def updated[V1 >: V](key: K, value: V1): CC[K, V1]
     @`inline` final override def +[V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
@@ -87,9 +84,6 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     def iteratorFrom(start: K): strawman.collection.Iterator[(K, V)] = underlying.iteratorFrom(start)
 
-    protected[this] def sortedMapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): SortedMap[K2, V2] =
-      sortedMapFactory.from(it)
-
     def keysIteratorFrom(start: K): strawman.collection.Iterator[K] = underlying.keysIteratorFrom(start)
 
     def rangeImpl(from: Option[K], until: Option[K]): WithDefault[K, V] =
@@ -97,9 +91,6 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     // Need to override following methods to match type signatures of `SortedMap.WithDefault`
     // for operations preserving default value
-
-    override protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
-      mapFactory.from(it)
 
     override def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =
       new WithDefault[K, V1](underlying.updated(key, value), defaultValue)

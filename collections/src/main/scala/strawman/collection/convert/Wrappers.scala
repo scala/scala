@@ -342,7 +342,6 @@ private[collection] trait Wrappers {
     protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]) = mutable.HashMap.from(coll)
     protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
     def mapFactory = mutable.HashMap
-    protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]) = mutable.HashMap.from(it)
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
@@ -450,7 +449,6 @@ private[collection] trait Wrappers {
     protected[this] def fromSpecificIterable(coll: Iterable[(A, B)]) = mutable.HashMap.from(coll)
     protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
     def mapFactory = mutable.HashMap
-    protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]) = mutable.HashMap.from(it)
     def empty = mutable.HashMap.empty
   }
 
@@ -504,7 +502,6 @@ private[collection] trait Wrappers {
     protected[this] def fromSpecificIterable(coll: Iterable[(String, String)]) = mutable.HashMap.from(coll)
     protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
     def mapFactory = mutable.HashMap
-    protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]) = mutable.HashMap.from(it)
   }
 }
 

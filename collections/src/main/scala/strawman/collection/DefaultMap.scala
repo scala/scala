@@ -33,5 +33,4 @@ trait DefaultMap[K, +V] extends Map[K, V] { self =>
   // Members declared in MapOps
   def mapFactory: MapFactory[Map] = Map
   def empty: Map[K,V] = mapFactory.empty
-  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 }

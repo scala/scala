@@ -174,7 +174,6 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
       def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }
   def mapFactory: MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 
   override def empty: LongMap[T] = LongMap.Nil
 

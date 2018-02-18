@@ -42,7 +42,6 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
     }
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] = HashMap.from(it)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] =  HashMap.newBuilder()
 

@@ -52,9 +52,6 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     with PartialFunction[K, V]
     with Equals {
 
-  /** Similar to fromIterable, but returns a Map collection type */
-  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2]
-
   def mapFactory: MapFactory[CC]
 
   /** Optionally returns the value associated with a key.
@@ -223,7 +220,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     *  @return       a new $coll resulting from applying the given function
     *                `f` to each element of this $coll and collecting the results.
     */
-  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFromIterable(View.Map(toIterable, f))
+  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(View.Map(toIterable, f))
 
   /** Builds a new collection by applying a partial function to all elements of this $coll
     *  on which the function is defined.
@@ -248,7 +245,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     *  @return       a new $coll resulting from applying the given collection-valued function
     *                `f` to each element of this $coll and concatenating the results.
     */
-  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFromIterable(View.FlatMap(toIterable, f))
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(View.FlatMap(toIterable, f))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -258,7 +255,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFromIterable(View.Concat(toIterable, suffix))
+  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(View.Concat(toIterable, suffix))
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
@@ -269,7 +266,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
-  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFromIterable(View.Append(toIterable, kv))
+  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(View.Append(toIterable, kv))
 }
 
 /**
