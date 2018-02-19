@@ -9,8 +9,9 @@ package tools
 package nsc
 package settings
 
-import scala.language.existentials
+import java.util.zip.Deflater
 
+import scala.language.existentials
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
@@ -225,6 +226,11 @@ trait ScalaSettings extends AbsScalaSettings
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
+  val YaddBackendThreads = IntSetting   ("-Ybackend-parallelism", "maximum worker threads for backend", 1, Some((1,16)), (x: String) => None )
+  val YmaxQueue = IntSetting   ("-Ybackend-worker-queue", "backend threads worker queue size", 0, Some((0,1000)), (x: String) => None )
+  val YjarCompressionLevel = IntSetting("-Yjar-compression-level", "compression level to use when writing jar files",
+    Deflater.DEFAULT_COMPRESSION, Some((Deflater.DEFAULT_COMPRESSION,Deflater.BEST_COMPRESSION)), (x: String) => None)
+
   object optChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
@@ -382,7 +388,7 @@ trait ScalaSettings extends AbsScalaSettings
     withPostSetHook( _ => YprofileEnabled.value = true )
   val YprofileExternalTool = PhasesSetting("-Yprofile-external-tool", "Enable profiling for a phase using an external tool hook. Generally only useful for a single phase", "typer").
     withPostSetHook( _ => YprofileEnabled.value = true )
-  val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or *", "_").
+  val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or all", "_").
     withPostSetHook( _ => YprofileEnabled.value = true )
 
 

@@ -1653,20 +1653,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  def getFile(source: AbstractFile, segments: Array[String], suffix: String): File = {
-    val outDir = Path(
-      settings.outputDirs.outputDirFor(source).path match {
-        case ""   => "."
-        case path => path
-      }
-    )
-    val dir      = segments.init.foldLeft(outDir)(_ / _).createDirectory()
-    new File(dir.path, segments.last + suffix)
-  }
-
-  /** Returns the file with the given suffix for the given class. Used for icode writing. */
-  def getFile(clazz: Symbol, suffix: String): File = getFile(clazz.sourceFile, clazz.fullName split '.', suffix)
-
   def createJavadoc    = false
 }
 

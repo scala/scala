@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.generic.Clearable
-import scala.reflect.internal.util.{JavaClearable, Position}
+import scala.reflect.internal.util.{JavaClearable, Position, Statistics}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import java.util.{Collection => JCollection, Map => JMap}
@@ -21,7 +21,14 @@ sealed abstract class PostProcessorFrontendAccess {
 
   def compilerSettings: CompilerSettings
 
+  def withThreadLocalReporter[T](reporter: BackendReporting)(fn: => T): T
   def backendReporting: BackendReporting
+  def directBackendReporting: BackendReporting
+
+  /**
+   * Statistics are not thread-safe, they can only be used if `compilerSettings.backendThreads == 1`
+   */
+  def unsafeStatistics: Statistics with BackendStats
 
   def backendClassPath: BackendClassPath
 
@@ -42,13 +49,7 @@ object PostProcessorFrontendAccess {
 
     def target: String
 
-    def genAsmpDirectory: Option[String]
-    def dumpClassesDirectory: Option[String]
-
-    def singleOutputDirectory: Option[AbstractFile]
-    def outputDirectoryFor(src: AbstractFile): AbstractFile
-
-    def mainClass: Option[String]
+    def outputDirectory(source: AbstractFile): AbstractFile
 
     def optAddToBytecodeRepository: Boolean
     def optBuildCallGraph: Boolean
@@ -80,10 +81,71 @@ object PostProcessorFrontendAccess {
     def optTrace: Option[String]
   }
 
-  sealed trait BackendReporting {
+  trait BackendReporting {
     def inlinerWarning(pos: Position, message: String): Unit
     def error(pos: Position, message: String): Unit
+    def warning(pos: Position, message: String): Unit
+    def inform(message: String): Unit
     def log(message: String): Unit
+  }
+
+  final class BufferingBackendReporting extends BackendReporting {
+    // We optimise access to the buffered reports for the common case - that there are no warning/errors to report
+    // We could use a listBuffer etc - but that would be extra allocation in the common case
+    // Note - all access is externally synchronized, as this allow the reports to be generated in on thread and
+    // consumed in another
+    private var bufferedReports = List.empty[Report]
+
+    def inlinerWarning(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportInlinerWarning(pos, message))
+
+    def error(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportError(pos, message))
+
+    def warning(pos: Position, message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportWarning(pos, message))
+
+    def inform(message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportInform(message))
+
+    def log(message: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportLog(message))
+
+    def relayReports(toReporting: BackendReporting): Unit = this.synchronized {
+      if (bufferedReports.nonEmpty) {
+        bufferedReports.reverse.foreach(_.relay(toReporting))
+        bufferedReports = Nil
+      }
+    }
+
+    private sealed trait Report {
+      def relay(backendReporting: BackendReporting): Unit
+    }
+
+    private class ReportInlinerWarning(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.inlinerWarning(pos, message)
+    }
+
+    private class ReportError(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.error(pos, message)
+    }
+
+    private class ReportWarning(pos: Position, message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.warning(pos, message)
+    }
+
+    private class ReportInform(message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.inform(message)
+    }
+
+    private class ReportLog(message: String) extends Report {
+      override def relay(reporting: BackendReporting): Unit =
+        reporting.log(message)
+    }
   }
 
   sealed trait BackendClassPath {
@@ -105,13 +167,9 @@ object PostProcessorFrontendAccess {
 
       val target: String = s.target.value
 
-      val genAsmpDirectory: Option[String] = s.Ygenasmp.valueSetByUser
-      val dumpClassesDirectory: Option[String] = s.Ydumpclasses.valueSetByUser
-
-      val singleOutputDirectory: Option[AbstractFile] = s.outputDirs.getSingleOutput
-      def outputDirectoryFor(src: AbstractFile): AbstractFile = frontendSynch(s.outputDirs.outputDirFor(src))
-
-      val mainClass: Option[String] = s.mainClass.valueSetByUser
+      private val singleOutDir = s.outputDirs.getSingleOutput
+      // the call to `outputDirFor` should be frontendSynch'd, but we assume that the setting is not mutated during the backend
+      def outputDirectory(source: AbstractFile): AbstractFile = singleOutDir.getOrElse(s.outputDirs.outputDirFor(source))
 
       val optAddToBytecodeRepository: Boolean = s.optAddToBytecodeRepository
       val optBuildCallGraph: Boolean = s.optBuildCallGraph
@@ -146,24 +204,55 @@ object PostProcessorFrontendAccess {
       val optTrace: Option[String] = s.YoptTrace.valueSetByUser
     }
 
-    object backendReporting extends BackendReporting {
+    private lazy val localReporter = perRunLazy(this)(new ThreadLocal[BackendReporting])
+
+    override def withThreadLocalReporter[T](reporter: BackendReporting)(fn: => T): T = {
+      val threadLocal = localReporter.get
+      val old = threadLocal.get()
+      threadLocal.set(reporter)
+      try fn finally
+        if (old eq null) threadLocal.remove() else threadLocal.set(old)
+    }
+
+    override def backendReporting: BackendReporting = {
+      val local = localReporter.get.get()
+      if (local eq null) directBackendReporting else local
+    }
+
+    object directBackendReporting extends BackendReporting {
       def inlinerWarning(pos: Position, message: String): Unit = frontendSynch {
         currentRun.reporting.inlinerWarning(pos, message)
       }
-      def error(pos: Position, message: String): Unit = frontendSynch(reporter.error(pos, message))
-      def log(message: String): Unit = frontendSynch(global.log(message))
-    }
 
+      def error(pos: Position, message: String): Unit = frontendSynch {
+        reporter.error(pos, message)
+      }
+
+      def warning(pos: Position, message: String): Unit = frontendSynch {
+        global.warning(pos, message)
+      }
+
+      def inform(message: String): Unit = frontendSynch {
+        global.inform(message)
+      }
+
+      def log(message: String): Unit = frontendSynch {
+        global.log(message)
+      }
+    }
+    def unsafeStatistics: Statistics with BackendStats = global.statistics
+
+    private lazy val cp = perRunLazy(this)(frontendSynch(optimizerClassPath(classPath)))
     object backendClassPath extends BackendClassPath {
-      def findClassFile(className: String): Option[AbstractFile] = frontendSynch(optimizerClassPath(classPath).findClassFile(className))
+      def findClassFile(className: String): Option[AbstractFile] = cp.get.findClassFile(className)
     }
 
     def getEntryPoints: List[String] = frontendSynch(cleanup.getEntryPoints)
 
     def javaDefinedClasses: Set[InternalName] = frontendSynch {
-      currentRun.symSource.collect({
-        case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
-      }).toSet
+      currentRun.symSource.keys.collect{
+        case sym if sym.isJavaDefined => sym.javaBinaryNameString
+      }(scala.collection.breakOut)
     }
 
 
