@@ -62,11 +62,11 @@ class ExtractAPI[GlobalType <: Global](
   // this cache reduces duplicate work both here and when persisting
   //   caches on other structures had minimal effect on time and cache size
   //   (tried: Definition, Modifier, Path, Id, String)
-  private[this] val typeCache = perRunCaches.newMap[(Symbol, Type), xsbti.api.Type]()
+  private[this] val typeCache = perRunCaches.newAnyRefMap[(Symbol, Type), xsbti.api.Type]()
   // these caches are necessary for correctness
-  private[this] val structureCache = perRunCaches.newMap[Symbol, xsbti.api.Structure]()
+  private[this] val structureCache = perRunCaches.newAnyRefMap[Symbol, xsbti.api.Structure]()
   private[this] val classLikeCache =
-    perRunCaches.newMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]()
+    perRunCaches.newAnyRefMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]()
   private[this] val pending = perRunCaches.newSet[xsbti.api.Lazy[_]]()
 
   private[this] val emptyStringArray = Array.empty[String]
