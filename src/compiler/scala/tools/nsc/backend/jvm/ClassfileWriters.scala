@@ -83,7 +83,7 @@ abstract class ClassfileWriters {
       }
 
       val enableStats = statistics.enabled && settings.YaddBackendThreads.value == 1
-      if (enableStats) new WithStatsWriter(statistics, withAdditionalFormats) else withAdditionalFormats
+      if (enableStats) new WithStatsWriter(withAdditionalFormats) else withAdditionalFormats
     }
 
     /**
@@ -257,9 +257,10 @@ abstract class ClassfileWriters {
       }
     }
 
-    private final class WithStatsWriter(statistics: Statistics with Global#GlobalStats, underlying: ClassfileWriter)
+    private final class WithStatsWriter(underlying: ClassfileWriter)
       extends ClassfileWriter {
       override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = {
+        val statistics = frontendAccess.unsafeStatistics
         val snap = statistics.startTimer(statistics.bcodeWriteTimer)
         underlying.write(className, bytes, paths)
         statistics.stopTimer(statistics.bcodeWriteTimer, snap)

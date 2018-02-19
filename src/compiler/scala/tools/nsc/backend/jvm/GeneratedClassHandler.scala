@@ -95,8 +95,8 @@ private[jvm] object GeneratedClassHandler {
     private val processingUnits = ListBuffer.empty[CompilationUnitInPostProcess]
 
     def process(unit: GeneratedCompilationUnit): Unit = {
-      val unitInPostProcess = new CompilationUnitInPostProcess(unit.classes, unit.sourceFile,
-        frontendAccess.compilerSettings.outputDirectory(unit.sourceFile))
+      val unitInPostProcess = new CompilationUnitInPostProcess(unit.classes,
+        CompilationUnitPaths(unit.sourceFile, frontendAccess.compilerSettings.outputDirectory(unit.sourceFile)))
       postProcessUnit(unitInPostProcess)
       processingUnits += unitInPostProcess
     }
@@ -109,7 +109,7 @@ private[jvm] object GeneratedClassHandler {
           // we 'take' classes to reduce the memory pressure
           // as soon as the class is consumed and written, we release its data
           unitInPostProcess.takeClasses() foreach {
-            postProcessor.sendToDisk(_, unitInPostProcess)
+            postProcessor.sendToDisk(_, unitInPostProcess.paths)
           }
         }
       }
@@ -155,7 +155,7 @@ private[jvm] object GeneratedClassHandler {
         } catch {
           case NonFatal(t) =>
             t.printStackTrace()
-            frontendAccess.backendReporting.error(NoPosition, s"unable to write ${unitInPostProcess.sourceFile} $t")
+            frontendAccess.backendReporting.error(NoPosition, s"unable to write ${unitInPostProcess.paths.sourceFile} $t")
         }
       }
     }
@@ -185,9 +185,7 @@ private[jvm] object GeneratedClassHandler {
 }
 
 /** Paths for a compilation unit, used during classfile writing */
-sealed trait CompilationUnitPaths {
-  val sourceFile: AbstractFile
-  val outputDir: AbstractFile
+final case class CompilationUnitPaths(sourceFile: AbstractFile, outputDir: AbstractFile) {
   def outputPath: Path = outputDir.file.toPath // `toPath` caches its result
 }
 
@@ -197,10 +195,7 @@ sealed trait CompilationUnitPaths {
  *   - Keeps a reference to the future that runs the post-processor
  *   - Buffers messages reported during post-processing
  */
-final class CompilationUnitInPostProcess(
-  private var classes: List[GeneratedClass],
-  val sourceFile: AbstractFile,
-  val outputDir: AbstractFile) extends CompilationUnitPaths {
+final class CompilationUnitInPostProcess(private var classes: List[GeneratedClass], val paths: CompilationUnitPaths) {
   def takeClasses(): List[GeneratedClass] = {
     val c = classes
     classes = Nil
