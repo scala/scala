@@ -1233,6 +1233,57 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     b
   }
 
+  /** Copy values produced by this iterator to an array.
+   *  Fills the given array `xs` starting at index `start`.
+   *  Copying will stop once either the end of the current iterator is reached,
+   *  or the end of the array is reached.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @note    Reuse: $consumesIterator
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+   *
+   *    $willNotTerminateInf
+   */
+  @`inline` final def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
+    var i = start
+    while (i < xs.length && hasNext) {
+      xs(i) = next()
+      i += 1
+    }
+    xs
+  }
+
+  /** Copy values produced by this iterator to an array.
+   *  Fills the given array `xs` starting at index `start` with at most
+   *  `len` values produced by this iterator.
+   *  Copying will stop once either the end of the current iterator is reached,
+   *  or the end of the array is reached, or `len` elements have been copied.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @note    Reuse: $consumesIterator
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *
+   *    $willNotTerminateInf
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
+    var i = start
+    val end = start + math.min(len, xs.length - start)
+    while (i < end && hasNext) {
+      xs(i) = next()
+      i += 1
+    }
+    xs
+  }
+
   /** Converts this Iterator into another collection.
     *  @return a new collection containing all elements of this Iterator.
     *  @tparam C The collection type to build.
@@ -1241,6 +1292,13 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     */
   def to[C](factory: Factory[A, C]): C = factory.fromSpecific(self)
 
+  /** Converts this iterator to a string.
+   *
+   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on
+   *           whether or not the iterator is empty.
+   *  @note    Reuse: $preservesIterator
+   */
+  override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
 }
 
 object Iterator extends IterableFactory[Iterator] {
@@ -1508,7 +1566,6 @@ object Iterator extends IterableFactory[Iterator] {
       }
     }
   }
-
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
