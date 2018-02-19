@@ -32,7 +32,7 @@ SimpleExpr1  ::=  Literal
                |  Path
                |  ‘_’
                |  ‘(’ [Exprs] ‘)’
-               |  SimpleExpr ‘.’ id s
+               |  SimpleExpr ‘.’ id
                |  SimpleExpr TypeArgs
                |  SimpleExpr1 ArgumentExprs
                |  XmlExpr
