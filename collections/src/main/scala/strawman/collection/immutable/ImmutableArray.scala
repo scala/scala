@@ -108,7 +108,8 @@ sealed abstract class ImmutableArray[+A]
 
   override def slice(from: Int, until: Int): ImmutableArray[A] = {
     val lo = scala.math.max(from, 0)
-    iterableFactory.tabulate(until - lo)(i => apply(i + lo))
+    val hi = scala.math.min(until, length)
+    iterableFactory.tabulate(hi - lo)(i => apply(i + lo))
   }
 
   override def tail: ImmutableArray[A] =
