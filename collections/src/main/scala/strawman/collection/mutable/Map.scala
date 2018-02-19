@@ -200,9 +200,6 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
       Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
-
-    protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2, V2] =
-      mapFactory.from(it)
   }
 
 }

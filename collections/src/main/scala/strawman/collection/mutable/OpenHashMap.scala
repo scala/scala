@@ -74,7 +74,6 @@ class OpenHashMap[Key, Value](initialSize : Int)
   protected[this] def newSpecificBuilder(): Builder[(Key, Value), OpenHashMap[Key, Value]] = mapFactory.newBuilder()
 
   def mapFactory: MapFactory[OpenHashMap] = OpenHashMap
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): OpenHashMap[K2,V2] = mapFactory.from(it)
 
   override def empty: OpenHashMap[Key, Value] = OpenHashMap.empty[Key, Value]
 

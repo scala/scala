@@ -37,8 +37,6 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
 
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ChampHashMap[K2, V2] = ChampHashMap.from(it)
-
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ChampHashMap[K, V] = ChampHashMap.from(coll)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), ChampHashMap[K, V]] = ChampHashMap.newBuilder()

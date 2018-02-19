@@ -43,9 +43,6 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
     TreeMap.from(coll)
 
-  protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.from(it)
-
   protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] = TreeMap.newBuilder()
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)

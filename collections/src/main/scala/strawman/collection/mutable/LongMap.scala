@@ -44,7 +44,6 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
   protected[this] def newSpecificBuilder(): Builder[(Long, V),LongMap[V]] = new GrowableBuilder(LongMap.empty[V])
   def mapFactory: strawman.collection.MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 
   /** Creates a new `LongMap` that returns default values according to a supplied key-value mapping. */
   def this(defaultEntry: Long => V) = this(defaultEntry, 16, true)

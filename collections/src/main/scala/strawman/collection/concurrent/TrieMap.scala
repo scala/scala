@@ -666,7 +666,6 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   def mapFactory: MapFactory[TrieMap] = TrieMap
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TrieMap[K,V] = TrieMap.from(coll)
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): TrieMap[K2,V2] = TrieMap.from(it)
   protected[this] def newSpecificBuilder(): Builder[(K, V), TrieMap[K,V]] = TrieMap.newBuilder[K, V]()
 
   /* internal methods */

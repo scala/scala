@@ -52,8 +52,6 @@ sealed class ListMap[K, +V]
   def iterableFactory = List
   def mapFactory = ListMap
 
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.from(it)
-
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] = ListMap.from(coll)
 
   protected[this] def newSpecificBuilder(): Builder[(K, V), ListMap[K, V]] = ListMap.newBuilder()

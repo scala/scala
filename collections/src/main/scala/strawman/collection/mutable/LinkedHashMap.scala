@@ -85,8 +85,7 @@ class LinkedHashMap[K, V]
 
   def mapFactory = LinkedHashMap
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]) = mapFromIterable(coll)
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]) = mapFactory.from(it)
+  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]) = mapFactory.from(coll)
 
   protected[this] def newSpecificBuilder() = mapFactory.newBuilder()
 

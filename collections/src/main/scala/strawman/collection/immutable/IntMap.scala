@@ -183,7 +183,6 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
   def mapFactory: MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 
   override def empty: IntMap[T] = IntMap.Nil
 

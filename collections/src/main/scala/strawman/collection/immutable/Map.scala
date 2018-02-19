@@ -154,9 +154,6 @@ object Map extends MapFactory[Map] {
 
     def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] =
-      mapFactory.from(it)
-
     protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
@@ -180,7 +177,6 @@ object Map extends MapFactory[Map] {
     def mapFactory: MapFactory[Map] = Map
     def empty: Map[K, V] = mapFactory.empty
     protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): Map[K, V] = mapFactory.from(coll)
-    protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): Map[K2, V2] = mapFactory.from(it)
     protected[this] def newSpecificBuilder(): Builder[(K, V), Map[K, V]] = mapFactory.newBuilder()
   }
 

@@ -37,7 +37,6 @@ class ListMap[K, V]
 
   protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): ListMap[K,V] = mapFactory.from(coll)
   protected[this] def newSpecificBuilder(): Builder[(K, V), ListMap[K,V]] = mapFactory.newBuilder()
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): ListMap[K2,V2] = mapFactory.from(it)
 
   private var elems: List[(K, V)] = List()
   private var siz: Int = 0

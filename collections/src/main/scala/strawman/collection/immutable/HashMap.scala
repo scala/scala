@@ -41,9 +41,6 @@ sealed abstract class HashMap[K, +V]
 
   protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
 
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): HashMap[K2, V2] =
-    HashMap.from(it)
-
   protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] = HashMap.newBuilder()
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
