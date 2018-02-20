@@ -5,7 +5,7 @@ import strawman.collection.immutable.TreeMap
 import strawman.collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, `inline`, Any}
+import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, `inline`, Any, deprecated}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -183,6 +183,9 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   /** Alias for `concat` */
   @`inline` final def ++ [K2 >: K, V2 >: V](xs: Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = concat(xs)
+
+  @deprecated("Consider requiring an immutable SortedMap or fall back to SortedMap.concat ", "2.13.0")
+  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = sortedMapFactory.from(new View.Appended(toIterable, kv))
 
   // We override these methods to fix their return type (which would be `Map` otherwise)
   override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = sortedMapFactory.from(new View.Concat(toIterable, xs))
