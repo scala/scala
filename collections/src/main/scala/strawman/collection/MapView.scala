@@ -16,7 +16,7 @@ trait MapView[K, +V]
     new MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
       def newBuilder[X, Y](): Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]()
       def empty[X, Y]: View[(X, Y)] = View.empty
-      def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it.asInstanceOf[Iterable[(X, Y)]]) // Waiting for https://github.com/scala/collection-strawman/pull/428
+      def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
     }
 
   def empty: View[(K, V)] = View.Empty
