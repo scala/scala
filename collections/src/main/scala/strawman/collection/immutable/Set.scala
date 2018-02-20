@@ -8,7 +8,7 @@ import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Seriali
 
 /** Base trait for immutable set collections */
 trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
-  override def iterableFactory: IterableFactory[Set] = Set
+  override def iterableFactory: IterableFactory[IterableCC] = Set
 }
 
 /** Base trait for immutable set operations

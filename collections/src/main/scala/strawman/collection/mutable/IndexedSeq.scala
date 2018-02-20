@@ -5,7 +5,7 @@ trait IndexedSeq[T] extends Seq[T]
   with strawman.collection.IndexedSeq[T]
   with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]] {
 
-  override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
+  override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
 }
 
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](ArrayBuffer)
