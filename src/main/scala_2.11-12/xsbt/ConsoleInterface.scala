@@ -49,7 +49,6 @@ class ConsoleInterface {
             override protected def newCompiler(settings: Settings, reporter: Reporter) =
               super.newCompiler(compilerSettings, reporter)
           }
-          intp.setContextClassLoader()
         } else
           super.createInterpreter()
 
