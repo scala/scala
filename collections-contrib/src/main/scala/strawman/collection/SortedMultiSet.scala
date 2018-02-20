@@ -12,15 +12,23 @@ trait SortedMultiSet[A]
 
   def unsorted: MultiSet[A] = this
 
+  override protected[this] def fromSpecificIterable(coll: Iterable[A]): SortedIterableCC[A] = sortedIterableFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] = sortedIterableFactory.newBuilder[A]()
+
+  protected[this] def sortedFromIterable[B : Ordering](it: strawman.collection.Iterable[B]): SortedIterableCC[B] = sortedIterableFactory.from(it)
+
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedMultiSet
 }
 
 trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
   extends MultiSetOps[A, MultiSet, C]
     with SortedOps[A, C] {
 
-  def sortedIterableFactory: SortedIterableFactory[CC]
+  protected[this] type SortedIterableCC[X] = CC[X]
 
-  protected[this] def sortedFromIterable[B : Ordering](it: Iterable[B]): CC[B]
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
+
+  protected[this] def sortedFromIterable[B : Ordering](it: Iterable[B]): SortedIterableCC[B]
   protected[this] def sortedFromOccurrences[B : Ordering](it: Iterable[(B, Int)]): CC[B] =
     sortedFromIterable(it.view.flatMap { case (b, n) => View.Fill(n)(b) })
 

@@ -59,9 +59,7 @@ private[collection] trait Wrappers {
   @SerialVersionUID(3L)
   case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Iterable[A] {
     def iterator() = underlying.iterator().asScala
-    protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
-    def iterableFactory = mutable.ArrayBuffer
-    protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
+    override def iterableFactory = mutable.ArrayBuffer
   }
 
   @SerialVersionUID(3L)
@@ -69,9 +67,7 @@ private[collection] trait Wrappers {
     def iterator() = underlying.iterator().asScala
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
-    protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
-    def iterableFactory = mutable.ArrayBuffer
-    protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
+    override def iterableFactory = mutable.ArrayBuffer
   }
 
   @SerialVersionUID(3L)
@@ -143,9 +139,7 @@ private[collection] trait Wrappers {
       }
       this
     }
-    protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.ArrayBuffer.from(coll)
-    def iterableFactory = mutable.ArrayBuffer
-    protected[this] def newSpecificBuilder() = mutable.ArrayBuffer.newBuilder()
+    override def iterableFactory = mutable.ArrayBuffer
     def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
   }
 
@@ -216,9 +210,7 @@ private[collection] trait Wrappers {
     override def clone() =
       new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
 
-    protected[this] def fromSpecificIterable(coll: Iterable[A]) = mutable.HashSet.from(coll)
-    def iterableFactory = mutable.HashSet
-    protected[this] def newSpecificBuilder() = mutable.HashSet.newBuilder()
+    override def iterableFactory = mutable.HashSet
   }
 
   @SerialVersionUID(3L)
@@ -339,9 +331,7 @@ private[collection] trait Wrappers {
 
     override def empty: C = null.asInstanceOf[C]
 
-    protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]) = mutable.HashMap.from(coll)
-    protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
-    def mapFactory = mutable.HashMap
+    override def mapFactory = mutable.HashMap
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
@@ -446,10 +436,7 @@ private[collection] trait Wrappers {
 
     def clear() = iterator().foreach(entry => underlying.remove(entry._1))
 
-    protected[this] def fromSpecificIterable(coll: Iterable[(A, B)]) = mutable.HashMap.from(coll)
-    protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
-    def mapFactory = mutable.HashMap
-    def empty = mutable.HashMap.empty
+    override def mapFactory = mutable.HashMap
   }
 
   @SerialVersionUID(3L)
@@ -499,9 +486,7 @@ private[collection] trait Wrappers {
     def setProperty(key: String, value: String) =
       underlying.setProperty(key, value)
 
-    protected[this] def fromSpecificIterable(coll: Iterable[(String, String)]) = mutable.HashMap.from(coll)
-    protected[this] def newSpecificBuilder() = mutable.HashMap.newBuilder()
-    def mapFactory = mutable.HashMap
+    override def mapFactory = mutable.HashMap
   }
 }
 

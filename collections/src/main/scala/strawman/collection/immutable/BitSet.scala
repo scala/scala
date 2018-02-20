@@ -25,14 +25,7 @@ sealed abstract class BitSet
     with StrictOptimizedIterableOps[Int, Set, BitSet]
     with Serializable {
 
-  def empty: BitSet = BitSet.empty
-
-  def iterableFactory = Set
-  def sortedIterableFactory = SortedSet
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet = BitSet.fromSpecific(coll)
-  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): SortedSet[B] = SortedSet.from(it)
-  protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = BitSet.newBuilder()
+  def bitSetFactory = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 

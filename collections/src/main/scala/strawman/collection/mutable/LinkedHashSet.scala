@@ -28,7 +28,7 @@ class LinkedHashSet[A]
     with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
     with Serializable {
 
-  def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
+  override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
 
   type Entry = LinkedHashSet.Entry[A]
 
@@ -58,11 +58,6 @@ class LinkedHashSet[A]
     val entry = table.findEntry(elem)
     if (entry != null) Some(entry.key) else None
   }
-
-  def empty: LinkedHashSet[A] = LinkedHashSet.empty
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]) = fromIterable(coll)
-  protected[this] def newSpecificBuilder() = iterableFactory.newBuilder()
 
   override def size: Int = table.tableSize
 

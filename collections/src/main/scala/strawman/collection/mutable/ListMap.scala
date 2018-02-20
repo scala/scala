@@ -31,12 +31,7 @@ class ListMap[K, V]
     with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
     with Serializable {
 
-  def empty: ListMap[K, V] = ListMap.empty[K, V]
-
-  def mapFactory: MapFactory[ListMap] = ListMap
-
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): ListMap[K,V] = mapFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), ListMap[K,V]] = mapFactory.newBuilder()
+  override def mapFactory: MapFactory[ListMap] = ListMap
 
   private var elems: List[(K, V)] = List()
   private var siz: Int = 0

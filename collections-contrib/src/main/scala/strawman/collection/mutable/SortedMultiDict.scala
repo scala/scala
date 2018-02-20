@@ -17,12 +17,9 @@ class SortedMultiDict[K, V] private (elems: SortedMap[K, Set[V]])(implicit val o
 
   def sets: collection.SortedMap[K, collection.Set[V]] = elems
 
-  def iterableFactory: IterableFactory[collection.Iterable] = collection.Iterable
   def sortedMultiMapFactory: SortedMapFactory[SortedMultiDict] = SortedMultiDict
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): SortedMultiDict[K, V] = sortedMultiMapFactory.from(coll)
   protected[this] def sortedFromIterable[L: Ordering, W](it: collection.Iterable[(L, W)]): SortedMultiDict[L, W] = sortedMultiMapFactory.from(it)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), SortedMultiDict[K, V]] = sortedMultiMapFactory.newBuilder()
 
   def rangeImpl(from: Option[K], until: Option[K]): SortedMultiDict[K, V] =
     new SortedMultiDict(elems.rangeImpl(from, until))

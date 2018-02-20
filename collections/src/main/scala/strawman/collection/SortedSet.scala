@@ -1,20 +1,32 @@
 package strawman.collection
 
-import scala.{Boolean, Ordering, `inline`, None, Option, Some}
+import scala.{Boolean, Ordering, `inline`, None, Option, Some, Any}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
 trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] {
   def unsorted: Set[A] = this
+
+  override protected[this] def fromSpecificIterable(coll: Iterable[A]): SortedIterableCC[A] = sortedIterableFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] = sortedIterableFactory.newBuilder[A]()
+
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
+
+  override def empty: SortedIterableCC[A] = sortedIterableFactory.empty
 }
 
 trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  def sortedIterableFactory: SortedIterableFactory[CC]
+  protected[this] type SortedIterableCC[X] = CC[X]
 
-  protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B]
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
+
+  /** Similar to `fromSpecificIterable`, but for a (possibly) different type of element.
+    * Note that the return type is now `CC[B]` aka `SortedIterableCC[B]` rather than `IterableCC[B]`.
+    */
+  @`inline` final protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B] = sortedIterableFactory.from(it)
 
   def unsorted: Set[A]
 

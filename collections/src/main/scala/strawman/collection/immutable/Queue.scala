@@ -43,11 +43,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     with StrictOptimizedSeqOps[A, Queue, Queue[A]]
     with Serializable {
 
-  def iterableFactory: SeqFactory[Queue] = Queue
-
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): Queue[A] = iterableFactory.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, Queue[A]] = iterableFactory.newBuilder()
+  override def iterableFactory: SeqFactory[Queue] = Queue
 
   /** Returns the `n`-th element of this queue.
     *  The first element is at position `0`.

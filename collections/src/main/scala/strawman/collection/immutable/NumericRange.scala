@@ -61,12 +61,6 @@ sealed class NumericRange[T](
     }
   }
 
-  def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
-
-  protected[this] def fromSpecificIterable(it: collection.Iterable[T]): IndexedSeq[T] = fromIterable(it)
-
-  protected[this] def newSpecificBuilder(): Builder[T, IndexedSeq[T]] = IndexedSeq.newBuilder()
-
   /** Note that NumericRange must be invariant so that constructs
     *  such as "1L to 10 by 5" do not infer the range type as AnyVal.
     */

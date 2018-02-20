@@ -184,12 +184,7 @@ import scala.annotation.unchecked.uncheckedVariance
   *  @define orderDependentFold
   */
 sealed abstract class LazyList[+A] extends LinearSeq[A] with LazyListOps[A, LazyList, LazyList[A]] {
-  def iterableFactory: LazyListFactory[LazyList] = LazyList
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): LazyList[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, LazyList[A]] =
-    IndexedSeq.newBuilder().mapResult(_.to(LazyList))
+  override def iterableFactory: LazyListFactory[LazyList] = LazyList
 
   protected[this] def cons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
 
@@ -533,12 +528,7 @@ object LazyList extends LazyListFactory[LazyList] {
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
 sealed abstract class Stream[+A] extends LinearSeq[A] with LazyListOps[A, Stream, Stream[A]] {
-  def iterableFactory: LazyListFactory[Stream] = Stream
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): Stream[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, Stream[A]] =
-    IndexedSeq.newBuilder().mapResult(_.to(Stream))
+  override def iterableFactory: LazyListFactory[Stream] = Stream
 
   protected[this] def cons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 

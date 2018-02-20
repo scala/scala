@@ -5,20 +5,35 @@ import strawman.collection.immutable.TreeMap
 import strawman.collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, `inline`}
+import scala.{Boolean, Int, Option, Ordering, PartialFunction, Serializable, SerialVersionUID, `inline`, Any}
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
   extends Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
+
   def unsorted: Map[K, V] = this
+
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): SortedMapCC[K, V] = sortedMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] = sortedMapFactory.newBuilder[K, V]()
+
+  def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
+
+  override def empty: SortedMapCC[K, V] = sortedMapFactory.empty
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
      with SortedOps[K, C] {
 
-  def sortedMapFactory: SortedMapFactory[CC]
+  protected[this] type SortedMapCC[K, V] = CC[K, V]
+
+  def sortedMapFactory: SortedMapFactory[SortedMapCC]
+
+  /** Similar to `mapFromIterable`, but returns a SortedMap collection type.
+    * Note that the return type is now `CC[K2, V2]` aka `SortedMapCC[K2, V2]` rather than `MapCC[(K2, V2)]`.
+    */
+  @`inline` protected[this] final def sortedMapFromIterable[K2, V2](it: Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = sortedMapFactory.from(it)
 
   def unsorted: Map[K, V]
 
@@ -89,13 +104,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   /** The implementation class of the set returned by `keySet` */
   @SerialVersionUID(3L)
   protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
-    def iterableFactory: IterableFactory[Set] = Set
-    def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
-    protected[this] def fromSpecificIterable(coll: Iterable[K]): SortedSet[K] = sortedFromIterable(coll)
-    protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
-    protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): SortedSet[B] = sortedFromIterable(it)
     def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(view.filterNot(that))
-    def empty: SortedSet[K] = sortedIterableFactory.empty
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
       val map = SortedMapOps.this.rangeImpl(from, until)
       new map.KeySortedSet

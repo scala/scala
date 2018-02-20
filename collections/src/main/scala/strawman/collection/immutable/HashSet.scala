@@ -35,11 +35,7 @@ sealed abstract class HashSet[A]
 
   import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
 
-  def iterableFactory = HashSet
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, HashSet[A]] = HashSet.newBuilder()
+  override def iterableFactory = HashSet
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
@@ -86,8 +82,6 @@ sealed abstract class HashSet[A]
     val buffer = new Array[HashSet[A]](bufferSize(size))
     nullToEmpty(filter0(p, true, 0, buffer, 0))
   }
-
-  def empty: HashSet[A] = HashSet.empty
 
   override def tail: HashSet[A] = this - head
 

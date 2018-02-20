@@ -20,7 +20,7 @@ trait Seq[+A]
     with SeqOps[A, Seq, Seq[A]]
     with Equals {
 
-  def iterableFactory: SeqFactory[Seq]
+  override def iterableFactory: SeqFactory[IterableCC] = Seq
 
   /** Method called from equality methods, so that user-defined subclasses can
     *  refuse to be equal to other collections of the same kind.

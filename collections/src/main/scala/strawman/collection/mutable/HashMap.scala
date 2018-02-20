@@ -27,7 +27,7 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {
 
-  def mapFactory = HashMap
+  override def mapFactory = HashMap
 
   @transient private[this] var table: HashTable[K, V, DefaultEntry[K, V]] = newHashTable
   table.initWithContents(contents)
@@ -41,13 +41,7 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
       def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
     }
 
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] =  HashMap.newBuilder()
-
   def iterator(): Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
-
-  def empty: HashMap[K, V] = HashMap.empty
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)

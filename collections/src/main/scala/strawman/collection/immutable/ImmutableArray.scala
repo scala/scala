@@ -28,7 +28,7 @@ sealed abstract class ImmutableArray[+A]
   /** The tag of the element type */
   protected[this] def elemTag: ClassTag[A]
 
-  def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
+  override def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
 
   /** The wrapped mutable `Array` that backs this `ImmutableArray`. Any changes to this array will break
     * the expected immutability. */
@@ -36,9 +36,9 @@ sealed abstract class ImmutableArray[+A]
   // uncheckedVariance should be safe: Array[A] for reference types A is covariant at the JVM level. Array[A] for
   // primitive types A can only be widened to Array[Any] which erases to Object.
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A

@@ -169,7 +169,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
   with Serializable {
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
     intMapFromIterable[T](coll)
   protected[this] def intMapFromIterable[V2](coll: strawman.collection.Iterable[(Int, V2)]): IntMap[V2] = {
     val b = IntMap.newBuilder[V2]()
@@ -177,12 +177,10 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     b.addAll(coll)
     b.result()
   }
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-  protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
+  override protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
-  def mapFactory: MapFactory[Map] = Map
 
   override def empty: IntMap[T] = IntMap.Nil
 

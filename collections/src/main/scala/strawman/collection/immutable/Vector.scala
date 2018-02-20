@@ -70,11 +70,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     with VectorPointer[A @uncheckedVariance]
     with Serializable { self =>
 
-  def iterableFactory: SeqFactory[Vector] = Vector
-
-  protected[this] def fromSpecificIterable(it: collection.Iterable[A]): Vector[A] = fromIterable(it)
-
-  protected[this] def newSpecificBuilder(): Builder[A, Vector[A]] = Vector.newBuilder()
+  override def iterableFactory: SeqFactory[Vector] = Vector
 
   private[immutable] var dirty = false
 

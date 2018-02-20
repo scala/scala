@@ -11,6 +11,8 @@ trait Buffer[A]
     with Growable[A]
     with Shrinkable[A] {
 
+  override def iterableFactory: SeqFactory[Buffer] = Buffer
+
   //TODO Prepend is a logical choice for a readable name of `+=:` but it conflicts with the renaming of `append` to `add`
   /** Prepends a single element at the front of this $coll.
     *

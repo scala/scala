@@ -9,7 +9,10 @@ import scala.Predef.intWrapper
 trait Seq[A]
   extends Iterable[A]
     with collection.Seq[A]
-    with SeqOps[A, Seq, Seq[A]]
+    with SeqOps[A, Seq, Seq[A]] {
+
+  override def iterableFactory: SeqFactory[Seq] = Seq
+}
 
 /**
   * $factoryInfo

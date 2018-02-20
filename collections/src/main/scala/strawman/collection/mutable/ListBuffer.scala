@@ -47,9 +47,7 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
+  override def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
 
   @throws[IndexOutOfBoundsException]
   def apply(i: Int) = first.apply(i)
@@ -59,8 +57,6 @@ class ListBuffer[A]
 
   override def isEmpty: Boolean = len == 0
   override def nonEmpty: Boolean = len > 0
-
-  protected[this] def newSpecificBuilder(): Builder[A, ListBuffer[A]] = ListBuffer.newBuilder()
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.from(this)

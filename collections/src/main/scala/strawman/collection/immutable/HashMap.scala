@@ -36,12 +36,7 @@ sealed abstract class HashMap[K, +V]
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
-  def iterableFactory = List
-  def mapFactory = HashMap
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): HashMap[K, V] = HashMap.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), HashMap[K, V]] = HashMap.newBuilder()
+  override def mapFactory: MapFactory[HashMap] = HashMap
 
   def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
 
@@ -49,8 +44,6 @@ sealed abstract class HashMap[K, +V]
     updated0(key, computeHash(key), 0, value, null, null)
 
   @`inline` override final def +[V1 >: V](kv: (K, V1)): HashMap[K, V1] = updated(kv._1, kv._2)
-
-  def empty: HashMap[K, V] = HashMap.empty[K, V]
 
   def get(key: K): Option[V] = get0(key, computeHash(key), 0)
 

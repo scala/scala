@@ -29,11 +29,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]]
     with Serializable {
 
-  def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ChampHashSet[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, ChampHashSet[A]] = ChampHashSet.newBuilder()
+  override def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet
 
   override def knownSize: Int = cachedSize
 
@@ -66,8 +62,6 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
       ChampHashSet(newRootNode, cachedJavaHashCode - elementHash, cachedSize - 1)
     else this
   }
-
-  def empty: ChampHashSet[A] = ChampHashSet.empty
 
   override def tail: ChampHashSet[A] = this - head
 

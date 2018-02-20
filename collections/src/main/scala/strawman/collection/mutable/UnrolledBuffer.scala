@@ -65,10 +65,10 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   private[collection] def lastPtr_=(last: Unrolled[T]) = lastptr = last
   private[collection] def size_=(s: Int) = sz = s
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[T]) = UnrolledBuffer.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[T]) = UnrolledBuffer.from(coll)
+  override protected[this] def newSpecificBuilder(): Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
 
-  def iterableFactory: SeqFactory[UnrolledBuffer] = UnrolledBuffer.untagged
+  override def iterableFactory: SeqFactory[UnrolledBuffer] = UnrolledBuffer.untagged
 
   protected def newUnrolled = new Unrolled[T](this)
 

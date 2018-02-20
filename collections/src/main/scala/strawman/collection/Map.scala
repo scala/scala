@@ -15,6 +15,13 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MapCC[K, V] = mapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] = mapFactory.newBuilder[K, V]()
+
+  def mapFactory: strawman.collection.MapFactory[MapCC] = Map
+
+  def empty: MapCC[K, V] = mapFactory.empty
+
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
@@ -52,7 +59,14 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     with PartialFunction[K, V]
     with Equals {
 
-  def mapFactory: MapFactory[CC]
+  protected[this] type MapCC[K, V] = CC[K, V]
+
+  /** Similar to `fromIterable`, but returns a Map collection type.
+    * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.
+    */
+  @`inline` protected[this] final def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2] = mapFactory.from(it)
+
+  def mapFactory: MapFactory[MapCC]
 
   /** Optionally returns the value associated with a key.
     *
@@ -104,11 +118,7 @@ trait MapOps[K, +V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C]
     */
   @SerialVersionUID(3L)
   protected class KeySet extends Set[K] with GenKeySet {
-    def iterableFactory: IterableFactory[Set] = Set
-    protected[this] def fromSpecificIterable(coll: Iterable[K]): Set[K] = fromIterable(coll)
-    protected[this] def newSpecificBuilder(): Builder[K, Set[K]] = iterableFactory.newBuilder()
     def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
-    def empty: Set[K] = iterableFactory.empty
   }
 
   /** A generic trait that is reused by keyset implementations */

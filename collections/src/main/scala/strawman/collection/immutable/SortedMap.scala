@@ -10,6 +10,8 @@ trait SortedMap[K, +V]
     with collection.SortedMap[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
 
+  override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
+
   /** The same map with a given default function.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
     *  are not affected by `withDefault`.
@@ -43,16 +45,10 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     /** The implementation class of the set returned by `keySet` */
     @SerialVersionUID(3L)
     protected class ImmutableKeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
-      def iterableFactory: IterableFactory[Set] = Set
-      def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
-      protected[this] def sortedFromIterable[B: Ordering](it: collection.Iterable[B]): SortedSet[B] = sortedIterableFactory.from(it)
-      protected[this] def fromSpecificIterable(coll: collection.Iterable[K]): SortedSet[K] = sortedIterableFactory.from(coll)
-      protected[this] def newSpecificBuilder(): Builder[K, SortedSet[K]] = sortedIterableFactory.newBuilder()
       def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
         val map = self.rangeImpl(from, until)
         new map.ImmutableKeySortedSet
       }
-      def empty: SortedSet[K] = sortedIterableFactory.empty
       def incl(elem: K): SortedSet[K] = fromSpecificIterable(this).incl(elem)
       def excl(elem: K): SortedSet[K] = fromSpecificIterable(this).excl(elem)
     }
@@ -80,7 +76,7 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     implicit def ordering: Ordering[K] = underlying.ordering
 
-    def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
+    override def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
 
     def iteratorFrom(start: K): strawman.collection.Iterator[(K, V)] = underlying.iteratorFrom(start)
 
