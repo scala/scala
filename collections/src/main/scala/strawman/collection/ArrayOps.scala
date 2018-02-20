@@ -27,7 +27,7 @@ object ArrayOps {
 class ArrayOps[A](val xs: Array[A]) extends AnyVal
   with IterableOnce[A]
   with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
-  with StrictOptimizedSeqOps[A, Seq, Array[A]] {
+  with StrictOptimizedSeqOps[A, immutable.IndexedSeq, Array[A]] {
 
   protected def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
@@ -51,7 +51,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   override def className = "Array"
 
-  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(new View.Map(toIterable, f))
+  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(new View.Map(this, f))
 
   def mapInPlace(f: A => A): Array[A] = {
     var i = 0
@@ -65,7 +65,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
   def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(new View.FlatMap(toIterable, f))
 
   def flatMap[BS, B](f: A => BS)(implicit asIterable: BS => Iterable[B], m: ClassTag[B]): Array[B] =
-    fromTaggedIterable(new View.FlatMap(toIterable, (x: A) => asIterable(f(x))))
+    fromTaggedIterable(new View.FlatMap(this, (x: A) => asIterable(f(x))))
 
   def flatten[B](implicit asIterable: A => strawman.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
     val b = WrappedArray.newBuilder[B]().mapResult(_.toArray)
@@ -81,22 +81,22 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   @`inline` final def ++[B >: A : ClassTag](xs: Iterable[B]): Array[B] = appendedAll(xs)
 
-  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(new View.Zip(toIterable, that))
+  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(new View.Zip(this, that))
 
-  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(new View.ZipWithIndex(toIterable))
+  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(new View.ZipWithIndex(this))
 
-  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Appended(toIterable, x))
+  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Appended(this, x))
   @`inline` final def :+ [B >: A : ClassTag](x: B): Array[B] = appended(x)
-  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Prepended(x, toIterable))
+  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Prepended(x, this))
   @`inline` final def +: [B >: A : ClassTag](x: B): Array[B] = prepended(x)
-  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(prefix, toIterable))
+  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(prefix, this))
   @`inline` final def ++: [B >: A : ClassTag](prefix: Iterable[B]): Array[B] = prependedAll(prefix)
-  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(toIterable, suffix))
+  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(this, suffix))
   @`inline` final def :++ [B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
   @`inline` final def concat[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
 
   def patch[B >: A : ClassTag](from: Int, other: Iterable[B], replaced: Int): Array[B] =
-    fromTaggedIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
+    fromTaggedIterable(new View.Patched(this, from, other, replaced)) //TODO optimize
 
   /** Converts an array of pairs into an array of first elements and an array of second elements.
     *

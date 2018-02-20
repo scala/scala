@@ -168,7 +168,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
     *          the predicate `p`. The resulting map wraps the original map without copying any elements.
     */
-  def filterKeys(p: K => Boolean): View[(K, V)] = new View.FilterKeys(toIterable, p)
+  def filterKeys(p: K => Boolean): MapView[K, V] = new MapView.FilterKeys(this, p)
 
   /** Transforms this map by applying a function to every retrieved value.
     *  @param  f   the function used to transform values of this map.

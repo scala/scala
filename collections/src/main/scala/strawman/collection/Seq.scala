@@ -121,7 +121,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *    @return a new $coll consisting of `value` followed
     *            by all elements of this $coll.
     */
-  def prepended[B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, toIterable))
+  def prepended[B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, this))
 
   /** Alias for `prepended`.
     *
@@ -151,7 +151,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return a new $coll consisting of
     *         all elements of this $coll followed by `value`.
     */
-  def appended[B >: A](elem: B): CC[B] = fromIterable(new View.Appended(toIterable, elem))
+  def appended[B >: A](elem: B): CC[B] = fromIterable(new View.Appended(this, elem))
 
   /** Alias for `appended`
     *
@@ -172,7 +172,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
-  def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, toIterable))
+  def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, this))
 
   /** Alias for `prependedAll` */
   @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependedAll(prefix)
@@ -210,7 +210,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
     */
-  def distinctBy[B](f: A => B): C = fromSpecificIterable(new View.DistinctBy(toIterable, f))
+  def distinctBy[B](f: A => B): C = fromSpecificIterable(new View.DistinctBy(this, f))
 
   /** Returns new $coll with elements in reversed order.
    *
@@ -284,7 +284,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
-  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(new View.PadTo(toIterable, len, elem))
+  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(new View.PadTo(this, len, elem))
 
   /** Computes length of longest segment whose elements all satisfy some predicate.
     *
@@ -766,7 +766,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                   by all the elements of `other`.
     */
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
-    fromIterable(new View.Patched(toIterable, from, other, replaced))
+    fromIterable(new View.Patched(this, from, other, replaced))
 
   private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = mutable.Map.empty[B, Int].withDefaultValue(0)

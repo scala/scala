@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Int, Option}
+import scala.{Boolean, Int, Option, None}
 
 import strawman.collection.mutable.Builder
 
@@ -25,19 +25,26 @@ trait MapView[K, +V]
 
 object MapView {
 
-  type AnyIterableConstr[X, Y] = IterableOps[_, AnyConstr, _]
-  type AnyMapOps[K, +V] = MapOps[K, V, AnyIterableConstr, _]
+  /** An `IterableOps` whose collection type and collection type constructor are unknown */
+  type SomeIterableConstr[X, Y] = IterableOps[_, AnyConstr, _]
+  /** A `MapOps` whose collection type and collection type constructor are (mostly) unknown */
+  type SomeMapOps[K, +V] = MapOps[K, V, SomeIterableConstr, _]
 
-  class Id[K, +V](underlying: AnyMapOps[K, V]) extends MapView[K, V] {
+  class Id[K, +V](underlying: SomeMapOps[K, V]) extends MapView[K, V] {
     def get(key: K): Option[V] = underlying.get(key)
     def iterator(): Iterator[(K, V)] = underlying.iterator()
     override def knownSize: Int = underlying.knownSize
   }
 
-  class MapValues[K, +V, +W](underlying: AnyMapOps[K, V], f: V => W) extends MapView[K, W] {
+  class MapValues[K, +V, +W](underlying: SomeMapOps[K, V], f: V => W) extends MapView[K, W] {
     def iterator(): Iterator[(K, W)] = underlying.iterator().map(kv => (kv._1, f(kv._2)))
     def get(key: K): Option[W] = underlying.get(key).map(f)
     override def knownSize: Int = underlying.knownSize
+  }
+
+  class FilterKeys[K, +V](underlying: SomeMapOps[K, V], p: K => Boolean) extends MapView[K, V] {
+    def iterator(): Iterator[(K, V)] = underlying.iterator().filter { case (k, _) => p(k) }
+    def get(key: K): Option[V] = if (p(key)) underlying.get(key) else None
   }
 
 }

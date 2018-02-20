@@ -27,45 +27,58 @@ trait IndexedView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A] { 
   override def dropRight(n: Int): IndexedView[A] = new IndexedView.DropRight(this, n)
   override def map[B](f: A => B): IndexedView[B] = new IndexedView.Map(this, f)
   override def reverse: IndexedView[A] = new IndexedView.Reverse(this)
+  override def slice(from: Int, until: Int): IndexedView[A] = new IndexedView.Slice(this, from, until)
 }
 
 object IndexedView {
 
-  class Id[+A](underlying: IndexedSeqOps[A, AnyConstr, _])
+  /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
+  type SomeIndexedSeqOps[A] = IndexedSeqOps[A, AnyConstr, _]
+
+  class Id[+A](underlying: SomeIndexedSeqOps[A])
     extends SeqView.Id(underlying) with IndexedView[A]
 
-  class Prepended[+A](elem: A, underlying: Iterable[A] with IndexedSeqOps[A, AnyConstr, _])
+  class Prepended[+A](elem: A, underlying: SomeIndexedSeqOps[A])
     extends SeqView.Prepended(elem, underlying) with IndexedView[A]
 
-  class Take[A](underlying: IndexedView[A], n: Int)
+  class Take[A](underlying: SomeIndexedSeqOps[A], n: Int)
     extends SeqView.Take(underlying, n) with IndexedView[A]
 
-  class TakeRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
+  class TakeRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends IndexedView[A] {
     private[this] val delta = (underlying.size - (n max 0)) max 0
     def length = underlying.size - delta
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + delta)
   }
 
-  class Drop[A](underlying: IndexedView[A], n: Int) extends View.Drop[A](underlying, n) with IndexedView[A] {
+  class Drop[A](underlying: SomeIndexedSeqOps[A], n: Int) extends View.Drop[A](underlying, n) with IndexedView[A] {
     def length = (underlying.size - normN) max 0
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
-  class DropRight[A](underlying: IndexedView[A], n: Int) extends IndexedView[A] {
+  class DropRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends IndexedView[A] {
     private[this] val len = (underlying.size - (n max 0)) max 0
     def length = len
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
   }
 
-  class Map[A, B](underlying: IndexedView[A], f: A => B)
+  class Map[A, B](underlying: SomeIndexedSeqOps[A], f: A => B)
     extends SeqView.Map(underlying, f) with IndexedView[B]
 
-  class Reverse[A](underlying: IndexedView[A]) extends IndexedView[A] {
+  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends IndexedView[A] {
     def length = underlying.size
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(size - 1 - i)
+  }
+
+  class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends IndexedView[A] {
+    protected val lo = from max 0
+    protected val hi = until min underlying.length
+    protected val len = (hi - lo) max 0
+    @throws[IndexOutOfBoundsException]
+    def apply(i: Int): A = underlying(lo + i)
+    def length: Int = len
   }
 }

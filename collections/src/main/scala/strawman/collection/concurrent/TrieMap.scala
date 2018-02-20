@@ -955,7 +955,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     if (nonReadOnly) readOnlySnapshot().keySet
     else super.keySet
   }
-  override def filterKeys(p: K => Boolean): collection.View[(K, V)] = {
+  override def filterKeys(p: K => Boolean): collection.MapView[K, V] = {
     if (nonReadOnly) readOnlySnapshot().filterKeys(p)
     else super.filterKeys(p)
   }
