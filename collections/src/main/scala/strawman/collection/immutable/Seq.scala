@@ -10,7 +10,7 @@ trait Seq[+A] extends Iterable[A]
 
   override final def toSeq: this.type = this
 
-  override def iterableFactory: SeqFactory[Seq] = Seq
+  override def iterableFactory: SeqFactory[IterableCC] = Seq
 }
 
 /**
@@ -43,7 +43,7 @@ trait IndexedSeq[+A] extends Seq[A]
 
   final override def toIndexedSeq: IndexedSeq[A] = this
 
-  override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
+  override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
 }
 
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
@@ -57,7 +57,7 @@ trait LinearSeq[+A]
     with collection.LinearSeq[A]
     with LinearSeqOps[A, LinearSeq, LinearSeq[A]] {
 
-  override def iterableFactory: SeqFactory[LinearSeq] = LinearSeq
+  override def iterableFactory: SeqFactory[IterableCC] = LinearSeq
 }
 
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)

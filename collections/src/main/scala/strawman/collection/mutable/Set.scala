@@ -9,7 +9,10 @@ import scala.{Boolean, Int, None, Option, Some, Unit, `inline`, deprecated}
 trait Set[A]
   extends Iterable[A]
     with collection.Set[A]
-    with SetOps[A, Set, Set[A]]
+    with SetOps[A, Set, Set[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Set
+}
 
 /**
   * @define coll mutable set
