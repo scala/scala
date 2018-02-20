@@ -201,7 +201,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -212,7 +212,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -223,7 +223,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.13.0-M3/jars/scala-partest_2.13.0-M3-1.1.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
@@ -237,7 +237,7 @@
     </library>
     <library name="manual-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.13.0-M3.jar!/" />
@@ -250,7 +250,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.13.0-M3/jars/scala-partest_2.13.0-M3-1.1.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
@@ -271,7 +271,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -282,7 +282,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -389,7 +389,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scalacheck/scalacheck_2.13.0-M1/jars/scalacheck_2.13.0-M1-1.13.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
@@ -402,7 +402,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -413,7 +413,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -425,7 +425,7 @@
           <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.13.0-M3.jar" />
           <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-compiler/jars/scala-compiler-2.13.0-M3.jar" />
           <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.13.0-M3.jar" />
-          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar" />
           <root url="file://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.4.jar" />
         </compiler-classpath>
       </properties>
@@ -438,7 +438,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.13.0-M3/jars/scala-partest_2.13.0-M3-1.1.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
