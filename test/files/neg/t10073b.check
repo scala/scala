@@ -1,0 +1,4 @@
+t10073b.scala:7: error: tpe Unused is an unresolved spliceable type
+   "".yo()
+   ^
+one error found
