@@ -10,8 +10,6 @@ trait MapView[K, +V]
 
   override def view: MapView[K, V] = this
 
-  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): View[(K2, V2)] = fromIterable(it)
-
   def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] =
     new MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
       def newBuilder[X, Y](): Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]()
