@@ -3,7 +3,7 @@ package collection.mutable
 
 import collection.Iterator
 
-import collection.arrayToArrayOps
+import collection.arrayToWrappedArray
 
 import scala.{AnyRef, Array, Boolean, Int, None, Option, Some, transient, Unit}
 import scala.Predef.{assert, println, intWrapper}
