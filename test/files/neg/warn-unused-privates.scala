@@ -236,3 +236,10 @@ object `classof something` {
   private class intrinsically
   def f = classOf[intrinsically].toString()
 }
+
+trait `short comings` {
+  def f: Int = {
+    val x = 42
+    17
+  }
+}
