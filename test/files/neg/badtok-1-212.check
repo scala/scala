@@ -1,7 +1,7 @@
-badtok-1-212.scala:2: error: unclosed character literal
+badtok-1-212.scala:2: error: unclosed character literal (or use " not ' for string literal)
 '42'
 ^
-badtok-1-212.scala:2: error: unclosed character literal
+badtok-1-212.scala:2: error: unclosed character literal (or use " not ' for string literal)
 '42'
    ^
 badtok-1-212.scala:6: warning: deprecated syntax for character literal (use '\'' for single quote)
