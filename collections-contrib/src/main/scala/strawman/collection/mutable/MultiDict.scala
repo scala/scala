@@ -15,10 +15,7 @@ class MultiDict[K, V] private (elems: Map[K, Set[V]])
     with Growable[(K, V)]
     with Shrinkable[(K, V)] {
 
-  def iterableFactory: IterableFactory[collection.Iterable] = collection.Iterable
-  def multiMapFactory: MapFactory[MultiDict] = MultiDict
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): MultiDict[K, V] = multiMapFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[(K, V), MultiDict[K, V]] = multiMapFactory.newBuilder()
+  override def multiMapFactory: MapFactory[MultiDict] = MultiDict
 
   def sets: collection.Map[K, collection.Set[V]] = elems
 

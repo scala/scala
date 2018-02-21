@@ -11,6 +11,11 @@ trait MultiDict[K, V]
     with MultiDictOps[K, V, MultiDict, MultiDict[K, V]]
     with Equals {
 
+  def multiMapFactory: MapFactory[MultiDictCC] = MultiDict
+
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MultiDictCC[K, V] = multiMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MultiDictCC[K, V]] = multiMapFactory.newBuilder[K, V]()
+
   def canEqual(that: Any): Boolean = true
 
   override def equals(o: Any): Boolean = o match {
@@ -35,7 +40,9 @@ trait MultiDict[K, V]
 trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
   extends IterableOps[(K, V), Iterable, C] {
 
-  def multiMapFactory: MapFactory[CC]
+  protected[this] type MultiDictCC[K, V] = CC[K, V]
+
+  def multiMapFactory: MapFactory[MultiDictCC]
 
   protected[this] def multiMapFromIterable[L, W](it: Iterable[(L, W)]): CC[L, W] =
     multiMapFactory.from(it)
@@ -94,7 +101,7 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     * @tparam W new type of values
     */
   def map[L, W](f: ((K, V)) => (L, W)): CC[L, W] =
-    multiMapFromIterable(View.Map(toIterable, f))
+    multiMapFromIterable(new View.Map(toIterable, f))
 
   /**
     * @return a multidict that contains all the entries of `this` multidict,
@@ -105,7 +112,7 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     * @tparam W new type of values
     */
   def flatMap[L, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] =
-    multiMapFromIterable(View.FlatMap(toIterable, f))
+    multiMapFromIterable(new View.FlatMap(toIterable, f))
 
   /**
     * @return a multidict that contains all the entries of `this` multidict
@@ -118,19 +125,19 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     */
   def collect[L, W](pf: PartialFunction[(K, V), (L, W)]): CC[L, W] =
     flatMap(kv =>
-      if (pf.isDefinedAt(kv)) View.Single(pf(kv))
+      if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
       else View.Empty
     )
 
   /** Concatenate the entries given in `that` iterable to `this` multidict */
   def concat(that: Iterable[(K, V)]): C =
-    fromSpecificIterable(View.Concat(toIterable, that))
+    fromSpecificIterable(new View.Concat(toIterable, that))
 
   override def withFilter(p: ((K, V)) => Boolean): MultiMapWithFilter = new MultiMapWithFilter(p)
 
   class MultiMapWithFilter(p: ((K, V)) => Boolean) extends WithFilter(p) {
-    def map[L, W](f: ((K, V)) => (L, W)): CC[L, W] = multiMapFromIterable(View.Map(filtered, f))
-    def flatMap[L, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = multiMapFromIterable(View.FlatMap(filtered, f))
+    def map[L, W](f: ((K, V)) => (L, W)): CC[L, W] = multiMapFromIterable(new View.Map(filtered, f))
+    def flatMap[L, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = multiMapFromIterable(new View.FlatMap(filtered, f))
     override def withFilter(q: ((K, V)) => Boolean): MultiMapWithFilter = new MultiMapWithFilter(kv => p(kv) && q(kv))
   }
 
@@ -150,7 +157,7 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     * @tparam W the type of values of the returned multidict
     */
   def mapSets[L, W](f: ((K, Set[V])) => (L, Set[W])): CC[L, W] =
-    fromSets(View.Map(sets, f))
+    fromSets(new View.Map(sets, f))
 
   /**
     * @return a multidict that contains all the entries of `this` multidict,
@@ -163,7 +170,7 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     */
   def collectSets[L, W](pf: PartialFunction[(K, Set[V]), (L, Set[W])]): CC[L, W] =
     flatMapSets(kvs =>
-      if (pf.isDefinedAt(kvs)) View.Single(pf(kvs))
+      if (pf.isDefinedAt(kvs)) new View.Single(pf(kvs))
       else View.Empty
     )
 
@@ -176,7 +183,7 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     * @tparam W the type of values of the returned multidict
     */
   def flatMapSets[L, W](f: ((K, Set[V])) => IterableOnce[(L, Set[W])]): CC[L, W] =
-    fromSets(View.FlatMap(sets, f))
+    fromSets(new View.FlatMap(sets, f))
 
   /**
     * @return a new multidict concatenating the values of this multidict
@@ -185,14 +192,14 @@ trait MultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
     * @param that the collection of values to add to this multidict
     */
   def concatSets(that: Iterable[(K, Set[V])]): C =
-    fromSpecificSets(View.Concat(sets, that))
+    fromSpecificSets(new View.Concat(sets, that))
 
   /**
     * @return a multidict that contains all the entries of this multidict
     *         that satisfy the predicate `p`
     */
   def filterSets(p: ((K, Set[V])) => Boolean): C =
-    fromSpecificSets(View.Filter(sets, p, isFlipped = false))
+    fromSpecificSets(new View.Filter(sets, p, isFlipped = false))
 
 }
 

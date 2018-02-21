@@ -12,14 +12,17 @@ trait SortedMultiDict[K, V]
 
   def unsorted: MultiDict[K, V] = this
 
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): SortedMultiDictCC[K, V] = sortedMultiMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMultiDictCC[K, V]] = sortedMultiMapFactory.newBuilder[K, V]()
 }
 
 trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, V]]
   extends MultiDictOps[K, V, MultiDict, C]
     with SortedOps[K, C] {
 
-  def multiMapFactory: MapFactory[MultiDict] = MultiDict
-  def sortedMultiMapFactory: SortedMapFactory[CC]
+  protected[this] type SortedMultiDictCC[K, V] = CC[K, V]
+
+  def sortedMultiMapFactory: SortedMapFactory[SortedMultiDictCC]
 
   protected[this] def sortedFromIterable[L : Ordering, W](it: Iterable[(L, W)]): CC[L, W]
   protected[this] def sortedFromSets[L : Ordering, W](it: Iterable[(L, Set[W])]): CC[L, W] =
@@ -51,8 +54,8 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
   override def withFilter(p: ((K, V)) => Boolean): SortedMultiMapWithFilter = new SortedMultiMapWithFilter(p)
 
   class SortedMultiMapWithFilter(p: ((K, V)) => Boolean) extends MultiMapWithFilter(p) {
-    def map[L : Ordering, W](f: ((K, V)) => (L, W)): CC[L, W] = sortedFromIterable(View.Map(filtered, f))
-    def flatMap[L : Ordering, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = sortedFromIterable(View.FlatMap(filtered, f))
+    def map[L : Ordering, W](f: ((K, V)) => (L, W)): CC[L, W] = sortedFromIterable(new View.Map(filtered, f))
+    def flatMap[L : Ordering, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = sortedFromIterable(new View.FlatMap(filtered, f))
     override def withFilter(q: ((K, V)) => Boolean): SortedMultiMapWithFilter = new SortedMultiMapWithFilter(kv => p(kv) && q(kv))
   }
 
@@ -64,7 +67,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     * @tparam L new type of keys
     * @tparam W new type of values
     */
-  def map[L : Ordering, W](f: ((K, V)) => (L, W)): CC[L, W] = sortedFromIterable(View.Map(toIterable, f))
+  def map[L : Ordering, W](f: ((K, V)) => (L, W)): CC[L, W] = sortedFromIterable(new View.Map(toIterable, f))
 
   /**
     * Builds a new sorted multidict by applying a function to all groups of elements
@@ -75,7 +78,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     *           `f` to each pair of element and its number of occurrences of this
     *           sorted multiset and collecting the results.
     */
-  def mapSets[L : Ordering, W](f: ((K, Set[V])) => (L, Set[W])): CC[L, W] = sortedFromSets(View.Map(sets, f))
+  def mapSets[L : Ordering, W](f: ((K, Set[V])) => (L, Set[W])): CC[L, W] = sortedFromSets(new View.Map(sets, f))
 
   /**
     * @return a sorted multidict that contains all the entries of `this` sorted multidict,
@@ -85,7 +88,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     * @tparam L new type of keys
     * @tparam W new type of values
     */
-  def flatMap[L : Ordering, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = sortedFromIterable(View.FlatMap(toIterable, f))
+  def flatMap[L : Ordering, W](f: ((K, V)) => IterableOnce[(L, W)]): CC[L, W] = sortedFromIterable(new View.FlatMap(toIterable, f))
 
   /**
     * @return a new sorted multidict resulting from applying the given function `f`
@@ -95,7 +98,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     * @tparam L the new type of keys
     * @tparam W the type of values of the returned sorted multidict
     */
-  def flatMapSets[L : Ordering, W](f: ((K, Set[V])) => IterableOnce[(L, Set[W])]): CC[L, W] = sortedFromSets(View.FlatMap(sets, f))
+  def flatMapSets[L : Ordering, W](f: ((K, Set[V])) => IterableOnce[(L, Set[W])]): CC[L, W] = sortedFromSets(new View.FlatMap(sets, f))
 
   /**
     * @return a sorted multidict that contains all the entries of `this` sorted multidict
@@ -107,7 +110,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     * @tparam W new type of values
     */
   def collect[L : Ordering, W](pf: PartialFunction[(K, V), (L, W)]): CC[L, W] = flatMap(kv =>
-    if (pf.isDefinedAt(kv)) View.Single(pf(kv))
+    if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
     else View.Empty
   )
 
@@ -121,7 +124,7 @@ trait SortedMultiDictOps[K, V, +CC[X, Y] <: MultiDict[X, Y], +C <: MultiDict[K, 
     * @tparam W the new type of values
     */
   def collectSets[L : Ordering, W](pf: PartialFunction[(K, Set[V]), (L, Set[W])]): CC[L, W] = flatMapSets(kv =>
-    if (pf.isDefinedAt(kv)) View.Single(pf(kv))
+    if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
     else View.Empty
   )
 

@@ -3,7 +3,8 @@ package strawman.collection
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import strawman.collection.immutable.{ImmutableArray, List}
+import strawman.collection.immutable.{ImmutableArray, List, Range}
+import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class IterableTest {
@@ -41,4 +42,54 @@ class IterableTest {
     Assert.assertEquals(expected, occurrences(xs))
   }
 
+  @Test def copyToArray(): Unit = {
+    def check(a: Array[Int], start: Int, end: Int) = {
+      var i = 0
+      while (i < start) {
+        assert(a(i) == 0)
+        i += 1
+      }
+      while (i < a.length && i < end) {
+        assert(a(i) == i - start)
+        i += 1
+      }
+      while (i < a.length) {
+        assert(a(i) == 0)
+        i += 1
+      }
+    }
+
+    val far = 100000
+    val l = Iterable.from(Range(0, 100))
+    check(l.copyToArray(new Array(100)),
+      0, far)
+    check(l.copyToArray(new Array(10)),
+      0, far)
+    check(l.copyToArray(new Array(1000)),
+      0, 100)
+
+    check(l.copyToArray(new Array(100), 5),
+      5, 105)
+    check(l.copyToArray(new Array(10), 5),
+      5, 10)
+    check(l.copyToArray(new Array(1000), 5),
+      5, 105)
+
+    check(l.copyToArray(new Array(100), 5, 50),
+      5, 55)
+    check(l.copyToArray(new Array(10), 5, 50),
+      5, 10)
+    check(l.copyToArray(new Array(1000), 5, 50),
+      5, 55)
+
+    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1))
+    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1, 10))
+
+    check(l.copyToArray(new Array(10), 10),
+      0, 0)
+    check(l.copyToArray(new Array(10), 10, 10),
+      0, 0)
+    check(l.copyToArray(new Array(10), 0, -1),
+      0, 0)
+  }
 }

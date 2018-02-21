@@ -218,8 +218,8 @@ As an example, here is how the default implementation of `map` and `take`
 are defined:
 
 ~~~ scala
-def take(n: Int): C = fromSpecificIterable(View.Take(toIterable, n))
-def map[B](f: A => B): CC[B] = fromIterable(View.Map(toIterable, f))
+def take(n: Int): C = fromSpecificIterable(new View.Take(toIterable, n))
+def map[B](f: A => B): CC[B] = fromIterable(new View.Map(toIterable, f))
 ~~~
 
 `View.Map` creates a `View` that applies the function `f` to the elements

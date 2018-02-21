@@ -70,13 +70,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     */
   def this() = this(8)
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Key, Value)]): OpenHashMap[Key, Value] = mapFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[(Key, Value), OpenHashMap[Key, Value]] = mapFactory.newBuilder()
-
-  def mapFactory: MapFactory[OpenHashMap] = OpenHashMap
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): OpenHashMap[K2,V2] = mapFactory.from(it)
-
-  override def empty: OpenHashMap[Key, Value] = OpenHashMap.empty[Key, Value]
+  override def mapFactory: MapFactory[OpenHashMap] = OpenHashMap
 
   private[this] val actualInitialSize = HashTable.nextPositivePowerOfTwo(initialSize)
 

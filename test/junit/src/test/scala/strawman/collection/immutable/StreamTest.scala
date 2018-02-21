@@ -125,10 +125,29 @@ class StreamTest {
   }
 
   @Test
-  def testStreamForcesHead: Unit = {
+  def testForceReturnsEvaluatedStream() : Unit = {
     var i = 0
     def f: Int = { i += 1; i }
-    val s = f #:: f #:: f #:: Stream.empty
+    val xs = f #:: f #:: f #:: Stream.empty
     assertEquals(1, i)
+    xs.force
+    assertEquals(3, i)
+    // it's possible to implement `force` with incorrect string representation
+    // (to forget about `tlEvaluated` update)
+    assertEquals( "1 #:: 2 #:: 3 #:: Empty", xs.toString())
+  }
+
+  val cycle1: Stream[Int] = 1 #:: 2 #:: cycle1
+  val cycle2: Stream[Int] = 1 #:: 2 #:: 3 #:: cycle2
+  @Test(timeout=10000)
+  def testSameElements(): Unit = {
+    assert(Stream().sameElements(Stream()))
+    assert(!Stream().sameElements(Stream(1)))
+    assert(Stream(1,2).sameElements(Stream(1,2)))
+    assert(!Stream(1,2).sameElements(Stream(1)))
+    assert(!Stream(1).sameElements(Stream(1,2)))
+    assert(!Stream(1).sameElements(Stream(2)))
+    assert(!cycle1.sameElements(cycle2))
+    assert(!cycle1.sameElements(cycle2))
   }
 }

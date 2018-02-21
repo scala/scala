@@ -28,6 +28,9 @@ trait Set[A]
 
   override def hashCode(): Int = Set.setHash(toIterable)
 
+  override def iterableFactory: IterableFactory[IterableCC] = Set
+
+  def empty: IterableCC[A] = iterableFactory.empty
 }
 
 /** Base trait for set operations
@@ -165,10 +168,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(View.Concat(toIterable, that))
+  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(new View.Concat(toIterable, that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union ", "2.13.0")
-  @`inline` final def + [B >: A](elem: B): CC[B] = iterableFactory.from(View.Append(toIterable, elem))
+  @`inline` final def + [B >: A](elem: B): CC[B] = iterableFactory.from(new View.Appended(toIterable, elem))
   //TODO We should be able to use `fromIterable` here but Dotty complains about a variance problem with no apparent workaround
 
   /** Alias for `concat` */

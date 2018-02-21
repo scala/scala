@@ -169,7 +169,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
   with Serializable {
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
     intMapFromIterable[T](coll)
   protected[this] def intMapFromIterable[V2](coll: strawman.collection.Iterable[(Int, V2)]): IntMap[V2] = {
     val b = IntMap.newBuilder[V2]()
@@ -177,13 +177,10 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     b.addAll(coll)
     b.result()
   }
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-  protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
+  override protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
-  def mapFactory: MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 
   override def empty: IntMap[T] = IntMap.Nil
 
@@ -306,9 +303,9 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     case IntMap.Nil => IntMap.Tip(key, value)
   }
 
-  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFromIterable(View.Map(toIterable, f))
+  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFromIterable(new View.Map(toIterable, f))
 
-  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFromIterable(View.FlatMap(toIterable, f))
+  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFromIterable(new View.FlatMap(toIterable, f))
 
   override def concat [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] =
     super.concat(that).asInstanceOf[IntMap[V1]] // Already has corect type but not declared as such

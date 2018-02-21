@@ -8,13 +8,18 @@ import immutable.ImmutableArray
 import scala.reflect.ClassTag
 
 object ArrayOps {
-  class WithFilter[A](p: A => Boolean, ao: ArrayOps[A]) extends collection.WithFilter[A, immutable.IndexedSeq] {
-    protected[this] def filtered = View.Filter(ao.toIterable, p, isFlipped = false)
-    def map[B](f: A => B): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.Map(filtered, f))
-    def flatMap[B](f: A => IterableOnce[B]): immutable.IndexedSeq[B] = ao.iterableFactory.from(View.FlatMap(filtered, f))
+  private[ArrayOps] trait LowPriorityWithFilterOps[A] {
+    protected def p: A => Boolean
+    protected def ao: ArrayOps[A]
+    protected def filtered = View.Filter(ao.toIterable, p, isFlipped = false)
+    def map[B](f: A => B): immutable.IndexedSeq[B] = ao.iterableFactory.from(new View.Map(filtered, f))
+    def flatMap[B](f: A => IterableOnce[B]): immutable.IndexedSeq[B] = ao.iterableFactory.from(new View.FlatMap(filtered, f))
+  }
+
+  class WithFilter[A](protected val p: A => Boolean, protected val ao: ArrayOps[A]) extends collection.WithFilter[A, immutable.IndexedSeq] with LowPriorityWithFilterOps[A] {
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
-    def map[B: ClassTag](f: A => B): Array[B] = ao.fromTaggedIterable(View.Map(filtered, f))
-    def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = ao.fromTaggedIterable(View.FlatMap(filtered, f))
+    def map[B: ClassTag](f: A => B): Array[B] = ao.fromTaggedIterable(new View.Map(filtered, f))
+    def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = ao.fromTaggedIterable(new View.FlatMap(filtered, f))
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), ao)
   }
 }
@@ -22,7 +27,7 @@ object ArrayOps {
 class ArrayOps[A](val xs: Array[A]) extends AnyVal
   with IterableOnce[A]
   with IndexedSeqOps[A, immutable.IndexedSeq, Array[A]]
-  with StrictOptimizedSeqOps[A, Seq, Array[A]] {
+  with StrictOptimizedSeqOps[A, immutable.IndexedSeq, Array[A]] {
 
   protected def fromTaggedIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
@@ -46,7 +51,7 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   override def className = "Array"
 
-  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(View.Map(toIterable, f))
+  def map[B: ClassTag](f: A => B): Array[B] = fromTaggedIterable(new View.Map(this, f))
 
   def mapInPlace(f: A => A): Array[A] = {
     var i = 0
@@ -57,10 +62,10 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
     xs
   }
 
-  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(View.FlatMap(toIterable, f))
+  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = fromTaggedIterable(new View.FlatMap(toIterable, f))
 
   def flatMap[BS, B](f: A => BS)(implicit asIterable: BS => Iterable[B], m: ClassTag[B]): Array[B] =
-    fromTaggedIterable(View.FlatMap(toIterable, (x: A) => asIterable(f(x))))
+    fromTaggedIterable(new View.FlatMap(this, (x: A) => asIterable(f(x))))
 
   def flatten[B](implicit asIterable: A => strawman.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
     val b = WrappedArray.newBuilder[B]().mapResult(_.toArray)
@@ -76,20 +81,22 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
 
   @`inline` final def ++[B >: A : ClassTag](xs: Iterable[B]): Array[B] = appendedAll(xs)
 
-  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(View.Zip(toIterable, that))
+  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = fromTaggedIterable(new View.Zip(this, that))
 
-  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(View.Append(toIterable, x))
+  def zipWithIndex(implicit ct: ClassTag[(A, Int)]): Array[(A, Int)] = fromTaggedIterable(new View.ZipWithIndex(this))
+
+  def appended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Appended(this, x))
   @`inline` final def :+ [B >: A : ClassTag](x: B): Array[B] = appended(x)
-  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(View.Prepend(x, toIterable))
+  def prepended[B >: A : ClassTag](x: B): Array[B] = fromTaggedIterable(new View.Prepended(x, this))
   @`inline` final def +: [B >: A : ClassTag](x: B): Array[B] = prepended(x)
-  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(prefix, toIterable))
+  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(prefix, this))
   @`inline` final def ++: [B >: A : ClassTag](prefix: Iterable[B]): Array[B] = prependedAll(prefix)
-  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(View.Concat(toIterable, suffix))
+  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = fromTaggedIterable(new View.Concat(this, suffix))
   @`inline` final def :++ [B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
   @`inline` final def concat[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
 
   def patch[B >: A : ClassTag](from: Int, other: Iterable[B], replaced: Int): Array[B] =
-    fromTaggedIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
+    fromTaggedIterable(new View.Patched(this, from, other, replaced)) //TODO optimize
 
   /** Converts an array of pairs into an array of first elements and an array of second elements.
     *
@@ -115,5 +122,24 @@ class ArrayOps[A](val xs: Array[A]) extends AnyVal
       i += 1
     }
     (a1, a2)
+  }
+
+  def transpose[B](implicit asArray: A => Array[B]): Array[Array[B]] = {
+    val aClass = xs.getClass.getComponentType
+    val bb = Array.newBuilder[Array[B]](ClassTag[Array[B]](aClass))
+    if (isEmpty) bb.result()
+    else {
+      def mkRowBuilder() = Array.newBuilder[B](ClassTag[B](aClass.getComponentType))
+      val bs = asArray(head) map ((x: B) => mkRowBuilder())
+      for (xs <- this) {
+        var i = 0
+        for (x <- asArray(xs)) {
+          bs(i) += x
+          i += 1
+        }
+      }
+      for (b <- bs) bb += b.result()
+      bb.result()
+    }
   }
 }

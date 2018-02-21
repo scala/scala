@@ -9,29 +9,12 @@
 package strawman
 package collection
 
+import scala.deprecated
+
 /** A default map which builds a default `immutable.Map` implementation for all
   * transformations.
   *
-  *  Instances that inherit from `DefaultMap[K, V]` still have to define:
-  *  {{{
-  *    def get(key: K): Option[V]
-  *    def iterator(): Iterator[(K, V)]
-  *  }}}
-  *
-  *  It might also be advisable to override `foreach` or `size` if efficient
-  *  implementations can be found.
-  *
   *  @since 2.8
   */
-trait DefaultMap[K, +V] extends Map[K, V] { self =>
-
-  // Members declared in IterableOps
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-  protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): Map[K,V] = mapFactory.from(coll)
-  protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), Map[K,V]] = mapFactory.newBuilder()
-
-  // Members declared in MapOps
-  def mapFactory: MapFactory[Map] = Map
-  def empty: Map[K,V] = mapFactory.empty
-  protected[this] def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
-}
+@deprecated("DefaultMap is no longer necessary; extend Map directly", "2.13.0")
+trait DefaultMap[K, +V] extends Map[K, V]

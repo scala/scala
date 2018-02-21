@@ -57,13 +57,6 @@ sealed abstract class Range(
     with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with Serializable { range =>
 
-  def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): IndexedSeq[Int] =
-    fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[Int, IndexedSeq[Int]] = IndexedSeq.newBuilder()
-
   override def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
   private def gap           = end.toLong - start.toLong

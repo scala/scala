@@ -76,9 +76,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     mask = m; _size = sz; _vacant = vc; _hashes = hz; _keys = kz; _values = vz
   }
 
-  def mapFactory: strawman.collection.MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
     var sz = coll.knownSize
     if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
@@ -86,7 +84,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
-  protected[this] def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
+  override protected[this] def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)
@@ -427,9 +425,9 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
   // TODO: Remove the unnecessary implicit in Scala 2.13; Dotty requires it for disambiguation
   def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2))(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
-    AnyRefMap.from(View.Map(toIterable, f))
+    AnyRefMap.from(new View.Map(toIterable, f))
   def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
-    AnyRefMap.from(View.FlatMap(toIterable, f))
+    AnyRefMap.from(new View.FlatMap(toIterable, f))
 }
 
 object AnyRefMap {

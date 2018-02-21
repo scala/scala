@@ -47,9 +47,7 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): ListBuffer[A] = fromIterable(coll)
+  override def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
 
   @throws[IndexOutOfBoundsException]
   def apply(i: Int) = first.apply(i)
@@ -58,9 +56,6 @@ class ListBuffer[A]
   override def knownSize = len
 
   override def isEmpty: Boolean = len == 0
-  override def nonEmpty: Boolean = len > 0
-
-  protected[this] def newSpecificBuilder(): Builder[A, ListBuffer[A]] = ListBuffer.newBuilder()
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.from(this)
@@ -161,14 +156,14 @@ class ListBuffer[A]
 
   def update(idx: Int, elem: A): Unit = {
     ensureUnaliased()
-    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException
+    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(idx.toString)
     val p = locate(idx)
     setNext(p, elem :: getNext(p).tail)
   }
 
   def insert(idx: Int, elem: A): Unit = {
     ensureUnaliased()
-    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException
+    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(idx.toString)
     if (idx == len) +=(elem)
     else {
       val p = locate(idx)
@@ -199,7 +194,7 @@ class ListBuffer[A]
     val it = elems.iterator()
     if (it.hasNext) {
       ensureUnaliased()
-      if (idx < 0 || idx > len) throw new IndexOutOfBoundsException
+      if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(idx.toString)
       if (idx == len) ++=(elems)
       else insertAfter(locate(idx), it)
     }
@@ -207,7 +202,7 @@ class ListBuffer[A]
 
   def remove(idx: Int): A = {
     ensureUnaliased()
-    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException
+    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(idx.toString)
     val p = locate(idx)
     val nx = getNext(p)
     setNext(p, nx.tail)
@@ -218,7 +213,7 @@ class ListBuffer[A]
   def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
       ensureUnaliased()
-      if (idx < 0 || idx + count > len) throw new IndexOutOfBoundsException
+      if (idx < 0 || idx + count > len) throw new IndexOutOfBoundsException(idx.toString)
       removeAfter(locate(idx), count)
     } else if (count < 0) {
       throw new IllegalArgumentException("removing negative number of elements: " + count)

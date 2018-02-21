@@ -5,7 +5,8 @@ package immutable
 import strawman.collection.immutable.{RedBlackTree => RB}
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
 
-import scala.{Boolean, Int, math, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
+import scala.{Boolean, Int, math, Option, Ordering, SerialVersionUID, Serializable, Some, Unit, deprecated}
+import scala.Predef.assert
 
 /** This class implements immutable maps using a tree.
   *
@@ -36,17 +37,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  def iterableFactory = List
-  def mapFactory = Map
-  def sortedMapFactory = TreeMap
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): TreeMap[K, V] =
-    TreeMap.from(coll)
-
-  protected[this] def sortedMapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): TreeMap[K2, V2] =
-    TreeMap.from(it)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), TreeMap[K, V]] = TreeMap.newBuilder()
+  override def sortedMapFactory = TreeMap
 
   def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
 
@@ -64,7 +55,19 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def updated[V1 >: V](key: K, value: V1): TreeMap[K, V1] = new TreeMap(RB.update(tree, key, value, overwrite = true))
 
-  def empty: TreeMap[K, V] = TreeMap.empty[K, V](ordering)
+  /** A new TreeMap with the entry added is returned,
+   *  assuming that key is <em>not</em> in the TreeMap.
+   *
+   *  @tparam V1    type of the values of the new bindings, a supertype of `V`
+   *  @param key    the key to be inserted
+   *  @param value  the value to be associated with `key`
+   *  @return       a new $coll with the inserted binding, if it wasn't present in the map
+   */
+  @deprecated("Use `updated` instead", "2.13.0")
+  def insert[V1 >: V](key: K, value: V1): TreeMap[K, V1] = {
+    assert(!RB.contains(tree, key))
+    new TreeMap(RB.update(tree, key, value, overwrite = true))
+  }
 
   def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMap[K, V](RB.rangeImpl(tree, from, until))
 

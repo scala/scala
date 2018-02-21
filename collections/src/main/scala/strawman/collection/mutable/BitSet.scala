@@ -36,17 +36,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def this() = this(0)
 
-  def iterableFactory = Set
-
-  def sortedIterableFactory = SortedSet
-
-  protected[this] def sortedFromIterable[B : Ordering](it: collection.Iterable[B]): collection.mutable.SortedSet[B] =
-    collection.mutable.SortedSet.from(it)
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[Int]): BitSet =
-    BitSet.fromSpecific(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[Int, BitSet] = BitSet.newBuilder()
+  def bitSetFactory = BitSet
 
   protected[collection] final def nwords: Int = elems.length
 
@@ -96,8 +86,6 @@ class BitSet(protected[collection] final var elems: Array[Long])
   def get(elem: Int): Option[Int] = if (contains(elem)) Some(elem) else None
 
   def unconstrained: collection.Set[Int] = this
-
-  def empty: BitSet = BitSet.empty
 
   /** Updates this bitset to the union with another bitset by performing a bitwise "or".
     *

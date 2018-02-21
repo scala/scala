@@ -29,7 +29,7 @@ class FactoriesTest {
   }
 
   def apply(factory: IterableFactory[Iterable]): Unit = {
-    assertTrue(factory(1, 2, 3).iterator().sameElements(View.Elems(1, 2, 3)))
+    assertTrue(factory(1, 2, 3).iterator().sameElements(new View.Elems(1, 2, 3)))
   }
 
   def iterate(factory: IterableFactory[Iterable]): Unit = {

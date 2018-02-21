@@ -31,11 +31,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   override def iterator(): Iterator[A] = table.iterator
 
-  def iterableFactory = HashSet
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[A, HashSet[A]] = HashSet.newBuilder()
+  override def iterableFactory: IterableFactory[HashSet] = HashSet
 
   def addOne(elem: A): this.type = {
     table.addElem(elem)
@@ -49,8 +45,6 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
   def clear(): Unit = table.clearTable()
 
   def contains(elem: A): Boolean = table.containsElem(elem)
-
-  def empty: HashSet[A] = HashSet.empty
 
   def get(elem: A): Option[A] = table.findEntry(elem)
 

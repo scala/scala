@@ -12,17 +12,25 @@ trait SortedMultiSet[A]
 
   def unsorted: MultiSet[A] = this
 
+  override protected[this] def fromSpecificIterable(coll: Iterable[A]): SortedIterableCC[A] = sortedIterableFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] = sortedIterableFactory.newBuilder[A]()
+
+  protected[this] def sortedFromIterable[B : Ordering](it: strawman.collection.Iterable[B]): SortedIterableCC[B] = sortedIterableFactory.from(it)
+
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedMultiSet
 }
 
 trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
   extends MultiSetOps[A, MultiSet, C]
     with SortedOps[A, C] {
 
-  def sortedIterableFactory: SortedIterableFactory[CC]
+  protected[this] type SortedIterableCC[X] = CC[X]
 
-  protected[this] def sortedFromIterable[B : Ordering](it: Iterable[B]): CC[B]
+  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
+
+  protected[this] def sortedFromIterable[B : Ordering](it: Iterable[B]): SortedIterableCC[B]
   protected[this] def sortedFromOccurrences[B : Ordering](it: Iterable[(B, Int)]): CC[B] =
-    sortedFromIterable(it.view.flatMap { case (b, n) => View.Fill(n)(b) })
+    sortedFromIterable(it.view.flatMap { case (b, n) => new View.Fill(n)(b) })
 
   /** `this` sorted multiset upcasted to an unsorted multiset */
   def unsorted: MultiSet[A]
@@ -38,7 +46,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     * @param start The lower-bound (inclusive) of the iterator
     */
   def iteratorFrom(start: A): Iterator[A] =
-    occurrences.iteratorFrom(start).flatMap { case (elem, n) => View.Fill(n)(elem) }
+    occurrences.iteratorFrom(start).flatMap { case (elem, n) => new View.Fill(n)(elem) }
 
   def firstKey: A = occurrences.firstKey
   def lastKey: A = occurrences.lastKey
@@ -62,9 +70,9 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     */
   class SortedWithFilter(p: A => Boolean) extends WithFilter(p) {
 
-    def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.from(View.Map(filtered, f))
+    def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.from(new View.Map(filtered, f))
 
-    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(View.FlatMap(filtered, f))
+    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(new View.FlatMap(filtered, f))
 
     override def withFilter(q: A => Boolean): SortedWithFilter = new SortedWithFilter(a => p(a) && q(a))
 
@@ -77,7 +85,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     *  @return       a new collection resulting from applying the given function
     *                `f` to each element of this sorted multiset and collecting the results.
     */
-  def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(View.Map(toIterable, f))
+  def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(new View.Map(toIterable, f))
 
   /**
     * Builds a new sorted multiset by applying a function to all pairs of element and its
@@ -90,7 +98,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     *           sorted multiset and collecting the results.
     */
   def mapOccurrences[B : Ordering](f: ((A, Int)) => (B, Int)): CC[B] =
-    sortedFromOccurrences(View.Map(occurrences, f))
+    sortedFromOccurrences(new View.Map(occurrences, f))
 
   /**
     * Builds a new collection by applying a function to all elements of this sorted
@@ -101,7 +109,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     * @return a new collection resulting from applying the given function `f` to
     *         each element of this sorted multiset and concatenating the results.
     */
-  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(View.FlatMap(toIterable, f))
+  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(new View.FlatMap(toIterable, f))
 
   /**
     * Builds a new collection by applying a function to all pairs of element and
@@ -115,7 +123,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     *         multiset and concatenating the results.
     */
   def flatMapOccurrences[B : Ordering](f: ((A, Int)) => IterableOnce[(B, Int)]): CC[B] =
-    sortedFromOccurrences(View.FlatMap(occurrences, f))
+    sortedFromOccurrences(new View.FlatMap(occurrences, f))
 
   /**
     * Returns a sorted multiset formed from this sorted multiset and another iterable
@@ -128,7 +136,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     *         is the minimum of the lengths of `this` and `that`
     */
   def zip[B](that: Iterable[B])(implicit ev: Ordering[B]): CC[(A @uncheckedVariance, B)] = // sound bcs of VarianceNote
-    sortedFromIterable(View.Zip(toIterable, that))
+    sortedFromIterable(new View.Zip(toIterable, that))
 
   /**
     * @return a new collection resulting from applying the given partial
@@ -138,7 +146,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     * @tparam B the element type of the returned collection
     */
   def collect[B : Ordering](pf: PartialFunction[A, B]): CC[B] = flatMap(a =>
-    if (pf.isDefinedAt(a)) View.Single(pf(a))
+    if (pf.isDefinedAt(a)) new View.Single(pf(a))
     else View.Empty
   )
 
@@ -150,14 +158,14 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
     * @tparam B the element type of the returned collection
     */
   def collectOccurrences[B : Ordering](pf: PartialFunction[(A, Int), (B, Int)]): CC[B] = flatMapOccurrences(a =>
-    if (pf.isDefinedAt(a)) View.Single(pf(a))
+    if (pf.isDefinedAt(a)) new View.Single(pf(a))
     else View.Empty
   )
 
   // --- Override return type of methods that returned an unsorted MultiSet
 
   override def zipWithIndex: CC[(A, Int)] =
-    sortedFromIterable(View.ZipWithIndex(toIterable))
+    sortedFromIterable(new View.ZipWithIndex(toIterable))
 
 }
 

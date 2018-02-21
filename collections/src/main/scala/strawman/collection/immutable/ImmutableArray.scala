@@ -28,7 +28,7 @@ sealed abstract class ImmutableArray[+A]
   /** The tag of the element type */
   protected[this] def elemTag: ClassTag[A]
 
-  def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
+  override def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
 
   /** The wrapped mutable `Array` that backs this `ImmutableArray`. Any changes to this array will break
     * the expected immutability. */
@@ -36,9 +36,9 @@ sealed abstract class ImmutableArray[+A]
   // uncheckedVariance should be safe: Array[A] for reference types A is covariant at the JVM level. Array[A] for
   // primitive types A can only be widened to Array[Any] which erases to Object.
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = fromIterable(coll)
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
@@ -74,7 +74,7 @@ sealed abstract class ImmutableArray[+A]
         Array.copy(bs.unsafeArray, 0, dest, length, bs.length)
         ImmutableArray.unsafeWrapArray(dest)
       case _ =>
-        fromIterable(View.Concat(toIterable, xs))
+        fromIterable(new View.Concat(toIterable, xs))
     }
 
   override def prependedAll[B >: A](xs: collection.Iterable[B]): ImmutableArray[B] =
@@ -85,7 +85,7 @@ sealed abstract class ImmutableArray[+A]
         Array.copy(unsafeArray, 0, dest, bs.length, length)
         ImmutableArray.unsafeWrapArray(dest)
       case _ =>
-        fromIterable(View.Concat(xs, toIterable))
+        fromIterable(new View.Concat(xs, toIterable))
     }
 
   override def zip[B](that: collection.Iterable[B]): ImmutableArray[(A, B)] =
@@ -95,7 +95,7 @@ sealed abstract class ImmutableArray[+A]
           (apply(i), bs(i))
         }
       case _ =>
-        fromIterable(View.Zip(toIterable, that))
+        fromIterable(new View.Zip(toIterable, that))
     }
 
   override def take(n: Int): ImmutableArray[A] = iterableFactory.tabulate(n)(apply)
@@ -108,7 +108,8 @@ sealed abstract class ImmutableArray[+A]
 
   override def slice(from: Int, until: Int): ImmutableArray[A] = {
     val lo = scala.math.max(from, 0)
-    iterableFactory.tabulate(until - lo)(i => apply(i + lo))
+    val hi = scala.math.min(until, length)
+    iterableFactory.tabulate(hi - lo)(i => apply(i + lo))
   }
 
   override def tail: ImmutableArray[A] =

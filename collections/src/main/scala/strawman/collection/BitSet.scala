@@ -18,7 +18,11 @@ import scala.Predef.{assert, intWrapper}
   * @define coll bitset
   * @define Coll `BitSet`
   */
-trait BitSet extends SortedSet[Int] with BitSetOps[BitSet]
+trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
+  override protected[this] def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
+  override protected[this] def newSpecificBuilder(): Builder[Int, BitSetC] = bitSetFactory.newBuilder()
+  override def empty: BitSetC = bitSetFactory.empty
+}
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
   def empty: BitSet = immutable.BitSet.empty
@@ -30,6 +34,10 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   extends SortedSetOps[Int, SortedSet, C] { self =>
   import BitSetOps._
+
+  def bitSetFactory: SpecificIterableFactory[Int, BitSetC]
+
+  protected[this] type BitSetC = C
 
   final def ordering: Ordering[Int] = Ordering.Int
 
@@ -154,9 +162,9 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     * @return a new bitset resulting from applying the given function ''f'' to
     *         each element of this bitset and collecting the results
     */
-  def map(f: Int => Int): C = fromSpecificIterable(View.Map(toIterable, f))
+  def map(f: Int => Int): C = fromSpecificIterable(new View.Map(toIterable, f))
 
-  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(View.FlatMap(toIterable, f))
+  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(new View.FlatMap(toIterable, f))
 
 }
 

@@ -153,7 +153,7 @@ final class StringOps(val s: String)
     *                   by `other`.
     */
   def patch(from: Int, other: String, replaced: Int): String =
-    fromSpecificIterable(new View.Patched(toIterable, from, other, replaced)) //TODO optimize
+    fromSpecificIterable(new View.Patched(this, from, other, replaced)) //TODO optimize
 
   /** A copy of this string with one single replaced element.
     *  @param  index  the position of the replacement
@@ -162,7 +162,7 @@ final class StringOps(val s: String)
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated(index: Int, elem: Char): String =
-    fromSpecificIterable(View.Updated(toIterable, index, elem)) // TODO optimize
+    fromSpecificIterable(new View.Updated(this, index, elem)) // TODO optimize
 
   override def toString = s
 

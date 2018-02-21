@@ -13,9 +13,7 @@ class MultiSet[A] private (val elems: Map[A, Int])
     with Growable[A]
     with Shrinkable [A] {
 
-  def iterableFactory: IterableFactory[MultiSet] = MultiSet
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): MultiSet[A] = fromIterable(coll)
-  protected[this] def newSpecificBuilder(): Builder[A, MultiSet[A]] = iterableFactory.newBuilder()
+  override def iterableFactory: IterableFactory[MultiSet] = MultiSet
 
   def occurrences: collection.Map[A, Int] = elems
 

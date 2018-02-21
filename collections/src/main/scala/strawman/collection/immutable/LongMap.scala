@@ -161,20 +161,17 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
   with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]]
   with Serializable {
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Long, T)]): LongMap[T] = {
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Long, T)]): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder()
     b.sizeHint(coll)
     b.addAll(coll)
     b.result()
   }
-  def iterableFactory: IterableFactory[Iterable] = Iterable
-  protected[this] def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] =
+  override protected[this] def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
       def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }
-  def mapFactory: MapFactory[Map] = Map
-  protected[this] def mapFromIterable[K2, V2](it: strawman.collection.Iterable[(K2, V2)]): Map[K2,V2] = mapFactory.from(it)
 
   override def empty: LongMap[T] = LongMap.Nil
 
@@ -453,9 +450,9 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
     case LongMap.Nil => throw new IllegalStateException("Empty set")
   }
 
-  def map[V2](f: ((Long, T)) => (Long, V2)): LongMap[V2] = LongMap.from(View.Map(coll, f))
+  def map[V2](f: ((Long, T)) => (Long, V2)): LongMap[V2] = LongMap.from(new View.Map(coll, f))
 
-  def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(View.FlatMap(coll, f))
+  def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
   override def concat [V1 >: T](that: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] =
     super.concat(that).asInstanceOf[LongMap[V1]] // Already has corect type but not declared as such

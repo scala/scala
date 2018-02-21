@@ -34,16 +34,16 @@ abstract class WrappedArray[T]
     with StrictOptimizedSeqOps[T, WrappedArray, WrappedArray[T]]
     with Serializable {
 
-  def iterableFactory: strawman.collection.SeqFactory[WrappedArray] = WrappedArray.untagged
+  override def iterableFactory: strawman.collection.SeqFactory[WrappedArray] = WrappedArray.untagged
 
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[T]): WrappedArray[T] = {
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[T]): WrappedArray[T] = {
     val b = ArrayBuilder.make()(elemTag)
     val s = coll.knownSize
     if(s > 0) b.sizeHint(s)
     b ++= coll
     WrappedArray.make(b.result())
   }
-  protected[this] def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
+  override protected[this] def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
 
   /** The tag of the element type */
   def elemTag: ClassTag[T]

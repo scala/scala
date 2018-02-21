@@ -49,9 +49,7 @@ private[mutable] final class LinkedList[A]() extends AbstractSeq[A]
   var elem: A = _
   var next: LinkedList[A] = this
 
-  def iterableFactory: SeqFactory[LinkedList] = LinkedList
-  protected[this] def newSpecificBuilder(): Builder[A, LinkedList[A]] = LinkedList.newBuilder()
-  protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): LinkedList[A] = LinkedList.from(coll)
+  override def iterableFactory: SeqFactory[LinkedList] = LinkedList
 
   def clear(): Unit = {
     elem = null.asInstanceOf[A]

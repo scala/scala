@@ -7,7 +7,9 @@ import strawman.collection.mutable.Builder
 import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Serializable, SerialVersionUID, Some, Unit}
 
 /** Base trait for immutable set collections */
-trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]]
+trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
+  override def iterableFactory: IterableFactory[IterableCC] = Set
+}
 
 /** Base trait for immutable set operations
   *
@@ -75,17 +77,9 @@ object Set extends IterableFactory[Set] {
   def newBuilder[A](): Builder[A, Set[A]] =
     if (useBaseline) HashSet.newBuilder() else ChampHashSet.newBuilder()
 
-  // Reusable implementations for the small sets defined below
-  trait SmallSet[A] extends Set[A] {
-    def iterableFactory: IterableFactory[Set] = Set
-    def empty: Set[A] = iterableFactory.empty
-    protected[this] def fromSpecificIterable(coll: collection.Iterable[A]): Set[A] = iterableFactory.from(coll)
-    protected[this] def newSpecificBuilder(): Builder[A, Set[A]] = iterableFactory.newBuilder()
-  }
-
   /** An optimized representation for immutable empty sets */
   @SerialVersionUID(3L)
-  private object EmptySet extends Set[Any] with SmallSet[Any] with Serializable {
+  private object EmptySet extends Set[Any] with Serializable {
     override def size: Int = 0
     def contains(elem: Any): Boolean = false
     def incl(elem: Any): Set[Any] = new Set1(elem)
@@ -97,7 +91,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(3L)
-  final class Set1[A] private[collection] (elem1: A) extends Set[A] with SmallSet[A] with Serializable {
+  final class Set1[A] private[collection] (elem1: A) extends Set[A] with Serializable {
     override def size: Int = 1
     def contains(elem: A): Boolean = elem == elem1
     def incl(elem: A): Set[A] =
@@ -119,7 +113,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 2 */
   @SerialVersionUID(3L)
-  final class Set2[A] private[collection] (elem1: A, elem2: A) extends Set[A] with SmallSet[A] with Serializable {
+  final class Set2[A] private[collection] (elem1: A, elem2: A) extends Set[A] with Serializable {
     override def size: Int = 2
     def contains(elem: A): Boolean = elem == elem1 || elem == elem2
     def incl(elem: A): Set[A] =
@@ -150,7 +144,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 3 */
   @SerialVersionUID(3L)
-  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends Set[A] with SmallSet[A] with Serializable {
+  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends Set[A] with Serializable {
     override def size: Int = 3
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3
@@ -184,7 +178,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 4 */
   @SerialVersionUID(3L)
-  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends Set[A] with SmallSet[A] with Serializable {
+  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends Set[A] with Serializable {
     override def size: Int = 4
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4

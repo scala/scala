@@ -49,16 +49,7 @@ sealed class ListMap[K, +V]
     with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
     with Serializable {
 
-  def iterableFactory = List
-  def mapFactory = ListMap
-
-  protected[this] def mapFromIterable[K2, V2](it: collection.Iterable[(K2, V2)]): ListMap[K2,V2] = ListMap.from(it)
-
-  protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): ListMap[K, V] = ListMap.from(coll)
-
-  protected[this] def newSpecificBuilder(): Builder[(K, V), ListMap[K, V]] = ListMap.newBuilder()
-
-  def empty: ListMap[K, V] = ListMap.empty[K, V]
+  override def mapFactory: MapFactory[ListMap] = ListMap
 
   override def size: Int = 0
 
