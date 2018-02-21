@@ -74,9 +74,9 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     */
   class SortedWithFilter(p: A => Boolean) extends WithFilter(p) {
 
-    def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.from(View.Map(filtered, f))
+    def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.from(new View.Map(filtered, f))
 
-    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(View.FlatMap(filtered, f))
+    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(new View.FlatMap(filtered, f))
 
     override def withFilter(q: A => Boolean): SortedWithFilter = new SortedWithFilter(a => p(a) && q(a))
 
@@ -89,7 +89,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *  @return       a new $coll resulting from applying the given function
     *                `f` to each element of this $coll and collecting the results.
     */
-  def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(View.Map(toIterable, f))
+  def map[B : Ordering](f: A => B): CC[B] = sortedFromIterable(new View.Map(toIterable, f))
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
@@ -99,7 +99,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *  @return       a new $coll resulting from applying the given collection-valued function
     *                `f` to each element of this $coll and concatenating the results.
     */
-  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(View.FlatMap(toIterable, f))
+  def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedFromIterable(new View.FlatMap(toIterable, f))
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.
@@ -111,7 +111,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                 The length of the returned collection is the minimum of the lengths of this $coll and `that`.
     */
   def zip[B](that: Iterable[B])(implicit ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = // sound bcs of VarianceNote
-    sortedFromIterable(View.Zip(toIterable, that))
+    sortedFromIterable(new View.Zip(toIterable, that))
 
   /** Builds a new sorted collection by applying a partial function to all elements of this $coll
     *  on which the function is defined.
@@ -123,7 +123,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                The order of the elements is preserved.
     */
   def collect[B: Ordering](pf: scala.PartialFunction[A, B]): CC[B] = flatMap(a =>
-    if (pf.isDefinedAt(a)) View.Single(pf(a))
+    if (pf.isDefinedAt(a)) new View.Single(pf(a))
     else View.Empty
   )
 }

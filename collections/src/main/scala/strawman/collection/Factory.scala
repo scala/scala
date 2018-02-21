@@ -92,7 +92,7 @@ trait IterableFactory[+CC[_]] {
     * @param elems  the elements of the created $coll
     * @return a new $coll with elements `elems`
     */
-  def apply[A](elems: A*): CC[A] = from(View.Elems(elems: _*))
+  def apply[A](elems: A*): CC[A] = from(new View.Elems(elems: _*))
 
   /** Produces a $coll containing repeated applications of a function to a start value.
     *
@@ -130,7 +130,7 @@ trait IterableFactory[+CC[_]] {
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n` evaluations of `elem`.
     */
-  def fill[A](n: Int)(elem: => A): CC[A] = from(View.Fill(n)(elem))
+  def fill[A](n: Int)(elem: => A): CC[A] = from(new View.Fill(n)(elem))
 
   /** Produces a two-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
@@ -312,8 +312,8 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
   */
 trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
-  def apply(xs: A*): C = fromSpecific(View.Elems(xs: _*))
-  def fill(n: Int)(elem: => A): C = fromSpecific(View.Fill(n)(elem))
+  def apply(xs: A*): C = fromSpecific(new View.Elems(xs: _*))
+  def fill(n: Int)(elem: => A): C = fromSpecific(new View.Fill(n)(elem))
   def newBuilder(): Builder[A, C]
 }
 
@@ -387,14 +387,14 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] {
 
   def empty[A : Ev]: CC[A]
 
-  def apply[A : Ev](xs: A*): CC[A] = from(View.Elems(xs: _*))
+  def apply[A : Ev](xs: A*): CC[A] = from(new View.Elems(xs: _*))
 
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n` evaluations of `elem`.
     */
-  def fill[A : Ev](n: Int)(elem: => A): CC[A] = from(View.Fill(n)(elem))
+  def fill[A : Ev](n: Int)(elem: => A): CC[A] = from(new View.Fill(n)(elem))
 
   /** Produces a $coll containing values of a given function over a range of integer values starting from 0.
     *  @param  n   The number of elements in the $coll

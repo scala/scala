@@ -450,9 +450,9 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
     case LongMap.Nil => throw new IllegalStateException("Empty set")
   }
 
-  def map[V2](f: ((Long, T)) => (Long, V2)): LongMap[V2] = LongMap.from(View.Map(coll, f))
+  def map[V2](f: ((Long, T)) => (Long, V2)): LongMap[V2] = LongMap.from(new View.Map(coll, f))
 
-  def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(View.FlatMap(coll, f))
+  def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
   override def concat [V1 >: T](that: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] =
     super.concat(that).asInstanceOf[LongMap[V1]] // Already has corect type but not declared as such

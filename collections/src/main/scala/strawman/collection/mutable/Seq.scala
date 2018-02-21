@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{Array, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Unit, throws}
+import scala.{AnyRef, Array, Boolean, IllegalArgumentException, IndexOutOfBoundsException, Int, Long, Unit, throws}
 import strawman.collection
 import strawman.collection.{IterableOnce, SeqFactory, toNewSeq, toOldSeq}
 
@@ -25,14 +25,14 @@ object Seq extends SeqFactory.Delegate[Seq](ArrayBuffer)
   * @define coll mutable sequence
   * @define Coll `mutable.Seq`
   */
-trait SeqOps[A, +CC[X] <: Seq[X], +C <: Seq[A]]
+trait SeqOps[A, +CC[_], +C <: AnyRef]
   extends IterableOps[A, CC, C]
     with collection.SeqOps[A, CC, C]
     with Cloneable[C] {
 
   override def clone(): C = {
     val b = newSpecificBuilder()
-    b ++= coll
+    b ++= toIterable
     b.result()
   }
 

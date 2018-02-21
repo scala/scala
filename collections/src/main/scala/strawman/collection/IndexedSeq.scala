@@ -13,7 +13,7 @@ trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 
 /** Base trait for indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, CC, C] { self =>
+trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   def iterator(): Iterator[A] = view.iterator()
 
@@ -27,19 +27,26 @@ trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C] extends Any with SeqOps[A, 
       } else Iterator.empty.next()
   }
 
-  override def view: IndexedView[A] = new IndexedView[A] {
-    def length: Int = self.length
-    def apply(i: Int): A = self(i)
-  }
+  override def view: IndexedView[A] = new IndexedView.Id[A](this)
 
-  override protected[this] def reversed: Iterable[A] = view.reverse
+  override protected[this] def reversed: Iterable[A] = new IndexedView.Reverse(this)
 
-  /** A collection containing the last `n` elements of this collection. */
-  override def takeRight(n: Int): C = fromSpecificIterable(view.takeRight(n))
+  // Override transformation operations to use more efficient views than the default ones
+  override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedView.Prepended(elem, this))
 
-  /** The rest of the collection without its `n` last elements. For
-    * linear, immutable collections this should avoid making a copy. */
-  override def dropRight(n: Int): C = fromSpecificIterable(view.dropRight(n))
+  override def take(n: Int): C = fromSpecificIterable(new IndexedView.Take(this, n))
+
+  override def takeRight(n: Int): C = fromSpecificIterable(new IndexedView.TakeRight(this, n))
+
+  override def drop(n: Int): C = fromSpecificIterable(new IndexedView.Drop(this, n))
+
+  override def dropRight(n: Int): C = fromSpecificIterable(new IndexedView.DropRight(this, n))
+
+  override def map[B](f: A => B): CC[B] = iterableFactory.from(new IndexedView.Map(this, f))
+
+  override def reverse: C = fromSpecificIterable(new IndexedView.Reverse(this))
+
+  override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedView.Slice(this, from, until))
 
   override def lengthCompare(len: Int): Int = length - len
 

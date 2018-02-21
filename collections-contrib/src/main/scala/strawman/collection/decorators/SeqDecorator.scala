@@ -24,7 +24,7 @@ class SeqDecorator[A, CC[X] <: SeqOps[X, CC, _]](`this`: CC[A]) {
     * }}}
     */
   def intersperse[B >: A](sep: B): CC[B] =
-    `this`.iterableFactory.from(View.Intersperse(`this`.toIterable, sep))
+    `this`.iterableFactory.from(new View.Intersperse(`this`.toIterable, sep))
 
   /** Adds the element `sep` between each element of the sequence,
     * prepending `start` and appending `end`.
@@ -42,6 +42,6 @@ class SeqDecorator[A, CC[X] <: SeqOps[X, CC, _]](`this`: CC[A]) {
     * }}}
     */
   def intersperse[B >: A, C](start: B, sep: B, end: B): CC[B] =
-    `this`.iterableFactory.from(View.IntersperseSurround(`this`.toIterable, start, sep, end))
+    `this`.iterableFactory.from(new View.IntersperseSurround(`this`.toIterable, start, sep, end))
 
 }
