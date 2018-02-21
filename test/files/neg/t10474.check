@@ -1,0 +1,11 @@
+t10474.scala:8: error: missing argument list for method Foo in object Test
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `Foo _` or `Foo(_)` instead of `Foo`.
+    case Foo.Bar ⇒ true
+         ^
+t10474.scala:15: error: missing argument list for method Foo in trait hrhino
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `Foo _` or `Foo(_)` instead of `Foo`.
+  val Foo.Crash = ???
+      ^
+two errors found
