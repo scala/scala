@@ -47,6 +47,19 @@ sealed abstract class ArrayBuilder[T]
     size += length
     this
   }
+
+  override def addAll(xs: IterableOnce[T]): this.type = {
+    val k = xs.knownSize
+    if(k > 0) {
+      ensureSize(this.size + k)
+      xs match {
+        case xs: Iterable[T] => xs.copyToArray(elems, this.size)
+        case _ => xs.iterator().copyToArray(elems, this.size)
+      }
+      size += k
+    } else if(k < 0) super.addAll(xs)
+    this
+  }
 }
 
 /** A companion object for array builders.
@@ -105,16 +118,6 @@ object ArrayBuilder {
       this
     }
 
-    override def addAll(xs: IterableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
-      case xs: ImmutableArray.ofRef[_] =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
-    }
-
     def result() = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
@@ -153,16 +156,6 @@ object ArrayBuilder {
       elems(size) = elem
       size += 1
       this
-    }
-
-    override def addAll(xs: IterableOnce[Byte]): this.type = xs match {
-      case xs: ImmutableArray.ofByte =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
     }
 
     def result() = {
@@ -205,16 +198,6 @@ object ArrayBuilder {
       this
     }
 
-    override def addAll(xs: IterableOnce[Short]): this.type = xs match {
-      case xs: ImmutableArray.ofShort =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
-    }
-
     def result() = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
@@ -253,16 +236,6 @@ object ArrayBuilder {
       elems(size) = elem
       size += 1
       this
-    }
-
-    override def addAll(xs: IterableOnce[Char]): this.type = xs match {
-      case xs: ImmutableArray.ofChar =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
     }
 
     def result() = {
@@ -305,16 +278,6 @@ object ArrayBuilder {
       this
     }
 
-    override def addAll(xs: IterableOnce[Int]): this.type = xs match {
-      case xs: ImmutableArray.ofInt =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
-    }
-
     def result() = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
@@ -353,16 +316,6 @@ object ArrayBuilder {
       elems(size) = elem
       size += 1
       this
-    }
-
-    override def addAll(xs: IterableOnce[Long]): this.type = xs match {
-      case xs: ImmutableArray.ofLong =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
     }
 
     def result() = {
@@ -405,16 +358,6 @@ object ArrayBuilder {
       this
     }
 
-    override def addAll(xs: IterableOnce[Float]): this.type = xs match {
-      case xs: ImmutableArray.ofFloat =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
-    }
-
     def result() = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
@@ -455,16 +398,6 @@ object ArrayBuilder {
       this
     }
 
-    override def addAll(xs: IterableOnce[Double]): this.type = xs match {
-      case xs: ImmutableArray.ofDouble =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
-    }
-
     def result() = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
@@ -503,16 +436,6 @@ object ArrayBuilder {
       elems(size) = elem
       size += 1
       this
-    }
-
-    override def addAll(xs: IterableOnce[Boolean]): this.type = xs match {
-      case xs: ImmutableArray.ofBoolean =>
-        ensureSize(this.size + xs.length)
-        Array.copy(xs.unsafeArray, 0, elems, this.size, xs.length)
-        size += xs.length
-        this
-      case _ =>
-        super.addAll(xs)
     }
 
     def result() = {

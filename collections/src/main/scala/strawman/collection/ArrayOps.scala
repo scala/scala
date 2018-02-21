@@ -4,7 +4,6 @@ package collection
 import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction}
 import java.lang.String
 import mutable.ArrayBuilder
-import immutable.ImmutableArray
 import scala.reflect.ClassTag
 import scala.math.{max, min}
 
@@ -494,38 +493,26 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   @`inline` final def +: [B >: A : ClassTag](x: B): Array[B] = prepended(x)
 
   /** A copy of this array with all elements of a collection prepended. */
-  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = prefix match {
-    case bs: ImmutableArray[B] =>
-      val dest = Array.ofDim[B](xs.length + bs.length)
-      Array.copy(bs.unsafeArray, 0, dest, xs.length, bs.length)
-      Array.copy(xs, 0, dest, 0, xs.length)
-      dest
-    case _ =>
-      val b = ArrayBuilder.make[B]()
-      val k = prefix.knownSize
-      if(k >= 0) b.sizeHint(k + xs.length)
-      b.addAll(prefix)
-      if(k < 0) b.sizeHint(b.length + xs.length)
-      b.addAll(xs)
-      b.result()
+  def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = {
+    val b = ArrayBuilder.make[B]()
+    val k = prefix.knownSize
+    if(k >= 0) b.sizeHint(k + xs.length)
+    b.addAll(prefix)
+    if(k < 0) b.sizeHint(b.length + xs.length)
+    b.addAll(xs)
+    b.result()
   }
 
   @`inline` final def ++: [B >: A : ClassTag](prefix: Iterable[B]): Array[B] = prependedAll(prefix)
 
   /** A copy of this array with all elements of a collection appended. */
-  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = suffix match {
-    case bs: ImmutableArray[B] =>
-      val dest = Array.ofDim[B](xs.length + bs.length)
-      Array.copy(xs, 0, dest, 0, xs.length)
-      Array.copy(bs.unsafeArray, 0, dest, xs.length, bs.length)
-      dest
-    case _ =>
-      val b = ArrayBuilder.make[B]()
-      val k = suffix.knownSize
-      if(k >= 0) b.sizeHint(k + xs.length)
-      b.addAll(xs)
-      b.addAll(suffix)
-      b.result()
+  def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = {
+    val b = ArrayBuilder.make[B]()
+    val k = suffix.knownSize
+    if(k >= 0) b.sizeHint(k + xs.length)
+    b.addAll(xs)
+    b.addAll(suffix)
+    b.result()
   }
 
   @`inline` final def :++ [B >: A : ClassTag](suffix: Iterable[B]): Array[B] = appendedAll(suffix)
