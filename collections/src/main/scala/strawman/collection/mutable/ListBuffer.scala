@@ -56,7 +56,6 @@ class ListBuffer[A]
   override def knownSize = len
 
   override def isEmpty: Boolean = len == 0
-  override def nonEmpty: Boolean = len > 0
 
   private def copyElems(): Unit = {
     val buf = ListBuffer.from(this)
