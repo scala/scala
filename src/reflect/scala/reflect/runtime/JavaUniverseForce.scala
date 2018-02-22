@@ -41,6 +41,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
     this.AtBoundIdentifierAttachment
+    this.PatVarDefAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
