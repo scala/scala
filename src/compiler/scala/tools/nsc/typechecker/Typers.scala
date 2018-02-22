@@ -4637,7 +4637,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
             case _                                  => Nil
           })
-          def errorInResult(tree: Tree) = treesInResult(tree) exists (err => typeErrors.exists(_.errPos == err.pos))
+          /* Only retry if the error hails from a result expression of `tree`
+           * (for instance, it makes no sense to retry on an error from a block statement)
+           * compare with `samePointAs` since many synthetic trees are made with
+           * offset positions even under -Yrangepos.
+           */
+          def errorInResult(tree: Tree) =
+            treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
 
           val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
           typingStack.printTyping({
