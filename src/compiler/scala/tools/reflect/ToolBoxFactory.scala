@@ -60,7 +60,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         undoLog.clear()
         analyzer.lastTreeToTyper = EmptyTree
         lastSeenSourceFile = NoSourceFile
-        lastSeenContext = null
+        lastSeenContext = analyzer.NoContext
       }
 
       def verify(expr: Tree): Tree = {
