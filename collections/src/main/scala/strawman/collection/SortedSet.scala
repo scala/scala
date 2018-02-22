@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{Boolean, Ordering, `inline`, None, Option, Some, Any}
+import scala.{Boolean, Ordering, `inline`, None, Option, Some, Any, deprecated}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of sorted sets */
