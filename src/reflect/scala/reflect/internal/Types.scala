@@ -4616,6 +4616,9 @@ trait Types
   /** A throwable signalling a type error */
   class TypeError(var pos: Position, val msg: String) extends Throwable(msg) {
     def this(msg: String) = this(NoPosition, msg)
+
+    final override def fillInStackTrace() =
+      if (settings.debug) super.fillInStackTrace() else this
   }
 
   // TODO: RecoverableCyclicReference should be separated from TypeError,
