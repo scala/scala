@@ -4368,7 +4368,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
         // see scala/bug#7617 for an explanation of why macro expansion is suppressed
-        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode)
+        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode | POLYmode)
         val lhs1    = unsuppressMacroExpansion(typedLhs(suppressMacroExpansion(lhs)))
         val varsym  = lhs1.symbol
 
@@ -4398,9 +4398,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
-          val rhs1 = typedByValueExpr(rhs)
-          val t = atPos(lhs1.pos.withEnd(rhs1.pos.end)) {
-            Apply(lhs1, List(rhs1))
+          val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
+            Apply(lhs1, List(rhs))
           }
           dyna.wrapErrors(t, _.typed1(t, mode, pt))
         }
