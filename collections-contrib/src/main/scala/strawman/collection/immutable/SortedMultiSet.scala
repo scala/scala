@@ -10,8 +10,9 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
   * @tparam A Type of elements
   */
 class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering: Ordering[A])
-  extends collection.SortedMultiSet[A]
-    with Iterable[A]
+  extends MultiSet[A]
+    with collection.SortedMultiSet[A]
+    with MultiSetOps[A, MultiSet, SortedMultiSet[A]]
     with collection.SortedMultiSetOps[A, SortedMultiSet, SortedMultiSet[A]]
     with collection.IterableOps[A, MultiSet, SortedMultiSet[A]] {
 
@@ -34,9 +35,6 @@ class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering
       case Some(n) => Some(n + 1)
     })
 
-  /** Alias for `incl` */
-  @`inline` final def + (elem: A): SortedMultiSet[A] = incl(elem)
-
   /**
     * @return an immutable sorted multiset containing all the elements of
     *         this multiset and one occurrence less of `elem`
@@ -47,10 +45,6 @@ class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering
     new SortedMultiSet(elems.updatedWith(elem) {
       case Some(n) => if (n > 1) Some(n - 1) else None
     })
-
-  /** Alias for `excl` */
-  @`inline` final def - (elem: A): SortedMultiSet[A] = excl(elem)
-
 }
 
 object SortedMultiSet extends SortedIterableFactory[SortedMultiSet] {

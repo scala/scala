@@ -10,8 +10,10 @@ import strawman.collection.decorators.MutableMapDecorator
   * @tparam A Type of elements
   */
 class SortedMultiSet[A] private (elems: SortedMap[A, Int])(implicit val ordering: Ordering[A])
-  extends collection.SortedMultiSet[A]
+  extends MultiSet[A]
+    with collection.SortedMultiSet[A]
     with collection.SortedMultiSetOps[A, SortedMultiSet, SortedMultiSet[A]]
+    with MultiSetOps[A, MultiSet, SortedMultiSet[A]]
     with Growable[A]
     with Shrinkable[A] {
 
