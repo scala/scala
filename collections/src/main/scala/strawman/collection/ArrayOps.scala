@@ -1,11 +1,12 @@
 package strawman
 package collection
 
-import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction}
+import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef}
+import scala.Predef.{implicitly, classOf}
 import java.lang.String
 import mutable.ArrayBuilder
 import scala.reflect.ClassTag
-import scala.math.{max, min}
+import scala.math.{max, min, Ordering}
 
 object ArrayOps {
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
@@ -69,6 +70,28 @@ object ArrayOps {
     /** Creates a new non-strict filter which combines this filter with the given predicate. */
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), xs)
   }
+
+  private class ArrayIterator[A](private[this] val xs: Array[A]) extends Iterator[A] {
+    private[this] var pos = 0
+    def hasNext: Boolean = pos < xs.length
+    def next(): A = try {
+      val r = xs(pos)
+      pos += 1
+      r
+    } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
+  }
+
+  private class GroupedIterator[A](xs: Array[A]) extends Iterator[Array[A]] {
+    private[this] var pos = 0
+    def hasNext: Boolean = pos < xs.length
+    def next(): Array[A] = {
+      if(pos >= xs.length) throw new NoSuchElementException
+      val r = xs.slice(pos, pos+size)
+      pos += size
+      r
+    }
+  }
+
 }
 
 /** This class serves as a wrapper for `Array`s with many of the operations found in
@@ -179,6 +202,41 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   /** The rest of the array without its `n` last elements. */
   def dropRight(n: Int): Array[A] = take(xs.length - max(n, 0))
 
+  /** Takes longest prefix of elements that satisfy a predicate.
+    *
+    *  @param   p  The predicate used to test elements.
+    *  @return  the longest prefix of this array whose elements all satisfy
+    *           the predicate `p`.
+    */
+  def takeWhile(p: A => Boolean): Array[A] = {
+    val i = indexWhere(x => !p(x))
+    val hi = if(i < 0) xs.length else i
+    slice(0, hi)
+  }
+
+  /** Drops longest prefix of elements that satisfy a predicate.
+    *
+    *  @param   p  The predicate used to test elements.
+    *  @return  the longest suffix of this array whose first element
+    *           does not satisfy the predicate `p`.
+    */
+  def dropWhile(p: A => Boolean): Array[A] = {
+    val i = indexWhere(x => !p(x))
+    val lo = if(i < 0) xs.length else i
+    slice(lo, xs.length)
+  }
+
+  def iterator(): Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
+
+  /** Partitions elements in fixed size arrays.
+    *  @see [[scala.collection.Iterator]], method `grouped`
+    *
+    *  @param size the number of elements per group
+    *  @return An iterator producing arrays of size `size`, except the
+    *          last will be less than size `size` if the elements don't divide evenly.
+    */
+  def grouped(size: Int): Iterator[Array[A]] = new ArrayOps.GroupedIterator[A](xs)
+
   /** Splits this array into two at a given position.
     * Note: `c splitAt n` is equivalent to `(c take n, c drop n)`.
     *
@@ -227,6 +285,78 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     }
     res.result()
   }
+
+  /** Selects all elements of this array which do not satisfy a predicate.
+    *
+    *  @param pred  the predicate used to test elements.
+    *  @return      a new array consisting of all elements of this array that do not satisfy the given predicate `pred`.
+    */
+  def filterNot(p: A => Boolean): Array[A] = filter(x => !p(x))
+
+  /** Sorts this array according to an Ordering.
+    *
+    *  The sort is stable. That is, elements that are equal (as determined by
+    *  `lt`) appear in the same order in the sorted sequence as in the original.
+    *
+    *  @see [[scala.math.Ordering]]
+    *
+    *  @param  ord the ordering to be used to compare elements.
+    *  @return     an array consisting of the elements of this array
+    *              sorted according to the ordering `ord`.
+    */
+  def sorted[B >: A](implicit ord: Ordering[B]): Array[A] = {
+    val len = xs.length
+    if(xs.getClass.getComponentType.isPrimitive && len > 1) {
+      // need to copy into a boxed representation to use Java's Arrays.sort
+      val a = new Array[AnyRef](len)
+      var i = 0
+      while(i < len) {
+        a(i) = xs(i).asInstanceOf[AnyRef]
+        i += 1
+      }
+      java.util.Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]])
+      val res = new Array[A](len)
+      i = 0
+      while(i < len) {
+        res(i) = a(i).asInstanceOf[A]
+        i += 1
+      }
+      res
+    } else {
+      val copy = slice(0, len)
+      if(len > 1)
+        java.util.Arrays.sort(copy.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
+      copy
+    }
+  }
+
+  /** Sorts this array according to a comparison function.
+    *
+    *  The sort is stable. That is, elements that are equal (as determined by
+    *  `lt`) appear in the same order in the sorted sequence as in the original.
+    *
+    *  @param  lt  the comparison function which tests whether
+    *              its first argument precedes its second argument in
+    *              the desired ordering.
+    *  @return     an array consisting of the elements of this array
+    *              sorted according to the comparison function `lt`.
+    */
+  def sortWith(lt: (A, A) => Boolean): Array[A] = sorted(Ordering.fromLessThan(lt))
+
+  /** Sorts this array according to the Ordering which results from transforming
+    *  an implicitly given Ordering with a transformation function.
+    *
+    *  @see [[scala.math.Ordering]]
+    *  @param   f the transformation function mapping elements
+    *           to some other domain `B`.
+    *  @param   ord the ordering assumed on domain `B`.
+    *  @tparam  B the target type of the transformation `f`, and the type where
+    *           the ordering `ord` is defined.
+    *  @return  an array consisting of the elements of this array
+    *           sorted according to the ordering where `x < y` if
+    *           `ord.lt(f(x), f(y))`.
+    */
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Array[A] = sorted(ord on f)
 
   /** Creates a non-strict filter of this array.
     *
@@ -443,8 +573,8 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return        a new array containing pairs consisting of corresponding elements of this array and `that`.
     *                 The length of the returned array is the minimum of the lengths of this array and `that`.
     */
-  def zip[B: ClassTag](that: Iterable[B]): Array[(A, B)] = {
-    val b = new ArrayBuilder.ofRef[(A, B)]
+  def zip[B](that: Iterable[B]): Array[(A, B)] = {
+    val b = new ArrayBuilder.ofRef[(A, B)]()
     val k = that.knownSize
     b.sizeHint(if(k >= 0) min(k, xs.length) else xs.length)
     var i = 0
@@ -462,14 +592,13 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *            Indices start at `0`.
     */
   def zipWithIndex: Array[(A, Int)] = {
-    val b = new ArrayBuilder.ofRef[(A, Int)]
-    b.sizeHint(xs.length)
+    val b = new Array[(A, Int)](xs.length)
     var i = 0
     while(i < xs.length) {
-      b += ((xs(i), i))
+      b(i) = ((xs(i), i))
       i += 1
     }
-    b.result()
+    b
   }
 
   /** A copy of this array with an element appended. */
@@ -589,7 +718,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val a3 = new Array[A3](xs.length)
     var i = 0
     while (i < xs.length) {
-      val e = xs(i)
+      val e = asTriple(xs(i))
       a1(i) = e._1
       a2(i) = e._2
       a3(i) = e._3

@@ -96,12 +96,13 @@ object ArrayBuilder {
    *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassTag` context bound.
    */
   @SerialVersionUID(3L)
-  final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
+  final class ofRef[T <: AnyRef](implicit ct: ClassTag[T]) extends ArrayBuilder[T] {
 
     protected var elems: Array[T] = _
 
     private def mkArray(size: Int): Array[T] = {
-      val newelems = new Array[T](size)
+      // Anything short of this will make Dotty create an Array[Object]:
+      val newelems = java.lang.reflect.Array.newInstance(ct.runtimeClass, size).asInstanceOf[Array[T]]
       if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
       newelems
     }
