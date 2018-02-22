@@ -9,3 +9,6 @@ object DINGO
 
 case class Hyrax()
 object HyRaX
+
+class Wacko
+object wackO
