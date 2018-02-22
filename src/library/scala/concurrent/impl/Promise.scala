@@ -373,7 +373,6 @@ private[concurrent] object Promise {
     }
 
     private[this] final class Successful[T](val result: Success[T]) extends Kept[T] {
-      override def onFailure[U](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = ()
       override def failed: Future[Throwable] = KeptPromise(Failure(new NoSuchElementException("Future.failed not completed with a throwable."))).future
       override def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] = this
       override def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]])(implicit executor: ExecutionContext): Future[U] = this
@@ -383,7 +382,6 @@ private[concurrent] object Promise {
     private[this] final class Failed[T](val result: Failure[T]) extends Kept[T] {
       private[this] final def thisAs[S]: Future[S] = future.asInstanceOf[Future[S]]
 
-      override def onSuccess[U](pf: PartialFunction[T, U])(implicit executor: ExecutionContext): Unit = ()
       override def failed: Future[Throwable] = KeptPromise(Success(result.exception)).future
       override def foreach[U](f: T => U)(implicit executor: ExecutionContext): Unit = ()
       override def map[S](f: T => S)(implicit executor: ExecutionContext): Future[S] = thisAs[S]

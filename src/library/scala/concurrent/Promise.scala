@@ -79,7 +79,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def success(@deprecatedName('v) value: T): this.type = complete(Success(value))
+  def success(value: T): this.type = complete(Success(value))
 
   /** Tries to complete the promise with a value.
    *
@@ -97,7 +97,7 @@ trait Promise[T] {
    *
    *  $promiseCompletion
    */
-  def failure(@deprecatedName('t) cause: Throwable): this.type = complete(Failure(cause))
+  def failure(cause: Throwable): this.type = complete(Failure(cause))
 
   /** Tries to complete the promise with an exception.
    *
@@ -105,7 +105,7 @@ trait Promise[T] {
    *
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(@deprecatedName('t) cause: Throwable): Boolean = tryComplete(Failure(cause))
+  def tryFailure(cause: Throwable): Boolean = tryComplete(Failure(cause))
 }
 
 object Promise {

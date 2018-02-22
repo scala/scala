@@ -87,14 +87,6 @@ class SyncVar[A] {
     finally unsetVal()
   }
 
-  // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration
-  // whether or not the SyncVar is already defined. So, set has been
-  // deprecated in order to eventually be able to make "setting" private
-  @deprecated("use `put` to ensure a value cannot be overwritten without a corresponding `take`", "2.10.0")
-  // NOTE: Used by sbt 0.13.0-M2 and below
-  def set(x: A): Unit = setVal(x)
-
   /** Place a value in the SyncVar. If the SyncVar already has a stored value,
    * wait until another thread takes it. */
   def put(x: A): Unit = synchronized {
@@ -105,18 +97,6 @@ class SyncVar[A] {
   /** Check whether a value is stored in the synchronized variable. */
   def isSet: Boolean = synchronized {
     isDefined
-  }
-
-  // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration
-  // whether or not the SyncVar is already defined. So, unset has been
-  // deprecated in order to eventually be able to make "unsetting" private
-  @deprecated("use `take` to ensure a value is never discarded", "2.10.0")
-  // NOTE: Used by sbt 0.13.0-M2 and below
-  def unset(): Unit = synchronized {
-    isDefined = false
-    value = null.asInstanceOf[A]
-    notifyAll()
   }
 
   // `setVal` exists so as to retroactively deprecate `set` without
