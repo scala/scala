@@ -13,6 +13,7 @@ import scala.reflect.internal.util.ListOfNil
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
+import scala.util.control.NonFatal
 import Fingerprint._
 
 /**
@@ -834,7 +835,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)
               case ex: ControlThrowable => throw ex
               case ex: TypeError => MacroGeneratedTypeError(expandee, ex)
-              case _ => MacroGeneratedException(expandee, realex)
+              case NonFatal(_) => MacroGeneratedException(expandee, realex)
+              case fatal => throw fatal
             }
         } finally {
           expandee.removeAttachment[MacroRuntimeAttachment]
