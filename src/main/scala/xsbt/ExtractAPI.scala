@@ -9,10 +9,12 @@ package xsbt
 
 import java.io.File
 import java.util.{ Arrays, Comparator }
+
 import scala.tools.nsc.symtab.Flags
 import xsbti.api._
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.tools.nsc.Global
 
 /**
@@ -62,17 +64,18 @@ class ExtractAPI[GlobalType <: Global](
   // this cache reduces duplicate work both here and when persisting
   //   caches on other structures had minimal effect on time and cache size
   //   (tried: Definition, Modifier, Path, Id, String)
-  private[this] val typeCache = perRunCaches.newAnyRefMap[(Symbol, Type), xsbti.api.Type]()
+
+  private[this] val typeCache = new java.util.HashMap[(Symbol, Type), xsbti.api.Type]()
   // these caches are necessary for correctness
-  private[this] val structureCache = perRunCaches.newAnyRefMap[Symbol, xsbti.api.Structure]()
+  private[this] val structureCache = new java.util.HashMap[Symbol, xsbti.api.Structure]()
   private[this] val classLikeCache =
-    perRunCaches.newAnyRefMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]()
-  private[this] val pending = perRunCaches.newSet[xsbti.api.Lazy[_]]()
+    new java.util.HashMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]()
+  private[this] val pending = new java.util.HashSet[xsbti.api.Lazy[_]]()
 
   private[this] val emptyStringArray = Array.empty[String]
 
-  private[this] val allNonLocalClassesInSrc = perRunCaches.newSet[xsbti.api.ClassLike]()
-  private[this] val _mainClasses = perRunCaches.newSet[String]()
+  private[this] val allNonLocalClassesInSrc = new collection.mutable.HashSet[xsbti.api.ClassLike]()
+  private[this] val _mainClasses = new collection.mutable.HashSet[String]()
 
   /**
    * Implements a work-around for https://github.com/sbt/sbt/issues/823
@@ -153,7 +156,7 @@ class ExtractAPI[GlobalType <: Global](
    */
   private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] = {
     val lazyImpl = xsbti.api.SafeLazy.apply(Message(s))
-    pending += lazyImpl
+    pending.add(lazyImpl)
     lazyImpl
   }
 
@@ -165,7 +168,7 @@ class ExtractAPI[GlobalType <: Global](
     if (pending.isEmpty)
       structureCache.clear()
     else {
-      val toProcess = pending.toList
+      val toProcess = pending.iterator().asScala.toList
       pending.clear()
       toProcess foreach { _.get() }
       forceStructures()
@@ -358,9 +361,13 @@ class ExtractAPI[GlobalType <: Global](
   }
 
   private def structure(info: Type, s: Symbol): xsbti.api.Structure =
-    structureCache.getOrElseUpdate(s, mkStructure(info, s))
+    structureCache.computeIfAbsent(s, new java.util.function.Function[Symbol, xsbti.api.Structure] {
+      def apply(key: Symbol) = mkStructure(info, s)
+    })
   private def structureWithInherited(info: Type, s: Symbol): xsbti.api.Structure =
-    structureCache.getOrElseUpdate(s, mkStructureWithInherited(info, s))
+    structureCache.computeIfAbsent(s, new java.util.function.Function[Symbol, xsbti.api.Structure] {
+      def apply(key: Symbol) = mkStructureWithInherited(info, s)
+    })
 
   private def removeConstructors(ds: List[Symbol]): List[Symbol] = ds filter { !_.isConstructor }
 
@@ -492,10 +499,13 @@ class ExtractAPI[GlobalType <: Global](
       else mapOver(tp)
   }
 
-  private def processType(in: Symbol, t: Type): xsbti.api.Type =
-    typeCache.getOrElseUpdate((in, t), makeType(in, t))
+  private def processType(in: Symbol, t: Type): xsbti.api.Type = {
+    typeCache.computeIfAbsent((in, t),
+                              new java.util.function.Function[(Symbol, Type), xsbti.api.Type] {
+                                def apply(key: (Symbol, Type)) = makeType(in, t)
+                              })
+  }
   private def makeType(in: Symbol, t: Type): xsbti.api.Type = {
-
     val dealiased = t match {
       case TypeRef(_, sym, _) if sym.isAliasType => t.dealias
       case _                                     => t
@@ -646,7 +656,10 @@ class ExtractAPI[GlobalType <: Global](
   }
 
   private def classLike(in: Symbol, c: Symbol): ClassLikeDef =
-    classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
+    classLikeCache.computeIfAbsent((in, c), mkClassLike0)
+  private val mkClassLike0 = new java.util.function.Function[(Symbol, Symbol), ClassLikeDef] {
+    def apply(k: ((Symbol, Symbol))) = mkClassLike(k._1, k._2)
+  }
   private def mkClassLike(in: Symbol, c: Symbol): ClassLikeDef = {
     // Normalize to a class symbol, and initialize it.
     // (An object -- aka module -- also has a term symbol,
