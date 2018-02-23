@@ -42,12 +42,13 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
   }
 
   override def slice(from: Int, until: Int): Array[T] = {
+     val reprVal = repr
      val lo = math.max(from, 0)
-     val hi = math.min(math.max(until, 0), repr.length)
+     val hi = math.min(math.max(until, 0), reprVal.length)
      val size = math.max(hi - lo, 0)
      val result = java.lang.reflect.Array.newInstance(elementClass, size)
      if (size > 0) {
-      Array.copy(repr, lo, result, 0, size)
+      Array.copy(reprVal, lo, result, 0, size)
      }
      result.asInstanceOf[Array[T]]
   }
@@ -61,16 +62,18 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
   }
 
   def :+[B >: T: ClassTag](elem: B): Array[B] = {
-    val result = Array.ofDim[B](repr.length + 1)
-    Array.copy(repr, 0, result, 0, repr.length)
-    result(repr.length) = elem
+    val currentLength = repr.length
+    val result = new Array[B](currentLength + 1)
+    Array.copy(repr, 0, result, 0, currentLength)
+    result(currentLength) = elem
     result
   }
 
   def +:[B >: T: ClassTag](elem: B): Array[B] = {
-    val result = Array.ofDim[B](repr.length + 1)
+    val currentLength = repr.length
+    val result = new Array[B](currentLength + 1)
     result(0) = elem
-    Array.copy(repr, 0, result, 1, repr.length)
+    Array.copy(repr, 0, result, 1, currentLength)
     result
   }
 
