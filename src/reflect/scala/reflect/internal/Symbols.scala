@@ -243,7 +243,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
     // The null check is for NoSymbol, which can't pass a reference to itself to the constructor and also
     // can't call owner_= due to an assertion it contains.
-    private[this] var _rawowner = if (initOwner eq null) this else initOwner
+    private[Symbol] var _rawowner = if (initOwner eq null) this else initOwner
     private[this] var _rawflags: Long = _
 
     def rawowner = _rawowner
@@ -1238,7 +1238,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def hasTransOwner(sym: Symbol): Boolean = {
       var o = this
-      while ((o ne sym) && (o ne NoSymbol)) o = o.owner
+      while ((o ne sym) && (o ne NoSymbol)) o = o._rawowner
       (o eq sym)
     }
 

@@ -527,7 +527,7 @@ trait TypeDiagnostics {
           // Only record type references which don't originate within the
           // definition of the class being referenced.
           if (t.tpe ne null) {
-            for (tp <- t.tpe if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
+            for (tp <- t.tpe if !treeTypes(tp) && !currentOwner.hasTransOwner(tp.typeSymbol)) {
               tp match {
                 case NoType | NoPrefix    =>
                 case NullaryMethodType(_) =>
