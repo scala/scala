@@ -1,14 +1,66 @@
 package strawman
 package collection
 
-import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef}
+import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef, Double, Long, Float, Byte, Short}
 import scala.Predef.{implicitly, classOf}
-import java.lang.String
+import java.lang.{String, Class}
 import mutable.ArrayBuilder
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
 object ArrayOps {
+  //TODO Move this method to scala.Array in 2.13
+  /** Copy one array to another, truncating or padding with default values (if
+    * necessary) so the copy has the specified length.
+    *
+    * Equivalent to Java's
+    *   `java.util.Arrays.copyOf(original, newLength)`,
+    * except that this works for primitive and object arrays in a single method.
+    *
+    * @see `java.util.Arrays#copyOf`
+    */
+  def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
+    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Float]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Char]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Unit]       =>
+      val dest = new Array[Unit](newLength)
+      Array.copy(original, 0, dest, 0, original.length)
+      dest
+  }).asInstanceOf[Array[A]]
+
+  //TODO Move this method to scala.Array in 2.13
+  /** Copy one array to another, truncating or padding with default values (if
+    * necessary) so the copy has the specified length. The new array can have
+    * a different type than the original one as long as the values are
+    * assignment-compatible. When copying between primitive and object arrays,
+    * boxing and unboxing are supported.
+    *
+    * Equivalent to Java's
+    *   `java.util.Arrays.copyOf(original, newLength, newType)`,
+    * except that this works for all combinations of primitive and object arrays
+    * in a single method.
+    *
+    * @see `java.util.Arrays#copyOf`
+    */
+  def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
+    val destClass = ct.runtimeClass
+    if (destClass.isAssignableFrom(original.getClass)) {
+      if(destClass.getComponentType.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
+      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
+    } else {
+      val dest = new Array[A](newLength)
+      Array.copy(original, 0, dest, 0, original.length)
+      dest
+    }
+  }
+
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter[A](p: A => Boolean, xs: Array[A]) {
 
@@ -178,10 +230,24 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def slice(from: Int, until: Int): Array[A] = {
     val lo = max(from, 0)
     val hi = min(until, xs.length)
-    val len = max(hi - lo, 0)
-    val res = new Array[A](len)
-    if(len > 0) Array.copy(xs, lo, res, 0, len)
-    res
+    val len = hi - lo
+    if(len > 0) {
+      ((xs: Array[_]) match {
+        case x: Array[AnyRef]     => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Int]        => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Double]     => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Long]       => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Float]      => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Char]       => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Byte]       => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Short]      => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Boolean]    => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[Unit]       =>
+          val res = new Array[Unit](len)
+          Array.copy(xs, lo, res, 0, len)
+          res
+      }).asInstanceOf[Array[A]]
+    } else new Array[A](0)
   }
 
   /** The rest of the array without its first element. */
@@ -603,8 +669,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with an element appended. */
   def appended[B >: A : ClassTag](x: B): Array[B] = {
-    val dest = new Array[B](xs.length + 1)
-    Array.copy(xs, 0, dest, 0, xs.length)
+    val dest = ArrayOps.copyAs[B](xs, xs.length+1)
     dest(xs.length) = x
     dest
   }
