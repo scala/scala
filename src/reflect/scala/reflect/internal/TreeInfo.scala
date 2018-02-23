@@ -437,6 +437,11 @@ abstract class TreeInfo {
     case _                  => false
   }
 
+  def isLiteralString(t: Tree): Boolean = t match {
+    case Literal(Constant(_: String)) => true
+    case _ => false
+  }
+
   /** Does the tree have a structure similar to typechecked trees? */
   private[internal] def detectTypecheckedTree(tree: Tree) =
     tree.hasExistingSymbol || tree.exists {

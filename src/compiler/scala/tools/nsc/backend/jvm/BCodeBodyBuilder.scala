@@ -1000,8 +1000,22 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genCallMethod(String_valueOf, InvokeStyle.Static, arg.pos)
 
         case concatenations =>
-          bc.genStartConcat(tree.pos)
-          for (elem <- concatenations) {
+          val approxBuilderSize = concatenations.map {
+            case Literal(Constant(s: String)) => s.length
+            case Literal(c @ Constant(value)) if c.isNonUnitAnyVal => String.valueOf(c).length
+            case _ =>
+              // could add some guess based on types of primitive args.
+              // or, we could stringify all the args onto the stack, compute the exact size of
+              // the stringbuffer.
+              // or, just let http://openjdk.java.net/jeps/280 (or a re-implementation thereof in our 2.13.x stdlib) do all the hard work at link time
+              0
+          }.sum
+          bc.genStartConcat(tree.pos, approxBuilderSize)
+          def isEmptyString(t: Tree) = t match {
+            case Literal(Constant("")) => true
+            case _ => false
+          }
+          for (elem <- concatenations if !isEmptyString(elem)) {
             val loadedElem = elem match {
               case Apply(boxOp, value :: Nil) if currentRun.runDefinitions.isBox(boxOp.symbol) =>
                 // Eliminate boxing of primitive values. Boxing is introduced by erasure because

@@ -172,13 +172,14 @@ abstract class BCodeIdiomatic {
     /*
      * can-multi-thread
      */
-    final def genStartConcat(pos: Position): Unit = {
+    final def genStartConcat(pos: Position, size: Int): Unit = {
       jmethod.visitTypeInsn(Opcodes.NEW, JavaStringBuilderClassName)
       jmethod.visitInsn(Opcodes.DUP)
+      jmethod.visitLdcInsn(Integer.valueOf(size))
       invokespecial(
         JavaStringBuilderClassName,
         INSTANCE_CONSTRUCTOR_NAME,
-        "()V",
+        "(I)V",
         itf = false,
         pos
       )
