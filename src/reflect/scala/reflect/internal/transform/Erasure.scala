@@ -170,9 +170,26 @@ trait Erasure {
         mapOver(tp)
     }
 
-    def applyInArray(tp: Type): Type = tp match {
-      case tref @ TypeRef(_, sym, _) if sym.isDerivedValueClass => eraseNormalClassRef(tref)
-      case _ => apply(tp)
+    /* scala/bug#10551, scala/bug#10646:
+     *
+     * There are a few contexts in which it's important to erase types referencing
+     * derived value classes to the value class itself, not the underlying. As
+     * of right now, those are:
+     *   - inside of `classOf`
+     *   - the element type of an `ArrayValue`
+     * In those cases, the value class needs to be detected and erased using
+     * `javaErasure`, which treats refs to value classes the same as any other
+     * `TypeRef`. This used to be done by matching on `tr@TypeRef(_,sym,_)`, and
+     * checking whether `sym.isDerivedValueClass`, but there are more types with
+     * `typeSymbol.isDerivedValueClass` than just `TypeRef`s (`ExistentialType`
+     * is one of the easiest to bump into, e.g. `classOf[VC[_]]`).
+     *
+     * tl;dr if you're trying to erase a value class ref to the value class itself
+     * and not going through this method, you're inviting trouble into your life.
+     */
+    def applyInArray(tp: Type): Type = {
+      if (tp.typeSymbol.isDerivedValueClass) javaErasure(tp)
+      else apply(tp)
     }
   }
 
