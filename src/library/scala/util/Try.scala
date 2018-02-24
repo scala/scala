@@ -198,6 +198,17 @@ sealed abstract class Try[+T] extends Product with Serializable {
    */
   def fold[U](fa: Throwable => U, fb: T => U): U
 
+  /**
+   * Applies `f` if this is a `Failure`.
+   *
+   * @example {{{
+   * val result: Try[Throwable, Int] = Try { string.toInt } orValue 0
+   * }}}
+   *
+   * @param f the function to apply if this is a `Failure`
+   * @return the `Success` value or the result of applying the function
+   */
+  def orValue[U >: T](f: Throwable => U): U = fold(f, x => x)
 }
 
 object Try {
