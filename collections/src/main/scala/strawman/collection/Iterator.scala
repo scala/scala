@@ -1233,6 +1233,51 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     b
   }
 
+  /** Appends all elements of this $coll to a string builder using a separator string.
+    *  The written text consists of the string representations (w.r.t. the method `toString`)
+    *  of all elements of this $coll, separated by the string `sep`.
+    *
+    * Example:
+    *
+    * {{{
+    *      scala> val a = List(1,2,3,4)
+    *      a: List[Int] = List(1, 2, 3, 4)
+    *
+    *      scala> val b = new StringBuilder()
+    *      b: StringBuilder =
+    *
+    *      scala> a.addString(b, ", ")
+    *      res0: StringBuilder = 1, 2, 3, 4
+    * }}}
+    *
+    *  @param  b    the string builder to which elements are appended.
+    *  @param sep   the separator string.
+    *  @return      the string builder `b` to which elements were appended.
+    */
+  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
+
+  /** Appends all elements of this $coll to a string builder.
+    *  The written text consists of the string representations (w.r.t. the method
+    * `toString`) of all elements of this $coll without any separator string.
+    *
+    * Example:
+    *
+    * {{{
+    *      scala> val a = List(1,2,3,4)
+    *      a: List[Int] = List(1, 2, 3, 4)
+    *
+    *      scala> val b = new StringBuilder()
+    *      b: StringBuilder =
+    *
+    *      scala> val h = a.addString(b)
+    *      h: StringBuilder = 1234
+    * }}}
+
+    *  @param  b    the string builder to which elements are appended.
+    *  @return      the string builder `b` to which elements were appended.
+    */
+  def addString(b: StringBuilder): StringBuilder = addString(b, "")
+  
   /** Copy values produced by this iterator to an array.
    *  Fills the given array `xs` starting at index `start`.
    *  Copying will stop once either the end of the current iterator is reached,
