@@ -128,12 +128,12 @@ object Duration {
       fromNanos(nanos.round)
   }
 
-  private[this] final val  µs_per_ns = 1000L
-  private[this] final val  ms_per_ns =  µs_per_ns * 1000
-  private[this] final val   s_per_ns =  ms_per_ns * 1000
-  private[this] final val min_per_ns =   s_per_ns * 60
-  private[this] final val   h_per_ns = min_per_ns * 60
-  private[this] final val   d_per_ns =   h_per_ns * 24
+  private[this] final val ns_per_µs  = 1000L
+  private[this] final val ns_per_ms  = ns_per_µs  * 1000
+  private[this] final val ns_per_s   = ns_per_ms  * 1000
+  private[this] final val ns_per_min = ns_per_s   * 60
+  private[this] final val ns_per_h   = ns_per_min * 60
+  private[this] final val ns_per_d   = ns_per_h   * 24
 
   /**
    * Construct a finite duration from the given number of nanoseconds. The
@@ -143,12 +143,12 @@ object Duration {
    * @throws IllegalArgumentException for `Long.MinValue` since that would lead to inconsistent behavior afterwards (cannot be negated)
    */
   def fromNanos(nanos: Long): FiniteDuration = {
-         if (nanos %   d_per_ns == 0) Duration(nanos /   d_per_ns, DAYS)
-    else if (nanos %   h_per_ns == 0) Duration(nanos /   h_per_ns, HOURS)
-    else if (nanos % min_per_ns == 0) Duration(nanos / min_per_ns, MINUTES)
-    else if (nanos %   s_per_ns == 0) Duration(nanos /   s_per_ns, SECONDS)
-    else if (nanos %  ms_per_ns == 0) Duration(nanos /  ms_per_ns, MILLISECONDS)
-    else if (nanos %  µs_per_ns == 0) Duration(nanos /  µs_per_ns, MICROSECONDS)
+         if (nanos % ns_per_d   == 0) Duration(nanos / ns_per_d  , DAYS)
+    else if (nanos % ns_per_h   == 0) Duration(nanos / ns_per_h  , HOURS)
+    else if (nanos % ns_per_min == 0) Duration(nanos / ns_per_min, MINUTES)
+    else if (nanos % ns_per_s   == 0) Duration(nanos / ns_per_s  , SECONDS)
+    else if (nanos % ns_per_ms  == 0) Duration(nanos / ns_per_ms , MILLISECONDS)
+    else if (nanos % ns_per_µs  == 0) Duration(nanos / ns_per_µs , MICROSECONDS)
     else Duration(nanos, NANOSECONDS)
   }
 
