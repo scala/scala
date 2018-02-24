@@ -708,6 +708,8 @@ self =>
       case _ => false
     })
 
+    def isSimpleTypeIntro: Boolean = isTypeIntroToken(in.token)
+
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
     def isCaseDefEnd = in.token == RBRACE || in.token == CASE || in.token == EOF
@@ -1055,14 +1057,32 @@ self =>
       }
 
       /** {{{
-       *  CompoundType ::= AnnotType {with AnnotType} [Refinement]
+       *  PrefixType ::= [`-' | `+' | `~' | `!'] SimpleType
+       *  }}}
+       */
+      def prefixType(): Tree = {
+        if (lookingAhead(isSimpleTypeIntro)) {
+          val namePos = in.offset
+          val uname = nme.toUnaryName(rawIdent().toTermName)
+          val opTree = atPos(namePos) { Ident(uname.toTypeName) }
+          val simpleTree = simpleType()
+          atPos(opTree.pos.start, namePos) {AppliedTypeTree(opTree, List(simpleTree))}
+        }
+        else atPos(in.offset) {simpleType()}
+      }
+
+      /** {{{
+       *  CompoundType ::= PrefixType
+       *                |  AnnotType {with AnnotType} [Refinement]
        *                |  Refinement
        *  }}}
        */
-      def compoundType(): Tree = compoundTypeRest(
-        if (in.token == LBRACE) atInPos(scalaAnyRefConstr)
-        else annotType()
-      )
+      def compoundType(): Tree =  if (isUnaryOp) prefixType() else {
+        compoundTypeRest(
+          if (in.token == LBRACE) atInPos(scalaAnyRefConstr)
+          else annotType()
+        )
+      }
 
       def compoundTypeRest(t: Tree): Tree = {
         val ts = new ListBuffer[Tree] += t
