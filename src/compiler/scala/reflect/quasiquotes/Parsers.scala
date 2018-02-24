@@ -175,12 +175,15 @@ trait Parsers { self: Quasiquotes =>
           stats
       }
 
-      override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
-        if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
-          val res = ForEnumPlaceholder(in.name) :: Nil
+      override def enumerator(isFirst: Boolean, allowNested: Boolean = true) =
+        if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || in.token == WITH || isStatSep }) {
+          val tree = ForEnumPlaceholder(in.name)
           in.nextToken()
-          res
-        } else super.enumerator(isFirst, allowNestedIf)
+          if(in.token == WITH) {
+            in.nextToken()
+            gen.With(tree) :: Nil
+          } else tree :: Nil
+        } else super.enumerator(isFirst, allowNested)
     }
   }
 
@@ -219,7 +222,7 @@ trait Parsers { self: Quasiquotes =>
 
   object ForEnumeratorParser extends Parser {
     def entryPoint = { parser =>
-      val enums = parser.enumerator(isFirst = false, allowNestedIf = false)
+      val enums = parser.enumerator(isFirst = false, allowNested = false)
       assert(enums.length == 1)
       implodePatDefs(enums.head)
     }

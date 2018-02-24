@@ -1843,7 +1843,7 @@ self =>
      *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
      *  }}}
      */
-    def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
+    def generator(eqOK: Boolean, allowNested: Boolean = true): List[Tree] = {
       val start  = in.offset
       val hasVal = in.token == VAL
       if (hasVal)
@@ -1862,18 +1862,28 @@ self =>
       else accept(LARROW)
       val rhs = expr()
 
-      def loop(): List[Tree] =
-        if (in.token != IF) Nil
-        else makeFilter(in.offset, guard()) :: loop()
-
-      val tail =
-        if (allowNestedIf) loop()
-        else Nil
-
       // why max? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
       val genPos = r2p(start, point, in.lastOffset max start)
-      gen.mkGenerator(genPos, pat, hasEq, rhs) :: tail
+      val genr = gen.mkGenerator(genPos, pat, hasEq, rhs)
+
+      val hasWith = !hasEq && in.token == WITH
+      val head = if(hasWith) {
+        val offsetOfWith = in.offset
+        in.nextToken()
+        gen.With(genr).setPos(r2p(start, offsetOfWith, in.lastOffset))
+      } else genr
+
+      def nestedFilters(): List[Tree] =
+        if (in.token != IF) Nil
+        else makeFilter(in.offset, guard()) :: nestedFilters()
+
+      val tail =
+        if(!allowNested) Nil
+        else if(hasWith) generator(eqOK = false)
+        else nestedFilters()
+
+      head :: tail
     }
 
     def makeFilter(start: Offset, tree: Tree) = gen.Filter(tree).setPos(r2p(start, tree.pos.point, tree.pos.end))

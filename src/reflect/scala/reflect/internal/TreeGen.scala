@@ -580,6 +580,25 @@ abstract class TreeGen {
     }
   }
 
+  object With {
+    def apply(tree: Tree) =
+      Select(tree, nme.WITHkw).updateAttachment(ForAttachment)
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case Select(enum, nme.WITHkw)
+        if tree.hasAttachment[ForAttachment.type] => Some(enum)
+      case _ => None
+    }
+  }
+
+  object MaybeWith {
+    def apply(tree: Tree, prod: Boolean) =
+      if (prod) With(tree) else tree
+    def unapply(tree: Tree): Option[(Tree, Boolean)] = tree match {
+      case With(t) => Some((t, true))
+      case t => Some((t, false))
+    }
+  }
+
   /** Encode/decode body of for yield loop as q"`yield`($tree)" */
   object Yield {
     def apply(tree: Tree): Tree =
@@ -695,14 +714,35 @@ abstract class TreeGen {
         rangePos(genpos.source, genpos.start, genpos.point, end)
       }
 
+    def makeProduct(posOfWith: Position, lhs: Tree, rhs: Tree): Tree = {
+      val selectPos =
+        if (posOfWith == NoPosition) NoPosition
+        else if(lhs.pos == NoPosition) posOfWith
+        else rangePos(posOfWith.source, lhs.pos.start, posOfWith.point, posOfWith.end)
+      // there's no way to make these positions non-overlapping with patterns so they must be transparent
+      Apply(
+        Select(lhs, nme.product).setPos(selectPos.makeTransparent).updateAttachment(ForAttachment),
+        List(rhs)
+      ).setPos(wrappingPos(posOfWith, List(lhs, rhs)).makeTransparent)
+    }
+
+    def maybeMakeWith(tree: Tree, posOfWith: Position, wrap: Boolean) =
+      if(wrap) With(tree).setPos(posOfWith union tree.pos) else tree
+
     enums match {
       case (t @ ValFrom(pat, rhs)) :: Nil =>
         makeCombination(closurePos(t.pos), mapName, rhs, pat, body)
-      case (t @ ValFrom(pat, rhs)) :: (rest @ (ValFrom(_, _) :: _)) =>
-        makeCombination(closurePos(t.pos), flatMapName, rhs, pat,
-                        mkFor(rest, sugarBody))
+      case (wt1 @ With(t1 @ ValFrom(pat1, rhs1))) :: (wt2 @ MaybeWith(t2 @ ValFrom(pat2, rhs2), hasWith)) :: rest =>
+        val pat = atPos((pat1.pos union pat2.pos).makeTransparent) { mkTuple(List(pat1, pat2)) }
+        val rhs = makeProduct(wt1.pos, rhs1, rhs2)
+        val combined = maybeMakeWith(ValFrom(pat, rhs).setPos(t1.pos union t2.pos), wt2.pos, hasWith)
+        mkFor(combined :: rest, sugarBody)
+      case (t @ ValFrom(pat, rhs)) :: (rest @ MaybeWith(ValFrom(_, _), _) :: _) =>
+        makeCombination(closurePos(t.pos), flatMapName, rhs, pat, mkFor(rest, sugarBody))
       case (t @ ValFrom(pat, rhs)) :: Filter(test) :: rest =>
-        mkFor(ValFrom(pat, makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)).setPos(t.pos) :: rest, sugarBody)
+        val filteredRhs = makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)
+        val filtered = ValFrom(pat, filteredRhs).setPos(t.pos union test.pos)
+        mkFor(filtered :: rest, sugarBody)
       case (t @ ValFrom(pat, rhs)) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
         assert(!valeqs.isEmpty)

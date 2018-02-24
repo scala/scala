@@ -178,6 +178,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticValEq, pat, rhs)
       case SyntacticFilter(cond) =>
         reifyBuildCall(nme.SyntacticFilter, cond)
+      case SyntacticWith(enum) =>
+        reifyBuildCall(nme.SyntacticWith, enum)
       case SyntacticFor(enums, body) =>
         reifyBuildCall(nme.SyntacticFor, enums, body)
       case SyntacticForYield(enums, body) =>

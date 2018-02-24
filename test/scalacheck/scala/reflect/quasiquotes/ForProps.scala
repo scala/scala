@@ -4,27 +4,42 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
 
 object ForProps extends QuasiquoteProperties("for") {
-  case class ForEnums(val value: List[Tree])
+  case class ForEnums(value: List[Tree])
 
   def genSimpleBind: Gen[Bind] =
-    for(name <- genTermName)
+    for (name <- genTermName)
       yield pq"$name @ _"
 
   def genForFilter: Gen[Tree] =
-    for(cond <- genIdent(genTermName))
+    for (cond <- genIdent(genTermName))
       yield fq"if $cond"
 
   def genForFrom: Gen[Tree] =
-    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName))
-      yield fq"$lhs <- $rhs"
+    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName); useWith <- Arbitrary.arbitrary[Boolean])
+      yield {
+        val gen = fq"$lhs <- $rhs"
+        if(useWith) fq"$gen with" else gen
+      }
 
   def genForEq: Gen[Tree] =
-    for(lhs <- genSimpleBind; rhs <- genIdent(genTermName))
+    for (lhs <- genSimpleBind; rhs <- genIdent(genTermName))
       yield fq"$lhs = $rhs"
 
+  def removeTrailingWiths(enums: List[Tree]): List[Tree] = enums match {
+    case fq"$head with" :: (tail @ (fq"if $guard" :: _)) =>
+      head :: removeTrailingWiths(tail)
+    case fq"$head with" :: (tail @ (fq"$pat = $expr" :: _)) =>
+      head :: removeTrailingWiths(tail)
+    case fq"$head with" :: Nil =>
+      head :: Nil
+    case head :: tail =>
+      head :: removeTrailingWiths(tail)
+    case Nil => Nil
+  }
+
   def genForEnums(size: Int): Gen[ForEnums] =
-    for(first <- genForFrom; rest <- listOfN(size, oneOf(genForFrom, genForFilter, genForEq)))
-      yield new ForEnums(first :: rest)
+    for (first <- genForFrom; rest <- listOfN(size, oneOf(genForFrom, genForFilter, genForEq)))
+      yield ForEnums(removeTrailingWiths(first :: rest))
 
   implicit val arbForEnums: Arbitrary[ForEnums] = arbitrarySized(genForEnums)
 

@@ -1,0 +1,32 @@
+creating a having 1
+creating mapped a having (1,2,3)
+flatMapping mapped a having (1,2,3)
+creating b having 2
+creating c having 3
+creating b with c having (2,3)
+creating d having 4
+creating b with c with d having ((2,3),4)
+creating filtered b with c with d having ((2,3),4)
+creating mapped filtered b with c with d having (((2,3),4),9)
+flatMapping mapped filtered b with c with d having (((2,3),4),9)
+creating e having 5
+creating f having 6
+creating e with f having (5,6)
+creating mapped e with f having 21
+
+creating a having 1
+creating mapped a having (1,2,3)
+foreach mapped a having (1,2,3)
+creating b having 2
+creating c having 3
+creating b with c having (2,3)
+creating d having 4
+creating b with c with d having ((2,3),4)
+creating filtered b with c with d having ((2,3),4)
+creating mapped filtered b with c with d having (((2,3),4),9)
+foreach mapped filtered b with c with d having (((2,3),4),9)
+creating e having 5
+creating f having 6
+creating e with f having (5,6)
+foreach e with f having (5,6)
+finished

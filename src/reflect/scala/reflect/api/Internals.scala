@@ -737,6 +737,13 @@ trait Internals { self: Universe =>
       def unapply(tree: Tree): Option[(Tree)]
     }
 
+    val SyntacticWith: SyntacticWithExtractor
+
+    trait SyntacticWithExtractor {
+      def apply(enum: Tree): Tree
+      def unapply(tree: Tree): Option[Tree]
+    }
+
     val SyntacticEmptyTypeTree: SyntacticEmptyTypeTreeExtractor
 
     trait SyntacticEmptyTypeTreeExtractor {
