@@ -1,0 +1,19 @@
+macro-reify-typetag-deptypes.scala:5: error: No TypeTag available for Test.a.T
+  typeOf[a.T]
+        ^
+macro-reify-typetag-deptypes.scala:8: error: No TypeTag available for Test.b.F[Int]
+  typeOf[b.F[Int]]
+        ^
+macro-reify-typetag-deptypes.scala:11: error: No TypeTag available for Test.c.T
+  typeOf[c.T]
+        ^
+macro-reify-typetag-deptypes.scala:14: error: No TypeTag available for Test.d.T
+  typeOf[d.T]
+        ^
+macro-reify-typetag-deptypes.scala:17: error: No TypeTag available for Test.e.T
+  typeOf[e.T]
+        ^
+macro-reify-typetag-deptypes.scala:20: error: No TypeTag available for Test.f.T
+  typeOf[f.T]
+        ^
+6 errors found

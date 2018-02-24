@@ -15,4 +15,6 @@ trait StdAttachments {
     }
 
   case class ReifyAliasAttachment(sym: Symbol, alias: TermName)
+  
+  case object TypeIsConcrete
 }

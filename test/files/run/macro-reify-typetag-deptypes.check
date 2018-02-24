@@ -1,0 +1,8 @@
+TypeTag[Test.a.T]
+true
+TypeTag[Test.b.F[Int]]
+true
+TypeTag[Test.c.T]
+true
+TypeTag[Test.d.T]
+true
