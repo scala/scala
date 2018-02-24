@@ -1096,7 +1096,7 @@ trait Contexts { self: Analyzer =>
             else newOverloaded(cx.owner, pre, entries)
         }
         if (!defSym.exists)
-          cx = cx.outer // push further outward
+          cx = outerContextWithDistinctScope(cx) // push further outward
       }
       if (symbolDepth < 0)
         symbolDepth = cx.depth
@@ -1196,6 +1196,13 @@ trait Contexts { self: Analyzer =>
         finish(resetPos(imp1.qual.duplicate), impSym)
       }
       else finish(EmptyTree, NoSymbol)
+    }
+
+    @inline final def outerContextWithDistinctScope(ctx0: Context): Context = {
+      var ctx = ctx0
+      while((ctx.outer.scope eq ctx.scope) || ctx.scope.nestingLevel > 0)
+        ctx = ctx.outer
+      ctx.outer
     }
 
     /**
