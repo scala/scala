@@ -628,7 +628,7 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
  *  @since 2.10
  */
 @SerialVersionUID(0L - 6402774413839597105L)
-final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
+final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[_, _], AnyRef], hashf: Hashing[K], ef: Equiv[K])
 extends scala.collection.concurrent.Map[K, V]
    with scala.collection.mutable.MapLike[K, V, TrieMap[K, V]]
    with CustomParallelizable[(K, V), ParTrieMap[K, V]]
@@ -644,7 +644,7 @@ extends scala.collection.concurrent.Map[K, V]
 
   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
     INode.newRootNode,
-    AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
+    TrieMap.rootupdater,
     hashf,
     ef
   )
@@ -668,7 +668,7 @@ extends scala.collection.concurrent.Map[K, V]
 
   private def readObject(in: java.io.ObjectInputStream) {
     root = INode.newRootNode
-    rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
+    rootupdater = TrieMap.rootupdater
 
     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
     equalityobj = in.readObject().asInstanceOf[Equiv[K]]
@@ -970,11 +970,16 @@ extends scala.collection.concurrent.Map[K, V]
 
   override def stringPrefix = "TrieMap"
 
+  // This is needed to instantiate the updater in this class, because it is accessing
+  // a private field, and then leak it to the companion object for storage
+  private def updater(): AtomicReferenceFieldUpdater[TrieMap[_, _], AnyRef] =
+    AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[_, _]], classOf[AnyRef], "root")
 }
-
 
 object TrieMap extends MutableMapFactory[TrieMap] {
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
+
+  private val rootupdater = new TrieMap[Any, Any](null, null, null, null).updater()
 
   implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] = new MapCanBuildFrom[K, V]
 
