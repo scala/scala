@@ -4183,7 +4183,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val op = if(args.exists(_.isInstanceOf[AssignOrNamedArg])) nme.applyDynamicNamed else nme.applyDynamic
               // not supported: foo.bar(a1,..., an: _*)
               val fn1 = if(treeInfo.isWildcardStarArgList(args)) DynamicVarArgUnsupported(fn, op) else fn
-              Some((op, fn))
+              Some((op, fn1))
             case Assign(lhs, _) if matches(lhs) => Some((nme.updateDynamic, lhs))
             case _ if matches(t)                => Some((nme.selectDynamic, t))
             case _                              => t.children.flatMap(findSelection).headOption
