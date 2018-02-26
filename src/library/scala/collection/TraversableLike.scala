@@ -428,13 +428,10 @@ trait TraversableLike[+A, +Repr] extends Any
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    var lst: A = null.asInstanceOf[A]
-    var hasElements = false
-    for (x <- this){
-      hasElements = true
+    var lst = head
+    for (x <- this)
       lst = x
-    }
-    if (hasElements) lst else throw new NoSuchElementException("last of empty traversable")
+    lst
   }
 
   /** Optionally selects the last element.
