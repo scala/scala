@@ -5,24 +5,29 @@
 package scala.tools.partest
 package nest
 
-import java.io.{ Console => _, _ }
+import java.io.{Console => _, _}
+import java.lang.reflect.InvocationTargetException
+import java.nio.charset.Charset
+import java.nio.file.{Files, StandardOpenOption}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
 import scala.reflect.internal.util.ScalaClassLoader
-import scala.sys.process.{ Process, ProcessLogger }
-import scala.tools.nsc.Properties.{ envOrNone, isWin, javaHome, propOrEmpty, versionMsg, javaVmName, javaVmVersion, javaVmInfo }
-import scala.tools.nsc.{ Settings, CompilerCommand, Global }
+import scala.sys.process.{Process, ProcessLogger}
+import scala.tools.nsc.Properties.{envOrNone, isWin, javaHome, javaVmInfo, javaVmName, javaVmVersion, propOrEmpty, versionMsg}
+import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Failure, Success, Try}
 import ClassPath.join
-import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
-
-import FileManager.{ compareContents, joinPaths, withTempFile }
+import TestState.{Crash, Fail, Pass, Uninitialized, Updated}
+import FileManager.{compareContents, joinPaths, withTempFile}
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
+import scala.util.control.ControlThrowable
 
 trait TestInfo {
   /** pos/t1234 */
@@ -53,6 +58,7 @@ trait TestInfo {
 
 /** Run a single test. Rubber meets road. */
 class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestUI) extends TestInfo {
+  private val stopwatch = new Stopwatch()
 
   import suiteRunner.{fileManager => fm, _}
   val fileManager = fm
@@ -157,8 +163,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     if (javaopts.nonEmpty)
       nestUI.verbose(s"Found javaopts file '$argsFile', using options: '${javaopts.mkString(",")}'")
 
-    val testFullPath = testFile.getAbsolutePath
-
     // Note! As this currently functions, suiteRunner.javaOpts must precede argString
     // because when an option is repeated to java only the last one wins.
     // That means until now all the .javaopts files were being ignored because
@@ -167,22 +171,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     //
     // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
-    val extras = if (nestUI.debug) List("-Dpartest.debug=true") else Nil
-    val propertyOptions = List(
-      "-Dfile.encoding=UTF-8",
-      "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
-      "-Dpartest.output="+outDir.getAbsolutePath,
-      "-Dpartest.lib="+libraryUnderTest.getAbsolutePath,
-      "-Dpartest.reflect="+reflectUnderTest.getAbsolutePath,
-      "-Dpartest.comp="+compilerUnderTest.getAbsolutePath,
-      "-Dpartest.cwd="+outDir.getParent,
-      "-Dpartest.test-path="+testFullPath,
-      "-Dpartest.testname="+fileBase,
-      "-Djavacmd="+javaCmdPath,
-      "-Djavaccmd="+javacCmdPath,
-      "-Duser.language=en",
-      "-Duser.country=US"
-    ) ++ extras
+    val propertyOpts = propertyOptions(fork = true).map { case (k, v) => s"-D$k=$v" }
 
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
@@ -190,7 +179,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       (suiteRunner.javaOpts.split(' ') ++ extraJavaOptions ++ javaopts).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
-      ) ++ propertyOptions ++ Seq(
+      ) ++ propertyOpts ++ Seq(
         "scala.tools.nsc.MainGenericRunner",
         "-usejavacp",
         "Test",
@@ -198,6 +187,40 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       )
     )
   }
+
+  def propertyOptions(fork: Boolean): List[(String, String)] = {
+    val testFullPath = testFile.getAbsolutePath
+    val extras =   if (nestUI.debug) List("partest.debug" -> "true") else Nil
+    val immutablePropsToCheck = List[(String, String)](
+      "file.encoding" -> "UTF-8",
+      "user.language" -> "en",
+      "user.country" -> "US"
+    )
+    val immutablePropsForkOnly = List[(String, String)](
+      "java.library.path" -> logFile.getParentFile.getAbsolutePath,
+    )
+    val shared = List(
+      "partest.output" -> ("" + outDir.getAbsolutePath),
+      "partest.lib" -> ("" + libraryUnderTest.jfile.getAbsolutePath),
+      "partest.reflect" -> ("" + reflectUnderTest.jfile.getAbsolutePath),
+      "partest.comp" -> ("" + compilerUnderTest.jfile.getAbsolutePath),
+      "partest.cwd" -> ("" + outDir.getParent),
+      "partest.test-path" -> ("" + testFullPath),
+      "partest.testname" -> ("" + fileBase),
+      "javacmd" -> ("" + javaCmdPath),
+      "javaccmd" -> ("" + javacCmdPath),
+    ) ++ extras
+    if (fork) {
+      immutablePropsToCheck ++ immutablePropsForkOnly ++ shared
+    } else {
+      for ((k, requiredValue) <- immutablePropsToCheck) {
+        val actual = System.getProperty(k)
+        assert(actual == requiredValue, s"Unable to run test without forking as the current JVM has an incorrect system property. For $k, found $actual, required $requiredValue")
+      }
+      shared
+    }
+  }
+
 
   /** Runs command redirecting standard out and
    *  error out to output file.
@@ -232,6 +255,53 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       case false =>
         _transcript append EOL + logFile.fileContents
         genFail("non-zero exit code")
+    }
+  }
+
+  def execTestInProcess(classesDir: File, log: File): Boolean = {
+    stopwatch.pause()
+    suiteRunner.synchronized {
+      stopwatch.start()
+      def run(): Unit = {
+        StreamCapture.withExtraProperties(propertyOptions(fork = false).toMap) {
+          try {
+            val out = Files.newOutputStream(log.toPath, StandardOpenOption.APPEND)
+            try {
+              val loader = new URLClassLoader(classesDir.toURI.toURL :: Nil, getClass.getClassLoader)
+              StreamCapture.capturingOutErr(out) {
+                val cls = loader.loadClass("Test")
+                val main = cls.getDeclaredMethod("main", classOf[Array[String]])
+                try {
+                  main.invoke(null, Array[String]("jvm"))
+                } catch {
+                  case ite: InvocationTargetException => throw ite.getCause
+                }
+              }
+            }  finally {
+              out.close()
+            }
+          } catch {
+            case t: ControlThrowable => throw t
+            case t: Throwable =>
+              // We'll let the checkfile diffing report this failure
+              Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), StandardOpenOption.APPEND)
+          }
+        }
+      }
+
+      pushTranscript(s"<in process execution of $testIdent> > ${logFile.getName}")
+
+      TrapExit(() => run()) match {
+        case Left((status, throwable)) if status != 0 =>
+          //        Files.readAllLines(log.toPath).forEach(println(_))
+          //        val error = new AssertionError(s"System.exit(${status}) was called.")
+          //        error.setStackTrace(throwable.getStackTrace)
+          setLastState(genFail("non-zero exit code"))
+          false
+        case _ =>
+          setLastState(genPass())
+          true
+      }
     }
   }
 
@@ -641,9 +711,10 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     (diffIsOk, LogContext(logFile, swr, wr))
   }
 
-  def run(): TestState = {
+  def run(): (TestState, Long) = {
     // javac runner, for one, would merely append to an existing log file, so just delete it before we start
     logFile.delete()
+    stopwatch.start()
 
     if (kind == "neg" || (kind endsWith "-neg")) runNegTest()
     else kind match {
@@ -652,10 +723,18 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
       case "script"       => runScriptTest()
-      case _              => runTestCommon(execTest(outDir, logFile) && diffIsOk)
+      case _              => runRunTest()
     }
 
-    lastState
+    (lastState, stopwatch.stop)
+  }
+
+  private def runRunTest(): Unit = {
+    val argsFile  = testFile changeExtension "javaopts"
+    val javaopts = readOptionsFile(argsFile)
+    val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
+    def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile)
+    runTestCommon(exec() && diffIsOk)
   }
 
   private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
@@ -738,6 +817,8 @@ class SuiteRunner(
   // TODO: make this immutable
   PathSettings.testSourcePath = testSourcePath
 
+  val durations = collection.concurrent.TrieMap[File, Long]()
+
   def banner = {
     val baseDir = fileManager.compilerUnderTest.parent.toString
     def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
@@ -759,11 +840,15 @@ class SuiteRunner(
     // |Java Classpath:             ${sys.props("java.class.path")}
   }
 
-  def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = result
+  def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
+    durations(testFile) = durationMs
+    result
+  }
 
   def runTest(testFile: File): TestState = {
     val start = System.nanoTime()
     val runner = new Runner(testFile, this, nestUI)
+    var stopwatchDuration: Option[Long] = None
 
     // when option "--failed" is provided execute test only if log
     // is present (which means it failed before)
@@ -771,17 +856,19 @@ class SuiteRunner(
       if (failed && !runner.logFile.canRead)
         runner.genPass()
       else {
-        val (state, _) =
-          try timed(runner.run())
+        val (state, durationMs) =
+          try runner.run()
           catch {
             case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
           }
-        nestUI.reportTest(state, runner)
+        stopwatchDuration = Some(durationMs)
+        nestUI.reportTest(state, runner, durationMs)
         runner.cleanup()
         state
       }
     val end = System.nanoTime()
-    onFinishTest(testFile, state, TimeUnit.NANOSECONDS.toMillis(end - start))
+    val durationMs = stopwatchDuration.getOrElse(TimeUnit.NANOSECONDS.toMillis(end - start))
+    onFinishTest(testFile, state, durationMs)
   }
 
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {

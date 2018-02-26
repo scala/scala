@@ -52,7 +52,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
     }
   }
 
-  def statusLine(state: TestState) = {
+  def statusLine(state: TestState, durationMs: Long) = {
     import state._
     import TestState._
     val colorizer = state match {
@@ -62,10 +62,11 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
       case _           => red
     }
     val word = bold(colorizer(state.shortStatus))
-    f"$word $testNumber - $testIdent%-40s$reasonString"
+    def durationString = if (durationMs > PartestDefaults.printDurationThreshold) f"[duration ${(1.0 * durationMs) / 1000}%.2fs]" else ""
+    f"$word $testNumber - $testIdent%-40s$reasonString$durationString"
   }
 
-  def reportTest(state: TestState, info: TestInfo): Unit = {
+  def reportTest(state: TestState, info: TestInfo, durationMs: Long): Unit = {
     if (terse && state.isOk) {
       if (dotCount >= DotWidth) {
         outline("\n.")
@@ -75,7 +76,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
         dotCount += 1
       }
     } else {
-      echo(statusLine(state))
+      echo(statusLine(state, durationMs))
       if (!state.isOk) {
         def showLog() = if (info.logFile.canRead) {
           echo(bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")))
