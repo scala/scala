@@ -2989,7 +2989,9 @@ self =>
       case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
-        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.", "2.11.0")
+        def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
+        if (settings.isScala214) syntaxError(tdef.pos.point, msg("unsupported"))
+        else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)
