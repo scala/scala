@@ -243,7 +243,16 @@ private[collection] trait Wrappers {
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)
-            override def hashCode = byteswap32(k.##) + (byteswap32(v.##) << 16)
+            
+            // It's important that this implementation conform to the contract
+            // specified in the javadocs of java.util.Map.Entry.hashCode
+            //
+            // See https://github.com/scala/bug/issues/10663
+            override def hashCode = {
+              (if (k == null) 0 else k.hashCode()) ^
+              (if (v == null) 0 else v.hashCode())
+            }
+
             override def equals(other: Any) = other match {
               case e: ju.Map.Entry[_, _] => k == e.getKey && v == e.getValue
               case _ => false
