@@ -619,6 +619,10 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   private var blockIndex = 0
   private var lo = 0
 
+  def size: Int = blockIndex + lo
+  def isEmpty: Boolean = size == 0
+  def nonEmpty: Boolean = size != 0
+
   def addOne(elem: A): this.type = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32
@@ -632,7 +636,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   }
 
   def result(): Vector[A] = {
-    val size = blockIndex + lo
+    val size = this.size
     if (size == 0)
       return Vector.empty
     val s = new Vector[A](0, size, 0) // should focus front or back?
