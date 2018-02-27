@@ -158,13 +158,6 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
       resize(2 * table.length)
   }
 
-  protected[collection] def addEntry2(e: Entry, h: Int): Unit = {
-    e.next = table(h).asInstanceOf[Entry]
-    table(h) = e
-    tableSize += 1
-    nnSizeMapAdd(h)
-  }
-
   /** Find entry with given key in table, or add new one if not found.
    *  May be somewhat faster then `findEntry`/`addEntry` pair as it
    *  computes entry's hash index only once.

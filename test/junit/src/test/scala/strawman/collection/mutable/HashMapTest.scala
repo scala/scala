@@ -5,6 +5,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import strawman.collection.immutable.List
 
 @RunWith(classOf[JUnit4])
 class HashMapTest {
@@ -34,5 +35,18 @@ class HashMapTest {
     val hm = new mutable.HashMap[Int, Int]()
     hm.put(0, 0)
     hm.getOrElseUpdate(0, throw new AssertionError())
+  }
+
+  @Test
+  def getOrElseUpdate_keyIdempotence(): Unit = {
+    val map = mutable.HashMap[String, String]()
+
+    val key = "key"
+    map.getOrElseUpdate(key, {
+      map.getOrElseUpdate(key, "value1")
+      "value2"
+    })
+
+    assertEquals(List((key, "value2")), map.toList)
   }
 }

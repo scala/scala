@@ -80,8 +80,8 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
     val hash = table.elemHashCode(key)
     val i = table.index(hash)
-    val entry = table.findEntry0(key, i)
-    if (entry != null) entry.value
+    val firstEntry = table.findEntry0(key, i)
+    if (firstEntry != null) firstEntry.value
     else {
       val table0 = table.table
       val default = defaultValue
@@ -89,8 +89,11 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
       // a table resize.
       val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
       val e = table.createNewEntry(key, default)
-      if (table.tableSize >= table.threshold) table.addEntry(e)
-      else table.addEntry2(e, newEntryIndex)
+      // Repeat search
+      // because evaluation of `default` can bring entry with `key`
+      val secondEntry = table.findEntry0(key, newEntryIndex)
+      if (secondEntry == null) table.addEntry0(e, newEntryIndex)
+      else secondEntry.value = default
       default
     }
   }
