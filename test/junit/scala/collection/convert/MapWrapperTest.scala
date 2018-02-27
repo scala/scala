@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util
 
 @RunWith(classOf[JUnit4])
 class MapWrapperTest {
@@ -49,11 +50,32 @@ class MapWrapperTest {
 
   // test for scala/bug#8504
   @Test
-  def testHashCode() {
+  def testHashCodeNulls() {
     import scala.collection.JavaConverters._
     val javaMap = Map(1 -> null).asJava
 
     // Before the fix for scala/bug#8504, this throws a NPE
     javaMap.hashCode
+  }
+
+  // regression test for https://github.com/scala/bug/issues/10663
+  @Test
+  def testHashCodeEqualsMatchesJavaMap() {
+    import scala.collection.JavaConverters._
+    val jmap = new util.HashMap[String, String]()
+    jmap.put("scala", "rocks")
+    jmap.put("java interop is fun!", "ya!")
+    jmap.put("Ĺởồҝ ïŧ\\'ş ūŋǐčōđẹ", "whyyyy")
+    jmap.put("nulls nooo", null)
+    jmap.put(null, "null keys are you serious??")
+
+    // manually convert to scala map
+    val scalaMap = jmap.entrySet().iterator().asScala.map { e => e.getKey -> e.getValue}.toMap
+
+    val mapWrapper = scalaMap.asJava
+
+    assertEquals(jmap.hashCode(), mapWrapper.hashCode())
+    assertTrue(jmap == mapWrapper)
+    assertTrue(mapWrapper == jmap)
   }
 }
