@@ -96,6 +96,67 @@ private[internal] trait TypeMaps {
     def variance_=(x: Variance) = { assert(trackVariance, this) ; _variance = x }
     def variance = _variance
 
+    def traverseOver(tp: Type): Unit = {
+      tp match {
+        case TypeRef(pre, _, args) =>
+          this(pre)
+          args foreach this
+        case ThisType(_) =>
+        case SingleType(pre, sym) =>
+          if (!sym.isPackageClass) this(pre)
+        case MethodType(params, result) =>
+          traverseOver(params)
+          this(result)
+        case TypeBounds(lo, hi) =>
+          this(lo)
+          this(hi)
+        case NullaryMethodType(result) =>
+          this(result)
+        case ConstantType(_) =>
+        case SuperType(thistp, supertp) =>
+          this(thistp)
+          this(supertp)
+        case PolyType(tparams, result) =>
+          traverseOver(tparams)
+          this(result)
+        case BoundedWildcardType(bounds) =>
+          this(bounds)
+        case RefinedType(parents, decls) =>
+          parents foreach this
+          traverseOver(decls.toList)
+        case ExistentialType(tparams, result) =>
+          traverseOver(tparams)
+          this(result)
+        case OverloadedType(pre, alts) =>
+          if (!pre.isInstanceOf[ClassInfoType]) this(pre)
+        case AntiPolyType(pre, args) =>
+          this(pre)
+          args foreach this
+        case tv@TypeVar(_, constr) =>
+          if (constr.instValid) this(constr.inst)
+          else tv.typeArgs foreach this
+        case AnnotatedType(annots, atp) =>
+          annots foreach { annot: AnnotationInfo =>
+            val AnnotationInfo(atp, args, _) = annot
+            traverseOver(atp)
+            args foreach traverseOver
+          }
+          this(atp)
+        case _ =>
+      }
+    }
+
+    def traverseOver(symbols: List[Symbol]) = for { sym <- symbols } this(sym.info)
+
+    def traverseOver(tree: Tree) = (new TypeMapTraverser).traverse(tree)
+
+    class TypeMapTraverser extends Traverser {
+      override def traverse(tree: Tree) = {
+        TypeMap.this(tree.tpe)
+        super.traverse(tree)
+      }
+    }
+
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case tr @ TypeRef(pre, sym, args) =>
@@ -911,7 +972,7 @@ private[internal] trait TypeMaps {
   object IsDependentCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (tp.isImmediatelyDependent) result = true
-      else if (!result) mapOver(tp.dealias)
+      else if (!result) traverseOver(tp.dealias)
     }
   }
 
@@ -1053,15 +1114,15 @@ private[internal] trait TypeMaps {
             //
             // We can just map over the components and wait until we see the underlying type before we call
             // normalize.
-            mapOver(tp)
+            traverseOver(tp)
           case _ =>
             tp.normalize match {
               case TypeRef(_, sym1, _) if (sym == sym1) => result = true
               case refined: RefinedType =>
-                mapOver(tp.prefix)
-                mapOver(refined)
+                traverseOver(tp.prefix)
+                traverseOver(refined)
               case SingleType(_, sym1) if (sym == sym1) => result = true
-              case _ => mapOver(tp)
+              case _ => traverseOver(tp)
             }
         }
       }
@@ -1083,7 +1144,7 @@ private[internal] trait TypeMaps {
 
     def traverse(tp: Type) {
       if (p(tp)) result ::= tp
-      mapOver(tp)
+      traverseOver(tp)
     }
   }
 
@@ -1093,14 +1154,14 @@ private[internal] trait TypeMaps {
 
     def traverse(tp: Type) {
       if (pf.isDefinedAt(tp)) result ::= pf(tp)
-      mapOver(tp)
+      traverseOver(tp)
     }
   }
 
   class ForEachTypeTraverser(f: Type => Unit) extends TypeTraverser {
     def traverse(tp: Type) {
       f(tp)
-      mapOver(tp)
+      traverseOver(tp)
     }
   }
 
@@ -1109,7 +1170,7 @@ private[internal] trait TypeMaps {
     def traverse(tp: Type) {
       if (result.isEmpty) {
         if (p(tp)) result = Some(tp)
-        mapOver(tp)
+        traverseOver(tp)
       }
     }
   }
@@ -1119,7 +1180,7 @@ private[internal] trait TypeMaps {
     def traverse(tp: Type) {
       if (!result) {
         result = tp.isError
-        mapOver(tp)
+        traverseOver(tp)
       }
     }
   }
