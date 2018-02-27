@@ -48,62 +48,17 @@ import scala.annotation.unchecked.uncheckedVariance
   *  and may be nondeterministic.
   *  @define coll iterator
   */
-trait Iterator[+A] extends IterableOnce[A] { self =>
+trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
   def hasNext: Boolean
   @throws[NoSuchElementException]
   def next(): A
   def iterator() = this
-
-  /** @return the ''remaining'' number of elements, if it can be computed in O(1) time, otherwise -1 */
-  def knownSize: Int = -1
-
-  /** Tests whether this iterator is empty.
-    *
-    *  @return   `true` if hasNext is false, `false` otherwise.
-    *  @note     Reuse: $preservesIterator
-    */
-  def isEmpty: Boolean = !hasNext
-
-  /** Tests whether this iterator is not empty, same as `hasNext`.
-    *
-    *  @return   `true` if hasNext is true, `false` otherwise.
-    *  @note     Reuse: $preservesIterator
-    */
-  @`inline` final def nonEmpty: Boolean = hasNext
 
   /** Wraps the value of `next()` in an option.
     *
     * @return `Some(next)` if a next element exists, `None` otherwise.
     */
   def nextOption(): Option[A] = if (hasNext) Some(next()) else None
-
-  /** Tests whether a predicate holds for all values produced by this iterator.
-    *  $mayNotTerminateInf
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return        `true` if the given predicate `p` holds for all values
-    *                 produced by this iterator, otherwise `false`.
-    *  @note          Reuse: $consumesIterator
-    */
-  def forall(p: A => Boolean): Boolean = {
-    var res = true
-    while (res && hasNext) res = p(next())
-    res
-  }
-
-  /** Tests whether a predicate holds for some of the values produced by this iterator.
-    *  $mayNotTerminateInf
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return        `true` if the given predicate `p` holds for some of the values
-    *                 produced by this iterator, otherwise `false`.
-    *  @note          Reuse: $consumesIterator
-    */
-  def exists(p: A => Boolean): Boolean = {
-    var res = false
-    while (!res && hasNext) res = p(next())
-    res
-  }
 
   /** Tests whether this iterator contains a given value as an element.
     *  $mayNotTerminateInf
@@ -114,56 +69,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     *  @note        Reuse: $consumesIterator
     */
   def contains(elem: Any): Boolean = exists(_ == elem)    // Note--this seems faster than manual inlining!
-
-  /** Counts the number of elements in the $coll which satisfy a predicate.
-    *
-    *  @param p     the predicate  used to test elements.
-    *  @return      the number of elements satisfying the predicate `p`.
-    */
-  def count(p: A => Boolean): Int = {
-    var res = 0
-    while (hasNext) if (p(next())) res += 1
-    res
-  }
-
-  /** Finds the first value produced by the iterator satisfying a
-    *  predicate, if any.
-    *  $mayNotTerminateInf
-    *
-    *  @param p the predicate used to test values.
-    *  @return  an option value containing the first value produced by the iterator that satisfies
-    *           predicate `p`, or `None` if none exists.
-    *  @note    Reuse: $consumesIterator
-    */
-  def find(p: A => Boolean): Option[A] = {
-    while (hasNext) {
-      val a = next()
-      if (p(a)) return Some(a)
-    }
-    None
-  }
-
-  /** Finds the first element of the iterator for which the given partial
-    *  function is defined, and applies the partial function to it.
-    *
-    *  $mayNotTerminateInf
-    *  $orderDependent
-    *
-    *  @param pf   the partial function
-    *  @return     an option value containing pf applied to the first
-    *              value for which it is defined, or `None` if none exists.
-    *  @example    `Seq("a", 1, 5L).iterator().collectFirst({ case x: Int => x*10 }) = Some(10)`
-    */
-  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
-    // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
-    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
-    while (hasNext) {
-      val x = pf.applyOrElse(next(), sentinel)
-      if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
-    }
-    None
-  }
 
   /** Creates a buffered iterator from this iterator.
     *
@@ -374,32 +279,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
     new GroupedIterator[B](self, size, step)
 
-  def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    var result = z
-    while (hasNext) {
-      result = op(result, next())
-    }
-    result
-  }
-
-  def foldRight[B](z: B)(op: (A, B) => B): B = {
-    var reversed: immutable.List[A] = immutable.Nil
-    while (hasNext) reversed = next() :: reversed
-    reversed.foldLeft(z)((b, a) => op(a, b))
-  }
-
-  /** Produces a collection containing cumulative results of applying the
-   *  operator going left to right.
-   *
-   *  $willNotTerminateInf
-   *  $orderDependent
-   *
-   *  @tparam B      the type of the elements in the resulting collection
-   *  @param z       the initial value
-   *  @param op      the binary operator applied to the intermediate result and the element
-   *  @return        iterator with intermediate results
-   *  @note          Reuse: $consumesAndProducesIterator
-   */
   def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new Iterator[B] {
     // We use an intermediate iterator that iterates through the first element `z`
     // and then that will be modified to iterate through the collection
@@ -422,9 +301,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     def next(): B = current.next()
     def hasNext: Boolean = current.hasNext
   }
-
-  def foreach[U](f: A => U): Unit =
-    while (hasNext) f(next())
 
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
@@ -472,272 +348,10 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     -1
   }
 
-  /** Reduces the elements of this $coll using the specified associative binary operator.
-    *
-    *  $undefinedorder
-    *
-    *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
-    *  @param op       A binary operator that must be associative.
-    *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
-    *  @throws UnsupportedOperationException
-    *  if this $coll is empty.
-    */
-  def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
+  final def length: Int = size
 
-  /** Reduces the elements of this $coll, if any, using the specified
-    *  associative binary operator.
-    *
-    *  $undefinedorder
-    *
-    *  @tparam B     A type parameter for the binary operator, a supertype of `A`.
-    *  @param op      A binary operator that must be associative.
-    *  @return        An option value containing result of applying reduce operator `op` between all
-    *                 the elements if the collection is nonempty, and `None` otherwise.
-    */
-  def reduceOption[B >: A](op: (B, B) => B): Option[B] = reduceLeftOption(op)
-
-  /** Applies a binary operator to all elements of this $coll,
-    *  going left to right.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going left to right:
-    *           {{{
-    *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
-    *  @throws UnsupportedOperationException if this $coll is empty.   */
-  def reduceLeft[B >: A](op: (B, A) => B): B = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.reduceLeft")
-
-    var first = true
-    var acc: B = 0.asInstanceOf[B]
-
-    while (hasNext) {
-      val x = next()
-      if (first) {
-        acc = x
-        first = false
-      }
-      else acc = op(acc, x)
-    }
-    acc
-  }
-
-  // For internal use
-  protected[this] def reversed: Iterable[A] = {
-    var xs: immutable.List[A] = immutable.Nil
-    val it = iterator()
-    while (it.hasNext) xs = it.next() :: xs
-    xs
-  }
-
-  /** Applies a binary operator to all elements of this $coll, going right to left.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going right to left:
-    *           {{{
-    *             op(x_1, op(x_2, ..., op(x_{n-1}, x_n)...))
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
-    *  @throws UnsupportedOperationException if this $coll is empty.
-    */
-  def reduceRight[B >: A](op: (A, B) => B): B = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.reduceRight")
-
-    reversed.reduceLeft[B]((x, y) => op(y, x))
-  }
-
-  /** Optionally applies a binary operator to all elements of this $coll, going left to right.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
-    *           `None` otherwise.
-    */
-  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = if (isEmpty) None else Some(reduceLeft(op))
-
-  /** Optionally applies a binary operator to all elements of this $coll, going
-    *  right to left.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
-    *           `None` otherwise.
-    */
-  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = if (isEmpty) None else Some(reduceRight(op))
-
-  /** Sums up the elements of this collection.
-    *
-    *   @param   num  an implicit parameter defining a set of numeric operations
-    *                 which includes the `+` operator to be used in forming the sum.
-    *   @tparam  B    the result type of the `+` operator.
-    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
-    *
-    *   @usecase def sum: A
-    *     @inheritdoc
-    *
-    *     @return       the sum of all elements in this $coll of numbers of type `Int`.
-    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-    *     can be used as element type of the $coll and as result type of `sum`.
-    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
-    *
-    */
-  def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
-
-  /** Multiplies up the elements of this collection.
-    *
-    *   @param   num  an implicit parameter defining a set of numeric operations
-    *                 which includes the `*` operator to be used in forming the product.
-    *   @tparam  B   the result type of the `*` operator.
-    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
-    *
-    *   @usecase def product: A
-    *     @inheritdoc
-    *
-    *     @return       the product of all elements in this $coll of numbers of type `Int`.
-    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-    *     can be used as element type of the $coll and as result type of `product`.
-    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
-    */
-  def product[B >: A](implicit num: Numeric[B]): B = foldLeft(num.one)(num.times)
-
-  /** Finds the smallest element.
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @return   the smallest element of this $coll with respect to the ordering `ord`.
-    *
-    *  @usecase def min: A
-    *    @inheritdoc
-    *
-    *    @return   the smallest element of this $coll
-    */
-  def min[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.min")
-
-    reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
-  }
-
-  /** Finds the largest element.
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @return   the largest element of this $coll with respect to the ordering `ord`.
-    *
-    *  @usecase def max: A
-    *    @inheritdoc
-    *
-    *    @return   the largest element of this $coll.
-    */
-  def max[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.max")
-
-    reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
-  }
-
-  /** Finds the first element which yields the largest value measured by function f.
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @return   the first element of this $coll with the largest value measured by function f
-    *  with respect to the ordering `cmp`.
-    *
-    *  @usecase def maxBy[B](f: A => B): A
-    *    @inheritdoc
-    *
-    *    @return   the first element of this $coll with the largest value measured by function f.
-    */
-  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.maxBy")
-
-    var maxF: B = null.asInstanceOf[B]
-    var maxElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- this) {
-      val fx = f(elem)
-      if (first || cmp.gt(fx, maxF)) {
-        maxElem = elem
-        maxF = fx
-        first = false
-      }
-    }
-    maxElem
-  }
-
-  /** Finds the first element which yields the smallest value measured by function f.
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @return   the first element of this $coll with the smallest value measured by function f
-    *  with respect to the ordering `cmp`.
-    *
-    *  @usecase def minBy[B](f: A => B): A
-    *    @inheritdoc
-    *
-    *    @return   the first element of this $coll with the smallest value measured by function f.
-    */
-  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.minBy")
-
-    var minF: B = null.asInstanceOf[B]
-    var minElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- this) {
-      val fx = f(elem)
-      if (first || cmp.lt(fx, minF)) {
-        minElem = elem
-        minF = fx
-        first = false
-      }
-    }
-    minElem
-  }
-
-  def length: Int = {
-    var len = 0
-    while (hasNext) { len += 1; next() }
-    len
-  }
-
-  final def size: Int = length
-  
-  /** Selects all elements of this iterator which satisfy a predicate.
-    *
-    *  @param p     the predicate used to test elements.
-    *  @return      a new iterator consisting of all elements of this $coll that satisfy the given
-    *               predicate `p`. The order of the elements is preserved.
-    */
   def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
 
-  /** Creates an iterator over all the elements of this iterator which
-    *  do not satisfy a predicate p.
-    *
-    *  @param p the predicate used to test values.
-    *  @return  an iterator which produces those values of this iterator which do not satisfy the predicate `p`.
-    *  @note    Reuse: $consumesAndProducesIterator
-    */
   def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
 
   private[collection] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new AbstractIterator[A] {
@@ -774,15 +388,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     */
   def withFilter(p: A => Boolean): Iterator[A] = filter(p)
 
-  /** Creates an iterator by transforming values
-    *  produced by this iterator with a partial function, dropping those
-    *  values for which the partial function is not defined.
-    *
-    *  @param pf the partial function which filters and maps the iterator.
-    *  @return   a new iterator which yields each value `x` produced by this iterator for
-    *  which `pf` is defined the image `pf(x)`.
-    *  @note     Reuse: $consumesAndProducesIterator
-    */
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: A = _
@@ -893,14 +498,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       else Iterator.empty.next()
   }
 
-  /** Takes longest prefix of values produced by this iterator that satisfy a predicate.
-    *
-    *  @param   p  The predicate used to test elements.
-    *  @return  An iterator returning the values produced by this iterator, until
-    *           this iterator produces a value that does not satisfy
-    *           the predicate `p`.
-    *  @note    Reuse: $consumesAndProducesIterator
-    */
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     private var hd: A = _
     private var hdDefined: Boolean = false
@@ -924,13 +521,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     this
   }
 
-  /** Skips longest sequence of elements of this iterator which satisfy given
-    *  predicate `p`, and returns an iterator of the remaining elements.
-    *
-    *  @param p the predicate used to skip elements.
-    *  @return  an iterator consisting of the remaining elements
-    *  @note    Reuse: $consumesAndProducesIterator
-    */
   def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
     private[this] var status = -1
@@ -962,13 +552,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
       else Iterator.empty.next()
   }
 
-  /** Splits this Iterator into a prefix/suffix pair according to a predicate.
-    *
-    *  @param p the test predicate
-    *  @return  a pair of Iterators consisting of the longest prefix of this
-    *           whose elements all satisfy `p`, and the rest of the Iterator.
-    *  @note    Reuse: $consumesOneAndProducesTwoIterators
-    */
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     /*
      * Giving a name to following iterator (as opposed to trailing) because
@@ -1072,15 +655,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     (leading, trailing)
   }
 
-  /** Creates an iterator returning an interval of the values produced by this iterator.
-    *
-    *  @param from   the index of the first element in this iterator which forms part of the slice.
-    *                If negative, the slice starts at zero.
-    *  @param until  the index of the first element following the slice. If negative, the slice is empty.
-    *  @return an iterator which advances this iterator past the first `from` elements using `drop`,
-    *  and then takes `until - from` elements, using `take`.
-    *  @note         Reuse: $consumesAndProducesIterator
-    */
   def slice(from: Int, until: Int): Iterator[A] = sliceIterator(from, until max 0)
 
   /** Creates an optionally bounded slice, unbounded if `until` is negative. */
@@ -1112,13 +686,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     }
   }
 
-  /** Creates an iterator that pairs each element produced by this iterator
-    *  with its index, counting from 0.
-    *
-    *  @return        a new iterator containing pairs consisting of
-    *                 corresponding elements of this iterator and their indices.
-    *  @note          Reuse: $consumesAndProducesIterator
-    */
   def zipWithIndex: Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
     var idx = 0
     def hasNext = self.hasNext
@@ -1182,160 +749,6 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
         }
       }
     }
-
-  def mkString(start: String, sep: String, end: String): String =
-    addString(new StringBuilder(), start, sep, end).toString
-
-  def mkString(sep: String): String = mkString("", sep, "")
-
-  def mkString: String = mkString("")
-
-  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
-    *  The written text begins with the string `start` and ends with the string `end`.
-    *  Inside, the string representations (w.r.t. the method `toString`)
-    *  of all elements of this $coll are separated by the string `sep`.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> a.addString(b , "List(" , ", " , ")")
-    *      res5: StringBuilder = List(1, 2, 3, 4)
-    * }}}
-    *
-    *  @param  b    the string builder to which elements are appended.
-    *  @param start the starting string.
-    *  @param sep   the separator string.
-    *  @param end   the ending string.
-    *  @return      the string builder `b` to which elements were appended.
-    */
-  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
-    var first = true
-
-    b.append(start)
-    for (x <- self) {
-      if (first) {
-        b.append(x)
-        first = false
-      }
-      else {
-        b.append(sep)
-        b.append(x)
-      }
-    }
-    b.append(end)
-
-    b
-  }
-
-  /** Appends all elements of this $coll to a string builder using a separator string.
-    *  The written text consists of the string representations (w.r.t. the method `toString`)
-    *  of all elements of this $coll, separated by the string `sep`.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> a.addString(b, ", ")
-    *      res0: StringBuilder = 1, 2, 3, 4
-    * }}}
-    *
-    *  @param  b    the string builder to which elements are appended.
-    *  @param sep   the separator string.
-    *  @return      the string builder `b` to which elements were appended.
-    */
-  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
-
-  /** Appends all elements of this $coll to a string builder.
-    *  The written text consists of the string representations (w.r.t. the method
-    * `toString`) of all elements of this $coll without any separator string.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> val h = a.addString(b)
-    *      h: StringBuilder = 1234
-    * }}}
-
-    *  @param  b    the string builder to which elements are appended.
-    *  @return      the string builder `b` to which elements were appended.
-    */
-  def addString(b: StringBuilder): StringBuilder = addString(b, "")
-  
-  /** Copy values produced by this iterator to an array.
-   *  Fills the given array `xs` starting at index `start`.
-   *  Copying will stop once either the end of the current iterator is reached,
-   *  or the end of the array is reached.
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
-   *  @tparam B      the type of the elements of the array.
-   *
-   *  @note    Reuse: $consumesIterator
-   *
-   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
-   *
-   *    $willNotTerminateInf
-   */
-  @`inline` final def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
-    var i = start
-    while (i < xs.length && hasNext) {
-      xs(i) = next()
-      i += 1
-    }
-    xs
-  }
-
-  /** Copy values produced by this iterator to an array.
-   *  Fills the given array `xs` starting at index `start` with at most
-   *  `len` values produced by this iterator.
-   *  Copying will stop once either the end of the current iterator is reached,
-   *  or the end of the array is reached, or `len` elements have been copied.
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
-   *  @param  len    the maximal number of elements to copy.
-   *  @tparam B      the type of the elements of the array.
-   *
-   *  @note    Reuse: $consumesIterator
-   *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
-   *
-   *    $willNotTerminateInf
-   */
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
-    var i = start
-    val end = start + math.min(len, xs.length - start)
-    while (i < end && hasNext) {
-      xs(i) = next()
-      i += 1
-    }
-    xs
-  }
-
-  /** Converts this Iterator into another collection.
-    *  @return a new collection containing all elements of this Iterator.
-    *  @tparam C The collection type to build.
-    *  @param factory Collection factory to use. The factory may or may
-    *                  not eagerly consume this iterator.
-    */
-  def to[C](factory: Factory[A, C]): C = factory.fromSpecific(self)
 
   /** Converts this iterator to a string.
    *

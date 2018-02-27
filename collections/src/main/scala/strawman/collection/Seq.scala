@@ -82,7 +82,7 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
   * @define Coll `Seq`
   */
 trait SeqOps[+A, +CC[_], +C] extends Any
-  with IterableOps[A, CC, C] {
+  with IterableOps[A, CC, C] { self =>
 
   override def view: SeqView[A] = new SeqView.Id[A](this)
 
@@ -496,7 +496,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
     private[this] def init() = {
       val m = mutable.HashMap[A, Int]()
-      val (es, is) = (toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (self.toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
 
       (es.to(mutable.ArrayBuffer), is.toArray)
     }
@@ -557,7 +557,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       val m = mutable.HashMap[A, Int]()
 
       // e => (e, weight(e))
-      val (es, is) = (toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (self.toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
       val cs = new Array[Int](m.size)
       is foreach (i => cs(i) += 1)
       val ns = new Array[Int](cs.length)
