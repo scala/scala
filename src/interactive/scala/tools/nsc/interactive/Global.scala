@@ -1106,7 +1106,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
      */
     def viewApply(view: SearchResult): Tree = {
       assert(view.tree != EmptyTree)
-      analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+      val t = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+        .typed(Apply(view.tree, List(tree)) setPos tree.pos)
+      if (!t.tpe.isErroneous) t
+      else analyzer.newTyper(context.makeSilent(reportAmbiguousErrors = true))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
         .onTypeError(EmptyTree)
     }
