@@ -314,7 +314,7 @@ class SetMapConsistencyTest {
   val smallKeys = Array(0, 1, 42, 9127)
   val intKeys = smallKeys ++ Array(-1, Int.MaxValue, Int.MinValue, -129385)
   val longKeys = intKeys.map(_.toLong) ++ Array(Long.MaxValue, Long.MinValue, 1397198789151L, -41402148014L)
-  val stringKeys = intKeys.map(_.toString) ++ Array("", null)
+  val stringKeys = intKeys.map(_.toString) ++ Array[String]("", null)
   val anyKeys = stringKeys.filter(_ != null) ++ Array(0L) ++ Array(true) ++ Array(math.Pi)
 
   @Test

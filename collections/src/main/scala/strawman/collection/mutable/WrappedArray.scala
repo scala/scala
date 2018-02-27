@@ -66,6 +66,14 @@ abstract class WrappedArray[T]
 
   /** Clones this object, including the underlying Array. */
   override def clone(): WrappedArray[T] = WrappedArray.make(array.clone())
+
+  override def copyToArray[B >: T](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+
+  override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): xs.type = {
+    val l = scala.math.min(scala.math.min(len, length), xs.length-start)
+    if(l > 0) Array.copy(array, 0, xs, start, l)
+    xs
+  }
 }
 
 /** A companion object used to create instances of `WrappedArray`.
