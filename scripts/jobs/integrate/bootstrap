@@ -456,7 +456,7 @@ testStability() {
       ${updatedModuleVersions[@]} \
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
       $clean \
-      dist/mkQuick
+      library/compile reflect/compile compiler/compile
   mv build/quick build/strap
   mv quick1 build/quick
   $scriptsDir/stability-test.sh
