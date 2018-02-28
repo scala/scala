@@ -77,7 +77,11 @@ trait PartialOrdering[T] extends Equiv[T] {
 
   def reverse : PartialOrdering[T] = new PartialOrdering[T] {
     override def reverse = outer
-    def lteq(x: T, y: T) = outer.lteq(y, x)
     def tryCompare(x: T, y: T) = outer.tryCompare(y, x)
+    def lteq(x: T, y: T) = outer.lteq(y, x)
+    override def gteq(x: T, y: T) = outer.gteq(y, x)
+    override def lt(x: T, y: T) = outer.lt(y, x)
+    override def gt(x: T, y: T) = outer.gt(y, x)
+    override def equiv(x: T, y: T) = outer.equiv(y, x)
   }
 }

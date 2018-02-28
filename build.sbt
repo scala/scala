@@ -445,6 +445,17 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.getOrElse0"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$IterableOrdering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple4Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple9Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Reverse"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple2Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple3Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple7Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple6Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple8Ordering"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple5Ordering"),
   )
 }
 
