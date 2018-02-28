@@ -121,16 +121,11 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
     val toAdd = Map[K, V]()
-    val toRemove = Set[K]()
     for (elem <- this) {
-      val mapped = f(elem)
-      if (!contains(mapped._1)) {
-        toAdd += mapped
-        toRemove -= elem._1
-      }
+        toAdd += f(elem)
     }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    coll.clear()
+    coll ++= toAdd
     this
   }
 

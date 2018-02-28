@@ -27,16 +27,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   def mapInPlace(f: A => A): this.type = {
     val toAdd = Set[A]()
-    val toRemove = Set[A]()
     for (elem <- this) {
-      val mapped = f(elem)
-      if (!contains(mapped)) {
-        toAdd += mapped
-        toRemove -= elem
-      }
+      toAdd += f(elem)
     }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    coll.clear()
+    coll ++= toAdd
     this
   }
 
