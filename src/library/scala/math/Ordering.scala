@@ -109,6 +109,12 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   override def reverse: Ordering[T] = new Ordering[T] {
     override def reverse = outer
     def compare(x: T, y: T) = outer.compare(y, x)
+    override def lteq(x: T, y: T) = outer.lteq(y, x)
+    override def gteq(x: T, y: T) = outer.gteq(y, x)
+    override def lt(x: T, y: T) = outer.lt(y, x)
+    override def gt(x: T, y: T) = outer.gt(y, x)
+    override def max(x: T, y: T) = outer.min(x, y)
+    override def min(x: T, y: T) = outer.max(x, y)
   }
 
   /** Given f, a function from U into T, creates an Ordering[U] whose compare
