@@ -133,13 +133,13 @@ object ArrayOps {
     } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
   }
 
-  private class GroupedIterator[A](xs: Array[A]) extends Iterator[Array[A]] {
+  private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends Iterator[Array[A]] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < xs.length
     def next(): Array[A] = {
       if(pos >= xs.length) throw new NoSuchElementException
-      val r = xs.slice(pos, pos+size)
-      pos += size
+      val r = xs.slice(pos, pos+groupSize)
+      pos += groupSize
       r
     }
   }
@@ -260,7 +260,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def take(n: Int): Array[A] = slice(0, min(n, xs.length))
 
   /** The rest of the array without its `n` first elements. */
-  def drop(n: Int): Array[A] = slice(n, xs.length - max(n, 0))
+  def drop(n: Int): Array[A] = slice(min(n, xs.length), xs.length)
 
   /** An array containing the last `n` elements of this array. */
   def takeRight(n: Int): Array[A] = drop(xs.length - max(n, 0))
@@ -301,7 +301,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return An iterator producing arrays of size `size`, except the
     *          last will be less than size `size` if the elements don't divide evenly.
     */
-  def grouped(size: Int): Iterator[Array[A]] = new ArrayOps.GroupedIterator[A](xs)
+  def grouped(size: Int): Iterator[Array[A]] = new ArrayOps.GroupedIterator[A](xs, size)
 
   /** Splits this array into two at a given position.
     * Note: `c splitAt n` is equivalent to `(c take n, c drop n)`.
