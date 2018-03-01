@@ -196,11 +196,9 @@ object VersionUtil {
     "org.scala-lang.scala-sha-bootstrap." + path.replace('/', '.')
 
   /** Build a dependency to a JAR file in the bootstrap repository */
-  def bootstrapDep(baseDir: File, path: String, libName: String): ModuleID = {
-    val sha = IO.read(baseDir / path / s"$libName.jar.desired.sha1").split(' ')(0)
-    bootstrapOrganization(path) % libName % sha from
-      s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/$sha/$path/$libName.jar"
-  }
+  def bootstrapDep(path: String)(libNameAndSha: (String, String)): ModuleID =
+    bootstrapOrganization(path) % libNameAndSha._1 % libNameAndSha._2 from
+      s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/${libNameAndSha._2}/$path/${libNameAndSha._1}.jar"
 
   /** Copy a bootstrap dependency JAR that is on the classpath to a file */
   def copyBootstrapJar(cp: Seq[Attributed[File]], baseDir: File, path: String, libName: String): Unit = {
@@ -209,6 +207,7 @@ object VersionUtil {
       val mod = a.get(moduleID.key)
       mod.map(_.organization) == Some(org) && mod.map(_.name) == Some(libName)
     }.map(_.data).get
+    if(!(baseDir / path).exists()) IO.createDirectory(baseDir / path)
     IO.copyFile(resolved, baseDir / path / s"$libName.jar")
   }
 }
