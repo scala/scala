@@ -138,8 +138,6 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class LocalOpt {
   val postProcessor: PostProcessor
 
-  import postProcessor.bTypes.frontendAccess.recordPerRunCache
-
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._

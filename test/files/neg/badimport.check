@@ -1,0 +1,4 @@
+badimport.scala:2: error: . expected
+import collection
+                 ^
+one error found

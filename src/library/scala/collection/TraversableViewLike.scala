@@ -112,6 +112,18 @@ trait TraversableViewLike[+A,
 
       None
     }
+
+    override def last: B = {
+      // (Should be) better than allocating a Some for every element.
+      var empty = true
+      var result: B = null.asInstanceOf[B]
+      for (x <- this) {
+        empty = false
+        result = x
+      }
+      if (empty) throw new NoSuchElementException("last of empty traversable") else result
+    }
+
     override def lastOption: Option[B] = {
       // (Should be) better than allocating a Some for every element.
       var empty = true

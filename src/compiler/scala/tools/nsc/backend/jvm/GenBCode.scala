@@ -9,6 +9,37 @@ package jvm
 
 import scala.tools.asm.Opcodes
 
+/**
+ * Some notes about the backend's state and its initialization and release.
+ *
+ * State that is used in a single run is allocated through `recordPerRunCache`, for example
+ * `ByteCodeRepository.compilingClasses` or `CallGraph.callsites`. This state is cleared at the end
+ * of each run.
+ *
+ * Some state needs to be re-initialized per run, for example `CoreBTypes` (computed from Symbols /
+ * Types) or the `GeneratedClassHandler` (depends on the compiler settings). This state is
+ * (re-) initialized in the `GenBCode.initialize` method. There two categories:
+ *
+ *   1. State that is stored in a `var` field and (re-) assigned in the `initialize` method, for
+ *      example the `GeneratedClassHandler`
+ *   2. State that uses the `PerRunInit` / `bTypes.perRunLazy` / `LazyVar` infrastructure, for
+ *      example the types in `CoreBTypes`
+ *
+ * The reason to use the `LazyVar` infrastructure is to prevent eagerly computing all the state
+ * even if it's never used in a run. It can also be used to work around initialization ordering
+ * issues, just like ordinary lazy vals. For state that is known to be accessed, a `var` field is
+ * just fine.
+ *
+ * Typical `LazyVar` use: `lazy val state: LazyVar[T] = perRunLazy(component)(initializer)`
+ *   - The `initializer` expression is executed lazily
+ *   - When the initializer actually runs, it synchronizes on the
+ *     `PostProcessorFrontendAccess.frontendLock`
+ *   - The `component.initialize` method causes the `LazyVar` to be re-initialized on the next `get`
+ *   - The `state` is itself a `lazy val` to make sure the `component.initialize` method only
+ *     clears those `LazyVar`s that were ever accessed
+ *
+ * TODO: convert some uses of `LazyVar` to ordinary `var`.
+ */
 abstract class GenBCode extends SubComponent {
   self =>
   import global._
@@ -20,9 +51,9 @@ abstract class GenBCode extends SubComponent {
 
   val codeGen: CodeGen[global.type] = new { val bTypes: self.bTypes.type = self.bTypes } with CodeGen[global.type](global)
 
-  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new {
-    val bTypes: self.bTypes.type = self.bTypes
-  } with PostProcessor(statistics)
+  val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new { val bTypes: self.bTypes.type = self.bTypes } with PostProcessor
+
+  var generatedClassHandler: GeneratedClassHandler = _
 
   val phaseName = "jvm"
 
@@ -33,45 +64,35 @@ abstract class GenBCode extends SubComponent {
 
     override val erasedTypes = true
 
-    private val globalOptsEnabled = {
-      import postProcessorFrontendAccess._
-      compilerSettings.optInlinerEnabled || compilerSettings.optClosureInvocations
-    }
-
-    def apply(unit: CompilationUnit): Unit = {
-      val generated = statistics.timed(bcodeGenStat) {
-        codeGen.genUnit(unit)
-      }
-      if (globalOptsEnabled) postProcessor.generatedClasses ++= generated
-      else postProcessor.postProcessAndSendToDisk(generated)
-    }
+    def apply(unit: CompilationUnit): Unit = codeGen.genUnit(unit)
 
     override def run(): Unit = {
       statistics.timed(bcodeTimer) {
         try {
           initialize()
           super.run() // invokes `apply` for each compilation unit
-          if (globalOptsEnabled) postProcessor.postProcessAndSendToDisk(postProcessor.generatedClasses)
+          generatedClassHandler.complete()
         } finally {
-          // When writing to a jar, we need to close the jarWriter. Since we invoke the postProcessor
-          // multiple times if (!globalOptsEnabled), we have to do it here at the end.
-          postProcessor.classfileWriter.get.close()
+          this.close()
         }
       }
     }
 
-    /**
-     * Several backend components have state that needs to be initialized in each run, because
-     * it depends on frontend data that may change between runs: Symbols, Types, Settings.
-     */
+    /** See comment in [[GenBCode]] */
     private def initialize(): Unit = {
       val initStart = statistics.startTimer(bcodeInitTimer)
       scalaPrimitives.init()
       bTypes.initialize()
       codeGen.initialize()
       postProcessorFrontendAccess.initialize()
-      postProcessor.initialize()
-      statistics.stopTimer(bcodeInitTimer, initStart)
+      postProcessor.initialize(global)
+      generatedClassHandler = GeneratedClassHandler(global)
+      statistics.stopTimer(statistics.bcodeInitTimer, initStart)
+    }
+
+    private def close(): Unit = {
+      postProcessor.classfileWriter.close()
+      generatedClassHandler.close()
     }
   }
 }

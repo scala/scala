@@ -287,7 +287,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       body
   }
 
-  override protected def isDeveloper = settings.developer || super.isDeveloper
+  override def isDeveloper = settings.developer || super.isDeveloper
 
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
@@ -1098,6 +1098,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     var currentUnit: CompilationUnit = NoCompilationUnit
 
     val profiler: Profiler = Profiler(settings)
+    keepPhaseStack = settings.log.isSetByUser
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
@@ -1652,20 +1653,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       inform(List(name, baseClasses, contents) mkString "\n\n")
     }
   }
-
-  def getFile(source: AbstractFile, segments: Array[String], suffix: String): File = {
-    val outDir = Path(
-      settings.outputDirs.outputDirFor(source).path match {
-        case ""   => "."
-        case path => path
-      }
-    )
-    val dir      = segments.init.foldLeft(outDir)(_ / _).createDirectory()
-    new File(dir.path, segments.last + suffix)
-  }
-
-  /** Returns the file with the given suffix for the given class. Used for icode writing. */
-  def getFile(clazz: Symbol, suffix: String): File = getFile(clazz.sourceFile, clazz.fullName split '.', suffix)
 
   def createJavadoc    = false
 }

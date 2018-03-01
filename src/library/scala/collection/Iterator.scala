@@ -590,7 +590,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   }
 
   /** Produces a collection containing cumulative results of applying the
-   *  operator going left to right.
+   *  operator going left to right, including the initial value.
    *
    *  $willNotTerminateInf
    *  $orderDependent
@@ -602,14 +602,20 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note          Reuse: $consumesAndProducesIterator
    */
   def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
-    var hasNext = true
-    var elem = z
-    def next() = if (hasNext) {
-      val res = elem
-      if (self.hasNext) elem = op(elem, self.next())
-      else hasNext = false
-      res
-    } else Iterator.empty.next()
+    private[this] var state = 0    // 1 consumed initial, 2 self.hasNext, 3 done
+    private[this] var accum = z
+    private[this] def gen() = { val res = op(accum, self.next()) ; accum = res ; res }
+    def hasNext = state match {
+      case 0 | 2 => true
+      case 3     => false
+      case _     => if (self.hasNext) { state = 2 ; true } else { state = 3 ; false }
+    }
+    def next() = state match {
+      case 0 => state = 1 ; accum
+      case 1 => gen()
+      case 2 => state = 1 ; gen()
+      case 3 => Iterator.empty.next()
+    }
   }
 
   /** Produces a collection containing cumulative results of applying the operator going right to left.

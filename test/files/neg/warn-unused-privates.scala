@@ -167,7 +167,7 @@ trait Boundings {
     17
   }
   def w() = {
-    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+    val D(x @ _) = d                      // no warn
     17
   }
 
@@ -185,7 +185,7 @@ trait Forever {
     val t = Option((17, 42))
     for {
       ns <- t
-      (i, j) = ns                        // warn, fixme
+      (i, j) = ns                        // no warn
     } yield 42                           // val emitted only if needed, hence nothing unused
   }
 }
@@ -222,5 +222,24 @@ class `no warn in patmat anonfun isDefinedAt` {
   def f(pf: PartialFunction[String, Int]) = pf("42")
   def g = f {
     case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
+  }
+}
+
+// this is the ordinary case, as AnyRef is an alias of Object
+class `nonprivate alias is enclosing` {
+  class C
+  type C2 = C
+  private class D extends C2   // warn
+}
+
+object `classof something` {
+  private class intrinsically
+  def f = classOf[intrinsically].toString()
+}
+
+trait `short comings` {
+  def f: Int = {
+    val x = 42
+    17
   }
 }

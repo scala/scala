@@ -117,11 +117,11 @@ class Foo {
 }
 
 
-object foo extends Foo
+object Foo extends Foo
 
 package pkg1 {
   class C1
-  object c1 extends C1
+  object C1 extends C1
 }
 
 object testClasses {

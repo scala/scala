@@ -13,6 +13,7 @@ import scala.reflect.internal.util.ListOfNil
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
+import scala.util.control.NonFatal
 import Fingerprint._
 
 /**
@@ -51,6 +52,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
+  private final val macroClassLoadersCache =
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
+
   /** Obtains a `ClassLoader` instance used for macro expansion.
    *
    *  By default a new `ScalaClassLoader` is created using the classpath
@@ -60,8 +64,24 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    */
   protected def findMacroClassLoader(): ClassLoader = {
     val classpath = global.classPath.asURLs
-    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+    def newLoader = () => {
+      macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+    }
+
+    import scala.tools.nsc.io.Jar
+    import scala.reflect.io.{AbstractFile, Path}
+    val locations = classpath.map(u => Path(AbstractFile.getURL(u).file))
+    val disableCache = settings.YdisableMacrosClassLoaderCaching.value
+    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) {
+      if (disableCache) macroLogVerbose("macro classloader: caching is disabled by the user.")
+      else {
+        val offenders = locations.filterNot(!Jar.isJarOrZip(_))
+        macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${offenders.mkString(",")}.")
+      }
+
+      newLoader()
+    } else macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
   }
 
   /** `MacroImplBinding` and its companion module are responsible for
@@ -815,7 +835,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)
               case ex: ControlThrowable => throw ex
               case ex: TypeError => MacroGeneratedTypeError(expandee, ex)
-              case _ => MacroGeneratedException(expandee, realex)
+              case NonFatal(_) => MacroGeneratedException(expandee, realex)
+              case fatal => throw fatal
             }
         } finally {
           expandee.removeAttachment[MacroRuntimeAttachment]
@@ -906,7 +927,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          try {
+            macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          } finally {
+            if (context.reporter.isBuffering)
+              context.reporter.propagateErrorsTo(typer.context.reporter)
+          }
         case _ =>
           tree
       })

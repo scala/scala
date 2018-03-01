@@ -546,9 +546,18 @@ trait Scanners extends ScannersCommon {
           def unclosedCharLit() = {
             val unclosed = "unclosed character literal"
             // advise if previous token was Symbol contiguous with the orphan single quote at offset
-            val msg =
+            val msg = {
+              val maybeMistakenQuote =
+                this match {
+                  case sfs: SourceFileScanner =>
+                    val wholeLine = sfs.source.lineToString(sfs.source.offsetToLine(offset))
+                    wholeLine.count(_ == '\'') > 1
+                  case _ => false
+                }
               if (token == SYMBOLLIT && offset == lastOffset) s"""$unclosed (or use " for string literal "$strVal")"""
+              else if (maybeMistakenQuote) s"""$unclosed (or use " not ' for string literal)"""
               else unclosed
+            }
             syntaxError(msg)
           }
           def fetchSingleQuote() = {

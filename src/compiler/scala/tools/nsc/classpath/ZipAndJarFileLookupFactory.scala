@@ -30,7 +30,7 @@ sealed trait ZipAndJarFileLookupFactory {
   protected def createForZipFile(zipFile: AbstractFile): ClassPath
 
   private def createUsingCache(zipFile: AbstractFile, settings: Settings): ClassPath = {
-    cache.getOrCreate(zipFile.file.toPath, () => createForZipFile(zipFile))
+    cache.getOrCreate(List(zipFile.file.toPath), () => createForZipFile(zipFile))
   }
 }
 
@@ -177,20 +177,24 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
 }
 
 final class FileBasedCache[T] {
+  import java.nio.file.Path
   private case class Stamp(lastModified: FileTime, fileKey: Object)
-  private val cache = collection.mutable.Map.empty[java.nio.file.Path, (Stamp, T)]
+  private val cache = collection.mutable.Map.empty[Seq[Path], (Seq[Stamp], T)]
 
-  def getOrCreate(path: java.nio.file.Path, create: () => T): T = cache.synchronized {
-    val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
-    val lastModified = attrs.lastModifiedTime()
-    // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
-    val fileKey = attrs.fileKey()
-    val stamp = Stamp(lastModified, fileKey)
-    cache.get(path) match {
-      case Some((cachedStamp, cached)) if cachedStamp == stamp => cached
+  def getOrCreate(paths: Seq[Path], create: () => T): T = cache.synchronized {
+    val stamps = paths.map { path =>
+      val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
+      val lastModified = attrs.lastModifiedTime()
+      // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
+      val fileKey = attrs.fileKey()
+      Stamp(lastModified, fileKey)
+    }
+
+    cache.get(paths) match {
+      case Some((cachedStamps, cached)) if cachedStamps == stamps => cached
       case _ =>
         val value = create()
-        cache.put(path, (stamp, value))
+        cache.put(paths, (stamps, value))
         value
     }
   }

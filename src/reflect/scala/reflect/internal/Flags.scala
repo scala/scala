@@ -301,6 +301,9 @@ class Flags extends ModifierFlags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PackageFlags | CASE | SYNTHETIC
 
+  final val ValidAliasFlags = SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED
+
+
   /** These flags are not pickled */
   final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
 

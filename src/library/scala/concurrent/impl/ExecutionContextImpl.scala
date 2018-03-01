@@ -120,32 +120,7 @@ private[concurrent] object ExecutionContextImpl {
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
-    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true) {
-      override def execute(runnable: Runnable): Unit = {
-        val fjt: ForkJoinTask[_] = runnable match {
-          case t: ForkJoinTask[_] => t
-          case r                  => new ExecutionContextImpl.AdaptedForkJoinTask(r)
-        }
-        Thread.currentThread match {
-          case fjw: ForkJoinWorkerThread if fjw.getPool eq this => fjt.fork()
-          case _                                                => super.execute(fjt)
-        }
-      }
-    }
-  }
-
-  final class AdaptedForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { runnable.run(); true } catch {
-      case anything: Throwable =>
-        val t = Thread.currentThread
-        t.getUncaughtExceptionHandler match {
-          case null =>
-          case some => some.uncaughtException(t, anything)
-        }
-        throw anything
-    }
+    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true)
   }
 
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl =

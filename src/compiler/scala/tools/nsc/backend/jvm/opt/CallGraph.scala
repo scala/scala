@@ -57,6 +57,7 @@ abstract class CallGraph {
    * optimizer: finding callsites to re-write requires running a producers-consumers analysis on
    * the method. Here the closure instantiations are already grouped by method.
    */
+   //currently single threaded access only
   val closureInstantiations: mutable.Map[MethodNode, Map[InvokeDynamicInsnNode, ClosureInstantiation]] = recordPerRunCache(concurrent.TrieMap.empty withDefaultValue Map.empty)
 
   /**
@@ -70,7 +71,9 @@ abstract class CallGraph {
    * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
    * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
    */
+  //currently single threaded access only
   val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+  //currently single threaded access only
   val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {

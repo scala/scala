@@ -2,6 +2,7 @@ package scala.tools.nsc.profile
 
 import java.io.{FileWriter, PrintWriter}
 import java.lang.management.ManagementFactory
+import java.util.ServiceLoader
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.management.openmbean.CompositeData
@@ -86,6 +87,7 @@ private [profile] object RealProfiler {
   val threadMx = ExtendedThreadMxBean.proxy
   if (threadMx.isThreadCpuTimeSupported) threadMx.setThreadCpuTimeEnabled(true)
   private val idGen = new AtomicInteger()
+  lazy val allPlugins = ServiceLoader.load(classOf[ProfilerPlugin]).iterator().asScala.toList
 }
 
 private [profile] class RealProfiler(reporter : ProfileReporter, val settings: Settings) extends Profiler with NotificationListener {
@@ -100,6 +102,8 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     case emitter: NotificationEmitter => emitter.addNotificationListener(this, null, null)
     case gc => println(s"Cant connect gcListener to ${gc.getClass}")
   }
+
+  val active = RealProfiler.allPlugins map (_.generate(this, settings))
 
   private val mainThread = Thread.currentThread()
 
@@ -128,6 +132,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
   reporter.header(this)
 
   override def finished(): Unit = {
+    active foreach {_.finished()}
     //we may miss a GC event if gc is occurring as we call this
     RealProfiler.gcMx foreach {
       case emitter: NotificationEmitter => emitter.removeNotificationListener(this)
@@ -163,6 +168,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
   override def afterPhase(phase: Phase, snapBefore: ProfileSnap): Unit = {
     assert(mainThread eq Thread.currentThread())
     val initialSnap = snapThread(0)
+    active foreach {_.afterPhase(phase)}
     if (settings.YprofileExternalTool.containsPhase(phase)) {
       println("Profile hook stop")
       ExternalToolHook.after()
@@ -183,6 +189,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
       println("Profile hook start")
       ExternalToolHook.before()
     }
+    active foreach {_.beforePhase(phase)}
     snapThread(0)
   }
 
