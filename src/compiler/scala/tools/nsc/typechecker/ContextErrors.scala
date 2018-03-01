@@ -21,7 +21,7 @@ trait ContextErrors {
   import global._
   import definitions._
 
-  sealed abstract class AbsTypeError extends Throwable {
+  sealed abstract class AbsTypeError {
     def errPos: Position
     def errMsg: String
     override def toString() = "[Type error at:" + errPos + "] " + errMsg

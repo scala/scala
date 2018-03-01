@@ -22,7 +22,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * The ByteCodeRepository provides utilities to read the bytecode of classfiles from the compilation
  * classpath. Parsed classes are cached in the `classes` map.
  */
-abstract class ByteCodeRepository {
+abstract class ByteCodeRepository extends PerRunInit {
   val postProcessor: PostProcessor
 
   import postProcessor.{bTypes, bTypesFromClassfile}
@@ -54,12 +54,7 @@ abstract class ByteCodeRepository {
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
-  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
-
-
-  def initialize(): Unit = {
-    javaDefinedClasses ++= frontendAccess.javaDefinedClasses
-  }
+  private lazy val javaDefinedClasses = perRunLazy(this)(frontendAccess.javaDefinedClasses)
 
   def add(classNode: ClassNode, sourceFilePath: Option[String]) = sourceFilePath match {
     case Some(path) if path != "<no file>" => compilingClasses(classNode.name) = (classNode, path)
@@ -273,7 +268,7 @@ abstract class ByteCodeRepository {
       classNode
     } match {
       case Some(node) => Right(node)
-      case None       => Left(ClassNotFound(internalName, javaDefinedClasses(internalName)))
+      case None       => Left(ClassNotFound(internalName, javaDefinedClasses.get(internalName)))
     }
   }
 }

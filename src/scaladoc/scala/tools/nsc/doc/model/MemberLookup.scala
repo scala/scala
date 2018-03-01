@@ -9,7 +9,7 @@ trait MemberLookup extends base.MemberLookupBase {
   thisFactory: ModelFactory =>
 
   import global._
-  import definitions.{ NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
+  import definitions.{ NothingClass, AnyClass, AnyValClass, AnyRefClass }
 
   override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] =
     findTemplateMaybe(sym) match {
@@ -39,7 +39,8 @@ trait MemberLookup extends base.MemberLookupBase {
 
   override def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
     val sym1 =
-      if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
+      if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass)
+        definitions.ScalaPackageClass.info.member(newTermName("package"))
       else if (sym.hasPackageFlag)
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
@@ -61,7 +62,7 @@ trait MemberLookup extends base.MemberLookupBase {
     }
     classpathEntryFor(sym1) flatMap { path =>
       settings.extUrlMapping get path map { url => {
-         LinkToExternalTpl(name, url, makeTemplate(sym1))
+         LinkToExternalTpl(name, url, makeTemplate(sym))
         }
       }
     }

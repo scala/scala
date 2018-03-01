@@ -17,8 +17,6 @@ f3: Some(5)
 fail
 success
 fail
-success
-fail
 fail
 success
 fail

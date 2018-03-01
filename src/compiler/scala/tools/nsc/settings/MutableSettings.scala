@@ -309,16 +309,13 @@ class MutableSettings(val errorFn: String => Unit)
       def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
         src.path.startsWith(srcDir.path)
 
-      singleOutDir match {
-        case Some(d) => d
-        case None =>
-          (outputs find (isBelow _).tupled) match {
-            case Some((_, d)) => d
-            case _ =>
-              throw new FatalError("Could not find an output directory for "
-                                   + src.path + " in " + outputs)
-          }
-      }
+      singleOutDir.getOrElse(outputs.find((isBelow _).tupled) match {
+          case Some((_, d)) => d
+          case _ =>
+            throw new FatalError("Could not find an output directory for "
+                                 + src.path + " in " + outputs)
+        }
+      )
     }
 
     /** Return the source file path(s) which correspond to the given
@@ -928,12 +925,14 @@ class MutableSettings(val errorFn: String => Unit)
 
     def tryToSet(args: List[String]) =
       if (default == "") errorAndValue("missing phase", None)
-      else tryToSetColon(List(default)) map (_ => args)
+      else tryToSetColon(splitDefault) map (_ => args)
+
+    private def splitDefault = default.split(',').toList
 
     override def tryToSetColon(args: List[String]) = try {
       args match {
         case Nil  => if (default == "") errorAndValue("missing phase", None)
-                     else tryToSetColon(List(default))
+                     else tryToSetColon(splitDefault)
         case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
       }
     } catch { case _: NumberFormatException => None }

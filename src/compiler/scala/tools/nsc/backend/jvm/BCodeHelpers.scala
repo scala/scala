@@ -461,12 +461,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *     non-erased existential type.
      */
     def erasedType(tp: Type): Type = enteringErasure {
-      // make sure we don't erase value class references to the type that the value class boxes
-      // this is basically the same logic as in erasure's preTransform, case Literal(classTag).
-      tp.dealiasWiden match {
-        case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => erasure.scalaErasure.eraseNormalClassRef(tr)
-        case tpe => erasure.erasure(tpe.typeSymbol)(tpe)
-      }
+      erasure.erasure(tp.typeSymbol).applyInArray(tp)
     }
 
     def descriptorForErasedType(tp: Type): String = typeToBType(erasedType(tp)).descriptor
@@ -739,9 +734,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
        */
       // TODO: evaluate the other flags we might be dropping on the floor here.
       // TODO: ACC_SYNTHETIC ?
-      val flags = GenBCode.PublicStatic | (
-        if (m.isVarargsMethod) asm.Opcodes.ACC_VARARGS else 0
-      )
+      val flags = GenBCode.PublicStatic |
+        (if (m.isVarargsMethod) asm.Opcodes.ACC_VARARGS else 0) |
+        (if (m.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0)
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
       val jgensig = staticForwarderGenericSignature

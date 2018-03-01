@@ -20,6 +20,8 @@ trait t6810 {
   val `
 ` = EOL               // not raw string literals aka triple-quoted, multiline strings
 
+  val firebreak = 42  // help parser recovery, could also use rbrace
+
   val a = '\u000D'    // similar treatment of CR
   val b = ''        // CR seen as EOL by scanner
   val c = '\r'        // traditionally

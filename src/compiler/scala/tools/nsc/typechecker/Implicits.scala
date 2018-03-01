@@ -109,6 +109,14 @@ trait Implicits {
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberImpl, findMemberStart)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
+    if (result.isSuccess && settings.warnSelfImplicit && result.tree.symbol != null) {
+      val s =
+        if (result.tree.symbol.isAccessor) result.tree.symbol.accessed
+        else if (result.tree.symbol.isModule) result.tree.symbol.moduleClass
+        else result.tree.symbol
+      if (context.owner.hasTransOwner(s))
+        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}")
+    }
     result
   }
 

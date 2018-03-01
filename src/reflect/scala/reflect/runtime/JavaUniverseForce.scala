@@ -41,6 +41,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
     this.AtBoundIdentifierAttachment
+    this.PatVarDefAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
@@ -320,6 +321,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.WhiteboxContextClass
     definitions.MacroImplAnnotation
     definitions.StringContextClass
+    definitions.StringContextModule
     definitions.ValueOfClass
     definitions.QuasiquoteClass
     definitions.QuasiquoteClass_api

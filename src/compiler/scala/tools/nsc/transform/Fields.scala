@@ -117,7 +117,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit =
     fieldInSubclass setFlag (NEEDS_TREES |
                              PrivateLocal
-                             | (accessor getFlag MUTABLE | LAZY)
+                             | (accessor getFlag MUTABLE | LAZY | DEFAULTINIT)
                              | (if (accessor hasFlag STABLE) 0 else MUTABLE)
       )
 

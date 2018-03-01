@@ -1084,7 +1084,12 @@ abstract class RefChecks extends Transform {
           nonSensiblyNew()
         else if (isNew(other) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
           nonSensiblyNew()
-        else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
+        else if (!(receiver.isRefinementClass || actual.isRefinementClass) &&
+                 // Rule out receiver of refinement class because checking receiver.isEffectivelyFinal does not work for them.
+                 // (the owner of the refinement depends on where the refinement was inferred, which has no bearing on the finality of the intersected classes)
+                 // TODO: should we try to decide finality for refinements?
+                 // TODO: Also, is subclassing really the right relationship to detect non-sensible equals between "effectively final" types??
+                 receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
           if (isEitherNullable)
             nonSensible("non-null ", false)
           else
@@ -1508,7 +1513,26 @@ abstract class RefChecks extends Transform {
             isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
 
           transform(qual)
-
+      case StringContextIntrinsic(treated, args) =>
+        var result: Tree = treated.head
+        def concat(t: Tree): Unit = {
+          result = atPos(t.pos)(gen.mkMethodCall(gen.mkAttributedSelect(result, definitions.String_+), t :: Nil)).setType(StringTpe)
+        }
+        val numLits = treated.length
+        foreachWithIndex(treated.tail) { (lit, i) =>
+          val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+          val emptyLit = treatedContents.isEmpty
+          if (i < numLits - 1) {
+            concat(args(i))
+            if (!emptyLit) concat(lit)
+          } else if (!emptyLit) {
+            concat(lit)
+          }
+        }
+        result match {
+          case ap: Apply => transformApply(ap)
+          case _ => result
+        }
       case Apply(fn, args) =>
         // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
         // analyses in the pattern matcher
@@ -1518,6 +1542,39 @@ abstract class RefChecks extends Transform {
         }
         currentApplication = tree
         tree
+    }
+
+    private object StringContextIntrinsic {
+      def unapply(t: Apply): Option[(List[Tree], List[Tree])] = {
+        val sym = t.fun.symbol
+        // symbol check done first for performance
+        val rd = currentRun.runDefinitions
+        if (sym == rd.StringContext_s || sym == rd.StringContext_raw) {
+          t match {
+            case Apply(fn @ Select(Apply(qual1 @ Select(qual, _), lits), _), args)
+              if qual1.symbol == rd.StringContext_apply &&
+                treeInfo.isQualifierSafeToElide(qual) &&
+                lits.forall(lit => treeInfo.isLiteralString(lit)) &&
+                lits.length == (args.length + 1) =>
+              val isRaw = sym == rd.StringContext_raw
+              if (isRaw) Some((lits, args))
+              else {
+                try {
+                  val treated = lits.mapConserve { lit =>
+                    val stringVal = lit.asInstanceOf[Literal].value.stringValue
+                    treeCopy.Literal(lit, Constant(StringContext.processEscapes(stringVal)))
+                  }
+                  Some((treated, args))
+                } catch {
+                  case _: StringContext.InvalidEscapeException =>
+                    None
+                }
+              }
+            case _ => None
+
+          }
+        } else None
+      }
     }
     private def transformSelect(tree: Select): Tree = {
       val Select(qual, _) = tree

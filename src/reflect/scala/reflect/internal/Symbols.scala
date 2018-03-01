@@ -217,7 +217,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
-    assert(isCompilerUniverse || isSynchronized || isAprioriThreadsafe, s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
+
+    if (!(isCompilerUniverse || isSynchronized || isAprioriThreadsafe))
+      throw new AssertionError(s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe") // Not an assert to avoid retention of `initOwner` as a field!
 
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
@@ -767,7 +769,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
@@ -1199,7 +1200,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
     def owner: Symbol = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       rawowner
     }
     final def safeOwner: Symbol   = if (this eq NoSymbol) NoSymbol else owner
@@ -2386,11 +2386,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else Nil
     }
 
+    private[this] var isOverridingSymbolCache = 0
+
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
-    lazy val isOverridingSymbol = (
+    private def computeIsOverridingSymbol: Boolean = (
          canMatchInheritedSymbols
       && owner.ancestors.exists(base => overriddenSymbol(base) != NoSymbol)
     )
+    final def isOverridingSymbol: Boolean = {
+      val curRunId = currentRunId
+      // TODO this cache can lead to incorrect answers if the overrider/overridee relationship changes
+      // with the passage of compiler phases. Details: https://github.com/scala/scala/pull/6197#discussion_r161427280
+      // When fixing this problem (e.g. by ignoring the cache after erasure?), be mindful of performance
+      if (isOverridingSymbolCache == curRunId) true
+      else if (isOverridingSymbolCache == -curRunId) false
+      else {
+        val result = computeIsOverridingSymbol
+        isOverridingSymbolCache = (if (result) 1 else -1) * curRunId
+        result
+      }
+    }
 
     /** Equivalent to allOverriddenSymbols.head (or NoSymbol if no overrides) but more efficient. */
     def nextOverriddenSymbol: Symbol = {
@@ -2770,7 +2785,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
     def name = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       _rawname
     }
     override def name_=(name: Name) {
@@ -2847,16 +2861,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       this
     }
 
-    private val validAliasFlags = SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED
-
     override def alias: Symbol =
-      if (hasFlag(validAliasFlags)) initialize.referenced
+      if (hasFlag(ValidAliasFlags)) initialize.referenced
       else NoSymbol
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this)
       assert(!alias.isOverloaded, alias)
-      assert(hasFlag(validAliasFlags), this)
+      assert(hasFlag(ValidAliasFlags), this)
 
       referenced = alias
       this
@@ -2904,13 +2916,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def moduleClass = referenced
 
     override def owner = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       // a non-static module symbol gets the METHOD flag in uncurry's info transform -- see isModuleNotMethod
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
     override def name: TermName = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -3042,7 +3052,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def rawname = _rawname
     def name = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       _rawname
     }
     final def asNameType(n: Name) = n.toTypeName
@@ -3329,12 +3338,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def owner: Symbol = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(ownerCount)
       if (needsFlatClasses) rawowner.owner else rawowner
     }
 
     override def name: TypeName = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = tpnme.flattenedName(rawowner.name, rawname)
@@ -3695,7 +3702,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug.value) printStackTrace()
+    if (settings.debug) printStackTrace()
   }
 
   /** A class for type histories */
@@ -3763,7 +3770,4 @@ trait SymbolsStats {
   val symbolsCount        = newView("#symbols")(symbolTable.getCurrentSymbolIdCount)
   val typeSymbolCount     = newCounter("#type symbols")
   val classSymbolCount    = newCounter("#class symbols")
-  val flagsCount          = newCounter("#flags ops")
-  val ownerCount          = newCounter("#owner ops")
-  val nameCount           = newCounter("#name ops")
 }

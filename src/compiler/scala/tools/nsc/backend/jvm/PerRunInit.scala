@@ -17,4 +17,3 @@ trait PerRunInit {
 
   def initialize(): Unit = inits.synchronized(inits.foreach(_.apply()))
 }
-

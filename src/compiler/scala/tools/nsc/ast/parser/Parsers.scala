@@ -591,7 +591,11 @@ self =>
     }
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
-    def expectedMsg(token: Token): String = expectedMsgTemplate(token2string(token), token2string(in.token))
+    def expectedMsg(token: Token): String =
+      in.token match {
+        case NEWLINE | NEWLINES => s"${token2string(token)} expected."
+        case actual             => expectedMsgTemplate(token2string(token), token2string(actual))
+      }
 
     /** Consume one token of the specified type, or signal an error if it is not there. */
     def accept(token: Token): Offset = {
@@ -1153,7 +1157,7 @@ self =>
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
     def selector(t: Tree): Tree = {
-      val point = if(isIdent) in.offset else in.lastOffset //scala/bug#8459
+      val point = if (isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
         Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
@@ -1973,8 +1977,7 @@ self =>
           atPos(p.pos.start, p.pos.start, body.pos.end) {
             val t = Bind(name, body)
             body match {
-              case Ident(nme.WILDCARD) => t updateAttachment AtBoundIdentifierAttachment
-              case _ if !settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
+              case Ident(nme.WILDCARD) if settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
               case _ => t
             }
           }
@@ -2280,16 +2283,18 @@ self =>
         newLineOptWhenFollowedBy(LPAREN)
       }
       if (ofCaseClass) {
+        def name = {
+          val s = owner.decodedName.toString
+          if (s != nme.ERROR.decodedName.toString) s else "C"
+        }
+        def elliptical = vds.map(_ => "(...)").mkString
         if (vds.isEmpty)
-          syntaxError(start, s"case classes must have a parameter list; try 'case class ${owner.encoded
-                                         }()' or 'case object ${owner.encoded}'")
+          syntaxError(start, s"case classes must have a parameter list; try 'case class $name()' or 'case object $name'")
         else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
           if (settings.isScala213)
-            syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class ${
-                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'")
+            syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class $name()$elliptical'")
           else {
-            deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class ${
-                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'", "2.12.2")
+            deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class $name()$elliptical'", "2.12.2")
             vds.insert(0, List.empty[ValDef])
             vds(1) = vds(1).map(vd => copyValDef(vd)(mods = vd.mods & ~Flags.CASEACCESSOR))
             if (implicitSection != -1) implicitSection += 1
@@ -2517,7 +2522,10 @@ self =>
         case THIS   => thisDotted(tpnme.EMPTY)
         case _      =>
           val id = atPos(start)(Ident(ident()))
-          accept(DOT)
+
+          if (in.token == DOT || !isStatSep) accept(DOT)
+          else syntaxError(in.lastOffset, s". expected", skipIt = false)
+
           if (in.token == THIS) thisDotted(id.name.toTypeName)
           else id
       })

@@ -94,6 +94,8 @@ sealed abstract class UndefinedPosition extends Position {
   override def start           = fail("start")
   override def point           = fail("point")
   override def end             = fail("end")
+
+  override def samePointAs(that: Position) = false
 }
 
 private[util] trait InternalPositionImpl {
@@ -199,6 +201,10 @@ private[util] trait InternalPositionImpl {
     else if (isDefined) s"[$point]"
     else "[NoPosition]"
   )
+
+  /* Same as `this.focus == that.focus`, but less allocation-y. */
+  def samePointAs(that: Position): Boolean =
+    that.isDefined && this.point == that.point && this.source.file == that.source.file
 
   private def asOffset(point: Int): Position = Position.offset(source, point)
   private def copyRange(source: SourceFile = source, start: Int = start, point: Int = point, end: Int = end): Position =

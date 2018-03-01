@@ -66,4 +66,17 @@ class TraversableLikeTest {
     val frenchLowercase = Foo.mkFrenchLowercase()
     assertEquals("étrangeNomDeClasseMinuscules", frenchLowercase.stringPrefix)
   }
+
+  @Test
+  def test_SI10631 {
+    val baselist = List(1, 2)
+    var checklist = List.empty[Int]
+    val lst = baselist.view.map { x =>
+      checklist = x :: checklist
+      x
+    }
+
+    assertEquals(2, lst.last)
+    assertEquals(baselist.reverse, checklist)
+  }
 }

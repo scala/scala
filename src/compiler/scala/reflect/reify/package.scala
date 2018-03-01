@@ -51,6 +51,9 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
+    if (global.phase.id < global.currentRun.erasurePhase.id)
+      devWarning(enclosingMacroPosition, s"reify Class[$tpe0] during ${global.phase.name}")
+
     // scala/bug#7375
     val tpe = tpe0.dealiasWiden
 
@@ -65,9 +68,7 @@ package object reify {
         val componentErasure = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
         gen.mkMethodCall(currentRun.runDefinitions.arrayClassMethod, List(componentErasure))
       case _ =>
-        var erasure = tpe.erasure
-        if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
-        gen.mkNullaryCall(currentRun.runDefinitions.Predef_classOf, List(erasure))
+        gen.mkClassOf(tpe)
     }
   }
 

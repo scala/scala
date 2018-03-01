@@ -5,8 +5,8 @@ package analysis
 import java.lang.invoke.LambdaMetafactory
 
 import scala.annotation.{switch, tailrec}
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.tools.asm

@@ -489,8 +489,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (cond) typerWithLocalContext(c)(f) else f(this)
 
     @inline
-    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T =
-      c.reporter.propagatingErrorsTo(context.reporter)(f(newTyper(c)))
+    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T = {
+      try f(newTyper(c))
+      finally c.reporter.propagateErrorsTo(context.reporter)
+    }
 
     /** The typer for a label definition. If this is part of a template we
      *  first have to enter the label definition.
@@ -4344,11 +4346,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedBind(tree: Bind) = {
-        val name = tree.name
-        val body = tree.body
-        name match {
-          case name: TypeName  =>
+      def typedBind(tree: Bind) =
+        tree match {
+          case Bind(name: TypeName, body)  =>
             assert(body == EmptyTree, s"${context.unit} typedBind: ${name.debugString} ${body} ${body.getClass}")
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
@@ -4364,7 +4364,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             tree setSymbol sym setType sym.tpeHK
 
-          case name: TermName  =>
+          case Bind(name: TermName, body)  =>
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else context.owner.newValue(name, tree.pos)
@@ -4394,7 +4394,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             tree setSymbol sym
             treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
         }
-      }
 
       def typedArrayValue(tree: ArrayValue) = {
         val elemtpt1 = typedType(tree.elemtpt, mode)
@@ -4407,7 +4406,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
         // see scala/bug#7617 for an explanation of why macro expansion is suppressed
-        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode)
+        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode | POLYmode)
         val lhs1    = unsuppressMacroExpansion(typedLhs(suppressMacroExpansion(lhs)))
         val varsym  = lhs1.symbol
 
@@ -4437,9 +4436,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
-          val rhs1 = typedByValueExpr(rhs)
-          val t = atPos(lhs1.pos.withEnd(rhs1.pos.end)) {
-            Apply(lhs1, List(rhs1))
+          val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
+            Apply(lhs1, List(rhs))
           }
           dyna.wrapErrors(t, _.typed1(t, mode, pt))
         }
@@ -4680,7 +4678,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
             case _                                  => Nil
           })
-          def errorInResult(tree: Tree) = treesInResult(tree) exists (err => typeErrors.exists(_.errPos == err.pos))
+          /* Only retry if the error hails from a result expression of `tree`
+           * (for instance, it makes no sense to retry on an error from a block statement)
+           * compare with `samePointAs` since many synthetic trees are made with
+           * offset positions even under -Yrangepos.
+           */
+          def errorInResult(tree: Tree) =
+            treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
 
           val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
           typingStack.printTyping({

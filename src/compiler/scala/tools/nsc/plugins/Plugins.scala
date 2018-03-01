@@ -31,7 +31,7 @@ trait Plugins { global: Global =>
       def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
       asPath(settings.pluginsDir.value) map injectDefault map Path.apply
     }
-    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value)
+    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value, settings.YdisablePluginsClassLoaderCaching.value)
     val (goods, errors) = maybes partition (_.isSuccess)
     // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
