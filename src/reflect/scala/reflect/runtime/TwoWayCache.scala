@@ -2,9 +2,10 @@ package scala
 package reflect
 package runtime
 
-import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference
+import java.util.{Collections, WeakHashMap}
 
+import scala.collection.convert.decorateAsScala._
 /** A cache that maintains a bijection between Java reflection type `J`
  *  and Scala reflection type `S`.
  *
@@ -14,13 +15,13 @@ import java.lang.ref.WeakReference
  */
 private[runtime] class TwoWayCache[J, S] {
 
-  private val toScalaMap = new WeakHashMap[J, WeakReference[S]]
-  private val toJavaMap = new WeakHashMap[S, WeakReference[J]]
+  private val toScalaMap = Collections.synchronizedMap(new WeakHashMap[J, WeakReference[S]]()).asScala
+  private val toJavaMap = Collections.synchronizedMap(new WeakHashMap[S, WeakReference[J]]()).asScala
 
-  def enter(j: J, s: S) = synchronized {
+  def enter(j: J, s: S) = {
     // debugInfo("cached: "+j+"/"+s)
-    toScalaMap(j) = new WeakReference(s)
-    toJavaMap(s) = new WeakReference(j)
+    toScalaMap.put(j, new WeakReference(s))
+    toJavaMap.put(s, new WeakReference(j))
   }
 
   private object SomeRef {
@@ -30,8 +31,8 @@ private[runtime] class TwoWayCache[J, S] {
       } else None
   }
 
-  def toScala(key: J)(body: => S): S = synchronized {
-    toScalaMap get key match {
+  def syncToScala(key: J)(body: => S): S = synchronized {
+    toScalaMap.get(key) match {
       case SomeRef(v) =>
         v
       case _ =>
@@ -41,8 +42,17 @@ private[runtime] class TwoWayCache[J, S] {
     }
   }
 
-  def toJava(key: S)(body: => J): J = synchronized {
-    toJavaMap get key match {
+  def toScala(key: J)(body: => S): S = {
+    toScalaMap.get(key) match {
+      case SomeRef(v) =>
+        v
+      case _ =>
+        syncToScala(key)(body)
+    }
+  }
+
+  def syncToJava(key: S)(body: => J): J = synchronized {
+    toJavaMap.get(key) match {
       case SomeRef(v) =>
         v
       case _ =>
@@ -51,4 +61,14 @@ private[runtime] class TwoWayCache[J, S] {
         result
     }
   }
+
+  def toJava(key: S)(body: => J): J = {
+    toJavaMap.get(key) match {
+      case SomeRef(v) =>
+        v
+      case _ =>
+        syncToJava(key)(body)
+    }
+  }
 }
+
