@@ -32,6 +32,11 @@
  *   - to modularize the Scala compiler or library further
  */
 
+import java.io.{PrintWriter, StringWriter}
+
+import sbt.TestResult
+import sbt.testing.TestSelector
+
 import scala.build._
 import VersionUtil._
 
@@ -694,6 +699,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
 
 lazy val test = project
   .dependsOn(compiler, interactive, replJlineEmbedded, scalap, partestExtras, partestJavaAgent, scaladoc)
+  .disablePlugins(plugins.JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(disableDocs)
@@ -737,7 +743,8 @@ lazy val test = project
         result.copy(overall = TestResult.Error)
       }
       else result
-    }
+    },
+    testListeners in IntegrationTest += new PartestTestListener(target.value)
   )
 
 lazy val manual = configureAsSubproject(project)
