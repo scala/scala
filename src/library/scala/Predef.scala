@@ -516,9 +516,6 @@ object Predef extends LowPriorityImplicits {
    *            }
    *           }}}
    *
-   *  @note We need a new type constructor `<:<` and evidence `$conforms`,
-   *        as reusing `Function1` and `identity` leads to ambiguities in
-   *        case of type errors (`any2stringadd` is inferred)
    *  @see [[=:=]] for expressing equality constraints
    *  @group type-constraints
    *  @define isProof This method is impossible to implement without `throw`ing or otherwise "cheating" unless
@@ -526,6 +523,7 @@ object Predef extends LowPriorityImplicits {
    *  @define contraCo contravariant in the first argument and covariant in the second
    *  @define contraCon a contravariant type constructor
    *  @define coCon a covariant type constructor
+   *  @define sameDiff but with a (potentially) different type
    *  @define tp <:<
    */
   // All of these methods are reimplemented unsafely in the singleton to avoid any indirection.
@@ -538,6 +536,8 @@ object Predef extends LowPriorityImplicits {
      *  Equivalent in power to each of [[substituteCo]] and [[substituteContra]].
      *
      *  $isProof
+     *
+     *  @return `ftf`, $sameDiff
      */
     def substituteBoth[F[-_, +_]](ftf: F[To, From]): F[From, To]
     // = substituteCo[({type G[+T] = F[From, T]})#G](substituteContra[({type G[-T] = F[T, From})#G](ftf))
@@ -547,6 +547,8 @@ object Predef extends LowPriorityImplicits {
      *  Equivalent in power to each of [[substituteBoth]] and [[substituteContra]].
      *
      *  $isProof
+     *
+     *  @return `ff`, $sameDiff
      */
     def substituteCo[F[+_]](ff: F[From]): F[To] = {
       type G[-_, +T] = F[T]
@@ -558,6 +560,8 @@ object Predef extends LowPriorityImplicits {
      *  Equivalent in power to each of [[substituteBoth]] and [[substituteCo]].
      *
      *  $isProof
+     *
+     *  @return `ft`, $sameDiff
      */
     def substituteContra[F[-_]](ft: F[To]): F[From] = {
       type G[-T, +_] = F[T]
@@ -570,17 +574,30 @@ object Predef extends LowPriorityImplicits {
      *  This method is often called implicitly as an implicit `A $tp B` doubles as an implicit view `A => B`.
      *
      *  @param f some value of type `From`
-     *  @return `f`, except with a (potentially) different type.
+     *  @return `f`, $sameDiff
      */
     override def apply(f: From): To = {
       type Id[+X] = X
       substituteCo[Id](f)
     }
 
+    override def compose[C](r: C => From): C => To = {
+      type G[+T] = C => T
+      substituteCo[G](r)
+    }
     /** If `From <: To` and `C <: From`, then `C <: To` (subtyping is transitive) */
     def compose[C](r: C <:< From): C <:< To = {
       type G[+T] = C <:< T
       substituteCo[G](r)
+    }
+    override def andThen[C](r: To => C): From => C = {
+      type G[-T] = T => C
+      substituteContra[G](r)
+    }
+    /** If `From <: To` and `To <: C`, then `From <: C` (subtyping is transitive) */
+    def andThen[C](r: To <:< C): From <:< C = {
+      type G[-T] = T <:< C
+      substituteContra[G](r)
     }
 
     /** Lift this evidence over $coCon `F`. */
@@ -598,13 +615,16 @@ object Predef extends LowPriorityImplicits {
   object <:< {
     // instead of making a gazillion identical <:< instances, make one and cast it for every use
     private[Predef] final val singleton = new <:<[Any,Any] {
-      override def substituteBoth[F[-_, +_]](ftf: F[Any, Any]): F[Any, Any] = ftf
-      override def substituteCo    [F[+_]](ff: F[Any]): F[Any] = ff
-      override def substituteContra[F[-_]](ft: F[Any]): F[Any] = ft
+      override def substituteBoth[F[-_, +_]](ftf: F[Any, Any]) = ftf
+      override def substituteCo    [F[+_]](ff: F[Any]) = ff
+      override def substituteContra[F[-_]](ft: F[Any]) = ft
       override def apply(x: Any): Any = x
-      override def compose[C](r: C <:< Any) = asInstanceOf[C <:< Any]
-      override def liftCo    [F[+_]]: F[Any] <:< F[Any] = asInstanceOf[F[Any] <:< F[Any]]
-      override def liftContra[F[-_]]: F[Any] <:< F[Any] = asInstanceOf[F[Any] <:< F[Any]]
+      override def compose[C](r: C =>  Any) = r
+      override def compose[C](r: C <:< Any) = r
+      override def andThen[C](r: Any =>  C) = r
+      override def andThen[C](r: Any <:< C) = r
+      override def liftCo    [F[+_]] = asInstanceOf[F[Any] <:< F[Any]]
+      override def liftContra[F[-_]] = asInstanceOf[F[Any] <:< F[Any]]
     }
     /** If `A <: B` and `B <: A`, then `A = B` (subtyping is antisymmetric) */
     def antisymm[A, B](implicit l: A <:< B, r: B <:< A): A =:= B = =:=.singleton.asInstanceOf[A =:= B]
@@ -665,15 +685,21 @@ object Predef extends LowPriorityImplicits {
 
     /** @inheritdoc */ override def apply(f: From) = super.apply(f)
 
-    /** If `A = B` then `B = A` (equality is reflexive) */
+    /** If `From = To` then `To = From` (equality is symmetric) */
     def flip: To =:= From = {
       type G[T, F] = F =:= T
       substituteBoth[G](this)
     }
-    /** If `A = B` and `B = C`, then `A = C` (equality is transitive) */
+
+    /** If `From = To` and `C = From`, then `C = To` (equality is transitive) */
     def compose[C](r: C =:= From): C =:= To = {
       type G[T] = C =:= T
       substituteCo[G](r)
+    }
+    /** If `From = To` and `To = C`, then `From = C` (equality is transitive) */
+    def andThen[C](r: To =:= C): From =:= C = {
+      type G[T] = T =:= C
+      substituteContra[G](r)
     }
 
     override def liftCo[F[_]]: F[From] =:= F[To] = {
@@ -686,15 +712,19 @@ object Predef extends LowPriorityImplicits {
   /** @group type-constraints */
   object =:= {
     private[Predef] final val singleton = new =:=[Any,Any] {
-      override def substituteBoth[F[_, _]](ftf: F[Any, Any]): F[Any, Any] = ftf
-      override def substituteCo    [F[_]](ff: F[Any]): F[Any] = ff
-      override def substituteContra[F[_]](ff: F[Any]): F[Any] = ff
-      override def apply(x: Any): Any = x
-      override def flip: Any =:= Any = this
-      override def compose[C](r: C <:< Any) = asInstanceOf[C <:< Any]
-      override def compose[C](r: C =:= Any) = asInstanceOf[C =:= Any]
-      override def liftCo    [F[_]]: F[Any] =:= F[Any] = this.asInstanceOf[F[Any] =:= F[Any]]
-      override def liftContra[F[_]]: F[Any] =:= F[Any] = this.asInstanceOf[F[Any] =:= F[Any]]
+      override def substituteBoth[F[_, _]](ftf: F[Any, Any]) = ftf
+      override def substituteCo    [F[_]](ff: F[Any]) = ff
+      override def substituteContra[F[_]](ff: F[Any]) = ff
+      override def apply(x: Any) = x
+      override def flip = this
+      override def compose[C](r: C =>  Any) = r
+      override def compose[C](r: C <:< Any) = r
+      override def compose[C](r: C =:= Any) = r
+      override def andThen[C](r: Any =>  C) = r
+      override def andThen[C](r: Any <:< C) = r
+      override def andThen[C](r: Any =:= C) = r
+      override def liftCo    [F[_]] = asInstanceOf[F[Any] =:= F[Any]]
+      override def liftContra[F[_]] = asInstanceOf[F[Any] =:= F[Any]]
     }
     /** `A = A` for all `A` (equality is reflexive) */
     implicit def refl[A]: A =:= A = singleton.asInstanceOf[A =:= A]
