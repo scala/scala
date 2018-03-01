@@ -1,8 +1,6 @@
 package scala.tools.nsc
 package reporters
 
-// TODO
-//import scala.reflect.internal.Reporter
 import scala.reflect.internal.{Reporter => InternalReporter, FilteringReporter}
 import scala.reflect.internal.util.Position
 
