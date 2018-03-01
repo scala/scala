@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL
+ * Copyright 2005-2018 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -963,7 +963,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
         // compile the result-extraction object
         val handls = if (printResults) handlers else Nil
-        IMain.withSuppressedSettings(settings, global)(lineRep compile ResultObjectSourceCode(handls))
+        IMain.withSuppressedSettings(settings)(lineRep compile ResultObjectSourceCode(handls))
       }
     }
 
@@ -1247,7 +1247,7 @@ object IMain {
   private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
   def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
 
-  private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
+  private[interpreter] def withSuppressedSettings[A](settings: Settings)(body: => A): A = {
     import settings._
     val wasWarning = !nowarn
     val noisy = List(Xprint, Ytyperdebug, browse)
@@ -1265,11 +1265,6 @@ object IMain {
         Ytyperdebug.value  = current._2
         browse.value       = current._3
         if (wasWarning) nowarn.value = false
-        // ctl-D in repl can result in no compiler
-        val g = global
-        if (g != null) {
-          g.printTypings = current._2
-        }
       }
     }
   }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2018 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -47,7 +47,9 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
 
   final lazy val replImplicits = new ReplImplicits
 
-  def typed[T <: analyzer.global.Tree](tree: T): T = typer.typed(tree).asInstanceOf[T]
+  // expose `typer.typed` for easy repl fiddling
+  def typed(tree: global.Tree, mode: Mode = EXPRmode, pt: global.Type = global.WildcardType): global.Tree =
+    typer.typed(tree, mode, pt)
 }
 
 object ReplVals {

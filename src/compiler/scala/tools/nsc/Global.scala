@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2018 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -76,7 +76,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def settings = currentSettings
 
   /** Switch to turn on detailed type logs */
-  var printTypings = settings.Ytyperdebug.value
+  final def printTypings = settings.Ytyperdebug.value
 
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)

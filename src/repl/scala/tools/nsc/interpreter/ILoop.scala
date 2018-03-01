@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL
+ * Copyright 2005-2018 LAMP/EPFL
  * @author Alexander Spoon
  */
 package scala
@@ -1005,10 +1005,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
         }
       case _ =>
     }
-    // ctl-D on first line of repl zaps the intp
-    def globalOrNull = if (intp != null) intp.global else null
     // wait until after startup to enable noisy settings; intp is used only after body completes
-    def startup(): String = IMain.withSuppressedSettings(settings, globalOrNull) {
+    def startup(): String = IMain.withSuppressedSettings(settings) {
       // -e is non-interactive
       val splash =
         runnerSettings.filter(_.execute.isSetByUser).map(ss => batchLoop(ss.execute.value)).getOrElse {
