@@ -1,10 +1,18 @@
 trait LeibnizLiskov {
   type A // instead of picking some concrete type, use a totally unknown, abstract one
   type B
+  type SA <: A
+  type SB >: B
 
   implicitly[A =:= B]
   implicitly[B =:= A]
   def aEqB: A =:= B
+
+  implicitly[A <:< SA]
+  implicitly[SB <:< B]
+  implicitly[SA <:< B]
+  implicitly[A <:< SB]
+
   def A(): A
   def B(): B
   aEqB.substituteCo    (List(B(), B(), B()))

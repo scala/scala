@@ -1,10 +1,17 @@
 trait LeibnizLiskov {
   type A // instead of picking some concrete type, use a totally unknown, abstract one
   type B
+  type SA <: A
+  type SB >: B
 
   implicitly[A =:= A]
   implicitly[B =:= B]
   def aEqB: A =:= B
+
+  type SASub[+X] = SA <:< X
+  (implicitly[B <:< SB].compose(aEqB.substituteCo[SASub](implicitly[SASub[A]]))): SA <:< SB
+  (aEqB.substituteCo[SASub](implicitly[SASub[A]]).andThen(implicitly[B <:< SB])): SA <:< SB
+
   // checks that inference is working (no explicit types on xs)
   def A(): A
   def B(): B
