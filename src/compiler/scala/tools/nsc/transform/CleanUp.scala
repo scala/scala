@@ -461,15 +461,15 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case app@Apply(TypeApply(fun, _), args) if fun.symbol == Object_synchronized =>
         treeCopy.Apply(app, fun, args).transform(this)
 
-      // Replaces `Array(Predef.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
+      // Replaces `Array(<Predef-or-ScalaRunTime>.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
-      if wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
+      if wrapRefArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod && appMeth.symbol == ArrayModule_genericApply =>
         arg.transform(this)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
-      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
+      if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
 
       case _ =>

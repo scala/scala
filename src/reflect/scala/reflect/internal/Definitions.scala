@@ -8,8 +8,7 @@ package reflect
 package internal
 
 import scala.language.postfixOps
-
-import scala.annotation.meta
+import scala.annotation.{meta, migration}
 import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
@@ -349,11 +348,14 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
 
     lazy val PredefModule               = requiredModule[scala.Predef.type]
-         def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
          def Predef_???                 = getMemberMethod(PredefModule, nme.???)
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
+
+    // This is a not the usual lazy val to prevent it from showing up as a separate module in JavaUniverseForce.scala
+    def getWrapVarargsArrayModule        = if(isNewCollections) ScalaRunTimeModule else PredefModule
+    def wrapVarargsArrayMethod(tp: Type) = getMemberMethod(getWrapVarargsArrayModule, wrapVarargsArrayMethodName(tp))
 
     /** Specialization.
      */
@@ -429,20 +431,24 @@ trait Definitions extends api.StandardDefinitions {
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
 
     // collections classes
+    private[this] lazy val isNewCollections = getClassIfDefined("scala.collection.IterableOnce") != NoSymbol
     lazy val ConsClass              = requiredClass[scala.collection.immutable.::[_]]
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
-    lazy val SeqClass               = requiredClass[scala.collection.Seq[_]]
+    @migration("SeqClass now refers to scala.collection.immutable.Seq", "2.13.0")
+    lazy val SeqClass               = if(isNewCollections) requiredClass[scala.collection.immutable.Seq[_]] else requiredClass[scala.collection.Seq[_]]
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
     lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
     lazy val JavaCharSequenceClass  = requiredClass[java.lang.CharSequence]
-    lazy val TraversableClass       = requiredClass[scala.collection.Traversable[_]]
+    @deprecated("Use IterableClass instead of TraversableClass", "2.13.0")
+    lazy val TraversableClass       = if(isNewCollections) IterableClass else requiredClass[scala.collection.Traversable[_]]
 
     lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
          def List_apply       = getMemberMethod(ListModule, nme.apply)
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
-    lazy val SeqModule        = requiredModule[scala.collection.Seq.type]
+    @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
+    lazy val SeqModule        = if(isNewCollections) requiredModule[scala.collection.immutable.Seq.type] else requiredModule[scala.collection.Seq.type]
 
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]
@@ -588,7 +594,7 @@ trait Definitions extends api.StandardDefinitions {
     def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe)
     def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe)
 
-    def wrapArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
+    def wrapVarargsArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
       case ByteClass    => nme.wrapByteArray
       case ShortClass   => nme.wrapShortArray
       case CharClass    => nme.wrapCharArray
@@ -1494,7 +1500,6 @@ trait Definitions extends api.StandardDefinitions {
                                orElse getMemberMethod(PredefModule, TermName("conforms"))) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
-      lazy val Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)
       lazy val Predef_???          = DefinitionsClass.this.Predef_???
 
       lazy val arrayApplyMethod       = getMemberMethod(ScalaRunTimeModule, nme.array_apply)
@@ -1504,6 +1509,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val ensureAccessibleMethod = getMemberMethod(ScalaRunTimeModule, nme.ensureAccessible)
       lazy val arrayClassMethod       = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
       lazy val traversableDropMethod  = getMemberMethod(ScalaRunTimeModule, nme.drop)
+      lazy val wrapVarargsRefArrayMethod = getMemberMethod(getWrapVarargsArrayModule, nme.wrapRefArray)
 
       lazy val GroupOfSpecializable = getMemberClass(SpecializableModule, tpnme.Group)
 
