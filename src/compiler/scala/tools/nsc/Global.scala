@@ -33,7 +33,7 @@ import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 
-class Global(var currentSettings: Settings, var reporter: Reporter)
+class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
     with CompilationUnits
     with Plugins
@@ -74,6 +74,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
+
+  private[this] var currentReporter: Reporter = { reporter = reporter0 ; currentReporter }
+
+  def reporter: Reporter = currentReporter
+  def reporter_=(newReporter: Reporter): Unit =
+    currentReporter = newReporter match {
+      case _: reporters.ConsoleReporter | _: reporters.LimitingReporter => newReporter
+      case _ if settings.maxerrs.isSetByUser && settings.maxerrs.value < settings.maxerrs.default =>
+        new reporters.LimitingReporter(settings, newReporter)
+      case _ => newReporter
+    }
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value

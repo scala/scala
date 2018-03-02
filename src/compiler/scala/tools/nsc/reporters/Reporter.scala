@@ -10,11 +10,10 @@ import scala.reflect.internal.util._
 
 /** Report information, warnings and errors.
  *
- * This describes the internal interface for issuing information, warnings and errors.
- * The only abstract method in this class must be info0.
+ *  This describes the internal interface for issuing information, warnings and errors.
+ *  The only abstract method in this class must be info0.
  *
- * TODO: Move external clients (sbt/ide/partest) to reflect.internal.Reporter,
- *       and remove this class.
+ *  TODO: Move external clients (sbt/ide/partest) to reflect.internal.Reporter, and remove this class.
  */
 abstract class Reporter extends scala.reflect.internal.Reporter {
   /** Informational messages. If `!force`, they may be suppressed. */
