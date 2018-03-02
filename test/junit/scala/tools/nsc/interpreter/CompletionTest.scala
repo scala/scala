@@ -50,6 +50,10 @@ class CompletionTest {
 
     // Output is sorted
     assertEquals(List("prefix_aaa", "prefix_nnn", "prefix_zzz"), completer.complete( """class C { def prefix_nnn = 0; def prefix_zzz = 0; def prefix_aaa = 0; prefix_""").candidates)
+
+    // Enable implicits to check completion enrichment
+    assert(completer.complete("""'c'.""").candidates.contains("toUpper"))
+    assert(completer.complete("""val c = 'c'; c.""").candidates.contains("toUpper"))
   }
 
   @Test
