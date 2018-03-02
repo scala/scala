@@ -1,19 +1,37 @@
-# opt-in to Travis's newer/faster container-based infrastructure
-sudo: false
+sudo: required # GCE VMs have better performance (will be upgrading to premium VMs soon)
 
 # this builds the spec using jekyll
 # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
-language: ruby
+
+language: scala
+jdk: openjdk8
+
+# the spec is built with jekyll
 rvm:
   - 2.2
-script: bundle exec jekyll build -s spec/ -d build/spec
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+script:
+  - (cd admin && ./init.sh)
+  - scripts/jobs/integrate/bootstrap
+  - bundle exec jekyll build -s spec/ -d build/spec
+
 install: bundle install
 
 # cat /dev/urandom | head -c 10000 | openssl sha1 > ./secret
 # openssl aes-256-cbc -pass "file:./secret" -in id_dsa_spec212_b4096 -out spec/id_dsa_travis.enc -a
 # travis encrypt "PRIV_KEY_SECRET=`cat ./secret`"
 env:
-  - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY="
+  global:
+    - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY="
+    - secure: "T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8=" # PRIVATE_REPO_PASS
+    - secure: "feE5A8mYNpkNQKVwCj3aXrwjVrJWh/4ENpRfFlr2HOD9ORk1GORD5Yq907WZd+dTkYK54Lh1gA+qHOCIDgJHbi9ZLU+kjzEjtYKF6lQy6Wb0LI8smTOnAA6IWVVYifiXw8d66MI2MKZb2jjGeIzy8Q00SZjLhEGjLyTeCIB88Ws=" # SONA_USER
+    - secure: "ek3As5q2tL8UBXcxSBbv4v5YgsoPD41SCzPOSu72kzfbngyxgQxrcziU5pIM+Lib9KaWex7hVVWNL38tMyDbu+0OpDv8bPjMujzlDx5I2pJUfuOJo7QRYsJE1nsXcY4cA72cCLfbRcLEkvtDAhcdLSaUOqlyQe5BY4X4fY5eoPA=" # SONA_PASS
+    - secure: "dbAvl6KEuLwZ0MVQPZihFsPzCdiLbX0EFk3so+hcfEbksrmLQ1tn4X5ZM7Wy1UDR8uN9lxngEwHch7a7lKqpugzmXMew9Wnikr9WBWbJT77Z+XJ/jHI6YuiCRpRo+nvxXGp9Ry80tSIgx5eju0J83IaJL41BWlBkvyAd7YAHORI=" # GPG_SUBKEY_SECRET
 
 # ^^^ set PRIV_KEY_SECRET to password used to encrypt spec/id_dsa_travis.enc
 
@@ -23,3 +41,8 @@ after_success:
 
 # using S3 would be simpler, but we want to upload to scala-lang.org
 # after_success: bundle exec s3_website push --headless
+
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete

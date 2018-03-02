@@ -159,7 +159,6 @@ EOF
 # Takes a variable number of additional repositories as argument.
 # See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
 function generateRepositoriesConfig() {
-  jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
   sbtRepositoryConfig="$scriptsDir/sbt-repositories-config"
   echo > "$sbtRepositoryConfig" '[repositories]'
   if [[ $# -gt 0 ]]; then
@@ -167,11 +166,29 @@ function generateRepositoriesConfig() {
       echo >> "$sbtRepositoryConfig" "  script-repo-$i: ${!i}"
     done
   fi
+
+  if [ "${TRAVIS}" != "true" ]; then
+    jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
+    echo "jcenter-cache: $jcenterCacheUrl" >> "$sbtRepositoryConfig"
+  fi
+
   cat >> "$sbtRepositoryConfig" << EOF
-  jcenter-cache: $jcenterCacheUrl
-  typesafe-ivy-releases: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-  maven-central
   local
+  maven-central
+  typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
 EOF
+}
+
+
+# https://github.com/travis-ci/docs-travis-ci-com/issues/949
+travis_fold_start() {
+  echo ""
+  echo -e "travis_fold:start:$1\033[33;1m$2\033[0m"
+}
+
+travis_fold_end() {
+  echo -e "\ntravis_fold:end:$1\r"
+  echo ""
 }

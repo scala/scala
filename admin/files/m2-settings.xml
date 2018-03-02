@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <servers>
+    <server>
+      <id>sonatype-nexus</id>
+      <username>${SONA_USER}</username>
+      <password>${SONA_PASS}</password>
+    </server>
+    <server>
+      <id>private-repo</id>
+      <username>scala-ci</username>
+      <password>${PRIVATE_REPO_PASS}</password>
+    </server>
+  </servers>
+
+  <mirrors>
+    <!--
+      codehaus doesn't exist anymore. it doesn't 404, but serves up
+      bad POMs, so we disable it globally by overriding with a mirror
+      with an invalid URL.
+      this entry could be removed after the scala-ide/scala-refactoring
+      repo removes their reference to codehaus-snapshots from their pom.xml
+    -->
+    <mirror>
+      <id>codehaus-snapshots-mirror</id>
+      <name>Maven Codehaus snapshot repository</name>
+      <url>file:///codehaus-does-not-exist-anymore</url>
+      <mirrorOf>codehaus-snapshots</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>

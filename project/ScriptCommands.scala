@@ -6,6 +6,8 @@ import BuildSettings.autoImport._
 
 /** Custom commands for use by the Jenkins scripts. This keeps the surface area and call syntax small. */
 object ScriptCommands {
+  def env(key: String) = Option(System.getenv(key)).getOrElse("")
+
   def all = Seq(
     setupPublishCore,
     setupValidateTest,
@@ -80,7 +82,7 @@ object ScriptCommands {
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       publishTo in Global := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-      credentials in Global += Credentials(Path.userHome / ".credentials-sonatype"),
+      credentials in Global += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS")),
       pgpPassphrase in Global := Some(Array.empty)
     ) ++ enableOptimizer
   }
@@ -114,7 +116,11 @@ object ScriptCommands {
   private[this] def publishTarget(url: String) = {
     // Append build.timestamp to Artifactory URL to get consistent build numbers (see https://github.com/sbt/sbt/issues/2088):
     val url2 = if(url.startsWith("file:")) url else url.replaceAll("/$", "") + ";build.timestamp=" + System.currentTimeMillis
-    Seq(publishTo in Global := Some("scala-pr-publish" at url2))
+
+    Seq(
+      publishTo in Global := Some("scala-pr-publish" at url2),
+      credentials in Global += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
+    )
   }
 
   /** Like `Def.sequential` but accumulate all results */

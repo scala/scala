@@ -77,13 +77,14 @@ publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
 forceRebuild=${forceRebuild-no}
-
 sbtBuildTask=${sbtBuildTask-"testAll"} # TESTING leave empty to avoid the sanity check
 testStability=${testStability-yes}
 
 clean="clean" # TESTING leave empty to speed up testing
 
-baseDir=${WORKSPACE-`pwd`}
+WORKSPACE=${WORKSPACE-`pwd`}
+baseDir=${WORKSPACE}
+
 scriptsDir="$baseDir/scripts"
 . $scriptsDir/common
 
@@ -99,7 +100,9 @@ mkdir -p $baseDir/resolutionScratch_
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
-generateRepositoriesConfig $integrationRepoUrl
+if [ "${TRAVIS}" != "true" ]; then
+  generateRepositoriesConfig $integrationRepoUrl
+fi
 
 # ARGH trying to get this to work on multiple versions of sbt-extras...
 # the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
@@ -152,8 +155,9 @@ function st_stagingRepoClose() {
 #### sbt tools
 
 sbtBuild() {
-  echo "### sbtBuild: "$SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
-  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
+  travis_fold_start build "Building $(basename $PWD) with $@"
+  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  travis_fold_end build
 }
 
 sbtResolve() {
@@ -161,10 +165,12 @@ sbtResolve() {
   touch build.sbt
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
   cross=${4-binary}
-  echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
+  # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
+  travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
-      'show update' >> $baseDir/logs/resolution 2>&1
+      'show update'
+  travis_fold_end resolve
 }
 
 # Oh boy... can't use scaladoc to document scala-xml if scaladoc depends on the same version of scala-xml.
@@ -229,7 +235,7 @@ buildScalaCheck(){
 
 # build modules, using ${buildTasks[@]} (except for ScalaCheck, which is hard-coded to publish to artifactory)
 buildModules() {
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
+  publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildXML
   # buildScalaCheck
@@ -237,7 +243,7 @@ buildModules() {
 }
 
 buildPublishedModules() {
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
+  publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' "set pgpPassphrase := Some(Array.empty)")
   buildTasks=($publishSonatypeTaskModules)
   buildXML
   buildPartest
@@ -283,7 +289,9 @@ determineScalaVersion() {
   if [ -z "$SCALA_VER_BASE" ]; then
     echo "No SCALA_VER_BASE specified."
 
+    travis_fold_start determineScalaVersion "Determining Scala version"
     $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
+    travis_fold_end determineScalaVersion
     parseScalaProperties "buildcharacter.properties"
     SCALA_VER_BASE="$maven_version_base"
     SCALA_VER_SUFFIX="$maven_version_suffix"
@@ -376,8 +384,6 @@ bootstrap() {
 
   #### (Optional) STARR.
   if [ ! -z "$STARR_REF" ]; then
-      echo "### Building STARR"
-
       STARR_DIR=./scala-starr
       STARR_VER_SUFFIX="-$(git rev-parse --short $STARR_REF)-starr"
       STARR_VER=$SCALA_VER_BASE$STARR_VER_SUFFIX
@@ -386,13 +392,13 @@ bootstrap() {
         git clone --reference $WORKSPACE/.git $WORKSPACE/.git $STARR_DIR
         cd $STARR_DIR
         git co $STARR_REF
-        $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish >> $baseDir/logs/builds 2>&1
+        travis_fold_start starr "Building starr"
+        $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
+        travis_fold_end starr
       )
   fi
 
   #### LOCKER
-
-  echo "### Building locker"
 
   # for bootstrapping, publish core (or at least smallest subset we can get away with)
   # so that we can build modules with this version of Scala and publish them locally
@@ -400,7 +406,10 @@ bootstrap() {
   # publish more than just core: partest needs scalap
   # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish >> $baseDir/logs/builds 2>&1
+
+  travis_fold_start locker "Building locker"
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
+  travis_fold_end locker
 
   echo "### Building modules using locker"
 
@@ -425,6 +434,7 @@ bootstrap() {
   cd $baseDir
   rm -rf build/
 
+  travis_fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
       --warn \
       -Dstarr.version=$SCALA_VER \
@@ -434,6 +444,7 @@ bootstrap() {
       $sbtBuildTask \
       dist/mkQuick \
       publish
+  travis_fold_end quick
 
   # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
   rm -rf $baseDir/ivy2
@@ -443,8 +454,7 @@ bootstrap() {
 }
 
 testStability() {
-  echo "### Testing stability"
-
+  travis_fold_start stab "Testing stability"
   cd $baseDir
 
   # Run stability tests using the just built version as "quick" and a new version as "strap"
@@ -460,6 +470,8 @@ testStability() {
   mv build/quick build/strap
   mv quick1 build/quick
   $scriptsDir/stability-test.sh
+
+  travis_fold_end stab
 }
 
 # assumes we just bootstrapped, and current directory is $baseDir
@@ -469,15 +481,16 @@ testStability() {
 publishSonatype() {
   # stage to sonatype, along with all modules -Dmaven.version.suffix/-Dbuild.release not necessary,
   # since we're just publishing an existing build
-  echo "### Publishing core to sonatype"
+  travis_fold_start sona "Publishing core to sonatype"
   $SBT_CMD $sbtArgs \
       --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
       $publishSonatypeTaskCore
+  travis_fold_end sona
 
-  echo "### Publishing modules to sonatype"
+  # echo "### Publishing modules to sonatype"
   # build/test/publish scala core modules to sonatype (this will start a new staging repo)
   # (was hoping we could make everything go to the same staging repo, but it's not timing that causes two staging repos to be opened)
   # NOTE: only publish those for which versions are set
