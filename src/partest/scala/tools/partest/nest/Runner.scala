@@ -7,6 +7,7 @@ package nest
 
 import java.io.{ Console => _, _ }
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -758,9 +759,10 @@ class SuiteRunner(
     // |Java Classpath:             ${sys.props("java.class.path")}
   }
 
-  def onFinishTest(testFile: File, result: TestState): TestState = result
+  def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = result
 
   def runTest(testFile: File): TestState = {
+    val start = System.nanoTime()
     val runner = new Runner(testFile, this, nestUI)
 
     // when option "--failed" is provided execute test only if log
@@ -778,7 +780,8 @@ class SuiteRunner(
         runner.cleanup()
         state
       }
-    onFinishTest(testFile, state)
+    val end = System.nanoTime()
+    onFinishTest(testFile, state, TimeUnit.NANOSECONDS.toMillis(end - start))
   }
 
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {

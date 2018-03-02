@@ -54,8 +54,10 @@ class SBTRunner(val config: RunnerSpec.Config,
     else l.mkString(" ")
   }
 
+  private val testSrcPath: String = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath
+
   val suiteRunner = new SuiteRunner(
-    testSourcePath = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
+    testSourcePath = testSrcPath,
     new FileManager(testClassLoader = testClassLoader),
     updateCheck = config.optUpdateCheck,
     failed  = config.optFailed,
@@ -66,14 +68,14 @@ class SBTRunner(val config: RunnerSpec.Config,
     javaOpts = javaOpts,
     scalacOpts = scalacOpts) { self =>
 
-      override def onFinishTest(testFile: File, result: TestState): TestState = {
+      override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
         self.synchronized {
           eventHandler.handle(new Event {
-            def fullyQualifiedName: String = testFile.testIdent
+            def fullyQualifiedName: String = scala.tools.partest.nest.PathSettings.testRoot.name + "/" + testSrcPath
             def fingerprint: Fingerprint = partestFingerprint
             def selector: Selector = new TestSelector(testFile.testIdent)
             val (status, throwable) = makeStatus(result)
-            def duration: Long = -1
+            def duration: Long = durationMs
           })
         }
         result
