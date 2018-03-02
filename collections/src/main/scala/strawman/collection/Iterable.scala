@@ -18,7 +18,7 @@ import java.lang.String
   * @define Coll `Iterable`
   * @define coll iterable collection
   */
-trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] with Traversable[A] {
+trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
 
   // The collection itself
   final def toIterable: this.type = this
