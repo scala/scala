@@ -148,8 +148,10 @@ import scala.language.implicitConversions"""
     def mkUnaryOps  = unaryOps map (x => "%s\n  def unary_%s : %s".format(x.doc, x.op, this opType I))
     def mkStringOps = List("def +(x: String): String")
     def mkShiftOps  = (
-      for (op <- shiftOps ; arg <- List(I, L)) yield
-        "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, this opType I)
+      for (op <- shiftOps ; arg <- List(I, L)) yield {
+        val doc = op.doc + (if (this == L || arg == I) "" else "\n  @deprecated(\"shifting a value by a `Long` argument is deprecated (except when the value is a `Long`).\\nCall `toInt` on the argument to maintain the current behavior and avoid the deprecation warning.\", \"2.12.7\")")
+        "%s\n  def %s(x: %s): %s".format(doc, op.op, arg, this opType I)
+      }
     )
 
     def clumps: List[List[String]] = {
@@ -232,6 +234,7 @@ import scala.language.implicitConversions"""
       "@unboxImpl@" -> "???"
     )
     def interpolations = Map(
+      "@article@"   -> (if (this == I) "an" else "a"),
       "@name@"      -> name,
       "@representation@" -> representation,
       "@javaequiv@" -> javaEquiv,
@@ -319,10 +322,10 @@ override def toString = "object scala.@name@"
   def nonUnitCompanions = ""  // todo
 
   def cardinalCompanion = """
-/** The smallest value representable as a @name@. */
+/** The smallest value representable as @article@ @name@. */
 final val MinValue = @boxed@.MIN_VALUE
 
-/** The largest value representable as a @name@. */
+/** The largest value representable as @article@ @name@. */
 final val MaxValue = @boxed@.MAX_VALUE
 """
 
