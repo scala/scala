@@ -55,6 +55,7 @@ final abstract class Short private extends AnyVal {
   *         filling in the new right bits with zeroes.
   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
   */
+  @deprecated("""bit shifting by `Long` is deprecated""", "2.12.5")
   def <<(x: Long): Int
   /**
   * Returns this value bit-shifted right by the specified number of bits,
@@ -77,6 +78,7 @@ final abstract class Short private extends AnyVal {
   * //            00011111 11111111 11111111 11111101
   * }}}
   */
+  @deprecated("""bit shifting by `Long` is deprecated""", "2.12.5")
   def >>>(x: Long): Int
   /**
   * Returns this value bit-shifted right by the specified number of bits,
@@ -99,6 +101,7 @@ final abstract class Short private extends AnyVal {
   * //            11111111 11111111 11111111 11111101
   * }}}
   */
+  @deprecated("""bit shifting by `Long` is deprecated""", "2.12.5")
   def >>(x: Long): Int
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
