@@ -176,20 +176,20 @@ class ScriptRunner extends HasCompileSocket {
     }
   }
 
-  /** Run a script file with the specified arguments and compilation
-   *  settings.
+  /** Run a script file with the specified arguments and compilation settings.
    *
-   * @return true if compilation and execution succeeded, false otherwise.
+   *  @return true if compilation and execution succeeded, false otherwise.
    */
-  def runScript(
-    settings: GenericRunnerSettings,
-    scriptFile: String,
-    scriptArgs: List[String]): Boolean =
-  {
-    if (File(scriptFile).isFile)
-      withCompiledScript(settings, scriptFile) { runCompiled(settings, _, scriptArgs) }
-    else
-      throw new IOException("no such file: " + scriptFile)
+  def runScript(settings: GenericRunnerSettings, scriptFile: String, scriptArgs: List[String]): Boolean = {
+    def checkedScript = {
+      val f = File(scriptFile)
+      if (!f.exists) throw new IOException(s"no such file: $scriptFile")
+      if (!f.canRead) throw new IOException(s"can't read: $scriptFile")
+      if (f.isDirectory) throw new IOException(s"can't compile a directory: $scriptFile")
+      if (!settings.nc && !f.isFile) throw new IOException(s"compile server requires a regular file: $scriptFile")
+      scriptFile
+    }
+    withCompiledScript(settings, checkedScript) { runCompiled(settings, _, scriptArgs) }
   }
 
   /** Calls runScript and catches the enumerated exceptions, routing
