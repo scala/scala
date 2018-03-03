@@ -96,6 +96,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   /** The cache listing all values of this enumeration. */
   @transient private var vset: ValueSet = null
   @transient @volatile private var vsetDefined = false
+  @transient private val vLock = new AnyRef
 
   /** The mapping from the integer used to identify values to their
     * names. */
@@ -105,8 +106,12 @@ abstract class Enumeration (initial: Int) extends Serializable {
    */
   def values: ValueSet = {
     if (!vsetDefined) {
-      vset = (ValueSet.newBuilder ++= vmap.values).result()
-      vsetDefined = true
+      vLock.synchronized {
+        if (!vsetDefined) {
+          vset = (ValueSet.newBuilder ++= vmap.values).result()
+          vsetDefined = true
+        }
+      }
     }
     vset
   }
@@ -234,12 +239,15 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def this(name: String) = this(nextId, name)
     def this()             = this(nextId)
 
-    assert(!vmap.isDefinedAt(i), "Duplicate id: " + i)
-    vmap(i) = this
-    vsetDefined = false
-    nextId = i + 1
-    if (nextId > topId) topId = nextId
-    if (i < bottomId) bottomId = i
+    // prevent duplicate IDs, as well as changing `vsetDefined` in a racy way
+    vLock.synchronized {
+      assert(!vmap.isDefinedAt(i), "Duplicate id: " + i)
+      vmap(i) = this
+      vsetDefined = false
+      nextId = i + 1
+      if (nextId > topId) topId = nextId
+      if (i < bottomId) bottomId = i
+    }
     def id = i
     override def toString() =
       if (name != null) name
