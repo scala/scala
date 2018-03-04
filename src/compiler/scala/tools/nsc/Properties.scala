@@ -29,7 +29,7 @@ object Properties extends scala.util.PropertiesTrait {
   def shellInterruptedString = scalaPropOrElse("shell.interrupted", f":quit$lineSeparator")
 
   // derived values
-  def isEmacsShell         = propOrEmpty("env.emacs") != ""
+  def isEmacsShell         = (propOrEmpty("env.emacs") != "") || envOrNone("INSIDE_EMACS").isDefined
 
   // Where we keep fsc's state (ports/redirection)
   lazy val scalacDir = (Path(Properties.userHome) / ".scalac").createDirectory(force = false)
