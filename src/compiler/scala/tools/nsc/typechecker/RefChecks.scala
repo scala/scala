@@ -336,7 +336,7 @@ abstract class RefChecks extends Transform {
           analyzer.foundReqMsg(pair.lowClassBound, pair.highClassBound)
         )
 
-        val indent = " "
+        val indent = "  "
         def overrideErrorMsg(msg: String): String = {
           val isConcreteOverAbstract =
             (other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred

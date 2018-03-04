@@ -1,9 +1,9 @@
 sip23-override.scala:24: error: overriding value f2 in trait Overridden of type 4;
- value f2 has incompatible type
+  value f2 has incompatible type
   override val f2: 5 = 5
                ^
 sip23-override.scala:28: error: overriding method f5 in trait Overridden of type => 4;
- method f5 has incompatible type
+  method f5 has incompatible type
   override def f5: 5 = 5
                ^
 two errors found
