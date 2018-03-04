@@ -67,6 +67,116 @@ Some characteristics of good tests:
 * be minimal, deterministic, stable (unaffected by irrelevant changes), easy to understand and review
 * have minimal dependencies: a compiler bug test should not depend on, e.g., the Scala library
 
+There are mainly three kinds of tests: unit tests, property-based tests, and integration tests.
+
+#### JUnit
+
+For unit tests we use JUnit, which can be run from sbt shell as follows:
+
+```
+root> junit/testQuick
+```
+
+It might take a few minutes the first time you run `junit/testQuick`, but from the second time onwards
+sbt will only run the tests that is affected by the code change since the last run.
+See `test/junit/` for the examples of JUnit tests.
+
+#### ScalaCheck
+
+For testing that can benefit from having lots of randomly generated data, property-based testing should be used.
+This is run from sbt shell as follows:
+
+```
+root> scalacheck/testOnly ByOneRangeTest
+```
+
+See `test/scalacheck/range.scala`.
+
+#### Partest
+
+scala/scala comes with a powerful integration testing tool called Partest.
+Using Partest you can compile or run some Scala code, and compare it against the expected output.
+In the source tree, partests are located under `test/files/<category>/`. The main categories are:
+
+- `pos`: These files must compile successfully.
+- `run`: In addition to compiling, `Test.main` is run and its output is compared against the test's `.check` file.
+- `neg`: These files must NOT compile, with compiler output matching the expected output in the `.check` file.
+- Other categories such as `jvm` behave the same as `run` category.
+
+To run a single negative test from sbt shell:
+
+```
+root> partest --verbose test/files/neg/delayed-init-ref.scala
+```
+
+To specify specific flags such as `-deprecation -Xlint -Xfatal-warnings`, you can put them in
+`test/files/neg/<test>.flags`. This could be used to test specific behavior under `-deprecation` flag etc.
+
+To run all tests in `neg` categories from sbt shell:
+
+```
+root> partest --neg
+```
+
+This might take a couple of minutes to complete. But in a few minutes you could test 1000+ negative examples,
+so it's totally worth your time if you are working on changing error messages for example.
+
+Suppose you're interested in ranges. Here's how you can grep the partests and run them:
+
+```
+root> partest --grep range
+...
+Selected 74 tests drawn from 74 tests matching 'range'
+...
+# starting 13 tests in pos
+ok  3 - pos/lookupswitch.scala
+ok  4 - pos/rangepos-patmat.scala
+...
+```
+
+Another thing you could do is to combine with `--failed` flag to iteratively run
+only the failed tests, similar to `testQuick`.
+
+```
+root> partest --grep range --failed
+```
+
+See `--help` for more info:
+
+```
+root> partest --help
+```
+
+If you're fixing a bug in the compiler, you would typically start with Partest;
+If you're fixing a bug or implementing new features in the the library, consider using JUnit and/or ScalaCheck.
+
+#### exploring with REPL
+
+Before or during the test, you might get better insight of the code by starting a REPL session
+using the freshly built scala. To start a REPL session from the sbt shell:
+
+```
+root> scala
+[info] Running scala.tools.nsc.MainGenericRunner -usejavacp
+Welcome to Scala 2.13.0-20180304-082722-3debf94 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_151).
+Type in expressions for evaluation. Or try :help.
+
+scala> val r = (0.0 to 2.0 by 0.1)
+r: scala.collection.immutable.NumericRange[Double] = NumericRange 0.0 to 2.0 by 0.1
+
+scala> r(3)
+res0: Double = 0.30000000000000004
+
+scala> for { i <- 1 to 20 } { assert(r.toList(i) == r(i), s"$i failed") }
+java.lang.AssertionError: assertion failed: 6 failed
+  at scala.Predef$.assert(Predef.scala:248)
+  at .$anonfun$res5$1(<console>:1)
+  at scala.collection.immutable.Range.foreach$mVc$sp(Range.scala:151)
+  ... 33 elided
+```
+
+Using this information, you can adjust your test.
+
 ### Documentation
 
 This is of course required for new features and enhancements.
