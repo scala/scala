@@ -598,6 +598,9 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
+  ).settings(
+    // Workaround for https://github.com/sbt/sbt/pull/3985
+    List(Keys.test, Keys.testOnly).map(task => parallelExecution in task := false) : _*
   )
 
 lazy val osgiTestFelix = osgiTestProject(
