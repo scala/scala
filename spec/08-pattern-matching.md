@@ -216,6 +216,9 @@ $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if it takes exactly one argument
 and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted).
 This case is further discussed [below](#pattern-sequences).
 
+Note that `null` is one of the values that could be passed into `unapply` or `unapplySeq`.
+If an extractor wishes to not match on `null`, it must check for it and return `false`/`None`.
+
 ###### Example
 
 If we define an extractor object `Pair`:
@@ -223,7 +226,9 @@ If we define an extractor object `Pair`:
 ```scala
 object Pair {
   def apply[A, B](x: A, y: B) = Tuple2(x, y)
-  def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
+  def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] =
+    if (x eq null) None
+    else Some(x)
 }
 ```
 
@@ -235,6 +240,10 @@ Hence, the following is possible:
 val x = (1, 2)
 val y = x match {
   case Pair(i, s) => Pair(s + i, i * i)
+}
+val z = null match {
+  case Pair(_, _) => "a pair"
+  case _          => "not a pair"
 }
 ```
 
