@@ -177,6 +177,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
 
   /** Standard commands **/
   lazy val standardCommands = List(
+    cmd("completions", "<string>", "output completions for the given string", completionsCommand),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
@@ -538,6 +539,22 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
   }
 
   def lineCommand(what: String): Result = editCommand(what, None)
+
+  def completionsCommand(what: String): Result = {
+    val completions = new ReplCompletion(intp).complete(what, what.length)
+    val prefix = if (completions == NoCandidates) "" else what.substring(0, completions.cursor)
+
+    val completionLines =
+      completions.candidates.map { c =>
+        s"[completions] $prefix$c"
+      }
+
+    if (completionLines.nonEmpty) {
+      echo(completionLines.mkString("\n"))
+    }
+
+    Result.default // never record completions
+  }
 
   // :edit id or :edit line
   def editCommand(what: String): Result = editCommand(what, Properties.envOrNone("EDITOR"))
