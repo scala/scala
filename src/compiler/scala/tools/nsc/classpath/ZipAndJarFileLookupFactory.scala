@@ -3,16 +3,18 @@
  */
 package scala.tools.nsc.classpath
 
-import java.io.File
+import java.io.{File, IOException}
 import java.net.URL
 import java.nio.file.Files
-import java.nio.file.attribute.{BasicFileAttributes, FileTime}
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.zip.ZipException
 
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.Settings
 import FileUtils._
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * A trait providing an optional cache for classpath entries obtained from zip and jar files.
@@ -178,16 +180,60 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
 
 final class FileBasedCache[T] {
   import java.nio.file.Path
-  private case class Stamp(lastModified: FileTime, fileKey: Object)
+  private case class Stamp(size: Long, signatures: ArrayBuffer[Long], fileKey: Object)
   private val cache = collection.mutable.Map.empty[Seq[Path], (Seq[Stamp], T)]
 
+  /**
+    * Read the CRCs of every zip entry if all of them succeed to be read.
+    *
+    * This method uses `java.util.jar` instead of `java.util.zip` utilities
+    * because the method `getCrc` in [[java.util.zip.ZipEntry]] returns 0 or
+    * -1 values.
+    *
+    * @param jarFile A jar file (which follows the zip specification format).
+    * @return A list of checksums for every zip entry.
+    */
+  def readJarCrcs(jarFile: Path): Option[ArrayBuffer[Long]] = {
+    try {
+      val jf = new java.util.jar.JarFile(jarFile.toFile)
+      try {
+        val entries = jf.entries()
+        val buffer = new ArrayBuffer[Long](32)
+        while (entries.hasMoreElements) buffer.+=(entries.nextElement().getCrc)
+        // It is very likely that a jar with no CRCs entries is ill-generated, assume so
+        if (buffer.isEmpty || buffer.forall(_ == -1L)) None else Some(buffer)
+      } finally jf.close()
+    } catch {
+      case _: IOException => None
+    }
+  }
+
+  /**
+    * Get a cached value or create it afresh if the value is missing or
+    * any of the given paths have been "modified".
+    *
+    * This implementation considers that a file has been modified if:
+    *   1. The file has changed its total size.
+    *   2. The CRCs present in the jar file are not the same (in the same order).
+    *   3. The file key (uniquely identifying a file) is different.
+    *
+    * Note that if there's a IO error while reading the CRCs in the cached paths,
+    * this implementation fallbacks to the use of the last modified time. This
+    * also happens when jars have no CRCs -- it is extremely unlikely that a
+    * classpath entry has no CRC, so if that happens we assume the jar is
+    * either corrupt or ill-generated, and we use a safer change detection strategy.
+    *
+    * @param paths The classpath entries to check for modification.
+    * @param create The closure to produce elements of type [[T]].
+    * @return A result of type [[T]] that may be either recently generated or cached.
+    */
   def getOrCreate(paths: Seq[Path], create: () => T): T = cache.synchronized {
     val stamps = paths.map { path =>
       val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
-      val lastModified = attrs.lastModifiedTime()
-      // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
-      val fileKey = attrs.fileKey()
-      Stamp(lastModified, fileKey)
+      val currentSize = attrs.size()
+      val signatures = readJarCrcs(path).getOrElse(ArrayBuffer(attrs.lastModifiedTime().toMillis))
+      val fileKey = attrs.fileKey() // only null on some platforms, but that's okay
+      Stamp(currentSize, signatures, fileKey)
     }
 
     cache.get(paths) match {
