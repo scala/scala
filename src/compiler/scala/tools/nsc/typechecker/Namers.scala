@@ -1906,8 +1906,8 @@ trait Namers extends MethodSynthesis {
       import SymValidateErrors._
       def fail(kind: SymValidateErrors.Value) = SymbolValidationError(sym, kind)
 
-      def checkNoConflict(flag1: Int, flag2: Int) = {
-        if (sym hasAllFlags flag1.toLong | flag2)
+      def checkNoConflict(flag1: Long, flag2: Long) = {
+        if (sym hasAllFlags flag1 | flag2)
           IllegalModifierCombination(sym, flag1, flag2)
       }
       if (sym.isImplicit) {
@@ -1945,7 +1945,7 @@ trait Namers extends MethodSynthesis {
         checkNoConflict(ABSTRACT, FINAL)
 
       if (sym.isDeferred) {
-        def checkWithDeferred(flag: Int) = {
+        def checkWithDeferred(flag: Long) = {
           if (sym hasFlag flag)
             AbstractMemberWithModiferError(sym, flag)
         }

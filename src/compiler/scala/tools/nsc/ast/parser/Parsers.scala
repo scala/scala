@@ -2374,7 +2374,7 @@ self =>
       }
     }
 
-    def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef = {
+    def param(owner: Name, implicitmod: Long, caseParam: Boolean): ValDef = {
       val start = in.offset
       val annots = annotations(skipNewLines = false)
       var mods = Modifiers(Flags.PARAM)
@@ -2394,7 +2394,7 @@ self =>
       }
       val nameOffset = in.offset
       val name = ident()
-      var bynamemod = 0
+      var bynamemod = 0L
       val tpt = {
           accept(COLON)
           if (in.token == ARROW) {
@@ -2414,7 +2414,7 @@ self =>
           expr()
         } else EmptyTree
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
-        ValDef((mods | implicitmod.toLong | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
+        ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
       }
     }
 
@@ -3250,10 +3250,10 @@ self =>
     }
     */
 
-    def localDef(implicitMod: Int): List[Tree] = {
+    def localDef(implicitMod: Long): List[Tree] = {
       val annots = annotations(skipNewLines = true)
       val pos = in.offset
-      val mods = (localModifiers() | implicitMod.toLong) withAnnotations annots
+      val mods = (localModifiers() | implicitMod) withAnnotations annots
       val defs =
         if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
         else List(tmplDef(pos, mods))
