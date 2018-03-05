@@ -1304,7 +1304,7 @@ trait Implicits {
               manifestFactoryCall("arrayType", args.head, findManifest(args.head))
             } else if (sym.isClass) {
               val classarg0 = gen.mkClassOf(tp1)
-              val classarg = tp match {
+              val classarg = tp.dealias match {
                 case _: ExistentialType => gen.mkCast(classarg0, ClassType(tp))
                 case _                  => classarg0
               }
