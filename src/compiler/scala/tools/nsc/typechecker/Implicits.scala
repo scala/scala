@@ -971,7 +971,12 @@ trait Implicits {
               }
             )
 
-          val typedFirstPending = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+          val savedInfos = undetParams.map(_.info)
+          val typedFirstPending = try {
+            typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+          } finally {
+            foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
+          }
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
           // the first `DivergentImplicitTypeError` that is being propagated
