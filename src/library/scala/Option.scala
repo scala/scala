@@ -8,6 +8,8 @@
 
 package scala
 
+import scala.collection.GenIterable
+
 object Option {
 
   import scala.language.implicitConversions
@@ -321,6 +323,36 @@ sealed abstract class Option[+A] extends Product with Serializable {
    */
   @inline final def toLeft[X](right: => X): Either[A, X] =
     if (isEmpty) Right(right) else Left(this.get)
+
+
+  /** Returns an `Option[(A,B)]` formed from this `Option` and another 
+   *  iterable collection by combining value of this `Option` and first element 
+   *  of incoming iterable. If iterable has more than one value, its remaining 
+   *  elements are ignored. If `option` is `None` or iterable is `None`, 
+   *  it returns `None`.
+   *
+   * @param   that  The iterable providing the second half of the pair
+   * @tparam  A1    The type of the first half of the returned pair 
+   *                (always a supertype of the collection's element type `A`).
+   * @tparam  B     The type of the second half of the returned pair
+   * @return        `Option` that contains a tuple of the value of the `Option`
+   *                 and the first element of `that`.
+   */
+  final def zip[A1 >: A, B](that: GenIterable[B]): Option[(A,B)] =
+    if (isEmpty || that.isEmpty) None else Some((this.get, that.head))
+
+  /** Returns an `Option[(A,B)]` formed from this `Option` and another one
+   *  by combining the values. If either of them is `None`, it returns `None`.
+   *
+   * @param   that  The option providing the second half of the pair
+   * @tparam  A1    The type of the first half of the returned pair 
+   *                (always a supertype of the collection's element type `A`).
+   * @tparam  B     The type of the second half of the returned pair
+   * @return        `Option` that contains a tuple formed of the value of 
+   *                this `Option` and `that` `Option`.
+   */
+  final def zip[A1 >: A, B](that: Option[B]): Option[(A, B)] =
+    if (this.isEmpty || that.isEmpty) None else Some((this.get, that.get))
 }
 
 /** Class `Some[A]` represents existing values of type
