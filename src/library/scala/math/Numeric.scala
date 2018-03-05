@@ -139,6 +139,8 @@ object Numeric {
     def toDouble(x: Float): Double = x.toDouble
     // logic in Numeric base trait mishandles abs(-0.0f)
     override def abs(x: Float): Float = math.abs(x)
+
+    override protected def deprecatedAsOrdering: Ordering[Float] = DeprecatedFloatOrdering
   }
   trait FloatIsFractional extends FloatIsConflicted with Fractional[Float] {
     def div(x: Float, y: Float): Float = x / y
@@ -147,9 +149,8 @@ object Numeric {
     def quot(x: Float, y: Float): Float = (BigDecimal(x) quot BigDecimal(y)).floatValue
     def rem(x: Float, y: Float): Float = (BigDecimal(x) remainder BigDecimal(y)).floatValue
   }
-  implicit object FloatIsFractional extends FloatIsFractional with Ordering.FloatOrdering
-  object FloatAsIfIntegral extends FloatAsIfIntegral with Ordering.FloatOrdering {
-  }
+  implicit object FloatIsFractional extends FloatIsFractional with PartialOrdering.FloatPartialOrdering
+  object FloatAsIfIntegral extends FloatAsIfIntegral with PartialOrdering.Float.AsUnsafeTotalOrdering
 
   trait DoubleIsConflicted extends Numeric[Double] {
     def plus(x: Double, y: Double): Double = x + y
@@ -164,6 +165,8 @@ object Numeric {
     def toDouble(x: Double): Double = x
     // logic in Numeric base trait mishandles abs(-0.0)
     override def abs(x: Double): Double = math.abs(x)
+
+    override protected def deprecatedAsOrdering: Ordering[Double] = DeprecatedDoubleOrdering
   }
   trait DoubleIsFractional extends DoubleIsConflicted with Fractional[Double] {
     def div(x: Double, y: Double): Double = x / y
@@ -199,11 +202,38 @@ object Numeric {
   implicit object BigDecimalIsFractional extends BigDecimalIsFractional with Ordering.BigDecimalOrdering
   object BigDecimalAsIfIntegral extends BigDecimalAsIfIntegral with Ordering.BigDecimalOrdering
 
-  implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
-  object DoubleAsIfIntegral extends DoubleAsIfIntegral with Ordering.DoubleOrdering
+  implicit object DoubleIsFractional extends DoubleIsFractional with PartialOrdering.DoublePartialOrdering
+  object DoubleAsIfIntegral extends DoubleAsIfIntegral with PartialOrdering.Double.AsUnsafeTotalOrdering
+
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  implicit def numericAsOrdering[T](numeric: Numeric[T]): Ordering[T] = numeric.deprecatedAsOrdering
+
+  /* Deprecated orderings for backwards compatibility */
+
+  private trait DeprecatedFloatOrdering extends Ordering.FloatOrdering {
+    override def lteq(x: Float, y: Float): Boolean = x <= y
+    override def gteq(x: Float, y: Float): Boolean = x >= y
+    override def lt(x: Float, y: Float): Boolean = x < y
+    override def gt(x: Float, y: Float): Boolean = x > y
+    override def equiv(x: Float, y: Float): Boolean = x == y
+    override def max(x: Float, y: Float): Float = math.max(x, y)
+    override def min(x: Float, y: Float): Float = math.min(x, y)
+  }
+  private object DeprecatedFloatOrdering extends DeprecatedFloatOrdering
+
+  private trait DeprecatedDoubleOrdering extends Ordering.DoubleOrdering {
+    override def lteq(x: Double, y: Double): Boolean = x <= y
+    override def gteq(x: Double, y: Double): Boolean = x >= y
+    override def lt(x: Double, y: Double): Boolean = x < y
+    override def gt(x: Double, y: Double): Boolean = x > y
+    override def equiv(x: Double, y: Double): Boolean = x == y
+    override def max(x: Double, y: Double): Double = math.max(x, y)
+    override def min(x: Double, y: Double): Double = math.min(x, y)
+  }
+  private object DeprecatedDoubleOrdering extends DeprecatedDoubleOrdering
 }
 
-trait Numeric[T] extends Ordering[T] {
+trait Numeric[T] extends PartialOrdering[T] {
   def plus(x: T, y: T): T
   def minus(x: T, y: T): T
   def times(x: T, y: T): T
@@ -237,4 +267,13 @@ trait Numeric[T] extends Ordering[T] {
     def toDouble(): Double = Numeric.this.toDouble(lhs)
   }
   implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
+
+  /** Used for deprecated conversion to [[scala.math.Ordering `Ordering`]].
+    *
+    * Override if you wish to support exact previous `Ordering` semantics.
+    */
+  protected def deprecatedAsOrdering: Ordering[T] = {
+    if (this.isInstanceOf[Ordering[_]]) this.asInstanceOf[Ordering[T]]
+    else new AnyRef with AsUnsafeTotalOrdering
+  }
 }

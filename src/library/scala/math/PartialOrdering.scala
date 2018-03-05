@@ -80,4 +80,53 @@ trait PartialOrdering[T] extends Equiv[T] {
     override def lt(x: T, y: T) = outer.lt(y, x)
     override def gt(x: T, y: T) = outer.gt(y, x)
   }
+
+  /** An [[scala.math.Ordering `Ordering`]] which behaves the same
+    * as this `PartialOrdering` when comparisons are supported,
+    * and throws an exception when they are not.
+    */
+  private[math] trait AsUnsafeTotalOrdering extends Ordering[T] {
+    def compare(x: T, y: T): Int = outer.tryCompare(x, y) match {
+      case Some(res) => res
+      case None => throw new IllegalArgumentException(s"$x and $y cannot be compared")
+    }
+  }
+}
+
+object PartialOrdering {
+  private[this] val someLess = Some(-1)
+  private[this] val someEquiv = Some(0)
+  private[this] val someGreater = Some(1)
+
+  trait FloatPartialOrdering extends PartialOrdering[Float] {
+    def tryCompare(x: Float, y: Float): Option[Int] = {
+      if (x < y) someLess
+      else if (x > y) someGreater
+      else if (x == y) someEquiv // includes -0.0 == 0.0
+      else None                  // one or both is NaN
+    }
+
+    def lteq(x: Float, y: Float): Boolean = x <= y
+    override def gteq(x: Float, y: Float): Boolean = x >= y
+    override def lt(x: Float, y: Float): Boolean = x < y
+    override def gt(x: Float, y: Float): Boolean = x > y
+    override def equiv(x: Float, y: Float): Boolean = x == y
+  }
+  implicit object Float extends FloatPartialOrdering
+
+  trait DoublePartialOrdering extends PartialOrdering[Double] {
+    def tryCompare(x: Double, y: Double): Option[Int] = {
+      if (x < y) someLess
+      else if (x > y) someGreater
+      else if (x == y) someEquiv // includes -0.0 == 0.0
+      else None                  // one or both is NaN
+    }
+
+    def lteq(x: Double, y: Double): Boolean = x <= y
+    override def gteq(x: Double, y: Double): Boolean = x >= y
+    override def lt(x: Double, y: Double): Boolean = x < y
+    override def gt(x: Double, y: Double): Boolean = x > y
+    override def equiv(x: Double, y: Double): Boolean = x == y
+  }
+  implicit object Double extends DoublePartialOrdering
 }

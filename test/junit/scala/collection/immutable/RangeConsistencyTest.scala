@@ -151,7 +151,7 @@ class RangeConsistencyTest {
 
   @Test
   def test_SI9388()  {
-    val possiblyNotDefaultNumeric = new scala.math.Numeric[Int] {
+    val possiblyNotDefaultNumeric = new scala.math.Numeric[Int] with scala.math.Ordering[Int] {
       def fromInt(x: Int) = x
       def parseString(str: String): Option[Int] = Try(str.toInt).toOption
       def minus(x: Int, y: Int): Int = x - y

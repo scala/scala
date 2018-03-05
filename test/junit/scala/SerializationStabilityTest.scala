@@ -81,7 +81,7 @@ object SerializationStability extends App {
     }
   }
 
-  // Generated on 20170710-04:55:44 with Scala version 2.13.0-20170709-181218-287a569)
+  // Generated on 20180305-04:42:35 with Scala version 2.13.0-20180305-034251-c8e7abf)
   overwrite.foreach(updateComment)
 
   check(Some(1))("rO0ABXNyAApzY2FsYS5Tb21lESLyaV6hi3QCAAFMAAV2YWx1ZXQAEkxqYXZhL2xhbmcvT2JqZWN0O3hyAAxzY2FsYS5PcHRpb27+aTf92w5mdAIAAHhwc3IAEWphdmEubGFuZy5JbnRlZ2VyEuKgpPeBhzgCAAFJAAV2YWx1ZXhyABBqYXZhLmxhbmcuTnVtYmVyhqyVHQuU4IsCAAB4cAAAAAE=")

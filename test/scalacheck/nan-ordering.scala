@@ -41,20 +41,6 @@ object NanOrderingTest extends Properties("NaN-Ordering") {
 
   property("Float equiv") = forAll(specFloats, specFloats) { (d1, d2) => numFloat.equiv(d1, d2) == (d1 == d2) }
 
-  property("Float reverse.min") = forAll(specFloats, specFloats) { (d1, d2) => {
-      val mathmax = math.max(d1, d2)
-      val numericmin = numFloat.reverse.min(d1, d2)
-      mathmax == numericmin || mathmax.isNaN && numericmin.isNaN
-    }
-  }
-
-  property("Float reverse.max") = forAll(specFloats, specFloats) { (d1, d2) => {
-      val mathmin = math.min(d1, d2)
-      val numericmax = numFloat.reverse.max(d1, d2)
-      mathmin == numericmax || mathmin.isNaN && numericmax.isNaN
-    }
-  }
-
   property("Float reverse.lt") = forAll(specFloats, specFloats) { (d1, d2) => numFloat.reverse.lt(d1, d2) == d2 < d1 }
 
   property("Float reverse.lteq") = forAll(specFloats, specFloats) { (d1, d2) => numFloat.reverse.lteq(d1, d2) == d2 <= d1 }
@@ -103,20 +89,6 @@ object NanOrderingTest extends Properties("NaN-Ordering") {
   property("Double gteq") = forAll(specDoubles, specDoubles) { (d1, d2) => numDouble.gteq(d1, d2) == d1 >= d2 }
 
   property("Double equiv") = forAll(specDoubles, specDoubles) { (d1, d2) => numDouble.equiv(d1, d2) == (d1 == d2) }
-
-  property("Double reverse.min") = forAll(specDoubles, specDoubles) { (d1, d2) => {
-    val mathmax = math.max(d1, d2)
-    val numericmin = numDouble.reverse.min(d1, d2)
-    mathmax == numericmin || mathmax.isNaN && numericmin.isNaN
-  }
-  }
-
-  property("Double reverse.max") = forAll(specDoubles, specDoubles) { (d1, d2) => {
-    val mathmin = math.min(d1, d2)
-    val numericmax = numDouble.reverse.max(d1, d2)
-    mathmin == numericmax || mathmin.isNaN && numericmax.isNaN
-  }
-  }
 
   property("Double reverse.lt") = forAll(specDoubles, specDoubles) { (d1, d2) => numDouble.reverse.lt(d1, d2) == d2 < d1 }
 
