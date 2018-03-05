@@ -742,7 +742,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       (flags & mask) != 0
     }
-    def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
 
     /** Does symbol have ALL the flags in `mask` set? */
     final def hasAllFlags(mask: Long): Boolean = {
