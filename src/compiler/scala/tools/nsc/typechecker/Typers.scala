@@ -5041,9 +5041,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // the qualifier type of a supercall constructor is its first parent class
           typedSelect(tree, typedSelectOrSuperQualifier(qual), nme.CONSTRUCTOR)
         case Select(qual, name) =>
-          if (name.isTypeName)
-            typedSelect(tree, typedTypeSelectionQualifier(tree.qualifier, WildcardType), name)
-          else {
+          if (name.isTypeName) {
+            val qualTyped = typedTypeSelectionQualifier(tree.qualifier, WildcardType)
+            val qualStableOrError =
+              if (qualTyped.isErrorTyped || treeInfo.admitsTypeSelection(qualTyped)) qualTyped
+              else UnstableTreeError(qualTyped)
+            typedSelect(tree, qualStableOrError, name)
+          } else {
             if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedSelectCount)
             val qualTyped = checkDead(typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
