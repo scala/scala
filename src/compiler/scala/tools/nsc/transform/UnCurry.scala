@@ -255,7 +255,7 @@ abstract class UnCurry extends InfoTransform
                 if (tree.tpe <:< pt) tree
                 else gen.mkCastArray(tree, elemtp, pt)
 
-              gen.mkWrapArray(adaptedTree, elemtp)
+              gen.mkWrapVarargsArray(adaptedTree, elemtp)
             }
           }
         }
@@ -801,7 +801,7 @@ abstract class UnCurry extends InfoTransform
           if (!isRep) Ident(param)
           else {
             val parTp = elementType(ArrayClass, param.tpe)
-            val wrap = gen.mkWrapArray(Ident(param), parTp)
+            val wrap = gen.mkWrapVarargsArray(Ident(param), parTp)
             param.attachments.get[TypeParamVarargsAttachment] match {
               case Some(TypeParamVarargsAttachment(tp)) => gen.mkCast(wrap, seqType(tp))
               case _ => wrap

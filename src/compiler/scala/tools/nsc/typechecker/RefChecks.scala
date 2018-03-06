@@ -197,7 +197,7 @@ abstract class RefChecks extends Transform {
           val params  = bridge.paramss.head
           val elemtp  = params.last.tpe.typeArgs.head
           val idents  = params map Ident
-          val lastarg = gen.wildcardStar(gen.mkWrapArray(idents.last, elemtp))
+          val lastarg = gen.wildcardStar(gen.mkWrapVarargsArray(idents.last, elemtp))
           val body    = Apply(Select(This(clazz), member), idents.init :+ lastarg)
 
           localTyper typed DefDef(bridge, body)
