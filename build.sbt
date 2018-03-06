@@ -817,41 +817,27 @@ lazy val root: Project = (project in file("."))
       state
     },
     testAll := {
-      val results = ScriptCommands.sequence[Result[Unit]](List(
-        (Keys.test in Test in junit).result,
-        (Keys.test in Test in scalacheck).result,
-        (testOnly in IntegrationTest in testP).toTask(" -- run").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
-        (Keys.test in Test in osgiTestFelix).result,
-        (Keys.test in Test in osgiTestEclipse).result,
-        (mimaReportBinaryIssues in library).result,
-        (mimaReportBinaryIssues in reflect).result,
+      val results = ScriptCommands.sequence[(Result[Unit], String)](List(
+        (Keys.test in Test in junit).result map (_ -> "junit/test"),
+        (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
+        (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
+        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
+        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
+        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
+        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
+        (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
+        (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
+        (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
+        (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
           doc in Compile in reflect,
           doc in Compile in compiler,
           doc in Compile in scalap
-        ).result
+        ).result map (_ -> "doc")
       )).value
-      // All attempts to define these together with the actual tasks due to the applicative rewriting of `.value`
-      val descriptions = Vector(
-        "junit/test",
-        "partest run",
-        "partest pos neg jvm",
-        "partest res scalap specialized",
-        "partest instrumented presentation",
-        "partest --srcpath scaladoc",
-        "osgiTestFelix/test",
-        "osgiTestEclipse/test",
-        "library/mimaReportBinaryIssues",
-        "reflect/mimaReportBinaryIssues",
-        "doc"
-      )
-      val failed = results.map(_.toEither).zip(descriptions).collect { case (Left(i: Incomplete), d) => (i, d) }
-      if(failed.nonEmpty) {
+      val failed = results.collect { case (Inc(i), d) => (i, d) }
+      if (failed.nonEmpty) {
         val log = streams.value.log
         def showScopedKey(k: Def.ScopedKey[_]): String =
           Vector(
