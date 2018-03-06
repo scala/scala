@@ -43,7 +43,9 @@ class BitSet(protected[collection] final var elems: Array[Long])
   protected[collection] final def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
 
-  protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = new BitSet(elems)
+  protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet =
+    if (elems.length == 0) empty
+    else new BitSet(elems)
 
   def addOne(elem: Int): this.type = {
     require(elem >= 0)
