@@ -177,6 +177,7 @@ object Map extends MapFactory[Map] {
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
+    override def getOrElse [V1](key: Any, default: => V1): V1 = default
     def iterator(): Iterator[(Any, Nothing)] = Iterator.empty
     def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def remove(key: Any): Map[Any, Nothing] = this
@@ -190,6 +191,8 @@ object Map extends MapFactory[Map] {
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
       if (key == key1) Some(value1) else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1 else default
     def iterator() = Iterator.single((key1, value1))
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
@@ -214,6 +217,10 @@ object Map extends MapFactory[Map] {
       if (key == key1) Some(value1)
       else if (key == key2) Some(value2)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else default
     def iterator() = ((key1, value1) :: (key2, value2) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
@@ -243,6 +250,11 @@ object Map extends MapFactory[Map] {
       else if (key == key2) Some(value2)
       else if (key == key3) Some(value3)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else if (key == key3) value3
+      else default
     def iterator() = ((key1, value1) :: (key2, value2) :: (key3, value3) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
@@ -276,6 +288,12 @@ object Map extends MapFactory[Map] {
       else if (key == key3) Some(value3)
       else if (key == key4) Some(value4)
       else None
+    override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
+      if (key == key1) value1
+      else if (key == key2) value2
+      else if (key == key3) value3
+      else if (key == key4) value4
+      else default
     def iterator() = ((key1, value1) :: (key2, value2) :: (key3, value3) :: (key4, value4) :: Nil).iterator()
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
