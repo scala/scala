@@ -9,7 +9,35 @@ import strawman.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, Stri
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
-/** A core Iterator class
+/** Iterators are data structures that allow to iterate over a sequence
+  * of elements. They have a `hasNext` method for checking
+  * if there is a next element available, and a `next` method
+  * which returns the next element and advances the iterator.
+  *
+  * An iterator is mutable: most operations on it change its state. While it is often used
+  * to iterate through the elements of a collection, it can also be used without
+  * being backed by any collection (see constructors on the companion object).
+  *
+  * It is of particular importance to note that, unless stated otherwise, ''one should never
+  * use an iterator after calling a method on it''. The two most important exceptions
+  * are also the sole abstract methods: `next` and `hasNext`.
+  *
+  * Both these methods can be called any number of times without having to discard the
+  * iterator. Note that even `hasNext` may cause mutation -- such as when iterating
+  * from an input stream, where it will block until the stream is closed or some
+  * input becomes available.
+  *
+  * Consider this example for safe and unsafe use:
+  *
+  * {{{
+  * def f[A](it: Iterator[A]) = {
+  *   if (it.hasNext) {            // Safe to reuse "it" after "hasNext"
+  *     it.next                    // Safe to reuse "it" after "next"
+  *     val remainder = it.drop(2) // it is *not* safe to use "it" again after this line!
+  *     remainder.take(2)          // it is *not* safe to use "remainder" after this line!
+  *   } else it
+  * }
+  * }}}
   *
   * @define consumesIterator
   * After calling this method, one should discard the iterator it was called
