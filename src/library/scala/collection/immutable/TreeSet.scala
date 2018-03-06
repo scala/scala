@@ -24,6 +24,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
   override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
     new SetBuilder(empty[A](ordering))
+  override implicit def newCanBuildFrom[A](implicit ord : Ordering[A]) : CanBuildFrom[Coll, A, TreeSet[A]] = super.newCanBuildFrom
 
   /** The empty set of this type
    */
