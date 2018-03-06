@@ -86,7 +86,7 @@ class ArrayDeque[A] protected (
     this
   }
 
-  /*override*/ def prependAll(elems: IterableOnce[A]): this.type = {
+  override def prependAll(elems: IterableOnce[A]): this.type = {
     val it = elems.iterator()
     if (it.nonEmpty) {
       val n = length
@@ -133,7 +133,7 @@ class ArrayDeque[A] protected (
     val n = length
     if (idx == 0) {
       prepend(elem)
-    } else if (idx == n - 1) {
+    } else if (idx == n) {
       addOne(elem)
     } else {
       val finalLength = n + 1
