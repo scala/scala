@@ -7,17 +7,17 @@ package object decorators {
   implicit def iteratorDecorator[A](it: Iterator[A]): IteratorDecorator[A] =
     new IteratorDecorator[A](it)
 
-  implicit def iterableDecorator[A](it: Iterable[A]): IterableDecorator[A] =
-    new IterableDecorator(it)
+  implicit def IterableDecorator[C](coll: C)(implicit it: HasIterableOps[C]): IterableDecorator[C, it.type] =
+    new IterableDecorator(coll)(it)
 
-  implicit def SeqDecorator[A, CC[X] <: SeqOps[X, CC, _]](seq: CC[A]): SeqDecorator[A, CC] =
-    new SeqDecorator[A, CC](seq)
+  implicit def SeqDecorator[C](coll: C)(implicit seq: HasSeqOps[C]): SeqDecorator[C, seq.type] =
+    new SeqDecorator(coll)(seq)
 
-  implicit def MapDecorator[K, V](map: Map[K, V]): MapDecorator[K, V] { val `this`: map.type } =
-    new MapDecorator[K, V] { val `this`: map.type = map }
+  implicit def MapDecorator[C](coll: C)(implicit map: HasMapOps[C]): MapDecorator[C, map.type] =
+    new MapDecorator(coll)(map)
 
-  implicit def ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.Map[X, Y]](map: CC[K, V]): ImmutableMapDecorator[K, V, CC] =
-    new ImmutableMapDecorator[K, V, CC](map)
+  implicit def ImmutableMapDecorator[C](coll: C)(implicit map: HasImmutableMapOps[C]): ImmutableMapDecorator[C, map.type] =
+    new ImmutableMapDecorator(coll)(map)
 
   implicit def MutableMapDecorator[K, V](map: mutable.Map[K, V]): MutableMapDecorator[K, V] =
     new MutableMapDecorator[K, V](map)

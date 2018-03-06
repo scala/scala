@@ -61,4 +61,17 @@ class MapDecoratorTest {
     }
   }
 
+  @Test
+  def mapDecoratorWorksWithViews/*AndMutableMaps*/(): Unit = {
+    val map1 = Map(1 -> "a", 2 -> "b")
+    val map2 = Map(2 -> "c")
+    val zipped = map1.view.zipByKeyWith(map2)(_ ++ _).to(Map)
+    val expected = Map(2 -> "bc")
+    Assert.assertEquals(expected, zipped)
+
+//    val mutableMap1 = mutable.Map(1 -> "a", 2 -> "b")
+//    val zipped2 = mutableMap1.zipByKeyWith(map2)(_ ++ _).to(Map)
+//    Assert.assertEquals(expected, zipped2)
+  }
+
 }

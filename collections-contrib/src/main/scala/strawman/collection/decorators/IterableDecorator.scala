@@ -2,7 +2,7 @@ package strawman
 package collection
 package decorators
 
-class IterableDecorator[A](val `this`: Iterable[A]) extends AnyVal {
+class IterableDecorator[C, I <: HasIterableOps[C]](coll: C)(implicit val it: I) {
 
   /**
     * Left to right fold that stops if the combination function `op`
@@ -14,8 +14,8 @@ class IterableDecorator[A](val `this`: Iterable[A]) extends AnyVal {
     *         going left to right with the start value `z` on the left, and stopping when
     *         all the elements have been traversed or earlier if the operator returns `None`
     */
-  def foldSomeLeft[B](z: B)(op: (B, A) => Option[B]): B =
-    `this`.iterator().foldSomeLeft(z)(op)
+  def foldSomeLeft[B](z: B)(op: (B, it.A) => Option[B]): B =
+    it(coll).iterator().foldSomeLeft(z)(op)
 
   /**
     * Right to left fold that can be interrupted before traversing the whole collection.
@@ -28,6 +28,7 @@ class IterableDecorator[A](val `this`: Iterable[A]) extends AnyVal {
     *         then `result` is returned without iterating further; if it returns `Right(f)`, the function
     *         `f` is applied to the previous result to produce the new result and the fold continues.
     */
-  def lazyFoldRight[B](z: B)(op: A => Either[B, B => B]): B = `this`.iterator().lazyFoldRight(z)(op)
+  def lazyFoldRight[B](z: B)(op: it.A => Either[B, B => B]): B =
+    it(coll).iterator().lazyFoldRight(z)(op)
 
 }

@@ -2,7 +2,7 @@ package strawman
 package collection
 package decorators
 
-class ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.Map[X, Y]](`this`: CC[K, V]) {
+class ImmutableMapDecorator[C, M <: HasImmutableMapOps[C]](coll: C)(implicit val map: M) {
 
   /**
     * Updates an existing binding or create a new one according to the
@@ -23,15 +23,16 @@ class ImmutableMapDecorator[K, V, CC[X, +Y] <: immutable.Map[X, Y]](`this`: CC[K
     *
     * @return A new updated `Map`
     */
-  def updatedWith[C](key: K)(f: PartialFunction[Option[V], Option[V]])(implicit bf: BuildFrom[CC[K, V], (K, V), C]): C = {
+  def updatedWith[That](key: map.K)(f: PartialFunction[Option[map.V], Option[map.V]])(implicit bf: BuildFrom[C, (map.K, map.V), That]): That = {
     val pf = f.lift
+    val `this` = map(coll)
     val previousValue = `this`.get(key)
     pf(previousValue) match {
-      case None => bf.fromSpecificIterable(`this`)(`this`)
+      case None => bf.fromSpecificIterable(coll)(`this`.toIterable)
       case Some(result) =>
         result match {
-          case None => bf.fromSpecificIterable(`this`)(`this` - key)
-          case Some(v) => bf.fromSpecificIterable(`this`)(`this` + (key -> v))
+          case None => bf.fromSpecificIterable(coll)((`this` - key).toIterable)
+          case Some(v) => bf.fromSpecificIterable(coll)((`this` + (key -> v)).toIterable)
         }
     }
   }

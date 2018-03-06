@@ -58,6 +58,12 @@ object BuildFrom extends BuildFromLowPriority {
       def newBuilder(from: Array[_]): Builder[A, Array[A]] = Factory.arrayFactory[A].newBuilder()
     }
 
+  implicit def buildFrom[A, B]: BuildFrom[View[A], B, View[B]] =
+    new BuildFrom[View[A], B, View[B]] {
+      def fromSpecificIterable(from: View[A])(it: Iterable[B]): View[B] = View.from(it)
+      def newBuilder(from: View[A]): Builder[B, View[B]] = View.newBuilder()
+    }
+
 }
 
 trait BuildFromLowPriority {
