@@ -1,7 +1,7 @@
 language: scala
 jdk: oraclejdk8
 script:
-  - sbt ++2.12.4 memoryBenchmark/compile test ++2.13.0-M2 timeBenchmark/compile test ++0.6.0-RC1 test
+  - sbt ++2.12.4 memoryBenchmark/compile test ++2.13.0-M2 timeBenchmark/compile test ++0.7.0-RC1 test
   - sbt ++2.13.0-M2 collections-contribJVM/test junit/test scalacheck/test
   - sbt ++2.12.4 collectionsJS/test ++2.13.0-M2 collectionsJS/test collections-contribJS/test
 before_script:

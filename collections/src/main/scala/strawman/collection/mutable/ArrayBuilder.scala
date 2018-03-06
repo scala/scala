@@ -101,8 +101,7 @@ object ArrayBuilder {
     protected var elems: Array[T] = _
 
     private def mkArray(size: Int): Array[T] = {
-      // Anything short of this will make Dotty create an Array[Object]:
-      val newelems = java.lang.reflect.Array.newInstance(ct.runtimeClass, size).asInstanceOf[Array[T]]
+      val newelems = new Array[T](size)
       if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
       newelems
     }
