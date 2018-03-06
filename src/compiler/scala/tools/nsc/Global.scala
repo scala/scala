@@ -10,6 +10,8 @@ package nsc
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+import java.nio.file.{Files, Paths}
+
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
@@ -26,9 +28,11 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
-import backend.jvm.{GenBCode, BackendStats}
+import backend.jvm.{BackendStats, GenBCode}
 import scala.concurrent.Future
+import scala.io.Codec.UTF8
 import scala.language.postfixOps
+import scala.reflect.io.Streamable
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
@@ -1482,6 +1486,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
         advancePhase()
       }
+      printCsvStatistics()
       profiler.finished()
 
       reporting.summarizeErrors()
@@ -1585,6 +1590,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       else List(treeNodeCount)
     }
 
+    private var nextQuantityIndex = 0
+    private val quantityIndex = mutable.LinkedHashMap[statistics.Quantity, Int]()
+    private def indexFor(q: statistics.Quantity) = quantityIndex.getOrElseUpdate(q, { val i = nextQuantityIndex; nextQuantityIndex += 1; i })
+    private val statisticsCsv = new StringBuilder()
+
     final def printStatisticsFor(phase: Phase) = {
       inform("*** Cumulative statistics at phase " + phase)
 
@@ -1603,8 +1613,51 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         if (phase.name == "parser") parserStats
         else if (settings.YhotStatisticsEnabled) statistics.allQuantities
         else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
-      for (q <- quants if q.showAt(phase.name)) inform(q.line)
+      for (q <- quants if q.showAt(phase.name)) {
+        inform(q.line)
+        q match {
+          case _: statistics.QuantMap[_, _, _] =>  // too awkward to render to CSV
+          case _ => indexFor(q)
+        }
+      }
+
+      if (settings.YstatisticsDestination.isSetByUser) {
+        val cells = mutable.ArrayBuffer[String]()
+        cells += currentRunId.toString
+        cells += phase.name
+        cells += settings.outputDirs.getSingleOutput.map(_.toString).getOrElse("")
+        for ((q, i) <- quantityIndex) {
+          if (q.showAt(phase.name)) {
+            cells ++= q.csvValues
+          } else {
+            q.csvLabels.foreach(_ => cells += "")
+          }
+        }
+        writeCsvRow(statisticsCsv, cells)
+      }
     }
+
+    private def writeCsvRow(out: StringBuilder, cells: TraversableOnce[String]) = {
+      def escape(s: String) = s.replace("\"", "\\\"")
+      cells.map(escape).addString(out, "\n", ",", "")
+    }
+
+    final def printCsvStatistics(): Unit = {
+      if (settings.YstatisticsDestination.isSetByUser) {
+        val b = new StringBuilder
+        val standardHeaders = List("run", "phase", "target")
+        writeCsvRow(b, standardHeaders.iterator ++ quantityIndex.keysIterator.flatMap(_.csvLabels))
+        b.append("\n")
+        b.append(statisticsCsv)
+        b.append("\n")
+        settings.YstatisticsDestination.value match {
+          case "-" => inform(b.toString)
+          case path =>
+            Files.write(Paths.get(path), b.toString.getBytes(UTF8.charSet))
+        }
+      }
+    }
+
   } // class Run
 
   def printAllUnits() {
