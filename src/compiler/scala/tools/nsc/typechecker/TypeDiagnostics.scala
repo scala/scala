@@ -513,7 +513,7 @@ trait TypeDiagnostics {
                   if (sym.isPrimaryConstructor)
                     for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
                   else if (sym.isSynthetic && sym.isImplicit) return
-                  else if (!sym.isConstructor)
+                  else if (!sym.isConstructor && rhs.symbol != Predef_???)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                   defnTrees += m
                 case _ =>
