@@ -576,7 +576,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Sorts this $coll according to an Ordering.
     *
     *  The sort is stable. That is, elements that are equal (as determined by
-    *  `lt`) appear in the same order in the sorted sequence as in the original.
+    *  `ord.compare`) appear in the same order in the sorted sequence as in the original.
     *
     *  @see [[scala.math.Ordering]]
     *
@@ -625,9 +625,13 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def sortWith(lt: (A, A) => Boolean): C = sorted(Ordering.fromLessThan(lt))
 
   /** Sorts this $coll according to the Ordering which results from transforming
-    *  an implicitly given Ordering with a transformation function.
+    * an implicitly given Ordering with a transformation function.
+    * $willNotTerminateInf
+    *
+    * The sort is stable. That is, elements that are equal (as determined by
+    * `ord.compare`) appear in the same order in the sorted sequence as in the original.
+    *
     *  @see [[scala.math.Ordering]]
-    *  $willNotTerminateInf
     *  @param   f the transformation function mapping elements
     *           to some other domain `B`.
     *  @param   ord the ordering assumed on domain `B`.
