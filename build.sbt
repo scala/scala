@@ -155,6 +155,25 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // to make sure they are being cleaned properly
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
+  // SBT 0.13.17+ doesn't seem to respect `cleanFiles` anymore: https://github.com/sbt/sbt/pull/3834/files#r172686677
+  // Let's override `cleanFilesTask`.
+  cleanFilesTask := {
+    val filesAndDirs = (Vector(managedDirectory.value, target.value) ++ cleanFiles.value).distinct
+
+    // START: Copy/pasted from SBT
+    val preserve = cleanKeepFiles.value
+    val (dirs, fs) = filesAndDirs.filter(_.exists).partition(_.isDirectory)
+    val preserveSet = preserve.filter(_.exists).toSet
+    // performance reasons, only the direct items under `filesAndDirs` are allowed to be preserved.
+    val dirItems = dirs flatMap { _.*("*").get }
+    (preserveSet diff dirItems.toSet) match {
+      case xs if xs.isEmpty => ()
+      case xs               => sys.error(s"cleanKeepFiles contains directory/file that are not directly under cleanFiles: $xs")
+    }
+    val toClean = (dirItems filterNot { preserveSet(_) }) ++ fs
+    toClean
+    // END: Copy/pasted from SBT
+  },
   fork in run := true,
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
