@@ -151,7 +151,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the
-    * operator going left to right.
+    * operator going left to right, including the initial value.
     *
     *  $willNotTerminateInf
     *  $orderDependent

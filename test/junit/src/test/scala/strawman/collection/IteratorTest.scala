@@ -450,4 +450,33 @@ class IteratorTest {
     check(l.copyToArray(new Array(10), 0, -1),
       0, 0)
   }
+  // scala/bug#10709
+  @Test def `scan is lazy enough`(): Unit = {
+    val results = mutable.ListBuffer.empty[Int]
+    val it = new AbstractIterator[Int] {
+      var cur = 1
+      val max = 3
+      override def hasNext = {
+        results += -cur
+        cur < max
+      }
+      override def next() = {
+        val res = cur
+        results += -res
+        cur += 1
+        res
+      }
+    }
+    val xy = it.scanLeft(10)((sum, x) => {
+      results += -(sum + x)
+      sum + x
+    })
+    val scan = mutable.ListBuffer.empty[Int]
+    for (i <- xy) {
+      scan += i
+      results += i
+    }
+    assertTrue(List(10,11,13).sameElements(scan))
+    assertTrue(List(10,-1,-1,-11,11,-2,-2,-13,13,-3).sameElements(results))
+  }
 }
