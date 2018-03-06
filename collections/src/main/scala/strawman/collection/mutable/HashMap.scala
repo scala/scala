@@ -9,7 +9,7 @@ import java.lang.String
 /** This class implements mutable maps using a hashtable.
   *
   *  @since 1
-  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash_tables "Scala's Collection Library overview"]]
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   *  section on `Hash Tables` for more information.
   *
   *  @tparam K    the type of the keys contained in this hash map.

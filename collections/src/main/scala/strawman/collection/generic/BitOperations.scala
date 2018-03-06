@@ -13,7 +13,7 @@ import scala.Predef.{String, intWrapper, longWrapper}
 
 /** Some bit operations.
   *
-  *  See http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/ for
+  *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
   *  an explanation of unsignedCompare.
   */
 private[collection] object BitOperations {

@@ -13,7 +13,7 @@ import scala.Predef.{require}
   *
   * $bitsetinfo
   *
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_bitsets "Scala's Collection Library overview"]]
+  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable-bitsets "Scala's Collection Library overview"]]
   * section on `Mutable Bitsets` for more information.
   *
   * @define Coll `BitSet`
