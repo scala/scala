@@ -361,6 +361,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def splitAt(n: Int): (C, C) = (take(n), drop(n))
 
+  /** Selects first ''n'' elements.
+    *  $orderDependent
+    *  @param  n    the number of elements to take from this $coll.
+    *  @return a $coll consisting only of the first `n` elements of this $coll,
+    *          or else the whole $coll, if it has less than `n` elements.
+    *          If `n` is negative, returns an empty $coll.
+    */
   def take(n: Int): C = fromSpecificIterable(new View.Take(this, n))
 
   /** A collection containing the last `n` elements of this collection. */
@@ -381,6 +388,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   def span(p: A => Boolean): (C, C) = (takeWhile(p), dropWhile(p))
 
+  /** Selects all elements except first ''n'' ones.
+    *  $orderDependent
+    *  @param  n    the number of elements to drop from this $coll.
+    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+    *          empty $coll, if this $coll has less than `n` elements.
+    *          If `n` is negative, don't drop any elements.
+    */
   def drop(n: Int): C = fromSpecificIterable(new View.Drop(this, n))
 
   /** The rest of the collection without its `n` last elements. For
