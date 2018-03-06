@@ -55,8 +55,12 @@ class InferTest extends BytecodeTesting {
       val foo1Tpe = foo1Sym.info
 
       // isStrictlyMoreSpecific uses existentialAbstraction
-      assert(!isStrictlyMoreSpecific(foo0Tpe, foo1Tpe, foo0Sym, foo1Sym))
-      assert(isStrictlyMoreSpecific(foo1Tpe, foo0Tpe, foo1Sym, foo0Sym))
+      assert(!isStrictlyMoreSpecific(foo0Tpe, foo1Tpe, foo0Sym, foo1Sym, nullaryImplicitArgs = false))
+      assert(isStrictlyMoreSpecific(foo1Tpe, foo0Tpe, foo1Sym, foo0Sym, nullaryImplicitArgs = false))
+
+      // isStrictlyMoreSpecific uses existentialAbstraction
+      assert(!isStrictlyMoreSpecific(foo0Tpe, foo1Tpe, foo0Sym, foo1Sym, nullaryImplicitArgs = true))
+      assert(isStrictlyMoreSpecific(foo1Tpe, foo0Tpe, foo1Sym, foo0Sym, nullaryImplicitArgs = true))
     }
   }
 }
