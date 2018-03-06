@@ -171,4 +171,8 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
     }
     last
   }
+
+  override def tails: Iterator[C] =
+    Iterator.iterate(coll)(_.tail.asInstanceOf[C]).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder().result())
+
 }
