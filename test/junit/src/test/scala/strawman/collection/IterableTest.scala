@@ -92,4 +92,17 @@ class IterableTest {
     check(l.copyToArray(new Array(10), 0, -1),
       0, 0)
   }
+
+  @Test
+  def test_SI10631 {
+    val baselist = List(1, 2)
+    var checklist = List.empty[Int]
+    val lst = baselist.view.map { x =>
+      checklist = x :: checklist
+      x
+    }
+
+    Assert.assertEquals(2, lst.last)
+    Assert.assertEquals(baselist.reverse, checklist)
+  }
 }
