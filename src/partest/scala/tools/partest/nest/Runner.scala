@@ -131,9 +131,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     )
 
     pushTranscript(args mkString " ")
-    val captured = StreamCapture(runCommand(args, logFile))
-    if (captured.result) genPass() else {
-      logFile appendAll captured.stderr
+    if (runCommand(args, logFile)) genPass() else {
       genFail("java compilation failed")
     }
   }
