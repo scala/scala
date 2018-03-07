@@ -2,7 +2,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, ArrayBuilder}
-import strawman.collection.{IterableOnce, Iterator, SeqFactory, ClassTagSeqFactory, StrictOptimizedClassTagSeqFactory, View}
+import strawman.collection.{IterableOnce, Iterator, SeqFactory, ClassTagSeqFactory, StrictOptimizedClassTagSeqFactory, View, ArrayOps}
 
 import scala.{Any, ArrayIndexOutOfBoundsException, Boolean, Int, Nothing, UnsupportedOperationException, throws, Array, AnyRef, `inline`, Serializable, SerialVersionUID, Byte, Short, Long, Double, Unit, Float, Char}
 import scala.annotation.unchecked.uncheckedVariance
@@ -95,28 +95,19 @@ sealed abstract class ImmutableArray[+A]
         fromIterable(new View.Zip(toIterable, that))
     }
 
-  override def take(n: Int): ImmutableArray[A] = iterableFactory.tabulate(n)(apply)
+  override def take(n: Int): ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).take(n))
 
-  override def takeRight(n: Int): ImmutableArray[A] = iterableFactory.tabulate(n min length)(i => apply(length - (n min length) + i))
+  override def takeRight(n: Int): ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).takeRight(n))
 
-  override def drop(n: Int): ImmutableArray[A] = iterableFactory.tabulate((length - n) max 0)(i => apply(n + i))
+  override def drop(n: Int): ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).drop(n))
 
-  override def dropRight(n: Int): ImmutableArray[A] = iterableFactory.tabulate((length - n) max 0)(apply)
+  override def dropRight(n: Int): ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).dropRight(n))
 
-  override def slice(from: Int, until: Int): ImmutableArray[A] = {
-    val lo = scala.math.max(from, 0)
-    val hi = scala.math.min(until, length)
-    iterableFactory.tabulate(hi - lo)(i => apply(i + lo))
-  }
+  override def slice(from: Int, until: Int): ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until))
 
-  override def tail: ImmutableArray[A] =
-    if (length > 0) {
-      val dest = Array.ofDim(length - 1)(elemTag)
-      java.lang.System.arraycopy(unsafeArray, 1, dest, 0, length - 1)
-      ImmutableArray.unsafeWrapArray(dest)
-    } else throw new UnsupportedOperationException("tail of empty array")
+  override def tail: ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).tail)
 
-  override def reverse: ImmutableArray[A] = iterableFactory.tabulate(length)(i => apply(length - 1 - i))
+  override def reverse: ImmutableArray[A] = ImmutableArray.unsafeWrapArray(new ArrayOps(unsafeArray).reverse)
 
   override def className = "ImmutableArray"
 

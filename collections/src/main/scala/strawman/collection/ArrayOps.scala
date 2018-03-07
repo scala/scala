@@ -5,6 +5,7 @@ import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `in
 import scala.Predef.{implicitly, classOf}
 import java.lang.{String, Class}
 import mutable.ArrayBuilder
+import immutable.ImmutableArray
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
@@ -829,4 +830,9 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       i += 1
     }
   }
+
+  @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
+
+  def toIndexedSeq: immutable.IndexedSeq[A] =
+    ImmutableArray.unsafeWrapArray(ArrayOps.copyOf(xs, xs.length))
 }
