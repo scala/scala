@@ -293,9 +293,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
 
       TrapExit(() => run()) match {
         case Left((status, throwable)) if status != 0 =>
-          //        Files.readAllLines(log.toPath).forEach(println(_))
-          //        val error = new AssertionError(s"System.exit(${status}) was called.")
-          //        error.setStackTrace(throwable.getStackTrace)
           setLastState(genFail("non-zero exit code"))
           false
         case _ =>

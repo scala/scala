@@ -52,30 +52,14 @@ object StreamCapture {
     Captured(stdoutFn(), stderrFn(), result)
   }
 
-  def withExtraProperties[A](extra: Map[String, String])(action: => A): A = {
-    val saved = System.getProperties()
-    val modified = new java.util.Properties()
-    saved.stringPropertyNames().forEach((k) => modified.setProperty(k, saved.getProperty(k)))
-    extra.foreach { case (k, v) => modified.setProperty(k, v) }
-    System.setProperties(modified)
-    try {
-      action
-    } finally {
-      System.setProperties(saved)
-    }
-  }
-
-  // TODO merge with code above
   def capturingOutErr[A](output: OutputStream)(f: => A): A = {
     import java.io._
-    val savedOut = System.out
-    val savedErr = System.err
-    try {
-      val charset = Charset.defaultCharset()
-      val printStream = new PrintStream(output, true, charset.name())
+    val charset = Charset.defaultCharset()
+    val printStream = new PrintStream(output, true, charset.name())
+    savingSystem {
+      System.setOut(printStream)
+      System.setErr(printStream)
       try {
-        System.setOut(printStream)
-        System.setErr(printStream)
         scala.Console.withErr(printStream) {
           scala.Console.withOut(printStream) {
             f
@@ -84,9 +68,19 @@ object StreamCapture {
       } finally {
         printStream.close()
       }
+    }
+  }
+
+  def withExtraProperties[A](extra: Map[String, String])(action: => A): A = {
+    val saved = System.getProperties()
+    val modified = new java.util.Properties()
+    modified.putAll(saved)
+    extra.foreach { case (k, v) => modified.setProperty(k, v) }
+    System.setProperties(modified)
+    try {
+      action
     } finally {
-      System.setOut(savedOut)
-      System.setOut(savedErr)
+      System.setProperties(saved)
     }
   }
 }

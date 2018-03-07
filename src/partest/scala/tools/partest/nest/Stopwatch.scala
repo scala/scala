@@ -1,6 +1,10 @@
 package scala.tools.partest.nest
 
-class Stopwatch {
+/**
+  * Measured elapsed time between between calls to `start` and `stop`.
+  * May be `pause`-ed and re-`started` before `stop` is eventually called.
+  */
+final class Stopwatch {
   private var base: Option[Long] = None
   private var elapsed = 0L
   def pause(): Unit = {
