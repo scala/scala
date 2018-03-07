@@ -105,11 +105,19 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Return `x` if `x` <= `y`, otherwise `y`. */
   def min(x: T, y: T): T = if (lteq(x, y)) x else y
 
-  /** Return the opposite ordering of this one. */
-  override def reverse: Ordering[T] = new Ordering[T] {
-    override def reverse = outer
-    def compare(x: T, y: T) = outer.compare(y, x)
+  private[math] class ReverseOrdering extends Ordering[T] {
+    override def reverse: Ordering[T] = outer
+    def compare(x: T, y: T): Int = outer.compare(y, x)
+    override def lteq(x: T, y: T): Boolean = outer.lteq(y, x)
+    override def gteq(x: T, y: T): Boolean = outer.gteq(y, x)
+    override def lt(x: T, y: T): Boolean = outer.lt(y, x)
+    override def gt(x: T, y: T): Boolean = outer.gt(y, x)
+    override def max(x: T, y: T): T = outer.min(x, y)
+    override def min(x: T, y: T): T = outer.max(x, y)
   }
+
+  /** Return the opposite ordering of this one. */
+  override def reverse: Ordering[T] = new ReverseOrdering
 
   /** Given f, a function from U into T, creates an Ordering[U] whose compare
     * function is equivalent to:
@@ -306,57 +314,12 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit object Long extends LongOrdering
 
   trait FloatOrdering extends Ordering[Float] {
-    outer =>
-
     def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
-
-    override def lteq(x: Float, y: Float): Boolean = x <= y
-    override def gteq(x: Float, y: Float): Boolean = x >= y
-    override def lt(x: Float, y: Float): Boolean = x < y
-    override def gt(x: Float, y: Float): Boolean = x > y
-    override def equiv(x: Float, y: Float): Boolean = x == y
-    override def max(x: Float, y: Float): Float = math.max(x, y)
-    override def min(x: Float, y: Float): Float = math.min(x, y)
-
-    override def reverse: Ordering[Float] = new FloatOrdering {
-      override def reverse = outer
-      override def compare(x: Float, y: Float) = outer.compare(y, x)
-
-      override def lteq(x: Float, y: Float): Boolean = outer.lteq(y, x)
-      override def gteq(x: Float, y: Float): Boolean = outer.gteq(y, x)
-      override def lt(x: Float, y: Float): Boolean = outer.lt(y, x)
-      override def gt(x: Float, y: Float): Boolean = outer.gt(y, x)
-      override def min(x: Float, y: Float): Float = outer.max(x, y)
-      override def max(x: Float, y: Float): Float = outer.min(x, y)
-
-    }
   }
   implicit object Float extends FloatOrdering
 
   trait DoubleOrdering extends Ordering[Double] {
-    outer =>
-
     def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
-
-    override def lteq(x: Double, y: Double): Boolean = x <= y
-    override def gteq(x: Double, y: Double): Boolean = x >= y
-    override def lt(x: Double, y: Double): Boolean = x < y
-    override def gt(x: Double, y: Double): Boolean = x > y
-    override def equiv(x: Double, y: Double): Boolean = x == y
-    override def max(x: Double, y: Double): Double = math.max(x, y)
-    override def min(x: Double, y: Double): Double = math.min(x, y)
-
-    override def reverse: Ordering[Double] = new DoubleOrdering {
-      override def reverse = outer
-      override def compare(x: Double, y: Double) = outer.compare(y, x)
-
-      override def lteq(x: Double, y: Double): Boolean = outer.lteq(y, x)
-      override def gteq(x: Double, y: Double): Boolean = outer.gteq(y, x)
-      override def lt(x: Double, y: Double): Boolean = outer.lt(y, x)
-      override def gt(x: Double, y: Double): Boolean = outer.gt(y, x)
-      override def min(x: Double, y: Double): Double = outer.max(x, y)
-      override def max(x: Double, y: Double): Double = outer.min(x, y)
-    }
   }
   implicit object Double extends DoubleOrdering
 

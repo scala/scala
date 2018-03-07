@@ -161,7 +161,7 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
 /* checks that sum respects custom Numeric */
   property("sumCustomNumeric") = forAll(myGen) { r =>
     val mod = 65536
-    object mynum extends Numeric[Int] {
+    object mynum extends Numeric[Int] with Ordering[Int] {
         def plus(x: Int, y: Int): Int = (x + y) % mod
         override def zero = 0
 

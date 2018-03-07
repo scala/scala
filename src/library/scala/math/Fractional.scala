@@ -22,6 +22,9 @@ trait Fractional[T] extends Numeric[T] {
   }
   override implicit def mkNumericOps(lhs: T): FractionalOps =
     new FractionalOps(lhs)
+
+  @deprecated("It doesn't make sense to reverse a Fractional", "2.13.0")
+  override def reverse: PartialOrdering[T] = new ReversePartialOrdering
 }
 
 object Fractional {
