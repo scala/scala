@@ -810,9 +810,22 @@ self =>
       makeTupleTerm(elems)
     }
 
+    /** Create a function Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeFunctionType(argtpes: List[Tree], offset: Offset, restpe: Tree) = {
+      if (checkFunctionArity(argtpes, offset)) makeFunctionTypeTree(argtpes, restpe)
+      else makeFunctionTypeTree(Nil, restpe) // create a dummy node
+    }
+
     private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
       elems.lengthCompare(definitions.MaxTupleArity) <= 0 || {
-        val msg = s"too many elements for tuple: ${elems.length}, allowed: ${definitions.MaxTupleArity}"
+        val msg = s"tuples may not have more than ${definitions.MaxFunctionArity} elements, but ${elems.length} given"
+        syntaxError(offset, msg, skipIt = false)
+        false
+      }
+
+    private[this] def checkFunctionArity(argtpes: List[Tree], offset: Offset): Boolean =
+      argtpes.lengthCompare(definitions.MaxFunctionArity) <= 0 || {
+        val msg = s"function values may not have more than ${definitions.MaxFunctionArity} parameters, but ${argtpes.length} given"
         syntaxError(offset, msg, skipIt = false)
         false
       }
@@ -965,7 +978,7 @@ self =>
           val ts = functionTypes()
           accept(RPAREN)
           if (in.token == ARROW)
-            atPos(start, in.skipToken()) { makeFunctionTypeTree(ts, typ()) }
+            atPos(start, in.skipToken()) { makeSafeFunctionType(ts, start, typ()) }
           else {
             ts foreach checkNotByNameOrVarargs
             val tuple = atPos(start) { makeSafeTupleType(ts, start) }
