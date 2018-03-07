@@ -151,4 +151,7 @@ class BuildFromTest {
 
   implicitly[BuildFrom[String, Char, String]]
   implicitly[BuildFrom[Array[Int], Char, Array[Char]]]
+  implicitly[BuildFrom[BitSet, Int, BitSet]]
+  implicitly[BuildFrom[immutable.BitSet, Int, immutable.BitSet]]
+  implicitly[BuildFrom[mutable.BitSet, Int, mutable.BitSet]]
 }

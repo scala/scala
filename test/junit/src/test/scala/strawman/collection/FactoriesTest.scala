@@ -99,5 +99,8 @@ class FactoriesTest {
 
   implicitly[Factory[Char, String]]
   implicitly[Factory[Char, Array[Char]]]
+  implicitly[Factory[Int, BitSet]]
+  implicitly[Factory[Int, mutable.BitSet]]
+  implicitly[Factory[Int, immutable.BitSet]]
 
 }
