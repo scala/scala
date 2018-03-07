@@ -245,12 +245,6 @@ object IterableFactory {
       def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
     }
 
-  implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
-    new BuildFrom[Any, A, CC[A]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder()
-    }
-
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
@@ -315,6 +309,8 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def apply(xs: A*): C = fromSpecific(new View.Elems(xs: _*))
   def fill(n: Int)(elem: => A): C = fromSpecific(new View.Fill(n)(elem))
   def newBuilder(): Builder[A, C]
+
+  implicit def specificIterableFactory: Factory[A, C] = this
 }
 
 /**
