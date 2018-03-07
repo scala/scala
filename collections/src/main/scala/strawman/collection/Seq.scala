@@ -366,29 +366,31 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
   // TODO Should be implemented in a way that preserves laziness
-  def indexOfSlice[B >: A](that: Seq[B], from: Int = 0): Int = {
-    val l = knownSize
-    val tl = that.knownSize
-    if (l >= 0 && tl >= 0) {
-      val clippedFrom = math.max(0, from)
-      if (from > l) -1
-      else if (tl < 1) clippedFrom
-      else if (l < tl) -1
-      else SeqOps.kmpSearch(toSeq, clippedFrom, l, that, 0, tl, forward = true)
-    }
+  def indexOfSlice[B >: A](that: Seq[B], from: Int = 0): Int =
+    if (that.isEmpty && from == 0) 0
     else {
-      var i = from
-      var s: Seq[A] = toSeq drop i
-      while (!s.isEmpty) {
-        if (s startsWith that)
-          return i
-
-        i += 1
-        s = s.tail
+      val l = knownSize
+      val tl = that.knownSize
+      if (l >= 0 && tl >= 0) {
+        val clippedFrom = math.max(0, from)
+        if (from > l) -1
+        else if (tl < 1) clippedFrom
+        else if (l < tl) -1
+        else SeqOps.kmpSearch(toSeq, clippedFrom, l, that, 0, tl, forward = true)
       }
-      -1
+      else {
+        var i = from
+        var s: Seq[A] = toSeq drop i
+        while (!s.isEmpty) {
+          if (s startsWith that)
+            return i
+
+          i += 1
+          s = s.tail
+        }
+        -1
+      }
     }
-  }
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test

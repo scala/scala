@@ -444,6 +444,7 @@ object LazyList extends LazyListFactory[LazyList] {
     override def tail: LazyList[Nothing] = throw new UnsupportedOperationException("tail of empty lazy list")
     def force: this.type = this
     override def toString(): String = "Empty"
+    override def knownSize: Int = 0
   }
 
   final class Cons[A](hd: => A, tl: => LazyList[A]) extends LazyList[A] {
@@ -595,6 +596,7 @@ object Stream extends LazyListFactory[Stream] {
       */
     def force: this.type = this
     override def toString(): String = "Empty"
+    override def knownSize: Int = 0
   }
 
   final class Cons[A](override val head: A, tl: => Stream[A]) extends Stream[A] {
