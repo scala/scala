@@ -810,9 +810,22 @@ self =>
       makeTupleTerm(elems)
     }
 
+    /** Create a function Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeFunctionType(argtpes: List[Tree], offset: Offset, restpe: Tree) = {
+      if (checkFunctionArity(argtpes, offset)) makeFunctionTypeTree(argtpes, restpe)
+      else makeFunctionTypeTree(Nil, restpe) // create a dummy node
+    }
+
     private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
       elems.lengthCompare(definitions.MaxTupleArity) <= 0 || {
         val msg = s"too many elements for tuple: ${elems.length}, allowed: ${definitions.MaxTupleArity}"
+        syntaxError(offset, msg, skipIt = false)
+        false
+      }
+
+    private[this] def checkFunctionArity(argtpes: List[Tree], offset: Offset): Boolean =
+      argtpes.lengthCompare(definitions.MaxFunctionArity) <= 0 || {
+        val msg = s"too many arguments for function: ${argtpes.length}, allowed: ${definitions.MaxFunctionArity}"
         syntaxError(offset, msg, skipIt = false)
         false
       }
@@ -950,13 +963,13 @@ self =>
         in.nextToken()
         if (in.token == RPAREN) {
           in.nextToken()
-          atPos(start, accept(ARROW)) { makeFunctionTypeTree(Nil, typ()) }
+          atPos(start, accept(ARROW)) { makeSafeFunctionType(Nil, start, typ()) }
         }
         else {
           val ts = functionTypes()
           accept(RPAREN)
           if (in.token == ARROW)
-            atPos(start, in.skipToken()) { makeFunctionTypeTree(ts, typ()) }
+            atPos(start, in.skipToken()) { makeSafeFunctionType(ts, start, typ()) }
           else {
             ts foreach checkNotByNameOrVarargs
             val tuple = atPos(start) { makeSafeTupleType(ts, start) }
@@ -996,7 +1009,7 @@ self =>
           else infixType(InfixMode.FirstOp)
 
         in.token match {
-          case ARROW    => atPos(start, in.skipToken()) { makeFunctionTypeTree(List(t), typ()) }
+          case ARROW    => atPos(start, in.skipToken()) { makeSafeFunctionType(List(t), start, typ()) }
           case FORSOME  => atPos(start, in.skipToken()) { makeExistentialTypeTree(t) }
           case _        => t
         }
@@ -2429,7 +2442,7 @@ self =>
             val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
             if (settings.future)
               deprecationWarning(in.offset, s"View bounds are deprecated. $msg", "2.12.0")
-            contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
+            contextBoundBuf += atPos(in.skipToken())(makeSafeFunctionType(List(Ident(pname)), in.offset, typ()))
           }
           while (in.token == COLON) {
             contextBoundBuf += atPos(in.skipToken()) {
