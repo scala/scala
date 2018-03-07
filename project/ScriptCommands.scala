@@ -67,7 +67,7 @@ object ScriptCommands {
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ publishTarget(url) ++ enableOptimizer
+    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:

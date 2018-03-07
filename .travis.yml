@@ -1,26 +1,73 @@
 sudo: required # GCE VMs have better performance (will be upgrading to premium VMs soon)
 
-# this builds the spec using jekyll
-# based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
-
 language: scala
 jdk: openjdk8
 
-# the spec is built with jekyll
-rvm:
-  - 2.2
 
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - build/
 
-script:
+
+before_script:
   - (cd admin && ./init.sh)
-  - scripts/jobs/integrate/bootstrap
-  - bundle exec jekyll build -s spec/ -d build/spec
 
-install: bundle install
+# buildQuick needs following env (is that propagated to stages?)
+# - PRIVATE_REPO_PASS, integrationRepoUrl,
+# computed: SBT_CMD sbtArgs SCALA_VER updatedModuleVersions
+jobs:
+    include:
+      - stage: build
+        script:
+          - source scripts/common
+          - source scripts/bootstrap_fun
+          - mkFreshIvy
+          - determineScalaVersion
+          - deriveModuleVersions
+          - removeExistingBuilds $integrationRepoUrl
+          - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+          - buildLocker
+          - rm -rf build/ # ensure we resolve from artifactory
+          - buildModules
+          - buildQuick clean publish
+          - echo 'declare -a updatedModuleVersions' > build/env
+          - echo 'export SCALA_VER="'${SCALA_VER}'" updatedModuleVersions="'${updatedModuleVersions}'"' >> build/env
+          - cat build/env
+
+      # this builds the spec using jekyll
+      # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
+      - stage: build
+        script: bundle exec jekyll build -s spec/ -d build/spec
+        rvm: 2.2
+        install: bundle install
+        # the key is restricted using forced commands so that it can only upload to the directory we need here
+        after_success: ./scripts/travis-publish-spec.sh
+
+        # be careful to not set any env vars, as this will result in a cache miss
+      - &test
+        stage: test
+        before_script:
+          - source build/env
+          - if [ -z "$SCALA_VER" ]; then echo "Environment not propagated. Caching issue?"; cat build/env ; exit 1; fi
+          - source scripts/common
+          - source scripts/bootstrap_fun
+          - mkFreshIvy
+          - find build -type f -exec touch {} + # give antStyle a chance
+        script: buildQuick "set antStyle := true" testRest # shouldn't rebuild, since build/ is cached
+      - <<: *test
+        script: buildQuick "set antStyle := true" testPosPres
+      - <<: *test
+        script: buildQuick "set antStyle := true" testRun
+        if: env(testRun) = yes
+
+      - script: testStability
+        if: env(testStability) = yes
+
+      - stage: publish
+        script: publishSonatype
+        if: env(publishToSonatype) = yes # TODO: is this environment variable evaluated afer `source scripts/common` has a chance to set it? maybe it's ok and we can just keep this as the hook for manually triggering a release
 
 # cat /dev/urandom | head -c 10000 | openssl sha1 > ./secret
 # openssl aes-256-cbc -pass "file:./secret" -in id_dsa_spec212_b4096 -out spec/id_dsa_travis.enc -a
@@ -35,9 +82,6 @@ env:
 
 # ^^^ set PRIV_KEY_SECRET to password used to encrypt spec/id_dsa_travis.enc
 
-# the key is restricted using forced commands so that it can only upload to the directory we need here
-after_success:
-  - ./scripts/travis-publish-spec.sh
 
 # using S3 would be simpler, but we want to upload to scala-lang.org
 # after_success: bundle exec s3_website push --headless

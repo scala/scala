@@ -1,8 +1,6 @@
 #!/bin/bash
 
-baseDir=${WORKSPACE-`pwd`}
-scriptsDir="$baseDir/scripts"
-. $scriptsDir/common
+source scripts/common
 
 java -version
 javac -version
