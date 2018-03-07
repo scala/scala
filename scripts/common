@@ -6,9 +6,6 @@ set -e
 
 WORKSPACE="${WORKSPACE-`pwd`}"
 
-# the default (home dir) is fine on Travis, since each jobs gets its own worker (ivy cache is cached by travis)
-IVY_HOME="${IVY_HOME-$HOME/.ivy2}"
-
 # Known problems : does not fare well with interrupted, partial
 # compilations. We should perhaps have a multi-dependency version
 # of do_i_have below

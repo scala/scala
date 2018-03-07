@@ -15,7 +15,7 @@ before_script:
   - (cd admin && ./init.sh)
 
 stages:
-  - name: build
+  - name: build # also builds the spec using jekyll
   - name: test
     if: type != pull_request
   - name: publish
