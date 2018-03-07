@@ -14,12 +14,22 @@ cache:
 before_script:
   - (cd admin && ./init.sh)
 
+stages:
+  - name: build
+  - name: test
+    if: type != pull_request
+  - name: publish
+    if: type != pull_request
+
 # buildQuick needs following env (is that propagated to stages?)
 # - PRIVATE_REPO_PASS, integrationRepoUrl,
 # computed: SBT_CMD sbtArgs SCALA_VER updatedModuleVersions
 jobs:
     include:
       - stage: build
+        # currently, not touching PR validation
+        # (also, we couldn't even, because the password to publish to artifactory is not there :-/)
+        if: type != pull_request
         script:
           - source scripts/common
           - source scripts/bootstrap_fun
@@ -45,6 +55,7 @@ jobs:
         # the key is restricted using forced commands so that it can only upload to the directory we need here
         after_success: ./scripts/travis-publish-spec.sh
 
+
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
         stage: test
@@ -64,6 +75,7 @@ jobs:
 
       - script: testStability
         if: env(testStability) = yes
+
 
       - stage: publish
         script: publishSonatype
