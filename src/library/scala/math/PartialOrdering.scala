@@ -72,14 +72,16 @@ trait PartialOrdering[T] extends Equiv[T] {
    */
   def equiv(x: T, y: T): Boolean = lteq(x,y) && lteq(y,x)
 
-  def reverse : PartialOrdering[T] = new PartialOrdering[T] {
-    override def reverse = outer
-    def tryCompare(x: T, y: T) = outer.tryCompare(y, x)
-    def lteq(x: T, y: T) = outer.lteq(y, x)
-    override def gteq(x: T, y: T) = outer.gteq(y, x)
-    override def lt(x: T, y: T) = outer.lt(y, x)
-    override def gt(x: T, y: T) = outer.gt(y, x)
+  private[math] class ReversePartialOrdering extends PartialOrdering[T] {
+    override def reverse: PartialOrdering[T] = outer
+    def tryCompare(x: T, y: T): Option[Int] = outer.tryCompare(y, x)
+    def lteq(x: T, y: T): Boolean = outer.lteq(y, x)
+    override def gteq(x: T, y: T): Boolean = outer.gteq(y, x)
+    override def lt(x: T, y: T): Boolean = outer.lt(y, x)
+    override def gt(x: T, y: T): Boolean = outer.gt(y, x)
   }
+
+  def reverse : PartialOrdering[T] = new ReversePartialOrdering
 
   /** An [[scala.math.Ordering `Ordering`]] which behaves the same
     * as this `PartialOrdering` when comparisons are supported,

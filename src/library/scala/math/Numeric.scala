@@ -268,12 +268,30 @@ trait Numeric[T] extends PartialOrdering[T] {
   }
   implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
 
+  @deprecated("It doesn't make sense to reverse a Numeric", "2.13.0")
+  override def reverse: PartialOrdering[T] = super.reverse
+
   /** Used for deprecated conversion to [[scala.math.Ordering `Ordering`]].
     *
     * Override if you wish to support exact previous `Ordering` semantics.
+    *
+    * This method is only expected to exist for two deprecation cycles.
     */
+  // TODO: deprecate in 2.14
   protected def deprecatedAsOrdering: Ordering[T] = {
     if (this.isInstanceOf[Ordering[_]]) this.asInstanceOf[Ordering[T]]
     else new AnyRef with AsUnsafeTotalOrdering
   }
+
+  /* deprecated methods previously inherited from Ordering */
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  def compare(x: T, y: T): Int = deprecatedAsOrdering.compare(x, y)
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  def max(x: T, y: T): T = deprecatedAsOrdering.max(x, y)
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  def min(x: T, y: T): T = deprecatedAsOrdering.min(x, y)
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  def on[U](f: U => T): Ordering[U] = deprecatedAsOrdering.on(f)
+  @deprecated("Numeric no longer extends Ordering, as it is not always consistent", "2.13.0")
+  implicit def mkOrderingOps(lhs: T): Ordering[T]#Ops = deprecatedAsOrdering.mkOrderingOps(lhs)
 }

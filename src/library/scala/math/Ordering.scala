@@ -105,17 +105,19 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Return `x` if `x` <= `y`, otherwise `y`. */
   def min(x: T, y: T): T = if (lteq(x, y)) x else y
 
-  /** Return the opposite ordering of this one. */
-  override def reverse: Ordering[T] = new Ordering[T] {
-    override def reverse = outer
-    def compare(x: T, y: T) = outer.compare(y, x)
-    override def lteq(x: T, y: T) = outer.lteq(y, x)
-    override def gteq(x: T, y: T) = outer.gteq(y, x)
-    override def lt(x: T, y: T) = outer.lt(y, x)
-    override def gt(x: T, y: T) = outer.gt(y, x)
-    override def max(x: T, y: T) = outer.min(x, y)
-    override def min(x: T, y: T) = outer.max(x, y)
+  private[math] class ReverseOrdering extends Ordering[T] {
+    override def reverse: Ordering[T] = outer
+    def compare(x: T, y: T): Int = outer.compare(y, x)
+    override def lteq(x: T, y: T): Boolean = outer.lteq(y, x)
+    override def gteq(x: T, y: T): Boolean = outer.gteq(y, x)
+    override def lt(x: T, y: T): Boolean = outer.lt(y, x)
+    override def gt(x: T, y: T): Boolean = outer.gt(y, x)
+    override def max(x: T, y: T): T = outer.min(x, y)
+    override def min(x: T, y: T): T = outer.max(x, y)
   }
+
+  /** Return the opposite ordering of this one. */
+  override def reverse: Ordering[T] = new ReverseOrdering
 
   /** Given f, a function from U into T, creates an Ordering[U] whose compare
     * function is equivalent to:

@@ -24,6 +24,11 @@ trait Integral[T] extends Ordering[T] with Numeric[T] {
     def /%(rhs: T) = (quot(lhs, rhs), rem(lhs, rhs))
   }
   override implicit def mkNumericOps(lhs: T): IntegralOps = new IntegralOps(lhs)
+
+  @deprecated("It doesn't make sense to reverse an Integral", "2.13.0")
+  override def reverse: Ordering[T] = new ReverseOrdering
+
+  override protected def deprecatedAsOrdering: Ordering[T] = this
 }
 
 object Integral {
