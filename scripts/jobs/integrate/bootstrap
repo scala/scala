@@ -73,6 +73,11 @@
 
 #### MAIN
 
+# each job has its own ivy2, sharing between jobs would lead to trouble
+mkdir -p $WORKSPACE/ivy2
+
+source scripts/common
+
 # TODO: this is weird for historical reasons, simplify now that we have one version of sbt in use
 # we probably don't need to override the sbt dir? just ivy
 #
@@ -81,13 +86,9 @@
 # the new version of sbt-extras ignores sbt-dir, so we pass it in as -Dsbt.global.base
 # need to set sbt-dir to one that has the gpg.sbt plugin config)
 #
-# scripts/common will add the repositories override
-sbtArgs="-ivy $WORKSPACE/ivy2 -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
+# scripts/common provides sbtRepositoryConfig
+sbtArgs="-ivy $WORKSPACE/ivy2 -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
 
-# each job has its own ivy2, sharing between jobs would lead to trouble
-mkdir -p $WORKSPACE/ivy2
-
-source scripts/common
 
 source scripts/bootstrap_fun
 

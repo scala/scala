@@ -2,9 +2,7 @@ publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
-forceRebuild=${forceRebuild-no}
-# testStability=${testStability-yes}
-testStability=no # currently borker by ant PR?
+forceBuildModules=${forceBuildModules-no}
 clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
 
 stApi="https://oss.sonatype.org/service/local"
@@ -37,7 +35,7 @@ docTask() {
 }
 
 buildXML() {
-  if [ "$XML_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
+  if [ "$XML_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
@@ -48,19 +46,20 @@ buildXML() {
 }
 
 buildPartest() {
-  if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
+  if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
     doc="$(docTask $PARTEST_BUILT)"
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" test "${buildTasks[@]}"
+    # disable -Xfatal-warnings until https://github.com/scala/bug/issues/10763 is fixed
+    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
 
 # should only be called with publishTasks publishing to artifactory
 buildScalaCheck(){
-  if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
+  if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
@@ -112,8 +111,6 @@ mkFreshIvy() {
 
   rm -rf $WORKSPACE/resolutionScratch_
   mkdir -p $WORKSPACE/resolutionScratch_
-
-  generateRepositoriesConfig $integrationRepoUrl
 }
 
 scalaVerToBinary() {

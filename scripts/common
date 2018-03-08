@@ -29,9 +29,7 @@ SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-
-sbtArgs="-Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig $sbtArgs" # allow supplying more args
-
+addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
 
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
@@ -249,7 +247,7 @@ st_stagingRepoClose() {
 
 sbtBuild() {
   travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD -no-colors $sbtArgs "$addIntegrationResolver" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
   travis_fold_end build
 }
 
@@ -261,6 +259,7 @@ sbtResolve() {
   # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
+    "$addIntegrationResolver" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
       'show update'
   travis_fold_end resolve
