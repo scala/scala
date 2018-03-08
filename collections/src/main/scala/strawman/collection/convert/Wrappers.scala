@@ -306,7 +306,13 @@ private[collection] trait Wrappers {
     override def clear() = underlying.clear()
   }
 
-  trait JMapWrapperLike[K, V, +C <: mutable.Map[K, V] with mutable.Map[K, V]] extends mutable.Map[K, V] with mutable.MapOps[K, V, mutable.Map, mutable.Map[K, V]] {
+  abstract class AbstractJMapWrapper[K, V]
+    extends mutable.AbstractMap[K, V]
+      with JMapWrapperLike[K, V, mutable.Map, mutable.Map[K, V]]
+
+  trait JMapWrapperLike[K, V, +CC[X, Y] <: mutable.MapOps[X, Y, CC, _], +C <: mutable.MapOps[K, V, CC, C]]
+    extends mutable.MapOps[K, V, CC, C] {
+
     def underlying: ju.Map[K, V]
 
     override def size = underlying.size
@@ -338,9 +344,6 @@ private[collection] trait Wrappers {
 
     override def clear() = underlying.clear()
 
-    override def empty: C = null.asInstanceOf[C]
-
-    override def mapFactory = mutable.HashMap
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
@@ -351,8 +354,9 @@ private[collection] trait Wrappers {
     * atomic `get` when `null` values may be present.
     */
   @SerialVersionUID(3L)
-  case class JMapWrapper[A, B](underlying : ju.Map[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
-    override def empty = JMapWrapper(new ju.HashMap[A, B])
+  class JMapWrapper[A, B](val underlying : ju.Map[A, B])
+    extends AbstractJMapWrapper[A, B] {
+    override def empty = new JMapWrapper(new ju.HashMap[A, B])
   }
 
   @SerialVersionUID(3L)
@@ -383,7 +387,10 @@ private[collection] trait Wrappers {
     * are not guaranteed to be atomic.
     */
   @SerialVersionUID(3L)
-  case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
+  case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B])
+    extends AbstractJMapWrapper[A, B]
+      with concurrent.Map[A, B] {
+
     override def get(k: A) = Option(underlying get k)
 
     override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[A, B])

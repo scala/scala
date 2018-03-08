@@ -221,7 +221,7 @@ private[convert] trait LowPriorityWrapAsJava {
    */
   implicit def mutableMapAsJavaMap[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = m match {
     case null                 => null
-    case JMapWrapper(wrapped) => wrapped
+    case w: JMapWrapper[A, B] => w.underlying
     case _                    => new MutableMapWrapper(m)
   }
 
@@ -261,7 +261,7 @@ private[convert] trait LowPriorityWrapAsJava {
    */
   implicit def mapAsJavaMap[A, B](m: Map[A, B]): ju.Map[A, B] = m match {
     case null                 => null
-    case JMapWrapper(wrapped) => wrapped.asInstanceOf[ju.Map[A, B]]
+    case w: JMapWrapper[A, B] => w.underlying
     case _                    => new MapWrapper(m)
   }
 
