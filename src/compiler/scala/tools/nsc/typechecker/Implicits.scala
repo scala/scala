@@ -538,7 +538,7 @@ trait Implicits {
           // Are all the symbols of the stripped core of pt contained in the stripped core of tp?
           def coversPt(tp: Type): Boolean = {
             val stp = stripped(core(tp))
-            (stp =:= spt) || (sptSyms diff allSymbols(stp)).isEmpty
+            (stp =:= spt) || (sptSyms == allSymbols(stp))
           }
 
           @tailrec
@@ -554,7 +554,7 @@ trait Implicits {
                   else None
                 } else None) match {
                   case Some(res) => res
-                  case None => (!byName || ptByName) && loop(tl, byName || belowByName)
+                  case None => loop(tl, byName || belowByName)
                 }
             }
           }
