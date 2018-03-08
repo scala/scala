@@ -436,9 +436,9 @@ abstract class RefChecks extends Transform {
                     + "\n(Note: this can be resolved by declaring an override in " + clazz + ".)"
                 )
               else
-                overrideError("needs `override' modifier")
+                overrideError("needs `override` modifier")
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
-            overrideError("needs `abstract override' modifiers")
+            overrideError("needs `abstract override` modifiers")
           }
           else if (member.isAnyOverride && (other hasFlag ACCESSOR) && !(other hasFlag STABLE | DEFERRED)) {
             // The check above used to look at `field` == `other.accessed`, ensuring field.isVariable && !field.isLazy,
@@ -453,7 +453,7 @@ abstract class RefChecks extends Transform {
                      !member.isDeferred && !other.isDeferred &&
                      intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
             overrideError("cannot override a concrete member without a third member that's overridden by both "+
-                          "(this rule is designed to prevent ``accidental overrides'')")
+                          "(this rule is designed to prevent ``accidental overrides``)")
           } else if (other.isStable && !member.isStable) { // (1.4)
             overrideError("needs to be a stable, immutable value")
           } else if (member.isValue && member.isLazy &&
@@ -734,7 +734,7 @@ abstract class RefChecks extends Transform {
               if (other != NoSymbol) " and overrides incomplete superclass member " + infoString(other)
               else ", but no concrete implementation could be found in a base class"
 
-            abstractClassError(true, infoString(member) + " is marked `abstract' and `override'" + explanation)
+            abstractClassError(true, infoString(member) + " is marked `abstract` and `override`" + explanation)
           }
         }
 
@@ -1038,7 +1038,7 @@ abstract class RefChecks extends Transform {
 
       def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
         val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
-        reporter.warning(pos, s"comparing $what using `${name.decode}' will always yield $msg")
+        reporter.warning(pos, s"comparing $what using `${name.decode}` will always yield $msg")
         isNonSensible = true
       }
       def nonSensible(pre: String, alwaysEqual: Boolean) =
@@ -1645,7 +1645,7 @@ abstract class RefChecks extends Transform {
         if (clazz.isTrait)
           reporter.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
         else if (clazz.hasAbstractFlag)
-          reporter.error(clazz.pos, "`abstract' modifier cannot be used with value classes")
+          reporter.error(clazz.pos, "`abstract` modifier cannot be used with value classes")
       }
     }
 
@@ -1760,7 +1760,7 @@ abstract class RefChecks extends Transform {
             tree
 
           case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
-            reporter.error(tree.pos, "no `: _*' annotation allowed here\n"+
+            reporter.error(tree.pos, "no `: _*` annotation allowed here\n"+
               "(such annotations are only allowed in arguments to *-parameters)")
             tree
 
