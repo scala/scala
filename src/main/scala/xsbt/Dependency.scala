@@ -386,6 +386,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
         traverseTrees(body)
 
+      case Literal(value) if value.tag == ClazzTag =>
+        addTypeDependencies(value.typeValue)
+
       /* Original type trees have to be traversed because typer is very
        * aggressive when expanding explicit user-defined types. For instance,
        * `Foo#B` will be expanded to `C` and the dependency on `Foo` will be
