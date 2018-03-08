@@ -43,6 +43,9 @@ object StreamCapture {
     val modified = new java.util.Properties()
     modified.putAll(saved)
     extra.foreach { case (k, v) => modified.setProperty(k, v) }
+    // Trying to avoid other threads seeing the new properties object prior to the new entries
+    // https://github.com/scala/scala/pull/6391#issuecomment-371346171
+    UnsafeAccess.U.storeFence()
     System.setProperties(modified)
     try {
       action
