@@ -36,6 +36,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   }
 
   val color = new Colors(colorEnabled)
+  private val realSysErr = System.err
   import color._
 
   private[this] val (_outline, _success, _failure, _warning, _default) =
@@ -137,15 +138,15 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   }
 
   def verbose(msg: String): Unit =
-    if (verbose) System.err.println(msg)
+    if (verbose) realSysErr.println(msg)
 
   def debug(msg: String): Unit =
-    if (debug) System.err.println(msg)
+    if (debug) realSysErr.println(msg)
 
   def showAllJVMInfo(): Unit = {
     vlog(vmArgString)
     vlog(allPropertiesString)
   }
 
-  def vlog(msg: => String) = if (verbose) System.err.println(msg)
+  def vlog(msg: => String) = if (verbose) realSysErr.println(msg)
 }
