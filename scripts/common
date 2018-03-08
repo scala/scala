@@ -88,59 +88,9 @@ function parseScalaProperties(){
 function checkAvailability () {
   pushd "${TMP_DIR}"
   rm -rf *
-
-# pom file for the test project
-  cat > pom.xml << EOF
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.typesafe</groupId>
-  <artifactId>typesafeDummy</artifactId>
-  <packaging>war</packaging>
-  <version>1.0-SNAPSHOT</version>
-  <name>Dummy</name>
-  <url>http://127.0.0.1</url>
-  <dependencies>
-    <dependency>
-      <groupId>$1</groupId>
-      <artifactId>$2</artifactId>
-      <version>$3</version>
-    </dependency>
-  </dependencies>
-  <repositories>
-    <repository>
-      <id>sonatype.snapshot</id>
-      <name>Sonatype maven snapshot repository</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <snapshots>
-        <updatePolicy>daily</updatePolicy>
-      </snapshots>
-    </repository>
-EOF
-
-  if [ -n "$4" ]
-  then
-# adds the extra repository
-    cat >> pom.xml << EOF
-    <repository>
-      <id>extrarepo</id>
-      <name>extra repository</name>
-      <url>$4</url>
-    </repository>
-EOF
-  fi
-
-  cat >> pom.xml << EOF
-  </repositories>
-</project>
-EOF
-
   set +e
-  mvn "${MAVEN_ARGS[@]}" compile &> "${TMP_DIR}/mvn.log"
+  mvn -q "${MAVEN_ARGS[@]}" -DremoteRepositories="$4" -DgroupId="$1" -DartifactId="$2" -Dversion="$3" -Dtransitive=false dependency:get
   RES=$?
-  # Quiet the maven, but allow diagnosing problems.
-  grep -i downloading "${TMP_DIR}/mvn.log"
-  grep -i exception "${TMP_DIR}/mvn.log"
-  grep -i error "${TMP_DIR}/mvn.log"
   set -e
 
 # log the result
