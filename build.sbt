@@ -337,6 +337,7 @@ lazy val bootstrap = project in file("target/bootstrap")
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.library"))
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
@@ -375,6 +376,7 @@ lazy val library = configureAsSubproject(project)
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.reflect"))
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
@@ -400,6 +402,7 @@ lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.tools.nsc"))
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
