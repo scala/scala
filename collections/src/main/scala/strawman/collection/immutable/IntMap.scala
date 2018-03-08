@@ -9,7 +9,7 @@
 package strawman.collection
 package immutable
 
-import scala.{Int, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
+import scala.{Int, None, Boolean, Unit, Any, AnyRef, Nothing, Array, PartialFunction, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
 import java.lang.IllegalStateException
 import strawman.collection
 import strawman.collection.generic.BitOperations
@@ -307,8 +307,13 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
 
   def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFromIterable(new View.FlatMap(toIterable, f))
 
-  override def concat [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] =
+  override def concat[V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] =
     super.concat(that).asInstanceOf[IntMap[V1]] // Already has corect type but not declared as such
+
+  override def ++ [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] = concat(that)
+
+  def collect[V2](pf: PartialFunction[(Int, T), (Int, V2)]): IntMap[V2] =
+    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
 
   /**
     * Updates the map, using the provided function to resolve conflicts if the key is already present.

@@ -1,7 +1,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Long, AnyRef, Boolean, NoSuchElementException, Some, None, Option, Unit, Int, Array, Serializable, SerialVersionUID, Nothing, math, deprecated}
+import scala.{Long, AnyRef, Boolean, NoSuchElementException, PartialFunction, Some, None, Option, Unit, Int, Array, Serializable, SerialVersionUID, Nothing, math, deprecated}
 
 /** This class implements mutable maps with `Long` keys based on a hash table with open addressing.
   *
@@ -439,6 +439,8 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     lm
   }
 
+  override def ++ [V1 >: V](xs: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(xs)
+
   @deprecated("Use LongMap.from(m).add(k,v) instead of m.updated(k, v)", "2.13.0")
   def updated[V1 >: V](key: Long, value: V1): LongMap[V1] = {
     val lm = clone().asInstanceOf[LongMap[V1]]
@@ -520,6 +522,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def map[V2](f: ((Long, V)) => (Long, V2)): LongMap[V2] = LongMap.from(new View.Map(coll, f))
 
   def flatMap[V2](f: ((Long, V)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
+
+  def collect[V2](pf: PartialFunction[(Long, V), (Long, V2)]): LongMap[V2] =
+    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+
 }
 
 object LongMap {

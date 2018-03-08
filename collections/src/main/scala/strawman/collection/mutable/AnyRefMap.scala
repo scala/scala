@@ -2,7 +2,7 @@ package strawman
 package collection
 package mutable
 
-import scala.{AnyRef, Any, Nothing, Array, Int, Boolean, Some, None, Option, SerialVersionUID, Serializable, NoSuchElementException, Unit, deprecated}
+import scala.{AnyRef, Any, Nothing, Array, Int, Boolean, PartialFunction, Some, None, Option, SerialVersionUID, Serializable, NoSuchElementException, Unit, deprecated}
 import scala.Predef.<:<
 import scala.math
 
@@ -356,6 +356,8 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     arm
   }
 
+  override def ++[V2 >: V](xs: strawman.collection.Iterable[(K, V2)]): AnyRefMap[K, V2] = concat(xs)
+
   @deprecated("Use AnyRefMap.from(m).add(k,v) instead of m.updated(k, v)", "2.13.0")
   def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
     val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
@@ -428,6 +430,11 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     AnyRefMap.from(new View.Map(toIterable, f))
   def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.FlatMap(toIterable, f))
+  def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K with AnyRef, V), (K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    flatMap { kv =>
+      if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
+      else View.Empty
+    }
 }
 
 object AnyRefMap {
@@ -478,7 +485,8 @@ object AnyRefMap {
     * which is already an `AnyRefMap` gets cloned.
     *
     * @param source Source collection
-    * @tparam A the type of the collection’s elements
+    * @tparam K the type of the keys
+    * @tparam V the type of the values
     * @return a new `AnyRefMap` with the elements of `source`
     */
   def from[K <: AnyRef, V](source: IterableOnce[(K, V)]): AnyRefMap[K, V] = source match {
