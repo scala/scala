@@ -100,18 +100,6 @@ buildPublishedModules() {
 
 
 ## BUILD STEPS:
-# TODO: can we reuse some caching? can we stop generating a repositories config,
-# since this is duplicated from sbt and may thus get out of synch...
-mkFreshIvy() {
-  # we must change ivy home to get a fresh ivy cache, otherwise we get half-bootstrapped scala
-  # rm it in case it existed (and there's no ivy2-shadow, which indicates we're running in a TESTING environment)...
-  # we don't nuke the whole ws since that clobbers the git clones needlessly
-  [[ -d $WORKSPACE/ivy2-shadow ]] || rm -rf $WORKSPACE/ivy2
-  mkdir -p $WORKSPACE/ivy2
-
-  rm -rf $WORKSPACE/resolutionScratch_
-  mkdir -p $WORKSPACE/resolutionScratch_
-}
 
 scalaVerToBinary() {
   # $1 = SCALA_VER
@@ -292,14 +280,6 @@ buildQuick() {
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
       "$@"
   travis_fold_end quick
-}
-
-wipeIvyCache() {
-  # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
-  rm -rf $WORKSPACE/ivy2
-
-  # TODO: create PR with following commit (note that release will have been tagged already)
-  # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
 }
 
 testStability() {

@@ -92,11 +92,17 @@ sbtArgs="-ivy $WORKSPACE/ivy2 -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.
 
 source scripts/bootstrap_fun
 
-mkFreshIvy
+# On Jenkins, we must change ivy home to get a fresh ivy cache, otherwise we get half-bootstrapped scala
+# rm it in case it existed (and there's no ivy2-shadow, which indicates we're running in a TESTING environment)...
+# we don't nuke the whole ws since that clobbers the git clones needlessly
+[[ -d $WORKSPACE/ivy2-shadow ]] || rm -rf "$WORKSPACE/ivy2"
+mkdir -p "$WORKSPACE/ivy2"
 
 determineScalaVersion
 
 deriveModuleVersions
+
+generateRepositoriesConfig $integrationRepoUrl
 
 removeExistingBuilds $integrationRepoUrl
 
@@ -113,12 +119,14 @@ buildModules
 
 buildQuick clean testAll publish
 
-wipeIvyCache
-
 if [ "$testStability" == "yes" ]
   then testStability
 fi
 
-if [ "$publishToSonatype" == "yes" ]
-  then publishSonatype
+
+if [ "$publishToSonatype" == "yes" ]; then
+  # clear ivy cache so the next round of building modules sees the fresh scala
+  rm -rf "$WORKSPACE/ivy2/cache/org.scala-lang"
+
+  publishSonatype
 fi

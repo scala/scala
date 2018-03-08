@@ -11,16 +11,13 @@ WORKSPACE="${WORKSPACE-`pwd`}"
 # of do_i_have below
 
 LOGGINGDIR="$WORKSPACE/logs"
-mkdir -p $LOGGINGDIR
+mkdir -p "$LOGGINGDIR"
 
-# unset SBT_HOME
-# SBT_HOME="$WORKSPACE/.sbt"
-# mkdir -p $SBT_HOME
-# IVY_CACHE="$WORKSPACE/.ivy2"
-# mkdir -p $IVY_CACHE
+rm -rf "$WORKSPACE/resolutionScratch_"
+mkdir -p "$WORKSPACE/resolutionScratch_"
 
 # TODO: do we need to nuke the cache on travis?
-# rm -rf $IVY_CACHE/cache/org.scala-lang
+# rm -rf $WORKSPACE/.ivy2/cache/org.scala-lang
 
 SBT_CMD=${sbtCmd-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
@@ -30,6 +27,8 @@ integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifacto
 
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
+
+jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
@@ -165,6 +164,7 @@ EOF
   popd
 }
 
+# Only used on Jenkins
 # Generate a repositories file with all allowed repositories in our build environment.
 # Takes a variable number of additional repositories as argument.
 # See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
@@ -176,12 +176,8 @@ function generateRepositoriesConfig() {
     done
   fi
 
-  if [ "${TRAVIS}" != "true" ]; then
-    jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
-    echo "jcenter-cache: $jcenterCacheUrl" >> "$sbtRepositoryConfig"
-  fi
-
   cat >> "$sbtRepositoryConfig" << EOF
+  jcenter-cache: $jcenterCacheUrl
   local
   maven-central
   typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
@@ -252,7 +248,7 @@ sbtBuild() {
 }
 
 sbtResolve() {
-  cd $WORKSPACE/resolutionScratch_
+  cd "$WORKSPACE/resolutionScratch_"
   touch build.sbt
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
   cross=${4-binary}
