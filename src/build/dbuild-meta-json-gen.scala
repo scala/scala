@@ -12,6 +12,7 @@
 
 import com.typesafe.dbuild.model._
 
+
 val meta =
   ProjMeta(version = "2.12.0", projects = Seq(
     Project("scala-library", "org.scala-lang",

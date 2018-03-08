@@ -210,7 +210,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     }
 
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String): String =
-    s"; for details, enable `:setting $name' or `:replay $name'"
+    s"; for details, enable `:setting $name` or `:replay $name`"
 
   def display(pos: Position, msg: String, severity: Severity): Unit = {
     val ok = severity match {
