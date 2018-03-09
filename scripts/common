@@ -210,3 +210,23 @@ sbtResolve() {
       'show update'
   travis_fold_end resolve
 }
+
+#### travis
+
+triggerScalaDist() {
+  local jsonTemplate='{ "request": { "branch": "%s", "message": "Scala Dist %s", "config": { "before_install": "export version=%s mode=release scala_sha=%s" } } }'
+  local json=$(printf "$jsonTemplate" "$TRAVIS_BRANCH" "$SCALA_VER" "$SCALA_VER" "$TRAVIS_COMMIT")
+
+  local curlStatus=$(curl \
+    -s -o /dev/null -w "%{http_code}" \
+    -H "Travis-API-Version: 3" \
+    -H "Authorization: token $TRAVIS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$json" \
+    https://api.travis-ci.org/repo/scala%2Fscala-dist/requests)
+
+  [[ "$curlStatus" == "202" ]] || {
+    echo "failed to start job"
+    exit 1
+  }
+}
