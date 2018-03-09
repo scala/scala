@@ -62,4 +62,17 @@ class ScalaRunTimeTest {
     assertEquals(stringOf(x), "this is the stringOf string")
     assertEquals(stringOf(x, 2), "this is the stringOf string")
   }
+
+  @Test
+  def testHashCode() {
+    for { i <- 0 to 31 } {
+      val x: Long = (1L << i)
+      assertEquals(x.##, x.toInt.##)
+      assertEquals(x.##, x.toFloat.##)
+      assertEquals(x.##, x.toDouble.##)
+      assertEquals(x.##, BigDecimal(x).##)
+    }
+
+    assertNotEquals(1.1f.##, 1.0f.##)
+  }
 }
