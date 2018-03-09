@@ -185,7 +185,7 @@ sealed abstract class Try[+T] extends Product with Serializable {
    * then `fa` is applied with this exception.
    *
    * @example {{{
-   * val result: Try[Throwable, Int] = Try { string.toInt }
+   * val result: Try[Int] = Try { string.toInt }
    * log(result.fold(
    *   ex => "Operation failed with " + ex,
    *   v => "Operation produced value: " + v
