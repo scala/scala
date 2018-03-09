@@ -709,15 +709,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Computes the multiset difference between this $coll and another sequence.
     *
     *  @param that   the sequence of elements to remove
-    *  @tparam B     the element type of the returned $coll.
-    *  @return       a new collection of type `That` which contains all elements of this $coll
+    *  @return       a new $coll which contains all elements of this $coll
     *                except some of occurrences of elements that also appear in `that`.
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     *  $willNotTerminateInf
     */
-  def diff[B >: A](that: Seq[B]): C = {
+  def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
     //TODO diff and intersect could have efficient lazy implementations if fromSpecificIterable accepted an IterableOnce, i.e. it guaranteed doing only a single traversal
     val b = newSpecificBuilder()
@@ -732,15 +731,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Computes the multiset intersection between this $coll and another sequence.
     *
     *  @param that   the sequence of elements to intersect with.
-    *  @tparam B     the element type of the returned $coll.
-    *  @return       a new collection of type `That` which contains all elements of this $coll
+    *  @return       a new $coll which contains all elements of this $coll
     *                which also appear in `that`.
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     *  $mayNotTerminateInf
     */
-  def intersect[B >: A](that: Seq[B]): C = {
+  def intersect(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
     val b = newSpecificBuilder()
     for (x <- this) {
