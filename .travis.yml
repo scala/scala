@@ -1,25 +1,103 @@
-# opt-in to Travis's newer/faster container-based infrastructure
-sudo: false
+sudo: required # GCE VMs have better performance (will be upgrading to premium VMs soon)
 
-# this builds the spec using jekyll
-# based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
-language: ruby
-rvm:
-  - 2.2
-script: bundle exec jekyll build -s spec/ -d build/spec
-install: bundle install
+language: scala
+jdk: openjdk8
+
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+    - build/
+
+
+before_script:
+  - (cd admin && ./init.sh)
+
+stages:
+  - name: build # also builds the spec using jekyll
+  # tests are running into time limits (will re-enable once Jason's partest speedups are in)
+  - name: test
+    if: env(bla) = thisVarIsNotSet AND type != pull_request # just disabling tests for now, but commenting the stage here doesn't do the trick
+  - name: publish
+    if: type != pull_request
+
+# buildQuick needs following env (is that propagated to stages?)
+# - PRIVATE_REPO_PASS, integrationRepoUrl,
+# computed: SBT_CMD sbtArgs SCALA_VER updatedModuleVersions
+jobs:
+    include:
+      - stage: build
+        # currently, not touching PR validation
+        # (also, we couldn't even, because the password to publish to artifactory is not there :-/)
+        if: type != pull_request
+        script:
+          - source scripts/common
+          - source scripts/bootstrap_fun
+          - determineScalaVersion
+          - deriveModuleVersions
+          - removeExistingBuilds $integrationRepoUrl
+          - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+          - buildLocker
+          - rm -rf build/ # ensure we resolve from artifactory
+          - buildModules
+          - buildQuick clean publish
+          - echo 'declare -a updatedModuleVersions' > build/env
+          - echo 'export SCALA_VER="'${SCALA_VER}'" updatedModuleVersions="'${updatedModuleVersions}'"' >> build/env
+          - cat build/env
+
+      # this builds the spec using jekyll
+      # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
+      - stage: build
+        script: bundle exec jekyll build -s spec/ -d build/spec
+        rvm: 2.2
+        install: bundle install
+        # the key is restricted using forced commands so that it can only upload to the directory we need here
+        after_success: ./scripts/travis-publish-spec.sh
+
+
+        # be careful to not set any env vars, as this will result in a cache miss
+      - &test
+        stage: test
+        before_script:
+          - source build/env
+          - if [ -z "$SCALA_VER" ]; then echo "Environment not propagated. Caching issue?"; cat build/env ; exit 1; fi
+          - source scripts/common
+          - source scripts/bootstrap_fun
+          # - find build -type f -exec touch {} + #  "set antStyle := true" seems to cause really long compiles for the test suite??
+        script: buildQuick testRest # shouldn't rebuild, since build/ is cached
+      - <<: *test
+        script: buildQuick testPosPres
+      - <<: *test
+        script: buildQuick testRun
+      - script: testStability
+
+      - stage: publish # note that it's important that this runs on a fresh VM, so we're sure to resolve scala from artifactory, and not out of local cache (which was overwritten during bootstrap, somewhat unorthodoxly)
+        script: if [ "$publishToSonatype" = "yes" ]; then publishSonatype; fi
+        # using bash conditional, because a travis condition on the stage won't work:
+        # the `env` function only picks stuff up from yaml, not variables set in bash,
+        # and we can't supply more env vars using a custom build from the web
+        # It would work using the API according to https://github.com/travis-ci/docs-travis-ci-com/issues/1485#issuecomment-351726416,
+        # but that's too much right now.
 
 # cat /dev/urandom | head -c 10000 | openssl sha1 > ./secret
 # openssl aes-256-cbc -pass "file:./secret" -in id_dsa_spec212_b4096 -out spec/id_dsa_travis.enc -a
 # travis encrypt "PRIV_KEY_SECRET=`cat ./secret`"
 env:
-  - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY="
+  global:
+    - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY="
+    - secure: "T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8=" # PRIVATE_REPO_PASS
+    - secure: "feE5A8mYNpkNQKVwCj3aXrwjVrJWh/4ENpRfFlr2HOD9ORk1GORD5Yq907WZd+dTkYK54Lh1gA+qHOCIDgJHbi9ZLU+kjzEjtYKF6lQy6Wb0LI8smTOnAA6IWVVYifiXw8d66MI2MKZb2jjGeIzy8Q00SZjLhEGjLyTeCIB88Ws=" # SONA_USER
+    - secure: "ek3As5q2tL8UBXcxSBbv4v5YgsoPD41SCzPOSu72kzfbngyxgQxrcziU5pIM+Lib9KaWex7hVVWNL38tMyDbu+0OpDv8bPjMujzlDx5I2pJUfuOJo7QRYsJE1nsXcY4cA72cCLfbRcLEkvtDAhcdLSaUOqlyQe5BY4X4fY5eoPA=" # SONA_PASS
+    - secure: "dbAvl6KEuLwZ0MVQPZihFsPzCdiLbX0EFk3so+hcfEbksrmLQ1tn4X5ZM7Wy1UDR8uN9lxngEwHch7a7lKqpugzmXMew9Wnikr9WBWbJT77Z+XJ/jHI6YuiCRpRo+nvxXGp9Ry80tSIgx5eju0J83IaJL41BWlBkvyAd7YAHORI=" # GPG_SUBKEY_SECRET
 
 # ^^^ set PRIV_KEY_SECRET to password used to encrypt spec/id_dsa_travis.enc
 
-# the key is restricted using forced commands so that it can only upload to the directory we need here
-after_success:
-  - ./scripts/travis-publish-spec.sh
 
 # using S3 would be simpler, but we want to upload to scala-lang.org
 # after_success: bundle exec s3_website push --headless
+
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete

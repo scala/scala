@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # requires checkout: root is a scala checkout with which to integrate (actually, only required file is versions.properties, as documented below)
 # requires env: scalaVersion (specifies binary already built from above checkout), WORKSPACE (provided by jenkins), repo_ref (HEAD of the scala checkout),
-# requires files: $baseDir/versions.properties (from checkout -- defines version numbers for modules used to build scala for dbuild...)
+# requires files: $WORKSPACE/versions.properties (from checkout -- defines version numbers for modules used to build scala for dbuild...)
 
 echo "IDE integration not yet available on 2.12.x. Punting."
 exit 0
@@ -13,9 +13,9 @@ baseDir=${WORKSPACE-`pwd`}
 uberBuildUrl=${uberBuildUrl-"https://github.com/scala-ide/uber-build.git"}
 uberBuildConfig=${uberBuildConfig-"validator.conf"} # TODO: backport to 2.10.x: uberBuildConfig="validator-2.10.conf"
 
-uberBuildDir="$baseDir/uber-build/"
+uberBuildDir="$WORKSPACE/uber-build/"
 
-cd $baseDir
+cd $WORKSPACE
 if [[ -d $uberBuildDir ]]; then
   ( cd $uberBuildDir && git fetch $uberBuildUrl HEAD && git checkout -f FETCH_HEAD && git clean -fxd )
 else
@@ -26,10 +26,10 @@ echo "maven.version.number=$scalaVersion" >> versions.properties
 
 # pass prRepoUrl in, which uber-build passes along to dbuild (in sbt-builds-for-ide)
 # the "-P pr-scala" maven arg accomplishes the same thing for maven (directly used in uber-build)
-BASEDIR="$baseDir" prRepoUrl="$prRepoUrl" IDE_M2_REPO="$prRepoUrl" MAVEN_ARGS="-P pr-scala"\
+BASEDIR="$WORKSPACE" prRepoUrl="$prRepoUrl" IDE_M2_REPO="$prRepoUrl" MAVEN_ARGS="-P pr-scala"\
   $uberBuildDir/uber-build.sh $uberBuildDir/config/$uberBuildConfig $repo_ref $scalaVersion
 
 # uber-build puts its local repo under target/m2repo
 # wipe the org/scala-lang part, which otherwise just keeps
 # growing and growing due to the -$sha-SNAPSHOT approach
-[[ -d $baseDir/target/m2repo/org/scala-lang ]] && rm -rf $baseDir/target/m2repo/org/scala-lang
+[[ -d $WORKSPACE/target/m2repo/org/scala-lang ]] && rm -rf $WORKSPACE/target/m2repo/org/scala-lang
