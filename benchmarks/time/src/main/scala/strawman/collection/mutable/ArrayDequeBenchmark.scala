@@ -1,5 +1,7 @@
 package strawman.collection.mutable
 
+import strawman.collection.arrayToArrayOps
+
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
@@ -14,15 +16,15 @@ import scala.Predef.{intWrapper, $conforms}
 @Warmup(iterations = 8)
 @Measurement(iterations = 8)
 @State(Scope.Benchmark)
-class ArrayBufferBenchmark {
+class ArrayDequeBenchmark {
   @Param(scala.Array("0", "1", "2", "3", "4", "7", "8", "15", "16", "17", "39", "282", "4096", "131070", "7312102"))
   var size: Int = _
 
-  var xs: ArrayBuffer[Long] = _
-  var zs: ArrayBuffer[Long] = _
-  var zipped: ArrayBuffer[(Long, Long)] = _
+  var xs: ArrayDeque[Long] = _
+  var zs: ArrayDeque[Long] = _
+  var zipped: ArrayDeque[(Long, Long)] = _
   var randomIndices: scala.Array[Int] = _
-  def fresh(n: Int) = ArrayBuffer((1 to n).map(_.toLong): _*)
+  def fresh(n: Int) = ArrayDeque((1 to n).map(_.toLong): _*)
 
   @Setup(Level.Trial)
   def initTrial(): Unit = {
@@ -106,7 +108,7 @@ class ArrayBufferBenchmark {
     val ys = xs
     var i = 0L
     while (i < 1000) {
-      ys.insertAll(0, zs)
+      ys.prependAll(zs)
       i += 1
     }
     bh.consume(ys)
@@ -131,7 +133,7 @@ class ArrayBufferBenchmark {
     var i = 0L
     while (i < 1000) {
       if ((i & 1) == 1) ys.addAll(zs)
-      else ys.insertAll(0, zs)
+      else ys.prependAll(zs)
       i += 1
     }
     bh.consume(ys)

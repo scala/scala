@@ -27,6 +27,15 @@ trait Buffer[A]
   /** Alias for `prepend` */
   @`inline` final def +=: (elem: A): this.type = prepend(elem)
 
+  def prependAll(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
+
+  /** Inserts a new element at a given index into this buffer.
+    *
+    *  @param idx    the index where the new elements is inserted.
+    *  @param elem   the element to insert.
+    *  @throws   IndexOutOfBoundsException if the index `idx` is not in the valid range
+    *            `0 <= idx <= length`.
+    */
   @throws[IndexOutOfBoundsException]
   def insert(idx: Int, elem: A): Unit
 

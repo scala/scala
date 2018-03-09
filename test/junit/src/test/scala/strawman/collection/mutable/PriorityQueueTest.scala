@@ -1,21 +1,22 @@
-package scala.collection.mutable
+package strawman.collection.mutable
 
+import strawman.collection.immutable.List
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.mutable
-import java.io.{ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream}
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */
 class PriorityQueueTest {
-  val priorityQueue = new mutable.PriorityQueue[Int]()
+  val priorityQueue = new PriorityQueue[Int]()
   val elements = List.fill(1000)(scala.util.Random.nextInt(Int.MaxValue))
-  priorityQueue.enqueue(elements :_*)
+  priorityQueue.enqueue(elements.toClassic :_*)
 
   @Test
   def orderingReverseReverse(): Unit = {
-    val pq = new mutable.PriorityQueue[Nothing]()((_,_)=>42)
+    val pq = new PriorityQueue[Nothing]()((_,_)=>42)
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
   

@@ -37,6 +37,7 @@ val commonSettings = Seq(
     <developers>
       <developer><id>ichoran</id><name>Rex Kerr</name></developer>
       <developer><id>odersky</id><name>Martin Odersky</name></developer>
+      <developer><id>pathikrit</id><name>Pathikrit Bhowmick</name></developer>
       <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
       <developer><id>szeiger</id><name>Stefan Zeiger</name></developer>
       <developer><id>msteindorfer</id><name>Michael J. Steindorfer</name></developer>
