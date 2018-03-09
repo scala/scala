@@ -9,7 +9,7 @@
 package strawman.collection
 package immutable
 
-import scala.{Int, Long, None, Boolean, Unit, Any, AnyRef, Nothing, Array, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
+import scala.{Int, Long, None, Boolean, Unit, Any, AnyRef, Nothing, Array, PartialFunction, Option, Serializable, SerialVersionUID, Some, IllegalArgumentException, `inline`}
 import java.lang.IllegalStateException
 import strawman.collection.generic.BitOperations
 import strawman.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
@@ -454,6 +454,12 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
 
   def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
-  override def concat [V1 >: T](that: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] =
+  override def concat[V1 >: T](that: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] =
     super.concat(that).asInstanceOf[LongMap[V1]] // Already has corect type but not declared as such
+
+  override def ++ [V1 >: T](that: strawman.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(that)
+
+  def collect[V2](pf: PartialFunction[(Long, T), (Long, V2)]): LongMap[V2] =
+    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+
 }
