@@ -74,6 +74,10 @@ jobs:
 
       - stage: publish # note that it's important that this runs on a fresh VM, so we're sure to resolve scala from artifactory, and not out of local cache (which was overwritten during bootstrap, somewhat unorthodoxly)
         script:
+          - source build/env
+          - if [ -z "$SCALA_VER" ]; then echo "Environment not propagated. Caching issue?"; cat build/env ; exit 1; fi
+          - source scripts/common
+          - source scripts/bootstrap_fun
           - if [ "$publishToSonatype" = "yes" ]; then publishSonatype; fi
           - triggerScalaDist
         # using bash conditional, because a travis condition on the stage won't work:
