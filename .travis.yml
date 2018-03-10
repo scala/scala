@@ -106,3 +106,6 @@ before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
+
+notifications:
+  webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis
