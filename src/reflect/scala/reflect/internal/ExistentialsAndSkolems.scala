@@ -114,5 +114,5 @@ trait ExistentialsAndSkolems {
    */
   final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type =
     if (hidden.isEmpty) tp
-    else existentialTransform(hidden, tp, rawOwner)(existentialAbstraction)
+    else existentialTransform(hidden, tp, rawOwner)(existentialAbstraction(_, _))
 }
