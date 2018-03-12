@@ -470,7 +470,7 @@ trait TypeDiagnostics {
     self: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
-      context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
+      context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
     object checkUnused {
       val ignoreNames: Set[TermName] = Set(
@@ -683,7 +683,7 @@ trait TypeDiagnostics {
         }
         if (settings.warnUnusedPatVars) {
           for (v <- unusedPrivates.unusedPatVars)
-            context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
+            context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_` suppresses this warning")
         }
         if (settings.warnUnusedParams) {
           def isImplementation(m: Symbol): Boolean = {

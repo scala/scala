@@ -1569,7 +1569,7 @@ self =>
                   Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                 }
               } else {
-                syntaxErrorOrIncomplete("`*' expected", skipIt = true)
+                syntaxErrorOrIncomplete("`*` expected", skipIt = true)
               }
             } else if (isAnnotation) {
               t = (t /: annotations(skipNewLines = false))(makeAnnotated)
@@ -2374,7 +2374,7 @@ self =>
             if (owner.isTypeName && !mods.isLocalToThis)
               syntaxError(
                 in.offset,
-                (if (mods.isMutable) "`var'" else "`val'") +
+                (if (mods.isMutable) "`var`" else "`val`") +
                 " parameters may not be call-by-name", skipIt = false)
             else if (implicitmod != 0)
               syntaxError(
@@ -2818,7 +2818,7 @@ self =>
           case t if t == SUPERTYPE || t == SUBTYPE || t == COMMA || t == RBRACE || isStatSep(t) =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
-            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(
+            syntaxErrorOrIncompleteAnd("`=`, `>:`, or `<:` expected", skipIt = true)(
               // assume a dummy type def so as to have somewhere to stash the annotations
               TypeDef(mods, tpnme.ERROR, Nil, EmptyTree)
             )
@@ -2878,8 +2878,8 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (settings.future) "" else " nor view bounds `<% ...'"
-              syntaxError(s"traits cannot have type parameters with context bounds `: ...'$viewBoundsExist", skipIt = false)
+            val viewBoundsExist = if (settings.future) "" else " nor view bounds `<% ...`"
+              syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
@@ -3198,7 +3198,7 @@ self =>
       } else if (!isStatSep) {
         syntaxErrorOrIncomplete(
           "illegal start of declaration"+
-          (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
+          (if (inFunReturnType) " (possible cause: missing `=` in front of current method body)"
            else ""), skipIt = true)
         Nil
       } else Nil
