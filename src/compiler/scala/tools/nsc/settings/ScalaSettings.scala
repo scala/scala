@@ -79,6 +79,15 @@ trait ScalaSettings extends AbsScalaSettings
       domain  = languageFeatures
     )
   }
+  val release = StringSetting("-release", "<release>", "Compile for a specific version of the Java platform. Supported targets: 6, 7, 8, 9", "").withPostSetHook { (value: StringSetting) =>
+    if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
+      errorFn.apply("-release is only supported on Java 9 and higher")
+    } else {
+      // TODO validate numeric value
+      // TODO validate release <= java.specification.version
+    }
+  }
+  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /*
    * The previous "-source" option is intended to be used mainly
