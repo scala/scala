@@ -1,7 +1,7 @@
-arrays.scala:248: warning: comparing values of types Unit and Unit using `==' will always yield true
+arrays.scala:248: warning: comparing values of types Unit and Unit using `==` will always yield true
     check(xs(0) == u0, xs(0), u0);
                 ^
-arrays.scala:249: warning: comparing values of types Unit and Unit using `==' will always yield true
+arrays.scala:249: warning: comparing values of types Unit and Unit using `==` will always yield true
     check(xs(1) == u1, xs(1), u1);
                 ^
 checks: 2302

@@ -48,7 +48,7 @@ trait Warnings {
   val warnUnused = MultiChoiceSetting(
     name    = "-Ywarn-unused",
     helpArg = "warning",
-    descr   = "Enable or disable specific `unused' warnings",
+    descr   = "Enable or disable specific `unused` warnings",
     domain  = UnusedWarnings,
     default = Some(List("_"))
   )
@@ -88,7 +88,7 @@ trait Warnings {
     val AdaptedArgs            = LintWarning("adapted-args",              "Warn if an argument list is modified to match the receiver.",               true)
     val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.",                       true)
-    val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()' overrides nullary `def f'.",                true)
+    val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()` overrides nullary `def f`.",                true)
     val InferAny               = LintWarning("infer-any",                 "Warn when a type argument is inferred to be `Any`.",                        true)
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "A Scaladoc comment appears to be detached from its element.")
