@@ -180,7 +180,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def filterNot(pred: A => Boolean): C
 
-  /** A collection containing the first `n` elements of this collection.
+  /** Selects first ''n'' elements.
+    *  $orderDependent
+    *  @param  n    the number of elements to take from this $coll.
+    *  @return a $coll consisting only of the first `n` elements of this $coll,
+    *          or else the whole $coll, if it has less than `n` elements.
+    *          If `n` is negative, returns an empty $coll.
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def take(n: Int): C
@@ -194,8 +199,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def takeWhile(p: A => Boolean): C
 
-  /** The rest of the $coll without its `n` first elements. For
-    *  linear, immutable collections this should avoid making a copy.
+  /** Selects all elements except first ''n'' ones.
+    *  $orderDependent
+    *  @param  n    the number of elements to drop from this $coll.
+    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+    *          empty $coll, if this $coll has less than `n` elements.
+    *          If `n` is negative, don't drop any elements.
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def drop(n: Int): C
