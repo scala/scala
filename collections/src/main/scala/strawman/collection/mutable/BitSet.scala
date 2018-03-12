@@ -13,7 +13,7 @@ import scala.Predef.{require}
   *
   * $bitsetinfo
   *
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_bitsets "Scala's Collection Library overview"]]
+  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable-bitsets "Scala's Collection Library overview"]]
   * section on `Mutable Bitsets` for more information.
   *
   * @define Coll `BitSet`
@@ -43,7 +43,9 @@ class BitSet(protected[collection] final var elems: Array[Long])
   protected[collection] final def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
 
-  protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = new BitSet(elems)
+  protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet =
+    if (elems.length == 0) empty
+    else new BitSet(elems)
 
   def addOne(elem: Int): this.type = {
     require(elem >= 0)

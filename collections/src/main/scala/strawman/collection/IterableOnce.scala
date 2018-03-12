@@ -151,7 +151,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the
-    * operator going left to right.
+    * operator going left to right, including the initial value.
     *
     *  $willNotTerminateInf
     *  $orderDependent
@@ -180,7 +180,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def filterNot(pred: A => Boolean): C
 
-  /** A collection containing the first `n` elements of this collection.
+  /** Selects first ''n'' elements.
+    *  $orderDependent
+    *  @param  n    the number of elements to take from this $coll.
+    *  @return a $coll consisting only of the first `n` elements of this $coll,
+    *          or else the whole $coll, if it has less than `n` elements.
+    *          If `n` is negative, returns an empty $coll.
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def take(n: Int): C
@@ -194,8 +199,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def takeWhile(p: A => Boolean): C
 
-  /** The rest of the $coll without its `n` first elements. For
-    *  linear, immutable collections this should avoid making a copy.
+  /** Selects all elements except first ''n'' ones.
+    *  $orderDependent
+    *  @param  n    the number of elements to drop from this $coll.
+    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+    *          empty $coll, if this $coll has less than `n` elements.
+    *          If `n` is negative, don't drop any elements.
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def drop(n: Int): C
@@ -465,8 +474,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
     *  @param op       A binary operator that must be associative.
     *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
-    *  @throws UnsupportedOperationException
-    *  if this $coll is empty.
+    *  @throws UnsupportedOperationException if this $coll is empty.
     */
   def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
 
@@ -688,6 +696,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *    @inheritdoc
     *
     *    @return   the smallest element of this $coll
+    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def min[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
@@ -705,6 +714,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *    @inheritdoc
     *
     *    @return   the largest element of this $coll.
+    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def max[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
@@ -718,12 +728,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam   B     The result type of the function f.
     *  @param    f     The measuring function.
     *  @return   the first element of this $coll with the largest value measured by function f
-    *  with respect to the ordering `cmp`.
+    *            with respect to the ordering `cmp`.
     *
     *  @usecase def maxBy[B](f: A => B): A
     *    @inheritdoc
     *
     *    @return   the first element of this $coll with the largest value measured by function f.
+    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
@@ -750,12 +761,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam   B     The result type of the function f.
     *  @param    f     The measuring function.
     *  @return   the first element of this $coll with the smallest value measured by function f
-    *  with respect to the ordering `cmp`.
+    *            with respect to the ordering `cmp`.
     *
     *  @usecase def minBy[B](f: A => B): A
     *    @inheritdoc
     *
     *    @return   the first element of this $coll with the smallest value measured by function f.
+    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)

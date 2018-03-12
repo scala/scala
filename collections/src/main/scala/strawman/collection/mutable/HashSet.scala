@@ -10,7 +10,7 @@ import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, transient, U
   * @author  Martin Odersky
   * @version 2.0, 31/12/2006
   * @since   1
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash_tables "Scala's Collection Library overview"]]
+  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   * section on `Hash Tables` for more information.
   *
   * @define Coll `mutable.HashSet`

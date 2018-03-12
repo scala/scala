@@ -73,6 +73,19 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
 }
 
+/** A builder for mutable sequence of characters.  This class provides an API
+  *  mostly compatible with `java.lang.StringBuilder`, except where there are
+  *  conflicts with the Scala collections API (such as the `reverse` method.)
+  *
+  *  @author Stephane Micheloud
+  *  @author Martin Odersky
+  *  @version 2.8
+  *  @since   2.7
+  *  @define Coll `mutable.IndexedSeq`
+  *  @define coll string builder
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]
+  *  section on `StringBuilders` for more information.
+  */
 @SerialVersionUID(3L)
 class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Char, String]
   with IndexedSeq[Char]
