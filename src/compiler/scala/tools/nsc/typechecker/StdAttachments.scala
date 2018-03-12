@@ -182,4 +182,7 @@ trait StdAttachments {
    * track of other adapted trees.
    */
   case class OriginalTreeAttachment(original: Tree)
+
+  /** Added to trees that appear in a method value, e.g., to `f(x)` in `f(x) _` */
+  case object MethodValueAttachment
 }
