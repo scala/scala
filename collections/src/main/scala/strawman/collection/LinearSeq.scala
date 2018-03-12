@@ -13,7 +13,7 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.List)
 
 /** Base trait for linear Seq operations */
-trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any with SeqOps[A, CC, C] {
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]] extends Any with SeqOps[A, CC, C] {
 
   // To be overridden in implementations:
   def isEmpty: Boolean
@@ -173,6 +173,6 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]] extends Any w
   }
 
   override def tails: Iterator[C] =
-    Iterator.iterate(coll)(_.tail.asInstanceOf[C]).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder().result())
+    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder().result())
 
 }
