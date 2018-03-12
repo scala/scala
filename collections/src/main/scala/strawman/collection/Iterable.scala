@@ -661,6 +661,32 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     (fromIterable(unzipped.first), fromIterable(unzipped.second))
   }
 
+  /** Converts this $coll of triples into three collections of the first, second,
+    *  and third element of each triple.
+    *
+    *    {{{
+    *    val xs = $Coll(
+    *               (1, "one", '1'),
+    *               (2, "two", '2'),
+    *               (3, "three", '3')).unzip3
+    *    // xs == ($Coll(1, 2, 3),
+    *    //        $Coll(one, two, three),
+    *    //        $Coll(1, 2, 3))
+    *    }}}
+    *
+    *  @tparam A1       the type of the first member of the element triples
+    *  @tparam A2       the type of the second member of the element triples
+    *  @tparam A3       the type of the third member of the element triples
+    *  @param asTriple  an implicit conversion which asserts that the element type
+    *                   of this $coll is a triple.
+    *  @return          a triple of ${coll}s, containing the first, second, respectively
+    *                   third member of each element triple of this $coll.
+    */
+  def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
+    val unzipped = new View.Unzip3(this)
+    (fromIterable(unzipped.first), fromIterable(unzipped.second), fromIterable(unzipped.third))
+  }
+
   /** Iterates over the tails of this $coll. The first value will be this
     *  $coll and the final one will be an empty $coll, with the intervening
     *  values the results of successive applications of `tail`.

@@ -94,7 +94,7 @@ class IterableTest {
   }
 
   @Test
-  def test_SI10631 {
+  def test_SI10631(): Unit = {
     val baselist = List(1, 2)
     var checklist = List.empty[Int]
     val lst = baselist.view.map { x =>
@@ -104,5 +104,21 @@ class IterableTest {
 
     Assert.assertEquals(2, lst.last)
     Assert.assertEquals(baselist.reverse, checklist)
+  }
+
+  def unzip(): Unit = {
+    val zipped = Seq((1, 'a'), (2, 'b'), (3, 'c'))
+    val (s1, s2) = zipped.unzip
+    Assert.assertTrue(Seq(1, 2, 3).sameElements(s1))
+    Assert.assertTrue(Seq('a', 'b', 'c').sameElements(s2))
+  }
+
+  @Test
+  def unzip3(): Unit = {
+    val zipped = Seq((1, 'a', true), (2, 'b', false), (3, 'c', true))
+    val (s1, s2, s3) = zipped.unzip3
+    Assert.assertTrue(Seq(1, 2, 3).sameElements(s1))
+    Assert.assertTrue(Seq('a', 'b', 'c').sameElements(s2))
+    Assert.assertTrue(Seq(true, false, true).sameElements(s3))
   }
 }

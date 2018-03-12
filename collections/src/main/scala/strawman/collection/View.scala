@@ -260,16 +260,14 @@ object View extends IterableFactory[View] {
   }
 
   class Unzip[A, A1, A2](underlying: SomeIterableOps[A])(implicit asPair: A => (A1, A2)) {
-    val first: View[A1] =
-      new View[A1] {
-        def iterator(): Iterator[A1] = underlying.iterator().map(xs => asPair(xs)._1)
-        override def knownSize: Int = underlying.knownSize
-      }
-    val second: View[A2] =
-      new View[A2] {
-        def iterator(): Iterator[A2] = underlying.iterator().map(xs => asPair(xs)._2)
-        override def knownSize: Int = underlying.knownSize
-      }
+    val first: View[A1] = new View.Map[A, A1](underlying, asPair(_)._1)
+    val second: View[A2] = new View.Map[A, A2](underlying, asPair(_)._2)
+  }
+
+  class Unzip3[A, A1, A2, A3](underlying: SomeIterableOps[A])(implicit asTriple: A => (A1, A2, A3)) {
+    val first: View[A1] = new View.Map[A, A1](underlying, asTriple(_)._1)
+    val second: View[A2] = new View.Map[A, A2](underlying, asTriple(_)._2)
+    val third: View[A3] = new View.Map[A, A3](underlying, asTriple(_)._3)
   }
 
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends View[A] {

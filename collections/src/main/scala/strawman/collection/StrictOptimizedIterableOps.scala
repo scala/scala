@@ -46,11 +46,25 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     val first = iterableFactory.newBuilder[A1]()
     val second = iterableFactory.newBuilder[A2]()
     foreach { a =>
-      val (a1, a2) = asPair(a)
-      first += a1
-      second += a2
+      val pair = asPair(a)
+      first += pair._1
+      second += pair._2
     }
     (first.result(), second.result())
+  }
+
+  override def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
+    val b1 = iterableFactory.newBuilder[A1]()
+    val b2 = iterableFactory.newBuilder[A2]()
+    val b3 = iterableFactory.newBuilder[A3]()
+
+    foreach { xyz =>
+      val triple = asTriple(xyz)
+      b1 += triple._1
+      b2 += triple._2
+      b3 += triple._3
+    }
+    (b1.result(), b2.result(), b3.result())
   }
 
   // The implementations of the following operations are not fundamentally different from
