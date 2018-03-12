@@ -1,0 +1,4 @@
+t10695.scala:6: error: stable identifier required, but X.raw found.
+  val node: raw.Node = null
+            ^
+one error found
