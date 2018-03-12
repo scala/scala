@@ -2,10 +2,10 @@ package strawman
 package collection
 
 import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef, Double, Long, Float, Byte, Short}
-import scala.Predef.{implicitly, classOf}
+import scala.Predef.{implicitly, classOf, identity}
 import java.lang.{String, Class}
-import mutable.ArrayBuilder
-import immutable.ImmutableArray
+import mutable.{ArrayBuilder, WrappedArray}
+import immutable.{ImmutableArray, Range}
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
@@ -130,6 +130,16 @@ object ArrayOps {
     def next(): A = try {
       val r = xs(pos)
       pos += 1
+      r
+    } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
+  }
+
+  private class ReverseIterator[A](private[this] val xs: Array[A]) extends Iterator[A] {
+    private[this] var pos = length-1
+    def hasNext: Boolean = pos >= 0
+    def next(): A = try {
+      val r = xs(pos)
+      pos -= 1
       r
     } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
   }
@@ -336,6 +346,14 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     }
     res
   }
+
+  /** An iterator yielding elements in reversed order.
+    *
+    * Note: `xs.reverseIterator` is the same as `xs.reverse.iterator` but implemented more efficiently.
+    *
+    *  @return  an iterator yielding the elements of this array in reversed order
+    */
+  def reverseIterator(): Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
 
   /** Selects all elements of this array which satisfy a predicate.
     *
@@ -801,10 +819,10 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def transpose[B](implicit asArray: A => Array[B]): Array[Array[B]] = {
     val aClass = xs.getClass.getComponentType
-    val bb = Array.newBuilder[Array[B]](ClassTag[Array[B]](aClass))
+    val bb = new ArrayBuilder.ofRef[Array[B]]()(ClassTag[Array[B]](aClass))
     if (xs.length == 0) bb.result()
     else {
-      def mkRowBuilder() = Array.newBuilder[B](ClassTag[B](aClass.getComponentType))
+      def mkRowBuilder() = ArrayBuilder.make[B]()(ClassTag[B](aClass.getComponentType))
       val bs = asArray(xs(0)) map ((x: B) => mkRowBuilder())
       var j = 0
       for (xs <- this) {
@@ -829,6 +847,95 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       f(xs(i))
       i += 1
     }
+  }
+
+  /** Selects all the elements of this array ignoring the duplicates.
+    *
+    * @return a new array consisting of all the elements of this array without duplicates.
+    */
+  def distinct: Array[A] = distinctBy(identity)
+
+  /** Selects all the elements of this array ignoring the duplicates as determined by `==` after applying
+    * the transforming function `f`.
+    *
+    * @param f The transforming function whose result is used to determine the uniqueness of each element
+    * @tparam B the type of the elements after being transformed by `f`
+    * @return a new array consisting of all the elements of this array without duplicates.
+    */
+  def distinctBy[B](f: A => B): Array[A] =
+    ArrayBuilder.make[A]().addAll(iterator().distinctBy(f)).result()
+
+  /** A copy of this array with an element value appended until a given target length is reached.
+    *
+    *  @param   len   the target length
+    *  @param   elem  the padding value
+    *  @tparam B      the element type of the returned array.
+    *  @return a new array consisting of
+    *          all elements of this array followed by the minimal number of occurrences of `elem` so
+    *          that the resulting collection has a length of at least `len`.
+    */
+  def padTo[B >: A : ClassTag](len: Int, elem: B): Array[B] = {
+    var i = xs.length
+    val newlen = max(i, len)
+    val dest = ArrayOps.copyAs[B](xs, newlen)
+    while(i < newlen) {
+      dest(i) = elem
+      i += 1
+    }
+    dest
+  }
+
+  /** Produces the range of all indices of this sequence.
+    *
+    *  @return  a `Range` value from `0` to one less than the length of this array.
+    */
+  def indices: Range = Range(0, xs.length)
+
+  /** Computes the multiset difference between this array and another sequence.
+    *
+    *  @param that   the sequence of elements to remove
+    *  @return       a new array which contains all elements of this array
+    *                except some of occurrences of elements that also appear in `that`.
+    *                If an element value `x` appears
+    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
+    *                part of the result, but any following occurrences will.
+    */
+  def diff(that: Seq[_ >: A]): Array[A] = WrappedArray.make[A](xs).diff(that).array
+
+  /** Computes the multiset intersection between this array and another sequence.
+    *
+    *  @param that   the sequence of elements to intersect with.
+    *  @return       a new array which contains all elements of this array
+    *                which also appear in `that`.
+    *                If an element value `x` appears
+    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
+    *                in the result, but any following occurrences will be omitted.
+    */
+  def intersect(that: Seq[_ >: A]): Array[A] = WrappedArray.make[A](xs).intersect(that).array
+
+  /** Partitions this array into a map of arrays according to some discriminator function.
+    *
+    *  @param f     the discriminator function.
+    *  @tparam K    the type of keys returned by the discriminator function.
+    *  @return      A map from keys to arrays such that the following invariant holds:
+    *               {{{
+    *                 (xs groupBy f)(k) = xs filter (x => f(x) == k)
+    *               }}}
+    *               That is, every key `k` is bound to an array of those elements `x`
+    *               for which `f(x)` equals `k`.
+    */
+  def groupBy[K](f: A => K): immutable.Map[K, Array[A]] = {
+    val m = mutable.Map.empty[K, ArrayBuilder[A]]
+    val len = xs.length
+    var i = 0
+    while(i < len) {
+      val elem = xs(i)
+      val key = f(elem)
+      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A]())
+      bldr += elem
+      i += 1
+    }
+    m.mapValues(_.result()).toMap
   }
 
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
