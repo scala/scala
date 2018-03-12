@@ -87,6 +87,7 @@ trait ScalaSettings extends AbsScalaSettings
       // TODO validate release <= java.specification.version
     }
   }
+  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /*
    * The previous "-source" option is intended to be used mainly

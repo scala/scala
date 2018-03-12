@@ -216,8 +216,6 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
       }.take(1).toList.headOption
     }
   }
-  private def packageOf(dottedClassName: String): String =
-    dottedClassName.substring(0, dottedClassName.lastIndexOf("."))
 }
 
 /**
@@ -225,9 +223,7 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
   */
 final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends ClassPath with NoSourcePaths {
   import java.nio.file.Path, java.nio.file._
-  type F = Path
-  private val javaHome = System.getProperty("java.home")
-  private val javaSpecVersion = scala.util.Properties.javaSpecVersion
+
   private val fileSystem: FileSystem = FileSystems.newFileSystem(ctSym, null)
   private val root: Path = fileSystem.getRootDirectories.iterator().next
   private val roots = Files.newDirectoryStream(root).iterator().asScala.toList
@@ -236,19 +232,17 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   private def codeFor(major: Int): String = if (major < 10) major.toString else ('A' + (major - 10)).toChar.toString
 
   private val releaseCode: String = codeFor(release)
-  private def fileNameMatchesRelease(fileName: String) = !fileName.contains("-") && fileName.contains(releaseCode)
-  private val subset: List[Path] = roots.filter(root => fileNameMatchesRelease(root.getFileName.toString))
+  private def fileNameMatchesRelease(fileName: String) = !fileName.contains("-") && fileName.contains(releaseCode) // exclude `9-modules`
+  private val rootsForRelease: List[Path] = roots.filter(root => fileNameMatchesRelease(root.getFileName.toString))
 
   // e.g. "java.lang" -> Seq(/876/java/lang, /87/java/lang, /8/java/lang))
   private val packageIndex: scala.collection.Map[String, Seq[Path]] = {
     val index = collection.mutable.AnyRefMap[String, collection.mutable.ListBuffer[Path]]()
-    subset.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach{
-      p =>
-        if (p.getNameCount > 1) {
-          val p1 = if (scala.util.Properties.isJavaAtLeast("9")) p.subpath(1, p.getNameCount) else p
-          val packageDotted = p1.toString.replace('/', '.')
-          index.getOrElseUpdate(packageDotted, new collection.mutable.ListBuffer) += p
-        }
+    rootsForRelease.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach { p =>
+      if (p.getNameCount > 1) {
+        val packageDotted = p.subpath(1, p.getNameCount).toString.replace('/', '.')
+        index.getOrElseUpdate(packageDotted, new collection.mutable.ListBuffer) += p
+      }
     })
     index
   }
@@ -261,9 +255,9 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = {
     if (inPackage == "") Nil
     else {
-      packageIndex.getOrElse(inPackage, Nil).flatMap(x =>
-        Files.list(x).iterator().asScala.filter(_.getFileName.toString.endsWith(".sig"))).map(x =>
-        ClassFileEntryImpl(new PlainNioFile(x))).toVector
+      val sigFiles = packageIndex.getOrElse(inPackage, Nil).iterator.flatMap(p =>
+        Files.list(p).iterator().asScala.filter(_.getFileName.toString.endsWith(".sig")))
+      sigFiles.map(f => ClassFileEntryImpl(new PlainNioFile(f))).toVector
     }
   }
 
@@ -278,8 +272,8 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
     if (!className.contains(".")) None
     else {
       val (inPackage, classSimpleName) = separatePkgAndClassNames(className)
-      packageIndex.getOrElse(inPackage, Nil).iterator.flatMap{x =>
-        val file = x.resolve(classSimpleName + ".sig")
+      packageIndex.getOrElse(inPackage, Nil).iterator.flatMap { p =>
+        val file = p.resolve(classSimpleName + ".sig")
         if (Files.exists(file)) new scala.reflect.io.PlainNioFile(file) :: Nil else Nil
       }.take(1).toList.headOption
     }

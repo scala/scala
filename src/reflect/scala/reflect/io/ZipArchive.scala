@@ -120,11 +120,9 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
         dir
     }
 
-  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = getDir(dirs, entry, entry.getName)
-
-  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry, entryName: String): DirEntry = {
-    if (entry.isDirectory) ensureDir(dirs, entryName, entry)
-    else ensureDir(dirs, dirName(entryName), null)
+  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
+    if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
+    else ensureDir(dirs, dirName(entry.getName), null)
   }
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
@@ -150,7 +148,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def lastModified: Long = time // could be stale
     override def input: InputStream = {
       val zipFile  = openZipFile()
-      val entry    = zipFile.getEntry(name)
+      val entry    = zipFile.getEntry(name) // with `-release`, returns the correct version under META-INF/versions
       val delegate = zipFile.getInputStream(entry)
       new FilterInputStream(delegate) {
         override def close(): Unit = { zipFile.close() }
@@ -187,19 +185,16 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
             // JARFile will return the entry for the corresponding release-dependent version here under META-INF/versions
             zipFile.getEntry(zipEntry.getName)
           } else zipEntry
-          // We always use the original entry name here, which corresponds to the class FQN.
-          val entryName = zipEntry.getName
-          val dir = getDir(dirs, zipEntry, entryName)
           if (!zipEntry.isDirectory) {
+            val dir = getDir(dirs, zipEntry)
             val f =
               if (ZipArchive.closeZipFile)
                 new LazyEntry(
-                  entryName,
-                  zipEntry.getTime(),
-                  zipEntry.getSize().toInt
-                )
+                  zipEntry.getName,
+                  zipEntry.getTime,
+                  zipEntry.getSize.toInt)
               else
-                new LeakyEntry(zipFile, zipEntryVersioned, entryName)
+                new LeakyEntry(zipFile, zipEntryVersioned, zipEntry.getName)
 
             dir.entries(f.name) = f
           }

@@ -24,6 +24,11 @@ object PackageNameUtils {
 
   def packagePrefix(inPackage: String): String = if (inPackage == RootPackage) "" else inPackage + "."
 
+  /**
+   * `true` if `packageDottedName` is a package directly nested in `inPackage`, for example:
+   *   - `packageContains("scala", "scala.collection")`
+   *   - `packageContains("", "scala")`
+   */
   def packageContains(inPackage: String, packageDottedName: String) = {
     if (packageDottedName.contains("."))
       packageDottedName.startsWith(inPackage) && packageDottedName.lastIndexOf('.') == inPackage.length

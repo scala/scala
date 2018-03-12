@@ -23,14 +23,14 @@ sealed trait ZipAndJarFileLookupFactory {
   private val cache = new FileBasedCache[ClassPath]
 
   def create(zipFile: AbstractFile, settings: Settings): ClassPath = {
-    if (settings.YdisableFlatCpCaching || zipFile.file == null) createForZipFile(zipFile, Option(settings.release.value).filter(_ != ""))
+    if (settings.YdisableFlatCpCaching || zipFile.file == null) createForZipFile(zipFile, settings.releaseValue)
     else createUsingCache(zipFile, settings)
   }
 
   protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath
 
   private def createUsingCache(zipFile: AbstractFile, settings: Settings): ClassPath = {
-    cache.getOrCreate(List(zipFile.file.toPath), () => createForZipFile(zipFile, Option(settings.release.value).filter(_ != "")))
+    cache.getOrCreate(List(zipFile.file.toPath), () => createForZipFile(zipFile, settings.releaseValue))
   }
 }
 

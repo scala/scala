@@ -47,7 +47,7 @@ public final class JDK9Reflectors {
         try {
             if (version == null) return new JarFile(file, verify, mode);
             else {
-                return (JarFile) NEW_JAR_FILE.invoke(file, verify, mode, version);
+                return NEW_JAR_FILE == null ? null : (JarFile) NEW_JAR_FILE.invoke(file, verify, mode, version);
             }
         } catch (IOException | IllegalArgumentException | SecurityException ex) {
             throw ex;
@@ -66,7 +66,7 @@ public final class JDK9Reflectors {
     }
     private static MethodHandle lookupRuntimeVersion() {
         try {
-            return MethodHandles.lookup().findStatic(Class.forName("java.lang.Runtime"), "version", MethodType.methodType(runtimeVersionClass()));
+            return MethodHandles.lookup().findStatic(java.lang.Runtime.class, "version", MethodType.methodType(runtimeVersionClass()));
         } catch (Throwable t) {
             return null;
         }
@@ -80,7 +80,7 @@ public final class JDK9Reflectors {
     }
     private static MethodHandle lookupNewJarFile() {
         try {
-            return MethodHandles.lookup().findConstructor(java.util.jar.JarFile.class, MethodType.methodType(void.class, java.io.File.class, java.lang.Boolean.TYPE, Integer.TYPE, Class.forName("java.lang.Runtime$Version")));
+            return MethodHandles.lookup().findConstructor(java.util.jar.JarFile.class, MethodType.methodType(void.class, java.io.File.class, java.lang.Boolean.TYPE, Integer.TYPE, runtimeVersionClass()));
         } catch (Throwable t) {
             return null;
         }
