@@ -1065,6 +1065,7 @@ trait Types
     def kind: String = "unknown type of class "+getClass()
 
     def mapOver(map: TypeMap): Type = this
+    def traverseOver(map: TypeMap): Unit = mapOver(map)
   }
 
 // Subclasses ------------------------------------------------------------
@@ -1158,6 +1159,9 @@ trait Types
       val bounds1 = map(bounds)
       if (bounds1 eq bounds) this
       else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      map(bounds)
     }
   }
 
@@ -1272,6 +1276,9 @@ trait Types
         else singleType(pre1, sym)
       }
     }
+    override def traverseOver(map: TypeMap): Unit = {
+      if (!sym.isPackageClass) map(pre)
+    }
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
@@ -1311,6 +1318,10 @@ trait Types
       val supertp1 = map(supertpe)
       if ((thistp1 eq thistpe) && (supertp1 eq supertpe)) this
       else SuperType(thistp1, supertp1)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      map(thistpe)
+      map(supertpe)
     }
   }
 
@@ -1360,6 +1371,10 @@ trait Types
       val hi1 = map(hi)
       if ((lo1 eq lo) && (hi1 eq hi)) this
       else TypeBounds(lo1, hi1)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      map.flipped(map(lo))
+      map(hi)
     }
   }
 
@@ -1687,6 +1702,10 @@ trait Types
       val parents1 = parents mapConserve map
       val decls1 = map.mapOver(decls)
       copyRefinedType(this, parents1, decls1)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      parents.foreach(map)
+      map.traverseOver(decls)
     }
   }
 
@@ -2181,6 +2200,18 @@ trait Types
       if ((pre1 eq pre) && (args1 eq args)) this
       else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
     }
+    override def traverseOver(map: TypeMap): Unit = {
+      map(pre)
+      if (map.trackVariance && args.nonEmpty && !map.variance.isInvariant) {
+        val tparams = sym.typeParams
+        if (tparams.isEmpty)
+          args.foreach(map)
+        else
+          map.traverseOverArgs(args, tparams)
+      } else {
+        args.foreach(map)
+      }
+    }
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN)
@@ -2639,6 +2670,10 @@ trait Types
       if ((params1 eq params) && (result1 eq resultType)) this
       else copyMethodType(this, params1, result1.substSym(params, params1))
     }
+    override def traverseOver(map: TypeMap): Unit = {
+      map.flipped(map.traverseOver(params))
+      map(resultType)
+    }
   }
 
   object MethodType extends MethodTypeExtractor
@@ -2670,7 +2705,9 @@ trait Types
       if (result1 eq resultType) this
       else NullaryMethodType(result1)
     }
-
+    override def traverseOver(map: TypeMap): Unit = {
+      map(resultType)
+    }
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
@@ -2742,7 +2779,10 @@ trait Types
       if ((tparams1 eq typeParams) && (result1 eq resultType)) this
       else PolyType(tparams1, result1.substSym(typeParams, tparams1))
     }
-
+    override def traverseOver(map: TypeMap): Unit = {
+      map.flipped(map.traverseOver(typeParams))
+      map(resultType)
+    }
   }
 
   object PolyType extends PolyTypeExtractor
@@ -2923,6 +2963,10 @@ trait Types
       if ((quantified1 eq quantified) && (underlying1 eq underlying)) this
       else newExistentialType(quantified1, underlying1.substSym(quantified, quantified1))
     }
+    override def traverseOver(map: TypeMap): Unit = {
+      map.traverseOver(quantified)
+      map(underlying)
+    }
   }
 
   object ExistentialType extends ExistentialTypeExtractor
@@ -2939,6 +2983,9 @@ trait Types
       val pre1 = if (pre.isInstanceOf[ClassInfoType]) pre else map(pre)
       if (pre1 eq pre) this
       else OverloadedType(pre1, alternatives)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      if (!pre.isInstanceOf[ClassInfoType]) map(pre)
     }
   }
 
@@ -2969,6 +3016,10 @@ trait Types
       val targs1 = targs mapConserve map
       if ((pre1 eq pre) && (targs1 eq targs)) this
       else AntiPolyType(pre1, targs1)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      map(pre)
+      targs.foreach(map)
     }
   }
 
@@ -3502,6 +3553,10 @@ trait Types
       if (constr.instValid) map(constr.inst)
       else this.applyArgs(map.mapOverArgs(this.typeArgs, this.params))  //@M !args.isEmpty implies !typeParams.isEmpty
     }
+    override def traverseOver(map: TypeMap): Unit = {
+      if (constr.instValid) map(constr.inst)
+      else map.traverseOverArgs(this.typeArgs, this.params)
+    }
   }
 
   /** A type carrying some annotations. Created by the typechecker
@@ -3578,6 +3633,10 @@ trait Types
       if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
       else if (annotations1.isEmpty) underlying1
       else AnnotatedType(annotations1, underlying1)
+    }
+    override def traverseOver(map: TypeMap): Unit = {
+      annotations.foreach(map.traverseOverAnnotations)
+      map(underlying)
     }
   }
 
