@@ -91,7 +91,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
   protected def emptyFiles: Array[File] = Array.empty
   protected def getSubDir(packageDirName: String): Option[File] = {
     val packageDir = new File(dir, packageDirName)
-    if (packageDir.exists && packageDir.isDirectory) Some(packageDir)
+    if (packageDir.exists && packageDir.isDirectory && packageDir.canRead) Some(packageDir)
     else None
   }
   protected def listChildren(dir: File, filter: Option[File => Boolean]): Array[File] = {
