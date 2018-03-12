@@ -132,16 +132,16 @@ abstract class SymbolTable extends macros.Universe
   }
 
   // Getting in front of Predef's asserts to supplement with more info; see `supplementErrorMessage`.
-  // This has the happy side effect of masking the one argument form of assert
-  // (but for now it's reproduced here, because there are a million uses to fix).
+  // This has the happy side effect of masking the one argument forms of assert/require
+  // (but for now they're reproduced here, because there are a million uses internal and external to fix).
   @inline
   final def assert(assertion: Boolean, message: => Any): Unit = {
     // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
     if (!assertion) throwAssertionError(message)
   }
 
-  // for those of us who use IDEs, this will now at least show up struck-through
-  @deprecated("prefer to use the two-argument form", since = "2.12.5")
+  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
+  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
   final def assert(assertion: Boolean): Unit = {
     assert(assertion, "")
   }
@@ -150,6 +150,12 @@ abstract class SymbolTable extends macros.Universe
   final def require(requirement: Boolean, message: => Any): Unit = {
     // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
     if (!requirement) throwRequirementError(message)
+  }
+
+  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
+  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
+  final def require(requirement: Boolean): Unit = {
+    require(requirement, "")
   }
 
   // extracted from `assert`/`require` to make them as small (and inlineable) as possible
