@@ -72,7 +72,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     import scala.tools.nsc.io.Jar
     import scala.reflect.io.{AbstractFile, Path}
     val locations = classpath.map(u => Path(AbstractFile.getURL(u).file))
-    val disableCache = settings.YdisableMacrosClassLoaderCaching.value
+    val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
     if (disableCache || locations.exists(!Jar.isJarOrZip(_))) {
       if (disableCache) macroLogVerbose("macro classloader: caching is disabled by the user.")
       else {
