@@ -129,7 +129,7 @@ class ArrayDeque[A] protected (
   }
 
   def insert(idx: Int, elem: A): Unit = {
-    requireBounds(idx)
+    requireBounds(idx, length+1)
     val n = length
     if (idx == 0) {
       prepend(elem)
@@ -164,7 +164,7 @@ class ArrayDeque[A] protected (
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    requireBounds(idx)
+    requireBounds(idx, length+1)
     val n = length
     if (idx == 0) {
       prependAll(elems)
@@ -428,8 +428,6 @@ class ArrayDeque[A] protected (
   override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): dest.type =
     copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)
 
-  override def className = "ArrayDeque"
-
   override def toArray[B >: A: ClassTag]: Array[B] =
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
 
@@ -444,7 +442,7 @@ class ArrayDeque[A] protected (
     * @param maxItems
     */
   def copySliceToArray(srcStart: Int, dest: Array[_], destStart: Int, maxItems: Int): dest.type = {
-    requireBounds(destStart, 0, dest.length)
+    requireBounds(destStart, dest.length+1)
     val toCopy = Math.min(maxItems, Math.min(length - srcStart, dest.length - destStart))
     if (toCopy > 0) {
       requireBounds(srcStart)
@@ -483,8 +481,8 @@ class ArrayDeque[A] protected (
     reset(array = array2, start = 0, end = n)
   }
 
-  @inline private[this] def requireBounds(idx: Int, from: Int = 0, until: Int = length) =
-    if (idx < 0 || until <= idx) throw new IndexOutOfBoundsException(idx.toString)
+  @inline private[this] def requireBounds(idx: Int, until: Int = length) =
+    if (idx < 0 || idx >= until) throw new IndexOutOfBoundsException(idx.toString)
 }
 
 /**
