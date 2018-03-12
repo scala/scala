@@ -821,6 +821,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (14) When in mode EXPRmode, do SAM conversion
      *  (15) When in mode EXPRmode, apply a view
      *  If all this fails, error
+     *
+     *  Note: the `original` tree parameter is for re-typing implicit method invocations (see below)
+     *  and should not be used otherwise. TODO: can it be replaced with a tree attachment?
      */
     protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
       def hasUndets           = context.undetparams.nonEmpty
@@ -842,13 +845,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           setError(tree)
         else
           withCondConstrTyper(treeInfo.isSelfOrSuperConstrCall(tree))(typer1 =>
-            if (original != EmptyTree && pt != WildcardType) (
+            if (original != EmptyTree && pt != WildcardType) {
               typer1 silent { tpr =>
                 val withImplicitArgs = tpr.applyImplicitArgs(tree)
                 if (tpr.context.reporter.hasErrors) tree // silent will wrap it in SilentTypeError anyway
                 else tpr.typed(withImplicitArgs, mode, pt)
-              }
-              orElse { _ =>
+              } orElse { _ =>
+                // Re-try typing (applying to implicit args) without expected type. Add in 53d98e7d42 to
+                // for better error message (scala/bug#2180, http://www.scala-lang.org/old/node/3453.html)
                 val resetTree = resetAttrs(original)
                 resetTree match {
                   case treeInfo.Applied(fun, targs, args) =>
@@ -861,8 +865,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ =>
                 }
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
-                // SO-10066 Need to patch the enclosing tree in the context to make translation of Dynamic
-                //          work during fallback typechecking below.
+                // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
+                // work during fallback typechecking below.
                 val resetContext: Context = {
                   object substResetForOriginal extends Transformer {
                     override def transform(tree: Tree): Tree = {
@@ -877,10 +881,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
                   // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
                   tree1 setType pluginsTyped(tree1.tpe, typer1, tree1, mode, pt)
-                  if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt, EmptyTree)
+                  if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt)
                 }
               }
-            )
+            }
             else
               typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
           )
