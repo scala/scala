@@ -1,3 +1,4 @@
+import scala.reflect.ClassManifest
 import scala.collection.mutable.MapLike
 
 class SparseArray[@specialized(Int) T:ClassManifest] extends collection.mutable.Map[Int,T] with collection.mutable.MapLike[Int,T,SparseArray[T]] {

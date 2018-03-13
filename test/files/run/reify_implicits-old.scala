@@ -1,5 +1,6 @@
 
 import scala.language.{ implicitConversions, reflectiveCalls }
+import scala.reflect.ClassManifest
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.Eval
 

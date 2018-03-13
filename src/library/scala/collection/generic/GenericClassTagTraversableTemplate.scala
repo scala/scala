@@ -25,8 +25,4 @@ trait GenericClassTagTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends H
   implicit protected[this] val tag: ClassTag[A]
   def classTagCompanion: GenericClassTagCompanion[CC]
   def genericClassTagBuilder[B](implicit tag: ClassTag[B]): Builder[B, CC[B]] = classTagCompanion.newBuilder[B]
-  @deprecated("use classTagCompanion instead", "2.10.0")
-  def classManifestCompanion: GenericClassManifestCompanion[CC] = classTagCompanion
-  @deprecated("use genericClassTagBuilder instead", "2.10.0")
-  def genericClassManifestBuilder[B](implicit manifest: ClassManifest[B]): Builder[B, CC[B]] = genericClassTagBuilder[B](manifest)
 }

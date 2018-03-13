@@ -746,8 +746,7 @@ trait Namers extends MethodSynthesis {
       case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
         assignAndEnterFinishedSymbol(tree)
       case DefDef(mods, name, _, _, _, _) =>
-        val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
-        val sym = enterInScope(assignMemberSymbol(tree)) setFlag bridgeFlag
+        val sym = enterInScope(assignMemberSymbol(tree))
 
         val completer =
           if (sym hasFlag SYNTHETIC) {

@@ -138,41 +138,12 @@ object BigDecimal {
   def valueOf(d: Double): BigDecimal = apply(BigDec valueOf d)
 
   /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor, specifying a `MathContext` that is
-   *  used for computations but isn't used for rounding.  Use
-   *  `BigDecimal.decimal` to use `MathContext` for rounding,
-   *  or `BigDecimal(java.math.BigDecimal.valueOf(d), mc)` for
-   *  no rounding.
-   *
-   *  @param  d the specified double value
-   *  @param  mc the `MathContext` used for future computations
-   *  @return the constructed `BigDecimal`
-   */
-  @deprecated("MathContext is not applied to Doubles in valueOf. Use BigDecimal.decimal to use rounding, or java.math.BigDecimal.valueOf to avoid it.", "2.11.0")
-  def valueOf(d: Double, mc: MathContext): BigDecimal = apply(BigDec valueOf d, mc)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
    *  valueOf constructor.
    *
    *  @param  x the specified `Long` value
    *  @return the constructed `BigDecimal`
    */
   def valueOf(x: Long): BigDecimal = apply(x)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor.  This is unlikely to do what you want;
-   *  use `valueOf(f.toDouble)` or `decimal(f)` instead.
-   */
-  @deprecated("Float arguments to valueOf may not do what you wish. Use decimal or valueOf(f.toDouble).", "2.11.0")
-  def valueOf(f: Float): BigDecimal = valueOf(f.toDouble)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor.  This is unlikely to do what you want;
-   *  use `valueOf(f.toDouble)` or `decimal(f)` instead.
-   */
-  @deprecated("Float arguments to valueOf may not do what you wish. Use decimal or valueOf(f.toDouble).", "2.11.0")
-  def valueOf(f: Float, mc: MathContext): BigDecimal = valueOf(f.toDouble, mc)
-
 
   /** Constructs a `BigDecimal` whose value is equal to that of the
    *  specified `Integer` value.
@@ -259,12 +230,6 @@ object BigDecimal {
    */
   def apply(d: Double, mc: MathContext): BigDecimal = decimal(d, mc)
 
-  @deprecated("The default conversion from Float may not do what you want. Use BigDecimal.decimal for a String representation, or explicitly convert the Float with .toDouble.", "2.11.0")
-  def apply(x: Float): BigDecimal = apply(x.toDouble)
-
-  @deprecated("The default conversion from Float may not do what you want. Use BigDecimal.decimal for a String representation, or explicitly convert the Float with .toDouble.", "2.11.0")
-  def apply(x: Float, mc: MathContext): BigDecimal = apply(x.toDouble, mc)
-
   /** Translates a character array representation of a `BigDecimal`
    *  into a `BigDecimal`.
    */
@@ -327,10 +292,7 @@ object BigDecimal {
     new BigDecimal(new BigDec(unscaledVal.bigInteger, scale, mc), mc)
 
   /** Constructs a `BigDecimal` from a `java.math.BigDecimal`. */
-  def apply(bd: BigDec): BigDecimal = apply(bd, defaultMathContext)
-
-  @deprecated("This method appears to round a java.math.BigDecimal but actually doesn't. Use new BigDecimal(bd, mc) instead for no rounding, or BigDecimal.decimal(bd, mc) for rounding.", "2.11.0")
-  def apply(bd: BigDec, mc: MathContext): BigDecimal = new BigDecimal(bd, mc)
+  def apply(bd: BigDec): BigDecimal = new BigDecimal(bd, defaultMathContext)
 
   /** Implicit conversion from `Int` to `BigDecimal`. */
   implicit def int2bigDecimal(i: Int): BigDecimal = apply(i)
@@ -463,24 +425,6 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   override def isValidChar  = isValidInt && toIntExact >= Char.MinValue && toIntExact <= Char.MaxValue
   override def isValidInt   = noArithmeticException(toIntExact)
   def isValidLong  = noArithmeticException(toLongExact)
-  /** Tests whether the value is a valid Float.  "Valid" has several distinct meanings, however.  Use
-    * `isExactFloat`, `isBinaryFloat`, or `isDecimalFloat`, depending on the intended meaning.
-    * By default, `decimal` creation is used, so `isDecimalFloat` is probably what you want.
-    */
-  @deprecated("What constitutes validity is unclear. Use `isExactFloat`, `isBinaryFloat`, or `isDecimalFloat` instead.", "2.11.0")
-  def isValidFloat = {
-    val f = toFloat
-    !f.isInfinity && bigDecimal.compareTo(new BigDec(f.toDouble)) == 0
-  }
-  /** Tests whether the value is a valid Double.  "Valid" has several distinct meanings, however.  Use
-    * `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble`, depending on the intended meaning.
-    * By default, `decimal` creation is used, so `isDecimalDouble` is probably what you want.
-    */
-  @deprecated("Validity has distinct meanings. Use `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble` instead.", "2.11.0")
-  def isValidDouble = {
-    val d = toDouble
-    !d.isInfinity && bigDecimal.compareTo(new BigDec(d)) == 0
-  }
 
   /** Tests whether this `BigDecimal` holds the decimal representation of a `Double`. */
   def isDecimalDouble = {

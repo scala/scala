@@ -187,7 +187,7 @@ class PromiseTests extends MinimalScalaTest {
       f {
         (future, result) =>
         val p = Promise[Any]()
-        future.onSuccess { case x => p.success(x) }
+        future foreach { x => p.success(x) }
         Await.result(p.future, defaultTimeout) mustBe (result)
       }
     }
@@ -283,7 +283,7 @@ class PromiseTests extends MinimalScalaTest {
       f {
         (future, message) =>
         val p = Promise[Any]()
-        future.onFailure { case _ => p.success(message) }
+        future.onComplete { case Failure(_) => p.success(message); case _ => }
         Await.result(p.future, defaultTimeout) mustBe (message)
       }
     }

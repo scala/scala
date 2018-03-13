@@ -366,7 +366,6 @@ trait Definitions extends api.StandardDefinitions {
          def Symbol_apply       = getMemberMethod(SymbolModule, nme.apply)
 
     // classes with special meanings
-    lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
     lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
     lazy val DelayedInitClass           = requiredClass[scala.DelayedInit]
       def delayedInitMethod = getMemberMethod(DelayedInitClass, nme.delayedInit)
@@ -1449,11 +1448,9 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runDefinitions` */
     final class RunDefinitions {
-      lazy val StringAdd_+ = getMemberMethod(StringAddClass, nme.PLUS)
-
-      // The given symbol represents either String.+ or StringAdd.+
+      // The given symbol represents String.+
       // TODO: this misses Predef.any2stringadd
-      def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
+      def isStringAddition(sym: Symbol) = sym == String_+
 
       lazy val StringContext_f = getMemberMethod(StringContextClass, nme.f)
       lazy val StringContext_s = getMemberMethod(StringContextClass, nme.s)

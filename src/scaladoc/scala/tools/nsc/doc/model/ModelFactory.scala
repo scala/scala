@@ -995,10 +995,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (!sym.isModule || sym.moduleClass.isInitialized) &&
     // documenting only public and protected members
     localShouldDocument(sym) &&
-    // Only this class's constructors are part of its members, inherited constructors are not.
-    (!sym.isConstructor || sym.owner == inTpl.sym) &&
-    // If the @bridge annotation overrides a normal member, show it
-    !isPureBridge(sym)
+    // Only this class's constructors are part of its members; inherited constructors are not.
+    (!sym.isConstructor || sym.owner == inTpl.sym)
   }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean =
@@ -1007,9 +1005,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   def localShouldDocument(aSym: Symbol): Boolean =
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
-
-  /** Filter '@bridge' methods only if *they don't override non-bridge methods*. See scala/bug#5373 for details */
-  def isPureBridge(sym: Symbol) = sym.isBridge && sym.allOverriddenSymbols.forall(_.isBridge)
 
   // the classes that are excluded from the index should also be excluded from the diagrams
   def classExcluded(clazz: TemplateEntity): Boolean = settings.hardcoded.isExcluded(clazz.qualifiedName)
