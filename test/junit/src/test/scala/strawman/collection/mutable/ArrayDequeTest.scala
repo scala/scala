@@ -4,6 +4,7 @@ package collection.mutable
 import strawman.collection.immutable.List
 
 import org.junit.Test
+import org.junit.Assert._
 
 class ArrayDequeTest {
 
@@ -50,5 +51,19 @@ class ArrayDequeTest {
       assert(buffer.slice(i, j) == buffer2.slice(i, j))
       if (i > 0 && j > 0) assert(List.from(buffer.sliding(i, j)) == List.from(buffer2.sliding(i, j)))
     }
+  }
+
+  @Test
+  def queueBounds: Unit = {
+    import strawman.collection.mutable.Queue
+
+    val xs = Queue.empty[Int]
+    assertEquals("Queue()", xs.toString)
+
+    val a = xs.toArray
+    assertEquals(0, a.length)
+
+    xs.insert(0, 0)
+    assertEquals(Queue(0), xs)
   }
 }
