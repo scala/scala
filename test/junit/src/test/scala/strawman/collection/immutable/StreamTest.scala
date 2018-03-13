@@ -134,7 +134,7 @@ class StreamTest {
     assertEquals(3, i)
     // it's possible to implement `force` with incorrect string representation
     // (to forget about `tlEvaluated` update)
-    assertEquals( "1 #:: 2 #:: 3 #:: Empty", xs.toString())
+    assertEquals( "Stream(1, 2, 3)", xs.toString())
   }
 
   val cycle1: Stream[Int] = 1 #:: 2 #:: cycle1
@@ -149,5 +149,68 @@ class StreamTest {
     assert(!Stream(1).sameElements(Stream(2)))
     assert(!cycle1.sameElements(cycle2))
     assert(!cycle1.sameElements(cycle2))
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailBothAreNotEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    assertEquals("Stream(1, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenOnlyHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    assertEquals("Stream(1, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    l.tail
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    l.tail.head
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.tail
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhedHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.tail.head
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamIsForcedToList: Unit = {
+    val l = 1 #:: 2 #:: 3 #:: 4 #:: Stream.empty
+    l.toList
+    assertEquals("Stream(1, 2, 3, 4)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamIsEmpty: Unit = {
+    val l = Stream.empty
+    assertEquals("Stream()", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamHasCyclicReference: Unit = {
+    lazy val cyc: Stream[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
+    cyc.tail.tail.tail.tail
+    assertEquals("Stream(1, 2, 3, 4, ...)", cyc.toString)
   }
 }

@@ -133,6 +133,106 @@ class LazyListTest {
     assertEquals(0, i)
   }
 
+  @Test
+  def testEmptyLazyListToString(): Unit = {
+    assertEquals("LazyList()", LazyList.Empty.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenHeadAndTailBothAreNotEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    assertEquals("LazyList(_, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenOnlyHeadIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.head
+    assertEquals("LazyList(1, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenHeadAndTailIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.head
+    l.tail
+    assertEquals("LazyList(1, _, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenHeadAndTailHeadIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.head
+    l.tail.head
+    assertEquals("LazyList(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.tail
+    assertEquals("LazyList(_, _, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhendHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.tail.head
+    assertEquals("LazyList(_, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.tail.tail
+    assertEquals("LazyList(_, _, _, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailHeadIsEvaluated = {
+    val l = LazyList(1, 2, 3, 4, 5)
+    l.tail.tail.head
+    assertEquals("LazyList(_, _, 3, ?)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenLazyListIsForcedToList: Unit = {
+    val l = 1 #:: 2 #:: 3 #:: 4 #:: LazyList.Empty
+    l.toList
+    assertEquals("LazyList(1, 2, 3, 4)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenStreamIsEmpty: Unit = {
+    val l = LazyList.empty
+    assertEquals("LazyList()", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringForSingleElementList: Unit = {
+    val l = LazyList(1)
+    l.force
+    assertEquals("LazyList(1)", l.toString)
+  }
+
+  @Test
+  def testLazyListToStringWhenLazyListHasCyclicReference: Unit = {
+    lazy val cyc: LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
+    assertEquals("LazyList(_, ?)", cyc.toString)
+    cyc.head
+    assertEquals("LazyList(1, ?)", cyc.toString)
+    cyc.tail
+    assertEquals("LazyList(1, _, ?)", cyc.toString)
+    cyc.tail.head
+    assertEquals("LazyList(1, 2, ?)", cyc.toString)
+    cyc.tail.tail.head
+    assertEquals("LazyList(1, 2, 3, ?)", cyc.toString)
+    cyc.tail.tail.tail.head
+    assertEquals("LazyList(1, 2, 3, 4, ?)", cyc.toString)
+    cyc.tail.tail.tail.tail.head
+    assertEquals("LazyList(1, 2, 3, 4, ...)", cyc.toString)
+  }
+
   def hasCorrectDrop(): Unit = {
     assertEquals(LazyList(), LazyList().drop(2))
     assertEquals(LazyList(), LazyList(1).drop(2))
@@ -151,7 +251,7 @@ class LazyListTest {
     assertEquals(3, i)
     // it's possible to implement `force` with incorrect string representation
     // (to forget about `tlEvaluated` update)
-    assertEquals( "1 #:: 2 #:: 3 #:: Empty", xs.toString())
+    assertEquals( "LazyList(1, 2, 3)", xs.toString())
   }
 
   val cycle1: LazyList[Int] = 1 #:: 2 #:: cycle1
@@ -167,6 +267,13 @@ class LazyListTest {
     assert(cycle1.sameElements(cycle1))
     assert(!cycle1.sameElements(cycle2))
     assert(!cycle1.sameElements(cycle2))
+  }
+
+  @Test
+  def toStringIsStackSafe(): Unit = {
+    val l = LazyList.from(Range.inclusive(1, 10000))
+    l.foreach(_ => ())
+    val s = l.toString // No exception thrown
   }
 
 }
