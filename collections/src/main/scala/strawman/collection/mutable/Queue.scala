@@ -9,7 +9,7 @@
 package strawman.collection
 package mutable
 
-import scala.{Array, AnyRef, Boolean, Int, Option, None, Some, SerialVersionUID, Serializable}
+import scala.{Array, AnyRef, Boolean, Int, Option, None, Some, SerialVersionUID, Serializable, `inline`, deprecated}
 
 import strawman.collection.toNewSeq
 
@@ -98,6 +98,14 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @return
     */
   def dequeueAll(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
+
+  /** Returns the first element in the queue, or throws an error if there
+    *  is no element contained in the queue.
+    *
+    *  @return the first element.
+    */
+  @deprecated("Use Queue.head instead of Queue.front", "2.13.0")
+  @`inline` final def front: A = head
 
   override def clone(): Queue[A] = {
     val bf = newSpecificBuilder()

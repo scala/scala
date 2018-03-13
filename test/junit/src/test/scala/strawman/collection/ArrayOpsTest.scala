@@ -1,12 +1,12 @@
 package strawman.collection
 
-import org.junit.Assert.{ assertArrayEquals,assertTrue }
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.Predef.{ refArrayOps => _, genericArrayOps => _, genericWrapArray => _, wrapRefArray => _, _ }
-import strawman.collection.arrayToArrayOps
+import scala.Predef.{ $conforms, classOf }
+import strawman.collection.immutable.List
 
 @RunWith(classOf[JUnit4])
 class ArrayOpsTest {
@@ -28,5 +28,11 @@ class ArrayOpsTest {
     assertArrayEquals(Array(1, 2, 3), a1)
     assertArrayEquals(Array('a', 'b', 'c'), a2)
     assertTrue(Array(true, false, true).sameElements(a3))
+  }
+
+  @Test
+  def reverseIterator: Unit = {
+    val a = Array(1,2,3)
+    assertEquals(List(3,2,1), a.reverseIterator.toList)
   }
 }
