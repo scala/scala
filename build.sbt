@@ -88,7 +88,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
   },
   credentials ++= {
     val file = Path.userHome / ".credentials"
-    if (file.exists) List(Credentials(file))
+    if (file.exists && !file.isDirectory) List(Credentials(file))
     else Nil
   },
   // Add a "default" Ivy configuration because sbt expects the Scala distribution to have one:
