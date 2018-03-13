@@ -199,7 +199,12 @@ buildXML() {
   else
     update scala scala-xml "$XML_REF" && gfxd
     doc="$(docTask $XML_BUILT)"
-    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean "$doc" 'set version := "'$XML_VER'"' test "${buildTasks[@]}"
+
+    # Exclude Scala JS https://github.com/scala/scala/pull/6341#issuecomment-372051392
+    buildTasksXml=("${buildTasks[@]/#/xmlJVM\/}")
+    if [[ "$doc" != "" ]]; then docXml="xmlJVM/$doc"; fi
+
+    sbtBuild 'set every version := "'$XML_VER'-DOC"' $clean "$docXml" 'set every version := "'$XML_VER'"' xmlJVM/test "${buildTasksXml[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
   fi
 }
