@@ -9,11 +9,11 @@ import org.junit.runners.JUnit4
 import scala.tools.testing.TempDir
 
 @RunWith(classOf[JUnit4])
-class AbstractFileSpec {
+class AbstractFileTest {
   @Test
   def handleURLEscapedCharacters(): Unit = {
     val tempDir = TempDir.createTempDir().toPath
-    val scalaPath = tempDir.resolve("this is a file?.scala")
+    val scalaPath = tempDir.resolve("this is a file$.scala")
     Files.createFile(scalaPath)
     val scalaFile = scalaPath.toFile
 
