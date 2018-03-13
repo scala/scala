@@ -3637,12 +3637,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 }
 
                 // Inline RHS of ValDef for right-associative by-value operator desugaring
-                val args2 = (args1, mt.params) match {
+                val (args2, pos2) = (args1, mt.params) match {
                   case ((ident: Ident) :: Nil, param :: Nil) if param.isByNameParam && rightAssocValDefs.contains(ident.symbol) =>
                     inlinedRightAssocValDefs += ident.symbol
                     val rhs = rightAssocValDefs.remove(ident.symbol).get
-                    rhs.changeOwner(ident.symbol -> context.owner) :: Nil
-                  case _ => args1
+                    (rhs.changeOwner(ident.symbol -> context.owner) :: Nil, wrappingPos(tree :: rhs :: Nil))
+                  case _ => (args1, tree.pos)
                 }
 
                 /*
@@ -3660,7 +3660,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply && isSelectionFromListModule(fun)))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
-                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe))
+                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe) setPos pos2)
               }
               checkDead.updateExpr(fun) {
                 handleMonomorphicCall

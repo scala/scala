@@ -828,12 +828,17 @@ self =>
       require(isExpr || targs.isEmpty || targs.exists(_.isErroneous),
         s"Incompatible args to makeBinop: !isExpr but targs=$targs")
 
+      val rightAssoc = !nme.isLeftAssoc(op)
+
       def mkSelection(t: Tree) = {
-        val pos = opPos union t.pos
+        val pos = (opPos union t.pos) makeTransparentIf rightAssoc
         val sel = atPos(pos)(Select(stripParens(t), op.encode))
         if (targs.isEmpty) sel
-        else atPos(pos union targs.last.pos withPoint pos.point) {
-          TypeApply(sel, targs)
+        else {
+          /* if it's right-associative, `targs` are between `op` and `t` so make the pos transparent */
+          atPos((pos union targs.last.pos) makeTransparentIf rightAssoc) {
+            TypeApply(sel, targs)
+          }
         }
       }
       def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
@@ -842,13 +847,13 @@ self =>
         case _            => right :: Nil
       }
       if (isExpr) {
-        if (nme.isLeftAssoc(op)) {
-          Apply(mkSelection(left), arguments)
-        } else {
+        if (rightAssoc) {
           val x = freshTermName(nme.RIGHT_ASSOC_OP_PREFIX)
           Block(
             List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
             Apply(mkSelection(right), List(Ident(x))))
+        } else {
+          Apply(mkSelection(left), arguments)
         }
       } else {
         Apply(Ident(op.encode), stripParens(left) :: arguments)

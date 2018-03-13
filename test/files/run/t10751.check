@@ -1,0 +1,16 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+[0:56]package [0:0]<empty> {
+  [0:56]object Test extends [12:56][56]scala.AnyRef {
+    [56]def <init>(): [12]Test.type = [56]{
+      [56][56][56]Test.super.<init>();
+      [12]()
+    };
+    [20:29]{
+      [20:29]<22:29><22:29>C.foo_:[[22]Nothing]([20:21]1)
+    };
+    [36:50]{
+      [36:50]<38:50><38:50>C.foo_:[[44:47]<type: [44:47]scala.Any>]([36:37]1)
+    }
+  }
+}
+
