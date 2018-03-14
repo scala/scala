@@ -154,4 +154,10 @@ class BuildFromTest {
   implicitly[BuildFrom[BitSet, Int, BitSet]]
   implicitly[BuildFrom[immutable.BitSet, Int, immutable.BitSet]]
   implicitly[BuildFrom[mutable.BitSet, Int, mutable.BitSet]]
+
+  // Check that collection companions can implicitly be converted to a `BuildFrom` instance
+  Iterable: BuildFrom[_, Int, Iterable[Int]]
+  Map: BuildFrom[_, (Int, String), Map[Int, String]]
+  SortedSet: BuildFrom[_, Int, SortedSet[Int]]
+  SortedMap: BuildFrom[_, (Int, String), SortedMap[Int, String]]
 }
