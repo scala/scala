@@ -7,7 +7,7 @@
     };
     [17:30]private[this] val d: [21]D = [25:30][25:30][25:30]new [29:30]D();
     [21]<stable> <accessor> def d: [21]D = [21][21]X.this.d;
-    [37:38][37:38][37]X.this.d.selectDynamic(<39:44>"field")
+    [37:44][37:38][37]X.this.d.selectDynamic(<39:44>"field")
   }
 }
 

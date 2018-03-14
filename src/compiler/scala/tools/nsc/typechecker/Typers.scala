@@ -4258,12 +4258,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _                              => t.children.flatMap(findSelection).headOption
           }
           findSelection(cxTree) map { case (opName, treeInfo.Applied(_, targs, _)) =>
-            val fun = gen.mkTypeApply(Select(qual, opName), targs)
+            val fun = atPos(wrappingPos(qual :: targs)) {
+              gen.mkTypeApply(Select(qual, opName) setPos qual.pos, targs)
+            }
             if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
             val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
              Literal(Constant(name.decode))
             }
-            markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+            markDynamicRewrite {
+              atPos(wrappingPos(qual :: fun :: nameStringLit :: Nil)) {
+                Apply(fun, List(nameStringLit))
+              }
+            }
           } getOrElse {
             // While there may be an error in the found tree itself, it should not be possible to *not find* it at all.
             devWarning(s"Tree $tree not found in the context $cxTree while trying to do a dynamic application")
