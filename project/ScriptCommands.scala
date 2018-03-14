@@ -60,14 +60,16 @@ object ScriptCommands {
 
   /** Set up the environment for building quick in `validate/bootstrap`. The arguments are:
     * - Repository URL for publishing
-    * - Version number to publish */
+    * - Version number to publish
+    * Note that the artifacts produced here are consumed by scala-dist, so the docs have to be built.
+    */
   def setupBootstrapQuick = setup("setupBootstrapQuick") { case Seq(url, ver) =>
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
+    ) ++ publishTarget(url) ++ enableOptimizer
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:
