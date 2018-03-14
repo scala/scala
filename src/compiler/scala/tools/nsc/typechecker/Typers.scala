@@ -2947,7 +2947,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _                                       => (vparams map (if (pt == ErrorType) (_ => ErrorType) else (_ => NoType)), WildcardType)
         }
 
-      if (!FunctionSymbol.exists) MaxFunctionArityError(fun)
+      if (!FunctionSymbol.exists) MaxFunctionArityError(fun, numVparams)
       else if (argpts.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argpts)
       else {
         val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22

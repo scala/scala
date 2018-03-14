@@ -1,7 +1,7 @@
-t7299.scala:4: error: functions may not have more than 22 parameters
+t7299.scala:4: error: functions may not have more than 22 parameters, but 23 given
    val eta1 = f _
               ^
-t7299.scala:5: error: functions may not have more than 22 parameters
+t7299.scala:5: error: functions may not have more than 22 parameters, but 23 given
    val eta2 = g[Any] _
                ^
 two errors found
