@@ -799,40 +799,42 @@ self =>
     def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 
     /** Create a tuple type Tree. If the arity is not supported, a syntax error is emitted. */
-    def makeSafeTupleType(elems: List[Tree], offset: Offset) = {
-      if (checkTupleSize(elems, offset)) makeTupleType(elems)
+    def makeSafeTupleType(elems: List[Tree]) = {
+      if (checkTupleSize(elems)) makeTupleType(elems)
       else makeTupleType(Nil) // create a dummy node; makeTupleType(elems) would fail
     }
 
     /** Create a tuple term Tree. If the arity is not supported, a syntax error is emitted. */
-    def makeSafeTupleTerm(elems: List[Tree], offset: Offset) = {
-      checkTupleSize(elems, offset)
+    def makeSafeTupleTerm(elems: List[Tree]) = {
+      checkTupleSize(elems)
       makeTupleTerm(elems)
     }
 
     /** Create a function Tree. If the arity is not supported, a syntax error is emitted. */
-    def makeSafeFunctionType(argtpes: List[Tree], offset: Offset, restpe: Tree) = {
-      if (checkFunctionArity(argtpes, offset)) makeFunctionTypeTree(argtpes, restpe)
+    def makeSafeFunctionType(argtpes: List[Tree], restpe: Tree) = {
+      if (checkFunctionArity(argtpes)) makeFunctionTypeTree(argtpes, restpe)
       else makeFunctionTypeTree(Nil, restpe) // create a dummy node
     }
 
-    private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
+    private[this] def checkTupleSize(elems: List[Tree]): Boolean =
       elems.lengthCompare(definitions.MaxTupleArity) <= 0 || {
+        val firstInvalidElem = elems(definitions.MaxTupleArity)
         val msg = s"tuples may not have more than ${definitions.MaxFunctionArity} elements, but ${elems.length} given"
-        syntaxError(offset, msg, skipIt = false)
+        syntaxError(firstInvalidElem.pos, msg, skipIt = false)
         false
       }
 
-    private[this] def checkFunctionArity(argtpes: List[Tree], offset: Offset): Boolean =
+    private[this] def checkFunctionArity(argtpes: List[Tree]): Boolean =
       argtpes.lengthCompare(definitions.MaxFunctionArity) <= 0 || {
+        val firstInvalidArg = argtpes(definitions.MaxFunctionArity)
         val msg = s"function values may not have more than ${definitions.MaxFunctionArity} parameters, but ${argtpes.length} given"
-        syntaxError(offset, msg, skipIt = false)
+        syntaxError(firstInvalidArg.pos, msg, skipIt = false)
         false
       }
 
     /** Strip the artificial `Parens` node to create a tuple term Tree. */
     def stripParens(t: Tree) = t match {
-      case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts, t.pos.point) }
+      case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts) }
       case _ => t
     }
 
@@ -978,10 +980,10 @@ self =>
           val ts = functionTypes()
           accept(RPAREN)
           if (in.token == ARROW)
-            atPos(start, in.skipToken()) { makeSafeFunctionType(ts, start, typ()) }
+            atPos(start, in.skipToken()) { makeSafeFunctionType(ts, typ()) }
           else {
             ts foreach checkNotByNameOrVarargs
-            val tuple = atPos(start) { makeSafeTupleType(ts, start) }
+            val tuple = atPos(start) { makeSafeTupleType(ts) }
             infixTypeRest(
               compoundTypeRest(
                 annotTypeRest(
@@ -1056,7 +1058,7 @@ self =>
         } else {
           val start = in.offset
           simpleTypeRest(in.token match {
-            case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
+            case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types())))
             case USCORE   => wildcardType(in.skipToken())
             case _        =>
               path(thisOK = false, typeOK = true) match {
