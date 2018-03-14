@@ -77,15 +77,13 @@ object ScriptCommands {
     * - Version number to publish
     * All artifacts are published to Sonatype. */
   def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(url, ver) =>
-    // Define a copy of the setting key here in case the plugin is not part of the build
-    val pgpPassphrase = SettingKey[Option[Array[Char]]]("pgp-passphrase", "The passphrase associated with the secret used to sign artifacts.", KeyRanks.BSetting)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       publishTo in Global := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-      credentials in Global += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS")),
-      pgpPassphrase in Global := Some(Array.empty)
+      credentials in Global += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS"))
+      // pgpSigningKey and pgpPassphrase are set externally by travis / the bootstrap script, as the sbt-pgp plugin is not enabled by default
     ) ++ enableOptimizer
   }
 
