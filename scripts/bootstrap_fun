@@ -315,9 +315,9 @@ publishSonatype() {
       --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
       'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
       'set pgpPassphrase in Global := Some(Array.empty)' \
+      "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
       $publishSonatypeTaskCore
   travis_fold_end sona
 
