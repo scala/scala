@@ -4736,7 +4736,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val header = f"${e.errMsg}%n  Expression does not convert to assignment because:%n    "
               val expansion = f"%n    expansion: ${show(convo)}"
               NormalTypeError(tree, err.errors.flatMap(_.errMsg.lines.toList).mkString(header, f"%n    ", expansion))
@@ -4744,7 +4744,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         def advice2(errors: List[AbsTypeError]): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val msg = f"${e.errMsg}%n  Expression does not convert to assignment because receiver is not assignable."
               NormalTypeError(tree, msg)
             } else e
