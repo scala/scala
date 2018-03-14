@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{AnyRef, Array, Boolean, Int, SerialVersionUID, Serializable}
+import scala.{AnyRef, Array, Boolean, Int, SerialVersionUID, Serializable, `inline`}
 import strawman.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps, toNewSeq}
 
 /** A stack implements a data structure which allows to store and retrieve
@@ -78,6 +78,15 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @return The removed elements
     */
   def popWhile(f: A => Boolean): strawman.collection.Seq[A] = removeLastWhile(f)
+
+  /** Returns the top element of the stack. This method will not remove
+    *  the element from the stack. An error is signaled if there is no
+    *  element on the stack.
+    *
+    *  @throws java.util.NoSuchElementException
+    *  @return the top element
+    */
+  @`inline` final def top: A = last
 
   override def clone(): Stack[A] = {
     val bf = newSpecificBuilder()

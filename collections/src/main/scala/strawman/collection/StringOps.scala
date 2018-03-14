@@ -20,7 +20,7 @@ object StringOps {
 
 import StringOps._
 
-final class StringOps(val s: String)
+final class StringOps(private val s: String)
   extends AnyVal
     with IterableOnce[Char]
     with collection.IndexedSeqOps[Char, immutable.IndexedSeq, String]

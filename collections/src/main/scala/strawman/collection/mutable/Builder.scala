@@ -451,3 +451,8 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
    */
   def lastIndexOf(str: String, fromIndex: Int): Int = sb.lastIndexOf(str, fromIndex)
 }
+
+object StringBuilder {
+  @deprecated("Use `new StringBuilder()` instead of `StringBuilder.newBuilder`", "2.13.0")
+  def newBuilder = new StringBuilder
+}

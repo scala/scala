@@ -97,14 +97,13 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @param f   the predicate used for choosing elements
     *  @return
     */
-  def dequeueAll(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
+  def dequeueAll(f: A => Boolean): strawman.collection.immutable.Seq[A] = removeHeadWhile(f)
 
   /** Returns the first element in the queue, or throws an error if there
     *  is no element contained in the queue.
     *
     *  @return the first element.
     */
-  @deprecated("Use Queue.head instead of Queue.front", "2.13.0")
   @`inline` final def front: A = head
 
   override def clone(): Queue[A] = {

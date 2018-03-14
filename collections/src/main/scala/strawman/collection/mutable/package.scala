@@ -11,6 +11,10 @@ package object mutable {
   type Traversable[X] = Iterable[X]
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
   val Traversable = Iterable
+  @deprecated("Use Stack instead of ArrayStack; it now uses an array-based implementation", "2.13.0")
+  type ArrayStack[X] = Stack[X]
+  @deprecated("Use Stack instead of ArrayStack; it now uses an array-based implementation", "2.13.0")
+  val ArrayStack = Stack
 
   @deprecated("mutable.LinearSeq has been removed; use LinearSeq with mutable.Seq instead", "2.13.0")
   type LinearSeq[X] = Seq[X] with strawman.collection.LinearSeq[X]
