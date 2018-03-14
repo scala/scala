@@ -429,7 +429,7 @@ trait ContextErrors {
 
       //typedFunction
       def MaxFunctionArityError(fun: Tree) = {
-        issueNormalTypeError(fun, "implementation restricts functions to " + definitions.MaxFunctionArity + " parameters")
+        issueNormalTypeError(fun, s"functions may not have more than ${definitions.MaxFunctionArity} parameters")
         setError(fun)
       }
 
