@@ -219,9 +219,13 @@ sbtResolve() {
 }
 
 clearIvyCache() {
-  rm -rf $IVY2_DIR/cache/org.scala-lang
-  if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rf; fi
-  if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rf; fi
+  travis_fold_start clearIvy "Clearing ivy cache"
+  rm -fv $IVY2_DIR/exclude_classifiers $IVY2_DIR/exclude_classifiers.lock
+  rm -rfv $IVY2_DIR/cache/org.scala-lang $IVY2_DIR/cache/org.scala-lang.modules
+  rm -rfv $IVY2_DIR/local/org.scala-lang $IVY2_DIR/local/org.scala-lang.modules
+  if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
+  if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
+  travis_fold_end clearIvy
 }
 
 #### travis

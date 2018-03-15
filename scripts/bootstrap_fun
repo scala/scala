@@ -310,12 +310,12 @@ testStability() {
 # publishes quick to sonatype, then builds modules again (those for which version numbers were provided),
 # and publishes those to sonatype as well. finally, the staging repos are closed.
 publishSonatype() {
-  travis_fold_start sona "Publishing core to sonatype"
   cd $WORKSPACE
 
   # Make sure that "quick" is downloaded when building the modules
   clearIvyCache
 
+  travis_fold_start sona "Publishing core to sonatype"
   # Stage to sonatype. No `clean`, just package and publish the `quick` build.
   $SBT_CMD $sbtArgs \
       --warn \
