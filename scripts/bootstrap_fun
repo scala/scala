@@ -244,7 +244,7 @@ buildStarr() {
     cd $STARR_DIR
     git co $STARR_REF
     travis_fold_start starr "Building starr"
-    $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
+    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
     travis_fold_end starr
   )
 }
@@ -261,7 +261,7 @@ buildLocker() {
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
 
   travis_fold_start locker "Building locker"
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
   travis_fold_end locker
 }
 
@@ -278,7 +278,6 @@ buildQuick() {
 
   travis_fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
@@ -294,7 +293,6 @@ testStability() {
   mv build/quick quick1
   rm -rf build/
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
@@ -318,7 +316,6 @@ publishSonatype() {
   travis_fold_start sona "Publishing core to sonatype"
   # Stage to sonatype. No `clean`, just package and publish the `quick` build.
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
