@@ -19,7 +19,7 @@ import scala.util.matching.Regex
  *
  *  Each call to a `Value` method adds a new unique value to the enumeration.
  *  To be accessible, these values are usually defined as `val` members of
- *  the evaluation.
+ *  the enumeration.
  *
  *  All values in an enumeration share a common, unique type defined as the
  *  `Value` type member of the enumeration (`Value` selected on the stable
