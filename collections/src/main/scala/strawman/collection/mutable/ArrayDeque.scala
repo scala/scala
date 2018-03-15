@@ -330,6 +330,19 @@ class ArrayDeque[A] protected (
   }
 
   /**
+    * Remove all elements from this collection and return the elements in reverse while emptying this data structure
+    * @return
+    */
+  def removeAllReverse(): strawman.collection.immutable.Seq[A] = {
+    val elems = strawman.collection.immutable.Seq.newBuilder[A]()
+    elems.sizeHint(length)
+    while(nonEmpty) {
+      elems += removeLastAssumingNonEmpty()
+    }
+    elems.result()
+  }
+
+  /**
     * Returns and removes all elements from the left of this queue which satisfy the given predicate
     *
     *  @param f   the predicate used for choosing elements
