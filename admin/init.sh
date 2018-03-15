@@ -22,4 +22,4 @@ gpg --list-secret-keys
 mkdir -p ~/.sbt/0.13/plugins
 cp files/gpg.sbt ~/.sbt/0.13/plugins/
 
-export SBT_CMD=$(which sbt)
+export sbtCmd=$(which sbt)

@@ -6,6 +6,9 @@ set -e
 
 WORKSPACE="${WORKSPACE-`pwd`}"
 
+# On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On travis, it's ~/.ivy2.
+IVY2_DIR="$WORKSPACE/.ivy2"
+
 # Known problems : does not fare well with interrupted, partial
 # compilations. We should perhaps have a multi-dependency version
 # of do_i_have below
@@ -16,15 +19,13 @@ mkdir -p "$LOGGINGDIR"
 rm -rf "$WORKSPACE/resolutionScratch_"
 mkdir -p "$WORKSPACE/resolutionScratch_"
 
-# TODO: do we need to nuke the cache on travis?
-# rm -rf $WORKSPACE/.ivy2/cache/org.scala-lang
-
 SBT_CMD=${sbtCmd-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
+# only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
 
@@ -209,6 +210,12 @@ sbtResolve() {
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
       'show update'
   travis_fold_end resolve
+}
+
+clearIvyCache() {
+  rm -rf $IVY2_DIR/cache/org.scala-lang
+  if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rf; fi
+  if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rf; fi
 }
 
 #### travis
