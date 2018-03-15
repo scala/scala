@@ -83,6 +83,8 @@ buildModules() {
   buildPartest
 
   constructUpdatedModuleVersions
+
+  cd $WORKSPACE
 }
 
 # build/test/publish scala core modules to sonatype (this will start a new staging repo)
@@ -96,6 +98,8 @@ buildPublishedModules() {
   buildTasks=($publishSonatypeTaskModules)
   buildXML
   buildPartest
+
+  cd $WORKSPACE
 }
 
 
@@ -303,16 +307,16 @@ testStability() {
   travis_fold_end stab
 }
 
-# assumes we just bootstrapped, and current directory is $WORKSPACE
-# publishes locker to sonatype, then builds modules again (those for which version numbers were provided),
-# and publishes those to sonatype as well
-# finally, the staging repos are closed
+# publishes quick to sonatype, then builds modules again (those for which version numbers were provided),
+# and publishes those to sonatype as well. finally, the staging repos are closed.
 publishSonatype() {
+  travis_fold_start sona "Publishing core to sonatype"
+  cd $WORKSPACE
+
   # Make sure that "quick" is downloaded when building the modules
   clearIvyCache
 
   # Stage to sonatype. No `clean`, just package and publish the `quick` build.
-  travis_fold_start sona "Publishing core to sonatype"
   $SBT_CMD $sbtArgs \
       --warn \
       -Dstarr.version=$SCALA_VER \
