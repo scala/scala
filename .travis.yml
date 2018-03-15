@@ -22,9 +22,13 @@ stages:
   - name: publish
     if: type != pull_request
 
-# buildQuick needs following env (is that propagated to stages?)
-# - PRIVATE_REPO_PASS, integrationRepoUrl,
-# computed: SBT_CMD sbtArgs SCALA_VER updatedModuleVersions
+# env available in each stage
+#  - by travis config (see below): secret env vars
+#  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
+#  - by `bootstrap_fun`: publishPrivateTask, ...
+# env computed in first stage, passed on to later stages with the `build/env` file
+#  - by `determineScalaVersion`: SCALA_VER, publishToSonatype
+#  - by `buildModules` / `constructUpdatedModuleVersions`: updatedModuleVersions
 jobs:
     include:
       - stage: build
@@ -37,6 +41,7 @@ jobs:
           - determineScalaVersion
           - deriveModuleVersions
           - removeExistingBuilds $integrationRepoUrl
+          - clearIvyCache
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
           - buildLocker
           - rm -rf build/ # ensure we resolve from artifactory

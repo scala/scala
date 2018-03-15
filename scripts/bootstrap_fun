@@ -308,8 +308,10 @@ testStability() {
 # and publishes those to sonatype as well
 # finally, the staging repos are closed
 publishSonatype() {
-  # stage to sonatype, along with all modules -Dmaven.version.suffix/-Dbuild.release not necessary,
-  # since we're just publishing an existing build
+  # Make sure that "quick" is downloaded when building the modules
+  clearIvyCache
+
+  # Stage to sonatype. No `clean`, just package and publish the `quick` build.
   travis_fold_start sona "Publishing core to sonatype"
   $SBT_CMD $sbtArgs \
       --warn \
@@ -321,6 +323,7 @@ publishSonatype() {
       $publishSonatypeTaskCore
   travis_fold_end sona
 
+  # Modules are re-built using quick (the first iteration was built with locker)
   buildPublishedModules
 
   open=$(st_stagingReposOpen)
