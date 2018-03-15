@@ -9,6 +9,11 @@ Implementation of the new collections of Scala 2.13.
 - [Dotty Issue](https://github.com/lampepfl/dotty/issues/818)
 - [Scala Center Proposal](https://github.com/scalacenter/advisoryboard/blob/master/proposals/007-collections.md)
 
+**Please note that we are currently in the process of moving the implementation to the
+[scala/scala](https://github.com/scala/scala) repository. If you wanted to contribute
+to the collections, you should wait for the move to be finished and then target
+your work to the [scala/scala](https://github.com/scala/scala) repository.**
+
 ## Current Status and Roadmap
 
 The new collections are available as a regular external library (see below usage
@@ -22,7 +27,7 @@ are available. If you see something missing, please
 The new collections will be part of the 2.13.0-M4 Scala distribution, where they will
 replace the standard collections.
 
-## Use it in your project
+## Use the last library release in your project
 
 ### Build setup
 
