@@ -1,5 +1,4 @@
-# This is for forcibly stopping the job from a subshell (see test
-# below).
+# This is for forcibly stopping the job from a subshell (see test below).
 trap "exit 1" TERM
 export TOP_PID=$$
 set -e
@@ -24,7 +23,7 @@ mkdir -p "$LOGGINGDIR"
 rm -rf "$WORKSPACE/resolutionScratch_"
 mkdir -p "$WORKSPACE/resolutionScratch_"
 
-SBT_CMD=${sbtCmd-sbt}
+SBT_CMD=${SBT_CMD-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
 
 # repo to publish builds
@@ -213,7 +212,7 @@ sbtResolve() {
   $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
     "$addIntegrationResolver" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
-      'show update'
+    "show update"
   cd $WORKSPACE
   travis_fold_end resolve
 }

@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/bin/bash -e
 
 sensitive() {
   perl -p -e 's/\$\{([^}]+)\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' < files/credentials-private-repo > ~/.credentials-private-repo
@@ -12,14 +11,9 @@ sensitive() {
 # don't let anything escape from the sensitive part (e.g. leak environment var by echoing to log on failure)
 sensitive >/dev/null 2>&1
 
-# pgp signing doesn't work without public key??
-gpg --keyserver pgp.mit.edu --recv-keys 0xa9052b1b6d92e560
-
 # just to verify
 gpg --list-keys
 gpg --list-secret-keys
 
 mkdir -p ~/.sbt/0.13/plugins
 cp files/gpg.sbt ~/.sbt/0.13/plugins/
-
-export sbtCmd=$(which sbt)

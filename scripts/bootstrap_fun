@@ -1,3 +1,71 @@
+# Bootstrap procedure
+#  - determine scala version
+#  - determine module versions
+#  - build minimal core (aka locker) of Scala, use the determined version number, publish to scala-integration
+#  - build those modules where a binary compatible version doesn't exist, publish to scala-integration
+#  - build Scala using the previously built core and modules, publish to scala-integration
+#  - run tests
+#  - for releases
+#    - stage Scala on sonatype
+#    - rebuild modules where no binary compatible version existed, stage them on sonatype
+#  - the Scala version is serialized to jenkins.properties, which is passed downstream to scala-release jobs
+
+
+# Specifying the Scala version:
+#  - To build a release (enables publishing to sonatype):
+#    - Specify SCALA_VER_BASE and optionally SCALA_VER_SUFFIX. The version is SCALA_VER=$SCALA_VER_BASE$SCALA_VER_SUFFIX.
+#    - After building a release, the jenkins job provides an updated versions.properties file as artifact.
+#      Put this file in the Scala repo and create a pull request, also update `baseVersion in Global` in build.sbt.
+#
+# - Otherwise, an integration build is performed:
+#    - version number is read from the build.sbt, extended with -[bin|pre]-$sha
+
+
+# Specifying module versions. We use release versions for modules.
+#  - Module versions are read from the versions.properties file.
+#  - Set <MODULE>_VER to override the default, e.g. XML_VER="1.0.4".
+#  - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
+
+
+# Modules are automatically built if necessary.
+#  - A module is built if it doesn't exist in the maven repository. Note that the lookup uses two versions:
+#    - The version of the module (see below how it's determined)
+#    - The binary version of of the SCALA_VER release that is being built
+#  - sbt computes the binary version when looking up / building modules (*). Examples:
+#    - 2.12.0-M1, 2.12.0-RC3: the full version is used
+#    - 2.12.0, 2.12.1-M1, 2.12.1-RC3, 2.12.1: the binary version 2.12 is used
+#
+#  - Example: assume that `scala-xml_2.11 % 1.0.3` and `scala-xml_2.12.0-M1 % 1.0.3` both exists
+#    - XML_VER=1.0.3 and SCALA_VER=2.11.7    => no rebuild (binary version remains 2.11)
+#    - XML_VER=1.0.3 and SCALA_VER=2.12.0-M2 => rebuild (new binary version 2.12.0-M2)
+#    - XML_VER=1.0.4 and SCALA_VER=2.11.7    => rebuild (new version for the module, not yet on maven)
+#      NOTE: this is not the recommended way of publishing a module. Instead, prefer to release `scala-xml_2.11 % 1.0.4`
+#            using the existing scala 2.11.6 compiler before releasing 2.11.7. Sometimes it's necessary though. One
+#            example was 2.11.1, which contained a fix in the backend (SerialVersionUID was ignored). All modules needed
+#            to be re-built using the 2.11.1 release, we could not use 2.11.0. We could also not release the modules
+#            after 2.11.1 was out, because that way the scala-library-all pom of 2.11.1 would depend on the old modules.
+#
+# (*) https://github.com/sbt/sbt/blob/v0.13.13/util/cross/src/main/input_sources/CrossVersionUtil.scala#L41
+
+
+# Binary incompatible changes in Modules: example with Scala 2.11 / 2.12 and scala-parser-combinators
+#  - The 1.0.x branch on scala-parser-combinators remains binary compatible with 1.0.0
+#  - Scala 2.11 will always use 1.0.x releases: we ship scala-parser-combinators with the distribution,
+#    so we cannot introduce incompatible changes in a minor release.
+#  - The master branch of scala-parser-combinators contains binary incompatible changes, versioned 1.1.x
+#  - Scala 2.12 will use 1.1.x releases
+#  - No changes to the build script required: just put the 1.1.x version number into versions.properties
+#
+# Note: It's still OK for a module to release a binary incompatible version to maven, for example
+# scala-parser-combinators_2.11 % 1.1.0. Users can depend on this in their sbt build. But for the
+# distribution (tar/zip archives, scala-library-all) we have to stay on the binary compatible version.
+
+
+# Credentials
+#  - `PRIVATE_REPO_PASS` password for `scala-ci` user on scala-ci.typesafe.com/artifactory
+#  - `SONA_USER` / `SONA_PASS` for sonatype
+
+
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
@@ -244,7 +312,7 @@ buildStarr() {
     cd $STARR_DIR
     git co $STARR_REF
     travis_fold_start starr "Building starr"
-    $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
+    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
     travis_fold_end starr
   )
 }
@@ -261,7 +329,7 @@ buildLocker() {
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
 
   travis_fold_start locker "Building locker"
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
   travis_fold_end locker
 }
 
@@ -278,7 +346,6 @@ buildQuick() {
 
   travis_fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
@@ -294,7 +361,6 @@ testStability() {
   mv build/quick quick1
   rm -rf build/
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
@@ -318,7 +384,6 @@ publishSonatype() {
   travis_fold_start sona "Publishing core to sonatype"
   # Stage to sonatype. No `clean`, just package and publish the `quick` build.
   $SBT_CMD $sbtArgs \
-      --warn \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \

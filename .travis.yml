@@ -22,6 +22,7 @@ stages:
   - name: publish
     if: type != pull_request
 
+# see comment in `bootstrap_fun` for details on the procedure
 # env available in each stage
 #  - by travis config (see below): secret env vars
 #  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
