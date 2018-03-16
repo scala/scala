@@ -91,7 +91,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
   },
   credentials ++= {
     val file = Path.userHome / ".credentials"
-    if (file.exists) List(Credentials(file))
+    if (file.exists && !file.isDirectory) List(Credentials(file))
     else Nil
   },
   // Add a "default" Ivy configuration because sbt expects the Scala distribution to have one:
@@ -160,6 +160,25 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // to make sure they are being cleaned properly
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
+  // SBT 0.13.17+ doesn't seem to respect `cleanFiles` anymore: https://github.com/sbt/sbt/pull/3834/files#r172686677
+  // Let's override `cleanFilesTask`.
+  cleanFilesTask := {
+    val filesAndDirs = (Vector(managedDirectory.value, target.value) ++ cleanFiles.value).distinct
+
+    // START: Copy/pasted from SBT
+    val preserve = cleanKeepFiles.value
+    val (dirs, fs) = filesAndDirs.filter(_.exists).partition(_.isDirectory)
+    val preserveSet = preserve.filter(_.exists).toSet
+    // performance reasons, only the direct items under `filesAndDirs` are allowed to be preserved.
+    val dirItems = dirs flatMap { _.*("*").get }
+    (preserveSet diff dirItems.toSet) match {
+      case xs if xs.isEmpty => ()
+      case xs               => sys.error(s"cleanKeepFiles contains directory/file that are not directly under cleanFiles: $xs")
+    }
+    val toClean = (dirItems filterNot { preserveSet(_) }) ++ fs
+    toClean
+    // END: Copy/pasted from SBT
+  },
   fork in run := true,
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
@@ -342,6 +361,7 @@ lazy val bootstrap = project in file("target/bootstrap")
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.library"))
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
@@ -380,6 +400,7 @@ lazy val library = configureAsSubproject(project)
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.reflect"))
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
@@ -405,6 +426,7 @@ lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
   .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.tools.nsc"))
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
@@ -563,6 +585,9 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
+  ).settings(
+    // Workaround for https://github.com/sbt/sbt/pull/3985
+    List(Keys.test, Keys.testOnly).map(task => parallelExecution in task := false) : _*
   )
 
 lazy val osgiTestFelix = osgiTestProject(
@@ -764,42 +789,46 @@ lazy val root: Project = (project in file("."))
       GenerateAnyVals.run(dir.getAbsoluteFile)
       state
     },
+
+    testRun := (testOnly in IntegrationTest in testP).toTask(" -- run").result.value,
+
+    testPosPres := (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value,
+
+    testRest := ScriptCommands.sequence[Result[Unit]](List(
+          (mimaReportBinaryIssues in library).result,
+          (mimaReportBinaryIssues in reflect).result,
+          (Keys.test in Test in junit).result,
+          (Keys.test in Test in scalacheck).result,
+          (testOnly in IntegrationTest in testP).toTask(" -- neg jvm").result,
+          (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
+          (testOnly in IntegrationTest in testP).toTask(" -- instrumented").result,
+          (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
+          (Keys.test in Test in osgiTestFelix).result,
+          (Keys.test in Test in osgiTestEclipse).result)).value,
+
+    // all of testRun, testPosPres, testRest
     testAll := {
-      val results = ScriptCommands.sequence[Result[Unit]](List(
-        (Keys.test in Test in junit).result,
-        (Keys.test in Test in scalacheck).result,
-        (testOnly in IntegrationTest in testP).toTask(" -- run").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
-        (Keys.test in Test in osgiTestFelix).result,
-        (Keys.test in Test in osgiTestEclipse).result,
-        (mimaReportBinaryIssues in library).result,
-        (mimaReportBinaryIssues in reflect).result,
+      val results = ScriptCommands.sequence[(Result[Unit], String)](List(
+        (Keys.test in Test in junit).result map (_ -> "junit/test"),
+        (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
+        (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
+        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
+        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
+        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
+        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
+        (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
+        (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
+        (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
+        (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
           doc in Compile in reflect,
           doc in Compile in compiler,
           doc in Compile in scalap
-        ).result
+        ).result map (_ -> "doc")
       )).value
-      // All attempts to define these together with the actual tasks due to the applicative rewriting of `.value`
-      val descriptions = Vector(
-        "junit/test",
-        "partest run",
-        "partest pos neg jvm",
-        "partest res scalap specialized",
-        "partest instrumented presentation",
-        "partest --srcpath scaladoc",
-        "osgiTestFelix/test",
-        "osgiTestEclipse/test",
-        "library/mimaReportBinaryIssues",
-        "reflect/mimaReportBinaryIssues",
-        "doc"
-      )
-      val failed = results.map(_.toEither).zip(descriptions).collect { case (Left(i: Incomplete), d) => (i, d) }
-      if(failed.nonEmpty) {
+      val failed = results.collect { case (Inc(i), d) => (i, d) }
+      if (failed.nonEmpty) {
         val log = streams.value.log
         def showScopedKey(k: Def.ScopedKey[_]): String =
           Vector(
@@ -915,6 +944,10 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
+
+lazy val testRun = taskKey[Unit]("Run compute intensive test tasks sequentially")
+lazy val testPosPres = taskKey[Unit]("Run compilation test (pos + presentation) sequentially")
+lazy val testRest = taskKey[Unit]("Run the remaining test tasks sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.

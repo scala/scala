@@ -131,6 +131,39 @@ abstract class SymbolTable extends macros.Universe
     result
   }
 
+  // Getting in front of Predef's asserts to supplement with more info; see `supplementErrorMessage`.
+  // This has the happy side effect of masking the one argument forms of assert/require
+  // (but for now they're reproduced here, because there are a million uses internal and external to fix).
+  @inline
+  final def assert(assertion: Boolean, message: => Any): Unit = {
+    // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
+    if (!assertion) throwAssertionError(message)
+  }
+
+  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
+  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
+  final def assert(assertion: Boolean): Unit = {
+    assert(assertion, "")
+  }
+
+  @inline
+  final def require(requirement: Boolean, message: => Any): Unit = {
+    // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
+    if (!requirement) throwRequirementError(message)
+  }
+
+  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
+  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
+  final def require(requirement: Boolean): Unit = {
+    require(requirement, "")
+  }
+
+  // extracted from `assert`/`require` to make them as small (and inlineable) as possible
+  private[internal] def throwAssertionError(msg: Any): Nothing =
+    throw new java.lang.AssertionError(s"assertion failed: ${supplementErrorMessage(String valueOf msg)}")
+  private[internal] def throwRequirementError(msg: Any): Nothing =
+    throw new java.lang.IllegalArgumentException(s"requirement failed: ${supplementErrorMessage(String valueOf msg)}")
+
   @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
     xs find p getOrElse NoSymbol
   }

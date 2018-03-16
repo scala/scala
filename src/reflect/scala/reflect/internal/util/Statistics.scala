@@ -2,10 +2,11 @@ package scala
 package reflect.internal.util
 
 import scala.collection.mutable
-
 import scala.reflect.internal.SymbolTable
 import scala.reflect.internal.settings.MutableSettings
-import java.lang.invoke.{SwitchPoint, MethodHandle, MethodHandles, MethodType}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+
+import scala.runtime.LongRef
 
 abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSettings) {
 
@@ -177,22 +178,37 @@ quant)
   }
 
   class Timer(val prefix: String, val phases: Seq[String]) extends Quantity {
-    var nanos: Long = 0
-    var timings = 0
-    def start() = {
-      (nanos, System.nanoTime())
+    private val totalThreads = new AtomicInteger()
+    private val threadNanos = new ThreadLocal[LongRef] {
+      override def initialValue() = {
+        totalThreads.incrementAndGet()
+        new LongRef(0)
+      }
+    }
+    private[util] val totalNanos = new AtomicLong
+    private[util] val timings = new AtomicInteger
+    def nanos = totalNanos.get
+    def start(): TimerSnapshot = {
+      (threadNanos.get.elem, System.nanoTime())
     }
     def stop(prev: TimerSnapshot) {
       val (nanos0, start) = prev
-      nanos = nanos0 + System.nanoTime() - start
-      timings += 1
+      val newThreadNanos = nanos0 + System.nanoTime() - start
+      val threadNanosCount = threadNanos.get
+      val diff = newThreadNanos - threadNanosCount.elem
+      threadNanosCount.elem = newThreadNanos
+      totalNanos.addAndGet(diff)
+      timings.incrementAndGet()
     }
-    protected def show(ns: Long) = s"${ns/1000000}ms"
-    override def toString = s"$timings spans, ${show(nanos)}"
+    protected def show(ns: Long) = s"${ns/1000/1000.0}ms"
+    override def toString = {
+      val threads = totalThreads.get
+      s"$timings spans, ${if (threads > 1) s"$threads threads, "}${show(totalNanos.get)}"
+    }
   }
 
   class SubTimer(prefix: String, override val underlying: Timer) extends Timer(prefix, underlying.phases) with SubQuantity {
-    override protected def show(ns: Long) = super.show(ns) + showPercent(ns, underlying.nanos)
+    override protected def show(ns: Long) = super.show(ns) + showPercent(ns, underlying.totalNanos.get)
   }
 
   class StackableTimer(prefix: String, underlying: Timer) extends SubTimer(prefix, underlying) with Ordered[StackableTimer] {
@@ -232,6 +248,8 @@ quant)
   /** A stack of timers, all active, where a timer's specific "clock"
    *  is stopped as long as it is buried by some other timer in the stack, but
    *  its aggregate clock keeps on ticking.
+   *
+   *  Note: Not threadsafe
    */
   class TimerStack {
     private var elems: List[(StackableTimer, Long)] = Nil
@@ -246,9 +264,9 @@ quant)
       val (nanos0, start) = prev
       val duration = System.nanoTime() - start
       val (topTimer, nestedNanos) :: rest = elems
-      topTimer.nanos = nanos0 + duration
+      topTimer.totalNanos.addAndGet(nanos0 + duration)
       topTimer.specificNanos += duration - nestedNanos
-      topTimer.timings += 1
+      topTimer.timings.incrementAndGet()
       elems = rest match {
         case (outerTimer, outerNested) :: elems1 =>
           (outerTimer, outerNested + duration) :: elems1

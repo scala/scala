@@ -1,0 +1,1 @@
+user = ${SONA_USER}:${SONA_PASS}

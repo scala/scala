@@ -201,4 +201,7 @@ trait StdAttachments {
 
   def removeStabilizingDefinitions(tree: Tree): Tree =
     tree.removeAttachment[StabilizingDefinitions]
+
+  /** Added to trees that appear in a method value, e.g., to `f(x)` in `f(x) _` */
+  case object MethodValueAttachment
 }

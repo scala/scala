@@ -197,7 +197,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def paramLists: List[List[Symbol]] = paramss
   }
 
-  private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
+  private[reflect] final case class SymbolKind(accurate: String, sanitized: String, abbreviation: String) {
+    def skolemize: SymbolKind = copy(accurate = s"$accurate skolem", abbreviation = s"$abbreviation#SKO")
+  }
 
   protected def newStubSymbol(owner: Symbol,
                               name: Name,
@@ -2581,7 +2583,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else ""
 
     private def symbolKind: SymbolKind = {
-      var kind =
+      implicit val triple2SK = (SymbolKind.apply _).tupled
+      val kind: SymbolKind =
         if (isTermMacro)                         ("term macro",           "macro method",    "MACM")
         else if (isInstanceOf[FreeTermSymbol])   ("free term",            "free term",       "FTE")
         else if (isInstanceOf[FreeTypeSymbol])   ("free type",            "free type",       "FTY")
@@ -2591,6 +2594,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isPackageObjectClass)           ("package object class", "package",         "PKOC")
         else if (isAnonymousClass)               ("anonymous class",      "anonymous class", "AC")
         else if (isRefinementClass)              ("refinement class",     "",                "RC")
+        else if (isJavaAnnotation)               ("Java annotation",      "Java annotation", "JANN")
+        else if (isJavaEnum
+            || companion.isJavaEnum)             ("Java enumeration",     "Java enum",       "JENUM")
+        else if (isJava && isModule)             ("Java module",          "class",           "JMOD")
+        else if (isJava && isModuleClass)        ("Java module class",    "class",           "JMODC")
         else if (isModule)                       ("module",               "object",          "MOD")
         else if (isModuleClass)                  ("module class",         "object",          "MODC")
         else if (isAccessor &&
@@ -2608,9 +2616,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isTerm)                         ("value",                "value",           "VAL")
         else                                     ("",                     "",                "???")
 
-      if (isSkolem) kind = (kind._1, kind._2, kind._3 + "#SKO")
-
-      SymbolKind(kind._1, kind._2, kind._3)
+      if (isSkolem) kind.skolemize else kind
     }
 
     /** Accurate string representation of symbols' kind, suitable for developers. */

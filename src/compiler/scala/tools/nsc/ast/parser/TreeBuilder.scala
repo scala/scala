@@ -35,9 +35,6 @@ abstract class TreeBuilder {
   def repeatedApplication(tpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(tpnme.REPEATED_PARAM_CLASS_NAME), List(tpe))
 
-  // represents `expr _`, as specified in Method Values of spec/06-expressions.md
-  def makeMethodValue(expr: Tree): Tree = Typed(expr, Function(Nil, EmptyTree))
-
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)
 

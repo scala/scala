@@ -817,7 +817,7 @@ abstract class TreeGen {
     if (treeInfo.isVarPatternDeep(pat)) rhs
     else {
       val cases = List(
-        CaseDef(pat.duplicate, EmptyTree, Literal(Constant(true))),
+        CaseDef(pat.duplicate updateAttachment AtBoundIdentifierAttachment, EmptyTree, Literal(Constant(true))),
         CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
       )
       val visitor = mkVisitor(cases, checkExhaustive = false, nme.CHECK_IF_REFUTABLE_STRING)

@@ -1,7 +1,18 @@
-t10279.scala:9: error: could not find implicit value for parameter s: String
-  val bar = foo(1) _
-               ^
-t10279.scala:12: error: could not find implicit value for parameter x: Int
-  val barSimple = fooSimple _
+t10279.scala:5: error: could not find implicit value for parameter s: String
+  val t1 = foo(1) _     // error: no implicit string
+              ^
+t10279.scala:6: error: _ must follow method; cannot follow String
+  val t2 = foo(1)("") _ // error: _ must follow method
+                 ^
+t10279.scala:7: error: could not find implicit value for parameter s: String
+  val t3 = foo _        // error: no implicit string
+           ^
+t10279.scala:14: error: type mismatch;
+ found   : Int
+ required: ? => ?
+  val t6 = { implicit val i = 0; bar(0) _ } // error: type mismatch, found Int, required: ? => ?
+                                    ^
+t10279.scala:17: error: could not find implicit value for parameter x: Int
+  val barSimple = fooSimple _ // error: no implicit int
                   ^
-two errors found
+5 errors found

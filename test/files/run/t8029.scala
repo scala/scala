@@ -43,7 +43,7 @@ package object p4 {
       val sourceFile = newSources(code).head
       global.reporter.reset()
       r.compileSources(sourceFile :: Nil)
-      assert(!global.reporter.hasErrors)
+      assert(!global.reporter.hasErrors, global.reporter.errorCount)
     }
 
     def typecheckTwice(code: String): Unit = {

@@ -79,6 +79,15 @@ trait ScalaSettings extends AbsScalaSettings
       domain  = languageFeatures
     )
   }
+  val release = StringSetting("-release", "<release>", "Compile for a specific version of the Java platform. Supported targets: 6, 7, 8, 9", "").withPostSetHook { (value: StringSetting) =>
+    if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
+      errorFn.apply("-release is only supported on Java 9 and higher")
+    } else {
+      // TODO validate numeric value
+      // TODO validate release <= java.specification.version
+    }
+  }
+  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /*
    * The previous "-source" option is intended to be used mainly
@@ -222,8 +231,8 @@ trait ScalaSettings extends AbsScalaSettings
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overridden methods.")
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
-  val YdisablePluginsClassLoaderCaching  = BooleanSetting    ("-YdisablePluginsClassLoaderCaching", "Do not cache classloaders for compiler plugins that are dynamically loaded.")
-  val YdisableMacrosClassLoaderCaching   = BooleanSetting    ("-YdisableMacrosClassLoaderCaching", "Do not cache classloaders for macros that are dynamically loaded.")
+  val YcachePluginClassLoader  = CachePolicy.setting("plugin", "compiler plugins")
+  val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
   val YpartialUnification = BooleanSetting ("-Ypartial-unification", "Enable partial unification in type constructor inference")
   val Yvirtpatmat     = BooleanSetting    ("-Yvirtpatmat", "Enable pattern matcher virtualization")
 
@@ -234,6 +243,16 @@ trait ScalaSettings extends AbsScalaSettings
   val YmaxQueue = IntSetting   ("-Ybackend-worker-queue", "backend threads worker queue size", 0, Some((0,1000)), (x: String) => None )
   val YjarCompressionLevel = IntSetting("-Yjar-compression-level", "compression level to use when writing jar files",
     Deflater.DEFAULT_COMPRESSION, Some((Deflater.DEFAULT_COMPRESSION,Deflater.BEST_COMPRESSION)), (x: String) => None)
+
+  sealed abstract class CachePolicy(val name: String, val help: String)
+  object CachePolicy {
+    def setting(style: String, styleLong: String) = ChoiceSetting(s"-Ycache-$style-class-loader", "policy", s"Policy for caching class loaders for $styleLong that are dynamically loaded.", values.map(_.name), None.name, values.map(_.help))
+    object None extends CachePolicy("none", "Don't cache class loader")
+    object LastModified extends CachePolicy("last-modified", "Cache class loader, using file last-modified time to invalidate")
+    // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
+    // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
+    def values: List[CachePolicy] = List(None, LastModified)
+  }
 
   object optChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
