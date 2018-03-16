@@ -572,7 +572,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(
     // enable forking to workaround https://github.com/sbt/sbt/issues/4009
     fork in Test := true,
-    // customise framework for early acess to https://github.com/rickynils/scalacheck/pull/388
+    // customise framework for early access to https://github.com/rickynils/scalacheck/pull/388
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",

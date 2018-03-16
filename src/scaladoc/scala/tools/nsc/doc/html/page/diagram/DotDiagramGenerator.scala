@@ -32,7 +32,7 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
   // used to generate unique node and edge ids (i.e. avoid conflicts with multiple diagrams)
   private var counter = 0
 
-  def generate(diagram: Diagram, template: DocTemplateEntity, page: HtmlPage):NodeSeq = {
+  def generate(diagram: Diagram, template: DocTemplateEntity, page: HtmlPage): HtmlTags.Elems = {
     counter = counter + 1
     this.page = page
     pathToLib = "../" * (page.templateToPath(template).size - 1) + "lib/"
@@ -314,6 +314,8 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
    * Calls dot with a given dot string and returns the SVG output.
    */
   private def generateSVG(dotInput: String, template: DocTemplateEntity) = {
+    import HtmlTags._
+
     val dotOutput = dotRunner.feedToDot(dotInput, template)
     var tSVG = -System.currentTimeMillis
 
@@ -323,9 +325,9 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
         val cpa = scala.xml.parsing.ConstructingParser.fromSource(src, preserveWS = false)
         val doc = cpa.document()
         if (doc != null)
-          transform(doc.docElem)
+          HtmlTags.Raw(transform(doc.docElem).toString) :: NoElems
         else
-          NodeSeq.Empty
+          NoElems
       } catch {
         case exc: Exception =>
           if (settings.docDiagramsDebug) {
@@ -339,10 +341,10 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
             settings.printMsg("\nThe diagram for " + template.qualifiedName + " could not be created due to an internal error.")
             settings.printMsg("Use " + settings.docDiagramsDebug.name + " for more information and please file this as a bug.")
           }
-          NodeSeq.Empty
+          NoElems
       }
     } else
-      NodeSeq.Empty
+      NoElems
 
     tSVG += System.currentTimeMillis
     DiagramStats.addSvgTime(tSVG)
