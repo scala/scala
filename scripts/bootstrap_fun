@@ -383,12 +383,16 @@ publishSonatype() {
 
   travis_fold_start sona "Publishing core to sonatype"
   # Stage to sonatype. No `clean`, just package and publish the `quick` build.
+  # TODO: currently we `clean` because everything is re-compiled anyway on travis. Cleaning ensures
+  # that we compile from a clean state and get identical classfiles (scala-dev#428). Once we figure
+  # out how to prevent sbt from re-compiling (also needed for test stages), we can remove the `clean`.
   $SBT_CMD $sbtArgs \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
       'set pgpPassphrase in Global := Some(Array.empty)' \
       "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
+      clean \
       $publishSonatypeTaskCore
   travis_fold_end sona
 
