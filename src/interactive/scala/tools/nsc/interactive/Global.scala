@@ -1177,15 +1177,17 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
     }
     private val CamelRegex = "([A-Z][^A-Z]*)".r
-    private def camelComponents(s: String): List[String] = {
-      CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
+    private def camelComponents(s: String, allowSnake: Boolean): List[String] = {
+      if (allowSnake && s.forall(c => c.isUpper || c == '_')) s.split('_').toList.filterNot(_.isEmpty)
+      else CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
     }
     def camelMatch(entered: Name): Name => Boolean = {
       val enteredS = entered.toString
       val enteredLowercaseSet = enteredS.toLowerCase().toSet
+      val allowSnake = !enteredS.contains('_')
 
       (candidate: Name) => {
-        def candidateChunks = camelComponents(candidate.toString)
+        def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
         // Loosely based on IntelliJ's autocompletion: the user can just write everything in
         // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
         def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
