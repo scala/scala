@@ -16,7 +16,7 @@ object Test {
     val TClass = reflect.runtime.universe.symbolOf[p.T[_, _]].asInstanceOf[symtab.Symbol]
     import symtab._
     val from = CTpe.member(TermName("test")).paramss.head.head
-    assert(from.baseClasses contains TClass)
-    assert(from.info.baseTypeIndex(TClass) != -1) // was failing!
+    assert(from.baseClasses contains TClass, from.baseClasses)
+    assert(from.info.baseTypeIndex(TClass) != -1, from.info.baseTypeSeq) // was failing!
   }
 }

@@ -6,6 +6,8 @@ import BuildSettings.autoImport._
 
 /** Custom commands for use by the Jenkins scripts. This keeps the surface area and call syntax small. */
 object ScriptCommands {
+  def env(key: String) = Option(System.getenv(key)).getOrElse("")
+
   def all = Seq(
     setupPublishCore,
     setupValidateTest,
@@ -58,7 +60,9 @@ object ScriptCommands {
 
   /** Set up the environment for building quick in `validate/bootstrap`. The arguments are:
     * - Repository URL for publishing
-    * - Version number to publish */
+    * - Version number to publish
+    * Note that the artifacts produced here are consumed by scala-dist, so the docs have to be built.
+    */
   def setupBootstrapQuick = setup("setupBootstrapQuick") { case Seq(url, ver) =>
     Seq(
       baseVersion in Global := ver,
@@ -73,35 +77,28 @@ object ScriptCommands {
     * - Version number to publish
     * All artifacts are published to Sonatype. */
   def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(url, ver) =>
-    // Define a copy of the setting key here in case the plugin is not part of the build
-    val pgpPassphrase = SettingKey[Option[Array[Char]]]("pgp-passphrase", "The passphrase associated with the secret used to sign artifacts.", KeyRanks.BSetting)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
       resolvers in Global += "scala-pr" at url,
       publishTo in Global := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-      credentials in Global += Credentials(Path.userHome / ".credentials-sonatype"),
-      pgpPassphrase in Global := Some(Array.empty)
+      credentials in Global += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS"))
+      // pgpSigningKey and pgpPassphrase are set externally by travis / the bootstrap script, as the sbt-pgp plugin is not enabled by default
     ) ++ enableOptimizer
   }
 
   def enableOptimizerCommand = setup("enableOptimizer")(_ => enableOptimizer)
 
   private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) = Command.args(name, name) { case (state, seq) =>
-    // `Project.extract(state).append(f(seq) ++ resetLogLevels, state)` would be simpler, but it
+    // `Project.extract(state).append(f(seq), state)` would be simpler, but it
     // takes the project's initial state and discards all changes that were made in the sbt console.
     val session = Project.session(state)
     val extracted = Project.extract(state)
-    val settings = f(seq) ++ resetLogLevels
+    val settings = f(seq)
     val appendSettings = Load.transformSettings(Load.projectScope(extracted.currentRef), extracted.currentRef.build, extracted.rootProject, settings)
     val newStructure = Load.reapply(session.mergeSettings ++ appendSettings, extracted.structure)(extracted.showKey)
     Project.setProject(session, newStructure, state)
   }
-
-  private[this] val resetLogLevels = Seq(
-    logLevel in ThisBuild := Level.Info,
-    logLevel in update in ThisBuild := Level.Warn
-  )
 
   private[this] val enableOptimizer = Seq(
     scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
@@ -114,7 +111,11 @@ object ScriptCommands {
   private[this] def publishTarget(url: String) = {
     // Append build.timestamp to Artifactory URL to get consistent build numbers (see https://github.com/sbt/sbt/issues/2088):
     val url2 = if(url.startsWith("file:")) url else url.replaceAll("/$", "") + ";build.timestamp=" + System.currentTimeMillis
-    Seq(publishTo in Global := Some("scala-pr-publish" at url2))
+
+    Seq(
+      publishTo in Global := Some("scala-pr-publish" at url2),
+      credentials in Global += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
+    )
   }
 
   /** Like `Def.sequential` but accumulate all results */

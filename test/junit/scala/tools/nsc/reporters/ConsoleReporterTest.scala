@@ -10,7 +10,6 @@ import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util._
 
-
 @RunWith(classOf[JUnit4])
 class ConsoleReporterTest {
   val source = "Test_ConsoleReporter"
@@ -20,34 +19,30 @@ class ConsoleReporterTest {
   val writerOut = new ByteArrayOutputStream()
   val echoWriterOut = new ByteArrayOutputStream()
 
-
   def createConsoleReporter(inputForReader: String, errOut: ByteArrayOutputStream, echoOut: ByteArrayOutputStream = null): ConsoleReporter = {
     val reader = new BufferedReader(new StringReader(inputForReader))
       
-    /** Create reporter with the same writer and echoWriter if echoOut is null */
+    // Create reporter with the same writer and echoWriter if echoOut is null
     echoOut match {
-      case null => new ConsoleReporter(new Settings(), reader, new PrintWriter(errOut))
-      case _ => new ConsoleReporter(new Settings(), reader, new PrintWriter(errOut), new PrintWriter(echoWriterOut))
+      case null => new ConsoleReporter(new Settings, reader, new PrintWriter(errOut))
+      case _ => new ConsoleReporter(new Settings, reader, new PrintWriter(errOut), new PrintWriter(echoWriterOut))
     }
   }
 
-
-  def testHelper(pos: Position = NoPosition, msg: String, severity: String = "")(test: Position => Unit) = {
-    test(pos)
-    if (msg.isEmpty && severity.isEmpty) assertTrue(writerOut.toString.isEmpty)
-    else {
-      if (!pos.isDefined) assertEquals(severity + msg, writerOut.toString.lines.next)
+  def testHelper(pos: Position = NoPosition, msg: String, severity: String = "")(test: Position => Unit) =
+    try {
+      test(pos)
+      val buf = writerOut.toString
+      if (msg.isEmpty && severity.isEmpty) assertTrue(buf.isEmpty)
+      else if (!pos.isDefined) assertEquals(severity + msg, buf.lines.next)
       else {
-        val it = writerOut.toString.lines
+        val it = buf.lines
         assertEquals(source + ":1: " + severity + msg, it.next)
         assertEquals(content, it.next)
         assertEquals("    ^", it.next)
       }
-    }
-    writerOut.reset
-  }
+    } finally writerOut.reset
 
-  
   @Test
   def printMessageTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
@@ -55,7 +50,6 @@ class ConsoleReporterTest {
     testHelper(msg = "Testing with NoPosition")(reporter.printMessage(_, "Testing with NoPosition"))
     testHelper(posWithSource, "Testing with Defined Position")(reporter.printMessage(_, "Testing with Defined Position"))
   }
-
 
   @Test
   def echoTest(): Unit = {
@@ -68,7 +62,6 @@ class ConsoleReporterTest {
     testHelper(msg = "Hello World!")(_ => reporter2.echo("Hello World!"))
   }
 
-
   @Test
   def printTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
@@ -80,7 +73,6 @@ class ConsoleReporterTest {
     testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.print(_, "test", reporter.ERROR))
   }
 
-
   @Test
   def printColumnMarkerTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
@@ -91,12 +83,11 @@ class ConsoleReporterTest {
     writerOut.reset
   }
 
-
   @Test
   def displayTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
 
-    /** Change maxerrs and maxwarns from default */
+    // Change maxerrs and maxwarns from default
     reporter.settings.maxerrs.value = 1
     reporter.settings.maxwarns.value = 1
 
@@ -121,7 +112,6 @@ class ConsoleReporterTest {
     testHelper(msg = "")(reporter.display(_, "Testing display for maxwarns to fail", reporter.WARNING))
   }
 
-
   @Test
   def finishTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
@@ -139,7 +129,6 @@ class ConsoleReporterTest {
     writerOut.reset
   }
 
-
   @Test
   def displayPromptTest(): Unit = {
     val output = "a)bort, s)tack, r)esume: "
@@ -151,7 +140,7 @@ class ConsoleReporterTest {
     assertTrue(it.next.isEmpty)
     assertEquals(output + "java.lang.Throwable", it.next)
     assertTrue(it.hasNext)
-    
+
     /** Check for no stack trace */
     val writerOut2 = new ByteArrayOutputStream()
     val reporter2 = createConsoleReporter("w", writerOut2)
@@ -169,5 +158,43 @@ class ConsoleReporterTest {
     assertTrue(it3.next.isEmpty)
     assertEquals(output, it3.next)
     assertFalse(it3.hasNext)
+  }
+
+  @Test
+  def filterTest(): Unit = {
+    val reporter = createConsoleReporter("r", writerOut)
+    val filter   = {
+      // Change maxerrs and maxwarns from default on filter only
+      val settings = new Settings
+      settings.maxerrs.value  = 1
+      settings.maxwarns.value = 1
+
+      new LimitingReporter(settings, reporter)
+    }
+
+    // pass one message
+    testHelper(msg = "Testing display")(filter.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(filter.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(filter.error(_, "Testing display"))
+    filter.reset()
+
+    testHelper(posWithSource, msg = "Testing display")(filter.echo(_, "Testing display"))
+    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(filter.warning(_, "Testing display"))
+    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(filter.error(_, "Testing display"))
+    filter.reset()
+
+    // either reset after each test or emit warn before error so that both are output by AbstractReporter
+    assertEquals(0, filter.errorCount)
+    assertEquals(0, reporter.errorCount)
+    assertEquals(0, filter.warningCount)
+    assertEquals(0, reporter.warningCount)
+
+    // try to pass two messages
+    // warn first; would be nice to flush too
+    testHelper(posWithSource, msg = "Testing display for maxwarns to pass", severity = "warning: ")(filter.warning(_, "Testing display for maxwarns to pass"))
+    testHelper(msg = "")(filter.warning(_, "Testing display for maxwarns to fail"))
+
+    testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(filter.error(_, "Testing display for maxerrs to pass"))
+    testHelper(msg = "")(filter.error(_, "Testing display for maxerrs to fail"))
   }
 }

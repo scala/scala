@@ -62,6 +62,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     for (k <- List(WARNING, ERROR) if k.count > 0) printMessage(s"${countAs(k.count, label(k))} found")
 
   def display(pos: Position, msg: String, severity: Severity): Unit = {
+    // the count includes the current message
     val ok = severity match {
       case ERROR   => ERROR.count   <= settings.maxerrs.value
       case WARNING => WARNING.count <= settings.maxwarns.value

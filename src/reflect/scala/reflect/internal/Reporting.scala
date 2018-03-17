@@ -116,6 +116,55 @@ abstract class Reporter {
     }
 }
 
+/** A `Reporter` that forwards all methods to a delegate.
+ *
+ *  Concrete subclasses must implement the abstract `delegate` member.
+ */
+trait ForwardingReporter extends Reporter {
+
+  /* Receiver of all forwarded calls. */
+  protected val delegate: Reporter
+
+  /* Always throws `UnsupportedOperationException`. */
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Nothing =
+    throw new UnsupportedOperationException(s"$msg ($pos)")
+
+  override def echo(pos: Position, msg: String)    = delegate.echo(pos, msg)
+  override def warning(pos: Position, msg: String) = delegate.warning(pos, msg)
+  override def error(pos: Position, msg: String)   = delegate.error(pos, msg)
+
+  private def other(severity: Severity): delegate.Severity = severity match {
+    case ERROR   => delegate.ERROR
+    case WARNING => delegate.WARNING
+    case _       => delegate.INFO
+  }
+  override def count(severity: Severity)      = delegate.count(other(severity))
+  override def resetCount(severity: Severity) = delegate.resetCount(other(severity))
+
+  override def errorCount   = delegate.errorCount
+  override def warningCount = delegate.warningCount
+  override def hasErrors    = delegate.hasErrors
+  override def hasWarnings  = delegate.hasWarnings
+  override def reset()      = delegate.reset()
+  override def flush()      = delegate.flush()
+  override def finish()     = delegate.finish()
+  override def rerunWithDetails(setting: MutableSettings#Setting, name: String) =
+                              delegate.rerunWithDetails(setting, name)
+}
+
+/** A `ForwardingReporter` that filters events before delegating.
+ *
+ *  Concrete subclasses should implement just the abstract `filter` method.
+ */
+trait FilteringReporter extends ForwardingReporter {
+  /* True to permit the message. */
+  protected def filter(pos: Position, msg: String, severity: Severity): Boolean
+
+  override def echo(pos: Position, msg: String)    = if (filter(pos, msg, INFO)) delegate.echo(pos, msg)
+  override def warning(pos: Position, msg: String) = if (filter(pos, msg, WARNING)) delegate.warning(pos, msg)
+  override def error(pos: Position, msg: String)   = if (filter(pos, msg, ERROR)) delegate.error(pos, msg)
+}
+
 // TODO: move into superclass once partest cuts tie on Severity
 abstract class ReporterImpl extends Reporter {
   class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}

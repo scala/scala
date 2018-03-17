@@ -1,0 +1,7 @@
+t10474.scala:8: error: stable identifier required, but Test.this.Foo found.
+    case Foo.Bar ⇒ true
+         ^
+t10474.scala:15: error: stable identifier required, but hrhino.this.Foo found.
+  val Foo.Crash = ???
+      ^
+two errors found

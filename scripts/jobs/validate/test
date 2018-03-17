@@ -1,8 +1,6 @@
 #!/bin/bash -e -v -x
 
-baseDir=${WORKSPACE-`pwd`}
-scriptsDir="$baseDir/scripts"
-. $scriptsDir/common
+source scripts/common
 
 generateRepositoriesConfig $prRepoUrl
 SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"

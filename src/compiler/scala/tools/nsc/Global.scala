@@ -33,7 +33,7 @@ import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 
-class Global(var currentSettings: Settings, var reporter: Reporter)
+class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
     with CompilationUnits
     with Plugins
@@ -74,6 +74,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
+
+  private[this] var currentReporter: Reporter = { reporter = reporter0 ; currentReporter }
+
+  def reporter: Reporter = currentReporter
+  def reporter_=(newReporter: Reporter): Unit =
+    currentReporter = newReporter match {
+      case _: reporters.ConsoleReporter | _: reporters.LimitingReporter => newReporter
+      case _ if settings.maxerrs.isSetByUser && settings.maxerrs.value < settings.maxerrs.default =>
+        new reporters.LimitingReporter(settings, newReporter)
+      case _ => newReporter
+    }
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
@@ -260,27 +271,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def registerTopLevelSym(sym: Symbol) {}
 
 // ------------------ Debugging -------------------------------------
-
-  // Getting in front of Predef's asserts to supplement with more info.
-  // This has the happy side effect of masking the one argument forms
-  // of assert and require (but for now I've reproduced them here,
-  // because there are a million to fix.)
-  @inline final def assert(assertion: Boolean, message: => Any) {
-    // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
-    if (!assertion)
-      throw new java.lang.AssertionError("assertion failed: "+ supplementErrorMessage("" + message))
-  }
-  @inline final def assert(assertion: Boolean) {
-    assert(assertion, "")
-  }
-  @inline final def require(requirement: Boolean, message: => Any) {
-    // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
-    if (!requirement)
-      throw new IllegalArgumentException("requirement failed: "+ supplementErrorMessage("" + message))
-  }
-  @inline final def require(requirement: Boolean) {
-    require(requirement, "")
-  }
 
   @inline final def ifDebug(body: => Unit) {
     if (settings.debug)
@@ -966,7 +956,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Let's share a lot more about why we crash all over the place.
    *  People will be very grateful.
    */
-  protected var lastSeenContext: analyzer.Context = null
+  protected var lastSeenContext: analyzer.Context = analyzer.NoContext
 
   /** The currently active run
    */
@@ -1015,46 +1005,49 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     else sym.ownerChain takeWhile (!_.isPackageClass) mkString " -> "
   )
 
-  private def formatExplain(pairs: (String, Any)*): String = (
-    pairs collect { case (k, v) if v != null => f"$k%20s: $v" } mkString "\n"
-  )
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
   override def supplementTyperState(errorMessage: String): String = try {
+    def formatExplain(pairs: List[(String, Any)]): String =
+      pairs collect { case (k, v) if v != null => f"$k%20s: $v" } mkString "\n"
+
     val tree      = analyzer.lastTreeToTyper
     val sym       = tree.symbol
     val tpe       = tree.tpe
     val site      = lastSeenContext.enclClassOrMethod.owner
     val pos_s     = if (tree.pos.isDefined) s"line ${tree.pos.line} of ${tree.pos.source.file}" else "<unknown>"
     val context_s = try {
-      import scala.reflect.io.{File => SFile}
       // Taking 3 before, 3 after the fingered line.
-      val start = 1 max (tree.pos.line - 3)
-      val xs = SFile(tree.pos.source.file.file).lines.drop(start-1).take(7)
-      val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
+      val start = 0 max (tree.pos.line - 4)
+      val xs = tree.pos.source.lines(start, start + 7)
+      val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx + 1}%6d $line" }
       strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
     }
     catch { case t: Exception => devWarning("" + t) ; "<Cannot read source file>" }
 
-    val info1 = formatExplain(
+    val info1 = formatExplain(List(
       "while compiling"    -> currentSource.path,
       "during phase"       -> ( if (globalPhase eq phase) phase else "globalPhase=%s, enteringPhase=%s".format(globalPhase, phase) ),
       "library version"    -> scala.util.Properties.versionString,
-      "compiler version"   -> Properties.versionString,
+      "compiler version"   -> scala.tools.nsc.Properties.versionString,
       "reconstructed args" -> settings.recreateArgs.mkString(" ")
-    )
-    val info2 = formatExplain(
-      "last tree to typer" -> tree.summaryString,
-      "tree position"      -> pos_s,
-      "tree tpe"           -> tpe,
-      "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
-      "symbol definition"  -> Option(sym).fold("null")(s => s.defString + s" (a ${s.shortSymbolClass})"),
+    ))
+    // useful things to know if we have a sym
+    val symbolInfos = if (sym eq null) List("symbol" -> "null") else List(
+      "symbol"             -> sym.debugLocationString,
+      "symbol definition"  -> s"${sym.defString} (a ${sym.shortSymbolClass})",
       "symbol package"     -> sym.enclosingPackage.fullName,
       "symbol owners"      -> ownerChainString(sym),
-      "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
     )
+    val info2 = formatExplain(List(
+      "last tree to typer" -> tree.summaryString,
+      "tree position"      -> pos_s,
+      "tree tpe"           -> tpe
+    ) ::: symbolInfos ::: List(
+      "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
+    ))
     ("\n  " + errorMessage + "\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
   } catch { case _: Exception | _: TypeError => errorMessage }
 

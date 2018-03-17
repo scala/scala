@@ -620,8 +620,10 @@ trait ContextErrors {
         NormalTypeError(tree, fun.tpe+" does not take parameters")
 
       // Dynamic
-      def DynamicVarArgUnsupported(tree: Tree, name: Name) =
-        issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
+      def DynamicVarArgUnsupported(tree: Tree, name: Name) = {
+        issueNormalTypeError(tree, name + " does not support passing a vararg parameter")
+        setError(tree)
+      }
 
       def DynamicRewriteError(tree: Tree, err: AbsTypeError) = {
         issueTypeError(PosAndMsgTypeError(err.errPos, err.errMsg +
@@ -748,7 +750,12 @@ trait ContextErrors {
 
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {
-        issueNormalTypeError(tree, sym.kindString + " " + sym.fullName + " is not a value")
+        /* Give a better error message for `val thread = java.lang.Thread`. */
+        val betterKindString =
+          if (sym.isJavaDefined && sym.isTrait) "Java interface"
+          else if (sym.isJavaDefined && (sym.isClass || sym.isModule)) "Java class"
+          else sym.kindString
+        issueNormalTypeError(tree, s"$betterKindString ${sym.fullName} is not a value")
         setError(tree)
       }
 

@@ -52,7 +52,7 @@ object AbstractFile {
    */
   def getURL(url: URL): AbstractFile =
     if (url.getProtocol == "file") {
-      val f = new java.io.File(url.getPath)
+      val f = new java.io.File(url.toURI)
       if (f.isDirectory) getDirectory(f)
       else getFile(f)
     } else null

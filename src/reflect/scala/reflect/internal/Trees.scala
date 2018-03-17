@@ -690,6 +690,15 @@ trait Trees extends api.Trees {
   }
   object Typed extends TypedExtractor
 
+  // represents `expr _`, as specified in Method Values of spec/06-expressions.md
+  object MethodValue {
+    def apply(expr: Tree): Tree = Typed(expr, Function(Nil, EmptyTree))
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case Typed(expr, Function(Nil, EmptyTree)) => Some(expr)
+      case _ => None
+    }
+  }
+
   abstract class GenericApply extends TermTree with GenericApplyApi {
     val fun: Tree
     val args: List[Tree]

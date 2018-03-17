@@ -10,8 +10,7 @@ import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.reflect.internal.util.Position
 
-/**
- * This reporter implements filtering.
+/** This reporter implements filtering by severity and position.
  */
 abstract class AbstractReporter extends Reporter {
   val settings: Settings
