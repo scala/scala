@@ -501,7 +501,7 @@ trait Implicits {
         case OpenImplicit(nfo, tp, tree1) => !nfo.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)
       }
 
-        if(existsDominatedImplicit) {
+        if (existsDominatedImplicit && (context.openImplicits.length > settings.YmaxImplicitCycleDepth.value)) {
           //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
           DivergentSearchFailure
         } else {
