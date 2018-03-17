@@ -37,7 +37,7 @@ package math
  *  @version 1.0, 2008-04-0-3
  *  @since 2.7
  */
-
+@annotation.implicitNotFound(msg = "No implicit PartialOrdering defined for ${T}.")
 trait PartialOrdering[T] extends Equiv[T] {
   outer =>
 

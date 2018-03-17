@@ -29,7 +29,7 @@ import java.util.Comparator
  *  @version 1.0, 2008-04-03
  *  @since 2.7
  */
-
+@annotation.implicitNotFound(msg = "No implicit Equiv defined for ${T}.")
 trait Equiv[T] extends Any with Serializable {
   /** Returns `true` iff `x` is equivalent to `y`.
    */
