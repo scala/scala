@@ -11,19 +11,15 @@ package math
 
 import java.util.Comparator
 
-/** A trait for representing equivalence relations.  It is important to
- *  distinguish between a type that can be compared for equality or
- *  equivalence and a representation of equivalence on some type. This
- *  trait is for representing the latter.
+/** Defines an equivalence relations on some type `T`.
  *
  *  An [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
- *  is a binary relation on a type. This relation is exposed as
- *  the `equiv` method of the `Equiv` trait.  The relation must be:
+ *  is a binary relation on a type `T`, exposed as
+ *  the `equiv` method of this trait, that must be:
  *
- *    1. reflexive: `equiv(x, x) == true` for any x of type `T`.
- *    1. symmetric: `equiv(x, y) == equiv(y, x)` for any `x` and `y` of type `T`.
- *    1. transitive: if `equiv(x, y) == true` and `equiv(y, z) == true`, then
- *       `equiv(x, z) == true` for any `x`, `y`, and `z` of type `T`.
+ *    1. reflexive: `x = x`
+ *    1. symmetric: if `x = y` then `y = x`
+ *    1. transitive: if `x = y` and `y = z`, then `x = z`
  *
  *  @author  Geoffrey Washburn, Paul Phillips
  *  @version 1.0, 2008-04-03
