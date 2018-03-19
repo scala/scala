@@ -9,27 +9,19 @@
 package scala
 package math
 
-/** A trait for representing partial orderings.  It is important to
- *  distinguish between a type that has a partial order and a representation
- *  of partial ordering on some type.  This trait is for representing the
- *  latter.
+/** Defines a partial ordering on some type `T`.
  *
  *  A [[http://en.wikipedia.org/wiki/Partially_ordered_set partial ordering]] is a
- *  binary relation on a type `T`, exposed as the `lteq` method of this trait.
- *  This relation must be:
+ *  binary relation on a type `T`, exposed as the `lteq` method of this trait,
+ *  that must be:
  *
- *  - reflexive: `lteq(x, x) == '''true'''`, for any `x` of type `T`.
- *  - anti-symmetric: if `lteq(x, y) == '''true'''` and
- *    `lteq(y, x) == '''true'''`
- *    then `equiv(x, y) == '''true'''`, for any `x` and `y` of type `T`.
- *  - transitive: if `lteq(x, y) == '''true'''` and
- *    `lteq(y, z) == '''true'''` then `lteq(x, z) == '''true'''`,
- *    for any `x`, `y`, and `z` of type `T`.
+ *    1. reflexive: `x <= x`
+ *    1. antisymmetric: if `x <= y` and `y <= x` then `x = y`
+ *    1. transitive: if `x <= y` and `y <= z` then `x <= z`
  *
  *  Additionally, a partial ordering induces an
  *  [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
- *  on a type `T`: `x` and `y` of type `T` are equivalent if and only if
- *  `lteq(x, y) && lteq(y, x) == '''true'''`. This equivalence relation is
+ *  on a type `T`,
  *  exposed as the `equiv` method, inherited from the
  *  [[scala.math.Equiv Equiv]] trait.
  *
@@ -37,7 +29,7 @@ package math
  *  @version 1.0, 2008-04-0-3
  *  @since 2.7
  */
-
+@annotation.implicitNotFound(msg = "No implicit PartialOrdering defined for ${T}.")
 trait PartialOrdering[T] extends Equiv[T] {
   outer =>
 
