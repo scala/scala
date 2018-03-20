@@ -524,6 +524,7 @@ abstract class LocalOpt {
         case i: IincInsnNode if isLive =>
           maxLocals = math.max(maxLocals, i.`var` + 1)
 
+        case _: LineNumberNode =>
         case _ =>
           if (!isLive || insn.getOpcode == NOP) {
             // Instruction iterators allow removing during iteration.
