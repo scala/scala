@@ -135,7 +135,7 @@ object ArrayOps {
   }
 
   private class ReverseIterator[A](private[this] val xs: Array[A]) extends Iterator[A] {
-    private[this] var pos = length-1
+    private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
     def next(): A = try {
       val r = xs(pos)

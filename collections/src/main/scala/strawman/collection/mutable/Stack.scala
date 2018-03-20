@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import scala.{AnyRef, Array, Boolean, Int, SerialVersionUID, Serializable}
+import scala.{AnyRef, Array, Boolean, Int, SerialVersionUID, Serializable, `inline`}
 import strawman.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps, toNewSeq}
 
 /** A stack implements a data structure which allows to store and retrieve
@@ -20,6 +20,7 @@ import strawman.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory,
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
+//TODO add in scala.collection namespace: @migration("Stack is now based on an ArrayDeque instead of a linked list", "2.13.0")
 class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Stack, Stack[A]]
@@ -38,7 +39,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     * @param elem
     * @return
     */
-  def push(elem: A): this.type = this += elem
+  def push(elem: A): this.type = prepend(elem)
 
   /** Push two or more elements onto the stack. The last element
     *  of the sequence will be on top of the new stack.
@@ -46,7 +47,11 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @param   elems      the element sequence.
     *  @return the stack with the new elements on top.
     */
-  def push(elem1: A, elem2: A, elems: A*): this.type = push(elem1).push(elem2).pushAll(elems.toStrawman)
+  def push(elem1: A, elem2: A, elems: A*): this.type = {
+    val k = elems.toStrawman.knownSize
+    ensureSize(length + (if(k >= 0) k + 2 else 3))
+    prepend(elem1).prepend(elem2).pushAll(elems.toStrawman)
+  }
 
   /** Push all elements in the given traversable object onto the stack. The
     *  last element in the traversable object will be on top of the new stack.
@@ -54,7 +59,11 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @param elems the traversable object.
     *  @return the stack with the new elements on top.
     */
-  def pushAll(elems: strawman.collection.IterableOnce[A]): this.type = this ++= elems
+  def pushAll(elems: strawman.collection.IterableOnce[A]): this.type =
+    prependAll(elems match {
+      case it: strawman.collection.Seq[A] => it.view.reverse
+      case it => IndexedSeq.from(it).view.reverse
+    })
 
   /**
     * Removes the top element from this stack and return it
@@ -62,14 +71,14 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     * @return
     * @throws java.util.NoSuchElementException when stack is empty
     */
-  def pop(): A = removeLast()
+  def pop(): A = removeHead()
 
   /**
     * Pop all elements from this stack and return it
     *
     * @return The removed elements
     */
-  def popAll(): strawman.collection.Seq[A] = removeAll()
+  def popAll(): strawman.collection.Seq[A] = removeAllReverse()
 
   /**
     * Returns and removes all elements from the top of this stack which satisfy the given predicate
@@ -77,7 +86,16 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @param f   the predicate used for choosing elements
     *  @return The removed elements
     */
-  def popWhile(f: A => Boolean): strawman.collection.Seq[A] = removeLastWhile(f)
+  def popWhile(f: A => Boolean): strawman.collection.Seq[A] = removeHeadWhile(f)
+
+  /** Returns the top element of the stack. This method will not remove
+    *  the element from the stack. An error is signaled if there is no
+    *  element on the stack.
+    *
+    *  @throws java.util.NoSuchElementException
+    *  @return the top element
+    */
+  @`inline` final def top: A = head
 
   override def clone(): Stack[A] = {
     val bf = newSpecificBuilder()

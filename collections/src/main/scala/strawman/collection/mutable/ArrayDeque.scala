@@ -320,11 +320,24 @@ class ArrayDeque[A] protected (
     * Remove all elements from this collection and return the elements while emptying this data structure
     * @return
     */
-  def removeAll(): strawman.collection.Seq[A] = {
-    val elems = strawman.collection.Seq.newBuilder[A]()
+  def removeAll(): strawman.collection.immutable.Seq[A] = {
+    val elems = strawman.collection.immutable.Seq.newBuilder[A]()
     elems.sizeHint(length)
     while(nonEmpty) {
       elems += removeHeadAssumingNonEmpty()
+    }
+    elems.result()
+  }
+
+  /**
+    * Remove all elements from this collection and return the elements in reverse while emptying this data structure
+    * @return
+    */
+  def removeAllReverse(): strawman.collection.immutable.Seq[A] = {
+    val elems = strawman.collection.immutable.Seq.newBuilder[A]()
+    elems.sizeHint(length)
+    while(nonEmpty) {
+      elems += removeLastAssumingNonEmpty()
     }
     elems.result()
   }
@@ -335,8 +348,8 @@ class ArrayDeque[A] protected (
     *  @param f   the predicate used for choosing elements
     *  @return
     */
-  def removeHeadWhile(f: A => Boolean): strawman.collection.Seq[A] = {
-    val elems = strawman.collection.Seq.newBuilder[A]()
+  def removeHeadWhile(f: A => Boolean): strawman.collection.immutable.Seq[A] = {
+    val elems = strawman.collection.immutable.Seq.newBuilder[A]()
     while(headOption.exists(f)) {
       elems += removeHeadAssumingNonEmpty()
     }
@@ -349,8 +362,8 @@ class ArrayDeque[A] protected (
     *  @param f   the predicate used for choosing elements
     *  @return
     */
-  def removeLastWhile(f: A => Boolean): strawman.collection.Seq[A] = {
-    val elems = strawman.collection.Seq.newBuilder[A]()
+  def removeLastWhile(f: A => Boolean): strawman.collection.immutable.Seq[A] = {
+    val elems = strawman.collection.immutable.Seq.newBuilder[A]()
     while(lastOption.exists(f)) {
       elems += removeLastAssumingNonEmpty()
     }
