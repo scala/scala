@@ -84,7 +84,7 @@ package scala.sys {
     *
     * To further control what how the process will be run, such as specifying
     * the directory in which it will be run, see the factories on
-    * [[scala.sys.process.Process]]'s object companion.
+    * [[scala.sys.process.Process]]'s companion object.
     *
     * Once the desired `ProcessBuilder` is available, it can be executed in
     * different ways, depending on how one desires to control its I/O, and what
@@ -140,7 +140,7 @@ package scala.sys {
     *
     *   - [[scala.sys.process.ProcessIO]]: provides the low level abstraction.
     *   - [[scala.sys.process.ProcessLogger]]: provides a higher level abstraction
-    *   for output, and can be created through its object companion
+    *   for output, and can be created through its companion object.
     *   - [[scala.sys.process.BasicIO]]: a library of helper methods for the
     *   creation of `ProcessIO`.
     *   - This package object itself, with a few implicit conversions.
