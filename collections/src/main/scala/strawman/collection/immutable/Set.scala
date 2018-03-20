@@ -5,6 +5,7 @@ package immutable
 import strawman.collection.mutable.Builder
 
 import scala.{Any, Boolean, Int, deprecatedName, `inline`, None, Option, Serializable, SerialVersionUID, Some, Unit}
+import scala.Predef.String
 
 /** Base trait for immutable set collections */
 trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
@@ -109,6 +110,7 @@ object Set extends IterableFactory[Set] {
       else None
     override def head: A = elem1
     override def tail: Set[A] = Set.empty
+    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 2 */
@@ -140,6 +142,7 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set1(elem2)
+    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 3 */
@@ -174,6 +177,7 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set2(elem2, elem3)
+    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 4 */
@@ -210,6 +214,7 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set3(elem2, elem3, elem4)
+    override def className: String = "Set"
   }
 
 }
