@@ -1,6 +1,3 @@
-# This is for forcibly stopping the job from a subshell (see test below).
-trap "exit 1" TERM
-export TOP_PID=$$
 set -e
 
 # The scala/scala checkout directory (set by Jenkins, or `/home/travis/build/scala/scala` on travis)
@@ -13,13 +10,7 @@ else
   IVY2_DIR="$WORKSPACE/.ivy2"
 fi
 
-# Known problems : does not fare well with interrupted, partial
-# compilations. We should perhaps have a multi-dependency version
-# of do_i_have below
-
-LOGGINGDIR="$WORKSPACE/logs"
-mkdir -p "$LOGGINGDIR"
-
+# used by `sbtResolve`
 rm -rf "$WORKSPACE/resolutionScratch_"
 mkdir -p "$WORKSPACE/resolutionScratch_"
 
@@ -35,44 +26,10 @@ addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integratio
 
 jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
-# temp dir where all 'non-build' operation are performed
+# used by `checkAvailability`
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"
 mkdir "${TMP_DIR}"
-
-
-# detect sed version and how to enable extended regexes
-SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
-
-
-
-# :docstring test:
-# Usage: test <argument ..>
-# Executes <argument ..>, logging the launch of the command to the
-# main log file, and kills global script execution with the TERM
-# signal if the commands ends up failing.
-# DO NOT USE ON FUNCTIONS THAT DECLARE VARIABLES,
-# AS YOU'LL BE RUNNING IN A SUBSHELL AND VARIABLE DECLARATIONS WILL BE LOST
-# :end docstring:
-
-function test() {
-    echo "### $@"
-    "$@"
-    status=$?
-    if [ $status -ne 0 ]; then
-        say "### ERROR with $1"
-        kill -s TERM $TOP_PID
-    fi
-}
-
-# :docstring say:
-# Usage: say <argument ..>
-# Prints <argument ..> to both console and the main log file.
-# :end docstring:
-
-function say(){
-    (echo "$@") | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-}
 
 # General debug logging
 # $* - message
@@ -213,8 +170,10 @@ sbtResolve() {
     "$addIntegrationResolver" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
     "show update"
+  res=$?
   cd $WORKSPACE
   travis_fold_end resolve
+  return $res
 }
 
 clearIvyCache() {
