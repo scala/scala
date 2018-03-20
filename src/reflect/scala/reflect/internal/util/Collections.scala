@@ -54,7 +54,7 @@ trait Collections {
     var rest = as.tail
     while (rest ne Nil) {
       val next = new ::(f(rest.head), Nil)
-      tail.tl = next
+      tail.next = next
       tail = next
       rest = rest.tail
     }

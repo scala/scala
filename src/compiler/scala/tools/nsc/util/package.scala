@@ -8,6 +8,7 @@ package tools
 package nsc
 
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter, Reader }
+import scala.collection.immutable.ImmutableArray
 
 package object util {
   // forwarder for old code that builds against 2.9 and 2.10
@@ -43,7 +44,7 @@ package object util {
       val tarray = new Array[Thread](Thread.activeCount())
       val got    = Thread.enumerate(tarray)
 
-      tarray take got
+      ImmutableArray.unsafeWrapArray(tarray.take(got))
     }
 
     val ts1    = allThreads()

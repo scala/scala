@@ -9,10 +9,10 @@
 package scala
 package runtime
 
-import scala.collection.{ TraversableView, AbstractIterator, GenIterable }
-import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ StringLike, NumericRange }
-import scala.collection.generic.{ Sorted, IsTraversableLike }
+import scala.collection.{ View, AbstractIterator, SortedOps, StringView, StringOps, StrictOptimizedIterableOps }
+import scala.collection.generic.IsIterableLike
+import scala.collection.immutable.{ NumericRange, ImmutableArray }
+import scala.collection.mutable.StringBuilder
 import scala.reflect.{ ClassTag, classTag }
 import java.lang.{ Class => jClass }
 
@@ -30,8 +30,8 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   // A helper method to make my life in the pattern matcher a lot easier.
-  def drop[Repr](coll: Repr, num: Int)(implicit traversable: IsTraversableLike[Repr]): Repr =
-    traversable conversion coll drop num
+  def drop[Repr](coll: Repr, num: Int)(implicit iterable: IsIterableLike[Repr]): Repr =
+    iterable conversion coll drop num
 
   /** Return the class object representing an array with element class `clazz`.
    */
@@ -199,17 +199,17 @@ object ScalaRunTime {
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
-      case _: Sorted[_, _]  => true
+      case _: SortedOps[_, _]  => true
       // StringBuilder(a, b, c) and similar not so attractive
-      case _: StringLike[_] => true
+      case _: StringView | _: StringOps | _: StringBuilder => true
       // Don't want to evaluate any elements in a view
-      case _: TraversableView[_, _] => true
+      case _: View[_] => true
       // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
       // -> catch those by isXmlNode and isXmlMetaData.
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
+      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, Nothing, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }
@@ -225,7 +225,7 @@ object ScalaRunTime {
       if (x.getClass.getComponentType == classOf[BoxedUnit])
         0 until (array_length(x) min maxElements) map (_ => "()") mkString ("Array(", ", ", ")")
       else
-        WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
+        x.asInstanceOf[Array[_]].iterator.take(maxElements).map(inner).mkString("Array(", ", ", ")")
     }
 
     // The recursively applied attempt to prettify Array printing.
@@ -238,9 +238,8 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: GenIterable[_]            => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: scala.collection.Map[_, _] => x.iterator take maxElements map mapInner mkString (x.className + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.className + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
       case x                            => x.toString
@@ -261,4 +260,23 @@ object ScalaRunTime {
 
     nl + s + "\n"
   }
+
+  // Convert arrays to ImmutableArray for use with Java varargs:
+  def genericWrapArray[T](xs: Array[T]): ImmutableArray[T] =
+    if (xs eq null) null
+    else ImmutableArray.unsafeWrapArray(xs)
+  def wrapRefArray[T <: AnyRef](xs: Array[T]): ImmutableArray[T] = {
+    if (xs eq null) null
+    else if (xs.length == 0) ImmutableArray.empty[AnyRef].asInstanceOf[ImmutableArray[T]]
+    else new ImmutableArray.ofRef[T](xs)
+  }
+  def wrapIntArray(xs: Array[Int]): ImmutableArray[Int] = if (xs ne null) new ImmutableArray.ofInt(xs) else null
+  def wrapDoubleArray(xs: Array[Double]): ImmutableArray[Double] = if (xs ne null) new ImmutableArray.ofDouble(xs) else null
+  def wrapLongArray(xs: Array[Long]): ImmutableArray[Long] = if (xs ne null) new ImmutableArray.ofLong(xs) else null
+  def wrapFloatArray(xs: Array[Float]): ImmutableArray[Float] = if (xs ne null) new ImmutableArray.ofFloat(xs) else null
+  def wrapCharArray(xs: Array[Char]): ImmutableArray[Char] = if (xs ne null) new ImmutableArray.ofChar(xs) else null
+  def wrapByteArray(xs: Array[Byte]): ImmutableArray[Byte] = if (xs ne null) new ImmutableArray.ofByte(xs) else null
+  def wrapShortArray(xs: Array[Short]): ImmutableArray[Short] = if (xs ne null) new ImmutableArray.ofShort(xs) else null
+  def wrapBooleanArray(xs: Array[Boolean]): ImmutableArray[Boolean] = if (xs ne null) new ImmutableArray.ofBoolean(xs) else null
+  def wrapUnitArray(xs: Array[Unit]): ImmutableArray[Unit] = if (xs ne null) new ImmutableArray.ofUnit(xs) else null
 }

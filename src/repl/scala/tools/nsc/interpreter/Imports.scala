@@ -132,7 +132,7 @@ trait Imports {
               case ReqAndHandler(_, _: ImportHandler) => referencedNames            // for "import a.b", add "a" to names to be resolved
               case _ => Nil
             }
-            val newWanted = wanted ++ augment -- definedNames -- importedNames
+            val newWanted = wanted ++ augment -- definedNames.toSet -- importedNames.toSet
             rh :: select(rest, newWanted)
         }
       }

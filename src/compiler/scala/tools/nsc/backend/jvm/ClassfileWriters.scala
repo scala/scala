@@ -71,9 +71,9 @@ abstract class ClassfileWriters {
       val basicClassWriter = settings.outputDirs.getSingleOutput match {
         case Some(dest) => singleWriter(dest)
         case None =>
-          val distinctOutputs: Set[AbstractFile] = settings.outputDirs.outputs.map(_._2)(scala.collection.breakOut)
+          val distinctOutputs: Set[AbstractFile] = settings.outputDirs.outputs.iterator.map(_._2).toSet
           if (distinctOutputs.size == 1) singleWriter(distinctOutputs.head)
-          else new MultiClassWriter(distinctOutputs.map { output: AbstractFile => output -> singleWriter(output) }(scala.collection.breakOut))
+          else new MultiClassWriter(distinctOutputs.iterator.map { output: AbstractFile => output -> singleWriter(output) }.toMap)
       }
 
       val withAdditionalFormats = if (settings.Ygenasmp.valueSetByUser.isEmpty && settings.Ydumpclasses.valueSetByUser.isEmpty) basicClassWriter else {

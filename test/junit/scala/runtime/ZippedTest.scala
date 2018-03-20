@@ -24,9 +24,9 @@ class ZippedTest {
     val as2 = as1.view
     val as3 = as1 take 10
 
-    def xss1 = List[Seq[Int]](xs1, xs2, xs3, ss1, ss2, ss3, as1, as2, as3)
-    def xss2 = List[Seq[Int]](xs1, xs2, xs3, ss3, as1, as2, as3)  // no infinities
-    def xss3 = List[Seq[Int]](xs2, xs3, ss3, as1) // representative sampling
+    def xss1 = List[Iterable[Int]](xs1, xs2, xs3, ss1, ss2, ss3, as1, as2, as3)
+    def xss2 = List[Iterable[Int]](xs1, xs2, xs3, ss3, as1, as2, as3)  // no infinities
+    def xss3 = List[Iterable[Int]](xs2, xs3, ss3, as1) // representative sampling
 
     for (cc1 <- xss1 ; cc2 <- xss2) {
       val sum1 = (cc1, cc2).zipped map { case (x, y) => x + y } sum

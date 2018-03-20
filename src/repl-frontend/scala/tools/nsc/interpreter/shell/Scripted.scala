@@ -55,7 +55,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
       binding <- Option(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
       key = binding._1
     } yield key
-    terms.to[Set]
+    Set.from(terms)
   }
 
 

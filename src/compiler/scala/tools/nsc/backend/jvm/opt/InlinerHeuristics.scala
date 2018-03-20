@@ -202,7 +202,7 @@ abstract class InlinerHeuristics extends PerRunInit {
                 paramNames.fold(syn)(v => v.applyOrElse(i, (_: Int) => syn))
               }
               def samInfo(i: Int, sam: String, arg: String) = s"the argument for parameter (${param(i)}: $sam) is a $arg"
-              val argInfos = for ((i, sam) <- callee.samParamTypes; info <- callsite.argInfos.get(i)) yield {
+              val argInfos = for ((i, sam) <- callee.samParamTypes; info <- callsite.argInfos.get(i).iterator) yield {
                 val argKind = info match {
                   case FunctionLiteral => "function literal"
                   case ForwardedParam(_) => "parameter of the callsite method"

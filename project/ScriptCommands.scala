@@ -19,7 +19,10 @@ object ScriptCommands {
     * The optional argument is the Artifactory snapshot repository URL. */
   def setupPublishCore = setup("setupPublishCore") { args =>
     Seq(
-      baseVersionSuffix in Global := "SHA-SNAPSHOT"
+      baseVersionSuffix in Global := "SHA-SNAPSHOT",
+      // Don't build scaladoc before bootstrapping because it requires scala-xml
+      sourceDirectory in Compile in LocalProject("scaladoc") := (baseDirectory in LocalProject("scaladoc")).value / ".." / "scaladoc-stub",
+      unmanagedSourceDirectories in Compile in LocalProject("scaladoc") := Seq((sourceDirectory in Compile in LocalProject("scaladoc")).value)
     ) ++ (args match {
       case Seq(url) => publishTarget(url)
       case Nil => Nil

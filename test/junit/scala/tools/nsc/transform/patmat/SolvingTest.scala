@@ -96,10 +96,8 @@ object TestSolver extends Logic with Solving {
 
       // the number of solutions is doubled for every unassigned variable
       val expandedModels = 1 << unassigned.size
-      var current = mutable.ArrayBuffer[Model]()
-      var next = mutable.ArrayBuffer[Model]()
-      current.sizeHint(expandedModels)
-      next.sizeHint(expandedModels)
+      var current = new mutable.ArrayBuffer[Model](expandedModels)
+      var next = new mutable.ArrayBuffer[Model](expandedModels)
 
       current += model
 
@@ -186,7 +184,7 @@ object TestSolver extends Logic with Solving {
           case s: Sym      => lit(s)
           case Not(s: Sym) => negLit(s)
           case And(ps)     =>
-            ps.toArray flatMap conjunctiveNormalForm
+            ps.toArray.flatMap(conjunctiveNormalForm _)
           case Or(ps)      =>
             ps map conjunctiveNormalForm reduceLeft { (a, b) =>
               distribute(a, b)
@@ -227,7 +225,7 @@ class SolvingTest {
           false
         else
           v1 < v2
-    }.toIterable
+    }.to(Iterable)
   }
 
   implicit val SolutionOrd: Ordering[TestSolver.TestSolver.Solution] =

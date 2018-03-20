@@ -230,12 +230,14 @@ quant)
    *  on access by executing `initValue`.
    */
   class QuantMap[K, V <% Ordered[V]](val prefix: String, val phases: Seq[String], initValue: => V)
-      extends mutable.HashMap[K, V] with mutable.SynchronizedMap[K, V] with Quantity {
+      extends mutable.HashMap[K, V] with Quantity {
     override def default(key: K) = {
       val elem = initValue
       this(key) = elem
       elem
     }
+    //TODO clients may need to do additional synchronization; QuantMap used to extend SynchronizedMap before 2.13
+    override def apply(key: K): V = super.apply(key)
     override def toString =
       this.toSeq.sortWith(_._2 > _._2).map {
         case (cls: Class[_], elem) =>

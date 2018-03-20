@@ -5,7 +5,6 @@ package scala.tools.nsc.classpath
 
 import java.io.File
 import java.net.URL
-import scala.collection.Seq
 import scala.reflect.io.AbstractFile
 import scala.reflect.io.FileZipArchive
 import FileUtils.AbstractFileOps

@@ -476,13 +476,13 @@ abstract class ClosureOptimizer {
      */
     def fromTypes(firstLocal: Int, types: Array[Type]): LocalsList = {
       var sizeTwoOffset = 0
-      val locals: List[Local] = types.indices.map(i => {
+      val locals = List.from[Local](types.indices.iterator.map(i => {
         // The ASM method `type.getOpcode` returns the opcode for operating on a value of `type`.
         val offset = types(i).getOpcode(ILOAD) - ILOAD
         val local = Local(firstLocal + i + sizeTwoOffset, offset)
         if (local.size == 2) sizeTwoOffset += 1
         local
-      })(collection.breakOut)
+      }))
       LocalsList(locals)
     }
   }

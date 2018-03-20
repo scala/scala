@@ -39,7 +39,7 @@ object ReplStrings {
   // no escaped or nested quotes
   private[this] val inquotes = """(['"])(.*?)\1""".r
   def unquoted(s: String) = s match { case inquotes(_, w) => w ; case _ => s }
-  def words(s: String) = (s.trim split "\\s+" filterNot (_ == "") map unquoted).toList
+  def words(s: String) = (s.trim split "\\s+" filterNot (_ == "") map (unquoted _)).toList
 
   //  /* An s-interpolator that uses `stringOf(arg)` instead of `String.valueOf(arg)`. */
   //  private[nsc] implicit class `smart stringifier`(val sc: StringContext) extends AnyVal {

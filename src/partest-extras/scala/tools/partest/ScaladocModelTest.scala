@@ -1,3 +1,5 @@
+/* Disabled so we can bootstrap without scaladoc
+
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author Vlad Ureche
@@ -202,3 +204,4 @@ abstract class ScaladocModelTest extends DirectTest {
     }
   }
 }
+*/

@@ -14,7 +14,7 @@ class ReusableBuildersTest {
     b += 3
     b.clear
     assert(!b.isInstanceOf[collection.mutable.ReusableBuilder[_,_]])
-    assert(b.isInstanceOf[collection.mutable.GrowingBuilder[_,_]])
+    assert(b.isInstanceOf[collection.mutable.GrowableBuilder[_,_]])
     assert(b.result == Set[Int]())
   }
 
