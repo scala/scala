@@ -949,18 +949,19 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
       val owner = ownerModule.moduleClass
       val name = TermName(fullname) drop split + 1
-      val opkg = owner.info decl name
-      if (opkg.hasPackageFlag)
+      // Be tolerant of clashes between, e.g. a subpackage and a package object member. These could arise
+      // under separate compilation.
+      val opkg = owner.info.decl(name).filter(_.hasPackageFlag)
+      if (opkg != NoSymbol)
         opkg.asModule
-      else if (opkg == NoSymbol) {
+      else {
         val pkg = owner.newPackage(name)
         pkg.moduleClass setInfo new LazyPackageType
         pkg setInfoAndEnter pkg.moduleClass.tpe
         markFlagsCompleted(pkg)(mask = AllFlags)
         info("made Scala "+pkg)
         pkg
-      } else
-        throw new ReflectError(opkg+" is not a package")
+      }
     }
 
     private def scalaSimpleName(jclazz: jClass[_]): TypeName = {
