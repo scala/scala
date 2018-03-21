@@ -612,10 +612,17 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    fork in Test := false,
+    // enable forking to workaround https://github.com/sbt/sbt/issues/4009
+    fork in Test := true,
+    // customise framework for early acess to https://github.com/rickynils/scalacheck/pull/388
+    // TODO remove this when we upgrade scalacheck
+    testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
-    testOptions += Tests.Cleanup { loader =>
-      ModuleUtilities.getObject("scala.TestCleanup", loader).asInstanceOf[Runnable].run()
+    testOptions ++= {
+      if ((fork in Test).value) Nil
+      else List(Tests.Cleanup { loader =>
+        ModuleUtilities.getObject("scala.TestCleanup", loader).asInstanceOf[Runnable].run()
+      })
     },
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
