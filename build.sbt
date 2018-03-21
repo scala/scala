@@ -580,7 +580,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    fork in Test := false,
+    // enable forking to workaround https://github.com/sbt/sbt/issues/4009
+    fork in Test := true,
+    // customise framework for early acess to https://github.com/rickynils/scalacheck/pull/388
+    // TODO remove this when we upgrade scalacheck
+    testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
@@ -673,8 +677,8 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
-    javaOptions in IntegrationTest ++= "-Xmx2G" :: "-Dfile.encoding=UTF-8" :: Nil,
-    testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8"),
+    javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
+    testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),

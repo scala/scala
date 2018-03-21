@@ -20,6 +20,13 @@ abstract class ReplTest extends DirectTest {
   final override def settings: Settings = {
     val s = super.settings
     s.Xnojline.value = true
+    if (getClass.getClassLoader.getParent != null) {
+      s.classpath.value = s.classpath.value match {
+        case "" => testOutput.toString
+        case s => s + java.io.File.pathSeparator + testOutput.toString
+      }
+      s.usejavacp.value = true
+    }
     transformSettings(s)
   }
   def normalize(s: String) = s
