@@ -23,7 +23,7 @@ abstract class ReplTest extends DirectTest {
     if (getClass.getClassLoader.getParent != null) {
       s.classpath.value = s.classpath.value match {
         case "" => testOutput.toString
-        case s => s + ":" + testOutput.toString
+        case s => s + java.io.File.pathSeparator + testOutput.toString
       }
       s.usejavacp.value = true
     }
