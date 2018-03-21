@@ -21,7 +21,7 @@ object Test {
     val longStandingPromise = Promise[Nothing]
 
     val futures = List.tabulate(numFutures) { i =>
-      val arr = Array.tabulate(arrSz)(identity)
+      val arr = new Array[Int](arrSz)
       val idx = rng.nextInt(arrSz)
       val f1 = Future {
         arr

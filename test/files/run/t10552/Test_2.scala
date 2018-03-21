@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -Ystop-after:typer"
+  override def extraSettings: String = s"-usejavacp -cp ${testOutput.path} -Ystop-after:typer"
 
   def code = "class C { A.f }"
 

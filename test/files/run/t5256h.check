@@ -1,6 +1,6 @@
 $anon
 Test.$anon$1
-java.lang.Object {
+Object {
   final private val x: Int
   def x(): Int
   def <init>(): $anon$1

@@ -1,5 +1,5 @@
 Expr[Int(2)](2)
-Expr[java.lang.String]({
+Expr[String]({
   def foo = "hello";
   foo.$plus("world!")
 })

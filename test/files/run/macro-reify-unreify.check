@@ -1,1 +1,1 @@
-hello world = Expr[java.lang.String("hello world")]("hello world")
+hello world = Expr[String("hello world")]("hello world")

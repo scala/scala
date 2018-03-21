@@ -30,13 +30,13 @@ object Test extends DirectTest {
         |}
       """.stripMargin
 
-    compileString(newCompiler("-usejavacp"))(aCode)
+    compileString(newCompiler(s"-usejavacp", "-cp", testOutput.path))(aCode)
 
     addDeadCode()
 
     // If inlining fails, the compiler will issue an inliner warning that is not present in the
     // check file
-    compileString(newCompiler("-usejavacp", "-opt:l:inline", "-opt-inline-from:**"))(bCode)
+    compileString(newCompiler("-usejavacp", "-cp", testOutput.path, "-opt:l:inline", "-opt-inline-from:**"))(bCode)
   }
 
   def readClass(file: String) = {

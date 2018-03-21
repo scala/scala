@@ -47,8 +47,17 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
-    private def searchForBootClasspath =
-      systemProperties collectFirst { case (k, v) if k endsWith ".boot.class.path" => v } getOrElse ""
+    import scala.collection.JavaConverters._
+
+    private def searchForBootClasspath: String = {
+      val props = System.getProperties
+      // This formulation should be immune to ConcurrentModificationExceptions when system properties
+      // we're unlucky enough to witness a partially published result of System.setProperty or direct
+      // mutation of the System property map. stringPropertyNames internally uses the Enumeration interface,
+      // rather than Iterator, and this disables the fail-fast ConcurrentModificationException.
+      val propNames = props.stringPropertyNames()
+      propNames.asScala collectFirst { case k if k endsWith ".boot.class.path" => props.getProperty(k) } getOrElse ""
+    }
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.

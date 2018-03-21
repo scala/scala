@@ -20,16 +20,16 @@ cs: reflect.runtime.universe.ClassSymbol = class X
 
 scala> val ts: Type = cs.info
 ts: reflect.runtime.universe.Type =
-scala.AnyRef {
+AnyRef {
   def <init>(): X
-  def methodIntIntInt(x: scala.Int,y: scala.Int): scala.Int
+  def methodIntIntInt(x: Int,y: Int): Int
 }
 
 scala> val ms: MethodSymbol = ts.decl(TermName("methodIntIntInt")).asMethod
 ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
 
 scala> val MethodType( _, t1 ) = ms.info
-t1: reflect.runtime.universe.Type = scala.Int
+t1: reflect.runtime.universe.Type = Int
 
 scala> val t2 = typeOf[scala.Int]
 t2: reflect.runtime.universe.Type = Int
