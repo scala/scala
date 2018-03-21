@@ -42,5 +42,5 @@ object Test extends DirectTest {
     ScalaClassLoader(getClass.getClassLoader) run ("Main", Nil)
   }
 
-  override def extraSettings = s"-usejavacp -d ${testOutput.path}"
+  override def extraSettings = s"-usejavacp -d ${testOutput.path} -cp ${testOutput.path}"
 }

@@ -2,7 +2,7 @@ import scala.tools.partest._
 
 object Test extends DirectTest {
   override def code = ""
-  lazy val global = newCompiler("-usejavacp")
+  lazy val global = newCompiler("-usejavacp", "-cp", testOutput.path)
   import global._, definitions._
 
   override def show() {
