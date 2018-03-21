@@ -593,9 +593,15 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // LazyUnit does not have a `value` member
       val valueSym = if (isUnit) NoSymbol else refTpe.member(nme.value)
 
+      def refineLiteral(tree: Tree): Tree =
+        lazyValType match {
+          case _: ConstantType => gen.mkAsInstanceOf(tree, lazyValType)
+          case _ => tree
+        }
+
       def initialized = Select(Ident(holderSym), initializedSym)
       def initialize  = Select(Ident(holderSym), initializeSym)
-      def getValue    = if (isUnit) UNIT else Apply(Select(Ident(holderSym), valueSym), Nil)
+      def getValue    = if (isUnit) UNIT else refineLiteral(Apply(Select(Ident(holderSym), valueSym), Nil))
 
       val computerSym =
         owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
@@ -603,13 +609,15 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val rhsAtComputer = rhs.changeOwner(lazySym -> computerSym)
 
       val computer = mkAccessor(computerSym)(gen.mkSynchronized(Ident(holderSym))(
-        If(initialized, getValue,
-          if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
-          else Apply(initialize, rhsAtComputer :: Nil))))
+        refineLiteral(
+          If(initialized, getValue,
+            if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
+            else Apply(initialize, rhsAtComputer :: Nil)))))
 
       val accessor = mkAccessor(lazySym)(
-        If(initialized, getValue,
-          Apply(Ident(computerSym), Nil)))
+        refineLiteral(
+          If(initialized, getValue,
+            Apply(Ident(computerSym), Nil))))
 
       // do last!
       // remove STABLE: prevent replacing accessor call of type Unit by BoxedUnit.UNIT in erasure
