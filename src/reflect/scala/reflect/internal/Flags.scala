@@ -222,14 +222,14 @@ class Flags extends ModifierFlags {
   // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
   // notPROTECTED set in ExplicitOuter#transform.
 
-//  final val lateDEFERRED  = (DEFERRED: Long) << LateShift // unused
-//  final val lateFINAL     = (FINAL: Long) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
-//  final val lateMETHOD    = (METHOD: Long) << LateShift   // unused
-//  final val lateMODULE    = (MODULE: Long) << LateShift   // unused
+//  final val lateDEFERRED  = (0L + DEFERRED) << LateShift // unused
+//  final val lateFINAL     = (0L + FINAL) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
+//  final val lateMETHOD    = (0L + METHOD) << LateShift   // unused
+//  final val lateMODULE    = (0L + MODULE) << LateShift   // unused
 
-//  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift // unused
-  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
-  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
+//  final val notOVERRIDE   = (0L + OVERRIDE) << AntiShift // unused
+  final val notPRIVATE    = (0L + PRIVATE) << AntiShift
+  final val notPROTECTED  = (0L + PROTECTED) << AntiShift
 
   // ------- masks -----------------------------------------------------------------------
 
