@@ -833,7 +833,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  and should not be used otherwise. TODO: can it be replaced with a tree attachment?
      */
     protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
-      def hasUndets           = context.undetparams.nonEmpty
+      def hasUndets           = !context.undetparams.isEmpty
       def hasUndetsInMonoMode = hasUndets && !mode.inPolyMode
 
       def adaptToImplicitMethod(mt: MethodType): Tree = {
