@@ -1551,11 +1551,11 @@ class InlinerTest extends BytecodeTesting {
 
     assertSameCode(is("t2"), List(
       Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "B", "fx", "()V", false),
-      Label(4), LineNumber(4, Label(4)), Op(ICONST_1), Op(IRETURN), Label(8)))
+      Label(4), LineNumber(4, Label(4)), Op(ICONST_1), Label(7), LineNumber(13, Label(7)), Op(IRETURN), Label(10)))
 
     assertSameCode(is("t3"), List(
       Label(0), LineNumber(9, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "fx", "()V", false),
-      Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Op(IRETURN), Label(8)))
+      Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Label(7), LineNumber(14, Label(7)), Op(IRETURN), Label(10)))
   }
 
   @Test
@@ -1753,5 +1753,23 @@ class InlinerTest extends BytecodeTesting {
     val i = getMethod(t, "$init$")
     assertDoesNotInvoke(i, "f")
     assertInvoke(i, "T", "T$_setter_$x_$eq")
+  }
+
+  @Test
+  def sd479_same_unit_inlining_line_number(): Unit = {
+    val code =
+      """class Test {
+        |  @inline final def foo(b: Boolean): String = {
+        |    "foo"
+        |  }
+        |
+        |  def bar(a: AnyRef, b: Boolean): AnyRef = {
+        |    foo(b); a.toString // line 7
+        |  }
+        |}
+      """.stripMargin
+    val List(t) = compileClasses(code)
+    val i = getMethod(t, "bar")
+    assertSameCode(i.instructions, List(Label(0), LineNumber(7, Label(0)), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false), Op(ARETURN), Label(5)))
   }
 }
