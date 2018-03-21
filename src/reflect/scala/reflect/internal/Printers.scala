@@ -981,7 +981,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           tree match {
             // processing methods ending on colons (x \: list)
             case Apply(Block(l1 @ List(sVD: ValDef), a1 @ Apply(Select(_, methodName), l2 @ List(Ident(iVDName)))), l3)
-              if sVD.mods.isSynthetic && treeInfo.isLeftAssoc(methodName) && sVD.name == iVDName =>
+              if sVD.mods.isSynthetic && nme.isLeftAssoc(methodName) && sVD.name == iVDName =>
               val printBlock = Block(l1, Apply(a1, l3))
               print(printBlock)
             case Apply(tree1, _) if (needsParentheses(tree1)(insideAnnotated = false)) =>

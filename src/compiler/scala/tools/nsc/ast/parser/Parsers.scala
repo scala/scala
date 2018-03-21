@@ -842,7 +842,7 @@ self =>
         case _            => right :: Nil
       }
       if (isExpr) {
-        if (treeInfo.isLeftAssoc(op)) {
+        if (nme.isLeftAssoc(op)) {
           Apply(mkSelection(left), arguments)
         } else {
           val x = freshTermName(nme.RIGHT_ASSOC_OP_PREFIX)
@@ -881,7 +881,7 @@ self =>
 
     def checkHeadAssoc(leftAssoc: Boolean) = checkAssoc(opHead.offset, opHead.operator, leftAssoc)
     def checkAssoc(offset: Offset, op: Name, leftAssoc: Boolean) = (
-      if (treeInfo.isLeftAssoc(op) != leftAssoc)
+      if (nme.isLeftAssoc(op) != leftAssoc)
         syntaxError(offset, "left- and right-associative operators with same precedence may not be mixed", skipIt = false)
     )
 
@@ -906,7 +906,7 @@ self =>
 
     def reduceStack(isExpr: Boolean, base: List[OpInfo], top: Tree): Tree = {
       val opPrecedence = if (isIdent) Precedence(in.name.toString) else Precedence(0)
-      val leftAssoc    = !isIdent || (treeInfo isLeftAssoc in.name)
+      val leftAssoc    = !isIdent || (nme isLeftAssoc in.name)
 
       reduceStack(isExpr, base, top, opPrecedence, leftAssoc)
     }
@@ -1107,7 +1107,7 @@ self =>
         } else EmptyTree
         def asInfix = {
           val opOffset  = in.offset
-          val leftAssoc = treeInfo.isLeftAssoc(in.name)
+          val leftAssoc = nme.isLeftAssoc(in.name)
           if (mode != InfixMode.FirstOp)
             checkAssoc(opOffset, in.name, leftAssoc = mode == InfixMode.LeftOp)
           val tycon = atPos(opOffset) { Ident(identForType()) }
