@@ -359,7 +359,12 @@ trait Types
     /** Map a constant type or not-null-type to its underlying base type,
      *  identity for all other types.
      */
-    def deconst: Type = this
+    def deconst: Type = {
+      val deconst0 = new TypeMap {
+        def apply(tp: Type): Type = tp.deconst
+      }
+      mapOver(deconst0)
+    }
 
     /** The type of `this` of a class type or reference type. */
     def typeOfThis: Type = typeSymbol.typeOfThis
