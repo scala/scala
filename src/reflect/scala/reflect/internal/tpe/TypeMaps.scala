@@ -24,6 +24,10 @@ private[internal] trait TypeMaps {
     }).mapOver(this)
   }
 
+  object deconstDeep extends TypeMap {
+     def apply(tp: Type) = tp.deconst.mapOver(this)
+  }
+
   /** Remove any occurrence of type <singleton> from this type and its parents */
   object dropSingletonType extends TypeMap {
     def apply(tp: Type): Type = {
@@ -510,7 +514,7 @@ private[internal] trait TypeMaps {
           loop(nextBase.prefix, clazz.owner)
         else nextBase match {
           case NoType                         => loop(NoType, clazz.owner) // backstop for scala/bug#2797, must remove `SingletonType#isHigherKinded` and run pos/t2797.scala to get here.
-          case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
+          case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied).deconst
           case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
           case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
         }

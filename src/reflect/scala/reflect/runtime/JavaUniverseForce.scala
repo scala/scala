@@ -179,6 +179,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.RecoverableCyclicReference
     this.TypeConstraint
     this.normalizeAliases
+    this.deconstDeep
     this.dropSingletonType
     this.abstractTypesToBounds
     this.dropIllegalStarTypes

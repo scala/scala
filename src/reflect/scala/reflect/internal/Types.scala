@@ -359,12 +359,7 @@ trait Types
     /** Map a constant type or not-null-type to its underlying base type,
      *  identity for all other types.
      */
-    def deconst: Type = {
-      val deconst0 = new TypeMap {
-        def apply(tp: Type): Type = tp.deconst
-      }
-      mapOver(deconst0)
-    }
+    def deconst: Type = this
 
     /** The type of `this` of a class type or reference type. */
     def typeOfThis: Type = typeSymbol.typeOfThis
@@ -2644,7 +2639,7 @@ trait Types
       if (isTrivial || phase.erasedTypes) resultType
       else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
-        val res = idm(resultType).deconst
+        val res = deconstDeep(idm(resultType))
         existentialAbstraction(idm.existentialsNeeded, res)
       }
       else existentialAbstraction(params, resultType)
