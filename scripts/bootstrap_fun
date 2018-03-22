@@ -162,7 +162,7 @@ buildModules() {
 buildPublishedModules() {
   echo "### Publishing modules to sonatype"
 
-  publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' "set pgpPassphrase := Some(Array.empty)")
+  publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' 'set pgpSigningKey := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' "set pgpPassphrase := Some(Array.empty)")
   buildTasks=($publishSonatypeTaskModules)
   buildXML
   buildPartest
