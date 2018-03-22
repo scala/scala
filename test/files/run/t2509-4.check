@@ -1,0 +1,3 @@
+warning: there was one feature warning; re-run with -feature for details
+A: class A: AValue
+B: class B: BValue
