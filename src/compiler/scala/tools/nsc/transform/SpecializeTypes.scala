@@ -201,8 +201,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     override def run(): Unit = {
       super.run()
       exitingSpecialize {
-        FunctionClass.seq.map(_.info)
-        TupleClass.seq.map(_.info)
+        FunctionClass.seq.take(MaxFunctionAritySpecialized + 1).foreach(_.info)
+        TupleClass.seq.take(MaxTupleAritySpecialized).foreach(_.info)
       }
 
       // Remove the final modifier and @inline annotation from anything in the
