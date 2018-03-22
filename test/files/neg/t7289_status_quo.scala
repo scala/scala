@@ -12,7 +12,10 @@ object Test1 {
 
   // Making Ext[+T] should incur the same behavior as these. (so says @paulp)
   implicitly[Ext[_ <: List[Int]]]               // compiles
-  implicitly[Ext[_ <: List[List[Int]]]]         // fails - ambiguous
+  implicitly[Ext[_ <: List[List[Int]]]]         // compiles due to f and m having equally specific result types due
+                                                // to scala/bug#10545 but f now being selected over m because it has
+                                                // the longer implicit argument list. When the fix for 10545 is
+                                                // merged this should compile, selecting m.
   implicitly[Ext[_ <: List[List[List[Int]]]]]   // compiles
 
   // But, we currently get:
