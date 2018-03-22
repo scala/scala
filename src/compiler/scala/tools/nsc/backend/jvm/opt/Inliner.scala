@@ -440,6 +440,19 @@ abstract class Inliner {
     // label for the exit of the inlined functions. xRETURNs are replaced by GOTOs to this label.
     val postCallLabel = newLabelNode
     clonedInstructions.add(postCallLabel)
+    if (sameSourceFile) {
+      BytecodeUtils.previousLineNumber(callsiteInstruction) match {
+        case Some(line) =>
+          BytecodeUtils.nextExecutableInstruction(callsiteInstruction).flatMap(BytecodeUtils.previousLineNumber) match {
+            case Some(line1) =>
+              if (line == line1)
+              // SD-479 code follows on the same line, restore the line number
+                clonedInstructions.add(new LineNumberNode(line, postCallLabel))
+            case None =>
+          }
+        case None =>
+      }
+    }
 
     // replace xRETURNs:
     //   - store the return value (if any)

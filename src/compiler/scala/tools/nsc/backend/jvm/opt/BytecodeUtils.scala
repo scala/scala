@@ -141,6 +141,15 @@ object BytecodeUtils {
     else previousExecutableInstruction(prev, stopBefore)
   }
 
+  @tailrec def previousLineNumber(insn: AbstractInsnNode): Option[Int] = {
+    val prev = insn.getPrevious
+    prev match {
+      case null => None
+      case line: LineNumberNode => Some(line.line)
+      case _ => previousLineNumber(prev)
+    }
+  }
+
   @tailrec def nextExecutableInstruction(insn: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     val next = insn.getNext
     if (next == null || isExecutable(next) || alsoKeep(next)) Option(next)

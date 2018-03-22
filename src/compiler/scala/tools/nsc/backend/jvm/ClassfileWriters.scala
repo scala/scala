@@ -143,7 +143,10 @@ abstract class ClassfileWriters {
           try Files.createDirectories(parent, noAttributes: _*)
           catch {
             case e: FileAlreadyExistsException =>
-              throw new FileConflictException(s"Can't create directory $parent; there is an existing (non-directory) file in its path", e)
+              // `createDirectories` reports this exception if `parent` is an existing symlink to a directory
+              // but that's fine for us (and common enough, `scalac -d /tmp` on mac targets symlink).
+              if (!Files.isDirectory(parent))
+                throw new FileConflictException(s"Can't create directory $parent; there is an existing (non-directory) file in its path", e)
           }
           builtPaths.put(baseDir, TRUE)
           var current = parent

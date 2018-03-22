@@ -48,7 +48,7 @@ jobs:
           - rm -rf build/ # ensure we resolve from artifactory
           - buildModules
           - buildQuick clean publish
-          - set | grep -E '^updatedModuleVersions=|^SCALA_VER=|^publishToSonatype=' > build/env
+          - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^scalaVersionTasks=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_REF=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
 
       # this builds the spec using jekyll
