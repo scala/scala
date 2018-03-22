@@ -1,0 +1,30 @@
+warn-discarded-companion-unit.scala:2: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+  def u1: Unit = Unit
+                 ^
+warn-discarded-companion-unit.scala:3: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+  val u2: Unit = Unit
+                 ^
+warn-discarded-companion-unit.scala:6: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+    Unit
+    ^
+warn-discarded-companion-unit.scala:11: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+    Unit
+    ^
+warn-discarded-companion-unit.scala:15: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+  runA(Unit)
+       ^
+warn-discarded-companion-unit.scala:16: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+  runA({ println(1 + 1); Unit })
+                         ^
+warn-discarded-companion-unit.scala:19: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+  runB { _ => println(2 + 3); Unit }
+                              ^
+warn-discarded-companion-unit.scala:22: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+    if (util.Random.nextInt % 2 == 0) Right(Unit) else Left(Unit)
+                                            ^
+warn-discarded-companion-unit.scala:22: warning: discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.
+    if (util.Random.nextInt % 2 == 0) Right(Unit) else Left(Unit)
+                                                            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+9 warnings found
+one error found
