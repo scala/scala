@@ -147,9 +147,16 @@ buildScalaCheck(){
 # we only need to build the modules necessary to build Scala itself
 # since the version of locker and quick are the same
 buildModules() {
-  echo "### Building modules using locker"
+  if [ "$1" = "bootstrap" ]; then
+    echo "### Building modules using locker"
+    addResolvers="$addBootstrapResolver"
+    publishTasks=("set every publishTo := Some(Resolver.file(\"file\", new File(\"$BOOTSTRAP_REPO_DIR\")))")
+  else
+    echo "### Building modules using quick"
+    addResolvers="$addIntegrationResolver"
+    publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
+  fi
 
-  publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildXML
   # buildScalaCheck
@@ -317,7 +324,7 @@ buildStarr() {
     cd $STARR_DIR
     git co $STARR_REF
     travis_fold_start starr "Building starr"
-    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr $integrationRepoUrl $STARR_VER" $clean publish
+    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
     travis_fold_end starr
   )
 }
@@ -334,7 +341,7 @@ buildLocker() {
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
 
   travis_fold_start locker "Building locker"
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR "setupBootstrapLocker $integrationRepoUrl $SCALA_VER" $clean publish
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" $clean publish
   travis_fold_end locker
 }
 
@@ -353,7 +360,7 @@ buildQuick() {
   $SBT_CMD $sbtArgs \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
+      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER \"$BOOTSTRAP_REPO_DIR\"" \
       "$@"
   travis_fold_end quick
 }

@@ -22,7 +22,6 @@ integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifacto
 
 # only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
 
 jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
@@ -30,6 +29,15 @@ jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jce
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"
 mkdir "${TMP_DIR}"
+
+# Used for publishing starr and locker
+BOOTSTRAP_REPO_DIR="${TMP_ROOT_DIR}/bootstrap-repo"
+mkdir "${BOOTSTRAP_REPO_DIR}"
+
+addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
+addBootstrapResolver="set resolvers in Global += Resolver.file(\"scala-bootstrap\", file(\"$BOOTSTRAP_REPO_DIR\"))"
+# Gets set to addIntegrationResolver or addBootstrapResolver for use in sbtBuild and sbtResolve:
+addResolvers=""
 
 # General debug logging
 # $* - message
@@ -155,7 +163,7 @@ st_stagingRepoClose() {
 
 sbtBuild() {
   travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors $sbtArgs 'set scalacOptions += "-Xfatal-warnings:false"' "$addIntegrationResolver" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD -no-colors $sbtArgs "$addResolvers" 'set scalacOptions += "-Xfatal-warnings:false"' "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
   travis_fold_end build
 }
 
@@ -167,7 +175,7 @@ sbtResolve() {
   # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
-    "$addIntegrationResolver" \
+    "$addResolvers" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
     "show update"
   res=$?
