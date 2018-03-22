@@ -2,7 +2,6 @@ package scala
 package collection
 package mutable
 
-import generic.CanBuildFrom
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
  *
@@ -27,13 +26,13 @@ import generic.CanBuildFrom
  *  rapidly as 2^30^ is approached.
  *
  */
-@SerialVersionUID(1L)
-final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
-extends AbstractMap[K, V]
-   with Map[K, V]
-   with MapLike[K, V, AnyRefMap[K, V]]
-   with Serializable
-{
+@SerialVersionUID(3L)
+class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
+  extends Map[K, V]
+    with MapOps[K, V, Map, AnyRefMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]]
+    with Serializable {
+
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
 
@@ -59,7 +58,7 @@ extends AbstractMap[K, V]
 
   if (initBlank) defaultInitialize(initialBufferSize)
 
-  private[this] def defaultInitialize(n: Int) {
+  private[this] def defaultInitialize(n: Int): Unit = {
     mask =
       if (n<0) 0x7
       else (((1 << (32 - java.lang.Integer.numberOfLeadingZeros(n-1))) - 1) & 0x3FFFFFFF) | 0x7
@@ -70,9 +69,19 @@ extends AbstractMap[K, V]
 
   private[collection] def initializeTo(
     m: Int, sz: Int, vc: Int, hz: Array[Int], kz: Array[AnyRef], vz: Array[AnyRef]
-  ) {
+  ): Unit = {
     mask = m; _size = sz; _vacant = vc; _hashes = hz; _keys = kz; _values = vz
   }
+
+  override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
+    var sz = coll.knownSize
+    if(sz < 0) sz = 4
+    val arm = new AnyRefMap[K, V](sz * 2)
+    coll.foreach{ case (k,v) => arm(k) = v }
+    if (arm.size < (sz>>3)) arm.repack()
+    arm
+  }
+  override protected[this] def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)
@@ -185,7 +194,7 @@ extends AbstractMap[K, V]
    */
   override def default(key: K) = defaultEntry(key)
 
-  private def repack(newMask: Int) {
+  private def repack(newMask: Int): Unit = {
     val oh = _hashes
     val ok = _keys
     val ov = _values
@@ -217,7 +226,7 @@ extends AbstractMap[K, V]
    *  improved performance.  Repacking takes time proportional to the number
    *  of entries in the map.
    */
-  def repack() {
+  def repack(): Unit = {
     var m = mask
     if (_size + _vacant >= 0.5*mask && !(_vacant > 0.2*mask)) m = ((m << 1) + 1) & IndexMask
     while (m > 8 && 8*_size < m) m = m >>> 1
@@ -272,11 +281,11 @@ extends AbstractMap[K, V]
   }
 
   /** Adds a new key/value pair to this map and returns the map. */
-  def +=(key: K, value: V): this.type = { update(key, value); this }
+  def addOne(key: K, value: V): this.type = { update(key, value); this }
 
-  def +=(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
+  def addOne(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
 
-  def -=(key: K): this.type = {
+  def subtractOne(key: K): this.type = {
     val i = seekEntry(hashOf(key), key)
     if (i >= 0) {
       _size -= 1
@@ -288,7 +297,7 @@ extends AbstractMap[K, V]
     this
   }
 
-  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
+  def iterator(): Iterator[(K, V)] = new Iterator[(K, V)] {
     private[this] val hz = _hashes
     private[this] val kz = _keys
     private[this] val vz = _values
@@ -305,7 +314,7 @@ extends AbstractMap[K, V]
       true
     }
 
-    def next: (K, V) = {
+    def next(): (K, V) = {
       if (hasNext) {
         val ans = (kz(index).asInstanceOf[K], vz(index).asInstanceOf[V])
         index += 1
@@ -315,7 +324,7 @@ extends AbstractMap[K, V]
     }
   }
 
-  override def foreach[U](f: ((K,V)) => U) {
+  override def foreach[U](f: ((K,V)) => U): Unit = {
     var i = 0
     var e = _size
     while (e > 0) {
@@ -338,25 +347,22 @@ extends AbstractMap[K, V]
     arm
   }
 
-  override def +[V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = {
-    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
-    arm += kv
-    arm
-  }
-
-  override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): AnyRefMap[K, V1] = {
-    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+  override def concat[V2 >: V](xs: scala.collection.Iterable[(K, V2)]): AnyRefMap[K, V2] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V2]]
     xs.foreach(kv => arm += kv)
     arm
   }
 
-  override def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
+  override def ++[V2 >: V](xs: scala.collection.Iterable[(K, V2)]): AnyRefMap[K, V2] = concat(xs)
+
+  @deprecated("Use AnyRefMap.from(m).add(k,v) instead of m.updated(k, v)", "2.13.0")
+  def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
     val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
-    arm += (key, value)
+    arm += ((key, value))
     arm
   }
 
-  private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B) {
+  private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B): Unit = {
     var i,j = 0
     while (i < _hashes.length & j < _size) {
       val h = _hashes(i)
@@ -369,10 +375,10 @@ extends AbstractMap[K, V]
   }
 
   /** Applies a function to all keys of this map. */
-  def foreachKey[A](f: K => A) { foreachElement[K,A](_keys, f) }
+  def foreachKey[A](f: K => A): Unit = foreachElement[K,A](_keys, f)
 
   /** Applies a function to all values of this map. */
-  def foreachValue[A](f: V => A) { foreachElement[V,A](_values, f) }
+  def foreachValue[A](f: V => A): Unit = foreachElement[V,A](_values, f)
 
   /** Creates a new `AnyRefMap` with different values.
    *  Unlike `mapValues`, this method generates a new
@@ -412,6 +418,20 @@ extends AbstractMap[K, V]
     this
   }
 
+  //TODO Replace this default implementation that used to be in MapLike
+  def clear(): Unit = keysIterator() foreach -=
+
+  // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
+  // TODO: Remove the unnecessary implicit in Scala 2.13; Dotty requires it for disambiguation
+  def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2))(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    AnyRefMap.from(new View.Map(toIterable, f))
+  def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    AnyRefMap.from(new View.FlatMap(toIterable, f))
+  def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K with AnyRef, V), (K2, V2)])(implicit ev: K2 <:< AnyRef): AnyRefMap[K2, V2] =
+    flatMap { kv: (K with AnyRef, V) =>
+      if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
+      else View.Empty
+    }(ev)
 }
 
 object AnyRefMap {
@@ -420,17 +440,11 @@ object AnyRefMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
 
-  @SerialVersionUID(1L)
+  @SerialVersionUID(3L)
   private class ExceptionDefault extends (Any => Nothing) with Serializable {
     def apply(k: Any): Nothing = throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
   }
   private val exceptionDefault = new ExceptionDefault
-
-  implicit def canBuildFrom[K <: AnyRef, V, J <: AnyRef, U]: CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] =
-    new CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] {
-      def apply(from: AnyRefMap[K,V]): AnyRefMapBuilder[J, U] = apply()
-      def apply(): AnyRefMapBuilder[J, U] = new AnyRefMapBuilder[J, U]
-    }
 
   /** A builder for instances of `AnyRefMap`.
    *
@@ -438,19 +452,22 @@ object AnyRefMap {
    */
   final class AnyRefMapBuilder[K <: AnyRef, V] extends ReusableBuilder[(K, V), AnyRefMap[K, V]] {
     private[collection] var elems: AnyRefMap[K, V] = new AnyRefMap[K, V]
-    def +=(entry: (K, V)): this.type = {
+    def addOne(entry: (K, V)): this.type = {
       elems += entry
       this
     }
-    def clear() { elems = new AnyRefMap[K, V] }
+    def clear(): Unit = elems = new AnyRefMap[K, V]
     def result(): AnyRefMap[K, V] = elems
   }
 
   /** Creates a new `AnyRefMap` with zero or more key/value pairs. */
-  def apply[K <: AnyRef, V](elems: (K, V)*): AnyRefMap[K, V] = {
-    val sz = if (elems.hasDefiniteSize) elems.size else 4
+  def apply[K <: AnyRef, V](elems: (K, V)*): AnyRefMap[K, V] = buildFromIterableOnce(elems)
+
+  private def buildFromIterableOnce[K <: AnyRef, V](elems: IterableOnce[(K, V)]): AnyRefMap[K, V] = {
+    var sz = elems.knownSize
+    if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
-    elems.foreach{ case (k,v) => arm(k) = v }
+    elems.iterator().foreach{ case (k,v) => arm(k) = v }
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
@@ -460,6 +477,19 @@ object AnyRefMap {
 
   /** Creates a new empty `AnyRefMap` with the supplied default */
   def withDefault[K <: AnyRef, V](default: K => V): AnyRefMap[K, V] = new AnyRefMap[K, V](default)
+
+  /** Creates a new `AnyRefMap` from an existing source collection. A source collection
+    * which is already an `AnyRefMap` gets cloned.
+    *
+    * @param source Source collection
+    * @tparam K the type of the keys
+    * @tparam V the type of the values
+    * @return a new `AnyRefMap` with the elements of `source`
+    */
+  def from[K <: AnyRef, V](source: IterableOnce[(K, V)]): AnyRefMap[K, V] = source match {
+    case source: AnyRefMap[_, _] => source.clone().asInstanceOf[AnyRefMap[K, V]]
+    case _ => buildFromIterableOnce(source)
+  }
 
   /** Creates a new `AnyRefMap` from arrays of keys and values.
    *  Equivalent to but more efficient than `AnyRefMap((keys zip values): _*)`.
@@ -479,9 +509,9 @@ object AnyRefMap {
   def fromZip[K <: AnyRef, V](keys: Iterable[K], values: Iterable[V]): AnyRefMap[K, V] = {
     val sz = math.min(keys.size, values.size)
     val arm = new AnyRefMap[K, V](sz * 2)
-    val ki = keys.iterator
-    val vi = values.iterator
-    while (ki.hasNext && vi.hasNext) arm(ki.next) = vi.next
+    val ki = keys.iterator()
+    val vi = values.iterator()
+    while (ki.hasNext && vi.hasNext) arm(ki.next()) = vi.next()
     if (arm.size < (sz >> 3)) arm.repack()
     arm
   }

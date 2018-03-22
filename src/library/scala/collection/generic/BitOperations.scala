@@ -6,15 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package collection
+package scala.collection
 package generic
 
+
 /** Some bit operations.
- *
- *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
- *  an explanation of unsignedCompare.
- */
+  *
+  *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
+  *  an explanation of unsignedCompare.
+  */
 private[collection] object BitOperations {
   trait Int {
     type Int = scala.Int

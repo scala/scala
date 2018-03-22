@@ -8,6 +8,8 @@
 
 package scala.collection.concurrent;
 
+import java.lang.String;
+
 public abstract class BasicNode {
 
     public abstract String string(int lev);
