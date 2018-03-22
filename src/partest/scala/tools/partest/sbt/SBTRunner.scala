@@ -64,7 +64,7 @@ class SBTRunner(val config: RunnerSpec.Config,
     nestUI = nestUI,
     javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
     javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-    scalacExtraArgs = scalacArgs,
+    scalacExtraArgs = scalacArgs.toIndexedSeq,
     javaOpts = javaOpts,
     scalacOpts = scalacOpts) { self =>
 

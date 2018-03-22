@@ -20,7 +20,7 @@ abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCm
   nestUI = nestUI,
   javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
   javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-  scalacExtraArgs = scalacArgs,
+  scalacExtraArgs = scalacArgs.toIndexedSeq,
   javaOpts = javaOpts.map(_.mkString(" ")).getOrElse(PartestDefaults.javaOpts)) {
 
   def error(msg: String): Nothing = sys.error(msg)

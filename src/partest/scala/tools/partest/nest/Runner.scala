@@ -607,7 +607,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       ) ++ antOptions ++ args
     )
 
-    runCommand(cmd, output)
+    runCommand(cmd.toIndexedSeq, output)
   }
 
   def runAntTest(): (Boolean, LogContext) = {
@@ -619,7 +619,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       nestUI.verbose("ant "+args.mkString(" "))
 
       pushTranscript(s"ant ${args.mkString(" ")}")
-      nextTestActionExpectTrue("ant failed", ant(args, logFile)) && diffIsOk
+      nextTestActionExpectTrue("ant failed", ant(args.toIndexedSeq, logFile)) && diffIsOk
     }
     catch { // *catch-all*
       case e: Exception =>
