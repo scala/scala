@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
+import scala.tools.asm.tree.ClassNode
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.AssertUtil._
 import scala.tools.testing.BytecodeTesting._
@@ -244,5 +245,22 @@ class UnreachableCodeTest extends ClearAfterClass {
     val cDCE = dceCompiler.compileClass(code)
     assertSameSummary(getMethod(cDCE, "t3"), List(ALOAD, NEW, DUP, LDC, "<init>", ATHROW))
     assertSameSummary(getMethod(cDCE, "t4"), List(ALOAD, ALOAD, "nt", ATHROW))
+  }
+
+  @Test
+  def patmatDefaultLineNumber(): Unit = {
+    val code =
+      """class Test {
+        |  def test = (this: AnyRef) match {
+        |    case _: String =>
+        |      "line4" // the synthetic `throw new MatchError` used to be positioned, here, despite the fact that patmat positions it at line 3.
+        |  }
+        |}
+        |""".stripMargin
+    val test: ClassNode = dceCompiler.compileClass(code)
+    val i = getAsmMethod(test, "test")
+    val instr = findInstrs(i, "NEW scala/MatchError").head
+    val lineNumber = BytecodeUtils.previousLineNumber(instr)
+    assertEquals(Some(2), lineNumber)
   }
 }
