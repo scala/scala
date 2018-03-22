@@ -5083,7 +5083,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 SelectWithUnderlyingError(tree, err)
                 return tree
               case SilentResultValue((qual, pre)) =>
-                (stabilize(qual, pre, mode, pt), None)
+                val tree = stabilize(qual, pre, mode, pt)
+                if (tree.symbol.isStable && treeInfo.isExprSafeToInline(qual)) {
+                  tree
+                } else {
+                  def deconstResult(tp: Type): Type =
+                    tp match {
+                    case tp @ NullaryMethodType(res) =>
+                      val res1 = res.deconst
+                      if (res eq res1) tp else NullaryMethodType(res1)
+                    case tp @ MethodType(params, res) =>
+                      val res1 = deconstResult(res)
+                      if (res eq res1) tp else MethodType(params, res1)
+                    case tp @ PolyType(params, res) =>
+                      val res1 = deconstResult(res)
+                      if (res eq res1) tp else PolyType(params, res1)
+                    case _ => tp.deconst
+                  }
+                  tree.modifyType(deconstResult)
+                }
+                (tree, None)
             }
 
             result match {

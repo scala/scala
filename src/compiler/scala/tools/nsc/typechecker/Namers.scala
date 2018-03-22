@@ -1079,7 +1079,7 @@ trait Namers extends MethodSynthesis {
         }
 
       // Only final vals may be constant folded, so deconst inferred type of other members.
-      @inline def keepSingleton = if (sym.isFinal) tpe else deconstDeep(tpe)
+      @inline def keepSingleton = if (sym.isFinal) tpe else tpe.deconst
 
       // Only widen if the definition can't keep its inferred singleton type,
       // (Also keep singleton type if so indicated by the expected type `pt`

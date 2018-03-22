@@ -2639,7 +2639,7 @@ trait Types
       if (isTrivial || phase.erasedTypes) resultType
       else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
-        val res = deconstDeep(idm(resultType))
+        val res = idm(resultType).deconst
         existentialAbstraction(idm.existentialsNeeded, res)
       }
       else existentialAbstraction(params, resultType)
