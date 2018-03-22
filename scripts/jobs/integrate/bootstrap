@@ -9,10 +9,10 @@ sbtArgs="-ivy $IVY2_DIR -Dsbt.override.build.repos=true -Dsbt.repository.config=
 
 source scripts/bootstrap_fun
 
+generateRepositoriesConfig $integrationRepoUrl
+
 determineScalaVersion
 deriveModuleVersions
-
-generateRepositoriesConfig $integrationRepoUrl
 
 removeExistingBuilds $integrationRepoUrl
 clearIvyCache
