@@ -124,7 +124,7 @@ buildPartest() {
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
     doc="$(docTask $PARTEST_BUILT)"
-    # disable -Xfatal-warnings until https://github.com/scala/bug/issues/10763 is fixed
+    # disable -Xfatal-warnings until https://github.com/scala/scala-partest/pull/101 is released
     sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
