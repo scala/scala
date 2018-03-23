@@ -43,11 +43,11 @@ import VersionUtil._
 // Scala dependencies:
 val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
+val scalacheckDep                = scalaDep("org.scalacheck", "scalacheck", versionProp = "scalacheck", compatibility = "scalacheck-binary", scope = "test")
 
 // Non-Scala dependencies:
 val junitDep          = "junit"                  % "junit"                % "4.11"
 val junitInterfaceDep = "com.novocode"           % "junit-interface"      % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.13.0-M1" % "1.13.5"                          % "test"
 val jolDep            = "org.openjdk.jol"        % "jol-core"             % "0.5"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"            % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"                % versionProps("jline.version")

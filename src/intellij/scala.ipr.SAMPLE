@@ -390,7 +390,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.2.0-scala-2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.13.0-M3/bundles/scala-xml_2.13.0-M3-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scalacheck/scalacheck_2.13.0-M1/jars/scalacheck_2.13.0-M1-1.13.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scalacheck/scalacheck_2.13.0-M3/jars/scalacheck_2.13.0-M3-1.13.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
       <JAVADOC />
