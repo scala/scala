@@ -1096,12 +1096,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (!isThisTypeResult) {
-              if (tree.tpe.termSymbol == UnitClass.companionModule)
-                context.warning(tree.pos, "discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.")
-              else if (settings.warnValueDiscard)
-                context.warning(tree.pos, "discarded non-Unit value")
-            }
+            if (tree.tpe.termSymbol == UnitClass.companionModule)
+              context.warning(tree.pos, "discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.")
+            else if (settings.warnValueDiscard && !isThisTypeResult)
+              context.warning(tree.pos, "discarded non-Unit value")
           }
           @inline def warnNumericWiden(): Unit =
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
