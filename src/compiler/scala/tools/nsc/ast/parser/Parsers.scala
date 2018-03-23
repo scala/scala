@@ -962,7 +962,7 @@ self =>
      *  called: either in a pattern context or not.  Formerly, this was
      *  threaded through numerous methods as boolean isPattern.
      */
-    trait PatternContextSensitive {
+    sealed trait PatternContextSensitive {
       /** {{{
        *  ArgType       ::=  Type
        *  }}}
@@ -1921,16 +1921,12 @@ self =>
     /** Methods which implicitly propagate whether the initial call took
      *  place in a context where sequences are allowed.  Formerly, this
      *  was threaded through methods as boolean seqOK.
+     *  @param isSequenceOK is a sequence pattern _* allowed?
+     *  @param isXML are we in an XML pattern?
      */
-    trait SeqContextSensitive extends PatternContextSensitive {
-      // is a sequence pattern _* allowed?
-      def isSequenceOK: Boolean
-
-      // are we in an XML pattern?
-      def isXML: Boolean = false
-
-      def functionArgType(): Tree = argType()
-      def argType(): Tree = {
+    final class SeqContextSensitive(val isSequenceOK: Boolean, val isXML: Boolean) extends PatternContextSensitive {
+      final def functionArgType(): Tree = argType()
+      final def argType(): Tree = {
         val start = in.offset
         in.token match {
           case USCORE =>
@@ -2122,23 +2118,19 @@ self =>
       }
     }
     /** The implementation of the context sensitive methods for parsing outside of patterns. */
-    object outPattern extends PatternContextSensitive {
+    final val outPattern = new PatternContextSensitive {
       def argType(): Tree = typ()
       def functionArgType(): Tree = paramType(useStartAsPosition = true)
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */
-    object seqOK extends SeqContextSensitive {
-      val isSequenceOK = true
-    }
+    final val seqOK = new SeqContextSensitive(isSequenceOK = true, isXML = false)
+
     /** The implementation for parsing inside of patterns at points where sequences are disallowed. */
-    object noSeq extends SeqContextSensitive {
-      val isSequenceOK = false
-    }
+    final val noSeq = new SeqContextSensitive(isSequenceOK = false, isXML = false)
+
     /** For use from xml pattern, where sequence is allowed and encouraged. */
-    object xmlSeqOK extends SeqContextSensitive {
-      val isSequenceOK = true
-      override val isXML = true
-    }
+    final val xmlSeqOK = new SeqContextSensitive(isSequenceOK = true, isXML = true)
+
     /** These are default entry points into the pattern context sensitive methods:
      *  they are all initiated from non-pattern context.
      */
