@@ -476,26 +476,6 @@ object Range {
       NumericRange.inclusive(start, end, step)
   }
 
-  // Double works by using a BigDecimal under the hood for precise
-  // stepping, but mapping the sequence values back to doubles with
-  // .doubleValue.  This constructs the BigDecimals by way of the
-  // String constructor (valueOf) instead of the Double one, which
-  // is necessary to keep 0.3d at 0.3 as opposed to
-  // 0.299999999999999988897769753748434595763683319091796875 or so.
-  object Double {
-    implicit val bigDecAsIntegral: Numeric.BigDecimalAsIfIntegral = Numeric.BigDecimalAsIfIntegral
-    implicit val doubleAsIntegral: Numeric.DoubleAsIfIntegral = Numeric.DoubleAsIfIntegral
-    def toBD(x: Double): BigDecimal = scala.math.BigDecimal valueOf x
-
-    @deprecated("use Range.BigDecimal instead", "2.12.6")
-    def apply(start: Double, end: Double, step: Double) =
-      BigDecimal(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
-
-    @deprecated("use Range.BigDecimal.inclusive instead", "2.12.6")
-    def inclusive(start: Double, end: Double, step: Double) =
-      BigDecimal.inclusive(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
-  }
-
   // As there is no appealing default step size for not-really-integral ranges,
   // we offer a partially constructed object.
   class Partial[T, U](private val f: T => U) extends AnyVal {

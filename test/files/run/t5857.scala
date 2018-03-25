@@ -21,14 +21,6 @@ object Test {
     val descending = sz to 1 by -1
     check { assert(descending.min == 1) }
     check { assert(descending.max == sz) }
-
-    val numeric = 1.0 to sz.toDouble by 1
-    check { assert(numeric.min == 1.0) }
-    check { assert(numeric.max == sz.toDouble) }
-
-    val numdesc = sz.toDouble to 1.0 by -1
-    check { assert(numdesc.min == 1.0) }
-    check { assert(numdesc.max == sz.toDouble) }
   }
 
   def check[U](b: =>U): Unit = {

@@ -242,18 +242,6 @@ sealed class NumericRange[T](
           }
         ans.asInstanceOf[B]
       }
-      else if ((num eq scala.math.Numeric.FloatAsIfIntegral) ||
-        (num eq scala.math.Numeric.DoubleAsIfIntegral)) {
-        // Try to compute sum with reasonable accuracy, avoiding over/underflow
-        val numAsIntegral = num.asInstanceOf[Integral[B]]
-        import numAsIntegral._
-        val a = math.abs(head.toDouble)
-        val b = math.abs(last.toDouble)
-        val two = num fromInt 2
-        val nre = num fromInt size
-        if (a > 1e38 || b > 1e38) nre * ((head / two) + (last / two))  // Compute in parts to avoid Infinity if possible
-        else (nre / two) * (head + last)    // Don't need to worry about infinity; this will be more accurate and avoid underflow
-      }
       else if ((num eq scala.math.Numeric.BigIntIsIntegral) ||
         (num eq scala.math.Numeric.BigDecimalIsFractional)) {
         // No overflow, so we can use arithmetic series formula directly
@@ -424,8 +412,6 @@ object NumericRange {
     Numeric.ByteIsIntegral -> Ordering.Byte,
     Numeric.CharIsIntegral -> Ordering.Char,
     Numeric.LongIsIntegral -> Ordering.Long,
-    Numeric.FloatAsIfIntegral -> Ordering.Float,
-    Numeric.DoubleAsIfIntegral -> Ordering.Double,
     Numeric.BigDecimalAsIfIntegral -> Ordering.BigDecimal
   )
 
