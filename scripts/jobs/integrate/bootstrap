@@ -3,11 +3,10 @@
 # See comment in bootstrap_fun
 
 source scripts/common
+source scripts/bootstrap_fun
 
 # scripts/common provides sbtRepositoryConfig
 sbtArgs="-ivy $IVY2_DIR -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
-
-source scripts/bootstrap_fun
 
 generateRepositoriesConfig $integrationRepoUrl
 
@@ -15,7 +14,6 @@ determineScalaVersion
 deriveModuleVersions
 
 removeExistingBuilds $integrationRepoUrl
-clearIvyCache
 
 if [ ! -z "$STARR_REF" ]; then
   buildStarr
@@ -23,17 +21,7 @@ fi
 
 buildLocker
 
-# locker is now published in BOOTSTRAP_REPO_DIR -- make sure we resolve from there
-rm -rf build/
+buildQuick clean publish
 
-buildModules bootstrap
-
-buildQuick clean testAll publish
-
+invokeQuick testAll
 testStability
-
-buildModules
-
-if [ "$publishToSonatype" == "yes" ]; then
-  publishSonatype
-fi

@@ -22,7 +22,6 @@ integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifacto
 
 # only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-
 jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # used by `checkAvailability`
@@ -35,9 +34,11 @@ BOOTSTRAP_REPO_DIR="${TMP_ROOT_DIR}/bootstrap-repo"
 mkdir "${BOOTSTRAP_REPO_DIR}"
 
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
-addBootstrapResolver="set resolvers in Global += Resolver.file(\"scala-bootstrap\", file(\"$BOOTSTRAP_REPO_DIR\"))"
+addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
 # Gets set to addIntegrationResolver or addBootstrapResolver for use in sbtBuild and sbtResolve:
 addResolvers=""
+
+stApi="https://oss.sonatype.org/service/local"
 
 # General debug logging
 # $* - message

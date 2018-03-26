@@ -1,13 +1,10 @@
 # Bootstrap procedure
 #  - determine scala version
 #  - determine module versions
-#  - build minimal core (aka locker) of Scala, use the determined version number, publish to scala-integration
-#  - build those modules where a binary compatible version doesn't exist, publish to scala-integration
-#  - build Scala using the previously built core and modules, publish to scala-integration
+#  - optionally build a fresh "starr", publish to BOOTSTRAP_REPO_DIR
+#  - build minimal core (aka "locker") of Scala, publish to BOOTSTRAP_REPO_DIR
+#  - build Scala (aka "quick") using locker, publish to scala-integration (or sonatype)
 #  - run tests
-#  - for releases
-#    - stage Scala on sonatype
-#    - rebuild modules where no binary compatible version existed, stage them on sonatype
 #  - the Scala version is serialized to jenkins.properties, which is passed downstream to scala-release jobs
 
 
@@ -73,45 +70,33 @@ publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 forceBuildModules=${forceBuildModules-no}
 clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
 
-stApi="https://oss.sonatype.org/service/local"
 
+docTask() {
+  # Build the module docs only in the last (quick) stage. The locker scaladoc may be binary
+  # incompatible with the starr scala-xml (on which it depends, by the pom file)
+  if [ "$1" = "quick" ]; then
+    echo "doc"
+  else
+    echo "set publishArtifact in (Compile, packageDoc) in ThisBuild := false"
+  fi
+}
 
 # Oh boy... can't use scaladoc to document scala-xml if scaladoc depends on the same version of scala-xml.
 # Even if that version is available through the project's resolvers, sbt won't look past this project.
 # SOOOOO, we set the version to a dummy (-DOC), generate documentation,
 # then set the version to the right one and publish (which won't re-gen the docs).
 # Also tried publish-local without docs using 'set publishArtifact in (Compile, packageDoc) := false' and republishing, no dice.
-
-# Each buildModule() function is invoked twice: first to build against locker and publish to artifactory, then
-# to build against the release and publish to sonatype (or publish-local if publishToSonatype is not "yes").
-# In the second round, sbtResolve is always true: the module will be found in the artifactory!
-# Therefore, if MODULE_BUILT is "yes" (in the second round), we know that we need to build (and publish) the
-# module again.
-#
-# Note: we tried an alternative solution in which sbtResolve would not look at artifactory, but that fails. For example,
-# scala-xml depends on scala-library, so sbt tries to find the scala-library of the version that we are currently building,
-# which exists only in artifactory.
-
-docTask() {
-  if [[ "$STARR_REF" != "" && "$1" != "yes" ]]; then
-    # Don't build module docs on the first round of module builds when bootstrapping
-    # a binary incompatible compiler change to avoid linkage errors with using the old Scaladoc
-    echo set publishArtifact in packageDoc in Compile := false
-  else
-    echo doc
-  fi
-}
-
 buildXML() {
-  if [ "$XML_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
+  if [ "$XML_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules" "scala-xml" $XML_VER )
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
-    doc="$(docTask $XML_BUILT)"
+    doc="$(docTask $1)"
 
     # Exclude Scala JS https://github.com/scala/scala/pull/6341#issuecomment-372051392
     buildTasksXml=("${buildTasks[@]/#/xmlJVM\/}")
-    if [[ "$doc" != "" ]]; then docXml="xmlJVM/$doc"; fi
+    docXml="$doc"
+    if [[ "$doc" == "doc" ]]; then docXml="xmlJVM/$doc"; fi
 
     sbtBuild 'set every version := "'$XML_VER'-DOC"' $clean "$docXml" 'set every version := "'$XML_VER'"' xmlJVM/test "${buildTasksXml[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
@@ -123,7 +108,7 @@ buildPartest() {
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
-    doc="$(docTask $PARTEST_BUILT)"
+    doc="$(docTask $1)"
     # disable -Xfatal-warnings until https://github.com/scala/scala-partest/pull/101 is released
     sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
@@ -136,7 +121,7 @@ buildScalaCheck(){
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
-    doc="$(docTask $SCALACHECK_BUILT)"
+    doc="$(docTask $1)"
     sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean "$doc" publish # test times out NOTE: never published to sonatype
     SCALACHECK_BUILT="yes"
   fi
@@ -147,37 +132,33 @@ buildScalaCheck(){
 # we only need to build the modules necessary to build Scala itself
 # since the version of locker and quick are the same
 buildModules() {
-  if [ "$1" = "bootstrap" ]; then
-    echo "### Building modules using locker"
-    addResolvers="$addBootstrapResolver"
-    publishTasks=("set every publishTo := Some(Resolver.file(\"file\", new File(\"$BOOTSTRAP_REPO_DIR\")))")
+  if [ "$1" = "starr" ]; then
+    scalaVersionTasks=('set every scalaVersion := "'$STARR_VER'"')
   else
-    echo "### Building modules using quick"
-    addResolvers="$addIntegrationResolver"
-    publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
+    scalaVersionTasks=('set every scalaVersion := "'$SCALA_VER'"')
   fi
 
-  buildTasks=($publishPrivateTask)
-  buildXML
-  # buildScalaCheck
-  buildPartest
+  if [[ "$1" = "starr" || "$1" == "locker" ]]; then
+    addResolvers="$addBootstrapResolver"
+    publishTasks=("set every publishTo := Some(\"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\")")
+    buildTasks=($publishPrivateTask)
+  else
+    if [ "$publishToSonatype" == "yes" ]; then
+      addResolvers=""
+      publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' 'set pgpSigningKey := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' "set pgpPassphrase := Some(Array.empty)")
+      buildTasks=($publishSonatypeTaskModules)
+    else
+      addResolvers="$addIntegrationResolver"
+      publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
+      buildTasks=($publishPrivateTask)
+    fi
+  fi
 
-  constructUpdatedModuleVersions
+  buildXML $1
+  # buildScalaCheck $1
+  buildPartest $1
 
-  cd $WORKSPACE
-}
-
-# build/test/publish scala core modules to sonatype (this will start a new staging repo)
-# (was hoping we could make everything go to the same staging repo, but it's not timing that causes two staging repos to be opened)
-# NOTE: only publish those for which versions are set
-# test and publish to sonatype, assuming you have ~/.sbt/0.13/sonatype.sbt and ~/.sbt/0.13/plugin/gpg.sbt
-buildPublishedModules() {
-  echo "### Publishing modules to sonatype"
-
-  publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' 'set pgpSigningKey := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' "set pgpPassphrase := Some(Array.empty)")
-  buildTasks=($publishSonatypeTaskModules)
-  buildXML
-  buildPartest
+  constructUpdatedModuleVersions $1
 
   cd $WORKSPACE
 }
@@ -238,8 +219,6 @@ determineScalaVersion() {
 
   echo "version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
   echo "sbtDistVersionOverride=-Dproject.version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
-
-  scalaVersionTasks=('set every scalaVersion := "'$SCALA_VER'"')
 
   echo "Building Scala $SCALA_VER."
 }
@@ -306,118 +285,125 @@ constructUpdatedModuleVersions() {
   # allow overriding the jline version using a jenkins build parameter
   if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
 
-  if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi
+  if [ "$SCALA_BINARY_VER" = "$SCALA_VER" ]; then
+    if [ "$1" = "starr" ]; then
+      binaryVer=$STARR_VER
+    else
+      binaryVer=$SCALA_BINARY_VER
+    fi
+    updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$binaryVer")
+  fi
 }
 
-# build locker (scala + modules) and quick, publishing everything to artifactory
+#### STARR (optional)
 
-#### (Optional) STARR.
 buildStarr() {
+  clearIvyCache
   cd $WORKSPACE
 
   STARR_DIR=./scala-starr
-  STARR_VER_SUFFIX="-$(git rev-parse --short $STARR_REF)-starr"
-  STARR_VER=$SCALA_VER_BASE$STARR_VER_SUFFIX
+  STARR_VER_SUFFIX="-starr-$(git rev-parse --short $STARR_REF)"
+  STARR_VER=$SCALA_VER$STARR_VER_SUFFIX
   rm -rf "$STARR_DIR"
   (
-    git clone --reference $WORKSPACE/.git $WORKSPACE/.git $STARR_DIR
+    git clone "file://$(pwd)" $STARR_DIR
     cd $STARR_DIR
-    git co $STARR_REF
+    git checkout $STARR_REF
     travis_fold_start starr "Building starr"
     $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
     travis_fold_end starr
   )
+  SET_STARR=-Dstarr.version=$STARR_VER
+
+  # Need to build modules for starr. The locker compiler will depend on these modules, i.e., the
+  # starr xml is on the classpath when running the locker scaladoc to build the quick docs.
+  # Not building the modules can fail scaladoc under binary incompatible changes.
+  buildModules starr
 }
 
 #### LOCKER
+
 # for bootstrapping, publish core (or at least smallest subset we can get away with)
 # so that we can build modules with this version of Scala and publish them locally
 # must publish under $SCALA_VER so that the modules will depend on this (binary) version of Scala
 # publish more than just core: partest needs scalap
 # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
 buildLocker() {
+  clearIvyCache
   cd $WORKSPACE
 
-  if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
-
   travis_fold_start locker "Building locker"
-  $SBT_CMD -no-colors $sbtArgs $SET_STARR "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" $clean publish
+  $SBT_CMD -no-colors $sbtArgs \
+    $SET_STARR \
+    ${updatedModuleVersions[@]} \
+    "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
+    $clean publish
   travis_fold_end locker
+
+  buildModules locker
 }
 
 #### QUICK
-buildQuick() {
-  cd $WORKSPACE
 
-  # # TODO: close all open staging repos so that we can be reasonably sure the only open one we see after publishing below is ours
-  # # the sbt call will create a new one
-  #
-  # Rebuild Scala with these modules so that all binary versions are consistent.
-  # Update versions.properties to new modules.
-  # Sanity check: make sure the Scala test suite passes / docs can be generated with these modules.
+invokeQuickInternal() {
+  cd $WORKSPACE
+  setupCmd="$1"
+  shift
 
   travis_fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER \"$BOOTSTRAP_REPO_DIR\"" \
+      "$setupCmd" \
       "$@"
   travis_fold_end quick
 }
 
-testStability() {
-  travis_fold_start stab "Testing stability"
-  cd $WORKSPACE
-
-  # Run stability tests using the just built version as "quick" and a new version as "strap"
-  mv build/quick quick1
-  rm -rf build/
-  $SBT_CMD $sbtArgs \
-      -Dstarr.version=$SCALA_VER \
-      ${updatedModuleVersions[@]} \
-      "setupBootstrapQuick $integrationRepoUrl $SCALA_VER" \
-      $clean \
-      library/compile reflect/compile compiler/compile
-  mv build/quick build/strap
-  mv quick1 build/quick
-  scripts/stability-test.sh
-
-  travis_fold_end stab
+invokeQuick() {
+  invokeQuickInternal \
+    "setupBootstrapQuick $integrationRepoUrl $SCALA_VER \"$BOOTSTRAP_REPO_DIR\"" \
+    "$@"
 }
 
-# publishes quick to sonatype, then builds modules again (those for which version numbers were provided),
-# and publishes those to sonatype as well. finally, the staging repos are closed.
-publishSonatype() {
-  cd $WORKSPACE
-
-  # Make sure that "quick" is downloaded when building the modules
+buildQuick() {
   clearIvyCache
-
-  travis_fold_start sona "Publishing core to sonatype"
-  # Stage to sonatype. No `clean`, just package and publish the `quick` build.
-  # TODO: currently we `clean` because everything is re-compiled anyway on travis. Cleaning ensures
-  # that we compile from a clean state and get identical classfiles (scala-dev#428). Once we figure
-  # out how to prevent sbt from re-compiling (also needed for test stages), we can remove the `clean`.
-  $SBT_CMD $sbtArgs \
-      -Dstarr.version=$SCALA_VER \
-      ${updatedModuleVersions[@]} \
+  if [ "$publishToSonatype" = "yes" ]; then
+    invokeQuickInternal \
       'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
       'set pgpPassphrase in Global := Some(Array.empty)' \
       "setupBootstrapPublish $integrationRepoUrl $SCALA_VER" \
-      clean \
-      $publishSonatypeTaskCore
-  travis_fold_end sona
+      $clean $publishSonatypeTaskCore
+  else
+    invokeQuick $clean publish
+  fi
 
-  # Modules are re-built using quick (the first iteration was built with locker)
-  buildPublishedModules
+  buildModules quick
 
-  open=$(st_stagingReposOpen)
-  allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
-  allOpen=$(echo $open | jq  '.repositoryId' | tr -d \")
+  if [ "$publishToSonatype" = "yes" ]; then
+      open=$(st_stagingReposOpen)
+      allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
+      allOpen=$(echo $open | jq  '.repositoryId' | tr -d \")
 
-  echo "Closing open repos: $allOpen"
+      echo "Closing open repos: $allOpen"
 
-  for repo in $allOpen; do st_stagingRepoClose $repo; done
+      for repo in $allOpen; do st_stagingRepoClose $repo; done
 
-  echo "Closed sonatype staging repos: $allOpenUrls."
+      echo "Closed sonatype staging repos: $allOpenUrls."
+  fi
+}
+
+testStability() {
+  # Run stability tests using the just built version as "quick" and a new version as "strap"
+  travis_fold_start stab "Testing stability"
+  cd $WORKSPACE
+
+  mv build/quick quick1
+  rm -rf build/
+
+  invokeQuick $clean library/compile reflect/compile compiler/compile
+
+  mv build/quick build/strap
+  mv quick1 build/quick
+  scripts/stability-test.sh
+  travis_fold_end stab
 }
