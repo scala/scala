@@ -22,7 +22,6 @@ integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifacto
 
 # only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-
 jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # used by `checkAvailability`
@@ -35,9 +34,11 @@ BOOTSTRAP_REPO_DIR="${TMP_ROOT_DIR}/bootstrap-repo"
 mkdir "${BOOTSTRAP_REPO_DIR}"
 
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
-addBootstrapResolver="set resolvers in Global += Resolver.file(\"scala-bootstrap\", file(\"$BOOTSTRAP_REPO_DIR\"))"
+addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
 # Gets set to addIntegrationResolver or addBootstrapResolver for use in sbtBuild and sbtResolve:
 addResolvers=""
+
+stApi="https://oss.sonatype.org/service/local"
 
 # General debug logging
 # $* - message
@@ -143,8 +144,16 @@ st_curl(){
   curl -H "Content-Type: application/json" -H "accept: application/json,application/vnd.siesta-error-v1+json,application/vnd.siesta-validation-errors-v1+json"  -K ~/.sonatype-curl -s -o - $@
 }
 
+st_stagingRepos() {
+ st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang")'
+}
+
 st_stagingReposOpen() {
- st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang") | select(.type == "open")'
+ st_stagingRepos | jq 'select(.type == "open")'
+}
+
+st_stagingRepoStatus() {
+  st_stagingRepos | jq -r "select(.repositoryId == \"$1\") | .type"
 }
 
 st_stagingRepoDrop() {

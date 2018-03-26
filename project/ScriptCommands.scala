@@ -69,28 +69,23 @@ object ScriptCommands {
     * - Optional: Repository for resolving (same as repository for publishing if not specified)
     * Note that the artifacts produced here are consumed by scala-dist, so the docs have to be built.
     */
-  def setupBootstrapQuick = {
-    def f(targetFileOrUrl: String, ver: String, resolverFileOrUrl: String): Seq[Setting[_]] = {
-      val targetUrl = fileToUrl(targetFileOrUrl)
-      val resolverUrl = fileToUrl(resolverFileOrUrl)
-      Seq(
-        baseVersion in Global := ver,
-        baseVersionSuffix in Global := "SPLIT",
-        resolvers in Global += "scala-pr" at resolverUrl,
-        testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-      ) ++ publishTarget(targetUrl) ++ enableOptimizer
-    }
-    setup("setupBootstrapQuick") {
-      case Seq(targetFileOrUrl, ver, resolverFileOrUrl) => f(targetFileOrUrl, ver, resolverFileOrUrl)
-      case Seq(targetFileOrUrl, ver) => f(targetFileOrUrl, ver, targetFileOrUrl)
-    }
+  def setupBootstrapQuick = setup("setupBootstrapQuick") { case Seq(targetFileOrUrl, ver, resolverFileOrUrl) =>
+    val targetUrl = fileToUrl(targetFileOrUrl)
+    val resolverUrl = fileToUrl(resolverFileOrUrl)
+    Seq(
+      baseVersion in Global := ver,
+      baseVersionSuffix in Global := "SPLIT",
+      resolvers in Global += "scala-pr" at resolverUrl,
+      testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
+    ) ++ publishTarget(targetUrl) ++ enableOptimizer
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:
     * - Temporary bootstrap repository URL for resolving modules
     * - Version number to publish
     * All artifacts are published to Sonatype. */
-  def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(url, ver) =>
+  def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(fileOrUrl, ver) =>
+    val url = fileToUrl(fileOrUrl)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
