@@ -42,6 +42,7 @@ jobs:
           - determineScalaVersion
           - deriveModuleVersions
           - removeExistingBuilds $integrationRepoUrl
+          - export STARR_REF=$TRAVIS_COMMIT # force starr to prevent running locker scaladoc with starr xml on the runtime classpath (=boom)
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
           - buildLocker
           - buildQuick
