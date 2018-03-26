@@ -238,8 +238,12 @@ trait MatchTranslation {
     // unlike translateMatch, we type our result before returning it
     def translateTry(caseDefs: List[CaseDef], pt: Type, pos: Position): List[CaseDef] =
       // if they're already simple enough to be handled by the back-end, we're done
-      if (caseDefs forall treeInfo.isCatchCase) caseDefs
-      else {
+      if (caseDefs forall treeInfo.isCatchCase) {
+        // well, we do need to look for unreachable cases
+        if (!settings.XnoPatmatAnalysis) unreachableTypeSwitchCase(caseDefs).foreach(cd => reportUnreachable(cd.body.pos))
+
+        caseDefs
+      } else {
         val swatches = { // switch-catches
           // scala/bug#7459 must duplicate here as we haven't committed to switch emission, and just figuring out
           //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in

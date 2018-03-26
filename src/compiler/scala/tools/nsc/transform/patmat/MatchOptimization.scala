@@ -392,15 +392,18 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         case (Literal(Constant(cx)), Literal(Constant(cy))) => cx == cy
         case (Ident(nme.WILDCARD), _)                       => true
         // type-switch for catch
-        case (Bind(_, Typed(Ident(nme.WILDCARD), tpX)),
-              Bind(_, Typed(Ident(nme.WILDCARD), tpY)))     => instanceOfTpImplies(tpY.tpe, tpX.tpe)
-        case _ => false
+        case (Typed(Ident(nme.WILDCARD), tpX), Typed(Ident(nme.WILDCARD), tpY)) => instanceOfTpImplies(tpY.tpe, tpX.tpe)
+        // peel off binders -- they don't influence matching
+        case (Bind(_, x), Bind(_, y))                                           => patternImplies(x)(y)
+        case (Bind(_, x), y)                                                    => patternImplies(x)(y)
+        case (x, Bind(_, y))                                                    => patternImplies(x)(y)
+        case _                                                                  => false
       }
 
       private def noGuards(cs: List[CaseDef]): Boolean = !cs.exists(isGuardedCase)
 
       // must do this before removing guards from cases and collapsing (scala/bug#6011, scala/bug#6048)
-      private def unreachableCase(cases: List[CaseDef]): Option[CaseDef] = {
+      def unreachableCase(cases: List[CaseDef]): Option[CaseDef] = {
         def loop(cases: List[CaseDef]): Option[CaseDef] = cases match {
           case head :: next :: _ if isDefault(head)                                    => Some(next) // subsumed by the next case, but faster
           case head :: rest if !isGuardedCase(head) || head.guard.tpe =:= ConstantTrue => rest find caseImplies(head) orElse loop(rest)
@@ -573,6 +576,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         (CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableTpe)))) IF guard) ==> body
       }}
     }
+
+    override def unreachableTypeSwitchCase(cases: List[CaseDef]): Option[CaseDef] = typeSwitchMaker.unreachableCase(cases)
 
     // TODO: drop null checks
     override def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] = {
