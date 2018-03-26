@@ -54,8 +54,7 @@ import scala.annotation.implicitNotFound
  * Application callback execution can be configured separately.
  */
 @implicitNotFound("""Cannot find an implicit ExecutionContext. You might pass
-an (implicit ec: ExecutionContext) parameter to your method
-or import scala.concurrent.ExecutionContext.Implicits.global.""")
+an (implicit ec: ExecutionContext) parameter to your method.""")
 trait ExecutionContext {
 
   /** Runs a block of code on this execution context.
