@@ -465,6 +465,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.FloatTpe
     definitions.DoubleTpe
     definitions.BooleanTpe
+    definitions.UnitModule
     definitions.ScalaNumericValueClasses
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses

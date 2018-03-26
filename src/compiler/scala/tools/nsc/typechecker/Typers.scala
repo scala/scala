@@ -1096,7 +1096,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (tree.tpe.termSymbol == UnitClass.companionModule)
+            if (tree.tpe.termSymbol == UnitModule)
               context.warning(tree.pos, "discarded companion object Unit of type Unit.type. Use () to obtain a value of type Unit.")
             else if (settings.warnValueDiscard && !isThisTypeResult)
               context.warning(tree.pos, "discarded non-Unit value")
