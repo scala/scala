@@ -148,8 +148,15 @@ class ListBuffer[A]
   private def getNext(p: Predecessor[A]): List[A] =
     if (p == null) first else p.next
 
-  private def setNext(p: Predecessor[A], nx: List[A]): Unit =
+  private def setNext(p: Predecessor[A], nx: List[A]): Unit = {
     if (p == null) first = nx else p.next = nx
+    if (nx.isEmpty) last0 = p
+    else {
+      var l = nx.asInstanceOf[::[A]]
+      while (l.next.nonEmpty) l = l.next.asInstanceOf[::[A]]
+      last0 = l
+    }
+  }
 
   def update(idx: Int, elem: A): Unit = {
     ensureUnaliased()
