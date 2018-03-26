@@ -732,9 +732,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  we'd like to expose to reflection users. Therefore a proposed solution is to check whether we're in a
      *  runtime reflection universe, and if yes and if we've not yet loaded the requested info, then to commence initialization.
      */
-    final def getFlag(mask: Long): Long = {
-      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
-      flags & mask
+    def getFlag(mask: Long): Long = {
+      mask & (if ((mask & PhaseIndependentFlags) == mask) rawflags else flags)
     }
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = getFlag(mask) != 0
@@ -746,7 +745,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
-    def resetFlags() { rawflags = 0 }
+    def resetFlags() { rawflags = 0L }
 
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses

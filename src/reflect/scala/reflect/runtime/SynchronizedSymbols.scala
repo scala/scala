@@ -125,6 +125,11 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       gilSynchronized { body }
     }
 
+    override final def getFlag(mask: Long): Long = {
+      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
+      super.getFlag(mask)
+    }
+
     override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }
     override def info = gilSynchronizedIfNotThreadsafe { super.info }
     override def rawInfo: Type = gilSynchronizedIfNotThreadsafe { super.rawInfo }

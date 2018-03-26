@@ -201,12 +201,18 @@ class Flags extends ModifierFlags {
   final val LateShift     = 47
   final val AntiShift     = 56
 
+  /** all of the flags that are unaffected by phase */
+  // (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift))
+  // will revert to a formula before commit, but currently constant folder does not fold this to a constant
+  // but we need this to be a constant now for benchmarking
+  final val PhaseIndependentFlags = 0xF807FFFFFFFFFE08L
+
   // Flags which sketchily share the same slot
   // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
   // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
   // 25:  DEFAULTPARAM/M       TRAIT/M
   // 35:     EXISTENTIAL       MIXEDIN
-  val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL
+  final val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL
 
   // ------- late flags (set by a transformer phase) ---------------------------------
   //
