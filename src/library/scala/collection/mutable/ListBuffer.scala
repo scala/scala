@@ -194,8 +194,21 @@ class ListBuffer[A]
   def update(idx: Int, elem: A): Unit = {
     ensureUnaliased()
     if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
-    val p = locate(idx)
-    setNext(p, elem :: getNext(p).tail)
+    if (idx == 0) {
+      val newElem = new :: (elem, first.tail)
+      if (last0 eq first) {
+        last0 = newElem
+      }
+      first = newElem
+    } else {
+      // `p` can not be `null` because the case where `idx == 0` is handled above
+      val p = locate(idx)
+      val newElem = new :: (elem, p.tail.tail)
+      if (last0 eq p.tail) {
+        last0 = newElem
+      }
+      p.asInstanceOf[::[A]].next = newElem
+    }
   }
 
   def insert(idx: Int, elem: A): Unit = {
