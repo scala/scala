@@ -92,6 +92,12 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       else purpose.isFlagRelated && (_initializationMask & purpose.mask & TopLevelPickledFlags) == 0
     }
 
+    override final def privateWithin: Symbol = {
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      super.privateWithin
+    }
+
     /** Communicates with completers declared in scala.reflect.runtime.SymbolLoaders
      *  about the status of initialization of the underlying symbol.
      *

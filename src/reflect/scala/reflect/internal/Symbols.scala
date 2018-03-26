@@ -1421,15 +1421,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     private[this] var _privateWithin: Symbol = _
     def privateWithin = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _privateWithin
     }
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
     def setPrivateWithin(sym: Symbol): this.type = { privateWithin_=(sym) ; this }
 
     /** Does symbol have a private or protected qualifier set? */
-    final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
+    final def hasAccessBoundary = {
+      val pw = privateWithin
+      (pw ne null) && (pw ne NoSymbol)
+    }
 
 // ------ info and type -------------------------------------------------------------------
 
@@ -2476,8 +2477,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def caseModule: Symbol = {
       var modname = name.toTermName
-      if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
-        modname = nme.expandedName(modname, privateWithin)
+      val pw = privateWithin
+      if (pw.isClass && !pw.isModuleClass && !hasFlag(EXPANDEDNAME))
+        modname = nme.expandedName(modname, pw)
       initialize.owner.info.decl(modname).suchThat(_.isModule)
     }
 
