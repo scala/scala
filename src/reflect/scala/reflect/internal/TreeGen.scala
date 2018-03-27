@@ -813,11 +813,19 @@ abstract class TreeGen {
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
 
+  private def unwarnable(pat: Tree): Tree = {
+    pat foreach {
+      case b @ Bind(_, _) => b updateAttachment AtBoundIdentifierAttachment
+      case _ =>
+    }
+    pat
+  }
+
   def mkCheckIfRefutable(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator) =
     if (treeInfo.isVarPatternDeep(pat)) rhs
     else {
       val cases = List(
-        CaseDef(pat.duplicate updateAttachment AtBoundIdentifierAttachment, EmptyTree, Literal(Constant(true))),
+        CaseDef(unwarnable(pat.duplicate), EmptyTree, Literal(Constant(true))),
         CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
       )
       val visitor = mkVisitor(cases, checkExhaustive = false, nme.CHECK_IF_REFUTABLE_STRING)

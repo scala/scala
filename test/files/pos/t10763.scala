@@ -4,4 +4,5 @@ class Test {
 
     for (refute@1 <- xs) {}
   }
+  def f() = for (Some(i: Int) <- List(Option(42))) println(i)
 }
