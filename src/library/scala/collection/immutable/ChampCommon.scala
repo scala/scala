@@ -66,8 +66,8 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   protected var currentValueNode: T = _
 
   private var currentStackLevel: Int = -1
-  private val nodeCursorsAndLengths: Array[Int] = Array.ofDim[Int](MaxDepth * 2)
-  private val nodes: Array[T] = Array.ofDim[Node[T]](MaxDepth).asInstanceOf[Array[T]]
+  private val nodeCursorsAndLengths: Array[Int] = new Array[Int](MaxDepth * 2)
+  private val nodes: Array[T] = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
 
   def this(rootNode: T) = {
     this()
@@ -143,8 +143,8 @@ private[immutable] abstract class ChampBaseReverseIterator[T <: Node[T]] {
   protected var currentValueNode: T = _
 
   private var currentStackLevel: Int = -1
-  private val nodeIndex: Array[Int] = Array.ofDim[Int](MaxDepth + 1)
-  private val nodeStack: Array[T] = Array.ofDim[Node[T]](MaxDepth + 1).asInstanceOf[Array[T]]
+  private val nodeIndex: Array[Int] = new Array[Int](MaxDepth + 1)
+  private val nodeStack: Array[T] = new Array[Node[T]](MaxDepth + 1).asInstanceOf[Array[T]]
 
   def this(rootNode: T) = {
     this()
