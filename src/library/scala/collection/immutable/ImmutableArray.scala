@@ -42,7 +42,7 @@ sealed abstract class ImmutableArray[+A]
   def apply(i: Int): A
 
   override def updated[B >: A](index: Int, elem: B): ImmutableArray[B] = {
-    val dest = Array.ofDim[Any](length)
+    val dest = new Array[Any](length)
     Array.copy(unsafeArray, 0, dest, 0, length)
     dest(index) = elem
     ImmutableArray.unsafeWrapArray(dest).asInstanceOf[ImmutableArray[B]]
@@ -51,14 +51,14 @@ sealed abstract class ImmutableArray[+A]
   override def map[B](f: A => B): ImmutableArray[B] = iterableFactory.tabulate(length)(i => f(apply(i)))
 
   override def prepended[B >: A](elem: B): ImmutableArray[B] = {
-    val dest = Array.ofDim[Any](length + 1)
+    val dest = new Array[Any](length + 1)
     dest(0) = elem
     Array.copy(unsafeArray, 0, dest, 1, length)
     ImmutableArray.unsafeWrapArray(dest).asInstanceOf[ImmutableArray[B]]
   }
 
   override def appended[B >: A](elem: B): ImmutableArray[B] = {
-    val dest = Array.ofDim[Any](length + 1)
+    val dest = new Array[Any](length + 1)
     Array.copy(unsafeArray, 0, dest, 0, length)
     dest(length) = elem
     ImmutableArray.unsafeWrapArray(dest).asInstanceOf[ImmutableArray[B]]
