@@ -93,7 +93,7 @@ class ListBuffer[A]
 
   def addOne(elem: A): this.type = {
     ensureUnaliased()
-    val last1 = (elem :: Nil).asInstanceOf[::[A]]
+    val last1 = new ::[A](elem, Nil)
     if (len == 0) first = last1 else last0.next = last1
     last0 = last1
     len += 1
