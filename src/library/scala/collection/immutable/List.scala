@@ -7,6 +7,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer, ReusableBuilder}
+import scala.collection.{LinearSeq, Seq}
 
 
 
@@ -393,6 +394,24 @@ sealed abstract class List[+A]
   }
 
   final override def toList: List[A] = this
+
+  // Override for performance
+  override def equals(o: scala.Any): Boolean = {
+    @tailrec def listEq(a: List[_], b: List[_]): Boolean =
+      (a eq b) || {
+        if (a.nonEmpty && b.nonEmpty && a.head == b.head) {
+          listEq(a.tail, b.tail)
+        }
+        else {
+          a.isEmpty && b.isEmpty
+        }
+      }
+
+    o match {
+      case that: List[_] => listEq(this, that)
+      case _ => super.equals(o)
+    }
+  }
 
 }
 
