@@ -333,6 +333,67 @@ sealed abstract class List[+A]
     acc
   }
 
+  // Copy/Paste overrides to avoid interface calls inside loops.
+
+  override final def length: Int = {
+    var these = this
+    var len = 0
+    while (!these.isEmpty) {
+      len += 1
+      these = these.tail
+    }
+    len
+  }
+
+  override final def lengthCompare(len: Int): Int = {
+    @tailrec def loop(i: Int, xs: List[A]): Int = {
+      if (i == len)
+        if (xs.isEmpty) 0 else 1
+      else if (xs.isEmpty)
+        -1
+      else
+        loop(i + 1, xs.tail)
+    }
+    if (len < 0) 1
+    else loop(0, coll)
+  }
+
+  override final def forall(p: A => Boolean): Boolean = {
+    var these: List[A] = coll
+    while (!these.isEmpty) {
+      if (!p(these.head)) return false
+      these = these.tail
+    }
+    true
+  }
+
+  override final def exists(p: A => Boolean): Boolean = {
+    var these: List[A] = coll
+    while (!these.isEmpty) {
+      if (p(these.head)) return true
+      these = these.tail
+    }
+    false
+  }
+
+  override final def contains[A1 >: A](elem: A1): Boolean = {
+    var these: List[A] = coll
+    while (!these.isEmpty) {
+      if (these.head == elem) return true
+      these = these.tail
+    }
+    false
+  }
+
+  override final def find(p: A => Boolean): Option[A] = {
+    var these: List[A] = this
+    while (!these.isEmpty) {
+      if (p(these.head)) return Some(these.head)
+      these = these.tail
+    }
+    None
+  }
+
   // Create a proxy for Java serialization that allows us to avoid mutation
   // during deserialization.  This is the Serialization Proxy Pattern.
   protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
