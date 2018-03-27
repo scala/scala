@@ -51,7 +51,7 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
-    if (global.phase.id < global.currentRun.erasurePhase.id)
+    if (global.phase.id >= global.currentRun.erasurePhase.id)
       devWarning(enclosingMacroPosition, s"reify Class[$tpe0] during ${global.phase.name}")
 
     // scala/bug#7375
@@ -72,7 +72,7 @@ package object reify {
     }
   }
 
-  // Note: If  current context is inside the constructor of an object or otherwise not inside
+  // Note: If current context is inside the constructor of an object or otherwise not inside
   // a class/object body, this will return an EmptyTree.
   def reifyEnclosingRuntimeClass(global: Global)(typer0: global.analyzer.Typer): global.Tree = {
     import global._
