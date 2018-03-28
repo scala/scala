@@ -359,7 +359,7 @@ sealed abstract class List[+A]
   }
 
   override final def forall(p: A => Boolean): Boolean = {
-    var these: List[A] = coll
+    var these: List[A] = this
     while (!these.isEmpty) {
       if (!p(these.head)) return false
       these = these.tail
@@ -368,7 +368,7 @@ sealed abstract class List[+A]
   }
 
   override final def exists(p: A => Boolean): Boolean = {
-    var these: List[A] = coll
+    var these: List[A] = this
     while (!these.isEmpty) {
       if (p(these.head)) return true
       these = these.tail
@@ -377,7 +377,7 @@ sealed abstract class List[+A]
   }
 
   override final def contains[A1 >: A](elem: A1): Boolean = {
-    var these: List[A] = coll
+    var these: List[A] = this
     while (!these.isEmpty) {
       if (these.head == elem) return true
       these = these.tail
