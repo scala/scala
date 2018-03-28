@@ -78,7 +78,6 @@ SEP=":"
 
 # Possible additional command line options
 WINDOWS_OPT=""
-EMACS_OPT="-Denv.emacs=$EMACS"
 
 # Remove spaces from SCALA_HOME on windows
 if [[ -n "$cygwin" ]]; then
@@ -216,7 +215,6 @@ execCommand \
   "${classpath_args[@@]}" \
   -Dscala.home="$SCALA_HOME" \
   $OVERRIDE_USEJAVACP \
-  "$EMACS_OPT" \
   $WINDOWS_OPT \
   @properties@ @class@ @toolflags@ "$@@"
 
