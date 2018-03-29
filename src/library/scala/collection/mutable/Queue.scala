@@ -85,7 +85,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
       removeHead()
       res
     } else {
-      val i = lastIndexWhere(p)
+      val i = indexWhere(p)
       if (i < 0) None
       else Some(remove(i))
     }
