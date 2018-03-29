@@ -1,6 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
+import java.nio.channels.ClosedByInterruptException
 import java.nio.file.Path
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent._
@@ -153,6 +154,8 @@ private[jvm] object GeneratedClassHandler {
           // We know the future is complete, throw the exception if it completed with a failure
           unitInPostProcess.task.value.get.get
         } catch {
+          case _: ClosedByInterruptException => throw new InterruptedException()
+          case ex: InterruptedException => throw ex
           case NonFatal(t) =>
             t.printStackTrace()
             frontendAccess.backendReporting.error(NoPosition, s"unable to write ${unitInPostProcess.paths.sourceFile} $t")
