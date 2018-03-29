@@ -1,7 +1,10 @@
 package scala.build
 
+import java.nio.file.Paths
+
 import sbt._
 import Keys._
+
 import BuildSettings.autoImport._
 
 /** Custom commands for use by the Jenkins scripts. This keeps the surface area and call syntax small. */
@@ -40,7 +43,8 @@ object ScriptCommands {
   /** Set up the environment for building STARR in `validate/bootstrap`. The arguments are:
     * - Repository URL for publishing
     * - Version number to publish */
-  def setupBootstrapStarr = setup("setupBootstrapStarr") { case Seq(url, ver) =>
+  def setupBootstrapStarr = setup("setupBootstrapStarr") { case Seq(fileOrUrl, ver) =>
+    val url = fileToUrl(fileOrUrl)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT"
@@ -48,9 +52,10 @@ object ScriptCommands {
   }
 
   /** Set up the environment for building locker in `validate/bootstrap`. The arguments are:
-    * - Repository URL for publishing locker and resolving STARR
+    * - Repository file or URL for publishing locker and resolving STARR
     * - Version number to publish */
-  def setupBootstrapLocker = setup("setupBootstrapLocker") { case Seq(url, ver) =>
+  def setupBootstrapLocker = setup("setupBootstrapLocker") { case Seq(fileOrUrl, ver) =>
+    val url = fileToUrl(fileOrUrl)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
@@ -61,22 +66,26 @@ object ScriptCommands {
   /** Set up the environment for building quick in `validate/bootstrap`. The arguments are:
     * - Repository URL for publishing
     * - Version number to publish
+    * - Optional: Repository for resolving (same as repository for publishing if not specified)
     * Note that the artifacts produced here are consumed by scala-dist, so the docs have to be built.
     */
-  def setupBootstrapQuick = setup("setupBootstrapQuick") { case Seq(url, ver) =>
+  def setupBootstrapQuick = setup("setupBootstrapQuick") { case Seq(targetFileOrUrl, ver, resolverFileOrUrl) =>
+    val targetUrl = fileToUrl(targetFileOrUrl)
+    val resolverUrl = fileToUrl(resolverFileOrUrl)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
-      resolvers in Global += "scala-pr" at url,
+      resolvers in Global += "scala-pr" at resolverUrl,
       testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ publishTarget(url) ++ enableOptimizer
+    ) ++ publishTarget(targetUrl) ++ enableOptimizer
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:
     * - Temporary bootstrap repository URL for resolving modules
     * - Version number to publish
     * All artifacts are published to Sonatype. */
-  def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(url, ver) =>
+  def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(fileOrUrl, ver) =>
+    val url = fileToUrl(fileOrUrl)
     Seq(
       baseVersion in Global := ver,
       baseVersionSuffix in Global := "SPLIT",
@@ -117,6 +126,11 @@ object ScriptCommands {
       credentials in Global += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
     )
   }
+
+  // If fileOrUrl is already a file:, http: or https: URL, return it, otherwise treat it as a local file and return a URL for it
+  private[this] def fileToUrl(fileOrUrl: String): String =
+    if(fileOrUrl.startsWith("file:") || fileOrUrl.startsWith("http:") || fileOrUrl.startsWith("https:")) fileOrUrl
+    else Paths.get(fileOrUrl).toUri.toString
 
   /** Like `Def.sequential` but accumulate all results */
   def sequence[B](tasks: List[Def.Initialize[Task[B]]]): Def.Initialize[Task[List[B]]] = tasks match {
