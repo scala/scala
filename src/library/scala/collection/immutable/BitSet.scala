@@ -25,6 +25,8 @@ sealed abstract class BitSet
 
   def bitSetFactory = BitSet
 
+  override def className: String = "BitSet"
+
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
   def incl(elem: Int): BitSet = {
