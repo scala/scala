@@ -24,7 +24,8 @@ trait BuildFrom[-From, -A, +C] extends Any {
   @`inline` def apply(from: From): Builder[A, C] = newBuilder(from)
 }
 
-object BuildFrom extends BuildFromLowPriority {
+object BuildFrom extends BuildFromLowPriority1 {
+
   /** Build the source collection type from a MapOps */
   implicit def buildFromMapOps[CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _], K0, V0, K, V]: BuildFrom[CC[K0, V0], (K, V), CC[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
     //TODO: Reuse a prototype instance
@@ -38,11 +39,11 @@ object BuildFrom extends BuildFromLowPriority {
     def fromSpecificIterable(from: CC[K0, V0])(it: Iterable[(K, V)]): CC[K, V] = from.sortedMapFactory.from(it)
   }
 
-  /** Build the source collection type from an Iterable with SortedOps */
-  implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
-    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]()
-    def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.sortedIterableFactory.from(it)
-  }
+  implicit def buildFromBitSet[C <: BitSet with BitSetOps[C]]: BuildFrom[C, Int, C] =
+    new BuildFrom[C, Int, C] {
+      def fromSpecificIterable(from: C)(it: Iterable[Int]): C = from.bitSetFactory.fromSpecific(it)
+      def newBuilder(from: C): Builder[Int, C] = from.bitSetFactory.newBuilder()
+    }
 
   implicit val buildFromString: BuildFrom[String, Char, String] =
     new BuildFrom[String, Char, String] {
@@ -62,15 +63,24 @@ object BuildFrom extends BuildFromLowPriority {
       def newBuilder(from: View[A]): Builder[B, View[B]] = View.newBuilder()
     }
 
-  implicit def buildFromBitSet[C <: BitSet with BitSetOps[C]]: BuildFrom[C, Int, C] =
-    new BuildFrom[C, Int, C] {
-      def fromSpecificIterable(from: C)(it: Iterable[Int]): C = from.bitSetFactory.fromSpecific(it)
-      def newBuilder(from: C): Builder[Int, C] = from.bitSetFactory.newBuilder()
-    }
-
 }
 
-trait BuildFromLowPriority {
+trait BuildFromLowPriority1 extends BuildFromLowPriority2 {
+
+  /** Build the source collection type from an Iterable with SortedOps */
+  implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
+    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]()
+    def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.sortedIterableFactory.from(it)
+  }
+
+  implicit def fallbackStringCanBuildFrom[A]: BuildFrom[String, A, immutable.IndexedSeq[A]] =
+    new BuildFrom[String, A, immutable.IndexedSeq[A]] {
+      def fromSpecificIterable(from: String)(it: Iterable[A]): immutable.IndexedSeq[A] = immutable.IndexedSeq.from(it)
+      def newBuilder(from: String): Builder[A, immutable.IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
+  }
+}
+
+trait BuildFromLowPriority2 {
   /** Build the source collection type from an IterableOps */
   implicit def buildFromIterableOps[CC[X] <: Iterable[X] with IterableOps[X, CC, _], A0, A]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
     //TODO: Reuse a prototype instance
