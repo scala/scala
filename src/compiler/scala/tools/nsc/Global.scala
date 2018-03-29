@@ -423,7 +423,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
     }
 
-    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
+    final def applyPhase(unit: CompilationUnit) = {
+      if (Thread.interrupted()) throw new InterruptedException
+      withCurrentUnit(unit)(apply(unit))
+    }
   }
 
   // phaseName = "parser"

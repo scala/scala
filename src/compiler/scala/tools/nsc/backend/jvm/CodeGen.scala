@@ -43,6 +43,7 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
         generatedClasses += GeneratedClass(beanClassNode, fullSymbolName, position, isArtifact = true)
       }
     } catch {
+      case ex: InterruptedException => throw ex
       case ex: Throwable =>
         ex.printStackTrace()
         error(s"Error while emitting ${unit.source}\n${ex.getMessage}")
