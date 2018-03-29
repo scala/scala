@@ -1,0 +1,7 @@
+inductive-implicits9.scala:10: error: ambiguous implicit values:
+ both value b of type Foo[String]
+ and value a of type Foo[String]
+ match expected type Foo[String]
+    implicitly[Foo[String]]
+              ^
+one error found

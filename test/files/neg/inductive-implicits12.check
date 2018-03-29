@@ -1,0 +1,23 @@
+inductive-implicits12.scala:17: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  h0: TC[Int]
+    ^
+inductive-implicits12.scala:19: error: ambiguous implicit values:
+ both value intTC in object TC of type => TC[Int]
+ and method fooTC in object TC of type [A](implicit ev: TC[A])TC[Foo[A]]
+ match expected type TC[A]
+  val h1 = handler(Bar(23))
+                  ^
+inductive-implicits12.scala:25: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  h3: TC[Foo[Int]]
+    ^
+inductive-implicits12.scala:28: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  h4: TC[Int]
+    ^
+inductive-implicits12.scala:31: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  h5: TC[Foo[Int]]
+    ^
+inductive-implicits12.scala:34: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  h6: TC[Foo[Foo[Int]]]
+    ^
+5 warnings found
+one error found

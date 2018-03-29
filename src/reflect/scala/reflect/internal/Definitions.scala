@@ -1135,6 +1135,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]
     lazy val TailrecClass               = requiredClass[scala.annotation.tailrec]
+    lazy val InductiveClass             = requiredClass[scala.annotation.inductive]
     lazy val VarargsClass               = requiredClass[scala.annotation.varargs]
     lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
