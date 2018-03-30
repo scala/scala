@@ -26,8 +26,6 @@ println("hello")
 
 // ticket #1513
 val t1513 = Array(null)
-// ambiguous toString problem from #547
-val atom = new scala.xml.Atom(())
 // overriding toString problem from #1404
 class S(override val toString : String)
 val fish = new S("fish")
@@ -108,14 +106,6 @@ xs map (x => (x, x))
 // both of the following should abort immediately:
 def x => y => z
 [1,2,3]
-
-
-// multi-line XML
-<a>
-<b
-  c="c"
-  d="dd"
-/></a>
 
 
 /*
