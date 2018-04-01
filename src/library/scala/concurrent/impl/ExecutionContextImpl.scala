@@ -29,7 +29,7 @@ private[concurrent] object ExecutionContextImpl {
     daemonic: Boolean,
     maxThreads: Int,
     prefix: String,
-    uncaught: Thread.UncaughtExceptionHandler) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
+    uncaught: Thread.UncaughtExceptionHandler) extends ForkJoinPool.ForkJoinWorkerThreadFactory {
 
     require(prefix ne null, "DefaultThreadFactory.prefix must be non null")
     require(maxThreads > 0, "DefaultThreadFactory.maxThreads must be greater than 0")
@@ -52,14 +52,6 @@ private[concurrent] object ExecutionContextImpl {
       thread.setName(prefix + "-" + thread.getId())
       thread
     }
-
-    // As per ThreadFactory contract newThread should return `null` if cannot create new thread.
-    def newThread(runnable: Runnable): Thread =
-      if (reserveThread())
-        wire(new Thread(new Runnable {
-          // We have to decrement the current thread count when the thread exits
-          override def run() = try runnable.run() finally deregisterThread()
-        })) else null
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
       if (reserveThread()) {
@@ -116,7 +108,7 @@ private[concurrent] object ExecutionContextImpl {
     }
 
     val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
-                                                                      maxThreads = maxNoOfThreads + maxExtraThreads,
+                                                                      maxThreads = maxNoOfThreads + 2 * maxExtraThreads,
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
@@ -147,5 +139,3 @@ private[concurrent] object ExecutionContextImpl {
       }
     }
 }
-
-
