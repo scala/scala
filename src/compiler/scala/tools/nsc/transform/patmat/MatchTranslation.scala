@@ -111,7 +111,12 @@ trait MatchTranslation {
         val (makers, unappBinder) = {
           val paramType = extractor.expectedExtractedType
           // Statically conforms to paramType
-          if (tpe <:< paramType) (treeMakers(binder, false, pos), binder)
+          if (tpe <:< paramType) {
+            // enforce all extractor patterns to be non-null
+            val nonNullTest = NonNullTestTreeMaker(binder, paramType, pos)
+            val unappBinder = nonNullTest.nextBinder
+            (nonNullTest :: treeMakers(unappBinder, pos), unappBinder)
+          }
           else {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
@@ -119,12 +124,15 @@ trait MatchTranslation {
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val typeTest = TypeTestTreeMaker(binder, binder, paramType, paramType)(pos, extractorArgTypeTest = true)
             val binderKnownNonNull = typeTest impliesBinderNonNull binder
-
-            // check whether typetest implies binder is not null,
-            // even though the eventual null check will be on typeTest.nextBinder
-            // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
-            val unappBinder = typeTest.nextBinder
-            (typeTest :: treeMakers(unappBinder, binderKnownNonNull, pos), unappBinder)
+            // skip null test if it's implied
+            if (binderKnownNonNull) {
+              val unappBinder = typeTest.nextBinder
+              (typeTest :: treeMakers(unappBinder, pos), unappBinder)
+            } else {
+              val nonNullTest = NonNullTestTreeMaker(typeTest.nextBinder, paramType, pos)
+              val unappBinder = nonNullTest.nextBinder
+              (typeTest :: nonNullTest :: treeMakers(unappBinder, pos), unappBinder)
+            }
           }
         }
 
@@ -380,11 +388,8 @@ trait MatchTranslation {
 
     abstract class ExtractorCall(fun: Tree, args: List[Tree]) extends ExtractorAlignment(fun, args)(context) {
       /** Create the TreeMaker that embodies this extractor call
-       *
-       * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
-       * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker]
+      def treeMakers(binder: Symbol, pos: Position): List[TreeMaker]
 
       // `subPatBinders` are the variables bound by this pattern in the following patterns
       // subPatBinders are replaced by references to the relevant part of the extractor's result (tuple component, seq element, the result as-is)
@@ -480,10 +485,8 @@ trait MatchTranslation {
       /** Create the TreeMaker that embodies this extractor call
        *
        * `binder` has been casted to `paramType` if necessary
-       * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
-       * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
+      def treeMakers(binder: Symbol, pos: Position): List[TreeMaker] = {
         val paramAccessors = expectedExtractedType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
@@ -504,7 +507,7 @@ trait MatchTranslation {
         )
 
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders) :: Nil
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, ignoredSubPatBinders) :: Nil
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -531,14 +534,13 @@ trait MatchTranslation {
       /** Create the TreeMaker that embodies this extractor call
        *
        *  `binder` has been casted to `paramType` if necessary
-       *  `binderKnownNonNull` is not used in this subclass
        *
        *  TODO: implement review feedback by @retronym:
        *    Passing the pair of values around suggests:
        *       case class Binder(sym: Symbol, knownNotNull: Boolean).
        *    Perhaps it hasn't reached critical mass, but it would already clean things up a touch.
        */
-      def treeMakers(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
+      def treeMakers(patBinderOrCasted: Symbol, pos: Position): List[TreeMaker] = {
         // the extractor call (applied to the binder bound by the flatMap corresponding
         // to the previous (i.e., enclosing/outer) pattern)
         val (extractorApply, needsSubst) = spliceApply(pos, patBinderOrCasted)

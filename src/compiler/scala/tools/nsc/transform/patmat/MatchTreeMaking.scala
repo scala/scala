@@ -194,6 +194,32 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     }
 
     /**
+     * Make a TreeMaker that performs null check.
+     * This is called prior to extractor call.
+     */
+    case class NonNullTestTreeMaker(
+       prevBinder: Symbol,
+       expectedTp: Type,
+       override val pos: Position) extends FunTreeMaker {
+      import CODE._
+      override lazy val nextBinder = prevBinder.asTerm // just passing through
+      val nextBinderTp = nextBinder.info.widen
+
+      val nullCheck = REF(prevBinder) OBJ_NE NULL
+      lazy val localSubstitution = Substitution(Nil, Nil)
+
+      def isExpectedPrimitiveType = isPrimitiveValueType(expectedTp)
+
+      def chainBefore(next: Tree)(casegen: Casegen): Tree =
+        atPos(pos) {
+          if (isExpectedPrimitiveType) next
+          else casegen.ifThenElseZero(nullCheck, next)
+        }
+
+      override def toString = s"NN(${prevBinder.name})"
+    }
+
+    /**
      * Make a TreeMaker that will result in an extractor call specified by `extractor`
      * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
      * a function with binder `nextBinder` over our extractor's result
@@ -268,7 +294,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           val subPatBinders: List[Symbol],
           val subPatRefs: List[Tree],
           val mutableBinders: List[Symbol],
-          binderKnownNonNull: Boolean,
           val ignoredSubPatBinders: Set[Symbol]
          ) extends FunTreeMaker with PreserveSubPatBinders {
 
@@ -279,13 +304,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       def extraStoredBinders: Set[Symbol] = mutableBinders.toSet
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
-        val nullCheck = REF(prevBinder) OBJ_NE NULL
-        val cond =
-          if (binderKnownNonNull) extraCond
-          else (extraCond map (nullCheck AND _)
-          orElse Some(nullCheck))
-
-        cond match {
+        extraCond match {
           case Some(cond) =>
             casegen.ifThenElseZero(cond, bindSubPats(substitution(next)))
           case _ =>

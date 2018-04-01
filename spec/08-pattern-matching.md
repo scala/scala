@@ -192,6 +192,9 @@ a case class, the stable identifier $x$ denotes an object which has a
 member method named `unapply` or `unapplySeq` that matches
 the pattern.
 
+An extractor pattern cannot match the value `null`. The implementation
+ensures that the `unapply`/`unapplySeq` method is not applied to `null`.
+
 An `unapply` method in an object $x$ _matches_ the pattern
 $x(p_1 , \ldots , p_n)$ if it takes exactly one argument and one of
 the following applies:
