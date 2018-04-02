@@ -17,6 +17,7 @@ ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$Lea
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.exists")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.getFlag")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.privateWithin")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.annotations")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.isScala213")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.this")

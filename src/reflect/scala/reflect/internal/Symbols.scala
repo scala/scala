@@ -1842,8 +1842,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _annotations
     }
 
@@ -1864,21 +1862,42 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def addAnnotation(annot: AnnotationInfo): this.type =
       setAnnotations(annot :: annotations)
 
-    // Convenience for the overwhelmingly common case
-    def addAnnotation(sym: Symbol, args: Tree*): this.type = {
+    // Convenience for the overwhelmingly common cases, and avoid varags and listbuilders
+    final def addAnnotation(sym: Symbol): this.type = {
+      addAnnotation(sym, Nil)
+    }
+    final def addAnnotation(sym: Symbol, arg: Tree): this.type = {
+      addAnnotation(sym, arg :: Nil)
+    }
+    final def addAnnotation(sym: Symbol, arg1: Tree, arg2: Tree): this.type = {
+      addAnnotation(sym, arg1 :: arg2 :: Nil)
+    }
+    final def addAnnotation(sym: Symbol, args: Tree*): this.type = {
+      addAnnotation(sym, args.toList)
+    }
+    final def addAnnotation(sym: Symbol, args: List[Tree]): this.type = {
       // The assertion below is meant to prevent from issues like scala/bug#7009 but it's disabled
       // due to problems with cycles while compiling Scala library. It's rather shocking that
       // just checking if sym is monomorphic type introduces nasty cycles. We are definitively
       // forcing too much because monomorphism is a local property of a type that can be checked
       // syntactically
       // assert(sym.initialize.isMonomorphicType, sym)
-      addAnnotation(AnnotationInfo(sym.tpe, args.toList, Nil))
+      addAnnotation(AnnotationInfo(sym.tpe, args, Nil))
     }
 
     /** Use that variant if you want to pass (for example) an applied type */
-    def addAnnotation(tp: Type, args: Tree*): this.type = {
+    final def addAnnotation(tp: Type): this.type = {
+      addAnnotation(tp, Nil)
+    }
+    final def addAnnotation(tp: Type, arg: Tree): this.type = {
+      addAnnotation(tp, arg:: Nil)
+    }
+    final def addAnnotation(tp: Type, arg1: Tree, arg2: Tree): this.type = {
+      addAnnotation(tp, arg1 :: arg2 :: Nil)
+    }
+    final def addAnnotation(tp: Type, args: List[Tree]): this.type = {
       assert(tp.typeParams.isEmpty, tp)
-      addAnnotation(AnnotationInfo(tp, args.toList, Nil))
+      addAnnotation(AnnotationInfo(tp, args, Nil))
     }
 
 // ------ comparisons ----------------------------------------------------------------

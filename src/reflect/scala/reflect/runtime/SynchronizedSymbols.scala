@@ -98,6 +98,12 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       super.privateWithin
     }
 
+    override def annotations: List[AnnotationInfo] = {
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      super.annotations
+    }
+
     /** Communicates with completers declared in scala.reflect.runtime.SymbolLoaders
      *  about the status of initialization of the underlying symbol.
      *
