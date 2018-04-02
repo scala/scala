@@ -1,0 +1,6 @@
+t8939.scala:5: warning: Option[UserId] and UserId are unrelated: they will most likely never compare equal
+  l.find(_.id == UserId(1))
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

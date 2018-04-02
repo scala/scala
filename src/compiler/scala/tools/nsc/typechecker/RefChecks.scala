@@ -1007,6 +1007,7 @@ abstract class RefChecks extends Transform {
       // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
       def isUsingDefaultScalaOp = sym == Object_== || sym == Object_!= || sym == Any_== || sym == Any_!=
       def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
+      def isSameClass = (actual isSubClass receiver) && (receiver isSubClass actual)
 
       // Whether the operands+operator represent a warnable combo (assuming anyrefs)
       // Looking for comparisons performed with ==/!= in combination with either an
@@ -1101,6 +1102,8 @@ abstract class RefChecks extends Transform {
       // this is especially important to enable transitioning from
       // regular to value classes without silent failures.
       if (isNonsenseValueClassCompare)
+        unrelatedTypes()
+      else if (settings.warnMismatchedTypesEquals && !isSameClass)
         unrelatedTypes()
       // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
       else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
