@@ -407,14 +407,38 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filterNot(p: Symbol => Boolean): Scope = (
-      if (toList exists p) newScopeWith(toList filterNot p: _*)
-      else this
-    )
-    override def filter(p: Symbol => Boolean): Scope = (
-      if (toList forall p) this
-      else newScopeWith(toList filter p: _*)
-    )
+    override def filterNot(p: Symbol => Boolean): Scope = {
+      val first = toList
+      var current = first
+      while ((current ne Nil) && !p(current.head)) {
+        current = current.tail
+      }
+      if (current eq Nil) this
+      else {
+        def notMatch(nextMatch: List[Symbol], firstNonMatch: List[Symbol]): List[Symbol] = {
+          if (nextMatch eq firstNonMatch) firstNonMatch.tail filterNot p
+          else nextMatch.head :: notMatch(nextMatch.tail, firstNonMatch)
+        }
+
+        newScopeWith(notMatch(first, current): _*)
+      }
+    }
+    override def filter(p: Symbol => Boolean): Scope = {
+      val first = toList
+      var current = first
+      while ((current ne Nil) && p(current.head)) {
+        current = current.tail
+      }
+      if (current eq Nil) this
+      else {
+        def matches(nextMatch: List[Symbol], firstNonMatch: List[Symbol]): List[Symbol] = {
+          if (nextMatch eq firstNonMatch) firstNonMatch.tail filter p
+          else nextMatch.head :: matches(nextMatch.tail, firstNonMatch)
+        }
+
+        newScopeWith(matches(first, current): _*)
+      }
+    }
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
