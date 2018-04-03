@@ -396,6 +396,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     def cancelled(unit: CompilationUnit) = {
       // run the typer only if in `createJavadoc` mode
       val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
+      if (Thread.interrupted()) reporter.cancelled = true
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
@@ -423,10 +424,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
     }
 
-    final def applyPhase(unit: CompilationUnit) = {
-      if (Thread.interrupted()) throw new InterruptedException
-      withCurrentUnit(unit)(apply(unit))
-    }
+    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
   }
 
   // phaseName = "parser"
@@ -1447,6 +1445,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
         val profileBefore=profiler.beforePhase(phase)
         try globalPhase.run()
+        catch { case _: InterruptedException => reporter.cancelled = true }
         finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
