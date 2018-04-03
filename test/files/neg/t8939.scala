@@ -12,4 +12,6 @@ object Test {
   val c3 = Some(OtherUser(Some(UserId(1)), 2)) == Some(User(Some(UserId(1)), 2))
   val c4 = (OtherUser(Some(UserId(1)), 2): Any) == User(Some(UserId(1)), 2)
   val c5 = true == 1L
+  val c6 = "" == 1L
+  val c7 = "" == 42
 }

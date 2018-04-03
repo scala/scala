@@ -19,6 +19,12 @@ t8939.scala:13: warning: Any and User are unrelated: they will most likely never
 t8939.scala:14: warning: comparing values of types Boolean and Long using `==' will always yield false
   val c5 = true == 1L
                 ^
+t8939.scala:15: warning: String and Long are unrelated: they will most likely never compare equal
+  val c6 = "" == 1L
+              ^
+t8939.scala:16: warning: String and Int are unrelated: they will most likely never compare equal
+  val c7 = "" == 42
+              ^
 error: No warnings can be incurred under -Xfatal-warnings.
-7 warnings found
+9 warnings found
 one error found
