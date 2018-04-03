@@ -80,7 +80,7 @@ trait TypeDiagnostics {
   }
 
   // Bind of pattern var was `x @ _`
-  private def atBounded(t: Tree) = t.hasAttachment[AtBoundIdentifierAttachment.type]
+  private def atBounded(t: Tree) = t.hasAttachment[NoWarnAttachment.type]
 
   // ValDef was a PatVarDef `val P(x) = ???`
   private def wasPatVarDef(t: Tree) = t.hasAttachment[PatVarDefAttachment.type]

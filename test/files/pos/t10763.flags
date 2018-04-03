@@ -1,1 +1,1 @@
--Xfatal-warnings -Xlint:unused
+-Xfatal-warnings -Ywarn-unused
