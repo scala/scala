@@ -418,6 +418,46 @@ trait Implicits {
     /** Is implicit info `info1` better than implicit info `info2`?
      */
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) = {
+      def restpe(tpe: Type): Type =
+        if(isView || isFunctionType(pt)) tpe
+        else tpe match {
+          case NullaryMethodType(restpe) => restpe
+          case MethodType(_, restpe) => restpe
+          case PolyType(tparams, NullaryMethodType(restpe)) => PolyType(tparams, restpe)
+          case PolyType(tparams, MethodType(_, restpe)) => PolyType(tparams, restpe)
+          case _ => tpe
+        }
+
+      val restpe1 = restpe(info1.tpe)
+      val restpe2 = restpe(info2.tpe)
+
+      def compute = {
+        // 1. Do we win on result type specificity?
+        val result0 = isStrictlyMoreSpecific(restpe1, restpe2, info1.sym, info2.sym, nullaryImplicitArgs = false)
+        if(result0) true
+        else {
+          val result1 = isStrictlyMoreSpecific(restpe2, restpe1, info2.sym, info1.sym, nullaryImplicitArgs = false)
+          if(result1) false
+          else {
+            // 2. If (1) is a tie, take the one with the most implicit arguments
+            def depoly(tpe: Type): Type = tpe match {
+              case PolyType(_, tp) => tp
+              case tp => tp
+            }
+            val imp1 = isImplicitMethodType(depoly(info1.tpe)) || info1.tpe.params.isEmpty
+            val imp2 = isImplicitMethodType(depoly(info2.tpe)) || info2.tpe.params.isEmpty
+            if(imp1 && imp2) {
+              val params1 = info1.tpe.paramTypes
+              val params2 = info2.tpe.paramTypes
+              if(params1.length > params2.length) true
+              else if(params2.length > params1.length) false
+              else // 3. If (2) is a tie, take the most specific by normal overloading rules
+                isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym, nullaryImplicitArgs = false)
+            } else imp1
+          }
+        }
+      }
+
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(improvesCount)
       (info2 == NoImplicitInfo) ||
       (info1 != NoImplicitInfo) && {
@@ -425,11 +465,11 @@ trait Implicits {
           improvesCache get ((info1, info2)) match {
             case Some(b) => if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(improvesCachedCount); b
             case None =>
-              val result = isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+              val result = compute
               improvesCache((info1, info2)) = result
               result
           }
-        } else isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+        } else compute
       }
     }
     def isPlausiblyCompatible(tp: Type, pt: Type) = checkCompatibility(fast = true, tp, pt)

@@ -30,7 +30,6 @@ private[reflect] class Settings extends MutableSettings {
     override def value: List[String] = v
   }
 
-  val Xexperimental     = new BooleanSetting(false)
   val XfullLubs         = new BooleanSetting(false)
   val XnoPatmatAnalysis = new BooleanSetting(false)
   val strictInference   = new BooleanSetting(false)
@@ -47,7 +46,6 @@ private[reflect] class Settings extends MutableSettings {
   val printtypes        = new BooleanSetting(false)
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
-  val YpartialUnification = new BooleanSetting(false)
   val Yvirtpatmat       = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)

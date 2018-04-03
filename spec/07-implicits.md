@@ -90,11 +90,21 @@ The _parts_ of a type $T$ are:
 Note that packages are internally represented as classes with companion modules to hold the package members.
 Thus, implicits defined in a package object are part of the implicit scope of a type prefixed by that package.
 
-If there are several eligible arguments which match the implicit
-parameter's type, a most specific one will be chosen using the rules
-of static [overloading resolution](06-expressions.html#overloading-resolution).
-If the parameter has a default argument and no implicit argument can
-be found the default argument is used.
+If there are several eligible definitions which match an implicit parameters type, a most specific one will be
+chosen using the rules of static [overloading resolution](06-expressions.html#overloading-resolution) modified to
+accommodate the fact if any of these definitions themselves have implicit parameters then those parameters must be
+resolved during the application of the overloading rules.
+
+The relative ordering of a pair of candidate implicits is computed as follows,
+
+1. The candidates are compared by their result type, the most specific by normal overload rules being selected.
+2. If (1) is a tie then we compare the lengths of the implicit argument lists of the candidates (if any). The
+   candidate with the longest argument list wins.
+3. If (2) is a tie then we have a pair of candidates with implicit argument lists of equal length and which are both
+   equally specific wrt their result type/the expected type. We now apply the full normal overloading resolution
+   rules and choose the most specific according to those rules.
+
+If a parameter has a default argument and no implicit argument can be found the default argument is used.
 
 ###### Example
 Assuming the classes from the [`Monoid` example](#example-monoid), here is a

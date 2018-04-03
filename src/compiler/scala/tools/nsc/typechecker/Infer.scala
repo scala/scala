@@ -810,40 +810,73 @@ trait Infer extends Checkable {
     /** Is type `ftpe1` strictly more specific than type `ftpe2`
      *  when both are alternatives in an overloaded function?
      *  @see SLS (sec:overloading-resolution)
+     *
+     *  When adapting an explicit method call to an implicit argument list we don't take the implicit
+     *  argument list into account, if effect treating a method with an implicit argument list as if
+     *  the last component was a NullaryMethod ... see test/files/pos/t9943.scala for an example where
+     *  this makes a difference.
+     *
+     *  Rather than assuming this behavior for all methods with implicit arguments in all circumstances
+     *  we do so conditionally on nullaryImplicitArgs, which will only be true when we are adapting and
+     *  not where implicit arguments are explicitly supplied, or during implicit resolution. This makes
+     *  methods with implicit arguments behave more consistently when they are explicitly vs. implicitly
+     *  applied and also allows more intuitive implicit selection which aligns more closely with normal
+     *  overload resolution rules.
      */
-    def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = {
+    def isAsSpecific(ftpe1: Type, ftpe2: Type, nullaryImplicitArgs: Boolean): Boolean = {
       def checkIsApplicable(argtpes: List[Type]) = isApplicable(Nil, ftpe2, argtpes, WildcardType)
       def bothAreVarargs                         = isVarArgsList(ftpe1.params) && isVarArgsList(ftpe2.params)
+      def nullaryImplicit(mt: MethodType): Boolean = mt.isImplicit && nullaryImplicitArgs
       def onRight = ftpe2 match {
-        case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
-        case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _))
-        case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe)
-        case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res)
-        case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe))
-        case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe))
+        case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt, nullaryImplicitArgs))
+        case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _, nullaryImplicitArgs))
+        case mt @ MethodType(_, restpe)                    => !nullaryImplicit(mt) || isAsSpecific(ftpe1, restpe, nullaryImplicitArgs)
+        case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res, nullaryImplicitArgs)
+        case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe), nullaryImplicitArgs)
+        case PolyType(tparams, mt @ MethodType(_, restpe)) => !nullaryImplicit(mt) || isAsSpecific(ftpe1, PolyType(tparams, restpe), nullaryImplicitArgs)
         case _                                             => isAsSpecificValueType(ftpe1, ftpe2, Nil, Nil)
       }
       ftpe1 match {
-        case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
-        case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
-        case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
-        case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
+        case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2, nullaryImplicitArgs))
+        case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2, nullaryImplicitArgs)
+        case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2, nullaryImplicitArgs)
+        case mt @ MethodType(_, restpe) if nullaryImplicit(mt)              => isAsSpecific(restpe, ftpe2, nullaryImplicitArgs)
         case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes mapConserve repeatedToSingle)
         case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
-        case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
-        case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
+        case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2, nullaryImplicitArgs)
+        case PolyType(tparams, mt @ MethodType(_, restpe)) if nullaryImplicit(mt) => isAsSpecific(PolyType(tparams, restpe), ftpe2, nullaryImplicitArgs)
         case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt.paramTypes)
         case ErrorType                                                      => true
         case _                                                              => onRight
       }
     }
+
     private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = tpe1 match {
       case PolyType(tparams1, rtpe1) =>
         isAsSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
       case _                         =>
         tpe2 match {
           case PolyType(tparams2, rtpe2) => isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
-          case _                         => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
+          case _                         =>
+
+            val e1 = existentialAbstraction(undef1, tpe1)
+            val e2 = existentialAbstraction(undef2, tpe2)
+
+            // Backport of fix for https://github.com/scala/bug/issues/2509
+            // from Dotty https://github.com/lampepfl/dotty/commit/89540268e6c49fb92b9ca61249e46bb59981bf5a
+            val flip = new TypeMap(trackVariance = true) {
+              def apply(tp: Type): Type = tp match {
+                case TypeRef(pre, sym, args) if variance > 0 && sym.typeParams.exists(_.isContravariant) =>
+                  TypeRef(pre, sym.flipped, args)
+                case _: TypeRef => tp
+                case _ =>
+                  mapOver(tp)
+              }
+            }
+
+            val bt = e1.baseType(e2.typeSymbol)
+            val lhs = if(bt != NoType) bt else e1
+            flip(lhs) <:< flip(e2)
         }
     }
 
@@ -866,12 +899,12 @@ trait Infer extends Checkable {
       || isProperSubClassOrObject(sym1.safeOwner, sym2.owner)
     )
 
-    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean = {
+    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol, nullaryImplicitArgs: Boolean): Boolean = {
       // ftpe1 / ftpe2 are OverloadedTypes (possibly with one single alternative) if they
       // denote the type of an "apply" member method (see "followApply")
       ftpe1.isError || {
-        val specificCount = (if (isAsSpecific(ftpe1, ftpe2)) 1 else 0) -
-                            (if (isAsSpecific(ftpe2, ftpe1) &&
+        val specificCount = (if (isAsSpecific(ftpe1, ftpe2, nullaryImplicitArgs)) 1 else 0) -
+                            (if (isAsSpecific(ftpe2, ftpe1, nullaryImplicitArgs) &&
                                  // todo: move to isAsSpecific test
 //                                 (!ftpe2.isInstanceOf[OverloadedType] || ftpe1.isInstanceOf[OverloadedType]) &&
                                  (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
@@ -1297,7 +1330,7 @@ trait Infer extends Checkable {
 
             (    (tp2 eq ErrorType)
               || isWeaklyCompatible(tp1, pt) && !isWeaklyCompatible(tp2, pt)
-              || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
+              || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2, nullaryImplicitArgs = true)
             )
           }
           // todo: missing test case for bests.isEmpty
@@ -1408,7 +1441,7 @@ trait Infer extends Checkable {
         private def followType(sym: Symbol) = followApply(pre memberType sym)
         // separate method to help the inliner
         private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
-        private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
+        private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2, nullaryImplicitArgs = false)
         private def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
           val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
           val ranked      = bestAlternatives(applicable)(rankAlternatives)
