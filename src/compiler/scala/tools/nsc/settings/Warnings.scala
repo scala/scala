@@ -29,9 +29,10 @@ trait Warnings {
       "Inspect both user-written code and expanded trees when generating unused symbol warnings."
     )
   )
-  val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
-  val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
-  val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
+  val warnDeadCode               = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
+  val warnValueDiscard           = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
+  val warnNumericWiden           = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
+  val warnStrictEquals  = BooleanSetting("-Ywarn-strict-equals", "Comparison of mismatched types")
 
   object UnusedWarnings extends MultiChoiceEnumeration {
     val Imports   = Choice("imports",   "Warn if an import selector is not referenced.")
@@ -102,7 +103,6 @@ trait Warnings {
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
-    val MismatchedTypesEquals  = LintWarning("mismatched-types-equals",   "Comparison of mismatched types")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
@@ -126,7 +126,6 @@ trait Warnings {
   def warnUnsoundMatch           = lint contains UnsoundMatch
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
-  def warnMismatchedTypesEquals  = lint contains MismatchedTypesEquals
   def lintUnused                 = lint contains Unused
 
   // Lint warnings that are currently -Y, but deprecated in that usage

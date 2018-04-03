@@ -1103,7 +1103,7 @@ abstract class RefChecks extends Transform {
       // regular to value classes without silent failures.
       if (isNonsenseValueClassCompare)
         unrelatedTypes()
-      else if (settings.warnMismatchedTypesEquals && !isSameClass)
+      else if (settings.warnStrictEquals && !isSameClass)
         unrelatedTypes()
       // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
       else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
