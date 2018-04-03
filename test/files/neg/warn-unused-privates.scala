@@ -133,9 +133,9 @@ trait Underwarn {
 }
 
 class OtherNames {
-  private def x_=(i: Int): Unit = ???
+  private def x_=(i: Int): Unit = ()
   private def x: Int = 42
-  private def y_=(i: Int): Unit = ???
+  private def y_=(i: Int): Unit = ()
   private def y: Int = 42
 
   def f = y
