@@ -1007,7 +1007,10 @@ abstract class RefChecks extends Transform {
       // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
       def isUsingDefaultScalaOp = sym == Object_== || sym == Object_!= || sym == Any_== || sym == Any_!=
       def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
-      def isSameClass = qual.tpe.widen =:= other.tpe.widen
+      def isSameClass = {
+        val common = global.lub(List(qual.tpe, other.tpe))
+        !(ObjectTpe <:< common) && (qual.tpe.widen <:< other.tpe.widen || other.tpe.widen <:< qual.tpe.widen)
+      }
 
       // Whether the operands+operator represent a warnable combo (assuming anyrefs)
       // Looking for comparisons performed with ==/!= in combination with either an
