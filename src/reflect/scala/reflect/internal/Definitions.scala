@@ -355,7 +355,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // This is a not the usual lazy val to prevent it from showing up as a separate module in JavaUniverseForce.scala
     def getWrapVarargsArrayModule        = if(isNewCollections) ScalaRunTimeModule else PredefModule
-    def wrapVarargsArrayMethod(tp: Type) = getMemberMethod(getWrapVarargsArrayModule, wrapVarargsArrayMethodName(tp))
+    def wrapVarargsArrayMethod(tp: Type) = getMemberMethod(getWrapVarargsArrayModule, wrapArrayMethodName(tp))
 
     /** Specialization.
      */
@@ -593,7 +593,7 @@ trait Definitions extends api.StandardDefinitions {
     def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe)
     def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe)
 
-    def wrapVarargsArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
+    def wrapArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
       case ByteClass    => nme.wrapByteArray
       case ShortClass   => nme.wrapShortArray
       case CharClass    => nme.wrapCharArray

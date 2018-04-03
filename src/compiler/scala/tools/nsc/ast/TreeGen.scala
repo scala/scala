@@ -129,7 +129,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkWrapVarargsArray(tree: Tree, elemtp: Type) = {
     mkMethodCall(
       getWrapVarargsArrayModule,
-      wrapVarargsArrayMethodName(elemtp),
+      wrapArrayMethodName(elemtp),
       if (isPrimitiveValueType(elemtp)) Nil else List(elemtp),
       List(tree)
     )
