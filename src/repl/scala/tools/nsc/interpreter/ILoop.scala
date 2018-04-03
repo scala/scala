@@ -926,7 +926,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
    *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
+    if (settings.Xnojline) SimpleReader()
     else {
       type Completer = () => Completion
       type ReaderMaker = Completer => InteractiveReader

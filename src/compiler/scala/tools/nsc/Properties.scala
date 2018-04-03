@@ -29,6 +29,7 @@ object Properties extends scala.util.PropertiesTrait {
   def shellInterruptedString = scalaPropOrElse("shell.interrupted", f":quit$lineSeparator")
 
   // derived values
+  @deprecated("Emacs support is fully handled by JLine, this will be removed in next release", "2.12.6")
   def isEmacsShell         = propOrEmpty("env.emacs") != ""
 
   // Where we keep fsc's state (ports/redirection)
