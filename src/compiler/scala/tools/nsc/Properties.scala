@@ -28,6 +28,10 @@ object Properties extends scala.util.PropertiesTrait {
   // a newline so as not to break the user's terminal)
   def shellInterruptedString = scalaPropOrElse("shell.interrupted", f":quit$lineSeparator")
 
+  // derived values
+  @deprecated("Emacs support is fully handled by JLine, this will be removed in next release", "2.12.6")
+  def isEmacsShell         = propOrEmpty("env.emacs") != ""
+
   // Where we keep fsc's state (ports/redirection)
   lazy val scalacDir = (Path(Properties.userHome) / ".scalac").createDirectory(force = false)
 }
