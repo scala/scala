@@ -33,6 +33,8 @@ sealed abstract class HashSet[A]
 
   import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
 
+  override def className: String = "HashSet"
+
   override def iterableFactory = HashSet
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
