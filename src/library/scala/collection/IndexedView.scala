@@ -73,7 +73,7 @@ object IndexedView {
 
   class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends IndexedView[A] {
     protected val lo = from max 0
-    protected val hi = until min underlying.length
+    protected val hi = (until max 0) min underlying.length
     protected val len = (hi - lo) max 0
     @throws[IndexOutOfBoundsException]
     def apply(i: Int): A = underlying(lo + i)
