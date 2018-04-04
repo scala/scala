@@ -439,10 +439,10 @@ final abstract class Char private extends AnyVal {
 }
 
 object Char extends AnyValCompanion {
-  /** The smallest value representable as a Char. */
+  /** The smallest value representable as Char. */
   final val MinValue = java.lang.Character.MIN_VALUE
 
-  /** The largest value representable as a Char. */
+  /** The largest value representable as Char. */
   final val MaxValue = java.lang.Character.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

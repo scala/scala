@@ -439,10 +439,10 @@ final abstract class Short private extends AnyVal {
 }
 
 object Short extends AnyValCompanion {
-  /** The smallest value representable as a Short. */
+  /** The smallest value representable as Short. */
   final val MinValue = java.lang.Short.MIN_VALUE
 
-  /** The largest value representable as a Short. */
+  /** The largest value representable as Short. */
   final val MaxValue = java.lang.Short.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

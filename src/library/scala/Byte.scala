@@ -439,10 +439,10 @@ final abstract class Byte private extends AnyVal {
 }
 
 object Byte extends AnyValCompanion {
-  /** The smallest value representable as a Byte. */
+  /** The smallest value representable as Byte. */
   final val MinValue = java.lang.Byte.MIN_VALUE
 
-  /** The largest value representable as a Byte. */
+  /** The largest value representable as Byte. */
   final val MaxValue = java.lang.Byte.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

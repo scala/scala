@@ -13,6 +13,7 @@ package scala
  */
 trait Specializable
 
+@annotation.compileTimeOnly("used to support specialization")
 object Specializable {
   // No type parameter in @specialized annotation.
   trait SpecializedGroup { }

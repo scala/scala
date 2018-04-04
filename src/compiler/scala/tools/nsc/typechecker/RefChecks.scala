@@ -108,6 +108,7 @@ abstract class RefChecks extends Transform {
 
     var localTyper: analyzer.Typer = typer
     var currentApplication: Tree = EmptyTree
+    var inAnnotation: Boolean = false
     var inPattern: Boolean = false
     @inline final def savingInPattern[A](body: => A): A = {
       val saved = inPattern
@@ -1259,7 +1260,7 @@ abstract class RefChecks extends Transform {
           reporter.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
-      if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
+      if (sym.isCompileTimeOnly && !inAnnotation && sym != SpecializedClass && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
         def defaultMsg =
           sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
               |it should have been processed and eliminated during expansion of an enclosing macro."""
@@ -1414,7 +1415,9 @@ abstract class RefChecks extends Transform {
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]) = {
         checkAnnotations(annots map (_.atp), tree)
-        transformTrees(annots flatMap (_.args))
+        val saved = inAnnotation
+        inAnnotation = true
+        try transformTrees(annots flatMap (_.args)) finally inAnnotation = saved
       }
 
       def checkIsElisible(sym: Symbol) = if (sym ne null) sym.elisionLevel.foreach { level =>

@@ -206,7 +206,7 @@ final abstract class Float private extends AnyVal {
 
 object Float extends AnyValCompanion {
   /** The smallest positive value greater than 0.0f which is
-   *  representable as a Float.
+   *  representable as Float.
    */
   final val MinPositiveValue = java.lang.Float.MIN_VALUE
   final val NaN              = java.lang.Float.NaN
@@ -214,13 +214,13 @@ object Float extends AnyValCompanion {
   final val NegativeInfinity = java.lang.Float.NEGATIVE_INFINITY
 
   /** The negative number with the greatest (finite) absolute value which is representable
-   *  by a Float.  Note that it differs from [[java.lang.Float.MIN_VALUE]], which
-   *  is the smallest positive value representable by a Float.  In Scala that number
+   *  as Float.  Note that it differs from [[java.lang.Float.MIN_VALUE]], which
+   *  is the smallest positive value representable as Float.  In Scala that number
    *  is called Float.MinPositiveValue.
    */
   final val MinValue = -java.lang.Float.MAX_VALUE
 
-  /** The largest finite positive number representable as a Float. */
+  /** The largest finite positive number representable as Float. */
   final val MaxValue = java.lang.Float.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

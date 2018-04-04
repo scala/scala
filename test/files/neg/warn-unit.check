@@ -1,0 +1,7 @@
+warn-unit.scala:13: error: please don't
+    println(X)
+            ^
+warn-unit.scala:14: error: not for use in source code. The unit value is written '()'.
+    Unit
+    ^
+two errors found

@@ -319,16 +319,16 @@ override def toString = "object scala.@name@"
   def nonUnitCompanions = ""  // todo
 
   def cardinalCompanion = """
-/** The smallest value representable as a @name@. */
+/** The smallest value representable as @name@. */
 final val MinValue = @boxed@.MIN_VALUE
 
-/** The largest value representable as a @name@. */
+/** The largest value representable as @name@. */
 final val MaxValue = @boxed@.MAX_VALUE
 """
 
   def floatingCompanion = """
 /** The smallest positive value greater than @zero@ which is
- *  representable as a @name@.
+ *  representable as @name@.
  */
 final val MinPositiveValue = @boxed@.MIN_VALUE
 final val NaN              = @boxed@.NaN
@@ -336,13 +336,13 @@ final val PositiveInfinity = @boxed@.POSITIVE_INFINITY
 final val NegativeInfinity = @boxed@.NEGATIVE_INFINITY
 
 /** The negative number with the greatest (finite) absolute value which is representable
- *  by a @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which
- *  is the smallest positive value representable by a @name@.  In Scala that number
+ *  as @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which
+ *  is the smallest positive value representable as @name@.  In Scala that number
  *  is called @name@.MinPositiveValue.
  */
 final val MinValue = -@boxed@.MAX_VALUE
 
-/** The largest finite positive number representable as a @name@. */
+/** The largest finite positive number representable as @name@. */
 final val MaxValue = @boxed@.MAX_VALUE
 """
 }
@@ -459,6 +459,9 @@ override def getClass(): Class[Boolean] = ???
     )
     def objectLines = interpolate(allCompanions).lines.toList
 
+    override def mkObject =
+      s"""@scala.annotation.compileTimeOnly("not for use in source code. The unit value is written '()'.")\n""" + super.mkObject
+
     override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",
       "@unboxRunTimeDoc@" -> "",
@@ -486,7 +489,7 @@ object GenerateAnyVals {
 
     av.make() foreach { case (name, code ) =>
       val file = new java.io.File(outDir, name + ".scala")
-      sbt.IO.write(file, code, java.nio.charset.Charset.forName("UTF-8"), false)
+      sbt.IO.write(file, code, java.nio.charset.StandardCharsets.UTF_8, false)
     }
   }
 }

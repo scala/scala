@@ -206,7 +206,7 @@ final abstract class Double private extends AnyVal {
 
 object Double extends AnyValCompanion {
   /** The smallest positive value greater than 0.0d which is
-   *  representable as a Double.
+   *  representable as Double.
    */
   final val MinPositiveValue = java.lang.Double.MIN_VALUE
   final val NaN              = java.lang.Double.NaN
@@ -214,13 +214,13 @@ object Double extends AnyValCompanion {
   final val NegativeInfinity = java.lang.Double.NEGATIVE_INFINITY
 
   /** The negative number with the greatest (finite) absolute value which is representable
-   *  by a Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
-   *  is the smallest positive value representable by a Double.  In Scala that number
+   *  as Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
+   *  is the smallest positive value representable as Double.  In Scala that number
    *  is called Double.MinPositiveValue.
    */
   final val MinValue = -java.lang.Double.MAX_VALUE
 
-  /** The largest finite positive number representable as a Double. */
+  /** The largest finite positive number representable as Double. */
   final val MaxValue = java.lang.Double.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

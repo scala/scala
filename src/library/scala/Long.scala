@@ -439,10 +439,10 @@ final abstract class Long private extends AnyVal {
 }
 
 object Long extends AnyValCompanion {
-  /** The smallest value representable as a Long. */
+  /** The smallest value representable as Long. */
   final val MinValue = java.lang.Long.MIN_VALUE
 
-  /** The largest value representable as a Long. */
+  /** The largest value representable as Long. */
   final val MaxValue = java.lang.Long.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.
