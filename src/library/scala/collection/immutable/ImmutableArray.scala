@@ -180,7 +180,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): T = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofRef[_] => Arrays.equals(unsafeArray.asInstanceOf[Array[AnyRef]], that.unsafeArray.asInstanceOf[Array[AnyRef]])
       case _ => super.equals(that)
@@ -193,7 +193,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Byte = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofByte => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -206,7 +206,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Short = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofShort => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -219,7 +219,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Char = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofChar => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -232,7 +232,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Int = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofInt => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -245,7 +245,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Long = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofLong => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -258,7 +258,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Float = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofFloat => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -271,7 +271,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Double = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofDouble => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -284,7 +284,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Boolean = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofBoolean => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
@@ -297,7 +297,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Unit = unsafeArray(i)
-    override def hashCode = MurmurHash3.arrayHash(unsafeArray)
+    override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
     override def equals(that: Any) = that match {
       case that: ofUnit => unsafeArray.length == that.unsafeArray.length
       case _ => super.equals(that)
