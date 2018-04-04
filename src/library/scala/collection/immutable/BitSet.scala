@@ -23,6 +23,8 @@ sealed abstract class BitSet
     with StrictOptimizedIterableOps[Int, Set, BitSet]
     with Serializable {
 
+  override def className: String = "BitSet"
+
   def bitSetFactory = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
