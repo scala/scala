@@ -226,8 +226,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           val decls = sym.info.decls
           for (s <- decls) {
             val privateWithin = s.privateWithin
-            if (privateWithin.isClass && !s.isProtected && !privateWithin.isModuleClass &&
-                !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
+            if (privateWithin.isClass && !s.hasFlag(EXPANDEDNAME | PROTECTED) && !privateWithin.isModuleClass &&
+                !s.isConstructor) {
               val savedName = s.name
               decls.unlink(s)
               s.expandName(privateWithin)

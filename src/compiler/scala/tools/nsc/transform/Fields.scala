@@ -125,11 +125,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   def checkAndClearOverriddenTraitSetter(setter: Symbol) = checkAndClear(OVERRIDDEN_TRAIT_SETTER)(setter)
   def checkAndClearNeedsTrees(setter: Symbol) = checkAndClear(NEEDS_TREES)(setter)
   def checkAndClear(flag: Long)(sym: Symbol) =
-    sym.hasFlag(flag) match {
-      case overridden =>
-        sym resetFlag flag
-        overridden
-    }
+    if (sym.hasFlag(flag)) {
+      sym resetFlag flag
+      true
+    } else false
 
 
   private def isOverriddenAccessor(member: Symbol, site: Symbol): Boolean = {
