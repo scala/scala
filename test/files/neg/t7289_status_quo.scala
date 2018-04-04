@@ -6,18 +6,21 @@ object Test1 {
   implicit def f[A, Coll <: CC[A], CC[X] <: Traversable[X]](implicit xi: Ext[A]): Ext[Coll] = ???
   implicit val m: Ext[List[List[Int]]] = new Ext[List[List[Int]]]{}
 
-  implicitly[Ext[List[Int]]]                    // fails - not found
+  implicitly[Ext[List[Int]]]                    // fails - not found (as expected)
   implicitly[Ext[List[List[Int]]]]              // compiles
-  implicitly[Ext[List[List[List[Int]]]]]        // fails - not found
+  implicitly[Ext[List[List[List[Int]]]]]        // compiles
 
   // Making Ext[+T] should incur the same behavior as these. (so says @paulp)
   implicitly[Ext[_ <: List[Int]]]               // compiles
-  implicitly[Ext[_ <: List[List[Int]]]]         // fails - ambiguous
+  implicitly[Ext[_ <: List[List[Int]]]]         // compiles
   implicitly[Ext[_ <: List[List[List[Int]]]]]   // compiles
 
-  // But, we currently get:
+  // And indeed it does:
   trait ExtCov[+T]
-  implicitly[ExtCov[List[Int]]]                 // fails - not found
-  implicitly[ExtCov[List[List[Int]]]]           // fails - not found
-  implicitly[ExtCov[List[List[List[Int]]]]]     // fails - not found
+  implicit def fCov[A, Coll <: CC[A], CC[X] <: Traversable[X]](implicit xi: ExtCov[A]): ExtCov[Coll] = ???
+  implicit val mCov: ExtCov[List[List[Int]]] = new ExtCov[List[List[Int]]]{}
+
+  implicitly[ExtCov[List[Int]]]                 // compiles
+  implicitly[ExtCov[List[List[Int]]]]           // compiles
+  implicitly[ExtCov[List[List[List[Int]]]]]     // compiles
 }

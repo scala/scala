@@ -195,48 +195,82 @@ private[internal] trait TypeConstraints {
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance) {
       if (tvar.constr.inst == NoType) {
         val up = if (variance.isContravariant) !upper else upper
-        tvar.constr.inst = null
+        tvar.constr.inst = null // mark tvar as being solved
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
         var cyclic = bound contains tparam
-        foreach3(tvars, tparams, variances)((tvar2, tparam2, variance2) => {
-          val ok = (tparam2 != tparam) && (
-            (bound contains tparam2)
-              ||  up && (tparam2.info.bounds.lo =:= tparam.tpeHK)
-              || !up && (tparam2.info.bounds.hi =:= tparam.tpeHK)
-            )
-          if (ok) {
-            if (tvar2.constr.inst eq null) cyclic = true
+
+        // This is attempting to reorder the solving of TypeVars such that tvs which are
+        // mentioned in the active bound are solved first.
+        // 1. Is this reordering desirable? Should solving always be left to right instead?
+        // 2. Should this take account of the variance of tparam2 and flip the bounds if
+        //    necessary?
+        foreach3(tvars, tparams, variances){ (tvar2, tparam2, variance2) =>
+          val contributes = (tparam2 != tparam) && ((bound contains tparam2) || {
+            val bound2 = if (up) tparam2.info.bounds.lo else tparam2.info.bounds.hi
+            bound2 contains tparam
+          })
+          if (contributes) {
+            if (tvar2.constr.inst eq null) cyclic = true // came back to a tvar that's being solved --> cycle! (note that we capture the `cyclic` var)
             solveOne(tvar2, tparam2, variance2)
           }
-        })
+        }
+
         if (!cyclic) {
+          def propagateBounds(tparam2: Symbol, tvar2: Type): Unit = {
+            def addBound(variance: Variance, bound: Type) = if (bound != NoType) {
+              debuglog(s"$tvar.addBound($variance, $bound.instantiateTypeParams($tparams, $tvars))")
+              if (variance.isInvariant || variance.isCovariant) tvar addHiBound bound
+              if (variance.isInvariant || variance.isContravariant) tvar addLoBound bound
+            }
+
+            def toInst(tp: Type): Type = tp match {
+              case tv: TypeVar =>
+                val inst = tv.inst
+                if (inst == null) NoType else inst
+              case _ => tp
+            }
+
+            // Try harder to propagate information we can discover from this type variable's
+            // occurence in bounds on other type variables. Also avoid some ill-kinding issues.
+            def propagate(variance: Variance, bound: Type, instantiate: Type): Unit = bound match {
+              // Propagate bounds of the same kind: F[A, B, C[_]] <: G[A, B, C] => F <: G
+              // Undoing eta-expansion to ensure the propagated bound is correct.
+              case GenPolyType(tparams, TypeRef(_, `tparam`, targs))
+                if tparams.corresponds(targs) { (tp, ta) => ta.typeArgs.isEmpty && ta.typeSymbolDirect == tp }
+                => addBound(variance, instantiate)
+              // Propagate type constructor: F[A] <: B => F <: B.typeConstructor
+              // Propagate type arguments: F[+A, -B] <: C => A <: C.typeArgs(0) && B >: C.typeArgs(1)
+              case TypeRef(_, tsym, targs) =>
+                val inst = toInst(instantiate)
+                if(inst != NoType) {
+                  if (tsym == tparam) addBound(variance, inst.typeConstructor)
+                  foreach3(tsym.typeParams, targs, inst.typeArgs) {
+                    (tparam, targ, inst) => propagate(tparam.variance * variance, targ, inst)
+                  }
+                }
+              case _ =>
+            }
+
+            val variance = if (up) Variance.Covariant else Variance.Contravariant
+            val bound = if (up) tparam2.info.bounds.lo else tparam2.info.bounds.hi
+            propagate(variance, bound.dealias, tvar2)
+          }
+
           if (up) {
             if (bound.typeSymbol != AnyClass) {
               debuglog(s"$tvar addHiBound $bound.instantiateTypeParams($tparams, $tvars)")
               tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
             }
-            for (tparam2 <- tparams)
-              tparam2.info.bounds.lo.dealias match {
-                case TypeRef(_, `tparam`, _) =>
-                  debuglog(s"$tvar addHiBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
-                  tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
-                case _ =>
-              }
           } else {
             if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
               debuglog(s"$tvar addLoBound $bound.instantiateTypeParams($tparams, $tvars)")
               tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
             }
-            for (tparam2 <- tparams)
-              tparam2.info.bounds.hi.dealias match {
-                case TypeRef(_, `tparam`, _) =>
-                  debuglog(s"$tvar addLoBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
-                  tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
-                case _ =>
-              }
           }
+          foreach2(tparams, tvars)(propagateBounds)
         }
+
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
 
         //println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
