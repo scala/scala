@@ -6,6 +6,7 @@ object Test {
   val l: List[User] = List(User(Some(UserId(1)), 2))
   l.find(_.id == UserId(1))
   l.find(_.id == Option(1))
+  l.find(_.id == List(UserId(1)))
   l.find(_.id.get == new UId(1))
   val c1 = OtherUser(Some(UserId(1)), 2) == UserId(3)
   val c2 = OtherUser(Some(UserId(1)), 2) == User(Some(UserId(1)), 2)
