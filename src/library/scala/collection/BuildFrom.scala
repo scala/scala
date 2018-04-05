@@ -87,4 +87,9 @@ trait BuildFromLowPriority2 {
     def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.iterableFactory.newBuilder[A]()
     def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.iterableFactory.from(it)
   }
+
+  implicit def buildFromIterator[A]: BuildFrom[Iterator[_], A, Iterator[A]] = new BuildFrom[Iterator[_], A, Iterator[A]] {
+    def newBuilder(from: Iterator[_]): mutable.Builder[A, Iterator[A]] = Iterator.newBuilder()
+    def fromSpecificIterable(from: Iterator[_])(it: Iterable[A]): Iterator[A] = Iterator.from(it)
+  }
 }
