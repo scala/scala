@@ -35,6 +35,8 @@ sealed class ListSet[A]
     with StrictOptimizedIterableOps[A, ListSet, ListSet[A]]
     with Serializable {
 
+  override def className: String = "ListSet"
+
   override def size: Int = 0
   override def isEmpty: Boolean = true
 
