@@ -898,7 +898,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  def diff(that: Seq[_ >: A]): Array[A] = WrappedArray.make[A](xs).diff(that).array
+  def diff(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).diff(that).array
 
   /** Computes the multiset intersection between this array and another sequence.
     *
@@ -909,7 +909,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  def intersect(that: Seq[_ >: A]): Array[A] = WrappedArray.make[A](xs).intersect(that).array
+  def intersect(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).intersect(that).array
 
   /** Partitions this array into a map of arrays according to some discriminator function.
     *

@@ -491,7 +491,7 @@ package IndexedTestImpl {
 //      for (i <- 0 until size) {
 //        jlArray.set(res, i, expectedValueAtIndex(i))
 //      }
-//      WrappedArray.make(res.asInstanceOf[Array[Unit]])
+//      WrappedArray.make(res).asInstanceOf[WrappedArray[BoxedUnit]]
 //    }
 //  }
 //  class RefWrappedArrayTest extends WrappedArrayTest[String](classOf[String]) with StringTestData

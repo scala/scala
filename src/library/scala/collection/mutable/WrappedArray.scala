@@ -94,17 +94,24 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
         i = i + 1
       }
       make(elements)
-    } else make[A](ArrayBuffer.from(it).toArray)
+    } else make(ArrayBuffer.from(it).toArray)
   }
 
   def newBuilder[A : ClassTag](): Builder[A, WrappedArray[A]] = ArrayBuilder.make[A]().mapResult(make)
 
-  // If make is called explicitly we use whatever we're given, even if it's
-  // empty.  This may be unnecessary (if WrappedArray is to honor the collections
-  // contract all empty ones must be equal, so discriminating based on the reference
-  // equality of an empty array should not come up) but we may as well be
-  // conservative since wrapRefArray contributes most of the unnecessary allocations.
-  def make[T](x: Array[_]): WrappedArray[T] = (x match {
+  /**
+   * Wrap an existing `Array` into a `WrappedArray` of the proper primitive specialization type
+   * without copying.
+   *
+   * Note that an array containing boxed primitives can be converted to a `WrappedArray` without
+   * copying. For example, `val a: Array[Any] = Array(1)` is an array of `Object` at runtime,
+   * containing `Integer`s. An `WrappedArray[Int]` can be obtained with a cast:
+   * `WrappedArray.make(a).asInstanceOf[ImmutableArray[Int]]`. The values are still
+   * boxed, the resulting instance is an [[WrappedArray.ofRef]]. Writing
+   * `WrappedArray.make(a.asInstanceOf[Array[Int]])` does not work, it throws a `ClassCastException`
+   * at runtime.
+   */
+  def make[T](x: Array[T]): WrappedArray[T] = (x.asInstanceOf[Array[_]] match {
     case null              => null
     case x: Array[AnyRef]  => new ofRef[AnyRef](x)
     case x: Array[Int]     => new ofInt(x)
