@@ -130,7 +130,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *
    *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
-  class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends AbstractIterator[Seq[B]] {
+  class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends AbstractIterator[immutable.Seq[B]] {
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
@@ -243,7 +243,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
     def hasNext = filled || fill()
     @throws[NoSuchElementException]
-    def next() = {
+    def next(): immutable.Seq[B] = {
       if (!filled)
         fill()
 
@@ -258,13 +258,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *  blocks.  Example usages:
    *  {{{
    *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7)))
-   *    (1 to 7).iterator grouped 3 toList
+   *    (1 to 7).iterator.grouped(3).toList
    *    // Returns List(List(1, 2, 3), List(4, 5, 6))
-   *    (1 to 7).iterator grouped 3 withPartial false toList
+   *    (1 to 7).iterator.grouped(3).withPartial(false).toList
    *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7, 20, 25)
    *    // Illustrating that withPadding's argument is by-name.
    *    val it2 = Iterator.iterate(20)(_ + 5)
-   *    (1 to 7).iterator grouped 3 withPadding it2.next toList
+   *    (1 to 7).iterator.grouped(3).withPadding(it2.next).toList
    *  }}}
    *
    *  @note Reuse: $consumesAndProducesIterator
