@@ -54,9 +54,9 @@ object Test extends App {
     assert((ten span (_ <= 5)) == (firstFive, secondFive))
     assert((ten splitAt 5) == (firstFive, secondFive), ten splitAt 5)
     val buf = new mutable.ArrayBuffer[Int]
-    firstFive copyToBuffer buf
-    secondFive copyToBuffer buf
-    assert(buf.result == ten, buf.result)
+    buf ++= firstFive
+    buf ++= secondFive
+    assert(buf == ten, buf)
     assert(ten.toArray.size == 10)
     assert(ten.toArray.toSeq == ten, ten.toArray.toSeq)
     assert(ten.toIterable == ten)
@@ -122,7 +122,7 @@ object Test extends App {
     assert(ten contains 1)
     assert(ten contains 10)
     assert(!(ten contains 0))
-    assert((empty ++ (1 to 7) union empty ++ (3 to 10)) == List(1, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 8, 9, 10))
+    assert((empty ++ (1 to 7) ++ empty ++ (3 to 10)) == List(1, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 8, 9, 10))
     assert((ten diff ten).isEmpty)
     assert((ten diff List()) == ten)
     assert((ten diff (ten filter (_ % 2 == 0))) == (ten filterNot  (_ % 2 == 0)))
@@ -139,7 +139,7 @@ object Test extends App {
 
   def setTest(empty: => Set[String]) {
     var s = empty + "A" + "B" + "C"
-    s += ("D", "E", "F")
+    s ++= List("D", "E", "F")
     s ++= List("G", "H", "I")
     s ++= ('J' to 'Z') map (_.toString)
     assert(s forall (s contains))
@@ -147,7 +147,7 @@ object Test extends App {
     assert(!(s contains "0"))
     s = s + "0"
     assert(s contains "0")
-    s = s - "X"
+    s = s.diff(Set("X"))
     assert(!(s contains "X"))
     assert(empty.isEmpty)
     assert(!s.isEmpty)
@@ -156,8 +156,8 @@ object Test extends App {
     assert(!s.isEmpty)
     val s1 = s intersect empty
     assert(s1 == empty, s1)
-    def abc = empty + ("a", "b", "c")
-    def bc = empty + ("b", "c")
+    def abc = empty ++ Set("a", "b", "c")
+    def bc = empty ++ Set("b", "c")
     assert(bc subsetOf abc)
   }
 
@@ -173,7 +173,7 @@ object Test extends App {
 
   def mapTest(empty: => Map[String, String]) = {
     var m = empty + ("A" -> "A") + ("B" -> "B") + ("C" -> "C")
-    m += (("D" -> "D"), ("E" -> "E"), ("F" -> "F"))
+    m ++= List(("D" -> "D"), ("E" -> "E"), ("F" -> "F"))
     m ++= List(("G" -> "G"), ("H" -> "H"), ("I" -> "I"))
     m ++= ('J' to 'Z') map (x => (x.toString -> x.toString))
     println(m.toList.sorted)
@@ -184,10 +184,11 @@ object Test extends App {
     assert(m.getOrElse("7", "@") == "@")
     assert(m.keySet.size == 26)
     assert(m.size == 26)
-    assert(m.keySet == Set() ++ m.keysIterator)
+    assert(m.keySet == Set() ++ m.keysIterator.to(LazyList))
     assert(m.keySet == m.keysIterator.toList.toSet, m.keySet.toList+"!="+m.keysIterator.toList.toSet)
     val m1 = empty ++ m
-    val mm = m -- m.keySet.toList
+    val ks = m.keySet
+    val mm = m.filterKeys(k => !ks(k))
     assert(mm.isEmpty, mm)
     def m3 = empty ++ m1
     assert(m1 == m3)

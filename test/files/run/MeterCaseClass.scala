@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 package a {
   abstract class BoxingConversions[Boxed, Unboxed] {
     def box(x: Unboxed): Boxed

@@ -13,7 +13,6 @@ object Test {
     mutable.ArrayBuffer(_: _*),
     // mutable.ArrayStack(_: _*),
     mutable.Buffer(_: _*),
-    mutable.LinearSeq(_: _*),
     // null on Nil
     // mutable.LinkedList(_: _*),
     mutable.ListBuffer(_: _*),
@@ -22,12 +21,11 @@ object Test {
     // mutable.Queue(_: _*),
     immutable.Seq(_: _*),
     mutable.Seq(_: _*),
-    immutable.Stack(_: _*),
     // mutable.Stack(_: _*),
     immutable.IndexedSeq(_: _*), // was Vector
     //mutable.Vector(_: _*),
     immutable.List(_: _*),
-    immutable.Stream(_: _*)
+    immutable.LazyList(_: _*)
   )
 
   abstract class Data[T] {

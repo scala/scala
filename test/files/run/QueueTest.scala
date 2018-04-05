@@ -1,21 +1,14 @@
-
-
 import scala.collection.mutable.Queue
 
-
-
-
-class ExtQueue[T] extends Queue[T] {
-  def printState {
-    println("-------------------")
-    println("Length: " + len)
-    println("First: " + first0)
-    println("First elem: " + first0.elem)
-    println("After first: " + first0.next)
-  }
-}
-
 object Test {
+  // TODO-newColl: remove this workaround, https://github.com/scala/collection-strawman/issues/530
+  implicit class DQA(val q: Queue[Int]) {
+    def dqa(p: Int => Boolean) = {
+      val es = q.filter(p)
+      q.filterInPlace(x => !p(x))
+      es
+    }
+  }
 
   def main(args: Array[String]) {
     testEmpty
@@ -32,14 +25,14 @@ object Test {
     assert(queue.size == 0)
     assert(queue.length == 0)
     assert(queue.dequeueFirst(_ > 500) == None)
-    assert(queue.dequeueAll(_ > 500).isEmpty)
+    assert(queue.dqa(_ > 500).isEmpty)
 
     queue.clear
     assert(queue.isEmpty)
     assert(queue.size == 0)
     assert(queue.length == 0)
     assert(queue.dequeueFirst(_ > 500) == None)
-    assert(queue.dequeueAll(_ > 500).isEmpty)
+    assert(queue.dqa(_ > 500).isEmpty)
   }
 
   def testEnqueue {
@@ -80,7 +73,7 @@ object Test {
   }
 
   def testTwoEnqueues {
-    val queue = new ExtQueue[Int]
+    val queue = new Queue[Int]
     queue.enqueue(30)
     queue.enqueue(40)
 
@@ -88,9 +81,8 @@ object Test {
     assert(queue.size == 2)
     assert(queue.nonEmpty)
     assert(queue.front == 30)
-//    queue.printState
 
-    val all = queue.dequeueAll(_ > 20)
+    val all = queue.dqa(_ > 20)
     assert(all.size == 2)
     assert(all.contains(30))
     assert(all.contains(40))
@@ -99,7 +91,7 @@ object Test {
   }
 
   def testFewEnqueues {
-    val queue = new ExtQueue[Int]
+    val queue = new Queue[Int]
     queue.enqueue(10)
     queue.enqueue(20)
 
@@ -108,35 +100,27 @@ object Test {
     assert(queue.head == 10)
     assert(queue.last == 20)
     assert(queue.front == 10)
-//    queue.printState
 
     val ten = queue.dequeue
     assert(ten == 10)
     assert(queue.length == 1)
-//    queue.printState
 
     queue.enqueue(30)
-//    queue.printState
     val gt25 = queue.dequeueFirst(_ > 25)
     assert(gt25 == Some(30))
     assert(queue.nonEmpty)
     assert(queue.length == 1)
     assert(queue.head == 20)
     assert(queue.front == 20)
-//    queue.printState
 
     queue.enqueue(30)
-//    queue.printState
     val lt25 = queue.dequeueFirst(_ < 25)
     assert(lt25 == Some(20))
     assert(queue.nonEmpty)
     assert(queue.length == 1)
-//    queue.printState
 
     queue.enqueue(40)
-//    queue.printState
-    val all = queue.dequeueAll(_ > 20)
-//    queue.printState
+    val all = queue.dqa(_ > 20)
     assert(all.size == 2)
     assert(all.contains(30))
     assert(all.contains(40))
@@ -145,19 +129,14 @@ object Test {
 
     queue.enqueue(50)
     queue.enqueue(60)
-//    queue.printState
-    val allgt55 = queue.dequeueAll(_ > 55)
-//    println(allgt55)
-//    queue.printState
+    val allgt55 = queue.dqa(_ > 55)
     assert(allgt55.size == 1)
     assert(allgt55.contains(60))
     assert(queue.length == 1)
 
     queue.enqueue(70)
     queue.enqueue(80)
-//    queue.printState
-    val alllt75 = queue.dequeueAll(_ < 75)
-//    queue.printState
+    val alllt75 = queue.dqa(_ < 75)
     assert(alllt75.size == 2)
     assert(alllt75.contains(70))
     assert(alllt75.contains(50))
@@ -168,7 +147,7 @@ object Test {
   }
 
   def testMoreEnqueues {
-    val queue = new ExtQueue[Int]
+    val queue = new Queue[Int]
     for (i <- 0 until 10) queue.enqueue(i * 2)
 
     for (i <- 0 until 10) {
@@ -183,10 +162,7 @@ object Test {
     assert(queue.length == 10)
     assert(queue.nonEmpty)
 
-    //queue.printState
-    val gt5 = queue.dequeueAll(_ > 4)
-    //queue.printState
-    //println(gt5)
+    val gt5 = queue.dqa(_ > 4)
     assert(gt5.size == 7)
     assert(queue.length == 3)
     assert(queue.nonEmpty)
@@ -198,14 +174,14 @@ object Test {
     for (i <- 0 until 10) queue.enqueue(i)
     assert(queue.length == 10)
 
-    val even = queue.dequeueAll(_ % 2 == 0)
+    val even = queue.dqa(_ % 2 == 0)
     assert(even.size == 5)
     assert(even.sameElements(List(0, 2, 4, 6, 8)))
     assert(queue.length == 5)
     assert(queue.head == 1)
     assert(queue.last == 9)
 
-    val odd = queue.dequeueAll(_ %2 == 1)
+    val odd = queue.dqa(_ %2 == 1)
     assert(odd.size == 5)
     assert(queue.length == 0)
     assert(queue.isEmpty)
@@ -217,14 +193,11 @@ object Test {
     assert(queue.length == 10)
 
     val foddgt25 = queue.dequeueFirst(num => num > 25 && num % 2 == 1)
-    assert(foddgt25 == Some(49))
+    assert(foddgt25 == Some(49), foddgt25)
     assert(queue.length == 9)
     assert(queue.nonEmpty)
 
-    //queue.printState
-    val lt30 = queue.dequeueAll(_ < 30)
-    //println(lt30)
-    //queue.printState
+    val lt30 = queue.dqa(_ < 30)
     assert(lt30.size == 6)
     assert(queue.length == 3)
 
@@ -252,7 +225,7 @@ object Test {
     assert(queue.isEmpty)
 
     for (i <- 0 until 4) queue.enqueue(i)
-    val interv = queue.dequeueAll(n => n > 0 && n < 3)
+    val interv = queue.dqa(n => n > 0 && n < 3)
     assert(interv.sameElements(List(1, 2)))
     assert(queue.length == 2)
     assert(queue.head == 0)
@@ -271,14 +244,14 @@ object Test {
     for (i <- -100 until 100) queue.enqueue(i * i + i % 7 + 5)
     assert(queue.length == 200)
 
-    val manyodds = queue.dequeueAll(_ % 2 == 1)
+    val manyodds = queue.dqa(_ % 2 == 1)
     assert((manyodds.size + queue.length) == 200)
 
-    queue.dequeueAll(_ > -10000)
+    queue.dqa(_ > -10000)
     assert(queue.isEmpty)
 
     for (i <- 0 until 100) queue.enqueue(i)
-    val multof3 = queue.dequeueAll(_ % 3 == 0)
+    val multof3 = queue.dqa(_ % 3 == 0)
     assert(multof3.size == 34)
     assert(queue.size == 66)
 

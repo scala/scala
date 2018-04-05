@@ -31,7 +31,7 @@ object Test {
     TestSequence07.run()
     TestSequence08.run()
     TestSimpleIntSwitch.run()
-    TestStream.run()
+    TestLazyList.run()
     TestUnbox.run()
     Ticket11.run()
     Ticket2.run()
@@ -196,9 +196,9 @@ object Test {
       val list2 = List("1", "2", "3")
       assertEquals(doMatch(list2), "ok")
       val array3 = Array[String]()
-      assertEquals(doMatch(array3), "ok")
+      assertEquals(doMatch(array3.toIndexedSeq), "ok")
       val array4 = Array[String]("ga", "gu")
-      assertEquals(doMatch(array4), "ok")
+      assertEquals(doMatch(array4.toIndexedSeq), "ok")
     }
   }
 
@@ -309,15 +309,15 @@ object Test {
     }
   }
 
-  // unapply for Streams
-  object TestStream {
-    def sum(stream: Stream[Int]): Int =
+  // unapply for LazyLists
+  object TestLazyList {
+    def sum(stream: LazyList[Int]): Int =
       stream match {
-        case Stream.Empty => 0
-        case Stream.cons(hd, tl) => hd + sum(tl)
+        case LazyList.Empty => 0
+        case LazyList.cons(hd, tl) => hd + sum(tl)
       }
 
-    val str: Stream[Int] = List(1, 2, 3).iterator.toStream
+    val str: LazyList[Int] = List(1, 2, 3).to(LazyList)
 
     def run() { assertEquals(sum(str), 6) }
   }

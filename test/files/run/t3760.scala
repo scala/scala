@@ -9,7 +9,7 @@ object Test {
 
     {
       val it = Iterator(1, 2)
-      val xs = it.toStream.toList
+      val xs = it.to(LazyList).toList
 
       assert(it.isEmpty)
     }

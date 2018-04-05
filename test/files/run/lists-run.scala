@@ -6,7 +6,7 @@ import scala.language.postfixOps
 
 object Test {
   def main(args: Array[String]) {
-    Test_multiset.run() // multiset operations: union, intersect, diff
+    Test_multiset.run() // multiset operations: :::, intersect, diff
     Test1.run() //count, exists, filter, ..
     Test2.run() //#468
     Test3.run() //#1691
@@ -21,8 +21,8 @@ object Test_multiset {
       thiz forall (that contains _)
     val xs = List(1, 1, 2)
     val ys = List(1, 2, 2, 3)
-    assert(List(1, 1, 2, 1, 2, 2, 3) == (xs union ys), "xs_union_ys")
-    assert(List(1, 2, 2, 3, 1, 1, 2) == (ys union xs), "ys_union_xs")
+    assert(List(1, 1, 2, 1, 2, 2, 3) == (xs ::: ys), "xs_:::_ys")
+    assert(List(1, 2, 2, 3, 1, 1, 2) == (ys ::: xs), "ys_:::_xs")
     assert(List(1, 2) == (xs intersect ys), "xs_intersect_ys")
     assert(List(1, 2) == (ys intersect xs), "ys_intersect_xs")
     assert(List(1) == (xs diff ys), "xs_diff_ys")
@@ -30,8 +30,8 @@ object Test_multiset {
     assert(isSubListOf(xs filterNot (ys contains), xs diff ys), "xs_subset_ys")
 
     val zs = List(0, 1, 1, 2, 2, 2)
-    assert(List(0, 1, 1, 2, 2, 2, 1, 2, 2, 3) == (zs union ys), "zs_union_ys")
-    assert(List(1, 2, 2, 3, 0, 1, 1, 2, 2, 2) == (ys union zs), "ys_union_zs")
+    assert(List(0, 1, 1, 2, 2, 2, 1, 2, 2, 3) == (zs ::: ys), "zs_:::_ys")
+    assert(List(1, 2, 2, 3, 0, 1, 1, 2, 2, 2) == (ys ::: zs), "ys_:::_zs")
     assert(List(1, 2, 2) == (zs intersect ys), "zs_intersect_ys")
     assert(List(1, 2, 2) == (ys intersect zs), "ys_intersect_zs")
     assert(List(0, 1, 2) == (zs diff ys), "zs_diff_ys")
@@ -39,8 +39,8 @@ object Test_multiset {
     assert(isSubListOf(zs filterNot (ys contains), zs diff ys), "xs_subset_ys")
 
     val ws = List(2)
-    assert(List(2, 1, 2, 2, 3) == (ws union ys), "ws_union_ys")
-    assert(List(1, 2, 2, 3, 2) == (ys union ws), "ys_union_ws")
+    assert(List(2, 1, 2, 2, 3) == (ws ::: ys), "ws_:::_ys")
+    assert(List(1, 2, 2, 3, 2) == (ys ::: ws), "ys_:::_ws")
     assert(List(2) == (ws intersect ys), "ws_intersect_ys")
     assert(List(2) == (ys intersect ws), "ys_intersect_ws")
     assert(List() == (ws diff ys), "ws_diff_ys")
@@ -48,8 +48,8 @@ object Test_multiset {
     assert(isSubListOf(ws filterNot (ys contains), ws diff ys), "ws_subset_ys")
 
     val vs = List(3, 2, 2, 1)
-    assert(List(1, 1, 2, 3, 2, 2, 1) == (xs union vs), "xs_union_vs")
-    assert(List(3, 2, 2, 1, 1, 1, 2) == (vs union xs), "vs_union_xs")
+    assert(List(1, 1, 2, 3, 2, 2, 1) == (xs ::: vs), "xs_:::_vs")
+    assert(List(3, 2, 2, 1, 1, 1, 2) == (vs ::: xs), "vs_:::_xs")
     assert(List(1, 2) == (xs intersect vs), "xs_intersect_vs")
     assert(List(2, 1) == (vs intersect xs), "vs_intersect_xs")
     assert(List(1) == (xs diff vs), "xs_diff_vs")

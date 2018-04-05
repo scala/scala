@@ -1,3 +1,4 @@
+import scala.tools.partest.Util.ArrayDeep
 import scala.reflect.internal.pickling.ByteCodecs._
 
 object Test {

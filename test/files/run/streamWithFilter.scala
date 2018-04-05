@@ -1,5 +1,5 @@
 object Test {
-  val nums = Stream.from(1)
+  val nums = LazyList.from(1)
   def isFizz(x: Int) = x % 3 == 0
   def isBuzz(x: Int) = x % 5 == 0
   // next line will run forever if withFilter isn't doing its thing.

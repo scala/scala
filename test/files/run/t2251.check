@@ -1,1 +1,1 @@
-Set(List(List(C), Stream(D, ?)))
+ChampHashSet(List(List(C), LazyList(D)))
