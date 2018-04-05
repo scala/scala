@@ -1,6 +1,9 @@
 package scala.collection
 package generic
 
+import scala.collection.mutable
+import scala.reflect.ClassTag
+
 
 /** A trait which can be used to avoid code duplication when defining extension
  *  methods that should be applicable both to existing Scala collections (i.e.,
@@ -110,10 +113,17 @@ object IsIterableLike {
       val conversion = implicitly[String => IterableOps[Char, Iterable, String]]
     }
 
-  implicit def arrayRepr[T](implicit conv: Array[T] => IterableOps[T, Iterable, Array[T]]): IsIterableLike[Array[T]] =
-    new IsIterableLike[Array[T]] {
-      type A = T
-      val conversion: Array[T] => IterableOps[A, Iterable, Array[T]] = conv
+  implicit def arrayRepr[A0: ClassTag]: IsIterableLike[Array[A0]] { type A = A0 } =
+    new IsIterableLike[Array[A0]] {
+      type A = A0
+      val conversion: Array[A] => IterableOps[A, Iterable, Array[A]] = a => new IterableOps[A, Iterable, Array[A]] {
+        def toIterable: Iterable[A] = mutable.WrappedArray.make(a)
+        protected[this] def coll: Array[A] = a
+        protected[this] def fromSpecificIterable(coll: Iterable[A]): Array[A] = Array.from(coll)
+        def iterableFactory: IterableFactory[Iterable] = Iterable
+        protected[this] def newSpecificBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder
+        def iterator(): Iterator[A] = a.iterator()
+      }
     }
 
   implicit def iterableRepr[C[X] <: Iterable[X], A0](implicit conv: C[A0] => IterableOps[A0, C, C[A0]]): IsIterableLike[C[A0]] { type A = A0 } =
