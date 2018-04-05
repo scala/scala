@@ -250,7 +250,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       if (!filled)
         throw new NoSuchElementException("next on empty iterator")
       filled = false
-      immutable.ImmutableArray.unsafeWrapArray(buffer.toArray[Any])
+      immutable.ImmutableArray.unsafeWrapArray(buffer.toArray[Any].asInstanceOf[Array[B]])
     }
   }
 

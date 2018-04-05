@@ -45,7 +45,7 @@ sealed abstract class ImmutableArray[+A]
     val dest = Array.ofDim[Any](length)
     Array.copy(unsafeArray, 0, dest, 0, length)
     dest(index) = elem
-    ImmutableArray.unsafeWrapArray(dest)
+    ImmutableArray.unsafeWrapArray(dest.asInstanceOf[Array[B]])
   }
 
   override def map[B](f: A => B): ImmutableArray[B] = iterableFactory.tabulate(length)(i => f(apply(i)))
@@ -54,14 +54,14 @@ sealed abstract class ImmutableArray[+A]
     val dest = Array.ofDim[Any](length + 1)
     dest(0) = elem
     Array.copy(unsafeArray, 0, dest, 1, length)
-    ImmutableArray.unsafeWrapArray(dest)
+    ImmutableArray.unsafeWrapArray(dest.asInstanceOf[Array[B]])
   }
 
   override def appended[B >: A](elem: B): ImmutableArray[B] = {
     val dest = Array.ofDim[Any](length + 1)
     Array.copy(unsafeArray, 0, dest, 0, length)
     dest(length) = elem
-    ImmutableArray.unsafeWrapArray(dest)
+    ImmutableArray.unsafeWrapArray(dest.asInstanceOf[Array[B]])
   }
 
   override def appendedAll[B >: A](suffix: collection.Iterable[B]): ImmutableArray[B] = {
@@ -70,7 +70,7 @@ sealed abstract class ImmutableArray[+A]
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
     b.addAll(unsafeArray)
     b.addAll(suffix)
-    ImmutableArray.unsafeWrapArray(b.result())
+    ImmutableArray.unsafeWrapArray(b.result().asInstanceOf[Array[B]])
   }
 
   override def prependedAll[B >: A](prefix: collection.Iterable[B]): ImmutableArray[B] = {
@@ -80,7 +80,7 @@ sealed abstract class ImmutableArray[+A]
     b.addAll(prefix)
     if(k < 0) b.sizeHint(b.length + unsafeArray.length)
     b.addAll(unsafeArray)
-    ImmutableArray.unsafeWrapArray(b.result())
+    ImmutableArray.unsafeWrapArray(b.result().asInstanceOf[Array[B]])
   }
 
   override def zip[B](that: collection.Iterable[B]): ImmutableArray[(A, B)] =
@@ -160,7 +160,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
   }
 
   /** Wrap an existing `Array` into an `ImmutableArray` of the proper primitive specialization type without copying. */
-  def unsafeWrapArray[T](x: Array[_]): ImmutableArray[T] = (x match {
+  def unsafeWrapArray[T](x: Array[T]): ImmutableArray[T] = (x.asInstanceOf[Array[_]] match {
     case null              => null
     case x: Array[AnyRef]  => new ofRef[AnyRef](x)
     case x: Array[Int]     => new ofInt(x)
