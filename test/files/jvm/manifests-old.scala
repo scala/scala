@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 object Test extends App {
   Test1
   Test2
