@@ -203,6 +203,19 @@ class IteratorTest {
     //Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).toList  // suffices
     Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).map(_.head).toList
   }
+
+  @Test def lazyListIsLazy(): Unit = {
+    val results = mutable.ListBuffer.empty[Int]
+    def mkIterator = Range.inclusive(1, 5).iterator() map (x => { results += x ; x })
+    def mkInfinite = Iterator continually { results += 1 ; 1 }
+
+    val s1 = LazyList.fromIterator(mkIterator)
+    val s2 = LazyList.fromIterator(mkInfinite)
+    // back and forth without slipping into nontermination.
+    results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
+    assertTrue(List(21).sameElements(results))
+  }
+
   // scala/bug#3516
   @Test def toStreamIsSufficientlyLazy(): Unit = {
     val results = collection.mutable.ListBuffer.empty[Int]
@@ -296,6 +309,152 @@ class IteratorTest {
     assertEquals(v2, v4)
     assertEquals(Some(v1), v2)
   }
+
+  @Test
+  def hasCorrectDistinct: Unit = {
+    val result = List(1, 1, 2, 3, 3, 3, 4, 5, 5).iterator().distinct
+
+    assertTrue(result.hasNext)
+    assertEquals(1, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(2, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(3, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(4, result.next())
+    assertTrue(result.hasNext)
+    assertEquals(5, result.next())
+    assertFalse(result.hasNext)
+  }
+
+  @Test
+  def hasCorrectDistinctBy: Unit = {
+    val result = List("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").iterator().distinctBy(_.length)
+
+    assertTrue(result.hasNext)
+    assertEquals("a", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("aa", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("aaa", result.next())
+    assertTrue(result.hasNext)
+    assertEquals("bbbb", result.next())
+    assertFalse(result.hasNext)
+  }
+
+  @Test
+  def knownSize: Unit = {
+
+    def indexedSeq[A](xs: IndexedSeq[A]): Unit = {
+      val it = xs.iterator()
+      assertEquals(xs.size, it.knownSize)
+      it.next()
+      assertEquals(xs.size - 1, it.knownSize)
+    }
+
+    indexedSeq(Vector(1, 2, 3))
+    indexedSeq(mutable.ArrayBuffer(1, 2, 3))
+    indexedSeq(immutable.ImmutableArray(1, 2, 3))
+    indexedSeq(Range(start = 1, end = 3, step = 1))
+    indexedSeq(Range(start = 9, end = 2, step = -2))
+    indexedSeq(immutable.NumericRange(start = 1, end = 3, step = 1))
+    indexedSeq(immutable.NumericRange(start = -10, end = -5, step = 1))
+  }
+
+  @Test
+  def mkString: Unit = {
+    val it = List("a", null, "b", null, "c", null).iterator()
+
+    assertEquals("a,null,b,null,c,null", it.mkString(","))
+  }
+
+  @Test
+  def emptyTypedIteratorsShouldBeEqual: Unit = {
+    val emptyDoubleIterator = Iterator.empty[Double]
+    val emptyIntIterator = Iterator.empty[Int]
+    assertSame(emptyDoubleIterator, emptyIntIterator)
+  }
+
+  @Test
+  def emptyIteratorInHigherOrderFunctions: Unit = {
+    val seqOfIterators = Seq(Seq(1, 2, 3).iterator(), Seq(3, 2, 1).iterator(), Seq(1, 3, 2).iterator())
+    val unified = seqOfIterators.foldLeft(Iterator.empty[Int])((a, b) => a ++ b)
+    assertEquals(List(1, 2, 3, 3, 2, 1, 1, 3, 2), List.from(unified))
+  }
+
+  @Test
+  def emptyIteratorBuilder: Unit = {
+    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int]().result())
+  }
+
+  @Test
+  def nonEmptyIteratorBuilder: Unit = {
+    var iteratorBuilder = Iterator.newBuilder[Int]()
+    iteratorBuilder += 5
+    iteratorBuilder += 4
+    iteratorBuilder += 3
+    assertEquals(List(5, 4, 3), List.from(iteratorBuilder.result()))
+  }
+
+  @Test
+  def nonEmptyIteratorAndClearBuilder: Unit = {
+    var iteratorBuilder = Iterator.newBuilder[Int]()
+    iteratorBuilder += 1
+    iteratorBuilder.clear()
+    assertSame(Iterator.empty, iteratorBuilder.result())
+  }
+
+  @Test def copyToArray(): Unit = {
+    def check(a: Array[Int], start: Int, end: Int) = {
+      var i = 0
+      while (i < start) {
+        assert(a(i) == 0)
+        i += 1
+      }
+      while (i < a.length && i < end) {
+        assert(a(i) == i - start)
+        i += 1
+      }
+      while (i < a.length) {
+        assert(a(i) == 0)
+        i += 1
+      }
+    }
+
+    val far = 100000
+    def l = Iterable.from(Range(0, 100)).iterator()
+    check(l.copyToArray(new Array(100)),
+      0, far)
+    check(l.copyToArray(new Array(10)),
+      0, far)
+    check(l.copyToArray(new Array(1000)),
+      0, 100)
+
+    check(l.copyToArray(new Array(100), 5),
+      5, 105)
+    check(l.copyToArray(new Array(10), 5),
+      5, 10)
+    check(l.copyToArray(new Array(1000), 5),
+      5, 105)
+
+    check(l.copyToArray(new Array(100), 5, 50),
+      5, 55)
+    check(l.copyToArray(new Array(10), 5, 50),
+      5, 10)
+    check(l.copyToArray(new Array(1000), 5, 50),
+      5, 55)
+
+    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1))
+    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1, 10))
+
+    check(l.copyToArray(new Array(10), 10),
+      0, 0)
+    check(l.copyToArray(new Array(10), 10, 10),
+      0, 0)
+    check(l.copyToArray(new Array(10), 0, -1),
+      0, 0)
+  }
+
   // scala/bug#10709
   @Test def `scan is lazy enough`(): Unit = {
     val results = collection.mutable.ListBuffer.empty[Int]

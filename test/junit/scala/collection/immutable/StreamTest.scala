@@ -123,4 +123,94 @@ class StreamTest {
     assertEquals(Stream(None, Some(1)), None #:: Stream(Some(1)))
     assertEquals(Stream(None, Some(1)), Stream(None) #::: Stream(Some(1)))
   }
+
+  @Test
+  def testForceReturnsEvaluatedStream() : Unit = {
+    var i = 0
+    def f: Int = { i += 1; i }
+    val xs = f #:: f #:: f #:: Stream.empty
+    assertEquals(1, i)
+    xs.force
+    assertEquals(3, i)
+    // it's possible to implement `force` with incorrect string representation
+    // (to forget about `tlEvaluated` update)
+    assertEquals( "Stream(1, 2, 3)", xs.toString())
+  }
+
+  val cycle1: Stream[Int] = 1 #:: 2 #:: cycle1
+  val cycle2: Stream[Int] = 1 #:: 2 #:: 3 #:: cycle2
+  @Test(timeout=10000)
+  def testSameElements(): Unit = {
+    assert(Stream().sameElements(Stream()))
+    assert(!Stream().sameElements(Stream(1)))
+    assert(Stream(1,2).sameElements(Stream(1,2)))
+    assert(!Stream(1,2).sameElements(Stream(1)))
+    assert(!Stream(1).sameElements(Stream(1,2)))
+    assert(!Stream(1).sameElements(Stream(2)))
+    assert(!cycle1.sameElements(cycle2))
+    assert(!cycle1.sameElements(cycle2))
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailBothAreNotEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    assertEquals("Stream(1, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenOnlyHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    assertEquals("Stream(1, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    l.tail
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadAndTailHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.head
+    l.tail.head
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.tail
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhedHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
+    val l = Stream(1, 2, 3, 4, 5)
+    l.tail.head
+    assertEquals("Stream(1, 2, ?)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamIsForcedToList: Unit = {
+    val l = 1 #:: 2 #:: 3 #:: 4 #:: Stream.empty
+    l.toList
+    assertEquals("Stream(1, 2, 3, 4)", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamIsEmpty: Unit = {
+    val l = Stream.empty
+    assertEquals("Stream()", l.toString)
+  }
+
+  @Test
+  def testStreamToStringWhenStreamHasCyclicReference: Unit = {
+    lazy val cyc: Stream[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
+    cyc.tail.tail.tail.tail
+    assertEquals("Stream(1, 2, 3, 4, ...)", cyc.toString)
+  }
 }
