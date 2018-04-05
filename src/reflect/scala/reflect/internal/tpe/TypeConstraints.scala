@@ -218,7 +218,7 @@ private[internal] trait TypeConstraints {
             }
             for (tparam2 <- tparams)
               tparam2.info.bounds.lo.dealias match {
-                case TypeRef(_, `tparam`, _) =>
+                case TypeRef(_, `tparam`, Nil) =>
                   debuglog(s"$tvar addHiBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
@@ -230,7 +230,7 @@ private[internal] trait TypeConstraints {
             }
             for (tparam2 <- tparams)
               tparam2.info.bounds.hi.dealias match {
-                case TypeRef(_, `tparam`, _) =>
+                case TypeRef(_, `tparam`, Nil) =>
                   debuglog(s"$tvar addLoBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
