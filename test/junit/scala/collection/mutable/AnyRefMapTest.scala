@@ -3,13 +3,24 @@ package scala.collection.mutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import org.junit.Assert.assertTrue
-
-import scala.collection.mutable.AnyRefMap
+import org.junit.Assert._
 
 /* Test for scala/bug#10540 */
 @RunWith(classOf[JUnit4])
 class AnyRefMapTest {
+
+  @Test def testAnyRefMapCopy: Unit = {
+    val m1 = AnyRefMap("a" -> "b")
+    val m2: AnyRefMap[String, AnyRef] = AnyRefMap.from(m1)
+    assertEquals(m1, m2)
+  }
+
+  @Test def testAnyRefMapContains: Unit = {
+    val m = AnyRefMap("a" -> 1)
+    assertEquals(1, m.size)
+    assertTrue(m.contains("a"))
+  }
+
   @Test
   def test10540: Unit = {
     val badHashCode = -2105619938

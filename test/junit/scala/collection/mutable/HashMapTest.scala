@@ -35,4 +35,37 @@ class HashMapTest {
     hm.put(0, 0)
     hm.getOrElseUpdate(0, throw new AssertionError())
   }
+
+  def getOrElseUpdate_keyIdempotence(): Unit = {
+    val map = mutable.HashMap[String, String]()
+
+    val key = "key"
+    map.getOrElseUpdate(key, {
+      map.getOrElseUpdate(key, "value1")
+      "value2"
+    })
+
+    assertEquals(List((key, "value2")), map.toList)
+  }
+
+  @Test
+  def mapInPlace_addOneToAll(): Unit = {
+    val hm = mutable.HashMap[Int, Int]()
+    hm.put(1, 1)
+    hm.put(2, 2)
+    hm.put(3, 3)
+    hm.mapInPlace{ case (k, v) => (k, v + 1) }
+    assertEquals(List((1, 2), (2, 3), (3, 4)), hm.toList.sortBy(_._1))
+  }
+
+  @Test
+  def mapInPlace_reducedToOneKey(): Unit = {
+    val hm = mutable.HashMap[Int, Int]()
+    hm.put(1, 1)
+    hm.put(2, 2)
+    hm.put(3, 3)
+    hm.mapInPlace{ case (_, v) => (1, v + 1) }
+    assert(hm.size == 1)
+    assert(hm.toList.head._2 > 1)
+  }
 }
