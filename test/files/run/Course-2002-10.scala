@@ -6,11 +6,11 @@ import math.{Pi, log}
 
 object M0 {
 
-  def addStream (s1: Stream[Int], s2: Stream[Int]): Stream[Int] =
-    Stream.cons(s1.head + s2.head, addStream(s1.tail, s2.tail));
+  def addLazyList (s1: LazyList[Int], s2: LazyList[Int]): LazyList[Int] =
+    LazyList.cons(s1.head + s2.head, addLazyList(s1.tail, s2.tail));
 
-  val fib: Stream[Int] =
-    Stream.cons(0, Stream.cons(1, addStream(this.fib, this.fib.tail)));
+  val fib: LazyList[Int] =
+    LazyList.cons(0, LazyList.cons(1, addLazyList(this.fib, this.fib.tail)));
 
   def test = {
     var i = 0;
@@ -23,36 +23,36 @@ object M0 {
 
 object M1 {
 
-  def scale(x: Double, s: Stream[Double]): Stream[Double] =
+  def scale(x: Double, s: LazyList[Double]): LazyList[Double] =
     s map { e: Double => e*x }
 
-  def partialSums(s: Stream[Double]): Stream[Double] =
-    Stream.cons(s.head, partialSums(s.tail) map (x => x + s.head));
+  def partialSums(s: LazyList[Double]): LazyList[Double] =
+    LazyList.cons(s.head, partialSums(s.tail) map (x => x + s.head));
 
-  def euler(s: Stream[Double]): Stream[Double] = {
+  def euler(s: LazyList[Double]): LazyList[Double] = {
     val nm1 = s apply 0;
     val n   = s apply 1;
     val np1 = s apply 2;
-    Stream.cons(np1 - ((np1 - n)*(np1 - n) / (nm1 - 2*n + np1)),euler(s.tail))
+    LazyList.cons(np1 - ((np1 - n)*(np1 - n) / (nm1 - 2*n + np1)),euler(s.tail))
   };
 
-  def better(s: Stream[Double], transform: Stream[Double] => Stream[Double])
-    : Stream[Stream[Double]] =
-    Stream.cons(s, better(transform(s), transform));
+  def better(s: LazyList[Double], transform: LazyList[Double] => LazyList[Double])
+    : LazyList[LazyList[Double]] =
+    LazyList.cons(s, better(transform(s), transform));
 
-  def veryGood(s: Stream[Double], transform: Stream[Double] => Stream[Double])
-    : Stream[Double] =
+  def veryGood(s: LazyList[Double], transform: LazyList[Double] => LazyList[Double])
+    : LazyList[Double] =
     better(s, transform) map (x => x.head);
 
-  def lnSummands(n: Double): Stream[Double] =
-    Stream.cons(1.0 / n, lnSummands(n + 1.0) map { x: Double => -x })
+  def lnSummands(n: Double): LazyList[Double] =
+    LazyList.cons(1.0 / n, lnSummands(n + 1.0) map { x: Double => -x })
 
   var ln0 = partialSums(lnSummands(1.0));
   var ln1 = euler(ln0);
   var ln2 = veryGood(ln0, euler);
 
-  def piSummands(n: Double): Stream[Double] =
-    Stream.cons(1.0 / n, piSummands(n + 2.0) map { x: Double => -x })
+  def piSummands(n: Double): LazyList[Double] =
+    LazyList.cons(1.0 / n, piSummands(n + 2.0) map { x: Double => -x })
 
   var pi0 = scale(4.0, partialSums(piSummands(1.0)));
   var pi1 = euler(pi0);

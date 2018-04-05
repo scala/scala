@@ -1,6 +1,4 @@
-
 object Test extends App {
-
   def needPackageConcurrentMap(map: collection.concurrent.Map[Int, Int]) {
   }
   def needJavaConcurrent(map: java.util.concurrent.ConcurrentMap[Int, Int]) {

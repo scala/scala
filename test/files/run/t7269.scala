@@ -2,7 +2,6 @@ import scala.collection.convert.ImplicitConversionsToScala._
 import scala.collection.mutable
 
 object Test extends App {
-
   def testMap(): Unit = {
     val mapJ = new java.util.HashMap[Int, String]
     val mapS: mutable.Map[Int, String] = mapJ
@@ -11,7 +10,7 @@ object Test extends App {
     assert(11 == mapS.size)
 
     // ConcurrentModificationException thrown in the following line
-    mapS.retain((i, str) => i % 2 == 0)
+    mapS.filterInPlace({ case (i, str) => i % 2 == 0 })
     assert(6 == mapS.size)
   }
 
@@ -23,7 +22,7 @@ object Test extends App {
     assert(11 == mapS.size)
 
     // ConcurrentModificationException thrown in the following line
-    mapS.retain((i) => i % 2 == 0)
+    mapS.filterInPlace((i) => i % 2 == 0)
     assert(6 == mapS.size)
   }
 

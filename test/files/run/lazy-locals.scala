@@ -132,7 +132,7 @@ object Test extends App {
 
   def testRecVal {
     lazy val twos: List[Int] = 2 :: twos
-    lazy val ones: Stream[Int] = Stream.cons(1, ones)
+    lazy val ones: LazyList[Int] = LazyList.cons(1, ones)
 
     println("First 5 elements of ones: " + ones.take(5).toList)
   }
