@@ -162,14 +162,12 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
     this
   }
 
-  /*
-  /** Appends all the Chars in the given Seq[Char] to this sequence.
+  /** Appends all the Chars in the given IterableOnce[Char] to this sequence.
     *
     *  @param  xs  the characters to be appended.
     *  @return     this StringBuilder.
     */
-  def appendAll(xs: TraversableOnce[Char]): StringBuilder = appendAll(xs.toArray)
-  */
+  def appendAll(xs: IterableOnce[Char]): StringBuilder = appendAll(ArrayBuffer.from(xs).toArray)
 
   /** Appends all the Chars in the given Array[Char] to this sequence.
     *
