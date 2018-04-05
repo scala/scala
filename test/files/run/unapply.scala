@@ -93,13 +93,13 @@ object LisSeqArr {
 }
 
 object StreamFoo {
-  def sum(stream: Stream[Int]): Int =
+  def sum(stream: LazyList[Int]): Int =
     stream match {
-      case Stream.Empty => 0
-      case Stream.cons(hd, tl) => hd + sum(tl)
+      case LazyList.Empty => 0
+      case LazyList.cons(hd, tl) => hd + sum(tl)
     }
   def run() {
-    val str: Stream[Int] = List(1,2,3).toStream
+    val str: LazyList[Int] = List(1,2,3).to(LazyList)
     assert(6 == sum(str))
   }
 }

@@ -13,9 +13,9 @@ Either's kind is F[+A1,+A2]
 * -(+)-> * -(+)-> *
 This is a type constructor: a 1st-order-kinded type.
 
-scala> :k -v scala.collection.generic.ImmutableSortedMapFactory
-scala.collection.generic.ImmutableSortedMapFactory's kind is X[CC[A,B] <: scala.collection.immutable.SortedMap[A,B] with scala.collection.SortedMapLike[A,B,CC[A,B]]]
-(* -> * -> *(scala.collection.immutable.SortedMap[A,B] with scala.collection.SortedMapLike[A,B,CC[A,B]])) -> *
+scala> :k -v scala.collection.SortedMapOps
+scala.collection.SortedMapOps's kind is X[K,+V,+CC[X,Y] <: scala.collection.Map[X,Y] with scala.collection.SortedMapOps[X, Y, CC, _],+C <: scala.collection.SortedMapOps[K,V,CC,C]]
+* -> * -(+)-> (* -> * -> *(scala.collection.Map[X,Y] with scala.collection.SortedMapOps[X, Y, CC, _])) -(+)-> *(scala.collection.SortedMapOps[K,V,CC,C]) -(+)-> *
 This is a type constructor that takes type constructor(s): a higher-kinded type.
 
 scala> :kind -v Tuple2

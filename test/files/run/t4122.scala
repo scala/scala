@@ -1,6 +1,6 @@
 object Test {
   val sw: Seq[Char] = "ab"
-  val sw2: Seq[Char] = Array('a', 'b')
+  val sw2: Seq[Char] = Array('a', 'b').toIndexedSeq
   val sw3 = Seq('a', 'b')
   val sw4 = "ab".toList
   val all = List(sw, sw2, sw3, sw4)
