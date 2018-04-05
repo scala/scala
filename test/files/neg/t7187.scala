@@ -25,4 +25,7 @@ class EtaExpandZeroArg {
   val t4b: () => Any = zap()   // ditto
   val t4c: () => Any = zap _   // ok
   val t4d: () => Any = zap() _ // ok
+
+  def zup(x: Int) = x
+  val t5a = zup // error in 2.13, eta-expansion in 2.14
 }

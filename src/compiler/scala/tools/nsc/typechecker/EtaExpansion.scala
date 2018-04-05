@@ -17,7 +17,7 @@ import symtab.Flags._
 trait EtaExpansion { self: Analyzer =>
   import global._
 
-  /** Expand partial method application `p.f(es_1)...(es_n)`.
+  /** Expand partial method application `p.f(es_1)...(es_n)`. Does not support dependent method types (yet).
     *
     * We expand this to the following block, which evaluates
     * the target of the application and its supplied arguments if needed (they are not stable),
@@ -33,8 +33,9 @@ trait EtaExpansion { self: Analyzer =>
     * }
     * ```
     *
-    * This is called from instantiateToMethodType after type checking `tree`,
-    * and we realize we have a method type, where a function type (builtin or SAM) is expected.
+    * This is called from typedEtaExpansion, which itself is called from
+    *   - instantiateToMethodType (for a naked method reference), or
+    *   - typedEta (when type checking a method value, `m _`).
     *
     **/
   def etaExpand(unit: CompilationUnit, tree: Tree, typer: Typer): Tree = {
@@ -120,6 +121,9 @@ trait EtaExpansion { self: Analyzer =>
     }
 
     val tree1 = liftoutPrefix(tree)
-    atPos(tree.pos)(Block(defs.toList, expand(tree1, tpe)))
+    val expansion = expand(tree1, tpe)
+
+    if (defs.isEmpty) expansion
+    else atPos(tree.pos)(Block(defs.toList, expansion))
   }
 }
