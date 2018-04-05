@@ -1,4 +1,4 @@
-
+import scala.tools.partest.Util.ArrayDeep
 import scala.language.{ higherKinds, reflectiveCalls }
 
 object Test2 {
