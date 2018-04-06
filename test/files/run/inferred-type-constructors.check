@@ -47,6 +47,7 @@ warning: there were two feature warnings; re-run with -feature for details
                 List[Nothing]
                 scala.collection.immutable.Vector[Nothing]
                 scala.collection.immutable.Iterable[(Int, Int)]
+                scala.collection.immutable.Map[Int,Int]
                 scala.collection.immutable.Set[Int]
                 Seq[Int]
                 Array[Int]

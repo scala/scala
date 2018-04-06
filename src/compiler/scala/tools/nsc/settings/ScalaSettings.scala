@@ -30,9 +30,6 @@ trait ScalaSettings extends AbsScalaSettings
    */
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
-  /** Enabled under -Xexperimental. */
-  protected def experimentalSettings = List[BooleanSetting](YpartialUnification)
-
   /** Enabled under -Xfuture. */
   protected def futureSettings = List[BooleanSetting]()
 
@@ -233,7 +230,6 @@ trait ScalaSettings extends AbsScalaSettings
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
   val YcachePluginClassLoader  = CachePolicy.setting("plugin", "compiler plugins")
   val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
-  val YpartialUnification = BooleanSetting ("-Ypartial-unification", "Enable partial unification in type constructor inference")
   val Yvirtpatmat     = BooleanSetting    ("-Yvirtpatmat", "Enable pattern matcher virtualization")
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
@@ -441,7 +437,8 @@ trait ScalaSettings extends AbsScalaSettings
       opt.enable(optChoices.lInline)
       optInlineFrom.value = List("**")
     })
-  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
+  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions in Scala 2.12 and earlier.")
+    .withDeprecationMessage(s"In 2.13 all options previously enabled by -Xexperimental are enabled by default or removed.")
 
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
