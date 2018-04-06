@@ -20,6 +20,6 @@ object Test extends ScaladocModelTest {
     val foo = rootPackage._package("scala")._package("test")._package("scaladoc")._package("SI5780")._method("foo")
     // check that AnyRef is properly linked to its template:
     assert(foo.resultType.name == "AnyRef", foo.resultType.name + " == AnyRef")
-    assert(foo.resultType.refEntity.size == 1, foo.resultType.refEntity + ".size == 1")
+    assert(foo.resultType.refEntity.size == 1, s"${foo.resultType.refEntity}.size == 1")
   }
 }
