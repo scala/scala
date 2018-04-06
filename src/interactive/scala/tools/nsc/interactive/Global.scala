@@ -187,7 +187,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     override def default(key: SourceFile): Set[Response[Tree]] = Set()
     override def addOne (binding: (SourceFile, Set[Response[Tree]])) = {
       assert(interruptsEnabled, "delayed operation within an ask")
-      super.+=(binding)
+      super.addOne(binding)
     }
   }
 
