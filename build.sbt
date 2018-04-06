@@ -63,7 +63,7 @@ val partestDependencies =  Seq(
   "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
 ).map(bootstrapDep("test/files/lib")) ++ Seq(
   bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test",
-  bootstrapDep("test/files/speclib")("instrumented" -> "1b11ac773055c1e942c6b5eb4aabdf02292a7194") % "test"
+  bootstrapDep("test/files/speclib")("instrumented" -> "9d6d56916c54219a33370fd9bb40a47b22566938") % "test"
 )
 
 /** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This

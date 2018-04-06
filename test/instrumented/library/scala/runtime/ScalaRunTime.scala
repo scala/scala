@@ -11,29 +11,29 @@
 package scala
 package runtime
 
-import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
-import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
-import scala.collection.generic.{ Sorted }
+import scala.collection.{ View, AbstractIterator, SortedOps, StringView, StringOps, StrictOptimizedIterableOps }
+import scala.collection.generic.IsIterableLike
+import scala.collection.immutable.{ NumericRange, ImmutableArray }
+import scala.collection.mutable.StringBuilder
 import scala.reflect.{ ClassTag, classTag }
-import scala.util.control.ControlThrowable
-import scala.xml.{ Node, MetaData }
 import java.lang.{ Class => jClass }
 
-import java.lang.Double.doubleToLongBits
-import java.lang.reflect.{ Modifier, Method => JMethod }
+import java.lang.reflect.{ Method => JMethod }
 
 /** The object ScalaRunTime provides support methods required by
  *  the scala runtime.  All these methods should be considered
  *  outside the API and subject to change or removal without notice.
  */
 object ScalaRunTime {
-  def isArray(x: AnyRef): Boolean = isArray(x, 1)
-  def isArray(x: Any, atLevel: Int): Boolean =
+  def isArray(x: Any, atLevel: Int = 1): Boolean =
     x != null && isArrayClass(x.getClass, atLevel)
 
   private def isArrayClass(clazz: jClass[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
+
+  // A helper method to make my life in the pattern matcher a lot easier.
+  def drop[Repr](coll: Repr, num: Int)(implicit iterable: IsIterableLike[Repr]): Repr =
+    iterable conversion coll drop num
 
   /** Return the class object representing an array with element class `clazz`.
    */
@@ -44,7 +44,7 @@ object ScalaRunTime {
   }
 
   /** Return the class object representing an unboxed value type,
-   *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
+   *  e.g., classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.
    */
   def anyValClass[T <: AnyVal : ClassTag](value: T): jClass[T] =
@@ -70,9 +70,11 @@ object ScalaRunTime {
     }
   }
 
+  var arrayUpdateCount = 0
+
   /** update generic array element */
   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
-    arrayApplyCount += 1
+    arrayUpdateCount += 1
     xs match {
       case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
       case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
@@ -141,15 +143,9 @@ object ScalaRunTime {
     arr
   }
 
-  // Java bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4071957
+  // Java bug: https://bugs.java.com/view_bug.do?bug_id=4071957
   // More background at ticket #2318.
-  def ensureAccessible(m: JMethod): JMethod = {
-    if (!m.isAccessible) {
-      try m setAccessible true
-      catch { case _: SecurityException => () }
-    }
-    m
-  }
+  def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
@@ -169,12 +165,6 @@ object ScalaRunTime {
       }
     }
   }
-
-  /** Implementation of `##`. */
-  def hash(x: Any): Int =
-    if (x == null) 0
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
-    else x.hashCode
 
   /** Given any Scala value, convert it to a String.
    *
@@ -200,22 +190,34 @@ object ScalaRunTime {
     // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
     def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
 
+    // We use reflection because the scala.xml package might not be available
+    def isSubClassOf(potentialSubClass: Class[_], ofClass: String) =
+      try {
+        val classLoader = potentialSubClass.getClassLoader
+        val clazz = Class.forName(ofClass, /*initialize =*/ false, classLoader)
+        clazz.isAssignableFrom(potentialSubClass)
+      } catch {
+        case cnfe: ClassNotFoundException => false
+      }
+    def isXmlNode(potentialSubClass: Class[_])     = isSubClassOf(potentialSubClass, "scala.xml.Node")
+    def isXmlMetaData(potentialSubClass: Class[_]) = isSubClassOf(potentialSubClass, "scala.xml.MetaData")
+
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
-      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
-      case _: Node | _: MetaData => true
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
-      case _: Sorted[_, _]  => true
+      case _: SortedOps[_, _]  => true
       // StringBuilder(a, b, c) and similar not so attractive
-      case _: StringLike[_] => true
+      case _: StringView | _: StringOps | _: StringBuilder => true
       // Don't want to evaluate any elements in a view
-      case _: TraversableView[_, _] => true
+      case _: View[_] => true
+      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
+      // -> catch those by isXmlNode and isXmlMetaData.
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x)
+      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, Nothing, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }
@@ -231,7 +233,7 @@ object ScalaRunTime {
       if (x.getClass.getComponentType == classOf[BoxedUnit])
         0 until (array_length(x) min maxElements) map (_ => "()") mkString ("Array(", ", ", ")")
       else
-        WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
+        x.asInstanceOf[Array[_]].iterator.take(maxElements).map(inner).mkString("Array(", ", ", ")")
     }
 
     // The recursively applied attempt to prettify Array printing.
@@ -244,9 +246,8 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: scala.collection.Map[_, _] => x.iterator take maxElements map mapInner mkString (x.className + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.className + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
       case x                            => x.toString
@@ -256,7 +257,7 @@ object ScalaRunTime {
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
     try inner(arg)
     catch {
-      case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
+      case _: UnsupportedOperationException | _: AssertionError => "" + arg
     }
   }
 
@@ -267,4 +268,23 @@ object ScalaRunTime {
 
     nl + s + "\n"
   }
+
+  // Convert arrays to ImmutableArray for use with Java varargs:
+  def genericWrapArray[T](xs: Array[T]): ImmutableArray[T] =
+    if (xs eq null) null
+    else ImmutableArray.unsafeWrapArray(xs)
+  def wrapRefArray[T <: AnyRef](xs: Array[T]): ImmutableArray[T] = {
+    if (xs eq null) null
+    else if (xs.length == 0) ImmutableArray.empty[AnyRef].asInstanceOf[ImmutableArray[T]]
+    else new ImmutableArray.ofRef[T](xs)
+  }
+  def wrapIntArray(xs: Array[Int]): ImmutableArray[Int] = if (xs ne null) new ImmutableArray.ofInt(xs) else null
+  def wrapDoubleArray(xs: Array[Double]): ImmutableArray[Double] = if (xs ne null) new ImmutableArray.ofDouble(xs) else null
+  def wrapLongArray(xs: Array[Long]): ImmutableArray[Long] = if (xs ne null) new ImmutableArray.ofLong(xs) else null
+  def wrapFloatArray(xs: Array[Float]): ImmutableArray[Float] = if (xs ne null) new ImmutableArray.ofFloat(xs) else null
+  def wrapCharArray(xs: Array[Char]): ImmutableArray[Char] = if (xs ne null) new ImmutableArray.ofChar(xs) else null
+  def wrapByteArray(xs: Array[Byte]): ImmutableArray[Byte] = if (xs ne null) new ImmutableArray.ofByte(xs) else null
+  def wrapShortArray(xs: Array[Short]): ImmutableArray[Short] = if (xs ne null) new ImmutableArray.ofShort(xs) else null
+  def wrapBooleanArray(xs: Array[Boolean]): ImmutableArray[Boolean] = if (xs ne null) new ImmutableArray.ofBoolean(xs) else null
+  def wrapUnitArray(xs: Array[Unit]): ImmutableArray[Unit] = if (xs ne null) new ImmutableArray.ofUnit(xs) else null
 }

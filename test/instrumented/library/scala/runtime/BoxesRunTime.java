@@ -10,7 +10,6 @@
 
 package scala.runtime;
 
-import java.io.*;
 import scala.math.ScalaNumber;
 
 /** An object (static class) that defines methods used for creating,
@@ -29,7 +28,7 @@ import scala.math.ScalaNumber;
   * @version 2.0 */
 public final class BoxesRunTime
 {
-    private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
+    private static final int CHAR = 0, /* BYTE = 1, SHORT = 2, */ INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
     /** We don't need to return BYTE and SHORT, as everything which might
      *  care widens to INT.
@@ -42,10 +41,6 @@ public final class BoxesRunTime
         if (a instanceof java.lang.Float) return FLOAT;
         if ((a instanceof java.lang.Byte) || (a instanceof java.lang.Short)) return INT;
         return OTHER;
-    }
-
-    private static String boxDescription(Object a) {
-      return "" + a.getClass().getSimpleName() + "(" + a + ")";
     }
 
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
@@ -200,7 +195,7 @@ public final class BoxesRunTime
         return xc.equals(y);
     }
 
-    private static boolean equalsNumChar(java.lang.Number xn, java.lang.Character yc) {
+    public static boolean equalsNumChar(java.lang.Number xn, java.lang.Character yc) {
         if (yc == null)
             return xn == null;
 
@@ -217,66 +212,6 @@ public final class BoxesRunTime
         default:
             return xn.equals(yc);
         }
-    }
-
-    /** Hashcode algorithm is driven by the requirements imposed
-     *  by primitive equality semantics, namely that equal objects
-     *  have equal hashCodes.  The first priority are the integral/char
-     *  types, which already have the same hashCodes for the same
-     *  values except for Long.  So Long's hashCode is altered to
-     *  conform to Int's for all values in Int's range.
-     *
-     *  Float is problematic because it's far too small to hold
-     *  all the Ints, so for instance Int.MaxValue.toFloat claims
-     *  to be == to each of the largest 64 Ints.  There is no way
-     *  to preserve equals/hashCode alignment without compromising
-     *  the hashCode distribution, so Floats are only guaranteed
-     *  to have the same hashCode for whole Floats in the range
-     *  Short.MinValue to Short.MaxValue (2^16 total.)
-     *
-     *  Double has its hashCode altered to match the entire Int range,
-     *  but is not guaranteed beyond that.  (But could/should it be?
-     *  The hashCode is only 32 bits so this is a more tractable
-     *  issue than Float's, but it might be better simply to exclude it.)
-     *
-     *  Note: BigInt and BigDecimal, being arbitrary precision, could
-     *  be made consistent with all other types for the Int range, but
-     *  as yet have not.
-     *
-     *  Note: Among primitives, Float.NaN != Float.NaN, but the boxed
-     *  versions are equal.  This still needs reconciliation.
-     */
-    public static int hashFromLong(java.lang.Long n) {
-        int iv = n.intValue();
-        if (iv == n.longValue()) return iv;
-        else return n.hashCode();
-    }
-    public static int hashFromDouble(java.lang.Double n) {
-        int iv = n.intValue();
-        double dv = n.doubleValue();
-        if (iv == dv) return iv;
-
-        long lv = n.longValue();
-        if (lv == dv) return java.lang.Long.valueOf(lv).hashCode();
-
-        float fv = n.floatValue();
-        if (fv == dv) return java.lang.Float.valueOf(fv).hashCode();
-        else return n.hashCode();
-    }
-    public static int hashFromFloat(java.lang.Float n) {
-        int iv = n.intValue();
-        float fv = n.floatValue();
-        if (iv == fv) return iv;
-
-        long lv = n.longValue();
-        if (lv == fv) return java.lang.Long.valueOf(lv).hashCode();
-        else return n.hashCode();
-    }
-    public static int hashFromNumber(java.lang.Number n) {
-      if (n instanceof java.lang.Long) return hashFromLong((java.lang.Long)n);
-      else if (n instanceof java.lang.Double) return hashFromDouble((java.lang.Double)n);
-      else if (n instanceof java.lang.Float) return hashFromFloat((java.lang.Float)n);
-      else return n.hashCode();
     }
 
     private static int unboxCharOrInt(Object arg1, int code) {
