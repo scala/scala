@@ -132,7 +132,7 @@ object TreeMapTest extends Properties("TreeMap") {
   property("to is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val to = subject.drop(n).firstKey
-    subject.to(to).lastKey == to && subject.to(to).forall(_._1 <= to)
+    subject.rangeTo(to).lastKey == to && subject.rangeTo(to).forall(_._1 <= to)
   }}
 
   property("until is exclusive") = forAll { (subject: TreeMap[Int, String]) => subject.size > 1 ==> {
