@@ -511,7 +511,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def concat[B >: A](xs: => IterableOnce[B]): Iterator[B] = new Iterator.ConcatIterator[B](self).concat(xs)
 
-  @`inline` def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
+  @`inline` final def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
   def take(n: Int): Iterator[A] = new AbstractIterator[A] {
     private var i = 0
