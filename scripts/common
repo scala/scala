@@ -97,10 +97,12 @@ function generateRepositoriesConfig() {
     done
   fi
 
+  # TODO-newColl: remove sonatype-staging when scalachek 1.14.0-newCollections is released to maven central
   cat >> "$sbtRepositoryConfig" << EOF
   jcenter-cache: $jcenterCacheUrl
   local
   maven-central
+  sonatype-staging: https://oss.sonatype.org/content/repositories/staging/
   typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
   typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
   sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]

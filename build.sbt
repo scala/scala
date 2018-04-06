@@ -45,13 +45,13 @@ val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                  % "junit"                % "4.11"
-val junitInterfaceDep = "com.novocode"           % "junit-interface"      % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.13.0-M1" % "1.13.5"                          % "test"
-val jolDep            = "org.openjdk.jol"        % "jol-core"             % "0.5"
-val asmDep            = "org.scala-lang.modules" % "scala-asm"            % versionProps("scala-asm.version")
-val jlineDep          = "jline"                  % "jline"                % versionProps("jline.version")
-val antDep            = "org.apache.ant"         % "ant"                  % "1.9.4"
+val junitDep          = "junit"                  % "junit"                            % "4.11"
+val junitInterfaceDep = "com.novocode"           % "junit-interface"                  % "0.11"                            % "test"
+val scalacheckDep     = "org.scala-lang.modules" % "scalacheck_2.13.0-M4-pre-20d3c21" % "1.14.0-newCollections"           % "test"
+val jolDep            = "org.openjdk.jol"        % "jol-core"                         % "0.5"
+val asmDep            = "org.scala-lang.modules" % "scala-asm"                        % versionProps("scala-asm.version")
+val jlineDep          = "jline"                  % "jline"                            % versionProps("jline.version")
+val antDep            = "org.apache.ant"         % "ant"                              % "1.9.4"
 
 val partestDependencies =  Seq(
   "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
@@ -586,6 +586,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
+    resolvers += "sonatype-staging" at "https://oss.sonatype.org/content/repositories/staging/", // TODO-newColl: remove when released to maven central
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
