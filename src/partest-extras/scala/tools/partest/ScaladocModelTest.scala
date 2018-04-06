@@ -1,5 +1,3 @@
-/* Disabled so we can bootstrap without scaladoc
-
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author Vlad Ureche
@@ -188,9 +186,9 @@ abstract class ScaladocModelTest extends DirectTest {
     def countLinksInBody(body: Body, p: EntityLink => Boolean): Int = {
       def countLinks(b: Any): Int = b match {
         case el: EntityLink if p(el) => 1
-        case s: Seq[_]  => s.toList.map(countLinks(_)).sum
+        case s: collection.Seq[_] => s.toList.map(countLinks(_)).sum
         case p: Product => p.productIterator.toList.map(countLinks(_)).sum
-        case _          => 0
+        case _ => 0
       }
       countLinks(body)
     }
@@ -204,4 +202,3 @@ abstract class ScaladocModelTest extends DirectTest {
     }
   }
 }
-*/

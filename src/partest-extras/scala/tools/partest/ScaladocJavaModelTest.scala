@@ -1,5 +1,3 @@
-/* Disabled so we can bootstrap without scaladoc
-
 package scala.tools.partest
 
 import scala.tools.nsc.doc.Universe
@@ -15,4 +13,3 @@ abstract class ScaladocJavaModelTest extends ScaladocModelTest {
   }
 
 }
-*/
