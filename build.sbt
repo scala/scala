@@ -586,7 +586,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
-    resolvers += "sonatype-staging" at "https://oss.sonatype.org/content/repositories/staging/", // TODO-newColl: remove when released to maven central
     libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
