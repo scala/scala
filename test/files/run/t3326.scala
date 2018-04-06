@@ -1,9 +1,4 @@
-
-
-
 import scala.math.Ordering
-
-
 
 /** The heart of the problem - we want to retain the ordering when
  *  using `++` on sorted maps.
@@ -36,11 +31,11 @@ object Test {
     var m1: SortedMap[Int, String] = SortedMap.empty[Int, String](order)
     var m2: SortedMap[Int, String] = SortedMap.empty[Int, String](order)
 
-    m1 += (1 -> "World")
-    m1 += (2 -> "Hello")
+    m1 ++= List(1 -> "World")
+    m1 ++= List(2 -> "Hello")
 
-    m2 += (4 -> "Bar")
-    m2 += (5 -> "Foo")
+    m2 ++= List(4 -> "Bar")
+    m2 ++= List(5 -> "Foo")
 
     val m3: SortedMap[Int, String] = m1 ++ m2
 
@@ -48,7 +43,7 @@ object Test {
     println(m2)
     println(m3)
 
-    println(m1 + (3 -> "?"))
+    println(m1 ++ List(3 -> "?"))
   }
 
   def testImmutableSorted() {

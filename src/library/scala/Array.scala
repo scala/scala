@@ -8,30 +8,13 @@
 
 package scala
 
-import scala.collection.generic._
-import scala.collection.{ mutable, immutable }
-import mutable.{ ArrayBuilder, ArraySeq }
+//import scala.collection.generic._
+import scala.collection.{Factory, immutable, mutable}
+import mutable.ArrayBuilder
+import immutable.ImmutableArray
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime.{ array_apply, array_update }
-
-/** Contains a fallback builder for arrays when the element type
- *  does not have a class tag. In that case a generic array is built.
- */
-class FallbackArrayBuilding {
-
-  /** A builder factory that generates a generic array.
-   *  Called instead of `Array.newBuilder` if the element type of an array
-   *  does not have a class tag. Note that fallbackBuilder factory
-   *  needs an implicit parameter (otherwise it would not be dominated in
-   *  implicit search by `Array.canBuildFrom`). We make sure that
-   *  implicit search is always successful.
-   */
-  implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
-    new CanBuildFrom[Array[_], T, ArraySeq[T]] {
-      def apply(from: Array[_]) = ArraySeq.newBuilder[T]
-      def apply() = ArraySeq.newBuilder[T]
-    }
-}
+import scala.runtime.ScalaRunTime
+import scala.runtime.ScalaRunTime.{array_apply, array_update}
 
 /** Utility methods for operating on arrays.
  *  For example:
@@ -46,7 +29,7 @@ class FallbackArrayBuilding {
  *  @author Martin Odersky
  *  @version 1.0
  */
-object Array extends FallbackArrayBuilding {
+object Array {
   val emptyBooleanArray = new Array[Boolean](0)
   val emptyByteArray    = new Array[Byte](0)
   val emptyCharArray    = new Array[Char](0)
@@ -57,16 +40,37 @@ object Array extends FallbackArrayBuilding {
   val emptyShortArray   = new Array[Short](0)
   val emptyObjectArray  = new Array[Object](0)
 
-  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
-    new CanBuildFrom[Array[_], T, Array[T]] {
-      def apply(from: Array[_]) = ArrayBuilder.make[T]()(t)
-      def apply() = ArrayBuilder.make[T]()(t)
+  /** Provides an implicit conversion from the Array object to a collection Factory */
+  implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] =
+    new Factory[A, Array[A]] {
+      def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
+      def newBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder[A]
     }
 
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].
    */
   def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T]()(t)
+
+  def from[A : ClassTag](it: IterableOnce[A]): Array[A] = {
+    val n = it.knownSize
+    if (n > -1) {
+      val elements = new Array[A](n)
+      val iterator = it.iterator()
+      var i = 0
+      while (i < n) {
+        ScalaRunTime.array_update(elements, i, iterator.next())
+        i = i + 1
+      }
+      elements
+    } else {
+      val b = ArrayBuilder.make[A]()
+      val iterator = it.iterator()
+      while (iterator.hasNext)
+        b += iterator.next()
+      b.result()
+    }
+  }
 
   private def slowcopy(src : AnyRef,
                        srcPos : Int,
@@ -436,12 +440,14 @@ object Array extends FallbackArrayBuilding {
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
    *
    *  @param x the selector value
-   *  @return  sequence wrapped in a [[scala.Some]], if `x` is a Seq, otherwise `None`
+   *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    if (x == null) None else Some(x.toIndexedSeq)
+    if (x == null) None else Some(ImmutableArray.unsafeWrapArray[T](x))
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
+    // Is ImmutableArray safe here? In 2.12 we used to call .toIndexedSeq which copied the array
+    // instead of wrapping it in a WrappedArray but it appears unnecessary.
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation

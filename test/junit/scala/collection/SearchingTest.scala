@@ -12,8 +12,8 @@ class SearchingTest {
   @Test
   def doesLinearSearchOnLinearSeqs() {
 
-    class TestSeq[A](list: List[A]) extends SeqLike[A, TestSeq[A]] {
-      var elementsAccessed = Set.empty[Int]
+    class TestSeq[A](list: List[A]) extends Seq[A] {
+      var elementsAccessed = immutable.Set.empty[Int]
 
       protected[this] def newBuilder = ??? // not needed for this test
       def seq = list
@@ -31,8 +31,8 @@ class SearchingTest {
   @Test
   def doesBinarySearchOnIndexedSeqs() {
 
-    class TestIndexedSeq[A](vec: Vector[A]) extends IndexedSeqLike[A, TestIndexedSeq[A]] {
-      var elementsAccessed = Set.empty[Int]
+    class TestIndexedSeq[A](vec: Vector[A]) extends IndexedSeq[A] {
+      var elementsAccessed = immutable.Set.empty[Int]
 
       protected[this] def newBuilder = ??? // not needed for this test
       def seq = vec

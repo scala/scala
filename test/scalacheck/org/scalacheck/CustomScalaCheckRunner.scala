@@ -40,10 +40,10 @@ private abstract class CustomScalaCheckRunner extends Runner {
   abstract class BaseTask(override val taskDef: TaskDef) extends Task {
     val tags: Array[String] = Array()
 
-    val props: Seq[(String,Prop)] = {
+    val props: collection.Seq[(String,Prop)] = {
       val fp = taskDef.fingerprint.asInstanceOf[SubclassFingerprint]
       val obj = if (fp.isModule) Platform.loadModule(taskDef.fullyQualifiedName,loader)
-                else Platform.newInstance(taskDef.fullyQualifiedName, loader)(Seq())
+                else Platform.newInstance(taskDef.fullyQualifiedName, loader, Seq())(Seq())
       obj match {
         case props: Properties => props.properties
         case prop: Prop => Seq("" -> prop)
@@ -54,7 +54,7 @@ private abstract class CustomScalaCheckRunner extends Runner {
     val properties: Option[Properties] = {
       val fp = taskDef.fingerprint.asInstanceOf[SubclassFingerprint]
       val obj = if (fp.isModule) Platform.loadModule(taskDef.fullyQualifiedName,loader)
-      else Platform.newInstance(taskDef.fullyQualifiedName, loader)(Seq())
+      else Platform.newInstance(taskDef.fullyQualifiedName, loader, Seq())(Seq())
       obj match {
         case props: Properties => Some(props)
         case prop: Prop => None

@@ -91,7 +91,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
    * creates an entry containing both of them. If there would be more than one class or source
    * entries for the same class it always would use the first entry of each type found on a classpath.
    */
-  private def mergeClassesAndSources(entries: Seq[Seq[ClassRepresentation]]): Seq[ClassRepresentation] = {
+  private def mergeClassesAndSources(entries: scala.collection.Seq[scala.collection.Seq[ClassRepresentation]]): Seq[ClassRepresentation] = {
     var count = 0
     val indices = collection.mutable.HashMap[String, Int]()
     val mergedEntries = new ArrayBuffer[ClassRepresentation](1024)

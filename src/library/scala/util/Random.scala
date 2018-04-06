@@ -9,9 +9,10 @@
 package scala
 package util
 
+import scala.annotation.migration
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable.{ List, Stream }
+import scala.collection.BuildFrom
+import scala.collection.immutable.{ List, LazyList }
 import scala.language.{implicitConversions, higherKinds}
 
 /**
@@ -203,7 +204,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *
    *  @return         the shuffled collection
    */
-  def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+  def shuffle[T, CC[X] <: IterableOnce[X]](xs: CC[T])(implicit bf: BuildFrom[CC[T], T, CC[T]]): CC[T] = {
     val buf = new ArrayBuffer[T] ++= xs
 
     def swap(i1: Int, i2: Int) {
@@ -217,21 +218,22 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       swap(n - 1, k)
     }
 
-    (bf(xs) ++= buf).result()
+    (bf.newBuilder(xs) ++= buf).result()
   }
 
-  /** Returns a Stream of pseudorandomly chosen alphanumeric characters,
+  /** Returns a LazyList of pseudorandomly chosen alphanumeric characters,
    *  equally chosen from A-Z, a-z, and 0-9.
    *
    *  @since 2.8
    */
-  def alphanumeric: Stream[Char] = {
+  @migration("`alphanumeric` returns a LazyList instead of a Stream", "2.13.0")
+  def alphanumeric: LazyList[Char] = {
     def nextAlphaNum: Char = {
       val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
       chars charAt (self nextInt chars.length)
     }
 
-    Stream continually nextAlphaNum
+    LazyList continually nextAlphaNum
   }
 
 }

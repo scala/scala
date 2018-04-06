@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
-import scala.collection.generic.CanBuildFrom
+import scala.collection.BuildFrom
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 
@@ -606,16 +607,16 @@ object Future {
   def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] =
     unit.map(_ => body)
 
-  /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms a `TraversableOnce[Future[A]]`
-   *  into a `Future[TraversableOnce[A]]`. Useful for reducing many `Future`s into a single `Future`.
+  /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms a `IterableOnce[Future[A]]`
+   *  into a `Future[IterableOnce[A]]`. Useful for reducing many `Future`s into a single `Future`.
    *
    * @tparam A        the type of the value inside the Futures
-   * @tparam M        the type of the `TraversableOnce` of Futures
-   * @param in        the `TraversableOnce` of Futures which will be sequenced
-   * @return          the `Future` of the `TraversableOnce` of results
+   * @tparam M        the type of the `IterableOnce` of Futures
+   * @param in        the `IterableOnce` of Futures which will be sequenced
+   * @return          the `Future` of the `IterableOnce` of results
    */
-  def sequence[A, M[X] <: TraversableOnce[X]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
-    in.foldLeft(successful(cbf(in))) {
+  def sequence[A, CC[X] <: IterableOnce[X], To](in: CC[Future[A]])(implicit bf: BuildFrom[CC[Future[A]], A, To], executor: ExecutionContext): Future[To] = {
+    in.iterator().foldLeft(successful(bf.newBuilder(in))) {
       (fr, fa) => fr.zipWith(fa)(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
   }
@@ -624,10 +625,10 @@ object Future {
    *  in the list that is completed. This means no matter if it is completed as a success or as a failure.
    *
    * @tparam T        the type of the value in the future
-   * @param futures   the `TraversableOnce` of Futures in which to find the first completed
+   * @param futures   the `IterableOnce` of Futures in which to find the first completed
    * @return          the `Future` holding the result of the future that is first to be completed
    */
-  def firstCompletedOf[T](futures: TraversableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
+  def firstCompletedOf[T](futures: IterableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
     val p = Promise[T]()
     val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
       override def apply(v1: Try[T]): Unit = getAndSet(null) match {
@@ -696,16 +697,16 @@ object Future {
    *
    * @tparam T       the type of the value of the input Futures
    * @tparam R       the type of the value of the returned `Future`
-   * @param futures  the `TraversableOnce` of Futures to be folded
+   * @param futures  the `IterableOnce` of Futures to be folded
    * @param zero     the start value of the fold
    * @param op       the fold operation to be applied to the zero and futures
    * @return         the `Future` holding the result of the fold
    */
   @deprecated("use Future.foldLeft instead", "2.12.0")
   // not removed in 2.13, to facilitate 2.11/2.12/2.13 cross-building; remove in 2.14 (see scala/scala#6319)
-  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+  def fold[T, R](futures: IterableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) successful(zero)
-    else sequence(futures).map(_.foldLeft(zero)(op))
+    else sequence(futures)(ArrayBuffer, executor).map(_.foldLeft(zero)(op))
   }
 
   /** Initiates a non-blocking, asynchronous, fold over the supplied futures
@@ -717,15 +718,15 @@ object Future {
    *  }}}
    * @tparam T       the type of the value of the input Futures
    * @tparam R       the type of the value of the returned `Future`
-   * @param futures  the `TraversableOnce` of Futures to be reduced
+   * @param futures  the `IterableOnce` of Futures to be reduced
    * @param op       the reduce operation which is applied to the results of the futures
    * @return         the `Future` holding the result of the reduce
    */
   @deprecated("use Future.reduceLeft instead", "2.12.0")
   // not removed in 2.13, to facilitate 2.11/2.12/2.13 cross-building; remove in 2.14 (see scala/scala#6319)
-  def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+  def reduce[T, R >: T](futures: IterableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))
-    else sequence(futures).map(_ reduceLeft op)
+    else sequence(futures)(ArrayBuffer, executor).map(_ reduceLeft op)
   }
 
   /** Initiates a non-blocking, asynchronous, left reduction over the supplied futures
@@ -747,7 +748,7 @@ object Future {
     else i.next() flatMap { v => foldNext(i, v, op) }
   }
 
-  /** Asynchronously and non-blockingly transforms a `TraversableOnce[A]` into a `Future[TraversableOnce[B]]`
+  /** Asynchronously and non-blockingly transforms a `IterableOnce[A]` into a `Future[IterableOnce[B]]`
    *  using the provided function `A => Future[B]`.
    *  This is useful for performing a parallel map. For example, to apply a function to all items of a list
    *  in parallel:
@@ -755,18 +756,17 @@ object Future {
    *  {{{
    *    val myFutureList = Future.traverse(myList)(x => Future(myFunc(x)))
    *  }}}
-   * @tparam A        the type of the value inside the Futures in the `TraversableOnce`
+   * @tparam A        the type of the value inside the Futures in the `IterableOnce`
    * @tparam B        the type of the value of the returned `Future`
-   * @tparam M        the type of the `TraversableOnce` of Futures
-   * @param in        the `TraversableOnce` of Futures which will be sequenced
-   * @param fn        the function to apply to the `TraversableOnce` of Futures to produce the results
-   * @return          the `Future` of the `TraversableOnce` of results
+   * @tparam M        the type of the `IterableOnce` of Futures
+   * @param in        the `IterableOnce` of Futures which will be sequenced
+   * @param fn        the function to apply to the `IterableOnce` of Futures to produce the results
+   * @return          the `Future` of the `IterableOnce` of results
    */
-  def traverse[A, B, M[X] <: TraversableOnce[X]](in: M[A])(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
-    in.foldLeft(successful(cbf(in))) {
+  def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
+    in.iterator().foldLeft(successful(bf.newBuilder(in))) {
       (fr, a) => fr.zipWith(fn(a))(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
-
 
   // This is used to run callbacks which are internal
   // to scala.concurrent; our own callbacks are only

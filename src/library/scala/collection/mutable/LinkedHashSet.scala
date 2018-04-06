@@ -1,17 +1,7 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
 package scala
 package collection
 package mutable
 
-import generic._
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
@@ -26,48 +16,65 @@ import generic._
  *
  *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `LinkedHashSet[B]` because an implicit of type `CanBuildFrom[LinkedHashSet, B, LinkedHashSet[B]]`
- *    is defined in object `LinkedHashSet`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `LinkedHashSet`.
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(1L)
-class LinkedHashSet[A] extends AbstractSet[A]
-                          with Set[A]
-                          with GenericSetTemplate[A, LinkedHashSet]
-                          with SetLike[A, LinkedHashSet[A]]
-                          with HashTable[A, LinkedHashSet.Entry[A]]
-                          with Serializable
-{
-  override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
+@SerialVersionUID(3L)
+class LinkedHashSet[A]
+  extends Set[A]
+    with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
+    with Serializable {
+
+  override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
 
   type Entry = LinkedHashSet.Entry[A]
 
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
+  @transient private[this] var table: HashTable[A, AnyRef, Entry] = newHashTable
 
-  override def size: Int = tableSize
+  private def newHashTable =
+    new HashTable[A, AnyRef, Entry] {
+      def createNewEntry(key: A, value: AnyRef) = {
+        val e = new Entry(key)
+        if (firstEntry eq null) firstEntry = e
+        else { lastEntry.later = e; e.earlier = lastEntry }
+        lastEntry = e
+        e
+      }
+      override def foreachEntry[U](f: Entry => U): Unit = {
+        var cur = firstEntry
+        while (cur ne null) {
+          f(cur)
+          cur = cur.later
+        }
+      }
+    }
 
-  def contains(elem: A): Boolean = findEntry(elem) ne null
+  def get(elem: A): Option[A] = {
+    val entry = table.findEntry(elem)
+    if (entry != null) Some(entry.key) else None
+  }
 
-  @deprecatedOverriding("+= should not be overridden so it stays consistent with add.", "2.11.0")
-  def += (elem: A): this.type = { add(elem); this }
+  override def size: Int = table.tableSize
 
-  @deprecatedOverriding("-= should not be overridden so it stays consistent with remove.", "2.11.0")
-  def -= (elem: A): this.type = { remove(elem); this }
+  def contains(elem: A): Boolean = table.findEntry(elem) ne null
 
-  override def add(elem: A): Boolean = findOrAddEntry(elem, null) eq null
+  def addOne(elem: A): this.type = {
+    table.findOrAddEntry(elem, null)
+    this
+  }
 
-  override def remove(elem: A): Boolean = {
-    val e = removeEntry(elem)
-    if (e eq null) false
+  def subtractOne(elem: A): this.type = {
+    remove(elem)
+    this
+  }
+
+  override def remove(elem: A): Option[A] = {
+    val e = table.removeEntry(elem)
+    if (e eq null) None
     else {
       if (e.earlier eq null) firstEntry = e.later
       else e.earlier.later = e.later
@@ -75,19 +82,19 @@ class LinkedHashSet[A] extends AbstractSet[A]
       else e.later.earlier = e.earlier
       e.earlier = null // Null references to prevent nepotism
       e.later = null
-      true
+      Some(e.key)
     }
   }
 
-  def iterator: Iterator[A] = new AbstractIterator[A] {
+  def iterator(): Iterator[A] = new Iterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null
-    def next =
+    def next() =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
       else Iterator.empty.next()
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f(cur.key)
@@ -95,36 +102,21 @@ class LinkedHashSet[A] extends AbstractSet[A]
     }
   }
 
-  protected override def foreachEntry[U](f: Entry => U) {
-    var cur = firstEntry
-    while (cur ne null) {
-      f(cur)
-      cur = cur.later
-    }
-  }
-
-  protected def createNewEntry[B](key: A, dummy: B): Entry = {
-    val e = new Entry(key)
-    if (firstEntry eq null) firstEntry = e
-    else { lastEntry.later = e; e.earlier = lastEntry }
-    lastEntry = e
-    e
-  }
-
-  override def clear() {
-    clearTable()
+  override def clear(): Unit = {
+    table.clearTable()
     firstEntry = null
     lastEntry = null
   }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, { e => out.writeObject(e.key) })
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
+    table.serializeTo(out, { e => out.writeObject(e.key) })
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
-    firstEntry = null
-    lastEntry = null
-    init(in, createNewEntry(in.readObject().asInstanceOf[A], null))
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
+    in.defaultReadObject()
+    table = newHashTable
+    table.init(in, table.createNewEntry(in.readObject().asInstanceOf[A], null))
   }
 }
 
@@ -132,13 +124,22 @@ class LinkedHashSet[A] extends AbstractSet[A]
  *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
  */
-object LinkedHashSet extends MutableSetFactory[LinkedHashSet] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedHashSet[A]] = setCanBuildFrom[A]
+object LinkedHashSet extends IterableFactory[LinkedHashSet] {
+
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]
+
+  def from[E](it: collection.IterableOnce[E]) =
+    it match {
+      case lhs: LinkedHashSet[E] => lhs
+      case _ => Growable.from(empty[E], it)
+    }
+
+  def newBuilder[A]() = new GrowableBuilder(empty[A])
 
   /** Class for the linked hash set entry, used internally.
    *  @since 2.10
    */
+  @SerialVersionUID(3L)
   private[scala] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
     var earlier: Entry[A] = null
     var later: Entry[A] = null

@@ -10,6 +10,6 @@ object Test {
     assert((1 to 10 drop 9) == Seq(10))
     assert((1 until 10 drop 9) == Nil)
 
-    assert(Stream(1 to 10).flatten.toList == Stream(1 until 11).flatten.toList)
+    assert(LazyList(1 to 10).flatten.toList == LazyList(1 until 11).flatten.toList)
   }
 }

@@ -347,7 +347,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     private val thisReferringMethods = mutable.Set[Symbol]()
 
     // the set of lifted lambda body methods that each method refers to
-    private val liftedMethodReferences = mutable.Map[Symbol, Set[Symbol]]().withDefault(_ => mutable.Set())
+    private val liftedMethodReferences = mutable.Map[Symbol, mutable.Set[Symbol]]()
 
     def methodReferencesThisIn(tree: Tree) = {
       traverse(tree)
@@ -365,7 +365,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         else {
           seen += symbol
           (thisReferringMethods contains symbol) ||
-            (liftedMethodReferences(symbol) exists loop) && {
+            (liftedMethodReferences.contains(symbol) && liftedMethodReferences(symbol).exists(loop)) && {
               // add it early to memoize
               debuglog(s"$symbol indirectly refers to 'this'")
               thisReferringMethods += symbol
@@ -389,9 +389,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // we don't drill into functions because at the beginning of this phase they will always refer to 'this'.
         // They'll be of the form {(args...) => this.anonfun(args...)}
         // but we do need to make note of the lifted body method in case it refers to 'this'
-        if (currentMethod.exists) liftedMethodReferences(currentMethod) += targetMethod(fun)
+        if (currentMethod.exists) liftedMethodReferences.getOrElseUpdate(currentMethod, mutable.Set()) += targetMethod(fun)
       case Apply(sel @ Select(This(_), _), args) if sel.symbol.isLiftedMethod =>
-        if (currentMethod.exists) liftedMethodReferences(currentMethod) += sel.symbol
+        if (currentMethod.exists) liftedMethodReferences.getOrElseUpdate(currentMethod, mutable.Set()) += sel.symbol
         super.traverseTrees(args)
       case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
         fun.traverse(this)

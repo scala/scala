@@ -282,7 +282,7 @@ object ManifestFactory {
     arg.asInstanceOf[Manifest[T]].arrayManifest
 
   @SerialVersionUID(1L)
-  private class AbstractTypeManifest[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Seq[Manifest[_]]) extends Manifest[T] {
+  private class AbstractTypeManifest[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: scala.collection.Seq[Manifest[_]]) extends Manifest[T] {
     def runtimeClass = upperBound
     override val typeArguments = args.toList
     override def toString = prefix.toString+"#"+name+argString
@@ -309,7 +309,7 @@ object ManifestFactory {
     new WildcardManifest[T](lowerBound, upperBound)
 
   @SerialVersionUID(1L)
-  private class IntersectionTypeManifest[T](parents: Seq[Manifest[_]]) extends Manifest[T] {
+  private class IntersectionTypeManifest[T](parents: scala.collection.Seq[Manifest[_]]) extends Manifest[T] {
     def runtimeClass = parents.head.runtimeClass
     override def toString = parents.mkString(" with ")
   }

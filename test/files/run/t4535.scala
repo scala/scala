@@ -1,7 +1,4 @@
-
-
 import collection._
-
 
 // #4535
 object Test {
@@ -26,5 +23,4 @@ object Test {
       assert(as == as.reverse.reverse)
     }
   }
-
 }

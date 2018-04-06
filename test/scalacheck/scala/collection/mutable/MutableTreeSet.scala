@@ -6,9 +6,7 @@ import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{BuildFrom, immutable, mutable}
 import scala.util.Try
 
 object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
@@ -63,7 +61,6 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
     set ++= ks
 
     set.iteratorFrom(k).toSeq == ks.filter(_ >= k).toSeq.sorted
-    set.keysIteratorFrom(k).toSeq == ks.filter(_ >= k).toSeq.sorted
   }
 
   property("headOption") = forAll { (set: mutable.TreeSet[K]) =>
@@ -111,8 +108,8 @@ object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
-  def keysInView[This <: TraversableOnce[K], That](keys: This, from: Option[K], until: Option[K])(implicit bf: CanBuildFrom[This, K, That]) = {
-    (bf.apply(keys) ++= keys.filter(in(_, from, until))).result()
+  def keysInView[This <: IterableOnce[K], That](keys: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, K, That]) = {
+    (bf.newBuilder(keys) ++= keys.iterator().filter(in(_, from, until))).result()
   }
 
   property("size, isEmpty") = forAll { (keys: Set[K], from: Option[K], until: Option[K]) =>

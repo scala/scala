@@ -316,7 +316,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
           val tpe = if (const.tag == UnitTag) UnitTpe else ConstantType(const)
           Literal(const) setType tpe
         case ArrayAnnotArg(jargs) =>
-          val args = jargs map reverseEngineerArg
+          val args = jargs.map(reverseEngineerArg _)
           // TODO: I think it would be a good idea to typecheck Java annotations using a more traditional algorithm
           // sure, we can't typecheck them as is using the `new jann(foo = bar)` syntax (because jann is going to be an @interface)
           // however we can do better than `typedAnnotation` by desugaring the aforementioned expression to

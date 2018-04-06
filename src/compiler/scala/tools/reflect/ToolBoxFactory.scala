@@ -227,7 +227,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             val (fv, name) = schema
             meth.newValueParameter(name, newFlags = if (fv.hasStableFlag) STABLE else 0) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
-          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyTpe)
+          meth setInfo MethodType(freeTerms.map(makeParam _).toList, AnyTpe)
           minfo.decls enter meth
           def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
             case Some(sym) if sym != null && sym != NoSymbol => sym.owner

@@ -12,7 +12,6 @@ class CollectionConversionsTest {
 
   val testVector = Vector(1,2,3)
   val testBuffer = Buffer(1,2,3)
-  val testGenSeq = GenSeq(1,2,3)
   val testSeq = Seq(1,2,3)
   val testStream = Stream(1,2,3)
   val testArray = Array(1,2,3)
@@ -51,16 +50,14 @@ class CollectionConversionsTest {
     out ++= ("-- Testing " + name + " ---\n")
     if(!(
       printResult("[Direct] Vector   ", col.toVector, testVector) &&
-      printResult("[Copy]   Vector   ", col.to[Vector], testVector) &&
+      printResult("[Copy]   Vector   ", col.to(Vector), testVector) &&
       printResult("[Direct] Buffer   ", col.toBuffer, testBuffer) &&
-      printResult("[Copy]   Buffer   ", col.to[Buffer], testBuffer) &&
-      printResult("[Direct] GenSeq   ", col.toSeq, testGenSeq) &&
-      printResult("[Copy]   GenSeq   ", col.to[GenSeq], testGenSeq) &&
-      printResult("[Copy]   Seq      ", col.to[Seq], testSeq) &&
+      printResult("[Copy]   Buffer   ", col.to(Buffer), testBuffer) &&
+      printResult("[Copy]   Seq      ", col.to(Seq), testSeq) &&
       printResult("[Direct] Stream   ", col.toStream, testStream) &&
-      printResult("[Copy]   Stream   ", col.to[Stream], testStream) &&
+      printResult("[Copy]   Stream   ", col.to(Stream), testStream) &&
       printResult("[Direct] Array    ", col.toArray, testArray) &&
-      printResult("[Copy]   Array    ", col.to[Array], testArray)
+      printResult("[Copy]   Array    ", col.to(Array), testArray)
     )) {
       print(out)
       fail("Not all tests successful")

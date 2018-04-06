@@ -3,7 +3,7 @@ import scala.language._
 
 object Test {
   def whatis[T: TypeTag](x: T) = typeOf[T]
-  def sshow(label: String, xs: Traversable[Any]) {
+  def sshow(label: String, xs: Iterable[Any]) {
     println("==== " + label + " ====\n")
     xs.toList.map("" + _).sorted foreach println
     println("\n")

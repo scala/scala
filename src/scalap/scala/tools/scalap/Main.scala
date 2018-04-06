@@ -106,7 +106,7 @@ class Main {
         // we have to encode every fragment of a name separately, otherwise the NameTransformer
         // will encode using unicode escaping dot separators as well
         // we can afford allocations because this is not a performance critical code
-        classname.split('.').map(NameTransformer.encode).mkString(".")
+        classname.split('.').map(NameTransformer.encode _).mkString(".")
     }
 
     path.findClassFile(encName) match {

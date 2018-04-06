@@ -130,7 +130,7 @@ object TreeSetTest extends Properties("TreeSet") {
   property("to is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val to = subject.drop(n).firstKey
-    subject.to(to).lastKey == to && subject.to(to).forall(_ <= to)
+    subject.rangeTo(to).lastKey == to && subject.rangeTo(to).forall(_ <= to)
   }}
 
   property("until is exclusive") = forAll { (subject: TreeSet[Int]) => subject.size > 1 ==> {

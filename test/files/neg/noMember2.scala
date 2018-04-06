@@ -1,3 +1,3 @@
 object Test {
-  val m = scala.collection.mutable.MultiMap(1, 2, 3)
+  val m = scala.collection.IterableOps(1, 2, 3)
 }

@@ -275,7 +275,7 @@ package IndexedTestImpl {
   import java.lang.{Double => jlDouble}
   import java.lang.{Character => jlChar}
 
-  import scala.collection.immutable.{StringLike, StringOps, WrappedString}
+  import scala.collection.immutable.{StringOps, WrappedString}
   import scala.collection.mutable
   import scala.runtime.BoxedUnit
   trait DataProvider[E] {
@@ -414,7 +414,7 @@ package IndexedTestImpl {
 
   }
   @Ignore
-  abstract class ImmutableIndexedSeqTest[T <: SeqLike[E, T], E] extends IndexedTest[T, E]   with DataProvider[E] {
+  abstract class ImmutableIndexedSeqTest[T <: SeqOps[E, Seq, T], E] extends IndexedTest[T, E]   with DataProvider[E] {
     override final def length(underTest: T) = underTest.length
 
     override def get(underTest: T, i: Int) = underTest(i)
@@ -504,7 +504,7 @@ package IndexedTestImpl {
       res
     }
   }
-  class ArraySeqTest extends MutableIndexedSeqTest[mutable.ArraySeq[String], String]  with StringTestData {
+  /*class ArraySeqTest extends MutableIndexedSeqTest[mutable.ArraySeq[String], String]  with StringTestData {
     import mutable.ArraySeq
     override def createEmpty(size: Int): ArraySeq[String] = {
       val res = new ArraySeq[String](size)
@@ -512,7 +512,7 @@ package IndexedTestImpl {
         res (i) = expectedValueAtIndex(i)
       res
     }
-  }
+  }*/
   class ArrayBufferTest extends MutableIndexedSeqTest[mutable.ArrayBuffer[String], String]  with StringTestData {
     import mutable.ArrayBuffer
     override def createEmpty(size: Int): ArrayBuffer[String] = {

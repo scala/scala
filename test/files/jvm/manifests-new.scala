@@ -1,3 +1,4 @@
+import scala.tools.partest.Util.ArrayDeep
 import scala.reflect.runtime.universe._
 import scala.reflect.{ClassTag, classTag}
 

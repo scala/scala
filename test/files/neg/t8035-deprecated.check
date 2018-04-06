@@ -1,7 +1,7 @@
 t8035-deprecated.scala:2: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
-        signature: GenSetLike.apply(elem: A): Boolean
+        signature: SetOps.apply(elem: A): Boolean
   given arguments: <none>
- after adaptation: GenSetLike((): Unit)
+ after adaptation: SetOps((): Unit)
   List(1,2,3).toSet()
                    ^
 t8035-deprecated.scala:5: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.

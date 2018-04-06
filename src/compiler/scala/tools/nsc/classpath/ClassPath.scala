@@ -6,12 +6,12 @@ package scala.tools.nsc.classpath
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.util.ClassRepresentation
 
-case class ClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepresentation])
+case class ClassPathEntries(packages: scala.collection.Seq[PackageEntry], classesAndSources: scala.collection.Seq[ClassRepresentation])
 
 object ClassPathEntries {
   import scala.language.implicitConversions
   // to have working unzip method
-  implicit def entry2Tuple(entry: ClassPathEntries): (Seq[PackageEntry], Seq[ClassRepresentation]) = (entry.packages, entry.classesAndSources)
+  implicit def entry2Tuple(entry: ClassPathEntries): (scala.collection.Seq[PackageEntry], scala.collection.Seq[ClassRepresentation]) = (entry.packages, entry.classesAndSources)
   val empty = ClassPathEntries(Seq.empty, Seq.empty)
 }
 

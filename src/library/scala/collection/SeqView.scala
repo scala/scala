@@ -1,33 +1,45 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
 package scala
 package collection
 
-import generic._
-import TraversableView.NoBuilder
 
-/** A base trait for non-strict views of sequences.
- *  $seqViewInfo
- */
-trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
+trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
 
-/** An object containing the necessary implicit definitions to make
- *  `SeqView`s work. Its definitions are generally not accessed directly by clients.
- */
-object SeqView {
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] =
-    new CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] {
-      def apply(from: Coll) = new NoBuilder
-      def apply() = new NoBuilder
-    }
+  override def view: SeqView[A] = this
+
+  override def map[B](f: A => B): SeqView[B] = new SeqView.Map(this, f)
+
+  override def prepended[B >: A](elem: B): SeqView[B] = new SeqView.Prepended(elem, this)
+
+  override def take(n: Int): SeqView[A] = new SeqView.Take(this, n)
+
 }
 
+object SeqView {
+
+  /** A `SeqOps` whose collection type and collection type constructor are unknown */
+  type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
+
+  /** A view that doesn’t apply any transformation to an underlying sequence */
+  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends SeqView[A] {
+    def apply(idx: Int): A = underlying.apply(idx)
+    def length: Int = underlying.length
+    def iterator(): Iterator[A] = underlying.iterator()
+    override def knownSize: Int = underlying.knownSize
+  }
+
+  class Map[+A, +B](underlying: SomeSeqOps[A], f: A => B) extends View.Map[A, B](underlying, f) with SeqView[B] {
+    def apply(idx: Int): B = f(underlying(idx))
+    def length: Int = underlying.length
+  }
+
+  class Prepended[+A](elem: A, underlying: SomeSeqOps[A]) extends View.Prepended(elem, underlying) with SeqView[A] {
+    def apply(idx: Int): A = if (idx == 0) elem else underlying(idx - 1)
+    def length: Int = underlying.length + 1
+  }
+
+  class Take[+A](underlying: SomeSeqOps[A], n: Int) extends View.Take(underlying, n) with SeqView[A] {
+    def apply(idx: Int): A = if (idx < n) underlying(idx) else throw new IndexOutOfBoundsException(idx.toString)
+    def length: Int = underlying.length min normN
+  }
+
+}
