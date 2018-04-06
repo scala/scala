@@ -1,38 +1,42 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-package scala
-package collection
-package mutable
+package scala.collection.mutable
 
-import generic._
+import scala.collection.{IterableFactory, IterableOnce}
 
-/** A base trait for iterable collections that can be mutated.
- *  $iterableInfo
- */
-trait Iterable[A] extends Traversable[A]
-//                     with GenIterable[A]
-                     with scala.collection.Iterable[A]
-                     with GenericTraversableTemplate[A, Iterable]
-                     with IterableLike[A, Iterable[A]]
-{
-  override def companion: GenericCompanion[Iterable] = Iterable
-  override def seq: Iterable[A] = this
+
+trait Iterable[A]
+  extends collection.Iterable[A]
+    with IterableOps[A, Iterable, Iterable[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
-/** $factoryInfo
- *  The current default implementation of a $Coll is an `ArrayBuffer`.
- *  @define coll mutable iterable collection
- *  @define Coll `mutable.Iterable`
- */
-object Iterable extends TraversableFactory[Iterable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
+/**
+  * @define coll mutable collection
+  * @define Coll `mutable.Iterable`
+  */
+trait IterableOps[A, +CC[X], +C]
+  extends collection.IterableOps[A, CC, C] {
+
+  /** Modifies this $coll by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       this $coll modified by replacing all elements with the
+    *                result of applying the given function `f` to each element
+    *                of this $coll.
+    */
+  def mapInPlace(f: A => A): this.type
+
+  @deprecated("Use `mapInPlace` instead", "2.13.0")
+  @`inline`final def transform(f: A => A): this.type = mapInPlace(f)
 }
+
+/**
+  * $factoryInfo
+  * @define coll mutable collection
+  * @define Coll `mutable.Iterable`
+  */
+object Iterable
+  extends IterableFactory.Delegate[Iterable](ArrayBuffer)
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]

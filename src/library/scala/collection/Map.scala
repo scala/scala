@@ -1,59 +1,293 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
 package scala
 package collection
 
-import generic._
+import collection.mutable.Builder
 
-/**
- *  A map from keys of type `K` to values of type `V`.
- *
- *  $mapNote
- *
- *  '''Note:''' If you do not have specific implementations for `add` and `-` in mind,
- *        you might consider inheriting from `DefaultMap` instead.
- *
- *  '''Note:''' If your additions and mutations return the same kind of map as the map
- *        you are defining, you should inherit from `MapLike` as well.
- *
- *  @tparam K     the type of the keys in this map.
- *  @tparam V     the type of the values associated with keys.
- *
- *  @since 1.0
- */
-trait Map[K, +V] extends Iterable[(K, V)] with GenMap[K, V] with MapLike[K, V, Map[K, V]] {
-  def empty: Map[K, V] = Map.empty
+import scala.annotation.unchecked.uncheckedVariance
+import scala.language.implicitConversions
+import scala.util.hashing.MurmurHash3
 
-  override def seq: Map[K, V] = this
-}
+/** Base Map type */
+trait Map[K, +V]
+  extends Iterable[(K, V)]
+    with MapOps[K, V, Map, Map[K, V]]
+    with Equals {
 
-/** $factoryInfo
- *  @define Coll `Map`
- *  @define coll map
- */
-object Map extends MapFactory[Map] {
-  def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MapCC[K, V] = mapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] = mapFactory.newBuilder[K, V]()
 
-  /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] = new MapCanBuildFrom[K, V]
+  def mapFactory: scala.collection.MapFactory[MapCC] = Map
 
-  /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
-   *  because of variance issues.
-   */
-  abstract class WithDefault[K, +V](underlying: Map[K, V], d: K => V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
-    override def size               = underlying.size
-    def get(key: K)                 = underlying.get(key) // removed in 2.9: orElse Some(default(key))
-    def iterator                    = underlying.iterator
-    override def default(key: K): V = d(key)
+  def empty: MapCC[K, V] = mapFactory.empty
+
+  def canEqual(that: Any): Boolean = true
+
+  override def equals(o: Any): Boolean = o match {
+    case that: Map[K, _] =>
+      (this eq that) ||
+      (that canEqual this) &&
+      (this.size == that.size) && {
+        try {
+          this forall { case (k, v) => that.get(k).contains(v) }
+        } catch {
+          case _: ClassCastException => false
+        }
+      }
+    case _ =>
+      false
   }
 
+  override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
+
+}
+
+/** Base Map implementation type
+  *
+  * @tparam K Type of keys
+  * @tparam V Type of values
+  * @tparam CC type constructor of the map (e.g. `HashMap`). Operations returning a collection
+  *            with a different type of entries `(L, W)` (e.g. `map`) return a `CC[L, W]`.
+  * @tparam C  type of the map (e.g. `HashMap[Int, String]`). Operations returning a collection
+  *            with the same type of element (e.g. `drop`, `filter`) return a `C`.
+  * @define coll map
+  * @define Coll `Map`
+  */
+// Note: the upper bound constraint on CC is useful only to
+// erase CC to IterableOps instead of Object
+trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
+  extends IterableOps[(K, V), Iterable, C]
+    with PartialFunction[K, V] {
+
+  override def view: MapView[K, V] = new MapView.Id(this)
+
+  protected[this] type MapCC[K, V] = CC[K, V]
+
+  /** Similar to `fromIterable`, but returns a Map collection type.
+    * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.
+    */
+  @`inline` protected[this] final def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2] = mapFactory.from(it)
+
+  def mapFactory: MapFactory[MapCC]
+
+  /** Optionally returns the value associated with a key.
+    *
+    *  @param  key    the key value
+    *  @return an option value containing the value associated with `key` in this map,
+    *          or `None` if none exists.
+    */
+  def get(key: K): Option[V]
+
+  /**  Returns the value associated with a key, or a default value if the key is not contained in the map.
+   *   @param   key      the key.
+   *   @param   default  a computation that yields a default value in case no binding for `key` is
+   *                     found in the map.
+   *   @tparam  V1       the result type of the default computation.
+   *   @return  the value associated with `key` if it exists,
+   *            otherwise the result of the `default` computation.
+   *
+   *   @usecase def getOrElse(key: K, default: => V): V
+   *     @inheritdoc
+   */
+  def getOrElse[V1 >: V](key: K, default: => V1): V1 = get(key) match {
+    case Some(v) => v
+    case None => default
+  }
+
+  /** Retrieves the value which is associated with the given key. This
+    *  method invokes the `default` method of the map if there is no mapping
+    *  from the given key to a value. Unless overridden, the `default` method throws a
+    *  `NoSuchElementException`.
+    *
+    *  @param  key the key
+    *  @return     the value associated with the given key, or the result of the
+    *              map's `default` method, if none exists.
+    */
+  @throws[NoSuchElementException]
+  def apply(key: K): V = get(key) match {
+    case None => default(key)
+    case Some(value) => value
+  }
+
+  override /*PartialFunction*/ def applyOrElse[K1 <: K, V1 >: V](x: K1, default: K1 => V1): V1 = getOrElse(x, default(x))
+
+  /** Collects all keys of this map in a set.
+    * @return  a set containing all keys of this map.
+    */
+  def keySet: Set[K] = new KeySet
+
+  /** The implementation class of the set returned by `keySet`.
+    */
+  @SerialVersionUID(3L)
+  protected class KeySet extends Set[K] with GenKeySet {
+    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
+  }
+
+  /** A generic trait that is reused by keyset implementations */
+  protected trait GenKeySet extends Serializable { this: Set[K] =>
+    def iterator(): Iterator[K] = MapOps.this.keysIterator()
+    def contains(key: K): Boolean = MapOps.this.contains(key)
+    override def size: Int = MapOps.this.size
+  }
+
+  /** Collects all keys of this map in an iterable collection.
+    *
+    *  @return the keys of this map as an iterable.
+    */
+  def keys: Iterable[K] = keySet
+
+  /** Collects all values of this map in an iterable collection.
+    *
+    *  @return the values of this map as an iterable.
+    */
+  def values: Iterable[V] = View.fromIteratorProvider(() => valuesIterator())
+
+  /** Creates an iterator for all keys.
+    *
+    *  @return an iterator over all keys.
+    */
+  def keysIterator(): Iterator[K] = new Iterator[K] {
+    val iter = MapOps.this.iterator()
+    def hasNext = iter.hasNext
+    def next() = iter.next()._1
+  }
+
+  /** Creates an iterator for all values in this map.
+    *
+    *  @return an iterator over all values that are associated with some key in this map.
+    */
+  def valuesIterator(): Iterator[V] = new Iterator[V] {
+    val iter = MapOps.this.iterator()
+    def hasNext = iter.hasNext
+    def next() = iter.next()._2
+  }
+
+  /** Filters this map by retaining only keys satisfying a predicate.
+    *  @param  p   the predicate used to test keys
+    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
+    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
+    */
+  def filterKeys(p: K => Boolean): MapView[K, V] = new MapView.FilterKeys(this, p)
+
+  /** Transforms this map by applying a function to every retrieved value.
+    *  @param  f   the function used to transform values of this map.
+    *  @return a map view which maps every key of this map
+    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
+    */
+  def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
+
+  /** Defines the default value computation for the map,
+    *  returned when a key is not found
+    *  The method implemented here throws an exception,
+    *  but it might be overridden in subclasses.
+    *
+    *  @param key the given key value for which a binding is missing.
+    *  @throws NoSuchElementException
+    */
+  @throws[NoSuchElementException]
+  def default(key: K): V =
+    throw new NoSuchElementException("key not found: " + key)
+
+  /** Tests whether this map contains a binding for a key.
+    *
+    *  @param key the key
+    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
+    */
+  def contains(key: K): Boolean = get(key).isDefined
+
+
+  /** Tests whether this map contains a binding for a key. This method,
+    *  which implements an abstract method of trait `PartialFunction`,
+    *  is equivalent to `contains`.
+    *
+    *  @param key the key
+    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
+    */
+  def isDefinedAt(key: K): Boolean = contains(key)
+
+  /** The empty map of the same type as this map
+    * @return an empty map of type `Repr`.
+    */
+  def empty: C
+
+  override def withFilter(p: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(p)
+
+  /** Specializes `WithFilter` for Map collection types
+    *
+    * @define coll map collection
+    */
+  class MapWithFilter(p: ((K, V)) => Boolean) extends WithFilter(p) {
+
+    def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(filtered, f))
+
+    def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(filtered, f))
+
+    override def withFilter(q: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(kv => p(kv) && q(kv))
+
+  }
+
+  /** Builds a new map by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given function
+    *                `f` to each element of this $coll and collecting the results.
+    */
+  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(toIterable, f))
+
+  /** Builds a new collection by applying a partial function to all elements of this $coll
+    *  on which the function is defined.
+    *
+    *  @param pf     the partial function which filters and maps the $coll.
+    *  @tparam K2    the key type of the returned $coll.
+    *  @tparam V2    the value type of the returned $coll.
+    *  @return       a new $coll resulting from applying the given partial function
+    *                `pf` to each element on which it is defined and collecting the results.
+    *                The order of the elements is preserved.
+    */
+  def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =
+    flatMap { a =>
+      if (pf.isDefinedAt(a)) new View.Single(pf(a))
+      else View.Empty
+    }
+
+  /** Builds a new map by applying a function to all elements of this $coll
+    *  and using the elements of the resulting collections.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given collection-valued function
+    *                `f` to each element of this $coll and concatenating the results.
+    */
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(toIterable, f))
+
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+    *  the element types of the two operands.
+    *
+    *  @param suffix   the traversable to append.
+    *  @return       a new $coll which contains all elements
+    *                of this $coll followed by all elements of `suffix`.
+    */
+  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(new View.Concat(toIterable, suffix))
+
+  /** Alias for `concat` */
+  /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
+
+  override def toString(): String = super[IterableOps].toString()
+
+  override def mkString(start: String, sep: String, end: String): String =
+    iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
+
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
+  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))
+}
+
+/**
+  * $factoryInfo
+  * @define coll map
+  * @define Coll `Map`
+  */
+object Map extends MapFactory.Delegate[Map](immutable.Map) {
+  implicit def toLazyZipOps[K, V, CC[X, Y] <: Iterable[(X, Y)]](that: CC[K, V]): LazyZipOps[(K, V), CC[K, V]] = new LazyZipOps(that)
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]
+abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]

@@ -327,7 +327,7 @@ class BasePrintTest {
   @Test def testFunc1 = assertResultCode(
     code = "List(1, 2, 3).map((i: Int) => i - 1)")(
     parsedCode = "List(1, 2, 3).map(((i: Int) => i.-(1)))",
-    typedCode = sm"scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int, List[Int]](((i: scala.Int) => i.-(1)))(scala.collection.immutable.List.canBuildFrom[Int])")
+    typedCode = sm"scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int](((i: scala.Int) => i.-(1)))")
 
   @Test def testFunc2 = assertResultCode(
     code = "val sum: Seq[Int] => Int = _ reduceLeft (_+_)")(
@@ -337,7 +337,7 @@ class BasePrintTest {
   @Test def testFunc3 = assertResultCode(
     code = "List(1, 2, 3) map (_ - 1)")(
     parsedCode = "List(1, 2, 3).map(((x$1) => x$1.-(1))) ",
-    typedCode = "scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int, List[Int]](((x$1: Int) => x$1.-(1)))(scala.collection.immutable.List.canBuildFrom[Int])")
+    typedCode = "scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int](((x$1: Int) => x$1.-(1)))")
 
   @Test def testFunc4 = assertResultCode(
     code = "val x: String => Int = ((str: String) => 1)")(

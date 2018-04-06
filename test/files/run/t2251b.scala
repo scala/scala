@@ -14,17 +14,17 @@ object Test {
   def what[T: TypeTag](x: T) = println(typeTag[T])
 
   def main(args: Array[String]): Unit = {
-    what(List(List(new C), Stream(new D)))
-    what(List(List(new C), Stream(new D), Vector(new E), Set(new F)))
-    what(List(immutable.Vector(new C), Stream(new D)))
+//    what(List(List(new C), LazyList(new D))) // no longer works in 2.13, lub with a long refinement, no type tag available
+    what(List(List(new C), LazyList(new D), Vector(new E), Set(new F)))
+//    what(List(immutable.Vector(new C), LazyList(new D)))  // no longer works in 2.13, lub with a long refinement, no type tag available
     what(List(collection.Set(new F), mutable.Set(new G)))
     what(List(collection.Set(new F), immutable.Set(new G)))
     what(List(mutable.Set(new F), immutable.Set(new G)))
     what(List(mutable.Seq(new F), immutable.Seq(new G)))
     what(List(mutable.Map(new C -> new D), immutable.Map(new F -> new G)))
-    what(List(mutable.MutableList(new F), immutable.List(new G)))
+//    what(List(mutable.Queue(new F), immutable.List(new G))) // no longer works in 2.13, invalid lub computed (see test invalid-lubs.scala)
     what(List(mutable.Seq(new F), collection.Seq(new G)))
-    what(List(mutable.LinearSeq(new F), collection.IndexedSeq(new G)))
+    what(List(immutable.LinearSeq(new F), collection.IndexedSeq(new G)))
   }
 }
 
@@ -33,11 +33,11 @@ object Test {
 
 
 // class E {
-//   val ys = List(List(new C), Stream(new D))
+//   val ys = List(List(new C), LazyList(new D))
 // }
 
 // object Test {
-//   def trav = List(List(), Stream())
+//   def trav = List(List(), LazyList())
 
 //   def main(args: Array[String]): Unit = {
 //     val f = (new E).ys _

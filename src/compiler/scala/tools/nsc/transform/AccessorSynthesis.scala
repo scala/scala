@@ -189,7 +189,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
       }
 
       fields groupBy bitmapCategory flatMap {
-        case (category, fields) if category != nme.NO_NAME && fields.nonEmpty => allocateBitmaps(fields, category)
+        case (category, fields) if category != nme.NO_NAME && fields.nonEmpty => allocateBitmaps(fields, category): Iterable[Symbol]
         case _ => Nil
       } toList
     }

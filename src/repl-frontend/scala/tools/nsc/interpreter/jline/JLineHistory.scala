@@ -64,7 +64,7 @@ object JLineHistory {
       override def toString = value.toString
     }
 
-    private def toEntries(): Seq[JEntry] = buf.zipWithIndex map { case (x, i) => Entry(i, x)}
+    private def toEntries(): scala.collection.Seq[JEntry] = buf.zipWithIndex map { case (x, i) => Entry(i, x)}
     def entries(idx: Int): JListIterator[JEntry] = toEntries().asJava.listIterator(idx)
     def entries(): JListIterator[JEntry] = toEntries().asJava.listIterator()
     def iterator: JIterator[JEntry] = toEntries().iterator.asJava

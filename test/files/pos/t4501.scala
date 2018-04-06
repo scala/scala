@@ -3,7 +3,8 @@ import scala.collection.mutable.ListBuffer
 
 class A {
   def foo[T](a:T, b:T):T = a
-  def f1 = foo(ListBuffer(), List())
+  // f1 no longer compiles with 2.13 collections, it produces an invalid lub; added to run/invalid-lubs.scala
+  // def f1 = foo(ListBuffer(), List())
   def f2 = foo(ListBuffer(), ListBuffer())
   def f3 = foo(List(), List())
 

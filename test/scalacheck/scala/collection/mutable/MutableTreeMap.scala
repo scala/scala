@@ -6,9 +6,7 @@ import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{BuildFrom, immutable, mutable}
 import scala.util.Try
 import scala.collection.mutable.{RedBlackTree => RB}
 
@@ -203,8 +201,8 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
-  def entriesInView[This <: TraversableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: CanBuildFrom[This, (K, V), That]) = {
-    (bf.apply(entries) ++= entries.filter { case (k, _) => in(k, from, until) }).result()
+  def entriesInView[This <: IterableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, (K, V), That]) = {
+    (bf.newBuilder(entries) ++= entries.iterator().filter { case (k, _) => in(k, from, until) }).result()
   }
 
   property("get, contains") = forAll { (allEntries: Map[K, V], from: Option[K], until: Option[K]) =>

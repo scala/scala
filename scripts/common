@@ -22,14 +22,23 @@ integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifacto
 
 # only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
-
 jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # used by `checkAvailability`
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"
 mkdir "${TMP_DIR}"
+
+# Used for publishing starr and locker
+BOOTSTRAP_REPO_DIR="${TMP_ROOT_DIR}/bootstrap-repo"
+mkdir "${BOOTSTRAP_REPO_DIR}"
+
+addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
+addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
+# Gets set to addIntegrationResolver or addBootstrapResolver for use in sbtBuild and sbtResolve:
+addResolvers=""
+
+stApi="https://oss.sonatype.org/service/local"
 
 # General debug logging
 # $* - message
@@ -135,8 +144,16 @@ st_curl(){
   curl -H "Content-Type: application/json" -H "accept: application/json,application/vnd.siesta-error-v1+json,application/vnd.siesta-validation-errors-v1+json"  -K ~/.sonatype-curl -s -o - $@
 }
 
+st_stagingRepos() {
+ st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang")'
+}
+
 st_stagingReposOpen() {
- st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang") | select(.type == "open")'
+ st_stagingRepos | jq 'select(.type == "open")'
+}
+
+st_stagingRepoStatus() {
+  st_stagingRepos | jq -r "select(.repositoryId == \"$1\") | .type"
 }
 
 st_stagingRepoDrop() {
@@ -155,7 +172,7 @@ st_stagingRepoClose() {
 
 sbtBuild() {
   travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors $sbtArgs 'set scalacOptions += "-Xfatal-warnings:false"' "$addIntegrationResolver" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD -no-colors $sbtArgs "$addResolvers" 'set scalacOptions += "-Xfatal-warnings:false"' "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
   travis_fold_end build
 }
 
@@ -167,7 +184,7 @@ sbtResolve() {
   # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
-    "$addIntegrationResolver" \
+    "$addResolvers" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
     "show update"
   res=$?

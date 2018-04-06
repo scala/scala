@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 class HashMapTest {
 
   private val computeHashF = {
-    HashMap.empty.computeHash _
+    scala.collection.Hashing.computeHash _
   }
 
   @Test

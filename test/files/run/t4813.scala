@@ -1,25 +1,20 @@
 import collection.mutable._
 import reflect._
 
-
 object Test extends App {
   def runTest[T, U](col: T)(clone: T => U)(mod: T => Unit)(implicit ct: ClassTag[T]): Unit = {
-     val cloned = clone(col)
-     assert(cloned == col, s"cloned should be equal to original. $cloned != $col")
-     mod(col)
-     assert(cloned != col, s"cloned should not modify when original does: $ct")
+    val cloned = clone(col)
+    assert(cloned == col, s"cloned should be equal to original. $cloned != $col")
+    mod(col)
+    assert(cloned != col, s"cloned should not modify when original does: $ct")
   }
 
   // Seqs
   runTest(ArrayBuffer(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(ArraySeq(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(Buffer(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
-  runTest(DoubleLinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(IndexedSeq(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
-  runTest(LinearSeq(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
-  runTest(LinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(ListBuffer(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
-  runTest(MutableList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(Queue(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
   runTest(Stack(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
 
@@ -34,4 +29,3 @@ object Test extends App {
   runTest(HashMap(1->1,2->2,3->3))(_.clone) { buf => buf put (4,4) }
   runTest(WeakHashMap(1->1,2->2,3->3))(_.clone) { buf => buf put (4,4) }
 }
-

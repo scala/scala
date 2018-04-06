@@ -488,7 +488,7 @@ trait MatchAnalysis extends MatchApproximation {
           else {
             prefix += prefHead
             current = current.tail
-          val and = And((current.head +: prefix): _*)
+          val and = And((current.head +: prefix).toIndexedSeq: _*)
           val model = findModelFor(eqFreePropToSolvable(and))
 
             // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
@@ -649,7 +649,7 @@ trait MatchAnalysis extends MatchApproximation {
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
-      }
+      }.to(Map)
 
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>

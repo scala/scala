@@ -547,15 +547,15 @@ abstract class Inliner {
 
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 
-    def mapArgInfo(argInfo: (Int, ArgInfo)): Option[(Int, ArgInfo)] = argInfo match {
-      case lit @ (_, FunctionLiteral)             => Some(lit)
-      case (argIndex, ForwardedParam(paramIndex)) => callsite.argInfos.get(paramIndex).map((argIndex, _))
+    def mapArgInfo(argInfo: (Int, ArgInfo)): IterableOnce[(Int, ArgInfo)] = argInfo match {
+      case lit @ (_, FunctionLiteral)             => Iterator(lit)
+      case (argIndex, ForwardedParam(paramIndex)) => callsite.argInfos.get(paramIndex).map((argIndex, _)).iterator
     }
 
     // Add all invocation instructions and closure instantiations that were inlined to the call graph
     callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
       val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
-      val argInfos = originalCallsite.argInfos flatMap mapArgInfo
+      val argInfos = originalCallsite.argInfos.flatMap(mapArgInfo _)
       val newCallsite = originalCallsite.copy(
         callsiteInstruction = newCallsiteIns,
         callsiteMethod = callsiteMethod,
@@ -574,7 +574,7 @@ abstract class Inliner {
 
     callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
       val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
-      val capturedArgInfos = originalClosureInit.capturedArgInfos flatMap mapArgInfo
+      val capturedArgInfos = originalClosureInit.capturedArgInfos.flatMap(mapArgInfo _)
       val newClosureInit = ClosureInstantiation(
         originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy),
         callsiteMethod,

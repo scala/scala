@@ -1,7 +1,6 @@
-#/bin/sh
-# 
+#!/bin/bash
+
 # Used to compile a jar with instrumented versions of certain classes.
-# 
 
 set -e
 

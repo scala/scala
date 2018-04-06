@@ -1,44 +1,54 @@
 
-scala> Map(1 -> "eis").values    // no warn
-res0: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> :paste -raw
+// Entering paste mode (ctrl-D to finish)
+
+package scala { object T { @scala.annotation.migration("text", "2.8.0") def muh: String = "muuh" } }
+
+// Exiting paste mode, now interpreting.
+
+
+scala> 
+
+scala> scala.T.muh    // no warn
+res0: String = muuh
 
 scala> :setting -Xmigration:none
 
-scala> Map(1 -> "eis").values    // no warn
-res1: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // no warn
+res1: String = muuh
 
 scala> :setting -Xmigration:any
 
-scala> Map(1 -> "eis").values    // warn
-                       ^
-       warning: method values in trait MapLike has changed semantics in version 2.8.0:
-       `values` returns `Iterable[V]` rather than `Iterator[V]`.
-res2: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // warn
+               ^
+       warning: method muh in object T has changed semantics in version 2.8.0:
+       text
+res2: String = muuh
 
 scala> :setting -Xmigration:2.8
 
-scala> Map(1 -> "eis").values    // no warn
-res3: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // no warn
+res3: String = muuh
 
 scala> :setting -Xmigration:2.7
 
-scala> Map(1 -> "eis").values    // warn
-                       ^
-       warning: method values in trait MapLike has changed semantics in version 2.8.0:
-       `values` returns `Iterable[V]` rather than `Iterator[V]`.
-res4: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // warn
+               ^
+       warning: method muh in object T has changed semantics in version 2.8.0:
+       text
+res4: String = muuh
 
 scala> :setting -Xmigration:2.11
 
-scala> Map(1 -> "eis").values    // no warn
-res5: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // no warn
+res5: String = muuh
 
-scala> :setting -Xmigration      // same as :any
+scala> :setting -Xmigration // same as :any
 
-scala> Map(1 -> "eis").values    // warn
-                       ^
-       warning: method values in trait MapLike has changed semantics in version 2.8.0:
-       `values` returns `Iterable[V]` rather than `Iterator[V]`.
-res6: Iterable[String] = MapLike.DefaultValuesIterable(eis)
+scala> scala.T.muh    // warn
+               ^
+       warning: method muh in object T has changed semantics in version 2.8.0:
+       text
+res6: String = muuh
 
 scala> :quit

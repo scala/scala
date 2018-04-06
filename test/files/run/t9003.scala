@@ -55,16 +55,17 @@ object Test {
 
     val buffer = collection.mutable.Buffer(0, 0)
     buffer match {
-      case Seq(_, i) =>
+      case collection.Seq(_, i) =>
         buffer(1) = 1
         assertZero(i) // failed
     }
 
     case class CaseSequence(as: Int*)
-    val buffer1 = collection.mutable.Buffer(0, 0)
-    CaseSequence(buffer1: _*) match {
+    val a = Array(0, 0)
+    val aArgs = collection.immutable.ImmutableArray.unsafeWrapArray(a)
+    CaseSequence(aArgs: _*) match {
       case CaseSequence(_, i) =>
-        buffer1(1) = 1
+        a(1) = 1
         assertZero(i) // failed
     }
   }

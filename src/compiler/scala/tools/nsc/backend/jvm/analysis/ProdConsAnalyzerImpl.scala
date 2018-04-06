@@ -78,7 +78,7 @@ trait ProdConsAnalyzerImpl {
    * This is the counterpart of `producersForValueAt`.
    */
   def consumersOfValueAt(insn: AbstractInsnNode, slot: Int): Set[AbstractInsnNode] = {
-    producersForValueAt(insn, slot).flatMap(prod => {
+    producersForValueAt(insn, slot).flatMap[AbstractInsnNode](prod => {
       val outputNumber = outputValueSlots(prod).indexOf(slot)
       _consumersOfOutputsFrom.get(prod).map(v => {
         v(outputNumber)
@@ -98,7 +98,7 @@ trait ProdConsAnalyzerImpl {
     case ParameterProducer(local)                      => consumersOfValueAt(methodNode.instructions.getFirst, local)
     case ExceptionProducer(handlerLabel, handlerFrame) => consumersOfValueAt(handlerLabel, handlerFrame.stackTop)
     case _ =>
-      _consumersOfOutputsFrom.get(insn).map(v => v.indices.flatMap(v.apply)(collection.breakOut): Set[AbstractInsnNode]).getOrElse(Set.empty)
+      _consumersOfOutputsFrom.get(insn).map(v => Set.from[AbstractInsnNode](v.indices.iterator.flatMap(v.apply))).getOrElse(Set.empty)
   }
 
   /**

@@ -1,7 +1,0 @@
-migration28.scala:4: warning: method scanRight in trait TraversableLike has changed semantics in version 2.9.0:
-The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.
-  List(1,2,3,4,5).scanRight(0)(_+_)
-                  ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

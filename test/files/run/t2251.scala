@@ -4,11 +4,11 @@ class C extends B[C] { override def toString = "C" }
 class D extends B[D] { override def toString = "D" }
 
 class E {
-  val ys = List(List(new C), Stream(new D))
+  val ys = List(List(new C), LazyList(new D))
 }
 
 object Test {
-  def trav = List(List(), Stream())
+  def trav = List(List(), LazyList())
 
   def main(args: Array[String]): Unit = {
     val f = (new E).ys _

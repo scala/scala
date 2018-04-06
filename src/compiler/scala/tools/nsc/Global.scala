@@ -872,7 +872,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           invalidated, failed)
       }
     }
-    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
+    def show(msg: String, syms: scala.collection.Iterable[Symbol]) =
       if (syms.nonEmpty)
         informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
     show("invalidated packages", invalidated)
@@ -1197,7 +1197,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
         def isSpecial(s: String) = (s == "all" || isRange(s))
         val setting = new ss.PhasesSetting("fake","fake")
-        for (p <- specs.flatten.to[Set]) {
+        for (p <- specs.flatten.to(Set)) {
           setting.value = List(p)
           val count = (
             if (including) first.iterator count (setting containsPhase _)

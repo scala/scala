@@ -1,163 +1,153 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
 package scala
 package collection
 package immutable
 
-import generic._
+import mutable.{Builder, ImmutableBuilder}
 import immutable.{RedBlackTree => RB}
-import mutable.{ Builder, SetBuilder }
 
-/** $factoryInfo
- *  @define Coll `immutable.TreeSet`
- *  @define coll immutable tree set
- */
-object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
-  implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
-  override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
-    new SetBuilder(empty[A](ordering))
 
-  /** The empty set of this type
-   */
-  def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
-}
-
-/** This class implements immutable sets using a tree.
- *
- *  @tparam A         the type of the elements contained in this tree set
- *  @param ordering   the implicit ordering used to compare objects of type `A`
- *
- *  @author  Martin Odersky
- *  @version 2.0, 02/01/2007
- *  @since   1
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
- *  section on `Red-Black Trees` for more information.
- *
- *  @define Coll `immutable.TreeSet`
- *  @define coll immutable tree set
- *  @define orderDependent
- *  @define orderDependentFold
- *  @define mayNotTerminateInf
- *  @define willNotTerminateInf
- */
-@SerialVersionUID(-5685982407650748405L)
+/** This class implements immutable sorted sets using a tree.
+  *
+  *  @tparam A         the type of the elements contained in this tree set
+  *  @param ordering   the implicit ordering used to compare objects of type `A`
+  *
+  *  @author  Martin Odersky
+  *  @version 2.0, 02/01/2007
+  *  @since   1
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
+  *  section on `Red-Black Trees` for more information.
+  *
+  *  @define Coll `immutable.TreeSet`
+  *  @define coll immutable tree set
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  */
+@SerialVersionUID(3L)
 final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
-  extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
+  extends SortedSet[A]
+    with SortedSetOps[A, TreeSet, TreeSet[A]]
+    with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
+    with Serializable {
 
-  if (ordering eq null)
-    throw new NullPointerException("ordering must not be null")
+  if (ordering eq null) throw new NullPointerException("ordering must not be null")
 
-  override def stringPrefix = "TreeSet"
+  def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def size = RB.count(tree)
+  override def sortedIterableFactory = TreeSet
 
-  override def head = RB.smallest(tree).key
-  override def headOption = if (RB.isEmpty(tree)) None else Some(head)
-  override def last = RB.greatest(tree).key
-  override def lastOption = if (RB.isEmpty(tree)) None else Some(last)
+  private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)
 
-  override def tail = new TreeSet(RB.delete(tree, firstKey))
-  override def init = new TreeSet(RB.delete(tree, lastKey))
+  override def size: Int = RB.count(tree)
 
-  override def drop(n: Int) = {
+  override def head: A = RB.smallest(tree).key
+
+  override def last: A = RB.greatest(tree).key
+
+  override def tail: TreeSet[A] = new TreeSet(RB.delete(tree, firstKey))
+
+  override def init: TreeSet[A] = new TreeSet(RB.delete(tree, lastKey))
+
+  override def drop(n: Int): TreeSet[A] = {
     if (n <= 0) this
     else if (n >= size) empty
     else newSet(RB.drop(tree, n))
   }
 
-  override def take(n: Int) = {
+  override def take(n: Int): TreeSet[A] = {
     if (n <= 0) empty
     else if (n >= size) this
     else newSet(RB.take(tree, n))
   }
 
-  override def slice(from: Int, until: Int) = {
+  override def slice(from: Int, until: Int): TreeSet[A] = {
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
     else newSet(RB.slice(tree, from, until))
   }
 
-  override def dropRight(n: Int) = take(size - math.max(n, 0))
-  override def takeRight(n: Int) = drop(size - math.max(n, 0))
-  override def splitAt(n: Int) = (take(n), drop(n))
+  override def dropRight(n: Int): TreeSet[A] = take(size - math.max(n, 0))
+
+  override def takeRight(n: Int): TreeSet[A] = drop(size - math.max(n, 0))
 
   private[this] def countWhile(p: A => Boolean): Int = {
     var result = 0
-    val it = iterator
+    val it = iterator()
     while (it.hasNext && p(it.next())) result += 1
     result
   }
-  override def dropWhile(p: A => Boolean) = drop(countWhile(p))
-  override def takeWhile(p: A => Boolean) = take(countWhile(p))
-  override def span(p: A => Boolean) = splitAt(countWhile(p))
+  override def dropWhile(p: A => Boolean): TreeSet[A] = drop(countWhile(p))
 
-  def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
+  override def takeWhile(p: A => Boolean): TreeSet[A] = take(countWhile(p))
 
-  private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)
+  override def span(p: A => Boolean): (TreeSet[A], TreeSet[A]) = splitAt(countWhile(p))
 
-  /** A factory to create empty sets of the same type of keys.
-   */
-  override def empty = TreeSet.empty
+  override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
 
-  /** Creates a new `TreeSet` with the entry added.
-   *
-   *  @param elem    a new element to add.
-   *  @return        a new $coll containing `elem` and all the elements of this $coll.
-   */
-  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
-
-  /** A new `TreeSet` with the entry added is returned,
-   *  assuming that elem is <em>not</em> in the TreeSet.
-   *
-   *  @param elem    a new element to add.
-   *  @return        a new $coll containing `elem` and all the elements of this $coll.
-   */
-  def insert(elem: A): TreeSet[A] = {
-    assert(!RB.contains(tree, elem))
-    newSet(RB.update(tree, elem, (), overwrite = false))
+  override def minAfter(key: A): Option[A] = {
+    val v = RB.minAfter(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
   }
 
-  /** Creates a new `TreeSet` with the entry removed.
-   *
-   *  @param elem    a new element to add.
-   *  @return        a new $coll containing all the elements of this $coll except `elem`.
-   */
-  def - (elem:A): TreeSet[A] =
-    if (!RB.contains(tree, elem)) this
-    else newSet(RB.delete(tree, elem))
+  override def maxBefore(key: A): Option[A] = {
+    val v = RB.maxBefore(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
+  }
+
+  def iterator(): Iterator[A] = RB.keysIterator(tree)
+
+  def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
   /** Checks if this set contains element `elem`.
-   *
-   *  @param  elem    the element to check for membership.
-   *  @return true, iff `elem` is contained in this set.
-   */
+    *
+    *  @param  elem    the element to check for membership.
+    *  @return true, iff `elem` is contained in this set.
+    */
   def contains(elem: A): Boolean = RB.contains(tree, elem)
 
-  /** Creates a new iterator over all elements contained in this
-   *  object.
-   *
-   *  @return the new iterator
-   */
-  def iterator: Iterator[A] = RB.keysIterator(tree)
-  override def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
-
-  override def foreach[U](f: A => U) = RB.foreachKey(tree, f)
-
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
   override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
-  override def from(from: A): TreeSet[A] = newSet(RB.from(tree, from))
-  override def to(to: A): TreeSet[A] = newSet(RB.to(tree, to))
-  override def until(until: A): TreeSet[A] = newSet(RB.until(tree, until))
 
-  override def firstKey = head
-  override def lastKey = last
+  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
+
+  /** Creates a new `TreeSet` with the entry added.
+    *
+    *  @param elem    a new element to add.
+    *  @return        a new $coll containing `elem` and all the elements of this $coll.
+    */
+  def incl(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+
+  /** Creates a new `TreeSet` with the entry removed.
+    *
+    *  @param elem    a new element to add.
+    *  @return        a new $coll containing all the elements of this $coll except `elem`.
+    */
+  def excl(elem: A): TreeSet[A] =
+    if (!RB.contains(tree, elem)) this
+    else newSet(RB.delete(tree, elem))
+}
+
+/**
+  * $factoryInfo
+  *
+  *  @define Coll `immutable.TreeSet`
+  *  @define coll immutable tree set
+  */
+object TreeSet extends SortedIterableFactory[TreeSet] {
+
+  def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
+
+  def from[E: Ordering](it: scala.collection.IterableOnce[E]): TreeSet[E] =
+    it match {
+      case ts: TreeSet[E] => ts
+      case _ => (newBuilder[E]() ++= it).result()
+    }
+
+  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =
+    new ImmutableBuilder[A, TreeSet[A]](empty) {
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
+    }
+
 }

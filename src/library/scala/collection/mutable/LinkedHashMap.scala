@@ -1,80 +1,103 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
 package scala
 package collection
 package mutable
 
-import generic._
 
 /** $factoryInfo
  *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
  */
-object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), LinkedHashMap[A, B]] = new MapCanBuildFrom[A, B]
+object LinkedHashMap extends MapFactory[LinkedHashMap] {
+
   def empty[A, B] = new LinkedHashMap[A, B]
+
+  def from[K, V](it: collection.IterableOnce[(K, V)]) =
+    it match {
+      case lhm: LinkedHashMap[K, V] => lhm
+      case _ => Growable.from(empty[K, V], it)
+    }
+
+  def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
+
+  /** Class for the linked hash map entry, used internally.
+    *  @since 2.8
+    */
+  @SerialVersionUID(3L)
+  final class LinkedEntry[K, V](val key: K, var value: V)
+    extends HashEntry[K, LinkedEntry[K, V]]
+      with Serializable {
+    var earlier: LinkedEntry[K, V] = null
+    var later: LinkedEntry[K, V] = null
+  }
+
 }
 
 /** This class implements mutable maps using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
  *
- *  @tparam A    the type of the keys contained in this hash map.
- *  @tparam B    the type of the values assigned to keys in this hash map.
+ *  @tparam K    the type of the keys contained in this hash map.
+ *  @tparam V    the type of the values assigned to keys in this hash map.
  *
  *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `LinkedHashMap[A, B]` if the elements contained in the resulting collection are
- *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[LinkedHashMap, (A, B), LinkedHashMap[A, B]]`
- *    is defined in object `LinkedHashMap`. Otherwise, `That` resolves to the most specific type that doesn't have
- *    to contain pairs of type `(A, B)`, which is `Iterable`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `LinkedHashMap`.
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(1L)
-class LinkedHashMap[A, B] extends AbstractMap[A, B]
-                             with Map[A, B]
-                             with MapLike[A, B, LinkedHashMap[A, B]]
-                             with HashTable[A, LinkedEntry[A, B]]
-                             with Serializable
-{
+@SerialVersionUID(3L)
+class LinkedHashMap[K, V]
+  extends Map[K, V]
+    with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
+    with Serializable {
 
-  override def empty = LinkedHashMap.empty[A, B]
-  override def size = tableSize
+  type Entry = LinkedHashMap.LinkedEntry[K, V]
 
-  type Entry = LinkedEntry[A, B]
+  @transient private[this] var table: HashTable[K, V, Entry] = newHashTable
+
+  private def newHashTable =
+    new HashTable[K, V, Entry] {
+      def createNewEntry(key: K, value: V): Entry = {
+        val e = new Entry(key, value.asInstanceOf[V])
+        if (firstEntry eq null) firstEntry = e
+        else { lastEntry.later = e; e.earlier = lastEntry }
+        lastEntry = e
+        e
+      }
+
+      override def foreachEntry[U](f: Entry => U): Unit = {
+        var cur = firstEntry
+        while (cur ne null) {
+          f(cur)
+          cur = cur.later
+        }
+      }
+
+    }
+
+  override def empty = LinkedHashMap.empty[K, V]
+  override def size = table.tableSize
 
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
 
-  def get(key: A): Option[B] = {
-    val e = findEntry(key)
+  override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
+
+  def get(key: K): Option[V] = {
+    val e = table.findEntry(key)
     if (e == null) None
     else Some(e.value)
   }
 
-  override def put(key: A, value: B): Option[B] = {
-    val e = findOrAddEntry(key, value)
+  override def put(key: K, value: V): Option[V] = {
+    val e = table.findOrAddEntry(key, value)
     if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
-  override def remove(key: A): Option[B] = {
-    val e = removeEntry(key)
+  override def remove(key: K): Option[V] = {
+    val e = table.removeEntry(key)
     if (e eq null) None
     else {
       if (e.earlier eq null) firstEntry = e.later
@@ -87,55 +110,42 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
-  @deprecatedOverriding("+= should not be overridden so it stays consistent with put.", "2.11.0")
-  def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
+  def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2); this }
 
-  @deprecatedOverriding("-= should not be overridden so it stays consistent with remove.", "2.11.0")
-  def -=(key: A): this.type = { remove(key); this }
+  def subtractOne(key: K): this.type = { remove(key); this }
 
-  def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
+  def iterator(): Iterator[(K, V)] = new Iterator[(K, V)] {
     private var cur = firstEntry
     def hasNext = cur ne null
-    def next =
+    def next() =
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
       else Iterator.empty.next()
   }
 
-  protected class FilteredKeys(p: A => Boolean) extends super.FilteredKeys(p) {
-    override def empty = LinkedHashMap.empty
+  @SerialVersionUID(3L)
+  protected class LinkedKeySet extends KeySet {
+    override def iterableFactory: IterableFactory[collection.Set] = LinkedHashSet
   }
 
-  override def filterKeys(p: A => Boolean): scala.collection.Map[A, B] = new FilteredKeys(p)
+  override def keySet: collection.Set[K] = new LinkedKeySet
 
-  protected class MappedValues[C](f: B => C) extends super.MappedValues[C](f) {
-    override def empty = LinkedHashMap.empty
-  }
-
-  override def mapValues[C](f: B => C): scala.collection.Map[A, C] = new MappedValues(f)
-
-  protected class DefaultKeySet extends super.DefaultKeySet {
-    override def empty = LinkedHashSet.empty
-  }
-
-  override def keySet: scala.collection.Set[A] = new DefaultKeySet
-
-  override def keysIterator: Iterator[A] = new AbstractIterator[A] {
+  override def keysIterator(): Iterator[K] = new Iterator[K] {
     private var cur = firstEntry
     def hasNext = cur ne null
-    def next =
+    def next() =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
       else Iterator.empty.next()
   }
 
-  override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
+  override def valuesIterator(): Iterator[V] = new Iterator[V] {
     private var cur = firstEntry
     def hasNext = cur ne null
-    def next =
+    def next() =
       if (hasNext) { val res = cur.value; cur = cur.later; res }
       else Iterator.empty.next()
   }
 
-  override def foreach[U](f: ((A, B)) => U) {
+  override def foreach[U](f: ((K, V)) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f((cur.key, cur.value))
@@ -143,38 +153,24 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
-  protected override def foreachEntry[U](f: Entry => U) {
-    var cur = firstEntry
-    while (cur ne null) {
-      f(cur)
-      cur = cur.later
-    }
-  }
-
-  protected def createNewEntry[B1](key: A, value: B1): Entry = {
-    val e = new Entry(key, value.asInstanceOf[B])
-    if (firstEntry eq null) firstEntry = e
-    else { lastEntry.later = e; e.earlier = lastEntry }
-    lastEntry = e
-    e
-  }
-
-  override def clear() {
-    clearTable()
+  override def clear(): Unit = {
+    table.clearTable()
     firstEntry = null
     lastEntry = null
   }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
-    serializeTo(out, { entry =>
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
+    table.serializeTo(out, { entry =>
       out.writeObject(entry.key)
       out.writeObject(entry.value)
     })
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
-    firstEntry = null
-    lastEntry = null
-    init(in, createNewEntry(in.readObject().asInstanceOf[A], in.readObject()))
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
+    in.defaultReadObject()
+    table = newHashTable
+    table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 }
+

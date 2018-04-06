@@ -3,6 +3,6 @@ object Test {
   def g[T] = f[T] _
 
   def main(args: Array[String]): Unit = {
-    println(g("hello" +: args))
+    println(g("hello" +: args.toIndexedSeq))
   }
 }

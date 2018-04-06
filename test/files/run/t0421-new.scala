@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 import scala.reflect.{ClassTag, classTag}
 
 // ticket #421

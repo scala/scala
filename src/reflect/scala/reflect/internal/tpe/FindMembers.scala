@@ -257,7 +257,7 @@ trait FindMembers {
         }
         if (isNew) {
           val lastM1 = new ::(sym, null)
-          lastM.tl = lastM1
+          lastM.next = lastM1
           lastM = lastM1
         }
       }
@@ -281,7 +281,7 @@ trait FindMembers {
       } else member0
     } else {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
-      lastM.tl = Nil
+      lastM.next = Nil
       initBaseClasses.head.newOverloaded(tpe, members)
     }
   }
