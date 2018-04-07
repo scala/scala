@@ -44,17 +44,17 @@ trait ScalaSettings extends AbsScalaSettings
 
   val jvmargs  = PrefixSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
   val defines  = PrefixSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")
-  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "")
-  val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.")
+  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "") withAbbreviation "--tool-class-path"
+  val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.") withAbbreviation "--no-boot-class-path"
 
   /**
    *  Standard settings
    */
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
+  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
   val d             = OutputSetting     (outputDirs, ".")
-  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
+  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.") withAbbreviation "--no-specialization"
 
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
@@ -74,7 +74,7 @@ trait ScalaSettings extends AbsScalaSettings
       helpArg = "feature",
       descr   = description,
       domain  = languageFeatures
-    )
+    ) withAbbreviation "--language"
   }
   val release = StringSetting("-release", "release", "Compile for a specific version of the Java platform. Supported targets: 6, 7, 8, 9", "").withPostSetHook { (value: StringSetting) =>
     if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
@@ -83,7 +83,7 @@ trait ScalaSettings extends AbsScalaSettings
       // TODO validate numeric value
       // TODO validate release <= java.specification.version
     }
-  }
+  } withAbbreviation "--release"
   def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /*
