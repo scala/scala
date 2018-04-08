@@ -1,1 +1,5 @@
+Macros_Test_2.scala:10: warning: view bounds are deprecated; use an implicit parameter instead.
+  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`
+  def bar[T <% Option[Int]](x: T) = println(x)
+            ^
 2
