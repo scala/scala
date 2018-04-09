@@ -375,6 +375,11 @@ lazy val library = configureAsSubproject(project)
         "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
       )
     },
+    scalacOptions in (Compile, console) := {
+      val opts = (scalacOptions in console).value
+      val ix = (scalacOptions in console).value.indexOfSlice(Seq[String]("-sourcepath", (scalaSource in Compile).value.toString))
+      opts.patch(ix, Nil, 2)
+    },
     includeFilter in unmanagedResources in Compile := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
     // Include *.txt files in source JAR:
     mappings in Compile in packageSrc ++= {
