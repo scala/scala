@@ -68,6 +68,26 @@ object TreeMapTest extends Properties("TreeMap") {
     elements.max == subject.last._1
   }}
 
+  property("minAfter") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
+    val half = elements.take(elements.size / 2)
+    val subject = TreeMap((half zip half): _*)
+    elements.forall{e => {
+      val temp = subject.from(e)
+      if (temp.isEmpty) subject.minAfter(e).isEmpty
+      else subject.minAfter(e).get == temp.min
+    }}
+  }}
+
+  property("maxBefore") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
+    val half = elements.take(elements.size / 2)
+    val subject = TreeMap((half zip half): _*)
+    elements.forall{e => {
+      val temp = subject.until(e)
+      if (temp.isEmpty) subject.maxBefore(e).isEmpty
+      else subject.maxBefore(e).get == temp.max
+    }}
+  }}
+
   property("head/tail identity") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
     subject == (subject.tail + subject.head)
   }}

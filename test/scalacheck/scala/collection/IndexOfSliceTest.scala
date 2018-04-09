@@ -1,8 +1,6 @@
-package strawman
-package collection
+package scala.collection
 
-import strawman.collection.immutable.{LazyList, Nil}
-import strawman.collection.Generators._
+import scala.collection.immutable.{LazyList, Nil}
 import org.scalacheck.{Arbitrary, Gen, Properties}
 import org.scalacheck.Prop._
 
