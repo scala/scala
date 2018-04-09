@@ -68,7 +68,21 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
   }
 
   property("lastOption") = forAll { (set: mutable.TreeSet[K]) =>
-    set.lastOption == Try(set.iterator.max).toOption
+    set.lastOption == Try(set.iterator().max).toOption
+  }
+
+  property("minAfter") = forAll { (set: mutable.TreeSet[K]) =>
+    val half = set.take(set.size / 2)
+    set.forall { x =>
+      half.minAfter(x) == half.rangeImpl(Some(x), None).headOption
+    }
+  }
+
+  property("maxBefore") = forAll { (set: mutable.TreeSet[K]) =>
+    val half = set.take(set.size / 2)
+    set.forall { x =>
+      half.maxBefore(x) == half.rangeImpl(None, Some(x)).lastOption
+    }
   }
 
   property("clear") = forAll { (set: mutable.TreeSet[K]) =>
@@ -100,7 +114,7 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
   }
 }
 
-object MutableTreeSetViewProperties extends Properties("mutable.TreeSetView") {
+object MutableTreeSetProjectionProperties extends Properties("mutable.TreeSetProjection") {
   type K = String
 
   implicit val ord = implicitly[Ordering[K]]
