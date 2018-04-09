@@ -68,9 +68,7 @@ trait Adaptations {
         )
       }
 
-      if (settings.noAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage("No automatic adaptation here: use explicit parentheses."))
-      else if (args.isEmpty) {
+      if (args.isEmpty) {
         if (settings.future)
           context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
         else {
@@ -85,7 +83,7 @@ trait Adaptations {
         )
 
       // return `true` if the adaptation should be kept
-      !(settings.noAdaptedArgs || (args.isEmpty && settings.future))
+      !(args.isEmpty && settings.future)
     }
   }
 }

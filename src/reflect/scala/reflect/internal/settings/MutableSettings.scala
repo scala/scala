@@ -36,10 +36,8 @@ abstract class MutableSettings extends AbsSettings {
     def valueSetByUser: Option[T] = if (isSetByUser) Some(value) else None
   }
 
-  def XfullLubs: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def Xprintpos: BooleanSetting
-  def strictInference: BooleanSetting
   def Yposdebug: BooleanSetting
   def Yrangepos: BooleanSetting
   def Yshowsymowners: BooleanSetting
@@ -48,11 +46,9 @@ abstract class MutableSettings extends AbsSettings {
   def debug: BooleanSetting
   def developer: BooleanSetting
   def explaintypes: BooleanSetting
-  def overrideObjects: BooleanSetting
   def printtypes: BooleanSetting
   def uniqid: BooleanSetting
   def verbose: BooleanSetting
-  def Yvirtpatmat: BooleanSetting
 
   // Define them returning a `Boolean` to avoid breaking bincompat change
   // TODO: Add these fields typed as `BooleanSetting` for 2.13.x

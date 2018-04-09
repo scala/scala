@@ -445,9 +445,8 @@ abstract class RefChecks extends Transform {
             // The check above used to look at `field` == `other.accessed`, ensuring field.isVariable && !field.isLazy,
             // which I think is identical to the more direct `!(other hasFlag STABLE)` (given that `other` is a method).
             // Also, we're moving away from (looking at) underlying fields (vals in traits no longer have them, to begin with)
-            // TODO: this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
-            if (!settings.overrideVars)
-              overrideError("cannot override a mutable variable")
+            // TODO: this is not covered by the spec.
+            overrideError("cannot override a mutable variable")
           }
           else if (member.isAnyOverride &&
                      !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&

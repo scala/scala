@@ -2583,21 +2583,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    // match has been typed -- virtualize it during type checking so the full context is available
-    def virtualizedMatch(match_ : Match, mode: Mode, pt: Type) = {
-      import patmat.{ vpmName, PureMatchTranslator }
-
-      // TODO: add fallback __match sentinel to predef
-      val matchStrategy: Tree =
-        if (!(settings.Yvirtpatmat && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
-        else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match)), reportAmbiguousErrors = false) orElse (_ => null)
-
-      if (matchStrategy ne null) // virtualize
-        typed((new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)).translateMatch(match_), mode, pt)
-      else
-        match_ // will be translated in phase `patmat`
-    }
-
     /** synthesize and type check a PartialFunction implementation based on the match in `tree`
      *
      *  `param => sel match { cases }` becomes:
@@ -2763,8 +2748,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           vd
         }
 
-        val rhs    = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
-        val defdef = newDefDef(methodSym, rhs)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
+        val defdef = newDefDef(methodSym, match_)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
 
         (defdef, matchResTp)
       }
@@ -2781,7 +2765,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val defaultCase = mkDefaultCase(FALSE)
         val match_ = methodBodyTyper.typedMatch(selector(paramSym), casesTrue :+ defaultCase, mode, BooleanTpe)
 
-        DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanTpe))
+        DefDef(methodSym, match_)
       }
 
       // only used for @cps annotated partial functions
@@ -2800,7 +2784,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val matchResTp = match_.tpe
         methodSym setInfo MethodType(List(paramSym), matchResTp) // patch info
 
-        (DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, matchResTp)), matchResTp)
+        (DefDef(methodSym, match_), matchResTp)
       }
 
       def parents(resTp: Type) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, List(argTp, resTp)))
@@ -4521,7 +4505,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
           }
         } else
-          virtualizedMatch(typedMatch(selector, cases, mode, pt, tree), mode, pt)
+          typedMatch(selector, cases, mode, pt, tree)
       }
 
       def typedReturn(tree: Return) = {
