@@ -1,10 +1,8 @@
-package strawman.collection.mutable
+package scala.collection.mutable
 
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck._
-import strawman.collection.Generators._
-import strawman.collection.immutable.List
 
 object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   type E = Int // the element type used for most/all of the tests
@@ -36,18 +34,18 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   }
 
   property("apply (in companion)") = forAll { list: List[E] =>
-    val pq = PriorityQueue.apply(list.toClassic : _*)
+    val pq = PriorityQueue.apply(list: _*)
     checkInvariant(pq) &&
     pq.dequeueAll == list.sorted.reverse
   }
 
   property("size, isEmpty") = forAll { list: List[E] =>
-    val pq = PriorityQueue(list.toClassic : _*)
+    val pq = PriorityQueue(list: _*)
     pq.size == list.size && pq.isEmpty == list.isEmpty
   }
 
   property("+=") = forAll { (x: E, list: List[E]) =>
-    val pq = PriorityQueue(list.toClassic : _*)
+    val pq = PriorityQueue(list: _*)
     pq += x
     checkInvariant(pq) &&
     pq.dequeueAll == (x :: list).sorted.reverse
@@ -61,14 +59,14 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   }
 
   property("++=") = forAll { (list1: List[E], list2: List[E]) =>
-    val pq = PriorityQueue(list1.toClassic : _*)
+    val pq = PriorityQueue(list1: _*)
     pq ++= list2
     checkInvariant(pq) &&
     pq.dequeueAll == (list1 ++ list2).sorted.reverse
   }
 
   property("reverse") = forAll { list: List[E] =>
-    val pq = PriorityQueue(list.toClassic : _*).reverse
+    val pq = PriorityQueue(list: _*).reverse
     checkInvariant(pq)(implicitly[Ordering[E]].reverse) &&
     pq.dequeueAll == list.sorted
   }
@@ -80,13 +78,13 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   }
 
   property("reverse then +=") = forAll { (x: E, list: List[E]) =>
-    val pq = PriorityQueue(list.toClassic : _*).reverse += x
+    val pq = PriorityQueue(list: _*).reverse += x
     checkInvariant(pq)(implicitly[Ordering[E]].reverse) &&
     pq.dequeueAll == (x +: list).sorted
   }
 
   property("clone") = forAll { list: List[E] =>
-    val pq = PriorityQueue(list.toClassic : _*)
+    val pq = PriorityQueue(list: _*)
     val c = pq.clone()
     (pq ne c) &&
     checkInvariant(c) &&
@@ -95,7 +93,7 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
 
   property("dequeue") = forAll { list: List[E] =>
     list.nonEmpty ==> {
-      val pq = PriorityQueue(list.toClassic : _*)
+      val pq = PriorityQueue(list: _*)
       val x = pq.dequeue()
       checkInvariant(pq) &&
       x == list.max && pq.dequeueAll == list.sorted.reverse.tail

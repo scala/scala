@@ -1,10 +1,8 @@
-package strawman.collection.immutable
+package scala.collection.immutable
 
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 import org.scalacheck._
-
-import strawman.collection.Generators._
 
 object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSet") {
 
