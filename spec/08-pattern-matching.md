@@ -87,10 +87,12 @@ that value.
 ```
 
 A _pattern binder_ `$x$@$p$` consists of a pattern variable $x$ and a
-pattern $p$. The type of the variable $x$ is the static type $T$ of the pattern $p$.
+pattern $p$. The type of the variable $x$ is the static type $T$ implied
+by the pattern $p$.
 This pattern matches any value $v$ matched by the pattern $p$,
-provided the run-time type of $v$ is also an instance of $T$,
 and it binds the variable name to that value.
+
+A pattern $p$ _implies_ a type $T$ if the pattern matches only values of the type $T$.
 
 ### Literal Patterns
 
