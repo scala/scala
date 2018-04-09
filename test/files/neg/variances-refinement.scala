@@ -20,7 +20,6 @@ trait Trait[-A, +B, C] {
   def fail4() = { object O { def f0(x: B): C = ??? } ; O } // fail
   def fail5() = { object O { def f0(x: C): A = ??? } ; O } // fail
 
-  /* TODO-newColl: the order of decls in refinements is not stable, at least when printed in error messages. need to figure out why. https://github.com/scala/bug/issues/10813.
   def fail6() = { // fail
     trait O0 {
       def f0(x: A): A = ???
@@ -38,5 +37,4 @@ trait Trait[-A, +B, C] {
     }
     new O0 { }
   }
-  */
 }
