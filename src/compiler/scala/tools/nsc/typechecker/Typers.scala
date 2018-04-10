@@ -2966,7 +2966,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      * Based on the expected type pt, potentially synthesize an instance of
      *   - PartialFunction,
-     *   - a type with a Single Abstract Method (under -Xexperimental for now).
+     *   - a type with a Single Abstract Method.
      */
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val vparams = fun.vparams

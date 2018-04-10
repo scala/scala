@@ -1,4 +1,4 @@
-/* Test checked initializers. Needs to be run with -Xexperimental and -checkinit
+/* Test checked initializers. Needs to be run with -checkinit
  */
 
 // 0 inherited fields

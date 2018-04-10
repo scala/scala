@@ -11,7 +11,7 @@ object Test extends App {
   val maxKey = 50
   val maxValue = 50
 
-  def testSet[A](set: SortedSet[A], list: List[A])(implicit o: Ordering[A]) {
+  def testSet[A](set: SortedSet[A], list: List[A])(implicit o: Ordering[A]): Unit = {
     val distinctSorted = list.distinct.sorted
     assertEquals("Set size wasn't the same as list sze", set.size, distinctSorted.size)
 
@@ -23,7 +23,7 @@ object Test extends App {
     }
   }
 
-  def testMap[A, B](map: SortedMap[A, B], list: List[(A, B)])(implicit o: Ordering[A]) {
+  def testMap[A, B](map: SortedMap[A, B], list: List[(A, B)])(implicit o: Ordering[A]): Unit = {
     val distinctSorted = distinctByKey(list).sortBy(_._1)
     assertEquals("Map size wasn't the same as list sze", map.size, distinctSorted.size)
 
@@ -38,11 +38,11 @@ object Test extends App {
     }
   }
 
-  def check[A](clazz: Class[_], list: List[_], m1: String, m2: String, l1: List[A], l2: List[A]) {
+  def check[A](clazz: Class[_], list: List[_], m1: String, m2: String, l1: List[A], l2: List[A]): Unit = {
     assertEquals(s"$clazz: `$m1` didn't match `$m2` on list $list", l1, l2)
   }
 
-  def assertEquals[A](msg: String, x: A, y: A) {
+  def assertEquals[A](msg: String, x: A, y: A): Unit = {
     assert(x == y, s"$msg\n1: $x\n2: $y")
   }
 

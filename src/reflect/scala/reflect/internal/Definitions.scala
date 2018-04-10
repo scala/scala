@@ -839,7 +839,7 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
-    private[this] val doSam = settings.isScala212 || (settings.isScala211 && settings.Xexperimental)
+    private[this] val doSam = settings.isScala212
 
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
      *

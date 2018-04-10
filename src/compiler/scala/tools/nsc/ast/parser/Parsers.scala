@@ -2425,10 +2425,11 @@ self =>
           TypeDef(mods, pname, tparams, typeBounds())
         }
         if (contextBoundBuf ne null) {
+          def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
+                                     |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
-            if (settings.future)
-              deprecationWarning(in.offset, s"View bounds are deprecated. $msg", "2.12.0")
+            if (settings.isScala214) syntaxError(in.offset, msg("unsupported"))
+            else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2878,7 +2879,7 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (settings.future) "" else " nor view bounds `<% ...'"
+            val viewBoundsExist = if (settings.isScala214) "" else " nor view bounds `<% ...'"
               syntaxError(s"traits cannot have type parameters with context bounds `: ...'$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }

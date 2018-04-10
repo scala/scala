@@ -200,9 +200,6 @@ object scalac extends Command {
           "Calls to " & MItalic("@elidable") &
           " methods are omitted if method priority is lower than argument."),
         Definition(
-          CmdOption("Xexperimental"),
-          "Enable experimental extensions"),
-        Definition(
           CmdOption("Xfatal-warnings"),
           "Fail the compilation if there are any warnings."),
         Definition(

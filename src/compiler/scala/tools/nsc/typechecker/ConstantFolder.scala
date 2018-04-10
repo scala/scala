@@ -67,9 +67,10 @@ abstract class ConstantFolder {
    *  the conversion.
    */
   def apply(tree: Tree, pt: Type): Tree = {
-    tree.tpe match {
-      case tp@ConstantType(x) => fold(apply(tree), x convertTo pt, isConstantType(tp))
-      case _ => apply(tree)
+    val orig = apply(tree)
+    orig.tpe match {
+      case tp@ConstantType(x) => fold(orig, x convertTo pt, isConstantType(tp))
+      case _ => orig
     }
   }
 
