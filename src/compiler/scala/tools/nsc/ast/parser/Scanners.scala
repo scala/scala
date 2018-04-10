@@ -880,11 +880,7 @@ trait Scanners extends ScannersCommon {
             }
           }
           val alt = if (oct == LF) "\\n" else "\\u%04x" format oct
-          def msg(what: String) = s"Octal escape literals are $what, use $alt instead."
-          if (settings.future)
-            syntaxError(start, msg("unsupported"))
-          else
-            deprecationWarning(start, msg("deprecated"), "2.11.0")
+          syntaxError(start, s"octal escape literals are unsupported: use $alt instead")
           putChar(oct.toChar)
         } else {
           ch match {

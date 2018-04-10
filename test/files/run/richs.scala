@@ -18,8 +18,6 @@ trait RichTest {
 object RichCharTest1 extends RichTest {
   def run {
     println("\n" + getObjectName + ":")
-    println('\40'.isWhitespace)
-    println('\011'.isWhitespace)
     println('1'.asDigit == 1)
     println('A'.asDigit == 10)
   }
