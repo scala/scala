@@ -163,7 +163,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] =
-    flatMap { (kv: (K, V)) =>
+    flatMap { kv =>
       if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
       else View.Empty
     }
