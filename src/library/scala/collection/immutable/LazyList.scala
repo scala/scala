@@ -247,8 +247,8 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     * @param suffix The collection that gets appended to this lazy list
     * @return The lazy list containing elements of this lazy list and the iterable object.
     */
-  def lazyAppendAll[B >: A](suffix: => collection.IterableOnce[B]): CC[B] =
-    if (isEmpty) iterableFactory.from(suffix) else cons[B](head, tail.lazyAppendAll(suffix))
+  def lazyAppendedAll[B >: A](suffix: => collection.IterableOnce[B]): CC[B] =
+    if (isEmpty) iterableFactory.from(suffix) else cons[B](head, tail.lazyAppendedAll(suffix))
 
   override def className = "LazyList"
 
@@ -339,7 +339,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
       }
 
       if (nonEmptyPrefix.isEmpty) iterableFactory.empty
-      else prefix.lazyAppendAll(nonEmptyPrefix.tail.flatMap(f))
+      else prefix.lazyAppendedAll(nonEmptyPrefix.tail.flatMap(f))
     }
 
   override final def zip[B](that: collection.Iterable[B]): CC[(A, B)] =
@@ -618,7 +618,7 @@ object LazyList extends LazyListFactory[LazyList] {
     /** Construct a LazyList consisting of the concatenation of the given LazyList and
       *  another LazyList.
       */
-    def #:::[B >: A](prefix: LazyList[B]): LazyList[B] = prefix lazyAppendAll l
+    def #:::[B >: A](prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l
   }
 
   object #:: {
@@ -773,7 +773,7 @@ object Stream extends LazyListFactory[Stream] {
     /** Construct a Stream consisting of the concatenation of the given Stream and
       *  another Stream.
       */
-    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix lazyAppendAll l
+    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix lazyAppendedAll l
   }
 
   object #:: {
