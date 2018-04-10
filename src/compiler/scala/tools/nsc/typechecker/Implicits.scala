@@ -1566,8 +1566,8 @@ trait Implicits {
   }
 
   class ImplicitAnnotationMsg(f: Symbol => Option[String], clazz: Symbol, annotationName: String) {
-    def unapply(sym: Symbol): Option[(Message)] = f(sym) match {
-      case Some(m) => Some(new Message(sym, m, annotationName))
+    def unapply(sym: Symbol): Option[Message] = f(sym) match {
+      case Some(msgStr) => Some(new Message(sym, msgStr, annotationName))
       case None if sym.isAliasType =>
         // perform exactly one step of dealiasing
         // this is necessary because ClassManifests are now aliased to ClassTags
@@ -1577,11 +1577,11 @@ trait Implicits {
     }
 
     // check the message's syntax: should be a string literal that may contain occurrences of the string "${X}",
-    // where `X` refers to a type parameter of `sym`
+    // where `X` refers to a type parameter of `sym` or any of its prefixes
     def check(sym: Symbol): Option[String] =
       sym.getAnnotation(clazz).flatMap(_.stringArg(0) match {
         case Some(m) => new Message(sym, m, annotationName).validate
-        case None => Some(s"Missing argument `msg` on $annotationName annotation.")
+        case None => Some(s"Missing argument `msg` on @$annotationName annotation.")
       })
   }
 
@@ -1599,10 +1599,33 @@ trait Implicits {
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
       })
 
-    private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
-    private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
+    private lazy val typeParams: List[Symbol] = sym.ownerChain.flatMap(_.typeParams)
+    private lazy val typeParamNames: List[String] = typeParams.map(_.decodedName)
 
-    def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
+    def format(paramName: Name, paramTp: Type): String = {
+
+      def prefixTypeArgs(tp: Type): List[(String, String)] = {
+        tp match {
+          case TypeRef(pre0, sym0, args0) =>
+            (sym0.typeParams zip args0).map {
+              case (tparam, targ) =>
+                tparam.nameString -> targ.toString
+            } ::: (tp.parents flatMap prefixTypeArgs) ::: prefixTypeArgs(pre0)
+          case ClassInfoType(parents, _, _) =>
+            parents flatMap prefixTypeArgs
+          case RefinedType(parents, _) =>
+            parents flatMap prefixTypeArgs
+          case single @ SingleType(_, _) =>
+            prefixTypeArgs(single.widen)
+          case thiz @ ThisType(_) =>
+            prefixTypeArgs(sym.info.memberInfo(thiz.sym))
+          case other => Nil
+        }
+      }
+
+      //format(typeArgsAtSym(paramTp) map (_.toString))
+      interpolate(msg, prefixTypeArgs(paramTp baseType sym).reverse.toMap)
+    }
 
     def format(typeArgs: List[String]): String =
       interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
@@ -1617,7 +1640,19 @@ trait Implicits {
           val singular = unboundNames.size == 1
           val ess      = if (singular) "" else "s"
           val bee      = if (singular) "is" else "are"
-          Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not defined by $sym.")
+          val invisMsg = s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not visible at $sym."
+          val hintMsg  =
+            if (decls.isEmpty)
+              s"Note that there are no type parameters visible at ${sym.name}."
+            else {
+              val locatedTparams = typeParams.map { tp =>
+                //tp.fullLocationString drop 5
+                s"${tp.name} (in ${tp.owner})"
+              }
+              s"Note that the following type parameters are visible at ${sym.name}: ${locatedTparams mkString ", "}"
+            }
+
+          Some(s"$invisMsg\n$hintMsg")
       }
     }
   }

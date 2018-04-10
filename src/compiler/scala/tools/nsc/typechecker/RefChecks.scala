@@ -1430,7 +1430,7 @@ abstract class RefChecks extends Transform {
           applyChecks(sym.annotations)
 
           def messageWarning(name: String)(warn: String) =
-            reporter.warning(tree.pos, f"Invalid $name message for ${sym}%s${sym.locationString}%s:%n$warn")
+            reporter.warning(tree.pos, f"Invalid @$name message for $sym%s${sym.locationString}%s:%n$warn")
 
           // validate implicitNotFoundMessage and implicitAmbiguousMessage
           analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
