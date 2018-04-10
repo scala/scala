@@ -13,26 +13,41 @@ trait SortedMap[K, +V]
 
   def unsorted: Map[K, V] = this
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): SortedMapCC[K, V] = sortedMapFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] = sortedMapFactory.newBuilder[K, V]()
+  override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.from(coll)
+  override protected def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]()
 
+  /**
+    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
+    *       return a `SortedMapFactory[SortedMapCC]`. The implementation in `SortedMap` only returns
+    *       a `SortedMapFactory[SortedMap]`, but the compiler will '''not''' throw an error if the
+    *       effective `SortedMapCC` type constructor is more specific than `SortedMap`.
+    *
+    * @return The factory of this collection.
+    */
   def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
-  override def empty: SortedMapCC[K, V] = sortedMapFactory.empty
+  override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
      with SortedOps[K, C] {
 
-  protected[this] type SortedMapCC[K, V] = CC[K, V]
+  /**
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type SortedMapCC[K, V] = CC[K, V] @uncheckedVariance
 
   def sortedMapFactory: SortedMapFactory[SortedMapCC]
 
   /** Similar to `mapFromIterable`, but returns a SortedMap collection type.
     * Note that the return type is now `CC[K2, V2]` aka `SortedMapCC[K2, V2]` rather than `MapCC[(K2, V2)]`.
     */
-  @`inline` protected[this] final def sortedMapFromIterable[K2, V2](it: Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = sortedMapFactory.from(it)
+  @`inline` protected final def sortedMapFromIterable[K2, V2](it: Iterable[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] = sortedMapFactory.from(it)
 
   def unsorted: Map[K, V]
 
@@ -116,23 +131,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     def iteratorFrom(start: K): Iterator[K] = SortedMapOps.this.keysIteratorFrom(start)
   }
 
-  override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
-
-  /** Specializes `MapWithFilter` for sorted Map collections
-    *
-    * @define coll sorted map collection
-    */
-  class SortedMapWithFilter(p: ((K, V)) => Boolean) extends MapWithFilter(p) {
-
-    def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
-      sortedMapFactory.from(new View.Map(filtered, f))
-
-    def flatMap[K2 : Ordering, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
-      sortedMapFactory.from(new View.FlatMap(filtered, f))
-
-    override def withFilter(q: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(kv => p(kv) && q(kv))
-
-  }
+  override def withFilter(p: ((K, V)) => Boolean): SortedMapOps.WithFilter[K, V, IterableCC, MapCC, CC] = new SortedMapOps.WithFilter(this, p)
 
   // And finally, we add new overloads taking an ordering
   /** Builds a new sorted map by applying a function to all elements of this $coll.
@@ -190,6 +189,29 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = sortedMapFactory.from(new View.Concat(toIterable, xs))
   override def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
   // TODO Also override mapValues
+
+}
+
+object SortedMapOps {
+  /** Specializes `MapWithFilter` for sorted Map collections
+    *
+    * @define coll sorted map collection
+    */
+  class WithFilter[K, +V, +IterableCC[_], +MapCC[X, Y] <: Map[X, Y], +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]](
+    self: SortedMapOps[K, V, CC, _] with MapOps[K, V, MapCC, _] with IterableOps[(K, V), IterableCC, _],
+    p: ((K, V)) => Boolean
+  ) extends MapOps.WithFilter[K, V, IterableCC, MapCC](self, p) {
+
+    def map[K2 : Ordering, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
+      self.sortedMapFactory.from(new View.Map(filtered, f))
+
+    def flatMap[K2 : Ordering, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
+      self.sortedMapFactory.from(new View.FlatMap(filtered, f))
+
+    override def withFilter(q: ((K, V)) => Boolean): WithFilter[K, V, IterableCC, MapCC, CC] =
+      new WithFilter[K, V, IterableCC, MapCC, CC](self, (kv: (K, V)) => p(kv) && q(kv))
+
+  }
 
 }
 

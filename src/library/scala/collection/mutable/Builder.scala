@@ -102,10 +102,10 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
   // Methods required to make this an IndexedSeq:
   def apply(i: Int): Char = sb.charAt(i)
 
- override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
+ override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
     new StringBuilder() ++= coll
 
-  override protected[this] def newSpecificBuilder(): Builder[Char, StringBuilder] =
+  override protected def newSpecificBuilder(): Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
 
   def length: Int = sb.length()

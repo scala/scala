@@ -2,6 +2,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 
 trait SortedMap[K, +V]
@@ -37,7 +38,7 @@ trait SortedMap[K, +V]
 trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] { self =>
-    protected[this] def coll: C with CC[K, V]
+    protected def coll: C with CC[K, V]
 
     override def keySet: SortedSet[K] = new ImmutableKeySortedSet
 
@@ -95,10 +96,10 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
-    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
       SortedMap.newBuilder().mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

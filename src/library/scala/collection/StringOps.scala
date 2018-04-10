@@ -26,10 +26,10 @@ final class StringOps(private val s: String)
 
   def toIterable = StringView(s)
   override def view: StringView = StringView(s)
-  protected[this] def coll: String = s
+  protected def coll: String = s
   override def toSeq: immutable.Seq[Char] = s.toCharArray
 
-  protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
+  protected def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
     for (ch <- coll) sb.append(ch)
     sb.toString
@@ -37,7 +37,7 @@ final class StringOps(private val s: String)
 
   def iterableFactory = immutable.IndexedSeq
 
-  override protected[this] def newSpecificBuilder() = new mutable.StringBuilder
+  protected def newSpecificBuilder() = new mutable.StringBuilder
 
   def length = s.length
 

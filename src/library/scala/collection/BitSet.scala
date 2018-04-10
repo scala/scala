@@ -1,6 +1,7 @@
 package scala
 package collection
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 
 
@@ -17,8 +18,8 @@ import scala.collection.mutable.Builder
   * @define Coll `BitSet`
   */
 trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
-  override protected[this] def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
-  override protected[this] def newSpecificBuilder(): Builder[Int, BitSetC] = bitSetFactory.newBuilder()
+  override protected def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
+  override protected def newSpecificBuilder(): Builder[Int, BitSetC] = bitSetFactory.newBuilder()
   override def empty: BitSetC = bitSetFactory.empty
 }
 
@@ -35,7 +36,14 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def bitSetFactory: SpecificIterableFactory[Int, BitSetC]
 
-  protected[this] type BitSetC = C
+  /**
+    * Type alias to `C`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type BitSetC = C @uncheckedVariance
 
   final def ordering: Ordering[Int] = Ordering.Int
 

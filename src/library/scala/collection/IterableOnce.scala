@@ -994,7 +994,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     else mutable.ArrayBuffer.from(this).toArray[B]
 
   // For internal use
-  protected[this] def reversed: Iterable[A] = {
+  protected def reversed: Iterable[A] = {
     var xs: immutable.List[A] = immutable.Nil
     val it = iterator()
     while (it.hasNext) xs = it.next() :: xs
