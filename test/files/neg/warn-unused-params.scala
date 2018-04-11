@@ -71,3 +71,9 @@ class Main {
 trait Unimplementation {
   def f(u: Int): Int = ???        // no warn for param in unimplementation
 }
+
+trait Anonymous {
+  val f = (i: Int) => 42
+
+  val g = for (i <- List(1)) yield 42
+}

@@ -524,9 +524,10 @@ trait TypeDiagnostics {
                 case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
                 case _ =>
               }
-            case _: RefTree if sym ne null             => targets += sym
-            case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
-            case _                                     =>
+            case _: RefTree if sym ne null                    => targets += sym
+            case Assign(lhs, _) if lhs.symbol != null         => setVars += lhs.symbol
+            case Function(ps, _) if settings.warnUnusedParams => params ++= ps.map(_.symbol)
+            case _                                            =>
           }
 
           if (t.tpe ne null) {
