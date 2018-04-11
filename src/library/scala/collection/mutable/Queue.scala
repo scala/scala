@@ -96,7 +96,25 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  @param f   the predicate used for choosing elements
     *  @return
     */
-  def dequeueAll(f: A => Boolean): scala.collection.immutable.Seq[A] = removeHeadWhile(f)
+  def dequeueAll(f: A => Boolean): scala.collection.immutable.Seq[A] = {
+    val elems = scala.collection.immutable.Seq.newBuilder[A]()
+    var i, j = 0
+    while (i < size) {
+      if (!f(apply(i))) {
+        if (i != j) {
+          this(j) = this(i)
+        }
+        j += 1
+      } else {
+        elems  += this(i)
+      }
+      i += 1
+    }
+
+    if (i == j) this else takeInPlace(j)
+
+    elems.result()
+  }
 
   /** Returns the first element in the queue, or throws an error if there
     *  is no element contained in the queue.
