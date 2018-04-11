@@ -1,0 +1,18 @@
+lint-non-local-return.scala:6: warning: this `return` statement is invoked in a lazy val and will use an exception for control flow.
+    lazy val lzy: Int = return i * 2                // non-local
+                        ^
+lint-non-local-return.scala:10: warning: this `return` statement is invoked in an anonymous function and will use an exception for control flow.
+    else if (i == 2) invoke  { return i }           // non-local
+                               ^
+lint-non-local-return.scala:11: warning: this `return` statement is invoked in an anonymous function and will use an exception for control flow.
+    else if (i == 3) invoke1 { _ => return i }      // non-local
+                                    ^
+lint-non-local-return.scala:12: warning: this `return` statement is invoked in an anonymous function and will use an exception for control flow.
+    else if (i == 4) collect { case _ => return i } // non-local; cf. run/t10291.scala
+                                         ^
+lint-non-local-return.scala:31: warning: this `return` statement is invoked in an anonymous function and will use an exception for control flow.
+    ( try { 10/i } catch { case _: Exception => return 0 } ) + 1
+                                                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found
