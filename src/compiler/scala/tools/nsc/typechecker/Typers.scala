@@ -5373,7 +5373,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // because `expr` might contain nested macro calls (see scala/bug#6673).
           // Otherwise, (check for dead code, and) eta-expand.
           case MethodValue(expr) =>
-            typed1(suppressMacroExpansion(expr), mode, pt) match {
+            // Need to type in FUNmode so that we accept a method type (which also means we can't use our pt),
+            // this does mean no overloading is performed. The main reason to ignore pt and move to FUNmode is that
+            // the `m` in `m _` could involve an implicit conversion, which will go through adapt after converting,
+            // which will run afoul of the restriction that a method-typed tree is only allowed when a function type is expected.
+            // We peeled off the `_` marker for the typed1 call, so we don't know that the user has requested eta-expansion.
+            // See scala/bug#8299.
+            val funTyped = typed1(suppressMacroExpansion(expr), mode | FUNmode, WildcardType)
+            if (funTyped.tpe.isInstanceOf[OverloadedType]) inferExprAlternative(funTyped, pt)
+            funTyped match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
               case methodValue                                       => typedEta(checkDead(methodValue))
             }
