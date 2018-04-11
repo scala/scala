@@ -751,13 +751,16 @@ self =>
         placeholderParams = placeholderParams filter (_.name != name)
       }
       def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
+      def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
+        if (from.hasAttachment[NoWarnAttachment.type]) to.updateAttachment(NoWarnAttachment)
+        else to
       tree match {
-        case Ident(name) =>
+        case id @ Ident(name) =>
           removeAsPlaceholder(name)
-          makeParam(name.toTermName, TypeTree() setPos o2p(tree.pos.end))
-        case Typed(Ident(name), tpe) if tpe.isType => // get the ident!
+          propagateNoWarnAttachment(id, makeParam(name.toTermName, TypeTree() setPos o2p(tree.pos.end)))
+        case Typed(id @ Ident(name), tpe) if tpe.isType => // get the ident!
           removeAsPlaceholder(name)
-          makeParam(name.toTermName, tpe)
+          propagateNoWarnAttachment(id, makeParam(name.toTermName, tpe))
         case build.SyntacticTuple(as) =>
           val arity = as.length
           val example = analyzer.exampleTuplePattern(as map { case Ident(name) => name; case _ => nme.EMPTY })
@@ -1343,7 +1346,7 @@ self =>
       val id = atPos(start)(Ident(pname))
       val param = atPos(id.pos.focus)(gen.mkSyntheticParam(pname.toTermName))
       placeholderParams = param :: placeholderParams
-      id
+      id.updateAttachment(NoWarnAttachment)
     }
 
     private def interpolatedString(inPattern: Boolean): Tree = {
