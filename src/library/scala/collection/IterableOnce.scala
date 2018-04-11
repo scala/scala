@@ -113,6 +113,9 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use .iterator().foldRight instead of .foldLeft on IterableOnce", "2.13.0")
   @`inline` def foldRight[B](z: B)(op: (A, B) => B): B = it.iterator().foldRight(z)(op)
 
+  @deprecated("Use .iterator().fold instead of .fold on IterableOnce", "2.13.0")
+  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = it.iterator().fold(z)(op)
+
   @deprecated("Use .iterator().foldLeft instead of /: on IterableOnce", "2.13.0")
   @`inline` def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
 
@@ -464,6 +467,22 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   @deprecated("Use foldRight instead of :\\", "2.13.0")
   @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
+
+  /** Folds the elements of this $coll using the specified associative binary operator.
+    * The default implementation in `IterableOnce` is equivalent to `foldLeft` but may be
+    * overridden for more efficient traversal orders.
+    *
+    *  $undefinedorder
+    *  $willNotTerminateInf
+    *
+    *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
+    *  @param z       a neutral element for the fold operation; may be added to the result
+    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
+    *                 0 for addition, or 1 for multiplication).
+    *  @param op      a binary operator that must be associative.
+    *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
+    */
+  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.
     *
