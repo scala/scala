@@ -7,7 +7,7 @@ package interactive
 
 import java.io.{ FileReader, FileWriter }
 import scala.collection.mutable
-import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
+import mutable.{LinkedHashMap, HashSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
 import scala.reflect.internal.util.SourceFile
@@ -177,19 +177,17 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
    */
-  protected val toBeRemoved: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemoved: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
   /** A set containing all those files that need to be removed after a full background compiler run
    */
-  protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemovedAfterRun: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
   class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
     override def default(key: SourceFile): Set[Response[Tree]] = Set()
-    override def += (binding: (SourceFile, Set[Response[Tree]])) = {
+    override def addOne (binding: (SourceFile, Set[Response[Tree]])) = {
       assert(interruptsEnabled, "delayed operation within an ask")
-      super.+=(binding)
+      super.addOne(binding)
     }
   }
 
@@ -371,7 +369,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** The top level classes and objects no longer seen in the presentation compiler
    */
-  val deletedTopLevelSyms = new mutable.LinkedHashSet[Symbol] with mutable.SynchronizedSet[Symbol]
+  val deletedTopLevelSyms = new mutable.LinkedHashSet[Symbol]
 
   /** Called from typechecker every time a top-level class or object is entered.
    */
@@ -596,7 +594,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
 
     // move units removable after this run to the "to-be-removed" buffer
-    toBeRemoved ++= toBeRemovedAfterRun
+    toBeRemoved.synchronized {
+      toBeRemovedAfterRun.synchronized {
+        toBeRemoved ++= toBeRemovedAfterRun
+      }
+    }
 
     // clean out stale waiting responses
     cleanAllResponses()
@@ -672,7 +674,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     for (d <- deleted) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms += d
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
       currentTopLevelSyms -= d
     }
   }
@@ -735,8 +737,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private[interactive] def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
-    toBeRemoved -= source.file
-    toBeRemovedAfterRun -= source.file
+    toBeRemoved.synchronized { toBeRemoved -= source.file }
+    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun -= source.file }
     reset(unit)
     //parseAndEnter(unit)
   }
@@ -763,7 +765,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val deletedSyms = currentTopLevelSyms filter {sym => deletedFiles contains sym.sourceFile}
     for (d <- deletedSyms) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms += d
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
       currentTopLevelSyms -= d
     }
     sources foreach (removeUnitOf(_))
@@ -777,7 +779,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
    */
   private def afterRunRemoveUnitsOf(sources: List[SourceFile]) {
-    toBeRemovedAfterRun ++= sources map (_.file)
+    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun ++= sources map (_.file) }
   }
 
   /** A fully attributed tree located at position `pos` */

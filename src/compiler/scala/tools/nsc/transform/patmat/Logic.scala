@@ -9,6 +9,7 @@ package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
+import scala.collection.immutable.ImmutableArray
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
 
 trait Logic extends Debugging  {
@@ -356,7 +357,7 @@ trait Logic extends Debugging  {
 
       val pure = props map (p => rewriteEqualsToProp(p))
 
-      val eqAxioms = mutable.ArrayBuffer[Prop]()
+      val eqAxioms = ImmutableArray.newBuilder[Prop]()
       @inline def addAxiom(p: Prop) = eqAxioms += p
 
       debug.patmat("removeVarEq vars: "+ vars)
@@ -398,12 +399,13 @@ trait Logic extends Debugging  {
         }
       }
 
-      debug.patmat(s"eqAxioms:\n${eqAxioms.mkString("\n")}")
+      val eqAxiomsSeq = eqAxioms.result()
+      debug.patmat(s"eqAxioms:\n${eqAxiomsSeq.mkString("\n")}")
       debug.patmat(s"pure:${pure.mkString("\n")}")
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaVarEq, start)
 
-      (And(eqAxioms: _*), pure)
+      (And(eqAxiomsSeq: _*), pure)
     }
 
     type Solvable

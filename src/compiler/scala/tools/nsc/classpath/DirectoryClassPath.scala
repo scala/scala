@@ -66,7 +66,7 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends ClassPath {
       case None => emptyFiles
       case Some(directory) => listChildren(directory, Some(isMatchingFile))
     }
-    files.map(f => createFileEntry(toAbstractFile(f)))
+    files.iterator.map(f => createFileEntry(toAbstractFile(f))).toSeq
   }
 
   private[nsc] def list(inPackage: String): ClassPathEntries = {
@@ -236,7 +236,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   private val rootsForRelease: List[Path] = roots.filter(root => fileNameMatchesRelease(root.getFileName.toString))
 
   // e.g. "java.lang" -> Seq(/876/java/lang, /87/java/lang, /8/java/lang))
-  private val packageIndex: scala.collection.Map[String, Seq[Path]] = {
+  private val packageIndex: scala.collection.Map[String, scala.collection.Seq[Path]] = {
     val index = collection.mutable.AnyRefMap[String, collection.mutable.ListBuffer[Path]]()
     rootsForRelease.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach { p =>
       if (p.getNameCount > 1) {

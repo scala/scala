@@ -1,6 +1,6 @@
 object Test extends App {
   val subs = Macros.knownDirectSubclasses[Foo]
-  assert(subs == List("Wibble", "Wobble", "Bar", "Baz"))
+  assert(subs.toSet == Set("Wibble", "Wobble", "Bar", "Baz"), subs)
 }
 
 sealed trait Foo

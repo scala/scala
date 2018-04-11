@@ -8,13 +8,15 @@
 
 package scala.collection.concurrent;
 
+import java.lang.Object;
+
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class INodeBase<K, V> extends BasicNode {
 
-    @SuppressWarnings("rawtypes")
-    public static final AtomicReferenceFieldUpdater<INodeBase, MainNode> updater =
-            AtomicReferenceFieldUpdater.newUpdater(INodeBase.class, MainNode.class, "mainnode");
+    @SuppressWarnings("unchecked")
+    public static final AtomicReferenceFieldUpdater<INodeBase<?, ?>, MainNode<?, ?>> updater =
+            AtomicReferenceFieldUpdater.newUpdater((Class<INodeBase<?, ?>>) (Class<?>) INodeBase.class, (Class<MainNode<?, ?>>) (Class<?>) MainNode.class, "mainnode");
 
     public static final Object RESTART = new Object();
 
@@ -23,7 +25,7 @@ abstract class INodeBase<K, V> extends BasicNode {
     public final Gen gen;
 
     public INodeBase(Gen generation) {
-	gen = generation;
+        gen = generation;
     }
 
     public BasicNode prev() {

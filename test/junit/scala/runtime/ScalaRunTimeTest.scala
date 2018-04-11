@@ -35,12 +35,6 @@ class ScalaRunTimeTest {
     assertEquals(s"""${iterable.stringPrefix}(a, "", " c", null)""", stringOf(iterable))
     assertEquals(s"""${iterable.stringPrefix}(a, "")""", stringOf(iterable, 2))
 
-    val traversable = new Traversable[Int] {
-       def foreach[U](f: Int => U): Unit = (0 to 3).foreach(f)
-    }
-    assertEquals(s"${traversable.stringPrefix}(0, 1, 2, 3)", stringOf(traversable))
-    assertEquals(s"${traversable.stringPrefix}(0, 1)", stringOf(traversable, 2))
-
     val tuple1 = Tuple1(0)
     assertEquals("(0,)", stringOf(tuple1))
     assertEquals("(0,)", stringOf(tuple1, 0))

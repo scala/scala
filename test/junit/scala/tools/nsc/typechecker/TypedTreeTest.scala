@@ -22,6 +22,6 @@ class TypedTreeTest extends BytecodeTesting {
     run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
     val tree = run.units.next().body
     val List(t) = tree.filter(_.attachments.all.nonEmpty).toList
-    assertEquals(s"$t:${t.attachments.all}", "42:Set(OriginalTreeAttachment(O.x))")
+    assertEquals("42:Set(OriginalTreeAttachment(O.x))", s"$t:${t.attachments.all}")
   }
 }

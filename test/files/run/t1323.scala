@@ -17,7 +17,7 @@ object Test extends App {
   println("16:" + List().indexOfSlice(List(1,2,3,4)))           // -1
 
   // Do some testing with infinite sequences
-  def from(n: Int): Stream[Int] = Stream.cons(n, from(n + 1))
+  def from(n: Int): LazyList[Int] = LazyList.cons(n, from(n + 1))
 
   println("17:" + List(1,2,3,4).indexOfSlice(from(1)))          // -1
   println("18:" + from(1).indexOfSlice(List(4,5,6)))            // 3

@@ -10,8 +10,7 @@ trait DeliteDSL {
   case class DeliteInt(x: Int) extends Forcible[Int]
   implicit val forcibleInt = Forcible.factory(DeliteInt(_: Int))
 
-  import scala.collection.Traversable
-  class DeliteCollection[T](val xs: Traversable[T]) {
+  class DeliteCollection[T](val xs: Iterable[T]) {
     // must use existential in bound of P, instead of T itself, because we cannot both have:
         // Test.x below: DeliteCollection[T=Int] -> P=DeliteInt <: Forcible[T=Int], as T=Int <~< P=DeliteInt
         // Test.xAlready below: DeliteCollection[T=DeliteInt] -> P=DeliteInt <: Forcible[T=DeliteInt], as T=DeliteInt <~< P=DeliteInt

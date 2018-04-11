@@ -1,27 +1,28 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
 package scala
 package collection
 package immutable
 
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.generic._
 import scala.collection.mutable.{Builder, ReusableBuilder}
 
-/** Companion object to the Vector class
- */
-object Vector extends IndexedSeqFactory[Vector] {
-  def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
-    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+import scala.annotation.unchecked.uncheckedVariance
+
+/** $factoryInfo
+  * @define Coll `Vector`
+  * @define coll vector
+  */
+object Vector extends StrictOptimizedSeqFactory[Vector] {
+
+  def empty[A]: Vector[A] = NIL
+
+  def from[E](it: collection.IterableOnce[E]): Vector[E] =
+    it match {
+      case v: Vector[E] => v
+      case _            => (newBuilder() ++= it).result()
+    }
+
+  def newBuilder[A](): Builder[A, Vector[A]] = new VectorBuilder[A]
+
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
-  override def empty[A]: Vector[A] = NIL
 
   // Constants governing concat strategy for performance
   private final val Log2ConcatFaster = 5
@@ -59,58 +60,45 @@ object Vector extends IndexedSeqFactory[Vector] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@SerialVersionUID(-1334388273712300479L)
+@SerialVersionUID(3L)
 final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
-extends AbstractSeq[A]
-   with IndexedSeq[A]
-   with GenericTraversableTemplate[A, Vector]
-   with IndexedSeqLike[A, Vector[A]]
-   with VectorPointer[A @uncheckedVariance]
-   with Serializable
-{ self =>
+  extends IndexedSeq[A]
+    with IndexedSeqOps[A, Vector, Vector[A]]
+    with StrictOptimizedSeqOps[A, Vector, Vector[A]]
+    with VectorPointer[A @uncheckedVariance]
+    with Serializable { self =>
 
-  override def companion: GenericCompanion[Vector] = Vector
+  override def iterableFactory: SeqFactory[Vector] = Vector
 
   private[immutable] var dirty = false
 
-  def length = endIndex - startIndex
-
-  override def toVector: Vector[A] = this
+  def length: Int = endIndex - startIndex
 
   override def lengthCompare(len: Int): Int = length - len
 
-  private[collection] final def initIterator[B >: A](s: VectorIterator[B]) {
+  private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit = {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
 
-  override def iterator: VectorIterator[A] = {
+  override def iterator(): VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     initIterator(s)
     s
-  }
-
-  override /*SeqLike*/
-  def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = self.length
-    def hasNext: Boolean = 0 < i
-    def next(): A =
-      if (0 < i) {
-        i -= 1
-        self(i)
-      } else Iterator.empty.next()
   }
 
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
   // In principle, escape analysis could even remove the iterator/builder allocations and do it
   // with local variables exclusively. But we're not quite there yet ...
 
+  @throws[IndexOutOfBoundsException]
   def apply(index: Int): A = {
     val idx = checkRangeConvert(index)
     getElem(idx, idx ^ focus)
   }
 
+  @throws[IndexOutOfBoundsException]
   private def checkRangeConvert(index: Int) = {
     val idx = index + startIndex
     if (index >= 0 && idx < endIndex)
@@ -119,26 +107,7 @@ extends AbstractSeq[A]
       throw new IndexOutOfBoundsException(index.toString)
   }
 
-  // If we have a default builder, there are faster ways to perform some operations
-  @inline private[this] def isDefaultCBF[A, B, That](bf: CanBuildFrom[Vector[A], B, That]): Boolean =
-    (bf eq IndexedSeq.ReusableCBF) || (bf eq collection.immutable.Seq.ReusableCBF) || (bf eq collection.Seq.ReusableCBF)
-
-  // SeqLike api
-
-  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (isDefaultCBF[A, B, That](bf))
-      updateAt(index, elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
-    else super.updated(index, elem)(bf)
-
-  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (isDefaultCBF[A, B, That](bf))
-      appendFront(elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
-    else super.+:(elem)(bf)
-
-  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (isDefaultCBF(bf))
-      appendBack(elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
-    else super.:+(elem)(bf)
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = updateAt(index, elem)
 
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
@@ -176,61 +145,67 @@ extends AbstractSeq[A]
       Vector.empty
   }
 
-  override /*IterableLike*/
-  def head: A = {
+  override def head: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.head")
     apply(0)
   }
 
-  override /*TraversableLike*/
-  def tail: Vector[A] = {
+  override def tail: Vector[A] = {
     if (isEmpty) throw new UnsupportedOperationException("empty.tail")
     drop(1)
   }
 
-  override /*TraversableLike*/
-  def last: A = {
+  override def last: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.last")
     apply(length - 1)
   }
 
-  override /*TraversableLike*/
-  def init: Vector[A] = {
+  override def init: Vector[A] = {
     if (isEmpty) throw new UnsupportedOperationException("empty.init")
     dropRight(1)
   }
 
-  override /*IterableLike*/
-  def slice(from: Int, until: Int): Vector[A] =
-    take(until).drop(from)
-
-  override /*IterableLike*/
-  def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
-
-  // concat (suboptimal but avoids worst performance gotchas)
-  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
-    if (isDefaultCBF(bf)) {
-      // We are sure we will create a Vector, so let's do it efficiently
-      import Vector.{Log2ConcatFaster, TinyAppendFaster}
-      if (that.isEmpty) this.asInstanceOf[That]
-      else {
-        val again = if (!that.isTraversableAgain) that.toVector else that.seq
-        again.size match {
-          // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
-          case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
-            var v: Vector[B] = this
-            for (x <- again) v = v :+ x
-            v.asInstanceOf[That]
-          case n if this.size < (n >>> Log2ConcatFaster) && again.isInstanceOf[Vector[_]] =>
-            var v = again.asInstanceOf[Vector[B]]
-            val ri = this.reverseIterator
-            while (ri.hasNext) v = ri.next +: v
-            v.asInstanceOf[That]
-          case _ => super.++(again)
-        }
+  // appendAll (suboptimal but avoids worst performance gotchas)
+  override def appendedAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
+    import Vector.{Log2ConcatFaster, TinyAppendFaster}
+    if (suffix.isEmpty) this
+    else {
+      suffix.size match {
+        // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+          var v: Vector[B] = this
+          for (x <- suffix) v = v :+ x
+          v
+        case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
+          var v = suffix.asInstanceOf[Vector[B]]
+          val ri = this.reverseIterator()
+          while (ri.hasNext) v = ri.next() +: v
+          v
+        case _ => super.appendedAll(suffix)
       }
     }
-    else super.++(that.seq)
+  }
+
+  override def prependedAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
+    // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
+    // has a small number of elements compared to the other, then we add them using `:+` or `+:` in a loop
+    import Vector.{Log2ConcatFaster, TinyAppendFaster}
+    if (prefix.isEmpty) this
+    else {
+      prefix.size match {
+        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+          var v: Vector[B] = this
+          val it = prefix.toIndexedSeq.reverseIterator()
+          while (it.hasNext) v = it.next() +: v
+          v
+        case n if this.size < (n >>> Log2ConcatFaster) && prefix.isInstanceOf[Vector[_]] =>
+          var v = prefix.asInstanceOf[Vector[B]]
+          val it = this.iterator()
+          while (it.hasNext) v = v :+ it.next()
+          v
+        case _ => super.prependedAll(prefix)
+      }
+    }
   }
 
   // semi-private api
@@ -259,7 +234,7 @@ extends AbstractSeq[A]
     dirty = true
   }
 
-  private[immutable] def appendFront[B >: A](value: B): Vector[B] = {
+  override def prepended[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
@@ -337,7 +312,7 @@ extends AbstractSeq[A]
     }
   }
 
-  private[immutable] def appendBack[B >: A](value: B): Vector[B] = {
+  override def appended[B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31
@@ -577,12 +552,13 @@ extends AbstractSeq[A]
     s.cleanRightEdge(cutIndex - shift)
     s
   }
+
+  override def toVector: Vector[A] = this
 }
 
 class VectorIterator[+A](_startIndex: Int, endIndex: Int)
-extends AbstractIterator[A]
-   with Iterator[A]
-   with VectorPointer[A @uncheckedVariance] {
+  extends AbstractIterator[A]
+    with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
@@ -617,6 +593,8 @@ extends AbstractIterator[A]
 
   private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
 
+  override def knownSize: Int = remainingElementCount
+
   /** Creates a new vector which consists of elements remaining in this iterator.
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */
@@ -639,7 +617,11 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   private var blockIndex = 0
   private var lo = 0
 
-  def +=(elem: A): this.type = {
+  def size: Int = blockIndex + lo
+  def isEmpty: Boolean = size == 0
+  def nonEmpty: Boolean = size != 0
+
+  def addOne(elem: A): this.type = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32
       gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)
@@ -651,10 +633,8 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type = super.++=(xs)
-
-  def result: Vector[A] = {
-    val size = blockIndex + lo
+  def result(): Vector[A] = {
+    val size = this.size
     if (size == 0)
       return Vector.empty
     val s = new Vector[A](0, size, 0) // should focus front or back?

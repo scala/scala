@@ -8,7 +8,7 @@
 
 package scala
 
-import scala.collection.{ mutable, immutable, generic, SortedSetLike, AbstractSet }
+import scala.collection.{ mutable, immutable, StrictOptimizedIterableOps, SpecificIterableFactory, View }
 import java.lang.reflect.{ Method => JMethod, Field => JField }
 import scala.reflect.NameTransformer._
 import scala.util.matching.Regex
@@ -266,10 +266,10 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *  @define Coll `collection.immutable.SortedSet`
    */
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
-  extends AbstractSet[Value]
-     with immutable.SortedSet[Value]
-     with SortedSetLike[Value, ValueSet]
-     with Serializable {
+    extends immutable.SortedSet[Value]
+      with immutable.SetOps[Value, immutable.Set, ValueSet]
+      with StrictOptimizedIterableOps[Value, immutable.Set, ValueSet]
+      with Serializable {
 
     implicit def ordering: Ordering[Value] = ValueOrdering
     def rangeImpl(from: Option[Value], until: Option[Value]): ValueSet =
@@ -277,39 +277,37 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
     override def empty = ValueSet.empty
     def contains(v: Value) = nnIds contains (v.id - bottomId)
-    def + (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
-    def - (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
+    def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
+    def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
     def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
-    override def keysIteratorFrom(start: Value) = nnIds keysIteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
-    override def stringPrefix = thisenum + ".ValueSet"
+    override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
+    override def className = thisenum + ".ValueSet"
     /** Creates a bit mask for the zero-adjusted ids in this set as a
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
+
+    override protected[this] def fromSpecificIterable(coll: Iterable[Value]) = ValueSet.fromSpecific(coll)
+    override protected[this] def newSpecificBuilder() = ValueSet.newBuilder
+
+    def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
+    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
   }
 
   /** A factory object for value sets */
-  object ValueSet {
-    import generic.CanBuildFrom
-
+  object ValueSet extends SpecificIterableFactory[Value, ValueSet] {
     /** The empty value set */
     val empty = new ValueSet(immutable.BitSet.empty)
-    /** A value set consisting of given elements */
-    def apply(elems: Value*): ValueSet = (newBuilder ++= elems).result()
     /** A value set containing all the values for the zero-adjusted ids
      *  corresponding to the bits in an array */
     def fromBitMask(elems: Array[Long]): ValueSet = new ValueSet(immutable.BitSet.fromBitMask(elems))
     /** A builder object for value sets */
     def newBuilder: mutable.Builder[Value, ValueSet] = new mutable.Builder[Value, ValueSet] {
       private[this] val b = new mutable.BitSet
-      def += (x: Value) = { b += (x.id - bottomId); this }
+      def addOne (x: Value) = { b += (x.id - bottomId); this }
       def clear() = b.clear()
       def result() = new ValueSet(b.toImmutable)
     }
-    /** The implicit builder for value sets */
-    implicit def canBuildFrom: CanBuildFrom[ValueSet, Value, ValueSet] =
-      new CanBuildFrom[ValueSet, Value, ValueSet] {
-        def apply(from: ValueSet) = newBuilder
-        def apply() = newBuilder
-      }
+    def fromSpecific(it: IterableOnce[Value]): ValueSet =
+      newBuilder.addAll(it).result()
   }
 }

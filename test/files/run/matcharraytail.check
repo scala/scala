@@ -1,2 +1,2 @@
 Array(foo, bar, baz)
-Vector(bar, baz)
+ImmutableArray(bar, baz)

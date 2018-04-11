@@ -37,10 +37,10 @@ trait SigTest {
   def methodsNamed[T: ClassTag](name: String) = methods[T](_.getName == name)
 
   def allGenericStrings[T: ClassTag]() =
-    (allMethods[T]() map mstr) ++ (allFields[T]() map fstr)
+    allMethods[T]().map(mstr _) ++ allFields[T]().map(fstr _)
 
   def genericStrings[T: ClassTag](name: String) =
-    (methodsNamed[T](name) map mstr) ++ (fieldsNamed[T](name) map fstr)
+    methodsNamed[T](name).map(mstr _) ++ fieldsNamed[T](name).map(fstr _)
 
   def show[T: ClassTag](name: String = "") = {
     println(classTag[T].runtimeClass.getName)

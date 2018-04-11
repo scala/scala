@@ -1,5 +1,5 @@
-Map(a -> Some(1), b -> None)
-Map(a -> 1)
+ChampHashMap(a -> Some(1), b -> None)
+ChampHashMap(a -> 1)
 a
 undefined
 a

@@ -394,10 +394,10 @@ trait Definitions extends api.StandardDefinitions {
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
 
     def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
-    def isJavaVarArgs(params: Seq[Symbol])  = !params.isEmpty && isJavaRepeatedParamType(params.last.tpe)
-    def isScalaVarArgs(params: Seq[Symbol]) = !params.isEmpty && isScalaRepeatedParamType(params.last.tpe)
-    def isVarArgsList(params: Seq[Symbol])  = !params.isEmpty && isRepeatedParamType(params.last.tpe)
-    def isVarArgTypes(formals: Seq[Type])   = !formals.isEmpty && isRepeatedParamType(formals.last)
+    def isJavaVarArgs(params: scala.collection.Seq[Symbol])  = !params.isEmpty && isJavaRepeatedParamType(params.last.tpe)
+    def isScalaVarArgs(params: scala.collection.Seq[Symbol]) = !params.isEmpty && isScalaRepeatedParamType(params.last.tpe)
+    def isVarArgsList(params: scala.collection.Seq[Symbol])  = !params.isEmpty && isRepeatedParamType(params.last.tpe)
+    def isVarArgTypes(formals: scala.collection.Seq[Type])   = !formals.isEmpty && isRepeatedParamType(formals.last)
 
     def firstParamType(tpe: Type): Type = tpe.paramTypes match {
       case p :: _ => p

@@ -7,7 +7,7 @@
  */
 object Test {
   private final val INFINITE = -1
-  def testStreamIterator(num: Int, stream: Stream[Int]): Unit = {
+  def testLazyListIterator(num: Int, stream: LazyList[Int]): Unit = {
     val iter = stream.iterator
     print(num)
     // if num == -1, then steram is infinite sequence
@@ -24,15 +24,15 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    import Stream.{from, cons, empty}
-    testStreamIterator(INFINITE, from(0))
-    testStreamIterator(INFINITE, from(0).filter(_ % 2 == 1))
-    testStreamIterator(1, Stream(1))
-    testStreamIterator(2, Stream(1, 2))
-    //Stream with side effect
-    testStreamIterator(2, cons(1, cons({ print(" A"); 2}, empty)))
-    testStreamIterator(3, Stream(1, 2, 3))
-    //Stream with side effect
-    testStreamIterator(3, cons(1, cons({ print(" A"); 2}, cons({ print(" B"); 3}, Stream.empty))))
+    import LazyList.{from, cons, empty}
+    testLazyListIterator(INFINITE, from(0))
+    testLazyListIterator(INFINITE, from(0).filter(_ % 2 == 1))
+    testLazyListIterator(1, LazyList(1))
+    testLazyListIterator(2, LazyList(1, 2))
+    //LazyList with side effect
+    testLazyListIterator(2, cons(1, cons({ print(" A"); 2}, empty)))
+    testLazyListIterator(3, LazyList(1, 2, 3))
+    //LazyList with side effect
+    testLazyListIterator(3, cons(1, cons({ print(" A"); 2}, cons({ print(" B"); 3}, LazyList.empty))))
   }
 }

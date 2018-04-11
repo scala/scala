@@ -36,10 +36,10 @@ class FutureTests extends MinimalScalaTest {
 
   "A future with custom ExecutionContext" should {
     "shouldHandleThrowables" in {
-      val ms = new mutable.HashSet[Throwable] with mutable.SynchronizedSet[Throwable]
+      val ms = new concurrent.TrieMap[Throwable, Unit]
       implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(), {
         t =>
-        ms += t
+        ms += (t -> ())
       })
 
       class ThrowableTest(m: String) extends Throwable(m)

@@ -20,7 +20,7 @@ object Test {
 
   def check[S <: Set[Foo]](set: S) {
     def output(s: Set[Foo]) = println(s.toList.sorted.mkString(","))
-    output(set + new Foo("bar", 2))
+    output(set ++ List(new Foo("bar", 2)))
     output(set ++ List(new Foo("bar", 2), new Foo("bar", 3), new Foo("bar", 4)))
     output(set union Set(new Foo("bar", 2), new Foo("baz", 3), new Foo("bazz", 4)))
   }

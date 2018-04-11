@@ -1,7 +1,10 @@
-package scala.collection.mutable
+package scala
+package collection.mutable
 
 import scala.annotation.tailrec
-import scala.collection.Iterator
+import collection.Iterator
+
+import java.lang.String
 
 /**
  * An object containing the red-black tree implementation used by mutable `TreeMaps`.
@@ -21,10 +24,10 @@ private[collection] object RedBlackTree {
   // Therefore, while obtaining the size of the whole tree is O(1), knowing the number of entries inside a range is O(n)
   // on the size of the range.
 
-  @SerialVersionUID(21575944040195605L)
+  @SerialVersionUID(3L)
   final class Tree[A, B](var root: Node[A, B], var size: Int) extends Serializable
 
-  @SerialVersionUID(1950599696441054720L)
+  @SerialVersionUID(3L)
   final class Node[A, B](var key: A, var value: B, var red: Boolean,
                          var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) extends Serializable {
 
@@ -37,11 +40,11 @@ private[collection] object RedBlackTree {
 
   object Node {
 
-    @inline def apply[A, B](key: A, value: B, red: Boolean,
+    @`inline` def apply[A, B](key: A, value: B, red: Boolean,
                             left: Node[A, B], right: Node[A, B], parent: Node[A, B]): Node[A, B] =
       new Node(key, value, red, left, right, parent)
 
-    @inline def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B]): Node[A, B] =
+    @`inline` def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B]): Node[A, B] =
       new Node(key, value, red, null, null, parent)
 
     def unapply[A, B](t: Node[A, B]) = Some((t.key, t.value, t.left, t.right, t.parent))
@@ -65,6 +68,12 @@ private[collection] object RedBlackTree {
     case null => None
     case node => Some(node.value)
   }
+
+  def getKey[A : Ordering](tree: Tree[A, _], key: A): Option[A] =
+    getNode(tree.root, key) match {
+      case null => None
+      case node => Some(node.key)
+    }
 
   @tailrec private[this] def getNode[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] =
     if (node eq null) null
@@ -471,6 +480,7 @@ private[collection] object RedBlackTree {
 
     def hasNext: Boolean = nextNode ne null
 
+    @throws[NoSuchElementException]
     def next(): R = nextNode match {
       case null => throw new NoSuchElementException("next on empty iterator")
       case node =>

@@ -61,7 +61,7 @@ package object sys {
    *
    *  @return   a Map containing the system environment variables.
    */
-  def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
+  def env: immutable.Map[String, String] = immutable.Map.from(System.getenv().asScala)
 
   /** Register a shutdown hook to be run when the VM exits.
    *  The hook is automatically registered: the returned value can be ignored,
@@ -85,6 +85,6 @@ package object sys {
     val tarray = new Array[Thread](num)
     val got    = Thread.enumerate(tarray)
 
-    tarray take got
+    immutable.ImmutableArray.unsafeWrapArray(tarray).take(got)
   }
 }

@@ -488,7 +488,7 @@ abstract class Erasure extends InfoTransform
      *  @param  other    The overridden symbol for which the bridge was generated
      *  @param  bridge   The bridge
      */
-    def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Seq[(Position, String)] = {
+    def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): scala.collection.Seq[(Position, String)] = {
       def fulldef(sym: Symbol) =
         if (sym == NoSymbol) sym.toString
         else s"$sym: ${sym.tpe} in ${sym.owner}"

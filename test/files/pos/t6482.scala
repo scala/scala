@@ -1,4 +1,4 @@
-final class TraversableOnceOps[+A](val collection: TraversableOnce[A]) extends AnyVal {
+final class IterableOnceOps[+A](val collection: Iterable[A]) extends AnyVal {
   def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] =
     if (collection.isEmpty) None else Some(collection.reduceLeft[B](op))
 }

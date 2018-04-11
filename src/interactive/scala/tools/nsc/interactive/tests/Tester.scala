@@ -119,7 +119,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   val testComment = "/**/"
 
   def testFileChanges(sfidx: Int) = {
-    lazy val testPositions: Seq[Int] = {
+    lazy val testPositions: scala.collection.Seq[Int] = {
       val sf = inputs(sfidx)
       val buf = new ArrayBuffer[Int]
       var pos = sf.content.indexOfSlice(testComment)
@@ -153,7 +153,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     }
   }
 
-  def doTest(sfidx: Int, changes: Seq[Change], testPositions: Seq[Int], otherTest: () => Unit): Option[ErrorTrace] = {
+  def doTest(sfidx: Int, changes: scala.collection.Seq[Change], testPositions: scala.collection.Seq[Int], otherTest: () => Unit): Option[ErrorTrace] = {
     print("new round with "+changes.length+" changes:")
     changes foreach (_.deleteAll())
     otherTest()
@@ -169,7 +169,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   }
 
   case class ErrorTrace(
-    sfidx: Int, changes: Seq[Change], infos: scala.collection.Set[reporter.Info], content: Array[Char]) {
+    sfidx: Int, changes: scala.collection.Seq[Change], infos: scala.collection.Set[reporter.Info], content: Array[Char]) {
     override def toString =
       "Sourcefile: "+inputs(sfidx)+
       "\nChanges:\n  "+changes.mkString("\n  ")+

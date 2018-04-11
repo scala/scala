@@ -66,6 +66,26 @@ object TreeSetTest extends Properties("TreeSet") {
     elements.max == subject.last
   }}
 
+  property("minAfter") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
+    val half = elements.take(elements.size / 2)
+    val subject = TreeSet(half: _*)
+    elements.forall{e => {
+      val temp = subject.from(e)
+      if (temp.isEmpty) subject.minAfter(e).isEmpty
+      else subject.minAfter(e).get == temp.min
+    }}
+  }}
+
+  property("maxBefore") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
+    val half = elements.take(elements.size / 2)
+    val subject = TreeSet(half: _*)
+    elements.forall{e => {
+      val temp = subject.from(e)
+      if (temp.isEmpty) subject.minAfter(e).isEmpty
+      else subject.minAfter(e).get == temp.min
+    }}
+  }}
+
   property("head/tail identity") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     subject == (subject.tail + subject.head)
   }}
@@ -130,7 +150,7 @@ object TreeSetTest extends Properties("TreeSet") {
   property("to is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val to = subject.drop(n).firstKey
-    subject.to(to).lastKey == to && subject.to(to).forall(_ <= to)
+    subject.rangeTo(to).lastKey == to && subject.rangeTo(to).forall(_ <= to)
   }}
 
   property("until is exclusive") = forAll { (subject: TreeSet[Int]) => subject.size > 1 ==> {

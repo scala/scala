@@ -1,44 +1,76 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
 package scala
 package collection
 package immutable
 
-import generic._
-import mutable.Builder
 
-/** A subtrait of `collection.Seq` which represents sequences
- *  that are guaranteed immutable.
- *
- *  $seqInfo
- *  @define Coll `immutable.Seq`
- *  @define coll immutable sequence
- */
 trait Seq[+A] extends Iterable[A]
-//                      with GenSeq[A]
-                      with scala.collection.Seq[A]
-                      with GenericTraversableTemplate[A, Seq]
-                      with SeqLike[A, Seq[A]]
-{
-  override def companion: GenericCompanion[Seq] = Seq
-  override def toSeq: Seq[A] = this
-  override def seq: Seq[A] = this
+                 with collection.Seq[A]
+                 with SeqOps[A, Seq, Seq[A]] {
+
+  override final def toSeq: this.type = this
+
+  override def iterableFactory: SeqFactory[IterableCC] = Seq
 }
 
-/** $factoryInfo
- *  @define Coll `immutable.Seq`
- *  @define coll immutable sequence
- */
-object Seq extends SeqFactory[Seq] {
-  /** genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Seq[A]] = new mutable.ListBuffer
+/**
+  * @define coll immutable sequence
+  * @define Coll `immutable.Seq`
+  */
+trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C] {
+
+  /** A copy of this $coll with one single replaced element.
+    *  @param  index  the position of the replacement
+    *  @param  elem   the replacing element
+    *  @tparam B        the element type of the returned $coll.
+    *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
+    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
+    */
+  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
 }
+
+/**
+  * $factoryInfo
+  * @define coll immutable sequence
+  * @define Coll `immutable.Seq`
+  */
+object Seq extends SeqFactory.Delegate[Seq](List)
+
+/** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
+trait IndexedSeq[+A] extends Seq[A]
+                        with collection.IndexedSeq[A]
+                        with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+
+  final override def toIndexedSeq: IndexedSeq[A] = this
+
+  override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
+}
+
+object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
+
+/** Base trait for immutable indexed Seq operations */
+trait IndexedSeqOps[+A, +CC[_], +C]
+  extends SeqOps[A, CC, C]
+    with collection.IndexedSeqOps[A, CC, C] {
+
+  override def slice(from: Int, until: Int): C = {
+    // since we are immutable we can just share the same collection
+    if (from <= 0 && until >= length) coll
+    else super.slice(from, until)
+  }
+
+}
+
+/** Base trait for immutable linear sequences that have efficient `head` and `tail` */
+trait LinearSeq[+A]
+  extends Seq[A]
+    with collection.LinearSeq[A]
+    with LinearSeqOps[A, LinearSeq, LinearSeq[A]] {
+
+  override def iterableFactory: SeqFactory[IterableCC] = LinearSeq
+}
+
+object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)
+
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]]
+  extends Any with SeqOps[A, CC, C]
+    with collection.LinearSeqOps[A, CC, C]

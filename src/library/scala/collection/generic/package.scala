@@ -1,8 +1,9 @@
-package scala
-package collection
+package scala.collection
 
-import scala.language.higherKinds
 
 package object generic {
-  type CanBuild[-Elem, +To] = CanBuildFrom[Nothing, Elem, To]
+  @deprecated("Clearable was moved from collection.generic to collection.mutable", "2.13.0")
+  type Clearable = scala.collection.mutable.Clearable
+  @deprecated("Use scala.collection.BuildFrom instead", "2.13.0")
+  type CanBuildFrom[-From, -A, +C] = scala.collection.BuildFrom[From, A, C]
 }

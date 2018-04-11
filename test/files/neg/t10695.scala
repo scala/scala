@@ -5,7 +5,7 @@ object Main extends App {
 
   val node: raw.Node = null
 
-  Seq().fold(node)(_ => _)
+  Seq().foldLeft(node)(_ => _)
 
 }
 

@@ -6,12 +6,12 @@ t7187.scala:11: error: type mismatch;
  required: () => Any
   val t2a: () => Any = bar   // error: no eta-expansion of zero-arglist-methods
                        ^
-t7187.scala:12: error: not enough arguments for method apply: (index: Int)Char in class StringOps.
-Unspecified value parameter index.
+t7187.scala:12: error: not enough arguments for method apply: (i: Int)Char in class StringOps.
+Unspecified value parameter i.
   val t2b: () => Any = bar() // error: bar doesn't take arguments, so expanded to bar.apply(), which misses an argument
                           ^
-t7187.scala:15: error: not enough arguments for method apply: (index: Int)Char in class StringOps.
-Unspecified value parameter index.
+t7187.scala:15: error: not enough arguments for method apply: (i: Int)Char in class StringOps.
+Unspecified value parameter i.
   val t2e: Any       = bar() _ // error: not enough arguments for method apply
                           ^
 t7187.scala:18: error: type mismatch;

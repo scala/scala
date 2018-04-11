@@ -2502,7 +2502,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
         val statsTyped2 = statsTyped match {
-          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs remove vd.symbol => Nil
+          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs.remove(vd.symbol).isDefined => Nil
           case _ => statsTyped
         }
 
@@ -4006,8 +4006,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
-      var localSyms = immutable.Set[Symbol]()
-      var boundSyms = immutable.Set[Symbol]()
+      val localSyms = mutable.LinkedHashSet.empty[Symbol]
+      val boundSyms = mutable.Set.empty[Symbol]
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))

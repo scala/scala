@@ -10,10 +10,9 @@ package scala
 
 import scala.language.implicitConversions
 
-import scala.collection.{ mutable, immutable, generic }
-import immutable.StringOps
-import mutable.ArrayOps
-import generic.CanBuildFrom
+import scala.collection.{ StringOps, StringView }
+import scala.collection.{ mutable, immutable, ArrayOps }
+import scala.collection.immutable.{ ImmutableArray, WrappedString }
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.io.StdIn
@@ -351,15 +350,8 @@ object Predef extends LowPriorityImplicits {
     override def toString                               = arrayOfChars mkString ""
   }
 
-  implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
-    def apply(from: String) = apply()
-    def apply()             = mutable.StringBuilder.newBuilder
-  }
-
   /** @group conversions-string */
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
-  /** @group conversions-string */
-  @inline implicit def unaugmentString(x: StringOps): String = x.repr
 
   // printing -----------------------------------------------------------
 
@@ -404,30 +396,19 @@ object Predef extends LowPriorityImplicits {
   implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
   implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
 
-  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
-    case x: Array[AnyRef]  => refArrayOps[AnyRef](x)
-    case x: Array[Boolean] => booleanArrayOps(x)
-    case x: Array[Byte]    => byteArrayOps(x)
-    case x: Array[Char]    => charArrayOps(x)
-    case x: Array[Double]  => doubleArrayOps(x)
-    case x: Array[Float]   => floatArrayOps(x)
-    case x: Array[Int]     => intArrayOps(x)
-    case x: Array[Long]    => longArrayOps(x)
-    case x: Array[Short]   => shortArrayOps(x)
-    case x: Array[Unit]    => unitArrayOps(x)
-    case null              => null
-  }).asInstanceOf[ArrayOps[T]]
-
-  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps.ofBoolean   = new ArrayOps.ofBoolean(xs)
-  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps.ofByte            = new ArrayOps.ofByte(xs)
-  implicit def charArrayOps(xs: Array[Char]): ArrayOps.ofChar            = new ArrayOps.ofChar(xs)
-  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps.ofDouble      = new ArrayOps.ofDouble(xs)
-  implicit def floatArrayOps(xs: Array[Float]): ArrayOps.ofFloat         = new ArrayOps.ofFloat(xs)
-  implicit def intArrayOps(xs: Array[Int]): ArrayOps.ofInt               = new ArrayOps.ofInt(xs)
-  implicit def longArrayOps(xs: Array[Long]): ArrayOps.ofLong            = new ArrayOps.ofLong(xs)
-  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps.ofRef[T] = new ArrayOps.ofRef[T](xs)
-  implicit def shortArrayOps(xs: Array[Short]): ArrayOps.ofShort         = new ArrayOps.ofShort(xs)
-  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps.ofUnit            = new ArrayOps.ofUnit(xs)
+  // Not specialized anymore since 2.13 but we still need separate methods
+  // to avoid https://github.com/scala/bug/issues/10746
+  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T]          = new ArrayOps(xs)
+  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps(xs)
+  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps(xs)
+  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps(xs)
+  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps(xs)
+  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps(xs)
+  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps(xs)
+  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps(xs)
+  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps(xs)
+  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps(xs)
+  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps(xs)
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
@@ -570,9 +551,9 @@ object Predef extends LowPriorityImplicits {
 // scala/bug#7335 Parents of Predef are defined in the same compilation unit to avoid
 // cyclic reference errors compiling the standard library *without* a previously
 // compiled copy on the classpath.
-private[scala] abstract class LowPriorityImplicits {
+private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2 {
   import mutable.WrappedArray
-  import immutable.WrappedString
+  //import immutable.WrappedString
 
   /** We prefer the java.lang.* boxed types to these wrappers in
    *  any potential conflicts.  Conflicts do exist because the wrappers
@@ -602,39 +583,38 @@ private[scala] abstract class LowPriorityImplicits {
   // is as good as another for all T <: AnyRef.  Instead of creating 100,000,000
   // unique ones by way of this implicit, let's share one.
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
+  implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray.ofRef[T] = {
     if (xs eq null) null
-    else if (xs.length == 0) WrappedArray.empty[T]
+    else if (xs.length == 0) WrappedArray.empty[AnyRef].asInstanceOf[WrappedArray.ofRef[T]]
     else new WrappedArray.ofRef[T](xs)
   }
 
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
+  implicit def wrapIntArray(xs: Array[Int]): WrappedArray.ofInt = if (xs ne null) new WrappedArray.ofInt(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray.ofDouble = if (xs ne null) new WrappedArray.ofDouble(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
+  implicit def wrapLongArray(xs: Array[Long]): WrappedArray.ofLong = if (xs ne null) new WrappedArray.ofLong(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray.ofFloat = if (xs ne null) new WrappedArray.ofFloat(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
+  implicit def wrapCharArray(xs: Array[Char]): WrappedArray.ofChar = if (xs ne null) new WrappedArray.ofChar(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
+  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray.ofByte = if (xs ne null) new WrappedArray.ofByte(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+  implicit def wrapShortArray(xs: Array[Short]): WrappedArray.ofShort = if (xs ne null) new WrappedArray.ofShort(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
+  implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray.ofBoolean = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
   /** @group conversions-array-to-wrapped-array */
-  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
+  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray.ofUnit = if (xs ne null) new WrappedArray.ofUnit(xs) else null
 
   /** @group conversions-string */
   implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
-  /** @group conversions-string */
-  implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
+}
 
-  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
-    new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
-      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
-      def apply() = immutable.IndexedSeq.newBuilder[T]
-    }
+private[scala] abstract class LowPriorityImplicits2 {
+  @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ImmutableArray.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
+  implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =
+    if (xs eq null) null
+    else new ArrayOps(xs).toIndexedSeq
 }

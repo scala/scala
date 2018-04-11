@@ -10,6 +10,7 @@ class IndexedSeqOptimizedTest {
 
   @Test
   def notThrowsAnExceptionInLastIndexOf() {
+    assertEquals(0, Array(2).lastIndexWhere(_ => true, 1))
     assertEquals(0, (Array(2): collection.mutable.WrappedArray[Int]).lastIndexWhere(_ => true, 1))
     assertEquals(2, "abc123".lastIndexWhere(_.isLetter, 6))
   }

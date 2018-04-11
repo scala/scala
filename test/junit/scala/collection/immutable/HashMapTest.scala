@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 class HashMapTest {
 
   private val computeHashF = {
-    HashMap.empty.computeHash _
+    scala.collection.Hashing.computeHash _
   }
 
   @Test
@@ -44,5 +44,13 @@ class HashMapTest {
       throw new RuntimeException("Should not be reached.")
     }
     assertEquals(expected, mergedWithMergeFunction)
+  }
+
+  @Test
+  def testWithDefaultValue: Unit = {
+    val m1 = HashMap(1 -> "a", 2 -> "b")
+    val m2 = m1.withDefaultValue(0)
+    assertEquals("a", m2(1))
+    assertEquals(0, m2(3))
   }
 }

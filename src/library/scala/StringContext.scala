@@ -60,7 +60,7 @@ case class StringContext(parts: String*) {
    *  @param `args` The arguments to be checked.
    *  @throws IllegalArgumentException  if this is not the case.
    */
-  def checkLengths(args: Seq[Any]): Unit =
+  def checkLengths(args: scala.collection.Seq[Any]): Unit =
     if (parts.length != args.length + 1)
       throw new IllegalArgumentException("wrong number of arguments ("+ args.length
         +") for interpolated string with "+ parts.length +" parts")
@@ -120,7 +120,7 @@ case class StringContext(parts: String*) {
    */
   def raw(args: Any*): String = standardInterpolator(identity, args)
 
-  def standardInterpolator(process: String => String, args: Seq[Any]): String = {
+  def standardInterpolator(process: String => String, args: scala.collection.Seq[Any]): String = {
     checkLengths(args)
     val pi = parts.iterator
     val ai = args.iterator

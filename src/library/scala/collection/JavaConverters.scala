@@ -6,8 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package collection
+package scala.collection
 
 import convert._
 

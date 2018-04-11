@@ -370,7 +370,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    def freeArgsOrNil(sym: Symbol) = free.getOrElse(sym, Nil).toList
+    def freeArgsOrNil(sym: Symbol) = free.getOrElse[Iterable[Symbol]](sym, Nil).toList
 
     private def freeArgs(sym: Symbol): List[Symbol] =
       freeArgsOrNil(sym)

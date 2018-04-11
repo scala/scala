@@ -97,9 +97,9 @@ abstract class BTypesFromClassfile {
       })
     }
 
-    def nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
+    def nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.iterator.collect({
       case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
-    })(collection.breakOut)
+    }).toList
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
     // case we build the NestedInfo.
@@ -120,7 +120,7 @@ abstract class BTypesFromClassfile {
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.iterator.map(classBTypeFromParsedClassfile).toList
 
     Right(ClassInfo(superClass, interfaces, flags, Lazy.withoutLock(nestedClasses), Lazy.withoutLock(nestedInfo), inlineInfo))
   }
@@ -147,13 +147,13 @@ abstract class BTypesFromClassfile {
       // require special handling. Excluding is OK because they are never inlined.
       // Here we are parsing from a classfile and we don't need to do anything special. Many of these
       // primitives don't even exist, for example Any.isInstanceOf.
-      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.map(methodNode => {
+      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.iterator.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         (methodNode.name + methodNode.desc, info)
-      })(scala.collection.breakOut)
+      }).toMap
       InlineInfo(
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),

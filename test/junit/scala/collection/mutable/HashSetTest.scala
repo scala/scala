@@ -34,4 +34,25 @@ class HashSetTest {
     hs --= 1 to 10
     assertTrue(hs.isEmpty)
   }
+
+  @Test
+  def mapInPlace_addOneToAll(): Unit = {
+    val hs = HashSet[Int]()
+    hs += 1
+    hs += 2
+    hs += 3
+    hs.mapInPlace(_ + 1)
+    assertEquals(List(2, 3, 4), hs.toList.sorted)
+  }
+
+  @Test
+  def mapInPlace_reducedToOneElement(): Unit = {
+    val hs = HashSet[Int]()
+    hs += 1
+    hs += 2
+    hs += 3
+    hs.mapInPlace(_ => 1)
+    assert(hs.size == 1)
+    assert(hs.contains(1))
+  }
 }

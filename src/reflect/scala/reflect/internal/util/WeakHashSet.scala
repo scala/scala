@@ -3,7 +3,9 @@ package reflect.internal.util
 
 import java.lang.ref.{WeakReference, ReferenceQueue}
 import scala.annotation.tailrec
+import scala.collection.IndexedView
 import scala.collection.mutable.{Set => MSet}
+import scala.collection.immutable.ImmutableArray
 
 /**
  * A HashSet where the elements are stored weakly. Elements in this set are eligible for GC if no other
@@ -15,7 +17,7 @@ import scala.collection.mutable.{Set => MSet}
  * This set implementation is not in general thread safe without external concurrency control. However it behaves
  * properly when GC concurrently collects elements in this set.
  */
-final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends Set[A] with Function1[A, Boolean] with MSet[A] {
+final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends MSet[A] {
 
   import WeakHashSet._
 
@@ -59,6 +61,8 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   private[this] var threshold = computeThreshold
 
   private[this] def computeThreshold: Int = (table.size * loadFactor).ceil.toInt
+
+  def get(elem: A): Option[A] = Option(findEntry(elem))
 
   /**
    * find the bucket associated with an element's hash code
@@ -143,8 +147,10 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     tableLoop(0)
   }
 
+  def contains(elem: A): Boolean = findEntry(elem) ne null
+
   // from scala.reflect.internal.Set, find an element or null if it isn't contained
-  override def findEntry(elem: A): A = elem match {
+  def findEntry(elem: A): A = elem match {
     case null => throw new NullPointerException("WeakHashSet cannot hold nulls")
     case _    => {
       removeStaleEntries()
@@ -195,7 +201,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   }
 
   // add an element to this set unless it's already in there and return this set
-  override def +(elem: A): this.type = elem match {
+  override def addOne (elem: A): this.type = elem match {
     case null => throw new NullPointerException("WeakHashSet cannot hold nulls")
     case _    => {
       removeStaleEntries()
@@ -221,13 +227,8 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     }
   }
 
-  def +=(elem: A) = this + elem
-
-  // from scala.reflect.internal.Set
-  override def addEntry(x: A) { this += x }
-
   // remove an element from this set and return this set
-  override def -(elem: A): this.type = elem match {
+  override def subtractOne(elem: A): this.type = elem match {
     case null => this
     case _ => {
       removeStaleEntries()
@@ -247,7 +248,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     }
   }
 
-  def -=(elem: A) = this - elem
+  def -(elem: A) = subtractOne(elem)
 
   // empty this set
   override def clear(): Unit = {
@@ -268,8 +269,6 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     removeStaleEntries()
     count
   }
-
-  override def apply(x: A): Boolean = this contains x
 
   override def foreach[U](f: A => U): Unit = iterator foreach f
 
@@ -365,7 +364,17 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     /**
      *  Produces a diagnostic dump of the table that underlies this hash set.
      */
-    def dump = table.deep
+    def dump = {
+      def deep[T](a: Array[T]): IndexedView[Any] = new IndexedView[Any] {
+        def length = a.length
+        def apply(idx: Int): Any = a(idx) match {
+          case x: AnyRef if x.getClass.isArray => deep(x.asInstanceOf[Array[_]])
+          case x => x
+        }
+        override def className = "Array"
+      }
+      deep(table)
+    }
 
     /**
      * Number of buckets that hold collisions. Useful for diagnosing performance issues.

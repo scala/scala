@@ -4,25 +4,25 @@ String OK.
 Length OK.
 
 Trying lb1 ...
-java.lang.IndexOutOfBoundsException: at 6 deleting 6
+java.lang.IndexOutOfBoundsException: 6
 Checking ...
 String OK.
 Length OK.
 
 Trying lb2 ...
-java.lang.IndexOutOfBoundsException: at 99 deleting 6
+java.lang.IndexOutOfBoundsException: 99
 Checking ...
 String OK.
 Length OK.
 
 Trying lb3 ...
-java.lang.IndexOutOfBoundsException: at 1 deleting 9
+java.lang.IndexOutOfBoundsException: 1
 Checking ...
 String OK.
 Length OK.
 
 Trying lb4 ...
-java.lang.IndexOutOfBoundsException: at -1 deleting 1
+java.lang.IndexOutOfBoundsException: -1
 Checking ...
 String OK.
 Length OK.

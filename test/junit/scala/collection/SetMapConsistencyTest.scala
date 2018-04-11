@@ -43,7 +43,7 @@ class SetMapConsistencyTest {
     def subbers: Int = 3
     def sub(n: Int, a: A) { n match {
       case 0 => m -= a
-      case 1 => m = (m - a).asInstanceOf[M]
+      case 1 => m = m.clone().asInstanceOf[M]; m -= a // no `-` any more for mutable Maps
       case 2 => m = m.filter(_._1 != a).asInstanceOf[M]
       case _ => oor("sub", n)
     }}
@@ -146,7 +146,7 @@ class SetMapConsistencyTest {
     override def toString = m.toString
   }
   
-  def boxIhm[A] = new BoxImmutableMap[A, ci.HashMap[A,Int]](new ci.HashMap[A, Int], "immutable.HashMap")
+  def boxIhm[A] = new BoxImmutableMap[A, ci.HashMap[A,Int]](ci.HashMap.empty[A, Int], "immutable.HashMap")
   
   def boxIim = new BoxImmutableMap[Int, ci.IntMap[Int]](ci.IntMap.empty[Int], "immutable.IntMap")
   
@@ -174,7 +174,7 @@ class SetMapConsistencyTest {
     def subbers: Int = 3
     def sub(n: Int, a: A) { n match {
       case 0 => m -= a
-      case 1 => m = (m - a).asInstanceOf[M]
+      case 1 => m = (m &~ Set(a)).asInstanceOf[M]
       case 2 => m = m.filter(_ != a).asInstanceOf[M]
       case _ => oor("sub", n)
     }}
@@ -413,7 +413,7 @@ class SetMapConsistencyTest {
     import cm.{AnyRefMap, HashMap}
     var arm = AnyRefMap.empty[String, Int]
     stringKeys.zipWithIndex.foreach{ case (k,i) => arm(k) = i }
-    
+
     assert{ arm.map{ case (k,v) => (if (k==null) "" else k+k) -> v.toString }.getClass == arm.getClass }
     
     assert {
@@ -514,7 +514,7 @@ class SetMapConsistencyTest {
   
   @Test
   def testSI8264() {
-    val hs = Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
+    val hs = immutable.Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
     assert( hs.toList.toSet == hs )
     assert( hs == hs.toList.toSet )
   }
@@ -539,9 +539,12 @@ class SetMapConsistencyTest {
     import scala.tools.testing.AssertUtil._
     type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
-    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE)
+    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
     assert{ (m contains 0) && (m get 0).nonEmpty }
-    assertThrows[NSEE]{ m contains 2 }
-    assertThrows[NSEE]{ m get 2 }
+    // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
+    // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions
+    // would have thrown a NSEE:
+    m contains 2
+    m get 2
   }
 }

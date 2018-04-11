@@ -1,7 +1,4 @@
-
-
 import collection._
-
 
 object Test {
 
@@ -27,19 +24,19 @@ object Test {
 
     val pred = (x: String) => x.length < 6
     val filtered = m.filterKeys(pred)
-    assert(filtered.drop(0).keys.toList == expected.filter(pred))
-    assert(filtered.drop(1).keys.toList == expected.filter(pred).drop(1))
-    assert(filtered.drop(2).keys.toList == expected.filter(pred).drop(2))
-    assert(filtered.drop(3).keys.toList == expected.filter(pred).drop(3))
-    assert(filtered.drop(4).keys.toList == expected.filter(pred).drop(4))
+    assert(filtered.drop(0).map(_._1).toList == expected.filter(pred))
+    assert(filtered.drop(1).map(_._1).toList == expected.filter(pred).drop(1))
+    assert(filtered.drop(2).map(_._1).toList == expected.filter(pred).drop(2))
+    assert(filtered.drop(3).map(_._1).toList == expected.filter(pred).drop(3))
+    assert(filtered.drop(4).map(_._1).toList == expected.filter(pred).drop(4))
 
     val mapped = m.mapValues(-_)
-    assert(mapped.drop(0).keys.toList == expected)
-    assert(mapped.drop(1).keys.toList == expected.drop(1))
-    assert(mapped.drop(2).keys.toList == expected.drop(2))
-    assert(mapped.drop(3).keys.toList == expected.drop(3))
-    assert(mapped.drop(4).keys.toList == expected.drop(4))
-    assert(mapped.drop(5).keys.toList == expected.drop(5))
+    assert(mapped.drop(0).map(_._1).toList == expected)
+    assert(mapped.drop(1).map(_._1).toList == expected.drop(1))
+    assert(mapped.drop(2).map(_._1).toList == expected.drop(2))
+    assert(mapped.drop(3).map(_._1).toList == expected.drop(3))
+    assert(mapped.drop(4).map(_._1).toList == expected.drop(4))
+    assert(mapped.drop(5).map(_._1).toList == expected.drop(5))
   }
 
 }
