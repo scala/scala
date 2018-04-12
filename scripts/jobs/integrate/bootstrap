@@ -2,13 +2,10 @@
 
 # See comment in bootstrap_fun
 
+# This script is used to run a bootstrap on Jenkins. For travis, see .travis.yml.
+
 source scripts/common
 source scripts/bootstrap_fun
-
-# scripts/common provides sbtRepositoryConfig
-sbtArgs="-ivy $IVY2_DIR -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
-
-generateRepositoriesConfig $integrationRepoUrl
 
 determineScalaVersion
 deriveModuleVersions

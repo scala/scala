@@ -3,11 +3,32 @@ set -e
 # The scala/scala checkout directory (set by Jenkins, or `/home/travis/build/scala/scala` on travis)
 WORKSPACE="${WORKSPACE-`pwd`}"
 
+function generateAddJCenterCachePlugin() {
+  mkdir -p "$HOME/.sbt/0.13/plugins"
+  cat > "$HOME/.sbt/0.13/plugins/AddJCenterCache.scala" << EOF
+import sbt._
+object AddJCenterCache {
+  def apply(rs: Seq[Resolver]): Seq[Resolver] = {
+    val jcc = "jcenter-cache" at "https://scala-ci.typesafe.com/artifactory/jcenter/"
+    val i = rs.indexWhere({
+      case MavenRepository(_, r) if r.startsWith("https://repo1.maven.org/maven2") => true
+      case _ => false
+    })
+    assert(i != -1, rs)
+    rs.patch(i, List(jcc), 0)
+  }
+}
+EOF
+}
+
 # On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On travis, it's ~/.ivy2.
 if [ "$TRAVIS" = "true" ]; then
   IVY2_DIR="$HOME/.ivy2"
+  sbtArgs=()
 else
   IVY2_DIR="$WORKSPACE/.ivy2"
+  generateAddJCenterCachePlugin
+  sbtArgs=("-ivy" "$IVY2_DIR" "set externalResolvers := AddJCenterCache(externalResolvers.value)")
 fi
 
 # used by `sbtResolve`
@@ -17,7 +38,7 @@ mkdir -p "$WORKSPACE/resolutionScratch_"
 SBT_CMD=${SBT_CMD-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
 
-# repo to publish builds
+# repo to publish integration builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
 # only used on jenkins
@@ -172,7 +193,7 @@ st_stagingRepoClose() {
 
 sbtBuild() {
   travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors $sbtArgs "$addResolvers" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD -no-colors "${sbtArgs[@]}" "$addResolvers" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
   travis_fold_end build
 }
 
@@ -181,9 +202,8 @@ sbtResolve() {
   touch build.sbt
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
   cross=${4-binary}
-  # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
+  $SBT_CMD -no-colors "${sbtArgs[@]}" "${scalaVersionTasks[@]}" \
     "$addResolvers" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
     "show update"
