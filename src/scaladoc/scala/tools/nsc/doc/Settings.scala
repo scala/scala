@@ -223,7 +223,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups, docNoJavaComments
-  )
+  ).map(s => s.withAbbreviation("-" + s.name))
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
   override def isScaladoc = true
