@@ -1742,27 +1742,18 @@ a sub-expression of parameterless method type, is not evaluated in the expanded 
 
 ### Dynamic Member Selection
 
-The standard Scala library defines a trait `scala.Dynamic` which defines a member
-`applyDynamic` as follows:
+The standard Scala library defines a marker trait `scala.Dynamic`. Subclasses of this trait are able to intercept selections and applications on their instances by defining methods of the names `applyDynamic`, `applyDynamicNamed`, `selectDynamic`, and `updateDynamic`. Under the conditions of [implicit conversion](#dynamic-member-selection), the following rewrites are performed, assuming $e$ has type `Dynamic`, and the originally expression does not type check under normal rules:
 
-```scala
-package scala
-trait Dynamic {
-  def applyDynamic (name: String, args: Any*): Any
-  ...
-}
-```
+ *  `e.m[Ti](xi)` becomes `e.applyDynamic[Ti]("m")(xi)`
+ *  `e.m[Ti]`     becomes `e.selectDynamic[Ti]("m")`
+ *  `e.m = x`     becomes `e.updateDynamic("m")(x)`
 
-Assume a selection of the form $e.x$ where the type of $e$ conforms to `scala.Dynamic`.
-Further assuming the selection is not followed by any function arguments, such an expression can be rewritten under the conditions given [here](#implicit-conversions) to:
+If any arguments are named in the application (one of the `xi` is of the shape `arg = x`), their name is preserved as the first component of the pair passed to `applyDynamicNamed` (for missing names, `""` is used):
 
-```scala
-$e$.applyDynamic("$x$")
-```
+ *  `e.m[Ti](argi = xi)` becomes `e.applyDynamicNamed[Ti]("m")(("argi", xi))`
 
-If the selection is followed by some arguments, e.g. $e.x(\mathit{args})$, then that expression
-is rewritten to
+Finally:
 
-```scala
-$e$.applyDynamic("$x$", $\mathit{args}$)
-```
+ *  `e.m(x) = y` becomes `e.selectDynamic("m").update(x, y)`
+
+None of these methods are actually defined in the `scala.Dynamic`, so that users are free to define them with or without type parameters, or implicit arguments.
