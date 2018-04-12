@@ -5,13 +5,20 @@ source scripts/common
 java -version
 javac -version
 
-generateRepositoriesConfig
+sbtJavaCommand=(java $JAVA_OPTS "-Dsbt.ivy.home=$IVY2_DIR" -jar "$sbtLauncher" )
 
-SBT="java $JAVA_OPTS -Dsbt.ivy.home=$WORKSPACE/.ivy2 -jar $sbtLauncher -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+# setSbt takes additional arguments that are added to the `java` invocation of `$sbt`
+# java arguments need to come before all program arguments (passed to sbt)
+# we don't have this issue on the linux nodes, as sbt-extras handles it
+function setSbt() {
+  sbt=("${sbtJavaCommand[@]}" "$@" "$addJCenterCache")
+}
 
 # Build locker with STARR
-$SBT --warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
+setSbt
+"${sbt[@]}" --warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
 
 # Build quick and run the tests
 parseScalaProperties buildcharacter.properties
-$SBT -Dstarr.version=$maven_version_number --warn "setupValidateTest" testAll
+setSbt "-Dstarr.version=$maven_version_number"
+"${sbt[@]}" --warn "setupValidateTest" testAll

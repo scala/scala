@@ -25,7 +25,7 @@ stages:
 # see comment in `bootstrap_fun` for details on the procedure
 # env available in each stage
 #  - by travis config (see below): secret env vars
-#  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
+#  - by `common` script: WORKSPACE, IVY2_DIR, sbt, integrationRepoUrl
 #  - by `bootstrap_fun`: publishPrivateTask, ...
 # env computed in first stage, passed on to later stages with the `build/env` file
 #  - by `determineScalaVersion`: SCALA_VER, publishToSonatype

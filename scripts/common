@@ -4,8 +4,14 @@ set -e
 WORKSPACE="${WORKSPACE-`pwd`}"
 
 function generateAddJCenterCachePlugin() {
-  mkdir -p "$HOME/.sbt/0.13/plugins"
-  cat > "$HOME/.sbt/0.13/plugins/AddJCenterCache.scala" << EOF
+  if [[ $(uname -s) == CYGWIN* ]]; then
+    homeDir=$(cygpath -u "$USERPROFILE")
+  else
+    homeDir=$HOME
+  fi
+
+  mkdir -p "$homeDir/.sbt/0.13/plugins"
+  cat > "$homeDir/.sbt/0.13/plugins/AddJCenterCache.scala" << EOF
 import sbt._
 object AddJCenterCache {
   def apply(rs: Seq[Resolver]): Seq[Resolver] = {
@@ -28,22 +34,18 @@ if [ "$TRAVIS" = "true" ]; then
 else
   IVY2_DIR="$WORKSPACE/.ivy2"
   generateAddJCenterCachePlugin
-  sbtArgs=("-ivy" "$IVY2_DIR" "set externalResolvers := AddJCenterCache(externalResolvers.value)")
+  addJCenterCache="set externalResolvers := AddJCenterCache(externalResolvers.value)"
+  sbtArgs=(-ivy "$IVY2_DIR" "$addJCenterCache")
 fi
 
 # used by `sbtResolve`
 rm -rf "$WORKSPACE/resolutionScratch_"
 mkdir -p "$WORKSPACE/resolutionScratch_"
 
-SBT_CMD=${SBT_CMD-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
+sbt=("${SBT_CMD-sbt}" -sbt-version 0.13.17 "${sbtArgs[@]}")
 
 # repo to publish integration builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
-
-# only used on jenkins
-sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # used by `checkAvailability`
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
@@ -104,28 +106,6 @@ function checkAvailability () {
     RES=false
   fi
   popd
-}
-
-# Only used on Jenkins
-# Generate a repositories file with all allowed repositories in our build environment.
-# Takes a variable number of additional repositories as argument.
-# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
-function generateRepositoriesConfig() {
-  echo > "$sbtRepositoryConfig" '[repositories]'
-  if [[ $# -gt 0 ]]; then
-    for i in $(seq 1 $#); do
-      echo >> "$sbtRepositoryConfig" "  script-repo-$i: ${!i}"
-    done
-  fi
-
-  cat >> "$sbtRepositoryConfig" << EOF
-  jcenter-cache: $jcenterCacheUrl
-  local
-  maven-central
-  typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-EOF
 }
 
 
@@ -193,7 +173,7 @@ st_stagingRepoClose() {
 
 sbtBuild() {
   travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors "${sbtArgs[@]}" "$addResolvers" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  "${sbt[@]}" -no-colors "$addResolvers" "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
   travis_fold_end build
 }
 
@@ -203,7 +183,7 @@ sbtResolve() {
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
   cross=${4-binary}
   travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  $SBT_CMD -no-colors "${sbtArgs[@]}" "${scalaVersionTasks[@]}" \
+  "${sbt[@]}" -no-colors "${scalaVersionTasks[@]}" \
     "$addResolvers" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
     "show update"

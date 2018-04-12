@@ -2,8 +2,7 @@
 
 source scripts/common
 
-generateRepositoriesConfig $prRepoUrl
-SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+sbt=("${sbt[@]}" "set resolvers in Global += \"pr-repo\" at \"$prRepoUrl\"")
 
 case $prDryRun in
 
@@ -16,7 +15,7 @@ case $prDryRun in
     # build quick using STARR built upstream, as specified by scalaVersion
     # (in that sense it's locker, since it was built with starr by that upstream job);
     # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
-    $SBT \
+    "${sbt[@]}" \
        -Dstarr.version=$scalaVersion \
        --warn \
        "setupValidateTest $prRepoUrl" \
