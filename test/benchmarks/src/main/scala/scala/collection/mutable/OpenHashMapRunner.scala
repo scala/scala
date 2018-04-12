@@ -48,7 +48,7 @@ object OpenHashMapRunner extends JmhRunner {
 
 
   def main(args: Array[String]) {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
   
     val opts = new CommandLineOptions(args: _*)
     var builder = new OptionsBuilder().parent(opts).jvmArgsPrepend("-Xmx6000m")
@@ -72,7 +72,7 @@ object OpenHashMapRunner extends JmhRunner {
     def addToDataset(key: String, result: RunResult): Unit =
       datasetByName.getOrElseUpdate(key, SortedSet.empty(ordering)) += result
 
-    results.foreach { result =>
+    results.asScala.foreach { result =>
       addToDataset(result.label, result)
 
       // Create another data set for trials that track memory usage

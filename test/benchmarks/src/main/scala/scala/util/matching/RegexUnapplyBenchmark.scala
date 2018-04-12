@@ -25,20 +25,14 @@ class RegexUnapplyBenchmark {
   @Benchmark def t8022CharSequence(bh: Blackhole): Unit = {
     val full = t8022CharSequenceRegex
     val text = "   When I use this operator: *"
-    // Testing 2.10.x compatibility of the return types of unapplySeq
-    val x :: Nil = full.unapplySeq(text: Any).get
     val y :: Nil = full.unapplySeq(text: CharSequence).get
-    bh.consume(x)
     bh.consume(y)
   }
 
   @Benchmark def t8022Match(bh: Blackhole): Unit = {
     val R = t8022MatchRegex
     val matchh = R.findFirstMatchIn("a1").get
-    // Testing 2.10.x compatibility of the return types of unapplySeq
-    val x :: Nil = R.unapplySeq(matchh: Any).get
     val y :: Nil = R.unapplySeq(matchh).get
-    bh.consume(x)
     bh.consume(y)
   }
 

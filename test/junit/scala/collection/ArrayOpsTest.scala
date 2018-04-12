@@ -32,4 +32,12 @@ class ArrayOpsTest {
     val a = Array(1,2,3)
     assertEquals(List(3,2,1), a.reverseIterator.toList)
   }
+
+  @Test
+  def folds: Unit = {
+    val a = Array(1,2,3)
+    assertEquals(6, a.foldLeft(0){ (a, b) => a+b })
+    assertEquals(6, a.foldRight(0){ (a, b) => a+b })
+    assertEquals(6, a.fold(0){ (a, b) => a+b })
+  }
 }
