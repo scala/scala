@@ -1069,7 +1069,7 @@ a return expression is `scala.Nothing`.
 The expression $e$ may be omitted. The return expression
 `return` is type-checked and evaluated as if it were `return ()`.
 
-Returning from the method from withing a nested function may be
+Returning from the method from within a nested function may be
 implemented by throwing and catching a
 `scala.runtime.NonLocalReturnException`. Any exception catches
 between the point of return and the enclosing methods might see
@@ -1742,7 +1742,9 @@ a sub-expression of parameterless method type, is not evaluated in the expanded 
 
 ### Dynamic Member Selection
 
-The standard Scala library defines a marker trait `scala.Dynamic`. Subclasses of this trait are able to intercept selections and applications on their instances by defining methods of the names `applyDynamic`, `applyDynamicNamed`, `selectDynamic`, and `updateDynamic`. Under the conditions of [implicit conversion](#dynamic-member-selection), the following rewrites are performed, assuming $e$ has type `Dynamic`, and the originally expression does not type check under normal rules:
+The standard Scala library defines a marker trait `scala.Dynamic`. Subclasses of this trait are able to intercept selections and applications on their instances by defining methods of the names `applyDynamic`, `applyDynamicNamed`, `selectDynamic`, and `updateDynamic`.
+
+The following rewrites are performed, assuming $e$'s type conforms to `scala.Dynamic`, and the original expression does not type check under the normal rules, as specified fully in the relevant subsection of [implicit conversion](#dynamic-member-selection):
 
  *  `e.m[Ti](xi)` becomes `e.applyDynamic[Ti]("m")(xi)`
  *  `e.m[Ti]`     becomes `e.selectDynamic[Ti]("m")`
