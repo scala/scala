@@ -103,6 +103,7 @@ trait Warnings {
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
+    val NonLocalReturn         = LintWarning("non-local-return",          "Warn whenever a `return` statement will use exceptions for control flow.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -126,6 +127,7 @@ trait Warnings {
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
+  def warnNonLocalReturn         = lint contains NonLocalReturn
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")

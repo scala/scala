@@ -383,7 +383,18 @@ abstract class UnCurry extends InfoTransform
         deriveDefDef(dd)(_ => body)
       case _ => tree
     }
-    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy || currentOwner.isAnonymousFunction
+
+    object NonLocalReturn {
+      /** binds (returned expression, "in ...") */
+      def unapply(tree: Tree): Option[(Tree, String)] = tree match {
+        case Return(expr) =>
+          if (currentOwner.isLazy)                                   Some(expr -> "in a lazy val"           )
+          else if (currentOwner.isAnonymousFunction
+               ||  (tree.symbol ne currentOwner.enclMethod))         Some(expr -> "in an anonymous function")
+          else                                                       None
+        case _ => None
+      }
+    }
 
 // ------ The tree transformers --------------------------------------------------------
 
@@ -482,7 +493,7 @@ abstract class UnCurry extends InfoTransform
           case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
             withNeedLift(needLift = true) { super.transform(tree) }
 
-          case ret @ Return(_) if isNonLocalReturn(ret) =>
+          case ret @ NonLocalReturn(_, _) =>
             withNeedLift(needLift = true) { super.transform(ret) }
 
           case Try(_, Nil, _) =>
@@ -621,8 +632,12 @@ abstract class UnCurry extends InfoTransform
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
-        case ret @ Return(expr) if isNonLocalReturn(ret) =>
-          log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
+        case ret @ NonLocalReturn(expr, where) =>
+          if (settings.warnNonLocalReturn) {
+            reporter.warning(ret.pos,
+              s"this `return` statement is invoked $where and will use an exception for control flow.")
+          } else log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
+
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
