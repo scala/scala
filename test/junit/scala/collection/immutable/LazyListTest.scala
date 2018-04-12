@@ -288,4 +288,44 @@ class LazyListTest {
     assertEquals(0, lazeCount)
   }
 
+  @Test  // Strawman issue #529
+  def testLazyListMustComputeHeadOnlyOnce(): Unit = {
+    var seedCounter = 0
+    var fCounter = 0
+    def seed(): Int = {
+      seedCounter += 1
+      1
+    }
+    val f: Int => Int = { x =>
+      fCounter += 1
+      x + 1
+    }
+    val xs = LazyList.iterate(seed())(f)
+    assertEquals(0, seedCounter)
+    assertEquals(0, fCounter)
+
+    xs.head
+    assertEquals(1, seedCounter)
+    assertEquals(0, fCounter)
+
+    xs.tail
+    assertEquals(1, seedCounter)
+    assertEquals(0, fCounter)
+
+    xs.tail.head
+    assertEquals(1, seedCounter)
+    assertEquals(1, fCounter)
+
+    xs.tail.tail
+    assertEquals(1, seedCounter)
+    assertEquals(1, fCounter)
+
+    xs.tail.tail.head
+    assertEquals(1, seedCounter)
+    assertEquals(2, fCounter)
+
+    xs.take(10).toList
+    assertEquals(1, seedCounter)
+    assertEquals(9, fCounter)
+  }
 }

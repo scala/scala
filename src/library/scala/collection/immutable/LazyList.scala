@@ -484,7 +484,10 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
     *  @param f     the function that's repeatedly applied
     *  @return      the LazyList returning the infinite sequence of values `start, f(start), f(f(start)), ...`
     */
-  def iterate[A](start: => A)(f: A => A): CC[A] = newCons(start, iterate(f(start))(f))
+  def iterate[A](start: => A)(f: A => A): CC[A] = {
+    lazy val head = start
+    newCons(head, iterate(f(head))(f))
+  }
 
   /**
     * Create an infinite LazyList starting at `start` and incrementing by
