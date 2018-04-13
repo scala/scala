@@ -18,11 +18,13 @@ class ArrayOpsBenchmark {
   var size: Int = _
   var integers: List[Int] = _
   var strings: List[String] = _
+  var integersA: Array[Int] = _
 
 
   @Setup(Level.Trial) def initNumbers: Unit = {
     integers = (1 to size).toList
     strings = integers.map(_.toString)
+    integersA = integers.toArray
   }
 
   @Benchmark def appendInteger(bh: Blackhole): Unit = {
@@ -55,5 +57,13 @@ class ArrayOpsBenchmark {
       arr = arr.+:(i)
     }
     bh.consume(arr)
+  }
+
+  @Benchmark def foldLeftSum(bh: Blackhole): Unit = {
+    bh.consume(integersA.foldLeft(0){ (z,n) => z + n })
+  }
+
+  @Benchmark def foldSum(bh: Blackhole): Unit = {
+    bh.consume(integersA.fold(0){ (a,b) => a + b })
   }
 }

@@ -33,7 +33,7 @@ class DistinctBenchmark {
       b2 += i.toString
     }
 
-    val adjustCollectionType = collectionType match {
+    val adjustCollectionType: (Seq[String] => Seq[String]) = collectionType match {
       case "List" => (col: Seq[String]) => col.toList
       case "Vector" => (col: Seq[String]) => col.toVector
     }

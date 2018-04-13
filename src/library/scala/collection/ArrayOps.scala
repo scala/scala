@@ -553,6 +553,17 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     v
   }
 
+  /** Folds the elements of this array using the specified associative binary operator.
+    *
+    *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
+    *  @param z       a neutral element for the fold operation; may be added to the result
+    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
+    *                 0 for addition, or 1 for multiplication).
+    *  @param op      a binary operator that must be associative.
+    *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this array is empty.
+    */
+  @`inline` final def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
+
   /** Builds a new array by applying a function to all elements of this array.
     *
     *  @param f      the function to apply to each element.
