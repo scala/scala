@@ -172,4 +172,22 @@ class RegexTest {
       assertEquals("aaaaa", aes)
     }
   }
+
+  @Test def `t10827 matches method`(): Unit = {
+    val r = """\d+""".r
+    assertTrue(r.matches("500"))
+    assertFalse(r.matches("foo"))
+    assertFalse(r.matches("123 123"))
+    assertFalse(r.matches("foo2"))
+    assertFalse(r.matches("2foo"))
+  }
+
+  @Test def `t10827 matches method for unanchored Regex`(): Unit = {
+    val r = """\d+""".r.unanchored
+    assertTrue(r.matches("500"))
+    assertFalse(r.matches("abc"))
+    assertTrue(r.matches("123 123"))
+    assertTrue(r.matches("foo2"))
+    assertTrue(r.matches("2foo"))
+  }
 }

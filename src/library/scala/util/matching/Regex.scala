@@ -110,6 +110,14 @@ import java.util.regex.{ Pattern, Matcher }
  *  val allYears = for (m <- date.findAllMatchIn(dates)) yield m.group(1)
  *  }}}
  *
+ *  To check whether input is matched by the regex:
+ *
+ *  {{{
+ *  date.matches("2018-03-01")                     // true
+ *  date.matches("Today is 2018-03-01")            // false
+ *  date.unanchored.matches("Today is 2018-03-01") // true
+ *  }}}
+ *
  *  To iterate over the matched strings, use `findAllIn`, which returns a special iterator
  *  that can be queried for the `MatchData` of the last match:
  *
@@ -454,6 +462,18 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     if (m.lookingAt) Some(new Match(source, m, groupNames)) else None
   }
 
+  /** Returns whether this `Regex` matches the given character sequence.
+    *
+    * Like the extractor, this method takes anchoring into account.
+    *
+    * @param source The text to match against
+    * @return       true if and only if `source` matches this `Regex`.
+    * @see          [[Regex#unanchored]]
+    * @example      {{{"""\d+""".r matches "123" // returns true}}}
+    */
+  def matches(source: CharSequence): Boolean =
+    runMatcher(pattern.matcher(source))
+
   /** Replaces all matches by a string.
    *
    *  $replacementString
@@ -544,7 +564,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     pattern.split(toSplit)
 
   /** Create a new Regex with the same pattern, but no requirement that
-   *  the entire String matches in extractor patterns.
+   *  the entire String matches in extractor patterns and [[Regex#matches]].
    *
    *  Normally, matching on `date` behaves as though the pattern were
    *  enclosed in anchors, `"^pattern$"`.
