@@ -617,17 +617,31 @@ trait Implicits {
     /** This expresses more cleanly in the negative: there's a linear path
      *  to a final true or false.
      */
-    private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.dealiasWiden match {
+    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = !isImpossibleSubType(tp1, tp2)
+    private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = tp1.dealiasWiden match {
       // We can only rule out a subtype relationship if the left hand
       // side is a class, else we may not know enough.
-      case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
+      case tr1 @ TypeRef(_, sym1, args1) if sym1.isClass =>
         def typeRefHasMember(tp: TypeRef, name: Name) = {
           tp.baseClasses.exists(_.info.decls.lookupEntry(name) != null)
         }
-        tp2.dealiasWiden match {
-          case TypeRef(_, sym2, _)         => ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
-          case RefinedType(parents, decls) => decls.nonEmpty && !typeRefHasMember(tr1, decls.head.name) // opt avoid full call to .member
+
+        def existentialUnderlying(t: Type) = t match {
+          case et: ExistentialType => et.underlying
+          case tp => tp
+        }
+        val tp2Bounds = existentialUnderlying(tp2.dealiasWiden.bounds.hi)
+        tp2Bounds match {
+          case TypeRef(_, sym2, args2) if sym2 ne SingletonClass =>
+            val impossible = if ((sym1 eq sym2) && (args1 ne Nil)) !corresponds3(sym1.typeParams, args1, args2) {(tparam, arg1, arg2) =>
+              if (tparam.isCovariant) isPlausiblySubType(arg1, arg2) else isPlausiblySubType(arg2, arg1)
+            } else {
+              ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
+            }
+            impossible
+          case RefinedType(parents, decls) =>
+            val impossible = decls.nonEmpty && !typeRefHasMember(tr1, decls.head.name) // opt avoid full call to .member
+            impossible
           case _                           => false
         }
       case _ => false
