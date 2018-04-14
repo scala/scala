@@ -65,6 +65,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var claszSymbol: Symbol        = null
     var isCZParcelable             = false
     var isCZStaticModule           = false
+    var initModuleInClinit         = false
 
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
@@ -78,6 +79,22 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     def tpeTK(tree: Tree): BType = typeToBType(tree.tpe)
 
+
+    private def canAssignModuleInClinit(cd: ClassDef, sym: Symbol): Boolean = {
+      import global.definitions._
+      val parentsArePure = claszSymbol.parentSymbols.forall(sym => sym == ObjectClass || isFunctionSymbol(sym) || isAbstractFunctionSymbol(sym) || sym == definitions.SerializableClass)
+      def isPureConstructor(dd: DefDef): Boolean = {
+        dd.rhs match {
+          case Block(stats, _) => treeInfo.isSuperConstrCall(stats.last)
+          case _ => false
+        }
+      }
+      def constructorsArePure = cd.impl.body.iterator.collect {
+        case dd: DefDef if dd.symbol.isConstructor => dd
+      }.forall(isPureConstructor)
+      parentsArePure && constructorsArePure 
+    }
+
     /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef): Unit = {
@@ -87,6 +104,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       isCZParcelable    = isAndroidParcelableClass(claszSymbol)
       isCZStaticModule  = isStaticModuleClass(claszSymbol)
       thisBType         = classBTypeFromSymbol(claszSymbol)
+      initModuleInClinit = isCZStaticModule && canAssignModuleInClinit(cd, claszSymbol)
 
       cnode = new asm.tree.ClassNode()
 
@@ -187,7 +205,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       //   after the constructor has completely finished, seems like the principled
       //   thing to do, but it would change behaviour when "benign" cyclic references
       //   between modules exist.
-      val mods = GenBCode.PublicStatic
+      //
+      // We special case modules with parents that we know don't (and won't ever) refer to
+      // the module during their construction. These can use a final field, and defer the assigment
+      // to <clinit>.
+      val mods = if (initModuleInClinit) GenBCode.PublicStaticFinal else GenBCode.PublicStatic
       val fv =
         cnode.visitField(mods,
                          strMODULE_INSTANCE_FIELD,
@@ -199,6 +221,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       fv.visitEnd()
     }
 
+    protected def assignModuleInstanceField(meth: asm.MethodVisitor): Unit = {
+      meth.visitFieldInsn(asm.Opcodes.PUTSTATIC, thisBType.internalName, strMODULE_INSTANCE_FIELD, thisBType.descriptor)
+    }
     /*
      * must-single-thread
      */
@@ -216,8 +241,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       /* "legacy static initialization" */
       if (isCZStaticModule) {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisBType.internalName)
+        if (initModuleInClinit) clinit.visitInsn(asm.Opcodes.DUP)
+
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
-                               thisBType.internalName, INSTANCE_CONSTRUCTOR_NAME, "()V", false)
+        thisBType.internalName, INSTANCE_CONSTRUCTOR_NAME, "()V", false)
+        if (initModuleInClinit) {
+          assignModuleInstanceField(clinit)
+        }
       }
       if (isCZParcelable) { legacyAddCreatorCode(clinit, cnode, thisBType.internalName) }
       clinit.visitInsn(asm.Opcodes.RETURN)

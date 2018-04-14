@@ -562,18 +562,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Apply(fun @ Select(sup @ Super(superQual, _), _), args) =>
           def initModule(): Unit = {
             // we initialize the MODULE$ field immediately after the super ctor
-            if (!isModuleInitialized &&
+            if (!initModuleInClinit && !isModuleInitialized &&
               jMethodName == INSTANCE_CONSTRUCTOR_NAME &&
               fun.symbol.javaSimpleName.toString == INSTANCE_CONSTRUCTOR_NAME &&
               isStaticModuleClass(claszSymbol)) {
               isModuleInitialized = true
               mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
-              mnode.visitFieldInsn(
-                asm.Opcodes.PUTSTATIC,
-                thisBType.internalName,
-                strMODULE_INSTANCE_FIELD,
-                thisBType.descriptor
-              )
+              assignModuleInstanceField(mnode)
             }
           }
 
