@@ -11,6 +11,7 @@ val tp = ArrayClass[scala.util.Random]    // magic with tags
 tp.memberType(Array_apply)                // evidence
 val m = LIT(10)                           // treedsl
 typed(m).tpe                              // typed is in scope
+typed(tq"Int", mode = Mode.TYPEmode)      // typed types types
 ${tripleQuote("escaping is hard, m'kah")}
   """.trim
 }

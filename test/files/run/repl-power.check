@@ -21,9 +21,12 @@ scala> val m = LIT(10)                           // treedsl
 m: $r.treedsl.global.Literal = 10
 
 scala> typed(m).tpe                              // typed is in scope
-res2: $r.treedsl.global.Type = Int(10)
+res2: $r.global.Type = Int(10)
+
+scala> typed(tq"Int", mode = Mode.TYPEmode)      // typed types types
+res3: $r.global.Tree = Int
 
 scala> """escaping is hard, m'kah"""
-res3: String = escaping is hard, m'kah
+res4: String = escaping is hard, m'kah
 
 scala> :quit
