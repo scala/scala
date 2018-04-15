@@ -794,11 +794,12 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := (testOnly in IntegrationTest in testP).toTask(" -- run").result.value,
+    testRun := { val v = (testOnly in IntegrationTest in testP).toTask(" -- run").result.value },
 
-    testPosPres := (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value,
+    testPosPres := { val v = (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value },
 
-    testRest := ScriptCommands.sequence[Result[Unit]](List(
+    testRest := {
+      val v = ScriptCommands.sequence[Result[Unit]](List(
           (mimaReportBinaryIssues in library).result,
           (mimaReportBinaryIssues in reflect).result,
           (Keys.test in Test in junit).result,
@@ -808,7 +809,8 @@ lazy val root: Project = (project in file("."))
           (testOnly in IntegrationTest in testP).toTask(" -- instrumented").result,
           (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
           (Keys.test in Test in osgiTestFelix).result,
-          (Keys.test in Test in osgiTestEclipse).result)).value,
+          (Keys.test in Test in osgiTestEclipse).result)).value
+    },
 
     // all of testRun, testPosPres, testRest
     testAll := {
