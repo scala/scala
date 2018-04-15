@@ -1,5 +1,6 @@
 package scala.collection.mutable
 
+import scala.annotation.migration
 import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps, toNewSeq}
 
 /** A stack implements a data structure which allows to store and retrieve
@@ -19,7 +20,7 @@ import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, St
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-//TODO add in scala.collection namespace: @migration("Stack is now based on an ArrayDeque instead of a linked list", "2.13.0")
+@migration("Stack is now based on an ArrayDeque instead of a linked list", "2.13.0")
 class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Stack, Stack[A]]

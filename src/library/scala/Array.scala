@@ -110,6 +110,56 @@ object Array {
       slowcopy(src, srcPos, dest, destPos, length)
   }
 
+  /** Copy one array to another, truncating or padding with default values (if
+    * necessary) so the copy has the specified length.
+    *
+    * Equivalent to Java's
+    *   `java.util.Arrays.copyOf(original, newLength)`,
+    * except that this works for primitive and object arrays in a single method.
+    *
+    * @see `java.util.Arrays#copyOf`
+    */
+  def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
+    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Float]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Char]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[Unit]       =>
+      val dest = new Array[Unit](newLength)
+      Array.copy(original, 0, dest, 0, original.length)
+      dest
+  }).asInstanceOf[Array[A]]
+
+  /** Copy one array to another, truncating or padding with default values (if
+    * necessary) so the copy has the specified length. The new array can have
+    * a different type than the original one as long as the values are
+    * assignment-compatible. When copying between primitive and object arrays,
+    * boxing and unboxing are supported.
+    *
+    * Equivalent to Java's
+    *   `java.util.Arrays.copyOf(original, newLength, newType)`,
+    * except that this works for all combinations of primitive and object arrays
+    * in a single method.
+    *
+    * @see `java.util.Arrays#copyOf`
+    */
+  def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
+    val destClass = ct.runtimeClass
+    if (destClass.isAssignableFrom(original.getClass)) {
+      if(destClass.getComponentType.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
+      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
+    } else {
+      val dest = new Array[A](newLength)
+      Array.copy(original, 0, dest, 0, original.length)
+      dest
+    }
+  }
+
   /** Returns an array of length 0 */
   def empty[T: ClassTag]: Array[T] = new Array[T](0)
 

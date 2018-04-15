@@ -34,19 +34,7 @@ trait Seq[+A]
       case _ => false
     }
 
-  override def hashCode(): Int = stableIterableHash(toIterable)
-
-  // Temporary: TODO move to MurmurHash3.scala
-  private def stableIterableHash(xs: Iterable[_]): Int = {
-    var n = 0
-    var h = "Seq".##
-    val it = xs.iterator()
-    while (it.hasNext) {
-      h = MurmurHash3.mix(h, it.next().##)
-      n += 1
-    }
-    MurmurHash3.finalizeHash(h, n)
-  }
+  override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
 
   override def toString(): String = super[Iterable].toString()
 

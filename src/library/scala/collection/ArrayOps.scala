@@ -8,57 +8,6 @@ import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
 object ArrayOps {
-  //TODO Move this method to scala.Array in 2.13
-  /** Copy one array to another, truncating or padding with default values (if
-    * necessary) so the copy has the specified length.
-    *
-    * Equivalent to Java's
-    *   `java.util.Arrays.copyOf(original, newLength)`,
-    * except that this works for primitive and object arrays in a single method.
-    *
-    * @see `java.util.Arrays#copyOf`
-    */
-  def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
-    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Float]      => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Char]       => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Unit]       =>
-      val dest = new Array[Unit](newLength)
-      Array.copy(original, 0, dest, 0, original.length)
-      dest
-  }).asInstanceOf[Array[A]]
-
-  //TODO Move this method to scala.Array in 2.13
-  /** Copy one array to another, truncating or padding with default values (if
-    * necessary) so the copy has the specified length. The new array can have
-    * a different type than the original one as long as the values are
-    * assignment-compatible. When copying between primitive and object arrays,
-    * boxing and unboxing are supported.
-    *
-    * Equivalent to Java's
-    *   `java.util.Arrays.copyOf(original, newLength, newType)`,
-    * except that this works for all combinations of primitive and object arrays
-    * in a single method.
-    *
-    * @see `java.util.Arrays#copyOf`
-    */
-  def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
-    val destClass = ct.runtimeClass
-    if (destClass.isAssignableFrom(original.getClass)) {
-      if(destClass.getComponentType.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
-    } else {
-      val dest = new Array[A](newLength)
-      Array.copy(original, 0, dest, 0, original.length)
-      dest
-    }
-  }
 
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter[A](p: A => Boolean, xs: Array[A]) {
@@ -697,7 +646,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with an element appended. */
   def appended[B >: A : ClassTag](x: B): Array[B] = {
-    val dest = ArrayOps.copyAs[B](xs, xs.length+1)
+    val dest = Array.copyAs[B](xs, xs.length+1)
     dest(xs.length) = x
     dest
   }
@@ -886,7 +835,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def padTo[B >: A : ClassTag](len: Int, elem: B): Array[B] = {
     var i = xs.length
     val newlen = max(i, len)
-    val dest = ArrayOps.copyAs[B](xs, newlen)
+    val dest = Array.copyAs[B](xs, newlen)
     while(i < newlen) {
       dest(i) = elem
       i += 1
@@ -950,5 +899,5 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
 
   def toIndexedSeq: immutable.IndexedSeq[A] =
-    ImmutableArray.unsafeWrapArray(ArrayOps.copyOf(xs, xs.length))
+    ImmutableArray.unsafeWrapArray(Array.copyOf(xs, xs.length))
 }
