@@ -11,6 +11,7 @@ import java.io.{BufferedReader, PrintWriter}
 import scala.reflect.internal.util.{Position, StringOps}
 import Position.formatMessage
 import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trimTrailing}
+import scala.tools.util.SystemExit
 
 /** This class implements a Reporter that displays messages on a text console.
  */
@@ -79,7 +80,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       reader.read match {
         case 'a' | 'A' =>
           new Throwable().printStackTrace(writer)
-          System.exit(1)
+          throw SystemExit(1)
         case 's' | 'S' =>
           new Throwable().printStackTrace(writer)
           writer.println()

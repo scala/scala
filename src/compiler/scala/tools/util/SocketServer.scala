@@ -20,7 +20,7 @@ trait CompileOutputCommon {
   def info(msg: String)  = if (verbose) echo(msg)
   def echo(msg: String)  = printlnFlush(msg, Console.out)
   def warn(msg: String)  = printlnFlush(msg, Console.err)
-  def fatal(msg: String) = { warn(msg) ; System.exit(1) ; ??? }
+  def fatal(msg: String) = { warn(msg) ; throw SystemExit(1) }
 
   private def printlnFlush(msg: String, out: PrintStream) = {
     out.println(msg)
