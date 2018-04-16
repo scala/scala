@@ -16,6 +16,19 @@ class BytecodeTest extends BytecodeTesting {
   import compiler._
 
   @Test
+  def t10812(): Unit = {
+    val code =
+      """ A { def f: Object = null }
+        |object B extends A { override def f: String = "b" }
+      """.stripMargin
+    for (base <- List("trait", "class")) {
+      val List(a, bMirror, bModule) = compileClasses(base + code)
+      assertEquals(bMirror.name, "B")
+      assertEquals(bMirror.methods.asScala.filter(_.name == "f").map(m => m.name + m.desc).toList, List("f()Ljava/lang/String;"))
+    }
+  }
+
+  @Test
   def t6288bJumpPosition(): Unit = {
     val code =
       """object Case3 {                                 // 01
