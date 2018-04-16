@@ -455,6 +455,7 @@ trait Implicits {
         case AnnotatedType(annots, tp)          => core(tp)
         case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+        case TypeRef(pre, sym, args)            => typeRef(pre, sym, args.map(core))
         case _                                  => tp
       }
       def stripped(tp: Type): Type = {
