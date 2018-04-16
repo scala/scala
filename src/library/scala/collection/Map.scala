@@ -37,7 +37,7 @@ trait Map[K, +V]
       false
   }
 
-  override def hashCode(): Int = Set.unorderedHash(toIterable, "Map".##)
+  override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
 
 }
 

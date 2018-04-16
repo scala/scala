@@ -24,7 +24,7 @@ trait Set[A]
       case _ => false
     }
 
-  override def hashCode(): Int = Set.setHash(toIterable)
+  override def hashCode(): Int = MurmurHash3.setHash(toIterable)
 
   override def iterableFactory: IterableFactory[IterableCC] = Set
 
@@ -197,26 +197,4 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   * @define coll set
   * @define Coll `Set`
   */
-object Set extends IterableFactory.Delegate[Set](immutable.Set) {
-
-  // Temporary, TODO move to MurmurHash3
-  def setHash(xs: Iterable[_]): Int = unorderedHash(xs, "Set".##)
-
-  final def unorderedHash(xs: Iterable[_], seed: Int): Int = {
-    var a, b, n = 0
-    var c = 1
-    xs foreach { x =>
-      val h = x.##
-      a += h
-      b ^= h
-      if (h != 0) c *= h
-      n += 1
-    }
-    var h = seed
-    h = MurmurHash3.mix(h, a)
-    h = MurmurHash3.mix(h, b)
-    h = MurmurHash3.mixLast(h, c)
-    MurmurHash3.finalizeHash(h, n)
-  }
-
-}
+object Set extends IterableFactory.Delegate[Set](immutable.Set)

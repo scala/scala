@@ -587,12 +587,12 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
       case ln: LNode[K, V] => ln.entries.to(immutable.List)
       case cn: CNode[K, V] => cn.collectElems
     }
-  }: (BasicNode => IterableOnce[(K, V)])) //TODO remove type annotatation in 2.13
+  })
 
   private def collectLocalElems: Seq[String] = array.flatMap({
     case sn: SNode[K, V] => Some(sn.kvPair._2.toString): IterableOnce[String]
     case in: INode[K, V] => Some(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")"): IterableOnce[String]
-  }: (BasicNode => IterableOnce[String])) //TODO remove type annotatation in 2.13
+  })
 
   override def toString = {
     val elems = collectLocalElems
