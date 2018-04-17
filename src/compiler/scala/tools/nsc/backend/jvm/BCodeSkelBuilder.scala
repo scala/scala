@@ -150,11 +150,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       emitAnnotations(cnode, claszSymbol.annotations ++ ssa)
 
       if (isCZStaticModule || isCZParcelable) {
-
         if (isCZStaticModule) { addModuleInstanceField() }
-
       } else {
-
         if (!settings.noForwarders) {
           val lmoc = claszSymbol.companionModule
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735

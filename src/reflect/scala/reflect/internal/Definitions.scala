@@ -566,6 +566,12 @@ trait Definitions extends api.StandardDefinitions {
     def hasJavaMainMethod(sym: Symbol): Boolean =
       (sym.tpe member nme.main).alternatives exists isJavaMainMethod
 
+    def isPlainMainMethod(sym: Symbol) = (sym.name == nme.main) && (sym.info match {
+      case MethodType(Nil, r) => r.typeSymbol == UnitClass
+      case NullaryMethodType(r) => r.typeSymbol == UnitClass
+      case _ => false
+    })
+
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset

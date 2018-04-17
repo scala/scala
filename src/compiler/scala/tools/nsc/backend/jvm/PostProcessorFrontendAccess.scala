@@ -32,8 +32,6 @@ sealed abstract class PostProcessorFrontendAccess {
 
   def backendClassPath: BackendClassPath
 
-  def getEntryPoints: List[String]
-
   def javaDefinedClasses: Set[InternalName]
 
   def recordPerRunCache[T <: Clearable](cache: T): T
@@ -246,8 +244,6 @@ object PostProcessorFrontendAccess {
     object backendClassPath extends BackendClassPath {
       def findClassFile(className: String): Option[AbstractFile] = cp.get.findClassFile(className)
     }
-
-    def getEntryPoints: List[String] = frontendSynch(cleanup.getEntryPoints)
 
     def javaDefinedClasses: Set[InternalName] = frontendSynch {
       currentRun.symSource.keys.iterator.collect{

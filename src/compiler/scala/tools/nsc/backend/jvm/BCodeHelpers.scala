@@ -778,6 +778,27 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
     }
 
+    def addJavaMain(jclass: asm.tree.ClassNode, plainMain: Symbol): Unit = {
+      val (throws, others) = plainMain.annotations partition (_.symbol == definitions.ThrowsClass)
+      val thrownExceptions: List[String] = getExceptions(throws)
+
+      val mirrorMethod: asm.MethodVisitor = jclass.visitMethod(
+        GenBCode.PublicStatic,
+        nme.main.toString,
+        MethodBType(List(ArrayBType(coreBTypes.StringRef)), UNIT).descriptor,
+        null,
+        mkArray(thrownExceptions))
+
+      mirrorMethod.visitParameter("args", asm.Opcodes.ACC_FINAL)
+      emitAnnotations(mirrorMethod, others)
+
+      mirrorMethod.visitCode()
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKESTATIC, jclass.name, nme.main.toString, MethodBType(Nil, UNIT).descriptor, false)
+      mirrorMethod.visitInsn(asm.Opcodes.RETURN)
+      mirrorMethod.visitMaxs(0, 1)
+      mirrorMethod.visitEnd()
+    }
+
     /* Add forwarders for all methods defined in `module` that don't conflict
      *  with methods in the companion class of `module`. A conflict arises when
      *  a method with the same name is defined both in a class and its companion object:
@@ -785,7 +806,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
+    def addForwarders(jclass: asm.tree.ClassNode, jclassName: String, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass, moduleClass)
 
       val linkedClass = moduleClass.companionClass
@@ -798,12 +819,17 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // * using `exitingPickler` (not `enteringErasure`) because erasure enters bridges in traversal,
       //   not in the InfoTransform, so it actually modifies the type from the previous phase.
       val members = exitingPickler(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
+      var javaMain = false
+      var plainMain: Symbol = null
       for (m <- members) {
         val excl = m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
           { val o = m.owner; (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass) } ||
           conflictingNames(m.name)
         if (!excl) addForwarder(jclass, moduleClass, m)
+        if (definitions.isJavaMainMethod(m)) javaMain = true
+        else if (definitions.isPlainMainMethod(m)) plainMain = m
       }
+      if (plainMain != null && !javaMain) addJavaMain(jclass, plainMain)
     }
 
     /*
