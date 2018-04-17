@@ -446,8 +446,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         currentRun.informUnitStarting(this, unit)
         val unit0 = currentUnit
         currentRun.currentUnit = unit
+        currentRun.profiler.beforeUnit(phase, unit.source.file)
         try apply(unit)
         finally {
+          currentRun.profiler.afterUnit(phase, unit.source.file)
           currentRun.currentUnit = unit0
           currentRun.advanceUnit()
         }
@@ -1110,6 +1112,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
 
+  override protected[scala] def currentRunProfilerBeforeCompletion(root: Symbol, associatedFile: AbstractFile): Unit = currentRun.profiler.beforeCompletion(root, associatedFile)
+  override protected[scala] def currentRunProfilerAfterCompletion(root: Symbol, associatedFile: AbstractFile): Unit = currentRun.profiler.afterCompletion(root, associatedFile)
+
   /** A Run is a single execution of the compiler on a set of units.
    */
   class Run extends RunContextApi with RunReporting with RunParsing {
@@ -1474,7 +1479,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private final val GlobalPhaseName = "global (synthetic)"
     protected final val totalCompileTime = statistics.newTimer("#total compile time", GlobalPhaseName)
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =  compileUnitsInternal(units,fromPhase)
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit = compileUnitsInternal(units,fromPhase)
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       reporter.reset()

@@ -109,11 +109,11 @@ object ScriptCommands {
     Project.setProject(session, newStructure, state)
   }
 
-  private[this] val enableOptimizer = Seq(
+  val enableOptimizer = Seq(
     scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
   )
 
-  private[this] val noDocs = Seq(
+  val noDocs = Seq(
     publishArtifact in (Compile, packageDoc) in ThisBuild := false
   )
 

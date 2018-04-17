@@ -203,6 +203,7 @@ abstract class SymbolLoaders {
     protected def doComplete(root: Symbol): Unit
 
     def sourcefile: Option[AbstractFile] = None
+    def associatedFile(self: Symbol): AbstractFile = NoAbstractFile
 
     /**
      * Description of the resource (ClassPath, AbstractFile)
@@ -221,23 +222,29 @@ abstract class SymbolLoaders {
     }
 
     override def complete(root: Symbol) {
+      val assocFile = associatedFile(root)
+      currentRunProfilerBeforeCompletion(root, assocFile)
       try {
-        val start = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
-        val currentphase = phase
-        doComplete(root)
-        phase = currentphase
-        informTime("loaded " + description, start)
-        ok = true
-        setSource(root)
-        setSource(root.companionSymbol) // module -> class, class -> module
+        try {
+          val start = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
+          val currentphase = phase
+          doComplete(root)
+          phase = currentphase
+          informTime("loaded " + description, start)
+          ok = true
+          setSource(root)
+          setSource(root.companionSymbol) // module -> class, class -> module
+        }
+        catch {
+          case ex@(_: IOException | _: MissingRequirementError) =>
+            ok = false
+            signalError(root, ex)
+        }
+        initRoot(root)
+        if (!root.isPackageClass) initRoot(root.companionSymbol)
+      } finally {
+        currentRunProfilerAfterCompletion(root, assocFile)
       }
-      catch {
-        case ex @ (_: IOException | _: MissingRequirementError) =>
-          ok = false
-          signalError(root, ex)
-      }
-      initRoot(root)
-      if (!root.isPackageClass) initRoot(root.companionSymbol)
     }
 
     override def load(root: Symbol) { complete(root) }
@@ -336,18 +343,27 @@ abstract class SymbolLoaders {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
+    override def associatedFile(self: Symbol): AbstractFile = classfile
   }
 
   class SourcefileLoader(val srcfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "source file "+ srcfile.toString
     override def fromSource = true
     override def sourcefile = Some(srcfile)
+    override def associatedFile(self: Symbol): AbstractFile = srcfile
     protected def doComplete(root: Symbol): Unit = compileLate(srcfile)
   }
 
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "module class loader"
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
+    override def associatedFile(self: Symbol): AbstractFile = {
+      val sourceModule = self.sourceModule
+      sourceModule.rawInfo match {
+        case loader: SymbolLoader => loader.associatedFile(sourceModule)
+        case _ => super.associatedFile(self)
+      }
+    }
   }
 
   /** used from classfile parser to avoid cycles */

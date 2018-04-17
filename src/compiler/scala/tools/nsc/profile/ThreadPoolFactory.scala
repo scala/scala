@@ -98,9 +98,9 @@ object ThreadPoolFactory {
       val data = new ThreadProfileData
       localData.set(data)
 
-      val profileStart = profiler.snapThread(0)
+      val profileStart = RealProfiler.snapThread(0)
       try worker.run finally {
-        val snap = profiler.snapThread(data.idleNs)
+        val snap = RealProfiler.snapThread(data.idleNs)
         val threadRange = ProfileRange(profileStart, snap, phase, shortId, data.taskCount, Thread.currentThread())
         profiler.completeBackground(threadRange)
       }
