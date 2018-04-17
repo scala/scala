@@ -276,7 +276,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     case null => None
     case _    =>
       val m = pattern matcher s
-      if (runMatcher(m)) Regex.extractGroupsFromMatcher(m)
+      if (runMatcher(m)) Some(List.tabulate(m.groupCount) { i => m.group(i + 1) })
       else None
   }
 
@@ -710,9 +710,9 @@ object Regex {
     def groupCount = matcher.groupCount
 
     private lazy val starts: Array[Int] =
-      ((0 to groupCount) map matcher.start).toArray
+      Array.tabulate(groupCount + 1) { matcher.start }
     private lazy val ends: Array[Int] =
-      ((0 to groupCount) map matcher.end).toArray
+      Array.tabulate(groupCount + 1) { matcher.end }
 
     /** The index of the first matched character in group `i`. */
     def start(i: Int) = starts(i)
@@ -758,25 +758,8 @@ object Regex {
     }
   }
 
-  private def extractGroupsFromMatch(m: Match): Option[List[String]] = {
-    var res = List.empty[String]
-    var index = m.groupCount
-    while (index > 0) {
-      res ::= m.group(index)
-      index -= 1
-    }
-    Some(res)
-  }
-
-  private def extractGroupsFromMatcher(m: Matcher): Option[List[String]] = {
-    var res = List.empty[String]
-    var index = m.groupCount
-    while (index > 0) {
-      res ::= m.group(index)
-      index -= 1
-    }
-    Some(res)
-  }
+  @inline private def extractGroupsFromMatch(m: Match): Option[List[String]] =
+     Some(List.tabulate(m.groupCount) { i => m.group(i + 1) })
 
   /** A class to step through a sequence of regex matches.
    *
