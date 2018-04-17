@@ -56,7 +56,7 @@ final class StringOps(private val s: String)
     *                `f` to each element of this String and collecting the results.
     */
   def map(f: Char => Char): String = {
-    val sb = new StringBuilder
+    val sb = new StringBuilder(length)
     for (ch <- s) sb += f(ch)
     sb.result()
   }
@@ -117,7 +117,7 @@ final class StringOps(private val s: String)
 
   /** A copy of the String with an element prepended */
   def prepended(c: Char): String = {
-    val b = new StringBuilder
+    val b = new StringBuilder(length + 1)
     b += c
     b ++= s
     b.result()
@@ -128,7 +128,7 @@ final class StringOps(private val s: String)
 
   /** A copy of the String with an element appended */
   def appended(c: Char): String = {
-    val b = new StringBuilder
+    val b = new StringBuilder(length + 1)
     b ++= s
     b += c
     b.result()
@@ -159,8 +159,20 @@ final class StringOps(private val s: String)
     *  @return a new string which is a copy of this string with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
-  def updated(index: Int, elem: Char): String =
-    fromSpecificIterable(new View.Updated(this, index, elem)) // TODO optimize
+  def updated(index: Int, elem: Char): String = {
+    val sb = new java.lang.StringBuilder(s)
+    sb.setCharAt(index, elem)
+    sb.toString()
+  }
+
+  // override for performance
+  /** Tests whether this $coll contains the given character.
+   *
+   *  @param elem  the character to test.
+   *  @return     `true` if this $coll has an element that is equal (as
+   *              determined by `==`) to `elem`, `false` otherwise.
+   */
+  override def contains[C >: Char](elem: C): Boolean = s.indexOf(elem) >= 0
 
   override def toString = s
 
@@ -177,12 +189,12 @@ final class StringOps(private val s: String)
   /** Return the current string concatenated `n` times.
    */
   def * (n: Int): String = {
-    val buf = new StringBuilder
+    val buf = new StringBuilder(length * n)
     for (i <- 0 until n) buf ++= toString
     buf.toString
   }
 
-  override def compare(other: String) = toString compareTo other
+  override def compare(other: String) = s compareTo other
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
