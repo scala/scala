@@ -86,7 +86,7 @@ object View extends IterableFactory[View] {
 
   /** A view with given elements */
   class Elems[A](xs: A*) extends View[A] {
-    def iterator() = Iterator(xs: _*)
+    def iterator() = xs.iterator()
     override def knownSize = xs.knownSize
   }
 

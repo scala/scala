@@ -809,10 +809,7 @@ object Iterator extends IterableFactory[Iterator] {
     def next() = if (consumed) empty.next() else { consumed = true; a }
   }
 
-  override def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
-    val length = xs.length
-    def apply(n: Int) = xs(n)
-  }.iterator()
+  override def apply[A](xs: A*): Iterator[A] = xs.iterator()
 
   /**
     * @return A builder for $Coll objects.
