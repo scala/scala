@@ -32,11 +32,11 @@ object Test extends App {
     check(set, distinct)
     check(set.clone, distinct)
 
-    val subset = set from (min + 1) until max
+    val subset = set rangeFrom (min + 1) rangeUntil max
     check(subset, distinctSublist)
     check(subset.clone, distinctSublist)
 
-    val subsubset = subset from (almostmin + 1) until almostmax
+    val subsubset = subset rangeFrom (almostmin + 1) rangeUntil almostmax
     check(subsubset, distinctSubsublist)
     check(subsubset.clone, distinctSubsublist)
   }
@@ -53,11 +53,11 @@ object Test extends App {
     check(set, list, nonlist)
     check(set.clone, list, nonlist)
 
-    val subset = set from (min + 1) until max
+    val subset = set rangeFrom (min + 1) rangeUntil max
     check(subset, sublist, subnonlist)
     check(subset.clone, sublist, subnonlist)
 
-    val subsubset = subset from (almostmin + 1) until almostmax
+    val subsubset = subset rangeFrom (almostmin + 1) rangeUntil almostmax
     check(subsubset, subsublist, subsubnonlist)
     check(subsubset.clone, subsublist, subsubnonlist)
   }
@@ -77,9 +77,9 @@ object Test extends App {
 
     val set = TreeSet[Int]()
     val clone = set.clone
-    val subset = set.clone from (min + 1) until max
+    val subset = set.clone rangeFrom (min + 1) rangeUntil max
     val subclone = subset.clone
-    val subsubset = subset.clone from (almostmin + 1) until almostmax
+    val subsubset = subset.clone rangeFrom (almostmin + 1) rangeUntil almostmax
     val subsubclone = subsubset.clone
 
     check(set, list, nonlist)
@@ -104,9 +104,9 @@ object Test extends App {
     }
     val set = TreeSet(list:_*)
     val clone = set.clone
-    val subset = set.clone from (min + 1) until max
+    val subset = set.clone rangeFrom (min + 1) rangeUntil max
     val subclone = subset.clone
-    val subsubset = subset.clone from (almostmin + 1) until almostmax
+    val subsubset = subset.clone rangeFrom (almostmin + 1) rangeUntil almostmax
     val subsubclone = subsubset.clone
 
     check(set, sorted)
@@ -128,11 +128,11 @@ object Test extends App {
     check(set, sorted)
     check(set.clone, sorted)
 
-    val subset = set from (min + 1) until max
+    val subset = set rangeFrom (min + 1) rangeUntil max
     check(subset, subsorted)
     check(subset.clone, subsorted)
 
-    val subsubset = subset from (almostmin + 1) until almostmax
+    val subsubset = subset rangeFrom (almostmin + 1) rangeUntil almostmax
     check(subsubset, subsubsorted)
     check(subsubset.clone, subsubsorted)
   }

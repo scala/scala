@@ -6,6 +6,6 @@ object Test {
   def main(args: Array[String]): Unit = {
     val m = SortedMap(Array[Byte](1) -> 0)
     println(m.rangeTo(Array[Byte](1)).toSeq flatMap (_._1.mkString))
-    println(m.from(Array[Byte](1)).toSeq flatMap (_._1.mkString))
+    println(m.rangeFrom(Array[Byte](1)).toSeq flatMap (_._1.mkString))
   }
 }
