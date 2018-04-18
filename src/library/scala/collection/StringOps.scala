@@ -1,7 +1,7 @@
 package scala
 package collection
 
-import java.lang.IllegalArgumentException
+import java.lang.{IllegalArgumentException, StringBuilder}
 import java.util.{Arrays, NoSuchElementException}
 import scala.util.matching.Regex
 import scala.math.{Ordered, ScalaNumber}
@@ -27,7 +27,7 @@ final class StringOps(private val s: String)
   def toIterable = StringView(s)
   override def view: StringView = StringView(s)
   protected[this] def coll: String = s
-  override def toSeq: immutable.Seq[Char] = s.toCharArray.toSeq
+  override def toSeq: immutable.Seq[Char] = s.toCharArray
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
@@ -37,7 +37,7 @@ final class StringOps(private val s: String)
 
   def iterableFactory = immutable.IndexedSeq
 
-  override protected[this] def newSpecificBuilder() = new StringBuilder
+  override protected[this] def newSpecificBuilder() = new mutable.StringBuilder
 
   def length = s.length
 
@@ -62,7 +62,7 @@ final class StringOps(private val s: String)
       dst(i) = f(s charAt i)
       i += 1
     }
-    String.valueOf(dst)
+    new String(dst)
   }
 
   // Overloaded version of `flatMap` that gives back a string, where the inherited
@@ -113,10 +113,16 @@ final class StringOps(private val s: String)
   def padTo(len: Int, elem: Char): String = {
     val sLen = s.length
     if (sLen >= len) s else {
-      val dst = new Array[Char](len)
-      s.getChars(0, sLen, dst, 0)
-      Arrays.fill(dst, sLen, len, elem)
-      String.valueOf(dst)
+      val sb = new StringBuilder(len)
+      sb.append(s)
+      // With JDK 11, this can written as:
+      // sb.append(String.valueOf(elem).repeat(len - sLen))
+      var i = sLen
+      while (i < len) {
+        sb.append(elem)
+        i += 1
+      }
+      sb.toString
     }
   }
 
@@ -127,31 +133,15 @@ final class StringOps(private val s: String)
   def ++(xs: String): String = s + xs
 
   /** A copy of the String with an element prepended */
-  def prepended(c: Char): String = {
-    val len = s.length
-    if (len == 0) String.valueOf(c)
-    else {
-      val dst = new Array[Char](len + 1)
-      dst(0) = c
-      s.getChars(0, len, dst, 1)
-      String.valueOf(dst)
-    }
-  }
+  def prepended(c: Char): String =
+    new StringBuilder(s.length + 1).append(c).append(s).toString
 
   /** Alias for `prepended` */
   @`inline` def +: (c: Char): String = prepended(c)
 
   /** A copy of the String with an element appended */
-  def appended(c: Char): String = {
-    val len = s.length
-    if (len == 0) String.valueOf(c)
-    else {
-      val dst = new Array[Char](len + 1)
-      s.getChars(0, len, dst, 0)
-      dst(len) = c
-      String.valueOf(dst)
-    }
-  }
+  def appended(c: Char): String =
+    new StringBuilder(s.length + 1).append(s).append(c).toString
 
   /** Alias for `appended` */
   @`inline` def :+ (c: Char): String = appended(c)
@@ -179,9 +169,9 @@ final class StringOps(private val s: String)
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated(index: Int, elem: Char): String = {
-    val dst = s.toCharArray
-    dst(index) = elem
-    String.valueOf(dst)
+    val sb = new StringBuilder(s.length).append(s)
+    sb.setCharAt(index, elem)
+    sb.toString
   }
 
   // override for performance
@@ -208,10 +198,11 @@ final class StringOps(private val s: String)
     else s.substring(start, end)
   }
 
+  // Note: String.repeat is added in JDK 11.
   /** Return the current string concatenated `n` times.
    */
-  def * (n: Int): String = {
-    val sb = new StringBuilder(length * n)
+  def *(n: Int): String = {
+    val sb = new StringBuilder(s.length * n)
     var i = 0
     while (i < n) {
       sb.append(s)
