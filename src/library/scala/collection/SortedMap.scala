@@ -79,23 +79,23 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     * @param key The given key.
     * @return `None` if there is no such node.
     */
-  def minAfter(key: K): Option[(K, V)] = from(key).headOption
+  def minAfter(key: K): Option[(K, V)] = rangeFrom(key).headOption
 
   /** Find the element with largest key less than a given key.
     * @param key The given key.
     * @return `None` if there is no such node.
     */
-  def maxBefore(key: K): Option[(K, V)] = until(key).lastOption
+  def maxBefore(key: K): Option[(K, V)] = rangeUntil(key).lastOption
 
   def rangeTo(to: K): C = {
-    val i = keySet.from(to).iterator()
+    val i = keySet.rangeFrom(to).iterator()
     if (i.isEmpty) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)
       if (i.isEmpty) coll
-      else until(i.next())
+      else rangeUntil(i.next())
     else
-      until(next)
+      rangeUntil(next)
   }
 
   override def keySet: SortedSet[K] = new KeySortedSet

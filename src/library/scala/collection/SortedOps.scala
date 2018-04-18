@@ -38,13 +38,33 @@ trait SortedOps[A, +C] {
     *
     *  @param from The lower-bound (inclusive) of the ranged projection.
     */
-  def from(from: A): C = rangeImpl(Some(from), None)
+  @deprecated("Use rangeFrom", "2.13.0")
+  final def from(from: A): C = rangeFrom(from)
+
+  /** Creates a ranged projection of this collection with no upper-bound.
+   *
+   *  @param from The lower-bound (inclusive) of the ranged projection.
+   */
+  def rangeFrom(from: A): C = rangeImpl(Some(from), None)
 
   /** Creates a ranged projection of this collection with no lower-bound.
     *
     *  @param until The upper-bound (exclusive) of the ranged projection.
     */
-  def until(until: A): C = rangeImpl(None, Some(until))
+  @deprecated("Use rangeUntil", "2.13.0")
+  final def until(until: A): C = rangeUntil(until)
+
+  /** Creates a ranged projection of this collection with no lower-bound.
+   *
+   *  @param until The upper-bound (exclusive) of the ranged projection.
+   */
+  def rangeUntil(until: A): C = rangeImpl(None, Some(until))
+
+  /** Create a range projection of this collection with no lower-bound.
+    *  @param to The upper-bound (inclusive) of the ranged projection.
+    */
+  @deprecated("Use rangeTo", "2.13.0")
+  final def to(to: A): C = rangeTo(to)
 
   /** Create a range projection of this collection with no lower-bound.
     *  @param to The upper-bound (inclusive) of the ranged projection.

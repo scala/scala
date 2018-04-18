@@ -24,7 +24,7 @@ object Test {
       big -= 1
       if (i % M == 0) {
         //println("big: "+big+", free memory: "+freeMBytes)
-        aSortedSet.until(i)
+        aSortedSet.rangeUntil(i)
       }
     }
   }
@@ -38,7 +38,7 @@ object Test {
       aSortedSet = (aSortedSet - big) ++ (TreeSet(i, big - 1)) + big
       big -= 1
       if (i % M == 0) {
-        aSortedSet.until(i)
+        aSortedSet.rangeUntil(i)
       }
     }
   }

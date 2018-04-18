@@ -46,23 +46,23 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     * @param key The given key.
     * @return `None` if there is no such node.
     */
-  def minAfter(key: A): Option[A] = from(key).headOption
+  def minAfter(key: A): Option[A] = rangeFrom(key).headOption
 
   /** Find the largest element less than a given key.
     * @param key The given key.
     * @return `None` if there is no such node.
     */
-  def maxBefore(key: A): Option[A] = until(key).lastOption
+  def maxBefore(key: A): Option[A] = rangeUntil(key).lastOption
 
   def rangeTo(to: A): C = {
-    val i = from(to).iterator()
+    val i = rangeFrom(to).iterator()
     if (i.isEmpty) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)
       if (i.isEmpty) coll
-      else until(i.next())
+      else rangeUntil(i.next())
     else
-      until(next)
+      rangeUntil(next)
   }
 
   override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
