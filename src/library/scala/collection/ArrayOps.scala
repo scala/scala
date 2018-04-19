@@ -478,6 +478,61 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     v
   }
 
+   /** Produces an array containing cumulative results of applying the binary
+    *  operator going left to right.
+    *
+    *  @param   z    the start value.
+    *  @param   op   the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  array with intermediate values.
+    *
+    *  Example:
+    *  {{{
+    *    Array(1, 2, 3, 4).scanLeft(0)(_ + _) == Array(0, 1, 3, 6, 10)
+    *  }}}    
+    *
+    */
+  def scanLeft[ B : ClassTag ](z: B)(op: (B, A) => B): Array[B] = {
+    var v = z
+    var i = 0
+    var res = new Array[B](xs.length + 1)
+    while(i < xs.length) {
+      res(i) = v
+      v = op(v, xs(i))
+      i += 1
+    }
+    res(i) = v
+    res 
+  }
+
+
+   /** Produces an array containing cumulative results of applying the binary
+    *  operator going right to left.
+    *
+    *  @param   z    the start value.
+    *  @param   op   the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  array with intermediate values.
+    *
+    *  Example:
+    *  {{{
+    *    Array(4, 3, 2, 1).scanRight(0)(_ + _) == Array(10, 6, 3, 1, 0)
+    *  }}}    
+    *
+    */
+  def scanRight[ B : ClassTag ](z: B)(op: (A, B) => B): Array[B] = {
+    var v = z
+    var i = xs.length - 1
+    var res = new Array[B](xs.length + 1)
+    res(xs.length) = z
+    while(i >= 0) {
+      v = op(xs(i), v)
+      res(i) = v
+      i -= 1
+    }
+    res 
+  }
+
   /** Applies a binary operator to all elements of this array and a start value,
     * going right to left.
     *

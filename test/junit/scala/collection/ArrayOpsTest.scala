@@ -40,4 +40,34 @@ class ArrayOpsTest {
     assertEquals(6, a.foldRight(0){ (a, b) => a+b })
     assertEquals(6, a.fold(0){ (a, b) => a+b })
   }
+
+  @Test
+  def scanLeft(): Unit = {
+    val arr = Array(2,3,4)
+    val sums = arr.scanLeft(1)(_ + _)
+    assertArrayEquals(Array(1, 3, 6, 10), sums)
+  }
+
+  @Test
+  def scanLeftZ(): Unit = {
+    val arr = Array[Int]()
+    val zero = arr.scanLeft(0)(_ + _)
+    assertArrayEquals(Array(0), zero)
+  }
+
+  @Test
+  def scanRight(): Unit = {
+    val arr = Array(4,3,2)
+    val sums = arr.scanRight(1)(_ + _)
+    assertArrayEquals(Array(10, 6, 3, 1), sums)
+  }
+
+  @Test
+  def scanRightZ(): Unit = {
+    val arr = Array[Int]()
+    val zero = arr.scanRight(0)(_ + _)
+    assertArrayEquals(Array(0), zero)
+  }
+
+
 }
