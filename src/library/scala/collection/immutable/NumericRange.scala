@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import scala.collection.{SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps, arrayToArrayOps}
+import scala.collection.{SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
 import java.lang.String
 
@@ -197,7 +197,7 @@ sealed class NumericRange[T](
       override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
 
       override def toString = {
-        def simpleOf(x: Any): String = collection.arrayToArrayOps(x.getClass.getName.split("\\.")).last
+        def simpleOf(x: Any): String = x.getClass.getName.split("\\.").last
         val stepped = simpleOf(underlyingRange.step)
         s"${super.toString} (using $underlyingRange of $stepped)"
       }

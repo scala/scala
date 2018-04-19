@@ -2,7 +2,7 @@ package scala
 
 import scala.language.higherKinds
 
-package object collection extends LowPriority {
+package object collection {
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
   type Traversable[+X] = Iterable[X]
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
@@ -41,39 +41,6 @@ package object collection extends LowPriority {
   @deprecated("Gen* collection types have been removed", "2.13.0")
   val GenMap = Map
 
-  import scala.language.implicitConversions
-  // ------------------ Decorators to add collection ops to existing types -----------------------
-
-  /** Decorator to add collection operations to strings. */
-  def stringToStringOps(s: String): StringOps = new StringOps(s)
-
-  /** Decorator to add collection operations to arrays. */
-  def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)
-
-  class toNewIterator[A](val it: scala.Iterator[A]) extends AnyVal {
-    def toStrawman = new scala.collection.Iterator[A] {
-      def hasNext = it.hasNext
-      def next() = it.next()
-    }
-  }
-
-  class toOldIterator[A](val it: scala.collection.Iterator[A]) extends AnyVal {
-    def toClassic = new scala.Iterator[A] {
-      def hasNext = it.hasNext
-      def next() = it.next()
-    }
-  }
-
-  class toNewSeq[A](val s: scala.collection.Seq[A]) extends AnyVal {
-    def toStrawman: scala.collection.Seq[A] =
-      new scala.collection.mutable.ArrayBuffer() ++= s.iterator
-  }
-
-  class toOldSeq[A](val s: scala.collection.Seq[A]) extends AnyVal {
-    def toClassic: scala.collection.Seq[A] =
-      new scala.collection.mutable.ArrayBuffer ++= s.iterator()
-  }
-
   /** Needed to circumvent a difficulty between dotty and scalac concerning
    *  the right top type for a type parameter of kind * -> *.
    *  In Scalac, we can provide `Any`, as `Any` is kind-polymorphic. In dotty this is not allowed.
@@ -107,13 +74,6 @@ package object collection extends LowPriority {
     }
   }
 
-  def optionToIterableOnce[A](maybeA: scala.Option[A]): IterableOnce[A] =
-     new Iterator[A] {
-       private var _hasNext = maybeA.nonEmpty
-       def next(): A = if (_hasNext) { _hasNext = false; maybeA.get } else Iterator.empty.next()
-       def hasNext: Boolean = _hasNext
-     }
-
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
     /** Splits a sequence into head :+ tail.
@@ -133,15 +93,4 @@ package object collection extends LowPriority {
       if(t.isEmpty) None
       else Some(t.init -> t.last)
   }
-}
-
-class LowPriority {
-  import scala.language.implicitConversions
-  import scala.collection._
-
-  /** Convert array to WrappedArray. Lower priority than ArrayOps */
-  def arrayToWrappedArray[T](xs: Array[T]): mutable.IndexedSeq[T] = mutable.WrappedArray.make(xs)
-
-  /** Convert String to Seq. Lower priority than StringOps */
-  def stringToSeq(s: String): immutable.WrappedString = new immutable.WrappedString(s)
 }

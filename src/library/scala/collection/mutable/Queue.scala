@@ -10,8 +10,6 @@ package scala.collection
 package mutable
 
 
-import scala.collection.toNewSeq
-
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
   *
