@@ -421,12 +421,7 @@ class MutableSettings(val errorFn: String => Unit)
     // Ensure that the default value is actually valid
     assert(isInputValid(default))
 
-    def parseArgument(x: String): Option[Int] = {
-      parser(x) orElse {
-        try   { Some(x.toInt) }
-        catch { case _: NumberFormatException => None }
-      }
-    }
+    def parseArgument(x: String): Option[Int] = parser(x) orElse x.parseInt
 
     def errorMsg() = errorFn(s"invalid setting for $name $getValidText")
 

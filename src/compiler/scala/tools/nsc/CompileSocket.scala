@@ -174,13 +174,8 @@ class CompileSocket extends CompileOutputCommon {
     getsock(maxAttempts)
   }
 
-  // XXX way past time for this to be central
-  def parseInt(x: String): Option[Int] =
-    try   { Some(x.toInt) }
-    catch { case _: NumberFormatException => None }
-
   def getSocket(serverAdr: String): Option[Socket] = (
-    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- parseInt(portStr)) yield
+    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- portStr.parseInt) yield
       getSocket(name, port)
   ) getOrElse fatal("Malformed server address: %s; exiting" format serverAdr)
 

@@ -376,7 +376,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     compileOrder := CompileOrder.Mixed, // needed for JFunction classes in scala.runtime.java8
-    scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
+    scalacOptions in Compile ++= Seq[String]("-opt:l:inline", "-opt-inline-from:**", "-opt:l:method", "-sourcepath", (scalaSource in Compile).value.toString),
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq(
@@ -643,6 +643,8 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
+    //Make scalacheck print full stack traces
+    testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.CustomScalaCheckFramework"), "-verbosity", "2"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   ).settings(
