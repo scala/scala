@@ -213,4 +213,10 @@ class StreamTest {
     cyc.tail.tail.tail.tail
     assertEquals("Stream(1, 2, 3, 4, ...)", cyc.toString)
   }
+
+  @Test
+  def testAppendAliasToLazyAppendAll: Unit = {
+    val l = 1 #:: 2 #:: 3 #:: Stream.Empty
+    assertEquals(l.append(l), l.lazyAppendAll(l))
+  }
 }
