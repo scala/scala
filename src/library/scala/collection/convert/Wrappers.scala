@@ -178,7 +178,7 @@ private[collection] trait Wrappers {
       sz < underlying.size
     }
     override def remove(elem: AnyRef) =
-      try underlying.remove(elem.asInstanceOf[A]).isDefined
+      try underlying.remove(elem.asInstanceOf[A])
       catch { case ex: ClassCastException => false }
     override def clear() = underlying.clear()
   }
@@ -195,8 +195,7 @@ private[collection] trait Wrappers {
     def addOne(elem: A): this.type = { underlying add elem; this }
     def subtractOne(elem: A): this.type = { underlying remove elem; this }
 
-    //TODO Should Set.remove return the canonical element? There is no efficient way to support this for wrapped Java Sets
-    override def remove(elem: A): Option[A] = if(underlying remove elem) Some(elem) else None
+    override def remove(elem: A): Boolean = underlying remove elem
     override def clear() = underlying.clear()
 
     //TODO Should Set.get be supported? There is no efficient way to return the canonical element from a Java Set

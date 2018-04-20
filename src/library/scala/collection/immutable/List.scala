@@ -7,9 +7,6 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer, ReusableBuilder}
-import scala.collection.{LinearSeq, Seq}
-
-
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
