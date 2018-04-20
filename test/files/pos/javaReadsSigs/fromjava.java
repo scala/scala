@@ -46,7 +46,9 @@ public class fromjava {
     return y.head();
   }
   public static String list(List<String> x) {
-    List<String> y = (List<String>)x.drop(2); // TODO-newColl: remove cast
+    // Needs cast since 2.13, as `drop` is not overridden in List.
+    // 2.12 has the same issue for methods that are not overridden, e.g., dropRight
+    List<String> y = (List<String>)x.drop(2);
     return y.head();
   }
   public static Tuple2<String, Integer> map(Map<String, Integer> x) {
