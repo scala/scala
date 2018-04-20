@@ -67,4 +67,13 @@ class TraversableOnceTest {
     assert(evaluatedCountOfMinBy == list.length, s"minBy: should evaluate f only ${list.length} times, but it evaluated $evaluatedCountOfMinBy times.")
   }
 
+  @Test
+  def copyToBuffer(): Unit = {
+    val b1 = mutable.ArrayBuffer.empty[Int]
+    list.copyToBuffer(b1)
+    val b2 = mutable.ArrayBuffer.empty[Int]
+    b2 ++= list
+    assert(b1 == b2)
+  }
+
 }

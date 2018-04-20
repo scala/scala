@@ -617,6 +617,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     }
   }
 
+  @deprecated("Use `dest ++= coll` instead", "2.13.0")
+  @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
+
   /** Copy elements of this collection to an array.
     *  Fills the given array `xs` starting at index `start`.
     *  Copying will stop once either the all elements of this collection have been copied,
