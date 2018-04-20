@@ -17,17 +17,7 @@ trait Seq[+A] extends Iterable[A]
   * @define coll immutable sequence
   * @define Coll `immutable.Seq`
   */
-trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C] {
-
-  /** A copy of this $coll with one single replaced element.
-    *  @param  index  the position of the replacement
-    *  @param  elem   the replacing element
-    *  @tparam B        the element type of the returned $coll.
-    *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
-    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
-    */
-  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
-}
+trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C]
 
 /**
   * $factoryInfo
