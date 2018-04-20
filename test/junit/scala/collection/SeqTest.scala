@@ -69,4 +69,11 @@ class SeqTest {
 
     assertEquals(Seq(1, 3, 5), s1.intersect(s2))
   }
+
+  @Test
+  def unionAlias(): Unit = {
+    val s1 = Seq(1, 2, 3)
+    val s2 = Seq(4, 5, 6)
+    assertEquals(s1.concat(s2), s1.union(s2))
+  }
 }
