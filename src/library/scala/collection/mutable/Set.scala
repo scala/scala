@@ -74,14 +74,18 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()
     val toRemove = Set[A]()
-    for (elem <- this)
+    toRemove ++= this
+
+    for (elem <- this){
       for (mapped <- f(elem).iterator())
-        if (!contains(mapped)) {
-          toAdd += mapped
-          toRemove -= elem
+        if(contains(mapped)) {
+          toRemove -= mapped 
+        } else  {
+          toAdd += mapped 
         }
-    for (elem <- toRemove) coll -= elem
-    for (elem <- toAdd) coll += elem
+    }
+    coll --= toRemove
+    coll ++= toAdd 
     this
   }
 
