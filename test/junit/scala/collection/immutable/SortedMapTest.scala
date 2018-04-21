@@ -97,6 +97,12 @@ class SortedMapTest {
     assertEquals("element missing", newMap(4))
   }
 
+  @Test
+  def testTransformReturnsSortedMap(): Unit = {
+    val tm = SortedMap(1 -> 1).transform(_ + _)
+    assert((tm: SortedMap[Int, Int]).isInstanceOf[SortedMap[_, _]])
+  }
+
   private def defaultValueFunction: Int => String = {
     i => s"$i is not present in this map"
   }
