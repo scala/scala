@@ -20,7 +20,7 @@ import java.lang.String
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
+class HashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
@@ -29,11 +29,9 @@ class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, Default
   override def mapFactory = HashMap
 
   @transient private[this] var table: HashTable[K, V, DefaultEntry[K, V]] = newHashTable
-  table.initWithContents(contents)
 
   type Entry = DefaultEntry[K, V]
 
-  def this() = this(null)
 
   private def newHashTable =
     new HashTable[K, V, DefaultEntry[K, V]] {

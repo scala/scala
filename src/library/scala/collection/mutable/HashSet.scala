@@ -18,7 +18,7 @@ package mutable
   * @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-final class HashSet[A](contents: FlatHashTable.Contents[A])
+final class HashSet[A]
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
@@ -26,7 +26,6 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
 
   @transient private[this] var table = new FlatHashTable[A]
 
-  def this() = this(null)
 
   override def iterator(): Iterator[A] = table.iterator
 

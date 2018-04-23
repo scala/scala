@@ -363,27 +363,6 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     val exponent = Integer.numberOfLeadingZeros(ones)
     (improve(hcode, seedvalue) >>> exponent) & ones
   }
-
-  def initWithContents(c: HashTable.Contents[A, Entry]) = {
-    if (c != null) {
-      _loadFactor = c.loadFactor
-      table = c.table
-      tableSize = c.tableSize
-      threshold = c.threshold
-      seedvalue = c.seedvalue
-      sizemap = c.sizemap
-    }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
-  }
-
-  private[collection] def hashTableContents = new HashTable.Contents(
-    _loadFactor,
-    table,
-    tableSize,
-    threshold,
-    seedvalue,
-    sizemap
-  )
 }
 
 private[collection] object HashTable {
@@ -425,29 +404,6 @@ private[collection] object HashTable {
    * Returns a power of two >= `target`.
    */
   private[collection] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
-
-  class Contents[A, Entry >: Null <: HashEntry[A, Entry]](
-    val loadFactor: Int,
-    val table: Array[HashEntry[A, Entry]],
-    val tableSize: Int,
-    val threshold: Int,
-    val seedvalue: Int,
-    val sizemap: Array[Int]
-  ) {
-    import scala.collection.DebugUtils._
-    private[collection] def debugInformation = buildString {
-      append =>
-      append("Hash table contents")
-      append("-------------------")
-      append("Table: [" + arrayString(table, 0, table.length) + "]")
-      append("Table size: " + tableSize)
-      append("Load factor: " + loadFactor)
-      append("Seedvalue: " + seedvalue)
-      append("Threshold: " + threshold)
-      append("Sizemap: [" + arrayString(sizemap, 0, sizemap.length) + "]")
-    }
-  }
-
 }
 
 /** Class used internally.
