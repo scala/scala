@@ -409,7 +409,7 @@ private[collection] object HashTable {
 /** Class used internally.
   * @since 2.8
   */
-trait HashEntry [A, E <: HashEntry[A, E]] {
+private[mutable] trait HashEntry[A, E <: HashEntry[A, E]] {
   val key: A
   var next: E = _
 }

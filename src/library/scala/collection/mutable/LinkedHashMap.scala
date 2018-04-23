@@ -23,7 +23,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
     *  @since 2.8
     */
   @SerialVersionUID(3L)
-  final class LinkedEntry[K, V](val key: K, var value: V)
+  private[mutable] final class LinkedEntry[K, V](val key: K, var value: V)
     extends HashEntry[K, LinkedEntry[K, V]]
       with Serializable {
     var earlier: LinkedEntry[K, V] = null

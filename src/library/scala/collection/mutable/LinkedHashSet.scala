@@ -140,7 +140,7 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
    *  @since 2.10
    */
   @SerialVersionUID(3L)
-  private[scala] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
+  private[mutable] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
     var earlier: Entry[A] = null
     var later: Entry[A] = null
   }
