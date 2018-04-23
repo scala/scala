@@ -2502,7 +2502,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
         val statsTyped2 = statsTyped match {
-          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs.remove(vd.symbol).isDefined => Nil
+          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs.remove(vd.symbol) => Nil
           case _ => statsTyped
         }
 

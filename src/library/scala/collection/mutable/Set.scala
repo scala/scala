@@ -62,8 +62,8 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     else remove(elem)
   }
 
-  def remove(elem: A): Option[A] = {
-    val res = get(elem)
+  def remove(elem: A): Boolean = {
+    val res = contains(elem)
     coll -= elem
     res
   }

@@ -72,9 +72,9 @@ class LinkedHashSet[A]
     this
   }
 
-  override def remove(elem: A): Option[A] = {
+  override def remove(elem: A): Boolean = {
     val e = table.removeEntry(elem)
-    if (e eq null) None
+    if (e eq null) false
     else {
       if (e.earlier eq null) firstEntry = e.later
       else e.earlier.later = e.later
@@ -82,7 +82,7 @@ class LinkedHashSet[A]
       else e.later.earlier = e.earlier
       e.earlier = null // Null references to prevent nepotism
       e.later = null
-      Some(e.key)
+      true
     }
   }
 
