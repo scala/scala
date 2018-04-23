@@ -397,8 +397,7 @@ lazy val library = configureAsSubproject(project)
     mimaCheckDirection := "both"
   )
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
-                                           regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
-                                           regexFileFilter(".*/runtime/StringAdd\\.scala"))))
+                                           regexFileFilter(".*/runtime/ScalaRunTime\\.scala"))))
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
