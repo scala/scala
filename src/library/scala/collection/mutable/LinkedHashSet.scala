@@ -35,6 +35,9 @@ class LinkedHashSet[A]
   @transient protected var lastEntry: Entry = null
   @transient private[this] var table: HashTable[A, AnyRef, Entry] = newHashTable
 
+  // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
+  private[mutable] def getTable: HashTable[A, AnyRef, Entry] = table
+
   private def newHashTable =
     new HashTable[A, AnyRef, Entry] {
       def createNewEntry(key: A, value: AnyRef) = {

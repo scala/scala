@@ -52,9 +52,16 @@ class LinkedHashMap[K, V]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
     with Serializable {
 
-  type Entry = LinkedHashMap.LinkedEntry[K, V]
+  override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
+  private[mutable] type Entry = LinkedHashMap.LinkedEntry[K, V]
+
+  @transient protected var firstEntry: Entry = null
+  @transient protected var lastEntry: Entry = null
   @transient private[this] var table: HashTable[K, V, Entry] = newHashTable
+
+  // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
+  private[mutable] def getTable: HashTable[K, V, Entry] = table
 
   private def newHashTable =
     new HashTable[K, V, Entry] {
@@ -78,11 +85,6 @@ class LinkedHashMap[K, V]
 
   override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
-
-  @transient protected var firstEntry: Entry = null
-  @transient protected var lastEntry: Entry = null
-
-  override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)

@@ -26,6 +26,8 @@ final class HashSet[A]
 
   @transient private[this] var table = new FlatHashTable[A]
 
+  // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
+  private[mutable] def getTable: FlatHashTable[A] = table
 
   override def iterator(): Iterator[A] = table.iterator
 
