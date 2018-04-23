@@ -64,10 +64,10 @@ trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] with RangedProxy[T
   type ResultWithoutStep = Range.Partial[T, NumericRange[T]]
 
   def isWhole() = false
-  def until(end: T): ResultWithoutStep                  = new Range.Partial(NumericRange(self, end, _))
-  def until(end: T, step: T): NumericRange.Exclusive[T] = NumericRange(self, end, step)
-  def to(end: T): ResultWithoutStep                     = new Range.Partial(NumericRange.inclusive(self, end, _))
-  def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
+  @deprecated("use BigDecimal range instead", "2.12.6") def until(end: T): ResultWithoutStep                  = new Range.Partial(NumericRange(self, end, _))
+  @deprecated("use BigDecimal range instead", "2.12.6") def until(end: T, step: T): NumericRange.Exclusive[T] = NumericRange(self, end, step)
+  @deprecated("use BigDecimal range instead", "2.12.6") def to(end: T): ResultWithoutStep                     = new Range.Partial(NumericRange.inclusive(self, end, _))
+  @deprecated("use BigDecimal range instead", "2.12.6") def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
 }
 
 trait OrderedProxy[T] extends Any with Ordered[T] with Typed[T] {
