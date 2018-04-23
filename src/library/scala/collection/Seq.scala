@@ -181,6 +181,17 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   // overrides of this method
   @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
+ /** Produces a new sequence which contains all elements of this $coll and also all elements of
+   *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
+   *
+   *  @param that   the sequence to add.
+   *  @tparam B     the element type of the returned $coll.
+   *  @return       a new collection which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   */
+  @deprecated("Use `concat` instead", "2.13.0")
+  @inline final def union[B >: A, That](that: Seq[B]): CC[B] = concat(that)
+
   final override def size: Int = length
 
   /** Selects all the elements of this $coll ignoring the duplicates.
