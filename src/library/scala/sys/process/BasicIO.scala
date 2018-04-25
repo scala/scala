@@ -37,16 +37,16 @@ object BasicIO {
   private[process] final class Streamed[T](
     val process:   T => Unit,
     val    done: Int => Unit,
-    val  stream:  () => Stream[T]
+    val  stream:  () => LazyList[T]
   )
 
   private[process] object Streamed {
     def apply[T](nonzeroException: Boolean, capacity: Integer): Streamed[T] = {
       val q = new LinkedBlockingQueue[Either[Int, T]](capacity)
-      def next(): Stream[T] = q.take match {
-        case Left(0)    => Stream.empty
-        case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
-        case Right(s)   => Stream.cons(s, next())
+      def next(): LazyList[T] = q.take match {
+        case Left(0)    => LazyList.empty
+        case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else LazyList.empty
+        case Right(s)   => LazyList.cons(s, next())
       }
       new Streamed((s: T) => q put Right(s), code => q put Left(code), () => next())
     }

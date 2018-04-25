@@ -85,10 +85,10 @@ private[hashing] class MurmurHash3 {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  final def unorderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
+  final def unorderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs foreach { x =>
+    xs.iterator() foreach { x =>
       val h = x.##
       a += h
       b ^= h
@@ -103,10 +103,10 @@ private[hashing] class MurmurHash3 {
   }
   /** Compute a hash that depends on the order of its arguments.
    */
-  final def orderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
+  final def orderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var n = 0
     var h = seed
-    xs foreach { x =>
+    xs.iterator() foreach { x =>
       h = mix(h, x.##)
       n += 1
     }
@@ -207,10 +207,10 @@ object MurmurHash3 extends MurmurHash3 {
 
   def arrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, arraySeed)
   def bytesHash(data: Array[Byte]): Int            = bytesHash(data, arraySeed)
-  def orderedHash(xs: TraversableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
+  def orderedHash(xs: IterableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
   def productHash(x: Product): Int                 = productHash(x, productSeed)
   def stringHash(x: String): Int                   = stringHash(x, stringSeed)
-  def unorderedHash(xs: TraversableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
+  def unorderedHash(xs: IterableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
 
   private[scala] def wrappedArrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
   private[scala] def wrappedBytesHash(data: Array[Byte]): Int            = bytesHash(data, seqSeed)
@@ -235,8 +235,8 @@ object MurmurHash3 extends MurmurHash3 {
     def hash(data: Array[Byte]) = bytesHash(data)
   }
 
-  def orderedHashing = new Hashing[TraversableOnce[Any]] {
-    def hash(xs: TraversableOnce[Any]) = orderedHash(xs)
+  def orderedHashing = new Hashing[IterableOnce[Any]] {
+    def hash(xs: IterableOnce[Any]) = orderedHash(xs)
   }
 
   def productHashing = new Hashing[Product] {
@@ -247,8 +247,8 @@ object MurmurHash3 extends MurmurHash3 {
     def hash(x: String) = stringHash(x)
   }
 
-  def unorderedHashing = new Hashing[TraversableOnce[Any]] {
-    def hash(xs: TraversableOnce[Any]) = unorderedHash(xs)
+  def unorderedHashing = new Hashing[IterableOnce[Any]] {
+    def hash(xs: IterableOnce[Any]) = unorderedHash(xs)
   }
 
   /** All this trouble and foreach still appears faster.
