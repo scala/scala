@@ -18,7 +18,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.sys.process.{Process, ProcessLogger}
-import scala.tools.nsc.Properties.{envOrNone, isWin, javaHome, javaVmInfo, javaVmName, javaVmVersion, propOrEmpty, versionMsg}
+import scala.tools.nsc.Properties.{isWin, javaHome, javaVmInfo, javaVmName, javaVmVersion, propOrEmpty, versionMsg}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
@@ -88,9 +88,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   val testIdent  = testFile.testIdent // e.g. pos/t1234
 
   lazy val outDir = { outFile.mkdirs() ; outFile }
-
-  // oh boy...
-  private lazy val antLauncher = SFile(Path(envOrNone("ANT_HOME") getOrElse "/opt/ant/") / "lib/ant-launcher.jar")
 
   type RanOneTest = (Boolean, LogContext)
 
@@ -594,42 +591,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     compilationRounds(testFile).forall(x => nextTestActionExpectTrue("compilation failed", x.isOk)) && andAlso
   }
 
-  // Apache Ant 1.6 or newer
-  def ant(args: Seq[String], output: File): Boolean = {
-    val antOptions =
-      if (nestUI.verbose) List("-verbose", "-noinput")
-      else List("-noinput")
-    val cmd = javaCmdPath +: (
-      suiteRunner.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
-        "-classpath",
-        antLauncher.path,
-        "org.apache.tools.ant.launch.Launcher"
-      ) ++ antOptions ++ args
-    )
-
-    runCommand(cmd.toIndexedSeq, output)
-  }
-
-  def runAntTest(): (Boolean, LogContext) = {
-    val (swr, wr) = newTestWriters()
-
-    val succeeded = try {
-      val binary = "-Dbinary="+ fileManager.distKind
-      val args = Array(binary, "-logfile", logFile.getPath, "-file", testFile.getPath)
-      nestUI.verbose("ant "+args.mkString(" "))
-
-      pushTranscript(s"ant ${args.mkString(" ")}")
-      nextTestActionExpectTrue("ant failed", ant(args.toIndexedSeq, logFile)) && diffIsOk
-    }
-    catch { // *catch-all*
-      case e: Exception =>
-        nestUI.warning("caught "+e)
-        false
-    }
-
-    (succeeded, LogContext(logFile, swr, wr))
-  }
-
   def extraClasspath = kind match {
     case "specialized"  => List(PathSettings.srcSpecLib.fold(sys.error, identity))
     case _              => Nil
@@ -714,7 +675,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     if (kind == "neg" || (kind endsWith "-neg")) runNegTest()
     else kind match {
       case "pos"          => runTestCommon(true)
-      case "ant"          => runAntTest()
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
       case "script"       => runScriptTest()
@@ -792,7 +752,7 @@ object Properties extends scala.util.PropertiesTrait {
   protected def pickJarBasedOn  = classOf[SuiteRunner]
 }
 
-/** Extended by Ant- and ConsoleRunner for running a set of tests. */
+/** Used by SBT- and ConsoleRunner for running a set of tests. */
 class SuiteRunner(
   val testSourcePath: String, // relative path, like "files", or "pending"
   val fileManager: FileManager,
