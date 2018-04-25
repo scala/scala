@@ -1,5 +1,5 @@
 t1364.scala:9: error: overriding type T in trait A with bounds <: AnyRef{type S[-U]};
- type T has incompatible type
+  type T has incompatible type
  type T = { type S[U] = U }
       ^
 one error found

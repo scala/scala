@@ -336,20 +336,19 @@ abstract class RefChecks extends Transform {
           analyzer.foundReqMsg(pair.lowClassBound, pair.highClassBound)
         )
 
+        val indent = "  "
         def overrideErrorMsg(msg: String): String = {
           val isConcreteOverAbstract =
             (other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred
           val addendum =
             if (isConcreteOverAbstract)
-              ";\n (Note that %s is abstract,\n  and is therefore overridden by concrete %s)".format(
-                infoStringWithLocation(other),
-                infoStringWithLocation(member)
-              )
+              s";\n${indent}(note that ${infoStringWithLocation(other)} is abstract,\n" +
+              s"${indent}and is therefore overridden by concrete ${infoStringWithLocation(member)})"
             else if (settings.debug)
               analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
 
-          s"overriding ${infoStringWithLocation(other)};\n ${infoString(member)} $msg$addendum"
+          s"overriding ${infoStringWithLocation(other)};\n$indent$msg$addendum"
         }
         def emitOverrideError(fullmsg: String): Unit = {
           if (member.owner == clazz) reporter.error(member.pos, fullmsg)
@@ -358,14 +357,15 @@ abstract class RefChecks extends Transform {
 
         def overrideError(msg: String): Unit = {
           if (noErrorType)
-            emitOverrideError(overrideErrorMsg(msg))
+            emitOverrideError(overrideErrorMsg(infoString(member) + " " + msg))
         }
 
         def overrideTypeError(): Unit = {
           if (noErrorType) {
             emitOverrideError(
               if (member.isModule && other.isModule) objectOverrideErrorMsg
-              else overrideErrorMsg("has incompatible type")
+              else if (!other.isDeferred && other.isAliasType) overrideErrorMsg(s"overriding concrete type alias ${infoString(member)} is not allowed except when equivalent")
+              else overrideErrorMsg(s"${infoString(member)} has incompatible type")
             )
           }
         }
@@ -431,9 +431,10 @@ abstract class RefChecks extends Transform {
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
                 emitOverrideError(
-                  clazz + " inherits conflicting members:\n  "
-                    + infoStringWithLocation(other) + "  and\n  " + infoStringWithLocation(member)
-                    + "\n(Note: this can be resolved by declaring an override in " + clazz + ".)"
+                  clazz + " inherits conflicting members:\n"
+                    + indent + infoStringWithLocation(other) + " and\n"
+                    + indent + infoStringWithLocation(member) + "\n"
+                    + indent + s"(note: this can be resolved by declaring an `override' in $clazz.)"
                 )
               else
                 overrideError("needs `override' modifier")

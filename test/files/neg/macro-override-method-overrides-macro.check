@@ -1,5 +1,5 @@
 Macros_Test_2.scala:8: error: overriding macro method foo in class B of type (x: String)Unit;
- method foo cannot be used here - only term macros can override term macros
+  method foo cannot be used here - only term macros can override term macros
   override def foo(x: String): Unit = println("fooDString")
                ^
 one error found
