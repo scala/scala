@@ -41,7 +41,6 @@ import scala.build._
 import VersionUtil._
 
 // Scala dependencies:
-val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
 
 // Non-Scala dependencies:
@@ -412,7 +411,7 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies += asmDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies ++= Seq(scalaXmlDep, jlineDep),
+    libraryDependencies ++= Seq(jlineDep),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -451,7 +450,6 @@ lazy val compiler = configureAsSubproject(project)
     ),
     Osgi.headers ++= Seq(
       "Import-Package" -> ("jline.*;resolution:=optional," +
-                           "scala.xml.*;version=\"${range;[====,====];"+versionNumber("scala-xml")+"}\";resolution:=optional," +
                            "scala.*;version=\"${range;[==,=+);${ver}}\"," +
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
@@ -504,7 +502,6 @@ lazy val scaladoc = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
-    libraryDependencies ++= Seq(scalaXmlDep),
     includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf"
   )
   .dependsOn(compiler)
@@ -660,7 +657,7 @@ lazy val test = project
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
+    libraryDependencies ++= Seq(asmDep, partestDep),
     libraryDependencies ++= partestDependencies,
     // no main sources
     sources in Compile := Seq.empty,
@@ -705,7 +702,7 @@ lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    libraryDependencies ++= Seq(scalaXmlDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
+    libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     classDirectory in Compile := (target in Compile).value / "classes"
   )
 
@@ -899,15 +896,9 @@ lazy val dist = (project in file("dist"))
     mkPack := Def.task { (buildDirectory in ThisBuild).value / "pack" }.dependsOn(packagedArtifact in (Compile, packageBin), mkBin).value,
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
-      val extraDeps = Set(scalaXmlDep)
       val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
-      def uniqueModule(m: ModuleID) = (m.organization, m.name.replaceFirst("_.*", ""))
-      val extraModules = extraDeps.map(uniqueModule)
-      val extraJars = (externalDependencyClasspath in Compile).value.map(a => (a.get(moduleID.key), a.data)).collect {
-        case (Some(m), f) if extraModules contains uniqueModule(m) => f
-      }
       val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
-      val mappings = extraJars.map(f => (f, targetDir / f.getName)) :+ ((jlineJAR, targetDir / "jline.jar"))
+      val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
       IO.copy(mappings, overwrite = true)
       targetDir
     },

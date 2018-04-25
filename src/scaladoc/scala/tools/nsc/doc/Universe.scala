@@ -5,8 +5,6 @@
 
 package scala.tools.nsc.doc
 
-import scala.tools.nsc.doc.html.page.diagram.DotRunner
-
 /**
  * Class to hold common dependencies across Scaladoc classes.
  * @author Pedro Furlanetto
@@ -15,5 +13,4 @@ import scala.tools.nsc.doc.html.page.diagram.DotRunner
 trait Universe {
   def settings: Settings
   def rootPackage: model.Package
-  def dotRunner: DotRunner
 }

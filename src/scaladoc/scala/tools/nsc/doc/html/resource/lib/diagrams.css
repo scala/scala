@@ -30,7 +30,7 @@
 }
 
 .diagram-container {
-  display: none;
+  display: block;
 }
 
 .diagram-container > span.toggle {
@@ -39,13 +39,15 @@
 
 .diagram {
   overflow: hidden;
+  display: none;
   padding-top:15px;
 }
 
 .diagram svg {
   display: block;
-  position: absolute;
-  visibility: hidden;
+  position: static;
+  visibility: visible;
+  z-index: auto;
   margin: auto;
 }
 
@@ -72,6 +74,11 @@
 #close:hover {
   text-decoration: none;
 }
+
+#inheritance-diagram {
+    padding-bottom: 20px;
+}
+
 
 #inheritance-diagram-container > span.toggle {
   z-index: 2;
@@ -136,68 +143,35 @@ svg text {
   font-size: 8.5px;
 }
 
-/* try to move the node text 1px in order to be vertically
- * centered (does not work in all browsers)
- */
-svg .node text {
-  transform: translate(0px,1px);
-  -ms-transform: translate(0px,1px);
-  -webkit-transform: translate(0px,1px);
-  -o-transform: translate(0px,1px);
-  -moz-transform: translate(0px,1px);
+
+svg {
+  border: 1px solid #999;
+  overflow: hidden;
 }
 
-/* hover effect for edges */
-
-svg .edge.over text,
-svg .edge.implicit-incoming.over polygon,
-svg .edge.implicit-outgoing.over polygon {
-  fill: #103A51;
+svg .node {
+  white-space: nowrap;
 }
 
-svg .edge.over path,
-svg .edge.over polygon {
-  stroke: #103A51;
+svg .node rect,
+svg .node circle,
+svg .node ellipse {
+  stroke: #333;
+  fill: #fff;
+  stroke-width: 1.5px;
 }
 
-/* for hover effect on nodes in diagrams, edit the following */
-svg.class-diagram .node {}
-svg.class-diagram .node.this {}
-svg.class-diagram .node.over {}
-
-svg .node.over polygon {
-  stroke: #202020;
+svg .cluster rect {
+  stroke: #333;
+  fill: #000;
+  fill-opacity: 0.1;
+  stroke-width: 1.5px;
 }
 
-/* hover effect for nodes in package diagrams */
-
-svg.package-diagram .node.class.over polygon,
-svg.class-diagram .node.this.class.over polygon {
-  fill: #098552;
-  fill: #04663e;
-}
-
-svg.package-diagram .node.trait.over polygon,
-svg.class-diagram .node.this.trait.over polygon {
-  fill: #3c7b9b;
-  fill: #235d7b;
-}
-
-svg.package-diagram .node.type.over polygon,
-svg.class-diagram .node.this.type.over polygon {
-  fill: #098552;
-  fill: #04663e;
+svg .edgePath path.path {
+  stroke: #333;
+  stroke-width: 1.5px;
+  fill: none;
 }
 
 
-svg.package-diagram .node.object.over polygon {
-  fill: #183377;
-}
-
-svg.package-diagram .node.outside.over polygon {
-  fill: #d4d4d4;
-}
-
-svg.package-diagram .node.default.over polygon {
-  fill: #d4d4d4;
-}

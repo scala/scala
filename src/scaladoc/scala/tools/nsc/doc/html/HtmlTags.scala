@@ -106,6 +106,7 @@ object HtmlTags {
   case class Dt(elems: Elems, `class`: String = null) extends Elem
   case class Dd(elems: Elems, `class`: String = null) extends Elem
   case class Code(elems: Elems) extends Elem
+  case class Svg(elems: Elems = Nil, id: String = null, `class`: String = null, width: String, height: String) extends Elem
   case object Hr extends Elem { def elems = Nil; override def tagName = "hr" }
   case object Br extends Elem { def elems = Nil; override def tagName = "br" }
 }

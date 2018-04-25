@@ -39,25 +39,29 @@ trait EntityPage extends HtmlPage {
   }
 
   def headers: Elems = {
-    val rootScript =
-      Script(`type` = "text/javascript", elems =
-        Txt("/* this variable can be used by the JS to determine the path to the root document */\n" +
-           s"""var toRoot = '${ val p = templateToPath(tpl); "../" * (p.size - 1) }';"""))
+    def extScript(str: String) = Script(`type` = "text/javascript", src = str)
+    def libScript(value: String) = extScript(relativeLinkTo(List(value, "lib")))
 
-    HtmlTags.Link(href = relativeLinkTo(List("index.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet") ::
-    HtmlTags.Link(href = relativeLinkTo(List("template.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet") ::
-    HtmlTags.Link(href = relativeLinkTo(List("diagrams.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet", id = "diagrams-css") ::
-      Script(`type` = "text/javascript", src = relativeLinkTo(List("jquery.js", "lib"))) ::
-      Script(`type` = "text/javascript", src = relativeLinkTo(List("jquery.panzoom.min.js", "lib"))) ::
-      Script(`type` = "text/javascript", src = relativeLinkTo(List("jquery.mousewheel.min.js", "lib"))) ::
-      Script(`type` = "text/javascript", src = relativeLinkTo(List("index.js", "lib"))) ::
-    Script(`type` = "text/javascript", src = relativeLinkTo(List("index.js"))) ::
-    Script(`type` = "text/javascript", src = relativeLinkTo(List("scheduler.js", "lib"))) ::
-    Script(`type` = "text/javascript", src = relativeLinkTo(List("template.js", "lib"))) ::
-    Script(`type` = "text/javascript", src = relativeLinkTo(List("tools.tooltip.js", "lib"))) ::
-    (if (!universe.settings.docDiagrams.value) rootScript :: NoElems
-       else Script(`type` = "text/javascript", src = relativeLinkTo(List("modernizr.custom.js", "lib"))) :: Script(`type` = "text/javascript", src = relativeLinkTo(List("diagrams.js", "lib")), id = "diagrams-js") :: rootScript :: NoElems)
+    List(HtmlTags.Link(href = relativeLinkTo(List("index.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
+    HtmlTags.Link(href = relativeLinkTo(List("template.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
+    HtmlTags.Link(href = relativeLinkTo(List("diagrams.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet", id = "diagrams-css"),
+    libScript("jquery.js"),
+    libScript("index.js"),
+    extScript(relativeLinkTo(List("index.js"))),
+    libScript("scheduler.js"),
+    libScript("template.js"),
+    libScript("tools.tooltip.js")) ++
+    ((if (!universe.settings.docDiagrams.value) Nil
+     else (List(
+         extScript("https://d3js.org/d3.v4.js"),
+         extScript("https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js"),
+         extScript("https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js")))) :+
+    Script(`type` = "text/javascript", elems =
+      Txt("/* this variable can be used by the JS to determine the path to the root document */\n" +
+          s"""var toRoot = '${ val p = templateToPath(tpl); "../" * (p.size - 1) }';""")))
   }
+
+
 
   def body =
     HtmlTags.Body (
@@ -722,31 +726,20 @@ trait EntityPage extends HtmlPage {
       case _ => NoElems
     }
 
-    def createDiagram(f: DocTemplateEntity => Option[Diagram], description: String, diagId: String): Elems =
-      if (s.docDiagrams.value) mbr match {
-        case dtpl: DocTemplateEntity if isSelf && !isReduced =>
-          val diagram = f(dtpl)
-          if (diagram.isDefined) {
-            val diagramSvg = generator.generate(diagram.get, tpl, this)
-            if (diagramSvg != NoElems) {
-              Div(`class`= "toggleContainer block diagram-container", id=diagId+"-container", elems=
-                Span(`class`= "toggle diagram-link", elems=
-                  Txt(description)
-                ) ::
-                Div(`class`= "diagram", id= diagId, elems= diagramSvg) ::
-                Div(id= "diagram-controls", `class`="hiddenContent", elems=
-                  Button(id="diagram-zoom-out", `class`="diagram-btn", elems=I(`class`="material-icons", elems=Txt("\uE15B"))) ::
-                  Button(id="diagram-zoom-in", `class`="diagram-btn", elems=I(`class`="material-icons", elems=Txt("\uE145"))) ::
-                  Button(title="Toggle full-screen", id="diagram-fs", `class`="diagram-btn to-full", elems=I(`class`="material-icons", elems=Txt("\uE5D0")))
-                )
-              )
-            } else NoElems
-          } else NoElems
-        case _ => NoElems
-      } else NoElems // diagrams not generated
+    def diagramDiv(description: String, diagId: String)(diagramSvg: Elems): Elems =
+      Div(`class`= "toggleContainer block diagram-container", id=diagId+"-container", elems= List(
+        Span(`class`= "toggle diagram-link", elems= Txt(description)),
+        Div(`class`= "diagram hiddenContent", id= diagId, elems= diagramSvg))) :: NoElems
 
-    val typeHierarchy = createDiagram(_.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
-    val contentHierarchy = createDiagram(_.contentDiagram, "Content Hierarchy", "content-diagram")
+    def ifDiags(genDiag: DocTemplateEntity => Option[Diagram])(embedDiagSvg: Elems => Elems): Elems =
+      mbr match {
+        case dtpl: DocTemplateEntity if s.docDiagrams.value && isSelf && !isReduced =>
+          genDiag(dtpl).map(diag => embedDiagSvg(generator.generate(diag, tpl, this))).getOrElse(NoElems)
+        case _ => NoElems
+      }
+
+    val typeHierarchy = ifDiags(_.inheritanceDiagram)(diagramDiv("Type Hierarchy", "inheritance-diagram"))
+    val contentHierarchy = ifDiags(_.contentDiagram)(diagramDiv("Content Hierarchy", "content-diagram"))
 
     memberComment ++ authorComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
   }
@@ -952,7 +945,7 @@ trait EntityPage extends HtmlPage {
     if (length < 36)
       Span(`class`= "symbol", elems= myXml )
     else
-      Span(`class`= "defval", name = textOf(myXml), elems= Txt("...") ) // TODO: original seems buggy: <span class="defval" name={ myXml }>{ "..." }</span> -- handle overflow in CSS
+      Span(`class`= "defval", elems= myXml ) // was buggy: <span class="defval" name={ myXml }>{ "..." }</span> -- TODO: handle overflow in CSS (as in #search > span#doc-title > span#doc-version )
   }
 
   private def argumentsToHtml(argss: List[ValueArgument]): Elems = {

@@ -66,13 +66,9 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
 
     "index.js",
     "jquery.js",
-    "jquery.mousewheel.min.js",
-    "jquery.panzoom.min.js",
     "scheduler.js",
-    "diagrams.js",
     "template.js",
     "tools.tooltip.js",
-    "modernizr.custom.js",
 
     "index.css",
     "ref-index.css",
@@ -116,7 +112,6 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
       writeTemplates(_ writeFor this)
     } finally {
       DiagramStats.printStats(universe.settings)
-      universe.dotRunner.cleanup()
     }
   }
 
@@ -125,7 +120,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
 
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
-        val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings, universe.dotRunner)
+        val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
         writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))
         written += tpl
         tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
