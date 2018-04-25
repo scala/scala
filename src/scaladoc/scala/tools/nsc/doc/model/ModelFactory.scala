@@ -9,7 +9,6 @@ import base.comment._
 import diagram._
 
 import scala.collection._
-import scala.tools.nsc.doc.html.page.diagram.{DotRunner}
 import scala.util.matching.Regex
 import scala.reflect.macros.internal.macroImpl
 import symtab.Flags
@@ -43,7 +42,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       thisFactory.universe = thisUniverse
       val settings = thisFactory.settings
       val rootPackage = modelCreation.createRootPackage
-      lazy val dotRunner = new DotRunner(settings)
     }
     _modelFinished = true
     // complete the links between model entities, everything that couldn't have been done before

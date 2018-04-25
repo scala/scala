@@ -7,7 +7,6 @@
 package scala.tools.docutil
 
 object EmitHtml {
-  import scala.xml.{Node, NodeBuffer, NodeSeq, XML}
   import ManPage._
 
   val out = Console

@@ -1,20 +1,7 @@
 // © 2009–2010 EPFL/LAMP
 // code by Gilles Dubochet with contributions by Pedro Furlanetto, Marcin Kubala and Felix Mulder
 
-var $panzoom = undefined;
 $(document).ready(function() {
-    // Add zoom functionality to type inheritance diagram
-    $panzoom = $(".diagram-container > .diagram").panzoom({
-        increment: 0.1,
-        minScale: 1,
-        maxScale: 7,
-        transition: true,
-        duration: 200,
-        contain: 'invert',
-        easing: "ease-in-out",
-        $zoomIn: $('#diagram-zoom-in'),
-        $zoomOut: $('#diagram-zoom-out'),
-    });
 
     var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
     $("div#packages > ul > li.current").click(function() {
@@ -271,18 +258,17 @@ $(document).ready(function() {
           if (!isMobile()) content.slideUp(100);
           else content.hide();
       } else {
+          // TODO: is there a cleaner way to render the svg only once it's visible?
+          setTimeout(function() {content.trigger('beforeShow');}, 100);
           if (!isMobile()) content.slideDown(100);
           else content.show();
       }
     };
 
-    $(".toggleContainer:not(.diagram-container):not(.full-signature-block)").click(function() {
-      toggleShowContentFct($(this));
-    });
-
-    $(".toggleContainer.full-signature-block").click(function() {
-      toggleShowContentFct($(this));
-      return false;
+    $(".toggle").click(function() {
+      toggleShowContentFct($(this).parent());
+      // Stop propagation so that we don't hide/show the parent (this a use case's full sig, which is nested in a member list)
+      if ($(this).parent().hasClass("full-signature-block")) return false;
     });
 
     if ($("#order > ol > li.group").length == 1) { orderGroup(); };
@@ -296,8 +282,10 @@ $(document).ready(function() {
     // highlight and jump to selected member if an anchor is provided
     if (window.location.hash) {
         var jqElem = findElementByHash(window.location.hash);
-        if (jqElem.length > 0)
-            exposeMember(jqElem);
+        if (jqElem.length > 0) {
+            if (jqElem.hasClass("toggleContainer")) toggleShowContentFct(jqElem);
+            else exposeMember(jqElem);
+        }
     }
 
     $("#template span.permalink").click(function(e) {

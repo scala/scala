@@ -13,7 +13,7 @@ class HtmlDocletTest {
   def testSyntaxHighlightingUnicode(): Unit = {
     val in = "unicode: …"
 
-    val out = SyntaxHigh(in).toString
+    val out = HtmlTags.textOf(SyntaxHigh(in))
 
     // scala/bug#9038, this failed with
     // "unicode: …" != "unicode: ￢ﾀﾦ"

@@ -6,7 +6,6 @@
 package scala
 package tools.nsc.doc.html
 
-import scala.xml.NodeSeq
 import scala.annotation.tailrec
 
 /** Highlight the syntax of Scala code appearing in a `{{{` wiki block
@@ -16,6 +15,7 @@ import scala.annotation.tailrec
   * @version 1.0
   */
 private[html] object SyntaxHigh {
+  import HtmlTags.{Elems, Raw, NoElems}
 
   /** Reserved words, sorted alphabetically
     * (see [[scala.reflect.internal.StdNames]]) */
@@ -51,7 +51,7 @@ private[html] object SyntaxHigh {
     "Seq", "Set", "Short", "Some", "String", "Symbol",
     "TypeTag", "Unit", "WeakTypeTag").sorted
 
-  def apply(data: String): NodeSeq = {
+  def apply(data: String): Elems = {
     val buf = data.toCharArray
     val out = new StringBuilder
 
@@ -282,6 +282,6 @@ private[html] object SyntaxHigh {
     }
 
     parse("", 0)
-    scala.xml.Unparsed(out.toString)
+    Raw(out.toString) :: NoElems
   }
 }

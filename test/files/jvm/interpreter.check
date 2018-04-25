@@ -53,11 +53,6 @@ scala> // ticket #1513
 scala> val t1513 = Array(null)
 t1513: Array[Null] = Array(null)
 
-scala> // ambiguous toString problem from #547
-
-scala> val atom = new scala.xml.Atom(())
-atom: scala.xml.Atom[Unit] = ()
-
 scala> // overriding toString problem from #1404
 
 scala> class S(override val toString : String)
@@ -287,19 +282,6 @@ scala>
 
 scala> 
 
-scala> // multi-line XML
-
-scala> <a>
-<b
-  c="c"
-  d="dd"
-/></a>
-res8: scala.xml.Elem =
-<a>
-<b c="c" d="dd"/></a>
-
-scala> 
-
 scala> 
 
 scala> /*
@@ -318,13 +300,11 @@ scala> """
 hello
 there
 """
-res9: String =
+res8: String =
 "
 hello
 there
 "
-
-scala> 
 
 scala> (1 +   // give up early by typing two blank lines
 
