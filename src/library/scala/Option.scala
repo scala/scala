@@ -301,6 +301,26 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def orElse[B >: A](alternative: => Option[B]): Option[B] =
     if (isEmpty) alternative else this
 
+  /** Returns a $some formed from this option and another option
+   *  by combining the corresponding elements in a pair.
+   *  If either of the two options is empty, $none is returned.
+   *
+   *  @example {{{
+   *  // Returns Option(("foo", "bar")) because both options are nonempty.
+   *  Some("foo") zip Some("bar")
+   *
+   *  // Returns None because `that` option is empty.
+   *  Some("foo") zip None
+   *
+   *  // Returns None because `this` option is empty.
+   *  None zip Some("bar")
+   *  }}}
+   *
+   *  @param  that   the options which is going to be zipped
+   */
+  final def zip[A1 >: A, B](that: Option[B]): Option[(A1, B)] =
+    if (isEmpty || that.isEmpty) None else Some((this.get, that.get))
+
   /** Returns a singleton iterator returning the $option's value
    * if it is nonempty, or an empty iterator if the option is empty.
    */
