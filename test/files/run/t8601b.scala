@@ -6,7 +6,7 @@ object Test {
   def check(x: => Any) = try { x; sys.error("failed to throw NPE!") } catch { case _: NullPointerException => }
   def checkNegSize(x: => Any) = try { x; sys.error("failed to throw NegativeArraySizeException!") } catch { case _: NegativeArraySizeException => }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     check(len(null)) // bug: did not NPE
     check(load(null))
     checkNegSize(newarray(-1))

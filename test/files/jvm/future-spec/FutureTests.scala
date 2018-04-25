@@ -587,7 +587,7 @@ class FutureTests extends MinimalScalaTest {
 
     "fold mutable zeroes safely" in {
       import scala.collection.mutable.ArrayBuffer
-      def test(testNumber: Int) {
+      def test(testNumber: Int): Unit = {
         val fs = (0 to 1000) map (i => Future(i))
         val f = Future.foldLeft(fs)(ArrayBuffer.empty[AnyRef]) {
           case (l, i) if i % 2 == 0 => l += i.asInstanceOf[AnyRef]

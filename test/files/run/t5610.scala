@@ -23,7 +23,7 @@ object Test {
 
   def foo(s: => String)(dummy: Int) = () => println(s)
 
-  def m(a: Int*)(z: String, b: Int*) {
+  def m(a: Int*)(z: String, b: Int*): Unit = {
     println(a.toList)
     println(b.toList)
   }

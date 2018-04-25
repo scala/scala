@@ -5,7 +5,7 @@ trait C[A >: Null <: AnyRef] { override def clone(): A = null }
 trait X extends C[X]
 class D extends X { def foo = (this: X).clone() }
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     assert(new D().foo == null)
   }
 }

@@ -3,7 +3,7 @@ import scala.collection.immutable.TreeSet
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     ticketExample
     similarExample
   }
@@ -14,7 +14,7 @@ object Test {
   val N = if (totalMBytes > 1000) 10000 else 4000
   val M = N / 10
 
-  def ticketExample {
+  def ticketExample: Unit = {
     var big = 100000
 
     var aSortedSet: SortedSet[Int] = TreeSet(big)
@@ -29,7 +29,7 @@ object Test {
     }
   }
 
-  def similarExample {
+  def similarExample: Unit = {
     var big = 100
 
     var aSortedSet: SortedSet[Int] = TreeSet(big)

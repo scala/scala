@@ -125,7 +125,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   }
 
   @Test
-  def newArraynotNull() {
+  def newArraynotNull(): Unit = {
     val m = compileAsmMethod("def f = { val a = new Array[Int](2); a(0) }")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "+NEWARRAY T_INT", 2, NotNullValue) // new array on stack

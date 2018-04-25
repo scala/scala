@@ -8,7 +8,7 @@ object Test {
     bar$default$1(0)
     assert(baz == "ba", baz)
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     multinest
   }
 }

@@ -4,7 +4,7 @@ object Test {
   type Star = *
   case class P(a: Int, b: Star) // alias still required
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val v = new *(6,7)
     val x * y = v
     printf("%d,%d\n",x,y)

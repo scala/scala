@@ -81,11 +81,11 @@ trait CompilationUnits { global: Global =>
      */
     object synthetics {
       private val map = mutable.AnyRefMap[Symbol, Tree]()
-      def update(sym: Symbol, tree: Tree) {
+      def update(sym: Symbol, tree: Tree): Unit = {
         debuglog(s"adding synthetic ($sym, $tree) to $self")
         map.update(sym, tree)
       }
-      def -=(sym: Symbol) {
+      def -=(sym: Symbol): Unit = {
         debuglog(s"removing synthetic $sym from $self")
         map -= sym
       }

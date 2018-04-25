@@ -10,7 +10,7 @@ import language.postfixOps
 class IterableViewLikeTest {
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     val iter = Iterable(1, 2, 3)
 
     import scala.language.postfixOps

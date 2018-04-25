@@ -2,7 +2,7 @@ class B[@specialized(Int, AnyRef, Unit) A, @specialized(Int, AnyRef, Unit) B](f:
 class C[@specialized(Int, AnyRef) A, @specialized(Int, AnyRef) B, @specialized(Int, AnyRef) C](f: (A, B) => C)
 
 object Test {
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     def show(x: Any) = println(x.getClass.getName)
 
     show(new B((x: Int) => 1))

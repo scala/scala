@@ -58,7 +58,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
   /** Browse the top-level of given abstract file `src` and enter
    *  any encountered top-level classes and modules in `root`
    */
-  def browseTopLevel(root: Symbol, src: AbstractFile) {
+  def browseTopLevel(root: Symbol, src: AbstractFile): Unit = {
 
     class BrowserTraverser extends Traverser {
       var packagePrefix = ""
@@ -117,7 +117,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
 
   /** Enter top-level symbols from a source file
    */
-  override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+  override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile): Unit = {
     try {
       if (root.isEffectiveRoot || !src.name.endsWith(".scala")) // RootClass or EmptyPackageClass
         super.enterToplevelsFromSource(root, name, src)

@@ -35,7 +35,7 @@ package object p4 {
 }
   """
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     import global._
     def typecheck(code: String): Unit = {

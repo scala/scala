@@ -1,8 +1,8 @@
 reload: PingPong.scala
 
-askTypeCompletion at PingPong.scala(10,23)
+askTypeCompletion at PingPong.scala(10,31)
 ================================================================================
-[response] askTypeCompletion at (10,23)
+[response] askTypeCompletion at (10,31)
 retrieved 32 members
 [inaccessible] private[this] val ping: Ping
 [inaccessible] protected[package lang] def clone(): Object
@@ -35,9 +35,9 @@ override def toString(): String
 private[this] val name: String
 ================================================================================
 
-askTypeCompletion at PingPong.scala(19,20)
+askTypeCompletion at PingPong.scala(19,28)
 ================================================================================
-[response] askTypeCompletion at (19,20)
+[response] askTypeCompletion at (19,28)
 retrieved 33 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
@@ -71,15 +71,15 @@ override def toString(): String
 private[this] val pong: Pong
 ================================================================================
 
-askType at PingPong.scala(8,10)
+askType at PingPong.scala(8,18)
 ================================================================================
-[response] askTypeAt (8,10)
+[response] askTypeAt (8,18)
 def loop: Unit = Ping.this.poke()
 ================================================================================
 
-askType at PingPong.scala(10,10)
+askType at PingPong.scala(10,18)
 ================================================================================
-[response] askTypeAt (10,10)
+[response] askTypeAt (10,18)
 def poke: Unit = Ping.this.pong.poke()
 ================================================================================
 

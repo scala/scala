@@ -22,8 +22,8 @@ object Test extends App {
   val subsubnonlist = almostmin :: almostmax :: subnonlist
   val subsubsorted = distinctSubsublist.sorted
 
-  def testSize {
-    def check(set : TreeSet[Int], list: List[Int]) {
+  def testSize: Unit = {
+    def check(set : TreeSet[Int], list: List[Int]): Unit = {
       assert(set.size == list.size, s"$set had size ${set.size} while $list had size ${list.size}")
     }
 
@@ -41,8 +41,8 @@ object Test extends App {
     check(subsubset.clone, distinctSubsublist)
   }
 
-  def testContains {
-    def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]) {
+  def testContains: Unit = {
+    def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]): Unit = {
       assert(list forall set.apply, s"$set did not contain all elements of $list using apply")
       assert(list forall set.contains, s"$set did not contain all elements of $list using contains")
       assert(!(nonlist exists set.apply), s"$set had an element from $nonlist using apply")
@@ -62,8 +62,8 @@ object Test extends App {
     check(subsubset.clone, subsublist, subsubnonlist)
   }
 
-  def testAdd {
-    def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]) {
+  def testAdd: Unit = {
+    def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]): Unit = {
       var builtList = List[Int]()
       for (x <- list) {
         set += x
@@ -92,8 +92,8 @@ object Test extends App {
     check(subsubclone, list, subsubnonlist)
   }
 
-  def testRemove {
-    def check(set: TreeSet[Int], sorted: List[Int]) {
+  def testRemove: Unit = {
+    def check(set: TreeSet[Int], sorted: List[Int]): Unit = {
       var builtList = sorted
       for (x <- list) {
         set remove x
@@ -119,8 +119,8 @@ object Test extends App {
     check(subsubclone, subsubsorted)
   }
 
-  def testIterator {
-    def check(set: TreeSet[Int], list: List[Int]) {
+  def testIterator: Unit = {
+    def check(set: TreeSet[Int], list: List[Int]): Unit = {
       val it = set.iterator.toList
       assert(it == list, s"$it did not equal $list")
     }

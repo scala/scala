@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 class TreeSetTest {
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     val set = TreeSet(1, 2, 3)
 
     assertEquals(TreeSet.empty[Int], set take Int.MinValue)

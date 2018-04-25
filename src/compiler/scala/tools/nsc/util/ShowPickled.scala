@@ -117,7 +117,7 @@ object ShowPickled extends Names {
     result.toInt
   }
 
-  def printFile(buf: PickleBuffer, out: PrintStream) {
+  def printFile(buf: PickleBuffer, out: PrintStream): Unit = {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
     val entryList = makeEntryList(buf, index)
@@ -125,7 +125,7 @@ object ShowPickled extends Names {
 
     def p(s: String) = out print s
 
-    def printNameRef() {
+    def printNameRef(): Unit = {
       val idx = buf.readNat()
       val name = entryList nameAt idx
       val toPrint = " %s(%s)".format(idx, name)
@@ -143,7 +143,7 @@ object ShowPickled extends Names {
     def printConstAnnotArgRef() = printNat()
     def printAnnotArgRef() = printNat()
 
-    def printSymInfo(end: Int) {
+    def printSymInfo(end: Int): Unit = {
       printNameRef()
       printSymbolRef()
       val pflags = buf.readLongNat()
@@ -181,7 +181,7 @@ object ShowPickled extends Names {
      * interpreted are for the most part going to tell you the wrong thing.
      * It's not so easy to duplicate the logic applied in the UnPickler.
      */
-    def printEntry(i: Int) {
+    def printEntry(i: Int): Unit = {
       buf.readIndex = index(i)
       p(i + "," + buf.readIndex + ": ")
       val tag = buf.readByte()
@@ -287,7 +287,7 @@ object ShowPickled extends Names {
     pickle.readIndex = saved
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     args foreach { arg =>
       fromFile(arg) match {
         case Some(pb) => show(arg + ":", pb)

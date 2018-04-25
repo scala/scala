@@ -19,7 +19,7 @@ trait Platform {
   private[nsc] def classPath: ClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
-  def updateClassPath(subst: Map[ClassPath, ClassPath])
+  def updateClassPath(subst: Map[ClassPath, ClassPath]): Unit
 
   /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]

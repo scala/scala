@@ -22,12 +22,12 @@ object SerializationStability {
     printBase64Binary(bos.toByteArray())
   }
 
-  def amend(file: File)(f: String => String) {
+  def amend(file: File)(f: String => String): Unit = {
     file.writeAll(f(file.slurp))
   }
   def quote(s: String) = List("\"", s, "\"").mkString
 
-  def patch(file: File, line: Int, prevResult: String, result: String) {
+  def patch(file: File, line: Int, prevResult: String, result: String): Unit = {
     amend(file) {
       content =>
         content.lines.toList.zipWithIndex.map {
@@ -41,7 +41,7 @@ object SerializationStability {
     }
   }
 
-  def updateComment(file: File) {
+  def updateComment(file: File): Unit = {
     val timestamp = {
       import java.text.SimpleDateFormat
       val sdf = new SimpleDateFormat("yyyyMMdd-HH:mm:ss")
@@ -62,13 +62,13 @@ object SerializationStability {
     in.readObject()
   }
 
-  def checkRoundTrip[T <: AnyRef](instance: T)(f: T => AnyRef) {
+  def checkRoundTrip[T <: AnyRef](instance: T)(f: T => AnyRef): Unit = {
     val result = serialize(instance)
     val reconstituted = deserialize(result).asInstanceOf[T]
     assert(f(instance) == f(reconstituted), (f(instance), f(reconstituted)))
   }
 
-  def check[T <: AnyRef](stack: Array[StackTraceElement])(instance: => T)(prevResult: String, f: T => AnyRef = (x: T) => x) {
+  def check[T <: AnyRef](stack: Array[StackTraceElement])(instance: => T)(prevResult: String, f: T => AnyRef = (x: T) => x): Unit = {
     val result = serialize(instance)
     overwrite match {
       case Some(f) =>

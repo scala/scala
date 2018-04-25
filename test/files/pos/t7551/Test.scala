@@ -1,5 +1,5 @@
 package p
 
 object Foo {
-  def bar(t: T) { }
+  def bar(t: T): Unit = { }
 }

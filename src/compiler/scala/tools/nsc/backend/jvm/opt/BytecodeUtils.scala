@@ -170,7 +170,7 @@ object BytecodeUtils {
     nextExecutableInstruction(a.label) == nextExecutableInstruction(b.label)
   }
 
-  def removeJumpAndAdjustStack(method: MethodNode, jump: JumpInsnNode) {
+  def removeJumpAndAdjustStack(method: MethodNode, jump: JumpInsnNode): Unit = {
     val instructions = method.instructions
     val op = jump.getOpcode
     if ((op >= IFEQ && op <= IFLE) || op == IFNULL || op == IFNONNULL) {

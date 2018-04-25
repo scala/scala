@@ -18,7 +18,7 @@ object Serialize {
       new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  def check[A, B](x: A, y: B) {
+  def check[A, B](x: A, y: B): Unit = {
     println("x = " + x)
     println("y = " + y)
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
@@ -513,7 +513,7 @@ object Test8 {
 
 @deprecated("Suppress warnings", since="2.11")
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     Test1_scala
     Test2_immutable
     Test3_mutable
@@ -533,7 +533,7 @@ object Test {
 
 object Test10_util {
   import scala.util.Random
-  def rep[A](n: Int)(f: => A) { if (n > 0) { f; rep(n-1)(f) } }
+  def rep[A](n: Int)(f: => A): Unit = { if (n > 0) { f; rep(n-1)(f) } }
 
   {
     val random = new Random(345)

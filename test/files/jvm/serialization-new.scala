@@ -18,7 +18,7 @@ object Serialize {
       new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  def check[A, B](x: A, y: B) {
+  def check[A, B](x: A, y: B): Unit = {
     println("x = " + x)
     println("y = " + y)
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))

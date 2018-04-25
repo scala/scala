@@ -7,7 +7,7 @@ object Test {
   def foo: Unit = macro fooImpl
   def fooImpl(c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     try {
       val method = classOf[Test].getMethod("foo")
       sys.error("Static forwarder generated for macro: " + method)

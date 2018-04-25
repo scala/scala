@@ -1,7 +1,7 @@
 object Obj {
   private var cache: Any = ()
   def returning(f: () => Unit) = ()
-  def foo {
+  def foo: Unit = {
     returning(() => cache = ())
   }
 

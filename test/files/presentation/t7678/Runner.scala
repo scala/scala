@@ -5,15 +5,15 @@ object Test extends InteractiveTest {
 
   import compiler._, definitions._
 
-  override def runDefaultTests() {
-    def resolveTypeTagHyperlink() {
+  override def runDefaultTests(): Unit = {
+    def resolveTypeTagHyperlink(): Unit = {
       val sym = compiler.askForResponse(() => compiler.currentRun.runDefinitions.TypeTagClass).get.swap.getOrElse(???)
       val r = new Response[Position]
       compiler.askLinkPos(sym, new BatchSourceFile("", source), r)
       r.get
     }
 
-    def checkTypeTagSymbolConsistent() {
+    def checkTypeTagSymbolConsistent(): Unit = {
       compiler.askForResponse {
         () => {
           val runDefinitions = currentRun.runDefinitions

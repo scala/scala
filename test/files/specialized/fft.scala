@@ -18,7 +18,7 @@ import Math.{sqrt, pow}
 object Test  {
   type Complex = (Double, Double)
 
-  def swap(x: Array[Complex], i: Int, j: Int) {
+  def swap(x: Array[Complex], i: Int, j: Int): Unit = {
     val tmp = x(i)
     x(i) = x(j)
     x(j) = tmp
@@ -42,7 +42,7 @@ object Test  {
   def minus(x: Complex, y: Complex) =
     (x._1 - y._1, x._2 - y._2)
 
-  def FFT(dir: Int, m: Long, x: Array[(Double, Double)]) {
+  def FFT(dir: Int, m: Long, x: Array[(Double, Double)]): Unit = {
     var i, i1, i2,j, k, l, l1, l2, n = 0l
 //   complex <double> tx, t1, u, c;
     var tx, t1, u, c = (0.0, 0.0)
@@ -111,7 +111,7 @@ object Test  {
    }
   }
 
-  def run() {
+  def run(): Unit = {
     FFT(1, 16, data)
   }
   var data: Array[Complex] = null
@@ -122,7 +122,7 @@ object Test  {
     else "input2.txt"
   }
 
-  def setUp {
+  def setUp: Unit = {
 //    print("Loading from %s.. ".format(inputFileName))
     val f = io.Source.fromFile(inputFileName)
     val lines = f.getLines
@@ -138,7 +138,7 @@ object Test  {
     println("Processing " + n + " items")
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     setUp
     run()
 

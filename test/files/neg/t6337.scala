@@ -11,7 +11,7 @@ class X[T](val i: XX[T]) extends AnyVal
 class XX[T](val x: T) extends AnyVal
 
 object C1 {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val x = new X1(new XX1(Some(3)))
     println(x.i.x.get + 9)
   }

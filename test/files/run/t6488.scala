@@ -22,7 +22,7 @@ object Test {
   // Show that no uncaught exceptions are thrown on spawned I/O threads
   // when the process is destroyed.  The default handler will print
   // stack traces in the failing case.
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     if (args.nonEmpty && args(0) == "data")
       data()
     else
@@ -30,7 +30,7 @@ object Test {
   }
 
   // fork the data spewer, wait for input, then destroy the process
-  def test() {
+  def test(): Unit = {
     val f = new File(javaHome, "bin").listFiles.sorted filter (_.getName startsWith "java") find (_.canExecute) getOrElse {
       // todo signal test runner that test is skipped
       new File("/bin/ls")  // innocuous
@@ -56,7 +56,7 @@ object Test {
   }
 
   // spew something
-  def data() {
+  def data(): Unit = {
     def filler = "." * 100
     for (i <- 1 to 1000)
       Console println s"Outputting data line $i $filler"

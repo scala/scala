@@ -7,12 +7,12 @@ import util.hashing.Hashing
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     hashing()
     equality()
   }
 
-  def hashing() {
+  def hashing(): Unit = {
     import collection._
 
     val tm = new concurrent.TrieMap[String, String](Hashing.fromFunction(x => x.length + x(0).toInt), Equiv.universal)
@@ -26,7 +26,7 @@ object Test {
     for (i <- 0 until 1000) assert(tm(i.toString) == i.toString)
   }
 
-  def equality() {
+  def equality(): Unit = {
     import collection._
 
     val tm = new concurrent.TrieMap[String, String](Hashing.fromFunction(x => x(0).toInt), Equiv.fromFunction(_(0) == _(0)))

@@ -19,7 +19,7 @@ object ClassPathMemoryConsumptionTester {
 
   private class MainRetainsGlobal extends scala.tools.nsc.MainClass {
     var retainedGlobal: Global = _
-    override def doCompile(compiler: Global) {
+    override def doCompile(compiler: Global): Unit = {
       retainedGlobal = compiler
       super.doCompile(compiler)
     }

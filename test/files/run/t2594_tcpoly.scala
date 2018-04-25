@@ -17,5 +17,5 @@ object Test {
     def foo[A](a: Bar[X, A]) = a
   }
 
-  def main(as: Array[String]) { BarMonad[Int] foo (new Bar[Int, Int]) }
+  def main(as: Array[String]): Unit = { BarMonad[Int] foo (new Bar[Int, Int]) }
 }

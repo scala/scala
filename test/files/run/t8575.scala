@@ -24,9 +24,9 @@ object Test extends TypeMember {
   def value = new E[F with C]
 
   // This call passes, since it invokes consume(E): Unit
-  def consume(x: X) {}
+  def consume(x: X): Unit = {}
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     consume(value)
   }
 }

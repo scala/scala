@@ -21,7 +21,7 @@ class StoreReporter extends Reporter {
       severity.count += 1
     }
   }
-  override def reset() {
+  override def reset(): Unit = {
     super.reset()
     infos.clear()
   }

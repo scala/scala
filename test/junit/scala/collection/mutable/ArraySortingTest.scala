@@ -18,7 +18,7 @@ class ArraySortingTest {
   
   // Tests scala/bug#7837
   @Test
-  def sortByTest() {
+  def sortByTest(): Unit = {
     val test = Array(1,2,3,4,1,3,5,7,1,4,8,1,1,1,1)
     val cant = test.map(i => new CantSortMe(i))
     java.util.Arrays.sort(test)

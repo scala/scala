@@ -34,7 +34,7 @@ object Test extends App {
   testGris()
   testWorking()
 
-  def testGris() {
+  def testGris(): Unit = {
     val pipp = NotWorkingTab.b
     pipp match {
       case NotWorkingTab.a => ???
@@ -43,7 +43,7 @@ object Test extends App {
     }
   }
 
-  def testWorking() {
+  def testWorking(): Unit = {
     val stuff = WorkingTab.a
     stuff match {
       case WorkingTab.a =>

@@ -7,7 +7,7 @@ import scala.tools.nsc.util.stringFromWriter
 import scala.collection.JavaConverters._
 
 object Test extends BytecodeTest {
-  def show {
+  def show: Unit = {
     val classNode = loadClassNode("Symbols", skipDebugInfo = true)
     classNode.methods.asScala.foreach(m => println(AsmUtils.textify(m)))
   }

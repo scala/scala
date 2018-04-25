@@ -31,7 +31,7 @@ object Test {
     catch { case e: IllegalArgumentException => List("---\n    " + e) }
   }
 
-  def runGroup(label: String, f: (Int, Int, Int) => Range) {
+  def runGroup(label: String, f: (Int, Int, Int) => Range): Unit = {
     println(">>> " + label + " <<<\n")
     for (start <- endpoints) {
       val s = "%-7s %-7s %-7s %s".format("start", "end", "step", "length/first/last")

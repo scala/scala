@@ -42,7 +42,7 @@ abstract class Duplicators extends Analyzer {
   override def newTyper(context: Context): Typer =
     newBodyDuplicator(context)
 
-  private def resetClassOwners() {
+  private def resetClassOwners(): Unit = {
     oldClassOwner = null
     newClassOwner = null
   }
@@ -135,7 +135,7 @@ abstract class Duplicators extends Analyzer {
       else
         sym
 
-    private def invalidate(tree: Tree, owner: Symbol = NoSymbol) {
+    private def invalidate(tree: Tree, owner: Symbol = NoSymbol): Unit = {
       debuglog(s"attempting to invalidate symbol = ${tree.symbol}")
       if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol) {
         debuglog("invalid " + tree.symbol)
@@ -181,7 +181,7 @@ abstract class Duplicators extends Analyzer {
       }
     }
 
-    private def invalidateAll(stats: List[Tree], owner: Symbol = NoSymbol) {
+    private def invalidateAll(stats: List[Tree], owner: Symbol = NoSymbol): Unit = {
       stats.foreach(invalidate(_, owner))
     }
 

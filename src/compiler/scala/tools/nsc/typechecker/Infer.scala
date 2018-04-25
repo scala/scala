@@ -920,7 +920,7 @@ trait Infer extends Checkable {
      *  first to `strictPt` and then, if this fails, to `lenientPt`. If both
      *  attempts fail, an error is produced.
      */
-    def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type) {
+    def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type): Unit = {
       printTyping(tree, s"inferring arg instance based on pt0=$strictPt, pt1=$lenientPt")
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt, useWeaklyCompatible = false)
       if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt))
@@ -967,7 +967,7 @@ trait Infer extends Checkable {
     /** Substitute free type variables `undetparams` of polymorphic argument
      *  expression `tree` to `targs`, Error if `targs` is null.
      */
-    private def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type) {
+    private def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type): Unit = {
       if (targs eq null) {
         if (!tree.tpe.isErroneous && !pt.isErroneous)
           PolymorphicExpressionInstantiationError(tree, undetparams, pt)
@@ -1030,7 +1030,7 @@ trait Infer extends Checkable {
      *  @param undetparams the undetermined type parameters
      *  @param pt0         the expected result type of the instance
      */
-    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
+    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type): Unit = {
       val pt       = abstractTypesToBounds(pt0)
       val ptparams = freeTypeParamsOfTerms(pt)
       val ctorTp   = tree.tpe
@@ -1128,7 +1128,7 @@ trait Infer extends Checkable {
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentionally observed in the mean time
-    def instantiateTypeVar(tvar: TypeVar) {
+    def instantiateTypeVar(tvar: TypeVar): Unit = {
       val tparam                    = tvar.origin.typeSymbol
       val TypeBounds(lo0, hi0)      = tparam.info.bounds
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)

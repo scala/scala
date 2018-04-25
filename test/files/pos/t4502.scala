@@ -1,9 +1,9 @@
 class T {
-  def send(o: Any, d: Int = 10) { }
+  def send(o: Any, d: Int = 10): Unit = { }
 
-  def c(f: => Any) { }
+  def c(f: => Any): Unit = { }
 
-  def f() {
+  def f(): Unit = {
     var a = this
     a.send(
       c(a.send(()))

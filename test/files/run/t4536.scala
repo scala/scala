@@ -38,7 +38,7 @@ object dynamicMixin extends dynamicAbstractClass with dynamicTrait {
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val cls = new dynamicClass
     dynamicMixin
   }

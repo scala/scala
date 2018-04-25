@@ -6,7 +6,7 @@ trait B { type T <: B }
 object Test extends MemoryTest {
   override def maxDelta = 10
   override def calcsPerIter = 50000
-  override def calc() {
+  override def calc(): Unit = {
     import scala.reflect.runtime.universe._
     glb(List(typeOf[A], typeOf[B]))
   }

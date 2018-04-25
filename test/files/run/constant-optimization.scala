@@ -1,19 +1,19 @@
 object Test extends App {
-  def testBothReachable() {
+  def testBothReachable(): Unit = {
     val i = util.Random.nextInt
     val x = if (i % 2 == 0) null else "good"
     val y = if (x == null) "good" else x + ""
     println(s"testBothReachable: $y")
   }
 
-  def testOneReachable() {
+  def testOneReachable(): Unit = {
     val i = 1
     val x = if (i != 1) null else "good"
     val y = if (x == null) "good" else x + ""
     println(s"testOneReachable: $y")
   }
 
-  def testAllReachable() {
+  def testAllReachable(): Unit = {
     val i = util.Random.nextInt
     val y = (i % 2) match {
       case 0 => "good"
@@ -23,7 +23,7 @@ object Test extends App {
     println(s"testAllReachable: $y")
   }
 
-  def testOneUnreachable() {
+  def testOneUnreachable(): Unit = {
     val i = util.Random.nextInt
     val x = if (i % 2 == 0) {
       1
@@ -38,7 +38,7 @@ object Test extends App {
     println(s"testOneUnreachable: $y")
   }
 
-  def testDefaultUnreachable() {
+  def testDefaultUnreachable(): Unit = {
     val i = util.Random.nextInt
     val x = if (i % 2 == 0) {
       1

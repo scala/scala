@@ -65,7 +65,7 @@ private[scala] trait MarkupParserCommon {
 
   /** [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'
    */
-  def xEndTag(startName: String) {
+  def xEndTag(startName: String): Unit = {
     xToken('/')
     if (xName != startName)
       errorNoEnd(startName)
@@ -145,11 +145,11 @@ private[scala] trait MarkupParserCommon {
     x
   }
 
-  def xToken(that: Char) {
+  def xToken(that: Char): Unit = {
     if (ch == that) nextch()
     else xHandleError(that, "'%s' expected instead of '%s'".format(that, ch))
   }
-  def xToken(that: Iterable[Char]) { that foreach xToken }
+  def xToken(that: Iterable[Char]): Unit = {that foreach xToken }
 
   /** scan [S] '=' [S]*/
   def xEQ() = { xSpaceOpt(); xToken('='); xSpaceOpt() }

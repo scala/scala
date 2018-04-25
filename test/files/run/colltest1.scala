@@ -6,7 +6,7 @@ import scala.language.postfixOps
 
 object Test extends App {
 
-  def orderedTraversableTest(empty: Traversable[Int]) {
+  def orderedTraversableTest(empty: Traversable[Int]): Unit = {
     println("new test starting with "+empty)
     assert(empty.isEmpty)
     val ten = empty ++ List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -67,7 +67,7 @@ object Test extends App {
     assert(ten.mkString("[", "; ", "]") endsWith "[1; 2; 3; 4; 5; 6; 7; 8; 9; 10]")
   }
 
-  def orderedIterableTest(empty: Iterable[Int]) {
+  def orderedIterableTest(empty: Iterable[Int]): Unit = {
     orderedTraversableTest(empty)
     val six = empty ++ List(1, 2, 3, 4, 5, 6)
     assert(six.iterator.toStream == six)
@@ -76,7 +76,7 @@ object Test extends App {
     assert(six sameElements (1 to 6))
   }
 
-  def sequenceTest(empty: Seq[Int]) {
+  def sequenceTest(empty: Seq[Int]): Unit = {
     orderedIterableTest(empty)
     val ten = empty ++ (1 to 10)
     println(ten)
@@ -137,7 +137,7 @@ object Test extends App {
     assert(ten.sortWith(_ > _) == ten.reverse)
   }
 
-  def setTest(empty: => Set[String]) {
+  def setTest(empty: => Set[String]): Unit = {
     var s = empty + "A" + "B" + "C"
     s ++= List("D", "E", "F")
     s ++= List("G", "H", "I")
@@ -161,7 +161,7 @@ object Test extends App {
     assert(bc subsetOf abc)
   }
 
-  def rangeTest(r: Range) {
+  def rangeTest(r: Range): Unit = {
     val ten = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     assert(r == ten)
     assert(r.toList == ten)

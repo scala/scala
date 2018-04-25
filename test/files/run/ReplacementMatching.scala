@@ -8,12 +8,12 @@ import util.matching._
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     replacementMatching
     groupsMatching
   }
 
-  def replacementMatching {
+  def replacementMatching: Unit = {
     val regex = """\$\{(.+?)\}""".r
     val replaced = regex.replaceAllIn("Replacing: ${main}. And another method: ${foo}.",
         (m: util.matching.Regex.Match) => {
@@ -30,7 +30,7 @@ object Test {
     assert(replaced3 == "Replacing: main. And another: ${foo}.")
   }
 
-  def groupsMatching {
+  def groupsMatching: Unit = {
     val Date = """(\d+)/(\d+)/(\d+)""".r
     for (Regex.Groups(a, b, c) <- Date findFirstMatchIn "1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.") {
       assert(a == "1")

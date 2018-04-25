@@ -42,7 +42,7 @@ object Test {
     if (util.Properties.isJavaAtLeast("1.7")) test()
   }
 
-  def test() {
+  def test(): Unit = {
     import scala.reflect.runtime._
     import scala.tools.reflect.ToolBox
 

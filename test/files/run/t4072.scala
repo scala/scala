@@ -9,7 +9,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new DryRun().compiler.test1
   }
 }

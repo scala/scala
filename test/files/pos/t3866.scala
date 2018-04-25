@@ -2,8 +2,8 @@ abstract class ImplicitRepeated {
   trait T[+A, +B]
   trait X
 
-  def f[N, R <: List[_]](elems: T[N, R]*)                // alternative a)
-  def f[N, R <: List[_]](props: String, elems: T[N, R]*) // alternative b)
+  def f[N, R <: List[_]](elems: T[N, R]*): Unit                // alternative a)
+  def f[N, R <: List[_]](props: String, elems: T[N, R]*): Unit // alternative b)
 
   // the following implicit causes "cannot be applied" errors
   implicit def xToRight(r: X): T[Nothing, X] = null

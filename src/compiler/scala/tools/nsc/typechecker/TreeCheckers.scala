@@ -13,7 +13,7 @@ import scala.reflect.internal.util.StringOps._
 abstract class TreeCheckers extends Analyzer {
   import global._
 
-  override protected def onTreeCheckerError(pos: Position, msg: String) {
+  override protected def onTreeCheckerError(pos: Position, msg: String): Unit = {
     if (settings.fatalWarnings)
       reporter.warning(pos, "\n** Error during internal checking:\n" + msg)
   }
@@ -95,7 +95,7 @@ abstract class TreeCheckers extends Analyzer {
     val movedMsgs     = mutable.ListBuffer[String]()
     def sortedNewSyms = newSyms.toList.distinct sortBy (_.name.toString)
 
-    def record(tree: Tree) {
+    def record(tree: Tree): Unit = {
       val sym = tree.symbol
       if ((sym eq null) || (sym eq NoSymbol)) return
 
@@ -149,7 +149,7 @@ abstract class TreeCheckers extends Analyzer {
       traverse(unit.body)
       reportChanges()
     }
-    override def traverse(tree: Tree) {
+    override def traverse(tree: Tree): Unit = {
       record(tree)
       super.traverse(tree)
     }
@@ -169,7 +169,7 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(pos: Position, msg: Any): Unit = reporter.warning(pos, "[check: %s] %s".format(phase.prev, msg))
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
-  def informFn(msg: Any) {
+  def informFn(msg: Any): Unit = {
     if (settings.verbose || settings.debug)
       println("[check: %s] %s".format(phase.prev, msg))
   }
@@ -187,7 +187,7 @@ abstract class TreeCheckers extends Analyzer {
     }
   }
 
-  def checkTrees() {
+  def checkTrees(): Unit = {
     if (settings.verbose)
       Console.println("[consistency check at the beginning of phase " + phase + "]")
 
@@ -202,7 +202,7 @@ abstract class TreeCheckers extends Analyzer {
     assertFn(currentUnit == unit, "currentUnit is " + currentUnit + ", but unit is " + unit)
     currentRun.currentUnit = unit0
   }
-  def check(unit: CompilationUnit) {
+  def check(unit: CompilationUnit): Unit = {
     informProgress("checking "+unit)
     val context = rootContext(unit, checking = true)
     tpeOfTree.clear()
@@ -283,7 +283,7 @@ abstract class TreeCheckers extends Analyzer {
         case _             => traverseInternal(tree)
       }
 
-      private def traverseInternal(tree: Tree) {
+      private def traverseInternal(tree: Tree): Unit = {
         if (!tree.canHaveAttrs)
           return
 
@@ -360,7 +360,7 @@ abstract class TreeCheckers extends Analyzer {
         super.traverse(tree)
       }
 
-      private def checkSymbolRefsRespectScope(enclosingMemberDefs: List[MemberDef], tree: Tree) {
+      private def checkSymbolRefsRespectScope(enclosingMemberDefs: List[MemberDef], tree: Tree): Unit = {
         def symbolOf(t: Tree): Symbol  = if (t.symbol eq null) NoSymbol else t.symbol
         def typeOf(t: Tree): Type      = if (t.tpe eq null) NoType else t.tpe
         def infoOf(t: Tree): Type      = symbolOf(t).info

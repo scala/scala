@@ -7,7 +7,7 @@ package case1 {
 
   trait Foo {
     object Bar extends Bippy with Bippo { override def f = 2 }
-    def f(x: Bippo)
+    def f(x: Bippo): Unit
     def g = f(Bar)
   }
   trait Foo2 extends Foo {

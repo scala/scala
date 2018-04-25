@@ -11,7 +11,7 @@ package foo {
   }
   package bar {
     object Main {
-      def main(args:Array[String]) {
+      def main(args:Array[String]): Unit = {
         duh(33L)
         bip.bar.duh(33L)
         duh(33d)
@@ -39,7 +39,7 @@ package bip {
   package object bar extends Duh with Duh2 { }
   package bar {
     object Main {
-      def main(args:Array[String]) {
+      def main(args:Array[String]): Unit = {
         duh(33L)
         bip.bar.duh(33L)
         duh(33d)

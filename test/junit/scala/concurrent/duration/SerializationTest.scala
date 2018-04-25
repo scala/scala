@@ -8,7 +8,7 @@ import org.junit.Test
 @RunWith(classOf[JUnit4])
 class SerializationTest {
   @Test
-  def test_SI9197 {
+  def test_SI9197: Unit = {
     def ser(a: AnyRef): Array[Byte] = {
       val bais = new java.io.ByteArrayOutputStream
       (new java.io.ObjectOutputStream(bais)).writeObject(a)

@@ -28,7 +28,7 @@ class Impl extends T
 
 
 object Test {
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         println(new B().bb)
         println(new C().bb)
     }

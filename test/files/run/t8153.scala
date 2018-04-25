@@ -8,7 +8,7 @@ object Test {
     it.mkString
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(f())
   }
 }

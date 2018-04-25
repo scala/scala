@@ -53,7 +53,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   // allows override of the behavior of the resetTyper method w.r.t comments
   def resetDocComments() = clearDocComments()
 
-  def resetTyper() {
+  def resetTyper(): Unit = {
     //println("resetTyper called")
     resetContexts()
     resetImplicits()
@@ -337,18 +337,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       lockedSym.unlock()
     }
 
-    def checkNonCyclic(sym: Symbol) {
+    def checkNonCyclic(sym: Symbol): Unit = {
       if (!checkNonCyclic(sym.pos, sym.tpe_*)) sym.setInfo(ErrorType)
     }
 
-    def checkNonCyclic(defn: Tree, tpt: Tree) {
+    def checkNonCyclic(defn: Tree, tpt: Tree): Unit = {
       if (!checkNonCyclic(defn.pos, tpt.tpe, defn.symbol)) {
         tpt setType ErrorType
         defn.symbol.setInfo(ErrorType)
       }
     }
 
-    def checkParamsConvertible(tree: Tree, tpe0: Type) {
+    def checkParamsConvertible(tree: Tree, tpe0: Type): Unit = {
       def checkParamsConvertible0(tpe: Type) =
         tpe match {
           case MethodType(formals, restpe) =>
@@ -403,7 +403,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!(hiddenSymbols contains sym)) hiddenSymbols = sym :: hiddenSymbols
 
       override def apply(t: Type): Type = {
-        def checkNoEscape(sym: Symbol) {
+        def checkNoEscape(sym: Symbol): Unit = {
           if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
             var o = owner
             while (o != NoSymbol && o != sym.owner && o != sym.owner.linkedClassOfClass &&
@@ -443,7 +443,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def reenterValueParams(vparamss: List[List[ValDef]]) {
+    def reenterValueParams(vparamss: List[List[ValDef]]): Unit = {
       for (vparams <- vparamss)
         for (vparam <- vparams)
           context.scope enter vparam.symbol
@@ -1742,7 +1742,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *    <li>no two parents define same symbol.</li>
      *  </ul>
      */
-    def validateParentClasses(parents: List[Tree], selfType: Type) {
+    def validateParentClasses(parents: List[Tree], selfType: Type): Unit = {
       val pending = ListBuffer[AbsTypeError]()
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
         if (parent == DynamicClass) checkFeature(parentPos, DynamicsFeature)
@@ -1803,7 +1803,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       pending.foreach(ErrorUtils.issueTypeError)
     }
 
-    def checkFinitary(classinfo: ClassInfoType) {
+    def checkFinitary(classinfo: ClassInfoType): Unit = {
       val clazz = classinfo.typeSymbol
 
       for (tparam <- clazz.typeParams) {
@@ -2094,7 +2094,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Enter all aliases of local parameter accessors.
      */
-    def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
+    def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
       debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       val pending = ListBuffer[AbsTypeError]()
 
@@ -2165,7 +2165,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     // Check for scala/bug#4842.
-    private def checkSelfConstructorArgs(ddef: DefDef, clazz: Symbol) {
+    private def checkSelfConstructorArgs(ddef: DefDef, clazz: Symbol): Unit = {
       val pending = ListBuffer[AbsTypeError]()
       ddef.rhs match {
         case Block(stats, expr) =>
@@ -2382,7 +2382,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       treeCopy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
 
-    private def enterLabelDef(stat: Tree) {
+    private def enterLabelDef(stat: Tree): Unit = {
       stat match {
         case ldef @ LabelDef(_, _, _) =>
           if (ldef.symbol == NoSymbol)
@@ -3098,7 +3098,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def typedRefinement(templ: Template) {
+    def typedRefinement(templ: Template): Unit = {
       val stats = templ.body
       namer.enterSyms(stats)
 
@@ -3600,7 +3600,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val symsOwnedByContextOwner = tree.collect {
                 case t @ (_: DefTree | _: Function) if ownerOf(t.symbol) == context.owner => t.symbol
               }
-              def rollbackNamesDefaultsOwnerChanges() {
+              def rollbackNamesDefaultsOwnerChanges(): Unit = {
                 symsOwnedByContextOwner foreach (_.owner = context.owner)
               }
 
@@ -4034,9 +4034,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
       // add all local symbols of `tp` to `localSyms`
       // TODO: expand higher-kinded types into individual copies for each instance.
-      def addLocals(tp: Type) {
+      def addLocals(tp: Type): Unit = {
         val remainingSyms = new ListBuffer[Symbol]
-        def addIfLocal(sym: Symbol, tp: Type) {
+        def addIfLocal(sym: Symbol, tp: Type): Unit = {
           if (isLocal(sym) && !localSyms(sym) && !boundSyms(sym)) {
             if (sym.typeParams.isEmpty) {
               localSyms += sym
@@ -5353,7 +5353,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
       }
       def issueTryWarnings(tree: Try): Try = {
-        def checkForCatchAll(cdef: CaseDef) {
+        def checkForCatchAll(cdef: CaseDef): Unit = {
           def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
           def warn(name: Name) = {
             val msg = s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning."

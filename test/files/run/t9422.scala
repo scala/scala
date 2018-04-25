@@ -4,7 +4,7 @@ class Test(val x: Long) {
 }
  
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val b = new Test(1L)
     assert(!b.sameDirection(-1L))
   }

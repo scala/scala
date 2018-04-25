@@ -16,7 +16,7 @@ elem: Fooable[T]): Fooable[Coll[T]] = {
     println("traversable")
     new Fooable[Coll[T]]{}
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     implicitly[Fooable[List[Any]]]
   }
 }

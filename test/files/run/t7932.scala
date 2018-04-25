@@ -22,7 +22,7 @@ object Test {
     val ms = c.getMethods.filter(_.getName.startsWith("category"))
     println(ms.map(_.toGenericString).sorted.mkString("\n"))
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     t(classOf[C])
     t(classOf[M1[_]])
     t(classOf[M2[_]])

@@ -247,7 +247,7 @@ class SolvingTest {
   def sym(name: String) = Sym(Var(Tree(name)), NullConst)
 
   @Test
-  def testSymCreation() {
+  def testSymCreation(): Unit = {
     val s1 = sym("hello")
     val s2 = sym("hello")
     assertEquals(s1, s2)
@@ -257,7 +257,7 @@ class SolvingTest {
    * Simplest possible test: solve a formula and check the solution(s)
    */
   @Test
-  def testUnassigned() {
+  def testUnassigned(): Unit = {
     val pSym = sym("p")
     val solvable = propToSolvable(Or(pSym, Not(pSym)))
     val solutions = TestSolver.TestSolver.findAllModelsFor(solvable)
@@ -270,7 +270,7 @@ class SolvingTest {
    * for stable results
    */
   @Test
-  def testNoUnassigned() {
+  def testNoUnassigned(): Unit = {
     val pSym = sym("p")
     val qSym = sym("q")
     val solvable = propToSolvable(Or(pSym, Not(qSym)))
@@ -286,7 +286,7 @@ class SolvingTest {
   }
 
   @Test
-  def testTseitinVsExpansionFrom_t7020() {
+  def testTseitinVsExpansionFrom_t7020(): Unit = {
     val formulas = Seq(
       And(And(And(Not(sym("V1=null")),
         sym("V1=scala.collection.immutable.::[?]")), And(Not(sym("V1=null")),
@@ -594,7 +594,7 @@ class SolvingTest {
   }
 
   @Test
-  def testAtMostOne() {
+  def testAtMostOne(): Unit = {
     val dummySym = sym("dummy")
     val syms = "pqrstu".map(c => sym(c.toString)).toList
     // expand unassigned variables

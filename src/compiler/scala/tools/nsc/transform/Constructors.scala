@@ -31,7 +31,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
      * Inspect for obvious out-of-order initialization; concrete, eager vals or vars, declared in this class,
      * for which a reference to the member precedes its definition.
      */
-    private def checkUninitializedReads(cd: ClassDef) {
+    private def checkUninitializedReads(cd: ClassDef): Unit = {
       val stats = cd.impl.body
       val clazz = cd.symbol
 

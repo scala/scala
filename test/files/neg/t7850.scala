@@ -7,7 +7,7 @@ class Dingy(a: Int) { def get = this }
 object Dingy { def unapply(a: Dingy) = a }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val Casey(x1) = new Casey(1)
     val Dingy(x2) = new Dingy(1)
     println(s"$x1 $x2")

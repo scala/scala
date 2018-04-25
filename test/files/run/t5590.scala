@@ -8,7 +8,7 @@ import collection._
 
 object Test {
 
-  def check(obj: AnyRef) {
+  def check(obj: AnyRef): Unit = {
     println(obj)
 
     val bos = new ByteArrayOutputStream()
@@ -21,7 +21,7 @@ object Test {
     println(deser)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val lhm = mutable.LinkedHashMap("a" -> "a", "b" -> "b", "c" -> "c")
     val lhs = mutable.LinkedHashSet("a", "b", "c", "d", "e")
     check(lhm)

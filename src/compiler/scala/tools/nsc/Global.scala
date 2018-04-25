@@ -192,7 +192,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     var lastPrintedSource: String = ""
     infolevel = InfoLevel.Verbose
 
-    def showUnit(unit: CompilationUnit) {
+    def showUnit(unit: CompilationUnit): Unit = {
       print(" // " + unit.source)
       if (unit.body == null) println(": tree is null")
       else {
@@ -247,10 +247,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Called every time an AST node is successfully typechecked in typerPhase.
    */
-  def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
+  def signalDone(context: analyzer.Context, old: Tree, result: Tree): Unit = {}
 
   /** Called from parser, which signals hereby that a method definition has been parsed. */
-  def signalParseProgress(pos: Position) {}
+  def signalParseProgress(pos: Position): Unit = {}
 
   /** Called by ScaladocAnalyzer when a doc comment has been parsed. */
   def signalParsedDocComment(comment: String, pos: Position) = {
@@ -262,17 +262,17 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Register new context; called for every created context
    */
-  def registerContext(c: analyzer.Context) {
+  def registerContext(c: analyzer.Context): Unit = {
     lastSeenContext = c
   }
 
   /** Register top level class (called on entering the class)
    */
-  def registerTopLevelSym(sym: Symbol) {}
+  def registerTopLevelSym(sym: Symbol): Unit = {}
 
 // ------------------ Debugging -------------------------------------
 
-  @inline final def ifDebug(body: => Unit) {
+  @inline final def ifDebug(body: => Unit): Unit = {
     if (settings.debug)
       body
   }
@@ -286,7 +286,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
    *  to make them visually distinct.
    */
   @inline final override def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
-  @inline final def devWarning(pos: Position, msg: => String) {
+  @inline final def devWarning(pos: Position, msg: => String): Unit = {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
     if (isDeveloper)
       warning(pos, "!!! " + msg)
@@ -300,12 +300,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     (settings.log containsPhase globalPhase) || (settings.log containsPhase phase)
   )
   // Over 200 closure objects are eliminated by inlining this.
-  @inline final def log(msg: => AnyRef) {
+  @inline final def log(msg: => AnyRef): Unit = {
     if (shouldLogAtThisPhase)
       inform(s"[log $globalPhase$atPhaseStackMessage] $msg")
   }
 
-  @inline final override def debuglog(msg: => String) {
+  @inline final override def debuglog(msg: => String): Unit = {
     if (settings.debug)
       log(msg)
   }
@@ -385,7 +385,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
 
-    def run() {
+    def run(): Unit = {
       echoPhaseSummary(this)
       currentRun.units foreach applyPhase
     }
@@ -399,7 +399,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
-    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
@@ -412,7 +412,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
     }
 
-    final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit) {
+    final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit): Unit = {
       val unit0 = currentUnit
       try {
         currentRun.currentUnit = unit
@@ -604,7 +604,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
     private class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
       def name = phaseName
-      def apply(unit: CompilationUnit) {}
+      def apply(unit: CompilationUnit): Unit = {}
     }
   }
 
@@ -688,7 +688,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
 
-  protected def addToPhasesSet(sub: SubComponent, descr: String) {
+  protected def addToPhasesSet(sub: SubComponent, descr: String): Unit = {
     phasesSet += sub
     phasesDescMap(sub) = descr
   }
@@ -743,7 +743,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         else if (max < 4) s.take(max)
         else s.take(max - 3) + "..."
       )
-      override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
+      override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int): Unit = {
         val p = foreshortened(s, precision)
         val w = if (width > 0 && p.length < width) {
           import FormattableFlags.LEFT_JUSTIFY
@@ -1236,18 +1236,18 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
      *  @param    current   number of "progress units" completed
      *  @param    total     total number of "progress units" in run
      */
-    def progress(current: Int, total: Int) {}
+    def progress(current: Int, total: Int): Unit = {}
 
     /**
      * For subclasses to override. Called when `phase` is about to be run on `unit`.
      * Variables are passed explicitly to indicate that `globalPhase` and `currentUnit` have been set.
      */
-    def informUnitStarting(phase: Phase, unit: CompilationUnit) { }
+    def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit = { }
 
     /** take note that phase is completed
      *  (for progress reporting)
      */
-    def advancePhase() {
+    def advancePhase(): Unit = {
       unitc = 0
       phasec += 1
       refreshProgress()
@@ -1255,13 +1255,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     /** take note that a phase on a unit is completed
      *  (for progress reporting)
      */
-    def advanceUnit() {
+    def advanceUnit(): Unit = {
       unitc += 1
       refreshProgress()
     }
 
     // for sbt
-    def cancel() { reporter.cancelled = true }
+    def cancel(): Unit = { reporter.cancelled = true }
 
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
@@ -1307,11 +1307,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
 
     /** add unit to be compiled in this run */
-    private def addUnit(unit: CompilationUnit) {
+    private def addUnit(unit: CompilationUnit): Unit = {
       unitbuf += unit
       compiledFiles += unit.source.file.path
     }
-    private def warnDeprecatedAndConflictingSettings() {
+    private def warnDeprecatedAndConflictingSettings(): Unit = {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
         currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
@@ -1353,7 +1353,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     // --------------- Compilation methods ----------------------------
 
-    protected def runCheckers() {
+    protected def runCheckers(): Unit = {
       val toCheck  = globalPhase.prev
       val canCheck = toCheck.checkable
       val fmt      = if (canCheck) "[Now checking: %s]" else "[Not checkable: %s]"
@@ -1429,7 +1429,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit =
       compileUnitsInternal(units, fromPhase)
-    private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
+    private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase): Unit = {
       units foreach addUnit
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
@@ -1517,7 +1517,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     /** Compile list of abstract files. */
-    def compileFiles(files: List[AbstractFile]) {
+    def compileFiles(files: List[AbstractFile]): Unit = {
       try {
         val snap = profiler.beforePhase(Global.InitPhase)
         val sources = files map getSourceFile
@@ -1528,7 +1528,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     /** Compile list of files given by their names */
-    def compile(filenames: List[String]) {
+    def compile(filenames: List[String]): Unit = {
       try {
         val snap = profiler.beforePhase(Global.InitPhase)
 
@@ -1551,14 +1551,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     /** Compile abstract file until `globalPhase`, but at least
      *  to phase "namer".
      */
-    def compileLate(file: AbstractFile) {
+    def compileLate(file: AbstractFile): Unit = {
       if (!compiledFiles(file.path))
         compileLate(new CompilationUnit(scripted(getSourceFile(file))))
     }
 
     /** Compile abstract file until `globalPhase`, but at least to phase "namer".
      */
-    def compileLate(unit: CompilationUnit) {
+    def compileLate(unit: CompilationUnit): Unit = {
       addUnit(unit)
 
       if (firstPhase ne null) { // we might get here during initialization, is a source is newer than the binary
@@ -1608,7 +1608,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
   } // class Run
 
-  def printAllUnits() {
+  def printAllUnits(): Unit = {
     print("[[syntax trees at end of %25s]]".format(phase))
     exitingPhase(phase)(currentRun.units foreach { unit =>
       nodePrinters showUnit unit
@@ -1663,6 +1663,6 @@ object Global {
   private object InitPhase extends Phase(null) {
     def name = "<init phase>"
     override def keepsTypeParams = false
-    def run() { throw new Error("InitPhase.run") }
+    def run(): Unit = { throw new Error("InitPhase.run") }
   }
 }

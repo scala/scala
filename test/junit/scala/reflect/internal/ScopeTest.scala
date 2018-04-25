@@ -21,7 +21,7 @@ class ScopeTest {
   @Test
   def testNestedScopeLarge(): Unit = testNestedScope(64) // exceeding MIN_HASH
 
-  private def testNestedScope(initSize: Int) {
+  private def testNestedScope(initSize: Int): Unit = {
     def sym(termName: String): Symbol = NoSymbol.newValue(TermName(termName))
     val foo = sym("foo")
     val bar = sym("bar")

@@ -17,7 +17,7 @@ askHyperlinkPos for `Bar` at (8,11) Foo.scala
 
 askHyperlinkPos for `baz` at (8,22) Foo.scala
 ================================================================================
-[response] found askHyperlinkPos for `baz` at (2,31) Foo.scala
+[response] found askHyperlinkPos for `baz` at (2,39) Foo.scala
 ================================================================================
 
 askHyperlinkPos for `Bar` at (9,11) Foo.scala
@@ -27,5 +27,5 @@ askHyperlinkPos for `Bar` at (9,11) Foo.scala
 
 askHyperlinkPos for `baz` at (9,22) Foo.scala
 ================================================================================
-[response] found askHyperlinkPos for `baz` at (2,31) Foo.scala
+[response] found askHyperlinkPos for `baz` at (2,39) Foo.scala
 ================================================================================

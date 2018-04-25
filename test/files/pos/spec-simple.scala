@@ -12,7 +12,7 @@ class Foo[@specialized T] {
 }
 
 class Test {
-  def test {
+  def test: Unit = {
     val a = new Foo[Int]
     val b = new a.Bar[Int]
     a.foo(10)

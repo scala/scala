@@ -192,7 +192,7 @@ abstract class ScalaPrimitives {
   private val primitives: mutable.Map[Symbol, Int] = new mutable.HashMap()
 
   /** Initialize the primitive map */
-  def init() {
+  def init(): Unit = {
     primitives.clear()
     // scala.Any
     addPrimitive(Any_==, EQ)
@@ -435,12 +435,12 @@ abstract class ScalaPrimitives {
   }
 
   /** Add a primitive operation to the map */
-  def addPrimitive(s: Symbol, code: Int) {
+  def addPrimitive(s: Symbol, code: Int): Unit = {
     assert(!(primitives contains s), "Duplicate primitive " + s)
     primitives(s) = code
   }
 
-  def addPrimitives(cls: Symbol, method: Name, code: Int) {
+  def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val alts = (cls.info member method).alternatives
     if (alts.isEmpty)
       inform(s"Unknown primitive method $cls.$method")

@@ -30,7 +30,7 @@ object Test {
     case _            => -1
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val break = BreakImpl(22)
     assert(f1(break) == 22)
     assert(f2(break) == 22)

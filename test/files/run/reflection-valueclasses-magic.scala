@@ -32,7 +32,7 @@ object Test extends App {
     else throw new Exception(s"not supported: value = $value, tpe = $tpe")
   }
 
-  def test[T: ClassTag](tpe: Type, receiver: T, method: String, args: Any*) {
+  def test[T: ClassTag](tpe: Type, receiver: T, method: String, args: Any*): Unit = {
     def wrap[T](op: => T) =
       try {
         var result = op.asInstanceOf[AnyRef]
@@ -52,14 +52,14 @@ object Test extends App {
       wrap(cm.reflect(receiver).reflectMethod(testee)(convertedArgs: _*))
     })
   }
-  def header(tpe: Type) {
+  def header(tpe: Type): Unit = {
     println(s"============\n$tpe")
     println("it's important to print the list of Byte's members")
     println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
     tpe.members.toList.sortBy(key).foreach(sym => println(key(sym)))
   }
 
-  def testNumeric[T: ClassTag](tpe: Type, value: T) {
+  def testNumeric[T: ClassTag](tpe: Type, value: T): Unit = {
     header(tpe)
     List("toByte", "toShort", "toChar", "toInt", "toLong", "toFloat", "toDouble") foreach (meth => test(tpe, value, meth))
     test(tpe, value, "==", 2)
@@ -75,7 +75,7 @@ object Test extends App {
     test(tpe, value, "%", 2)
   }
 
-  def testIntegral[T: ClassTag](tpe: Type, value: T) {
+  def testIntegral[T: ClassTag](tpe: Type, value: T): Unit = {
     testNumeric(tpe, value)
     test(tpe, value, "unary_~")
     test(tpe, value, "unary_+")
@@ -88,7 +88,7 @@ object Test extends App {
     test(tpe, value, "^", 2)
   }
 
-  def testBoolean() {
+  def testBoolean(): Unit = {
     header(typeOf[Boolean])
     test(typeOf[Boolean], true, "unary_!")
     test(typeOf[Boolean], true, "==", true)
@@ -100,7 +100,7 @@ object Test extends App {
     test(typeOf[Boolean], true, "^", true)
   }
 
-  def testUnit() {
+  def testUnit(): Unit = {
     header(typeOf[Unit])
   }
 

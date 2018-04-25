@@ -5,7 +5,7 @@ class Box[X <: CharSequence](val x: X) extends AnyVal {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val g = (x: String) => x + x
     println(new Box("abc") map g)
   }

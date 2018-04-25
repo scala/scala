@@ -70,7 +70,7 @@ trait MarkupParsers {
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
-    def nextch() { input.nextChar() }
+    def nextch(): Unit = { input.nextChar() }
 
     protected def ch_returning_nextch: Char = {
       val result = ch; input.nextChar(); result
@@ -191,7 +191,7 @@ trait MarkupParsers {
     /** adds entity/character to ts as side-effect
      *  @precond ch == '&'
      */
-    def content_AMP(ts: ArrayBuffer[Tree]) {
+    def content_AMP(ts: ArrayBuffer[Tree]): Unit = {
       nextch()
       val toAppend = ch match {
         case '#' => // CharacterRef
@@ -423,7 +423,7 @@ trait MarkupParsers {
     def xScalaPatterns: List[Tree] = escapeToScala(parser.xmlSeqPatterns(), "pattern")
 
     def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
-    def reportSyntaxError(str: String) {
+    def reportSyntaxError(str: String): Unit = {
       reportSyntaxError(curOffset, "in XML literal: " + str)
       nextch()
     }

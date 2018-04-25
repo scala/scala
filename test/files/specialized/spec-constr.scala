@@ -6,7 +6,7 @@ object Test {
     if (f == null) f = { _ => false }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new E[Int]
     println("goodbye")
     println(runtime.BoxesRunTime.integerBoxCount)

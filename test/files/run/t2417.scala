@@ -1,10 +1,10 @@
 // #2417
 object Test {
 
-  def parallel(numThreads: Int)(block: => Unit) {
+  def parallel(numThreads: Int)(block: => Unit): Unit = {
     var failure: Throwable = null
     val threads = Array.tabulate(numThreads)(i => new Thread {
-      override def run {
+      override def run: Unit = {
         try {
           block
           } catch {
@@ -17,7 +17,7 @@ object Test {
       if (failure != null) println("FAILURE: " + failure)
     }
 
-    def testSet(initialSize: Int, numThreads: Int, passes: Int) {
+    def testSet(initialSize: Int, numThreads: Int, passes: Int): Unit = {
       val orig = Set.empty ++ (1 to initialSize)
       parallel(numThreads) {
         for (pass <- 0 until passes) {
@@ -33,7 +33,7 @@ object Test {
       }
     }
 
-    def testMap(initialSize: Int, numThreads: Int, passes: Int) {
+    def testMap(initialSize: Int, numThreads: Int, passes: Int): Unit = {
       val orig = Map.empty ++ ((1 to initialSize) map ((_,"v")))
       parallel(numThreads) {
         for (pass <- 0 until passes) {
@@ -49,7 +49,7 @@ object Test {
       }
     }
 
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
       println("testing small Map that doesn't promote to HashMap...")
       testMap(4, 2, 1000000)
       println()

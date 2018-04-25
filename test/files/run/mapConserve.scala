@@ -17,7 +17,7 @@ object Test {
     assert(xs.mapConserve(x => x) eq xs)
   }
 
-  def checkBehaviourUnchanged(input: List[_], oldOutput: List[_], newOutput: List[_]) {
+  def checkBehaviourUnchanged(input: List[_], oldOutput: List[_], newOutput: List[_]): Unit = {
     if (oldOutput eq input)
       assert(newOutput eq oldOutput)
     else {
@@ -30,7 +30,7 @@ object Test {
     var callCount = 0
     val lastHexDigit: Function1[BigInt, AnyRef] = { x: BigInt => callCount+=1; if (x < 16) x else x % 16 }
 
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         for (length <- 0 to maxListLength;
              bitmap <- 0 until (1 << length);
              data = List.range(0, length) map { x: Int =>

@@ -2,14 +2,14 @@ import scala.language.reflectiveCalls
  // Scala class:
 class ScalaVarArgs extends J_1 {
   // -- no problem on overriding it using ordinary class
-  def method(s: String*) { println(s) }
+  def method(s: String*): Unit = { println(s) }
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     //[1] Ok - no problem using inferred type
     val varArgs = new J_1 {
-      def method(s: String*) { println(s) }
+      def method(s: String*): Unit = { println(s) }
     }
     varArgs.method("1", "2")
 
@@ -24,7 +24,7 @@ object Test {
     //[4] Not Ok -- error when assigning anonymous class to an explictly typed val
     // Compiler error:  object creation impossible, since method method in trait VarArgs of type (s: <repeated...>[java.lang.String])Unit is not defined
     val tagged: J_1 = new J_1 {
-      def method(s: String*) { println(s) }
+      def method(s: String*): Unit = { println(s) }
     }
   }
 }

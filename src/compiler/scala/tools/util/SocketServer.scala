@@ -82,10 +82,10 @@ abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
     }
   }
 
-  def run() {
+  def run(): Unit = {
     info("Starting SocketServer run() loop.")
 
-    def loop() {
+    def loop(): Unit = {
       acceptBox.either match {
         case Right(clientSocket) =>
           try doSession(clientSocket)

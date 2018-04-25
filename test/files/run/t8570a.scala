@@ -8,7 +8,7 @@ trait T1 extends Trait40_1 {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println((new T1 {}).run)
   }
 }

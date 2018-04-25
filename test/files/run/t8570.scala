@@ -4,7 +4,7 @@ trait Trait40_1 {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new Trait40_1 {}).run
   }
 }

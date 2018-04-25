@@ -3,7 +3,7 @@ class Test {
     def apply(x: Int): Unit = {}
   }
 
-  def gather(x: Int) {
+  def gather(x: Int): Unit = {
     (new PropTraverser {})(x)
   }
 }

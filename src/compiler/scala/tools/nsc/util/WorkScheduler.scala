@@ -91,6 +91,6 @@ class WorkScheduler {
 }
 
 class EmptyAction extends (() => Unit) {
-  def apply() {}
+  def apply(): Unit = {}
 }
 

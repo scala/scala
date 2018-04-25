@@ -1,5 +1,5 @@
 class Foo {
-  def aaa {
+  def aaa: Unit = {
     println("a")
   }
 }

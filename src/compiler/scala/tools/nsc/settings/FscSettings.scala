@@ -52,7 +52,7 @@ class FscSettings(error: String => Unit) extends Settings(error) {
   private[this] def absolutizePath(p: String) = (Path(currentDir.value) resolve Path(p)).normalize.path
 
   /** All user set settings rewritten with absolute paths based on currentDir */
-  def absolutize() {
+  def absolutize(): Unit = {
     userSetSettings foreach {
       case p: OutputSetting => p.outputDirs setSingleOutput AbstractFile.getDirectory(absolutizePath(p.value))
       case p: PathSetting   => p.value = ClassPath.map(p.value, absolutizePath)

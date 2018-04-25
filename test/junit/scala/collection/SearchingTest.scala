@@ -10,7 +10,7 @@ import scala.collection.Searching._
 class SearchingTest {
 
   @Test
-  def doesLinearSearchOnLinearSeqs() {
+  def doesLinearSearchOnLinearSeqs(): Unit = {
 
     class TestSeq[A](list: List[A]) extends Seq[A] {
       var elementsAccessed = immutable.Set.empty[Int]
@@ -29,7 +29,7 @@ class SearchingTest {
   }
 
   @Test
-  def doesBinarySearchOnIndexedSeqs() {
+  def doesBinarySearchOnIndexedSeqs(): Unit = {
 
     class TestIndexedSeq[A](vec: Vector[A]) extends IndexedSeq[A] {
       var elementsAccessed = immutable.Set.empty[Int]

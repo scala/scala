@@ -9,7 +9,7 @@ import scala.tools.testing.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 class SettingsTest {
-  @Test def booleanSettingColon() {
+  @Test def booleanSettingColon(): Unit = {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val b1 = new s.BooleanSetting("-Ytest-setting", "")
@@ -33,13 +33,13 @@ class SettingsTest {
     assert(residual.isEmpty)
     b(s)
   }
-  @Test def userSettingsHavePrecedenceOverLint() {
+  @Test def userSettingsHavePrecedenceOverLint(): Unit = {
     assertTrue(check("-Xlint")(_.warnAdaptedArgs))
     assertFalse(check("-Xlint", "-Ywarn-adapted-args:false")(_.warnAdaptedArgs))
     assertFalse(check("-Ywarn-adapted-args:false", "-Xlint")(_.warnAdaptedArgs))
   }
 
-  @Test def anonymousLintersCanBeNamed() {
+  @Test def anonymousLintersCanBeNamed(): Unit = {
     assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
     assertFalse(check("-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
 

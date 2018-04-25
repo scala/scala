@@ -16,7 +16,7 @@ object Test {
   @native
   def sayHello(s: String): String = null
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val s = sayHello("Scala is great!")
     println("Invocation returned \"" + s + "\"")
   }

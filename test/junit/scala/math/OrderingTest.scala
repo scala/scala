@@ -10,7 +10,7 @@ class OrderingTest {
 
   /* Test for scala/bug#9077 */
   @Test
-  def testReverseOrdering {
+  def testReverseOrdering: Unit = {
     def check[T: Ordering](t1: T, t2: T): Unit = {
       val O = Ordering[T]
       val R = O.reverse

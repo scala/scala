@@ -12,7 +12,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class ZippedTest {
   @Test
-  def crossZipped() {
+  def crossZipped(): Unit = {
 
     val xs1 = List.range(1, 100)
     val xs2 = xs1.view
@@ -51,7 +51,7 @@ class ZippedTest {
   }
 
   @Test
-  def test_si9379() {
+  def test_si9379(): Unit = {
     class Boom {
       private var i = -1
       def inc = {

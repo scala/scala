@@ -1,6 +1,6 @@
 object Test {
   def check(a: Range, b: Range) = (a == b) == (a.toList == b.toList)
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val lo = -2 to 2
     val hi = lo
     val step = List(-6,-2,-1,1,2,6)

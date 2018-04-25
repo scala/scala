@@ -1,5 +1,5 @@
 object Animal {
-  def main(args: Array[String]) { new Animal[Awake].goToSleep }
+  def main(args: Array[String]): Unit = { new Animal[Awake].goToSleep }
 }
 
 class Animal[A <: AwakeOrAsleep] {

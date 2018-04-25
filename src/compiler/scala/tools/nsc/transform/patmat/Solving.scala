@@ -105,7 +105,7 @@ trait Solving extends Logic {
 
       def isConst(l: Lit): Boolean = l == constTrue || l == constFalse
 
-      def addClauseProcessed(clause: Clause) {
+      def addClauseProcessed(clause: Clause): Unit = {
         if (clause.nonEmpty) {
           buff += clause
         }
@@ -218,7 +218,7 @@ trait Solving extends Logic {
          * See also "Towards an Optimal CNF Encoding of Boolean Cardinality Constraints"
          * http://www.carstensinz.de/papers/CP-2005.pdf
          */
-        def atMostOne(ops: List[Sym]) {
+        def atMostOne(ops: List[Sym]): Unit = {
           (ops: @unchecked) match {
             case hd :: Nil  => convertSym(hd)
             case x1 :: tail =>

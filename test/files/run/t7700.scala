@@ -8,7 +8,7 @@ trait C[@specialized U] {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val declared = classOf[C[_]].getDeclaredMethods.sortBy(_.getName)
     println(declared.mkString("\n"))
     object CInt extends C[Int] { def foo(i: Int) = i }

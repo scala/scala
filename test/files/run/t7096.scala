@@ -72,7 +72,7 @@ class Sub extends Base {
   object syms extends SymsInPackage("ano")
   import syms._
 
-  def check(source: String, unit: global.CompilationUnit) {
+  def check(source: String, unit: global.CompilationUnit): Unit = {
     exitingTyper {
       terms.filter(_.name.toString == "foo").foreach(sym => {
         val xParam = sym.tpe.paramss.flatten.head

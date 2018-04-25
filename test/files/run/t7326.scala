@@ -3,11 +3,11 @@ import scala.collection.immutable.HashSet
 
 object Test extends App {
 
-  def testCorrectness() {
+  def testCorrectness(): Unit = {
     // a key that has many hashCode collisions
     case class Collision(i: Int) { override def hashCode = i / 5 }
 
-    def subsetTest[T](emptyA:Set[T], emptyB:Set[T], mkKey:Int => T, n:Int) {
+    def subsetTest[T](emptyA:Set[T], emptyB:Set[T], mkKey:Int => T, n:Int): Unit = {
       val outside = mkKey(n + 1)
       for(i <- 0 to n) {
         val a = emptyA ++ (0 until i).map(mkKey)

@@ -1,3 +1,3 @@
 object Meh {
-  @deprecated("","") def whatever {}
+  @deprecated("","") def whatever: Unit = {}
 }

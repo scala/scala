@@ -508,7 +508,7 @@ class LispUser(lisp: Lisp) {
 // Main
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new LispUser(LispCaseClasses).run;
     new LispUser(LispAny).run;
     ()

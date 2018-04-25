@@ -50,7 +50,7 @@ trait Namers extends MethodSynthesis {
 
   abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
     // overridden by the presentation compiler
-    def saveDefaultGetter(meth: Symbol, default: Symbol) { }
+    def saveDefaultGetter(meth: Symbol, default: Symbol): Unit = { }
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -399,7 +399,7 @@ trait Namers extends MethodSynthesis {
     /** Given a ClassDef or ModuleDef, verifies there isn't a companion which
      *  has been defined in a separate file.
      */
-    def validateCompanionDefs(tree: ImplDef) {
+    def validateCompanionDefs(tree: ImplDef): Unit = {
       val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
       val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
@@ -525,7 +525,7 @@ trait Namers extends MethodSynthesis {
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
-      def checkNotRedundant(pos: Position, from: Name, to0: Name) {
+      def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
         def check(to: Name) = {
           val e = context.scope.lookupEntry(to)
 
@@ -570,7 +570,7 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value) {
+      def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value): Unit = {
         def loop(xs: List[Name]): Unit = xs match {
           case Nil      => ()
           case hd :: tl =>
@@ -590,7 +590,7 @@ trait Namers extends MethodSynthesis {
       /* Assign the types of the class parameters to the parameters of the
        * copy method. See comment in `Unapplies.caseClassCopyMeth`
        */
-      def assignParamTypes(copyDef: DefDef, sym: Symbol) {
+      def assignParamTypes(copyDef: DefDef, sym: Symbol): Unit = {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
         val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
@@ -729,7 +729,7 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterPackage(tree: PackageDef) {
+    def enterPackage(tree: PackageDef): Unit = {
       val sym = createPackageSymbol(tree.pos, tree.pid)
       tree.symbol = sym
       newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
@@ -758,7 +758,7 @@ trait Namers extends MethodSynthesis {
         sym setInfo completer
       }
 
-    def enterClassDef(tree: ClassDef) {
+    def enterClassDef(tree: ClassDef): Unit = {
       val ClassDef(mods, _, _, impl) = tree
       val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
       tree.symbol = enterClassSymbol(tree)
@@ -796,7 +796,7 @@ trait Namers extends MethodSynthesis {
     def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       this.context
     }
-    def enterIfNotThere(sym: Symbol) { }
+    def enterIfNotThere(sym: Symbol): Unit = { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
@@ -1095,7 +1095,7 @@ trait Namers extends MethodSynthesis {
     }
 
     // owner is the class with the self type
-    def enterSelf(self: ValDef) {
+    def enterSelf(self: ValDef): Unit = {
       val ValDef(_, name, tpt, _) = self
       if (self eq noSelfType)
         return
@@ -1446,7 +1446,7 @@ trait Namers extends MethodSynthesis {
      * typechecked, the corresponding param would not yet have the "defaultparam"
      * flag.
      */
-    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol) {
+    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol): Unit = {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(ddef.duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
@@ -1748,7 +1748,7 @@ trait Namers extends MethodSynthesis {
      * @param cdef is the class definition of the case class
      * @param namer is the namer of the module class (the comp. obj)
      */
-    def addApplyUnapply(cdef: ClassDef, namer: Namer) {
+    def addApplyUnapply(cdef: ClassDef, namer: Namer): Unit = {
       if (!cdef.symbol.hasAbstractFlag)
         namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
 
@@ -1757,7 +1757,7 @@ trait Namers extends MethodSynthesis {
         namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
     }
 
-    def addCopyMethod(cdef: ClassDef, namer: Namer) {
+    def addCopyMethod(cdef: ClassDef, namer: Namer): Unit = {
       caseClassCopyMeth(cdef) foreach namer.enterSyntheticSym
     }
 
@@ -1861,7 +1861,7 @@ trait Namers extends MethodSynthesis {
      *   - `def` modifier never for parameters of case classes
      *   - declarations only in mixins or abstract classes (when not @native)
      */
-    def validate(sym: Symbol) {
+    def validate(sym: Symbol): Unit = {
       import SymValidateErrors._
       def fail(kind: SymValidateErrors.Value) = SymbolValidationError(sym, kind)
 
@@ -2042,7 +2042,7 @@ trait Namers extends MethodSynthesis {
 
       case _ => mapOver(tp)
     }
-    def check(vparamss: List[List[Symbol]]) {
+    def check(vparamss: List[List[Symbol]]): Unit = {
       for (vps <- vparamss) {
         for (p <- vps)
           this(p.info)

@@ -26,8 +26,8 @@ package object reflect {
   /** Creates a UI-less reporter that simply accumulates all the messages
    */
   def mkSilentFrontEnd(): FrontEnd = new FrontEnd {
-    def display(info: Info) {}
-    def interactive() {}
+    def display(info: Info): Unit = {}
+    def interactive(): Unit = {}
   }
 
   /** Creates a reporter that prints messages to the console according to the settings.

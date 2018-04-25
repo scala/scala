@@ -15,7 +15,7 @@ object O {
 }
 
 abstract class C[E] {
-  def foo[BB](f: BB)
+  def foo[BB](f: BB): Unit
   def test[B](f: B): Any = foo(f)
   // error: no type parameters for method foo: (<param> f: BB)scala.this.Unit exist so that it can be applied to arguments (B&1)
   // --- because ---

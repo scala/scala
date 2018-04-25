@@ -6,7 +6,7 @@ object Test extends App {
   val inst   = j_1.info.decl(TermName("inst"))
   val statik = j_1.companion.info.decl(TermName("statik"))
 
-  def check(info: Type) {
+  def check(info: Type): Unit = {
     assert(info.paramLists.head.map(_.name) == List(TermName("i"), TermName("j")), info)
   }
 

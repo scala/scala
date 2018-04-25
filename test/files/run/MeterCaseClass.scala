@@ -79,7 +79,7 @@ object Test extends App {
   { println("testing native arrays")
     val arr = Array(x, y + x)
     println(arr.deep)
-    def foo[T <: Printable](x: Array[T]) {
+    def foo[T <: Printable](x: Array[T]): Unit = {
       for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
     }
     val m = arr(0)

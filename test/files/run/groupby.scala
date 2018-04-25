@@ -4,7 +4,7 @@
 // Fixes #3422
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val arr = Array.range(0,10)
     val map = arr groupBy (_%2)
     val v1 = map(0)

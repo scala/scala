@@ -1,7 +1,7 @@
 import scala.tools.partest.BytecodeTest
 
 object Test extends BytecodeTest {
-  def show {
+  def show: Unit = {
     val node1 = loadClassNode("Sub1")
     val node2 = loadClassNode("Sub2")
 

@@ -482,7 +482,7 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
     /** The transformation method for whole compilation units */
-    override def transformUnit(unit: CompilationUnit) {
+    override def transformUnit(unit: CompilationUnit): Unit = {
       exitingExplicitOuter(super.transformUnit(unit))
     }
   }

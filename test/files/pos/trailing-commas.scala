@@ -36,7 +36,7 @@ trait Params {
   )(implicit
     ev0: Ev0,
     ev1: Ev1,
-  )
+  ): Unit
 }
 
 trait ClassParams {
@@ -84,7 +84,7 @@ trait FunTypeParamClause {
   def f[
     A,
     B,
-  ]
+  ]: Unit
 }
 
 trait SimpleType {
@@ -137,7 +137,7 @@ trait ImportSelectors {
 }
 
 trait Bindings {
-  def g(f: (Int, String) => Boolean)
+  def g(f: (Int, String) => Boolean): Unit
 
   g((
     foo,

@@ -91,24 +91,24 @@ class JarWriter(val file: File, val manifest: Manifest) {
     new DataOutputStream(out)
   }
 
-  def writeAllFrom(dir: Directory) {
+  def writeAllFrom(dir: Directory): Unit = {
     try dir.list foreach (x => addEntry(x, ""))
     finally out.close()
   }
-  def addStream(entry: JarEntry, in: InputStream) {
+  def addStream(entry: JarEntry, in: InputStream): Unit = {
     out putNextEntry entry
     try transfer(in, out)
     finally out.closeEntry()
   }
-  def addFile(file: File, prefix: String) {
+  def addFile(file: File, prefix: String): Unit = {
     val entry = new JarEntry(prefix + file.name)
     addStream(entry, file.inputStream())
   }
-  def addEntry(entry: Path, prefix: String) {
+  def addEntry(entry: Path, prefix: String): Unit = {
     if (entry.isFile) addFile(entry.toFile, prefix)
     else addDirectory(entry.toDirectory, prefix + entry.name + "/")
   }
-  def addDirectory(entry: Directory, prefix: String) {
+  def addDirectory(entry: Directory, prefix: String): Unit = {
     entry.list foreach (p => addEntry(p, prefix))
   }
 
@@ -164,7 +164,7 @@ object Jar {
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 
-  def create(file: File, sourceDir: Directory, mainClass: String) {
+  def create(file: File, sourceDir: Directory, mainClass: String): Unit = {
     val writer = new Jar(file).jarWriter(Name.MAIN_CLASS -> mainClass)
     writer writeAllFrom sourceDir
   }

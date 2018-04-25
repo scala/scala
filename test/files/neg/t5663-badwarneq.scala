@@ -41,7 +41,7 @@ class MyThing extends InThing
 */
 
 object Test {
-  def main(a: Array[String]) {
+  def main(a: Array[String]): Unit = {
     // nothing to do with Gavin
     println(new Some(1) == new Some(1)) // OK, true
     println(new Some(1) == None) // Should complain on type, was: spuriously complains on fresh object

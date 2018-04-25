@@ -18,7 +18,7 @@ object Test {
     testUsedLater()
   }
 
-  def testLazy() {
+  def testLazy(): Unit = {
     val o = new Lazy("".length)
     val f = classOf[Lazy].getDeclaredField("f")
     f.setAccessible(true)
@@ -27,7 +27,7 @@ object Test {
     assert(f.get(o) == null)
   }
 
-  def testUsedLater() {
+  def testUsedLater(): Unit = {
     val o = new UsedLater("".length)
     val f = classOf[UsedLater].getDeclaredField("f")
     f.setAccessible(true)
@@ -36,7 +36,7 @@ object Test {
     assert(f.get(o) != null)
   }
 
-  def testTransientLazy() {
+  def testTransientLazy(): Unit = {
     val o = new TransientLazy("".length)
     val f = classOf[TransientLazy].getDeclaredField("f")
     f.setAccessible(true)

@@ -3,7 +3,7 @@ import scala.tools.nsc.interactive.tests._
 object Test extends InteractiveTest {
   override def execute(): Unit = recursiveAskForResponse()
 
-  def recursiveAskForResponse() {
+  def recursiveAskForResponse(): Unit = {
     val res0 = compiler.askForResponse( () => {
       println("[ outer] askForResponse")
       val res = compiler.askForResponse( () => { println("[nested] askForResponse") })

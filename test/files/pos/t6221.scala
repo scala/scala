@@ -11,7 +11,7 @@ object Test {
 
   implicit def otherFuncToMyFunc[A, B](f: OtherFunc[A, B]): MyFunc[A, B] = new MyFunc // = new MyFunc[A,Nothing]();
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val col = new MyCollection[Int]
 
     // Doesn't compile: error: missing parameter type for expanded function ((x$1) => x$1.toString)

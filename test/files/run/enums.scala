@@ -85,7 +85,7 @@ object Test5 {
     val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
   }
 
-  def run {
+  def run: Unit = {
     val s1 = D1.ValueSet(D1.North, D1.East)
     val s2 = D2.North + D2.East
     println(s1)
@@ -117,7 +117,7 @@ object SerializationTest {
     prime
   }
 
-  def run {
+  def run: Unit = {
     serialize(new B())
     serialize(new A())
   }

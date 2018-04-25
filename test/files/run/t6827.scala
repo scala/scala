@@ -35,7 +35,7 @@ object Test extends App {
 
   // Bonus test from @som-snytt to check for overflow in
   // index calculations.
-  def testOverflow(start: Int, len: Int, expected: List[Char]) {
+  def testOverflow(start: Int, len: Int, expected: List[Char]): Unit = {
     def copyFromIterator = {
       val arr = Array.fill[Char](3)('-')
       "abc".iterator().copyToArray(arr, start, len)

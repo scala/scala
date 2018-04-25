@@ -27,7 +27,7 @@ trait DocComments { self: Global =>
    */
   val docComments = mutable.WeakHashMap[Symbol, DocComment]()
 
-  def clearDocComments() {
+  def clearDocComments(): Unit = {
     cookedDocComments.clear()
     docComments.clear()
     defs.clear()
@@ -54,7 +54,7 @@ trait DocComments { self: Global =>
     else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
   }
 
-  def fillDocComment(sym: Symbol, comment: DocComment) {
+  def fillDocComment(sym: Symbol, comment: DocComment): Unit = {
     docComments(sym) = comment
     comment.defineVariables(sym)
   }
@@ -334,7 +334,7 @@ trait DocComments { self: Global =>
         else {
           val vstart = idx
           idx = skipVariable(str, idx + 1)
-          def replaceWith(repl: String) {
+          def replaceWith(repl: String): Unit = {
             out append str.substring(copied, vstart)
             out append repl
             copied = idx

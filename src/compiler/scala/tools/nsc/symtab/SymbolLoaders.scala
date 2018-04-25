@@ -46,7 +46,7 @@ abstract class SymbolLoaders {
     member
   }
 
-  protected def signalError(root: Symbol, ex: Throwable) {
+  protected def signalError(root: Symbol, ex: Throwable): Unit = {
     if (settings.debug) ex.printStackTrace()
     globalError(ex.getMessage() match {
       case null => "i/o error while loading " + root.name
@@ -123,7 +123,7 @@ abstract class SymbolLoaders {
   /** Enter class and module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
+  def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader): Unit = {
     val clazz0 = newClass(root, name)
     val module0 = newModule(root, name)
     val completer = getCompleter(clazz0, module0)
@@ -153,7 +153,7 @@ abstract class SymbolLoaders {
    *  with source completer for given `src` as type.
    *  (overridden in interactive.Global).
    */
-  def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+  def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile): Unit = {
     enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src))
   }
 
@@ -170,7 +170,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit = {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -205,7 +205,7 @@ abstract class SymbolLoaders {
 
     private var ok = false
 
-    private def setSource(sym: Symbol) {
+    private def setSource(sym: Symbol): Unit = {
       sourcefile foreach (sf => sym match {
         case cls: ClassSymbol => cls.associatedFile = sf
         case mod: ModuleSymbol => mod.moduleClass.associatedFile = sf
@@ -213,7 +213,7 @@ abstract class SymbolLoaders {
       })
     }
 
-    override def complete(root: Symbol) {
+    override def complete(root: Symbol): Unit = {
       try {
         val start = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
         val currentphase = phase
@@ -233,7 +233,7 @@ abstract class SymbolLoaders {
       if (!root.isPackageClass) initRoot(root.companionSymbol)
     }
 
-    override def load(root: Symbol) { complete(root) }
+    override def load(root: Symbol): Unit = { complete(root) }
 
     private def markAbsent(sym: Symbol): Unit = {
       val tpe: Type = if (ok) NoType else ErrorType
@@ -241,7 +241,7 @@ abstract class SymbolLoaders {
       if (sym != NoSymbol)
         sym setInfo tpe
     }
-    private def initRoot(root: Symbol) {
+    private def initRoot(root: Symbol): Unit = {
       if (root.rawInfo == this)
         List(root, root.moduleClass) foreach markAbsent
       else if (root.isClass && !root.isModuleClass)
@@ -264,7 +264,7 @@ abstract class SymbolLoaders {
       s"package loader $shownPackageName"
     }
 
-    protected def doComplete(root: Symbol) {
+    protected def doComplete(root: Symbol): Unit = {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
 
@@ -311,7 +311,7 @@ abstract class SymbolLoaders {
 
     protected def description = "class file "+ classfile.toString
 
-    protected def doComplete(root: Symbol) {
+    protected def doComplete(root: Symbol): Unit = {
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.classReadNanos) else null
       classfileParser.parse(classfile, clazz, module)
       if (root.associatedFile eq NoAbstractFile) {
@@ -338,7 +338,7 @@ abstract class SymbolLoaders {
 
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "module class loader"
-    protected def doComplete(root: Symbol) { root.sourceModule.initialize }
+    protected def doComplete(root: Symbol): Unit = { root.sourceModule.initialize }
   }
 
   /** used from classfile parser to avoid cycles */

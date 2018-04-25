@@ -31,7 +31,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]
     private val newStaticInits        = mutable.Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
-    private def clearStatics() {
+    private def clearStatics(): Unit = {
       newStaticMembers.clear()
       newStaticInits.clear()
       symbolsStoredAsStatic.clear()

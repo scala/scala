@@ -16,15 +16,15 @@ class DependentImplicitTezt {
   val i1 = new o1.Inner
   val i2 = new o2.Inner
 
-  def doesntCompile {
+  def doesntCompile: Unit = {
     o1.run(i2) // should compile
   }
 
-  def workaround1 {
+  def workaround1: Unit = {
     o1.run(i2: Bridge) // ok
   }
 
-  def workaround2 {
+  def workaround2: Unit = {
     import o1.Inner.fromOther
     o1.run(i2) // ok
   }

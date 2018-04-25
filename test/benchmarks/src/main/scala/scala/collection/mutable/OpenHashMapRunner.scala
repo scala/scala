@@ -46,10 +46,9 @@ object OpenHashMapRunner extends JmhRunner {
   /** Return the statistics of the given result as a string. */
   private[this] def stats(r: Result[_]) = r.getScore + " " + r.getStatistics.getStandardDeviation
 
-
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import scala.collection.JavaConverters._
-  
+
     val opts = new CommandLineOptions(args: _*)
     var builder = new OptionsBuilder().parent(opts).jvmArgsPrepend("-Xmx6000m")
     if (!opts.verbosity.hasValue)  builder = builder.verbosity(VerboseMode.SILENT)
@@ -95,7 +94,7 @@ object OpenHashMapRunner extends JmhRunner {
     }
   }
   
-  private[this] def outputDataset(f: PrintWriter, label: String, dataset: Iterable[RunResult]) {
+  private[this] def outputDataset(f: PrintWriter, label: String, dataset: Iterable[RunResult]): Unit = {
     f.println(s"# [$label]")
 
     val isMemoryUsageDataset = label.endsWith(memoryDatasetQualifier)

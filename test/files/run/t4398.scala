@@ -3,7 +3,7 @@
 import scala.language.{ postfixOps }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val x = 1 to 10 toSet
     val y = x + 5
     val z = y - 154321

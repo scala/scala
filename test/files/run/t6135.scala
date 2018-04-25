@@ -2,7 +2,7 @@ object Test extends App {
   class A { class V }
 
   abstract class B[S] {
-    def foo(t: S, a: A)(v: a.V)
+    def foo(t: S, a: A)(v: a.V): Unit
   }
 
   val b1 = new B[String] {

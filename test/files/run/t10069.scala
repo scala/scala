@@ -25,7 +25,7 @@ object Test {
     check(foo2(new Array[Int](1)))
     check(foo3(new Array[String](1)))
   }
-  def check(f: => Any) {
+  def check(f: => Any): Unit = {
     try {f ; sys.error("no exception thrown") 
     } catch {
       case Expected =>

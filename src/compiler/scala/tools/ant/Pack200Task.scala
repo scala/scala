@@ -48,13 +48,13 @@ class Pack200Task extends ScalaMatchingTask {
 **                             Properties setters                             **
 \*============================================================================*/
 
-  def setDir(dir: File) {
+  def setDir(dir: File): Unit = {
     if (dir.exists && dir.isDirectory) srcdir = Some(dir)
     else buildError("Please specify a valid directory with Jar files for packing.")
   }
 
   /** A level from 0 (none) to 9 (max) of effort for applying Pack200 */
-  def setEffort(x: Int) {
+  def setEffort(x: Int): Unit = {
     if (effort < 10 && effort > -1) effort = x
     else buildError("The effort level must be a value from 0 to 9")
   }
@@ -64,27 +64,27 @@ class Pack200Task extends ScalaMatchingTask {
     * @param x
     *         `'''true'''` to retain file ordering.
     *         `'''false'''` to optimize directory structure (DEFAULT).  */
-  def setKeepFileOrder(x: Boolean) { keepFileOrder = x }
+  def setKeepFileOrder(x: Boolean): Unit = { keepFileOrder = x }
 
   /** If false, a single modification time is used for all contained files */
-  def setKeepModificationTime(x: Boolean) { keepModificationTime = x }
+  def setKeepModificationTime(x: Boolean): Unit = { keepModificationTime = x }
 
   /** A flag that tells the task to pack and then unpack the source JAR file
     * into another JAR file.  This resulting JAR file can then be signed,
     * packed again, compressed and distributed for securely distributed code.
     */
-  def setRepack(r: Boolean) { repack = r }
+  def setRepack(r: Boolean): Unit = { repack = r }
 
 
-  def setSegmentLimit(size: Int) { segmentLimit = size }
+  def setSegmentLimit(size: Int): Unit = { segmentLimit = size }
 
   /** Set the output directory */
-  def setDestdir(file: File) {
+  def setDestdir(file: File): Unit = {
     if (file != null && file.exists && file.isDirectory) destdir = Some(file)
     else buildError("The destination directory is invalid: " + file.getAbsolutePath)
   }
 
-  def setSuffix(s: String) { packFileSuffix = s }
+  def setSuffix(s: String): Unit = { packFileSuffix = s }
 
 /*============================================================================*\
 **                             Properties getters                             **

@@ -1,6 +1,6 @@
 trait C[A]
 object Test {
-  def ImplicitParamCA[CC[A], A](implicit ev: C[A]) {implicitly[C[A]]} // must use this exact syntax...
+  def ImplicitParamCA[CC[A], A](implicit ev: C[A]): Unit = {implicitly[C[A]]} // must use this exact syntax...
   // error: could not find implicit value for parameter e: C[A]
 }
 // [[syntax trees at end of typer]]

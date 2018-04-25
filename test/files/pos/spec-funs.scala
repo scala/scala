@@ -15,7 +15,7 @@ final class IntTest {
     }
   }
 
-  def run() {
+  def run(): Unit = {
     val xs = new Array[Int](10000)
     val f = new AbsFunction1[Int, Int] {
       def apply(x: Int): Int = x * x
@@ -42,7 +42,7 @@ final class ClosureTest {
     }
   }
 
-  def run() {
+  def run(): Unit = {
     val xs = new Array[Int](10000)
 //    val f = (x: Int) => x * x
     for (j <- 0 until niters) {

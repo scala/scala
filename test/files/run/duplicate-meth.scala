@@ -15,7 +15,7 @@ object TestUser extends TestUser {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     TestUser.objMeth
     // no-op, just check that it passes verification
     println("verified!")

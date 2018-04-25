@@ -10,7 +10,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println((new A("abc")).foo.value)
     println((new A(10)).foo.value)
     // before fixing scala/bug#7343, this was printing 3. Now it's printing 2,

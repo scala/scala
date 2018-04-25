@@ -4,7 +4,7 @@ object Test extends DirectTest {
   override def code = ""
   override def extraSettings: String = s"-usejavacp -cp ${testOutput.path}"
 
-  override def show() {
+  override def show(): Unit = {
     val c = newCompiler()
     new c.Run
     import c._

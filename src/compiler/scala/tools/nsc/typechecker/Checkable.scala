@@ -294,7 +294,7 @@ trait Checkable {
       *
       *  Instead of the canRemedy flag, annotate uncheckable types that have become checkable because of the availability of a class tag?
       */
-    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false) {
+    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false): Unit = {
       if (uncheckedOk(P0)) return
       def where = if (inPattern) "pattern " else ""
 

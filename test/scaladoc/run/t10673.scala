@@ -28,7 +28,7 @@ object Test extends ScaladocModelTest {
     s"-no-link-warnings -doc-external-doc $scalaLibPath#$scalaURL"
   }
 
-  def testModel(rootPackage: Package) {
+  def testModel(rootPackage: Package): Unit = {
     import access._
     def showParents(e: MemberTemplateEntity): Unit = {
       e.parentTypes.foreach(_._2.refEntity.foreach {

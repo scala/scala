@@ -3,7 +3,7 @@ import scala.tools.nsc.interactive.tests.core.IdempotencyTest
 // At the time of writing this test, removing any part of `enterExistingSym` 
 // leads to a failure.
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test("""
       object Foo {
         def term {
@@ -43,7 +43,7 @@ object Test {
     """)
   }
 
-  def test(code0: String) {
+  def test(code0: String): Unit = {
     val t = new IdempotencyTest {
       def code = code0
     }

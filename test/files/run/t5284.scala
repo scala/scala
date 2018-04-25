@@ -8,7 +8,7 @@
  *  safely cast `T` to `W` whenever type bounds on `W` hold.
  */
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a = Blarg(Array(1, 2, 3))
     println(a.m((x: Int) => x + 1))
   }

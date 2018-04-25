@@ -5,7 +5,7 @@ object Test {
   final case class InnerCase()
   final class InnerNonCase()
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     def checkFinal(clazz: Class[_]) =
       println(s"${clazz} isFinal = ${isFinal(clazz.getModifiers())}")
 

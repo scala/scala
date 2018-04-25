@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import collection.immutable._
 
     val intmap = IntMap(1 -> 1, 2 -> 2)

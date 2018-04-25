@@ -14,7 +14,7 @@ import java.io.File
 import org.apache.tools.ant.Task
 
 class Make extends Task with TaskArgs {
-  override def execute() {
+  override def execute(): Unit = {
     if (id.isEmpty) throw new IllegalStateException("Mandatory attribute 'id' is not set.")
     if (compilerPath.isEmpty) throw new IllegalStateException("Mandatory attribute 'compilerpath' is not set.")
     val settings = new Settings

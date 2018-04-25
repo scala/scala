@@ -11,7 +11,7 @@ class C extends A {
 }
 
 object Program {
-  def main(args : Array[String]) {
+  def main(args : Array[String]): Unit = {
     (new B: A).f(new C)
   }
 }

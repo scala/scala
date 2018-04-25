@@ -2,7 +2,7 @@ import collection._
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = scala.collection.mutable.LinkedHashMap("one" -> 1, "two" -> 2, "three" -> 3, "four" -> 4, "five" -> 5)
     val expected = List("one", "two", "three", "four", "five")
     assert(m.keys.iterator.toList == expected)

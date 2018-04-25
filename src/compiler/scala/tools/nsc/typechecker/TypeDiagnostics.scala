@@ -781,7 +781,7 @@ trait TypeDiagnostics {
      *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error
      */
-    def reportTypeError(context0: Context, pos: Position, ex: TypeError) {
+    def reportTypeError(context0: Context, pos: Position, ex: TypeError): Unit = {
       if (ex.pos == NoPosition) ex.pos = pos
       // TODO: should be replaced by throwErrors
       // but it seems that throwErrors excludes some of the errors that should actually be

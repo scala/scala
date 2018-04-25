@@ -18,7 +18,7 @@ trait CommonRunner {
    *  @throws NoSuchMethodException
    *  @throws InvocationTargetException
    */
-  def run(urls: Seq[URL], objectName: String, arguments: Seq[String]) {
+  def run(urls: Seq[URL], objectName: String, arguments: Seq[String]): Unit = {
     (ScalaClassLoader fromURLs urls).run(objectName, arguments)
   }
 

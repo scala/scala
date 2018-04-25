@@ -44,7 +44,7 @@ trait MatchWarnings {
     // However this is a pain (at least the way I'm going about it)
     // and I have to think these detailed errors are primarily useful
     // for beginners, not people writing nested pattern matches.
-    def checkMatchVariablePatterns(cases: List[CaseDef]) {
+    def checkMatchVariablePatterns(cases: List[CaseDef]): Unit = {
       // A string describing the first variable pattern
       var vpat: String = null
       // Using an iterator so we can recognize the last case

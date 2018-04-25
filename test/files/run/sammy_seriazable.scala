@@ -8,7 +8,7 @@ trait IsSerializableInterface extends java.io.Serializable { def apply(a: Any): 
 abstract class IsSerializableClass extends java.io.Serializable { def apply(a: Any): Any }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val nsi: NotSerializableInterface = x => x
     val nsc: NotSerializableClass = x => x
 
