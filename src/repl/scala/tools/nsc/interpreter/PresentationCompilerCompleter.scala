@@ -33,6 +33,7 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
 
     // secret handshakes
     val slashPrint  = """.*// *print *""".r
+    val slashPrintRaw  = """.*// *printRaw *""".r
     val slashTypeAt = """.*// *typeAt *(\d+) *(\d+) *""".r
     val Cursor = IMain.DummyCursorFragment + " "
 
@@ -118,7 +119,10 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
         case Left(_) => Completion.NoCandidates
         case Right(result) => try {
           buf match {
-            case slashPrint() if cursor == buf.length => print(result)
+            case slashPrint() if cursor == buf.length =>
+              val c = print(result)
+              c.copy(candidates = c.candidates.map(intp.naming.unmangle))
+            case slashPrintRaw() if cursor == buf.length => print(result)
             case slashTypeAt(start, end) if cursor == buf.length => typeAt(result, start.toInt, end.toInt)
             case _ => candidates(result)
           }
