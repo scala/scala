@@ -25,7 +25,7 @@ object Test extends ScaladocModelTest {
     val scalaLibPath = if(samplePath.contains("!")) { // in scala-library.jar
       val scalaLibUri = samplePath.split("!")(0)
       val p = new URI(scalaLibUri).getPath
-      // this is a bit fragile (depends on the scala library being in build/pack as produced by ant)
+      // this is a bit fragile (depends on the scala library being in build/pack)
       p.replace("/pack/lib/scala-library.jar", "/pack/bin/../lib/scala-library.jar")
     } else { // individual class files on disk
       val p = samplePath.dropRight("scala/Function1.class".length + 1)

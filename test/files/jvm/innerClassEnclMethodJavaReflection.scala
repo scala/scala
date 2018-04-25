@@ -5,11 +5,11 @@ object Test extends App {
   val jarsOrDirectories = Set("partest.lib", "partest.reflect", "partest.comp") map sys.props
 
   object AllowedMissingClass {
-    // Some classes in scala-compiler.jar have references to jline / ant classes, which seem to be
+    // Some classes in scala-compiler.jar have references to jline classes, which seem to be
     // not on the classpath. We just skip over those classes.
     // PENDING: for now we also allow missing $anonfun classes: the optimizer may eliminate some closures
     // that are referred to in EnclosingClass attributes. scala/bug#9136
-    val allowedMissingPackages = Set("jline", "org.apache.tools.ant", "$anonfun")
+    val allowedMissingPackages = Set("jline", "$anonfun")
 
     def ok(t: Throwable) = {
       allowedMissingPackages.exists(p => t.getMessage.replace('/', '.').contains(p))
