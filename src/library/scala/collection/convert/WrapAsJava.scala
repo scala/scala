@@ -11,6 +11,7 @@ package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
+import scala.{ unchecked => uc }
 import scala.language.implicitConversions
 
 @deprecated("use JavaConverters or consider ToJavaImplicits", since="2.12.0")
@@ -219,9 +220,9 @@ private[convert] trait LowPriorityWrapAsJava {
    * @return A Java Map view of the argument.
    */
   implicit def mutableMapAsJavaMap[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = m match {
-    case null                 => null
-    case w: JMapWrapper[A, B] => w.underlying
-    case _                    => new MutableMapWrapper(m)
+    case null                         => null
+    case w: JMapWrapper[A @uc, B @uc] => w.underlying
+    case _                            => new MutableMapWrapper(m)
   }
 
   /**
@@ -259,9 +260,9 @@ private[convert] trait LowPriorityWrapAsJava {
    * @return A Java `Map` view of the argument.
    */
   implicit def mapAsJavaMap[A, B](m: Map[A, B]): ju.Map[A, B] = m match {
-    case null                 => null
-    case w: JMapWrapper[A, B] => w.underlying
-    case _                    => new MapWrapper(m)
+    case null                         => null
+    case w: JMapWrapper[A @uc, B @uc] => w.underlying
+    case _                            => new MapWrapper(m)
   }
 
   /**
