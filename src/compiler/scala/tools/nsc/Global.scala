@@ -1317,7 +1317,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
       }
       val supportedTarget = "jvm-1.8"
-      if (settings.target.value != supportedTarget) {
+      if (settings.target.value != supportedTarget && settings.target.value != "jvm-9") {
         currentRun.reporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget, "2.12.0")
         settings.target.value = supportedTarget
       }

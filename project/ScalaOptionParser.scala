@@ -106,7 +106,7 @@ object ScalaOptionParser {
     "-Ymacro-expand" -> List("discard", "none"),
     "-Yresolve-term-conflict" -> List("error", "object", "package"),
     "-g" -> List("line", "none", "notailcails", "source", "vars"),
-    "-target" -> List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"))
+    "-target" -> List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8", "jvm-9"))
   private def multiChoiceSettingNames = Map[String, List[String]](
     "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "by-name-right-associative", "package-object-classes", "unsound-match", "stars-align"),
     "-language" -> List("help", "_", "dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros"),
