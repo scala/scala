@@ -2,6 +2,7 @@ package scala
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 
 /**
   * Trait that overrides operations to take advantage of strict builders.

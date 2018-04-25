@@ -8,7 +8,7 @@
 
 package scala
 
-import scala.language.implicitConversions
+import scala.language.{ higherKinds, implicitConversions }
 
 import scala.collection.{ StringOps, StringView }
 import scala.collection.{ mutable, immutable, ArrayOps }

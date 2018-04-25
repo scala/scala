@@ -3,6 +3,7 @@ package collection
 
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 
 trait StrictOptimizedSortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SortedSetOps[A, CC, C]

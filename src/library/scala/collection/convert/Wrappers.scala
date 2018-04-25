@@ -16,6 +16,7 @@ import java.util.function.Predicate
 import java.lang.{IllegalStateException, Object, UnsupportedOperationException}
 
 import scala.collection.JavaConverters._
+import scala.language.higherKinds
 
 /** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {

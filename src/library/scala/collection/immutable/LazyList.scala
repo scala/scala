@@ -7,6 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.StringBuilder
+import scala.language.higherKinds
 
 /**  The class `LazyList` implements lazy lists where elements
   *  are only evaluated when they are needed. Here is an example:

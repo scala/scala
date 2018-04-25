@@ -3,6 +3,7 @@ package collection
 
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.Builder
+import scala.language.higherKinds
 
 import scala.annotation.unchecked.uncheckedVariance
 

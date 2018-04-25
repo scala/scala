@@ -3,6 +3,7 @@ package collection
 package immutable
 
 import scala.collection.mutable.Builder
+import scala.language.higherKinds
 
 
 /** Base type of immutable Maps */
