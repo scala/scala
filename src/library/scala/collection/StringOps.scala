@@ -1,9 +1,8 @@
 package scala
 package collection
 
-import java.lang.IllegalArgumentException
-import java.util.NoSuchElementException
-import scala.collection.mutable.StringBuilder
+import java.lang.{IllegalArgumentException, StringBuilder}
+import java.util.{Arrays, NoSuchElementException}
 import scala.util.matching.Regex
 import scala.math.{Ordered, ScalaNumber}
 import scala.reflect.ClassTag
@@ -28,17 +27,17 @@ final class StringOps(private val s: String)
   def toIterable = StringView(s)
   override def view: StringView = StringView(s)
   protected[this] def coll: String = s
-  override def toSeq: immutable.Seq[Char] = fromIterable(toIterable)
+  override def toSeq: immutable.Seq[Char] = s.toCharArray
 
   protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = {
     val sb = new StringBuilder
-    for (ch <- coll) sb += ch
-    sb.result()
+    for (ch <- coll) sb.append(ch)
+    sb.toString
   }
 
   def iterableFactory = immutable.IndexedSeq
 
-  protected[this] def newSpecificBuilder() = new StringBuilder
+  override protected[this] def newSpecificBuilder() = new mutable.StringBuilder
 
   def length = s.length
 
@@ -56,9 +55,14 @@ final class StringOps(private val s: String)
     *                `f` to each element of this String and collecting the results.
     */
   def map(f: Char => Char): String = {
-    val sb = new StringBuilder
-    for (ch <- s) sb += f(ch)
-    sb.result()
+    val len = s.length
+    val dst = new Array[Char](len)
+    var i = 0
+    while (i < len) {
+      dst(i) = f(s charAt i)
+      i += 1
+    }
+    new String(dst)
   }
 
   // Overloaded version of `flatMap` that gives back a string, where the inherited
@@ -71,9 +75,14 @@ final class StringOps(private val s: String)
     *                `f` to each element of this String and concatenating the results.
     */
   def flatMap(f: Char => String): String = {
+    val len = s.length
     val sb = new StringBuilder
-    for (ch <- s) sb ++= f(ch)
-    sb.result()
+    var i = 0
+    while (i < len) {
+      sb append f(s.charAt(i))
+      i += 1
+    }
+    sb.toString
   }
 
   // Overloaded version of `++` that gives back a string, where the inherited
@@ -86,9 +95,9 @@ final class StringOps(private val s: String)
     *                of this String followed by all elements of `suffix`.
     */
   def concat(suffix: IterableOnce[Char]): String = {
-    val sb = new StringBuilder() ++= s
-    for (ch <- suffix.iterator()) sb += ch
-    sb.result()
+    val sb = new StringBuilder(s)
+    for (ch <- suffix.iterator()) sb.append(ch)
+    sb.toString
   }
 
   // Overloaded version of `padTo` that gives back a string, where the inherited
@@ -101,38 +110,38 @@ final class StringOps(private val s: String)
     *          this String followed by the minimal number of occurrences of `elem` so
     *          that the resulting String has a length of at least `len`.
     */
-  def padTo(len: Int, elem: Char): String =
-    if(s.length >= len) s else {
-      val b = new java.lang.StringBuilder(len)
-      b.append(s)
-      while(b.length < len) b.append(elem)
-      b.toString
+  def padTo(len: Int, elem: Char): String = {
+    val sLen = s.length
+    if (sLen >= len) s else {
+      val sb = new StringBuilder(len)
+      sb.append(s)
+      // With JDK 11, this can written as:
+      // sb.append(String.valueOf(elem).repeat(len - sLen))
+      var i = sLen
+      while (i < len) {
+        sb.append(elem)
+        i += 1
+      }
+      sb.toString
     }
+  }
 
   /** Alias for `concat` */
-  @`inline` def ++ (suffix: IterableOnce[Char]): String = concat(suffix)
+  @`inline` def ++(suffix: IterableOnce[Char]): String = concat(suffix)
 
   /** Another overloaded version of `++`. */
   def ++(xs: String): String = s + xs
 
   /** A copy of the String with an element prepended */
-  def prepended(c: Char): String = {
-    val b = new StringBuilder
-    b += c
-    b ++= s
-    b.result()
-  }
+  def prepended(c: Char): String =
+    new StringBuilder(s.length + 1).append(c).append(s).toString
 
   /** Alias for `prepended` */
   @`inline` def +: (c: Char): String = prepended(c)
 
   /** A copy of the String with an element appended */
-  def appended(c: Char): String = {
-    val b = new StringBuilder
-    b ++= s
-    b += c
-    b.result()
-  }
+  def appended(c: Char): String =
+    new StringBuilder(s.length + 1).append(s).append(c).toString
 
   /** Alias for `appended` */
   @`inline` def :+ (c: Char): String = appended(c)
@@ -159,32 +168,52 @@ final class StringOps(private val s: String)
     *  @return a new string which is a copy of this string with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
-  def updated(index: Int, elem: Char): String =
-    fromSpecificIterable(new View.Updated(this, index, elem)) // TODO optimize
+  def updated(index: Int, elem: Char): String = {
+    val sb = new StringBuilder(s.length).append(s)
+    sb.setCharAt(index, elem)
+    sb.toString
+  }
+
+  // override for performance
+  /** Tests whether this $coll contains the given character.
+   *
+   *  @param elem  the character to test.
+   *  @return     `true` if this $coll has an element that is equal (as
+   *              determined by `==`) to `elem`, `false` otherwise.
+   */
+  override def contains[C >: Char](elem: C): Boolean = elem match {
+    case c: Char => s.indexOf(c) >= 0
+    case _ => super.contains(elem)
+  }
 
   override def toString = s
 
-  override def mkString = toString
+  override def mkString = s
 
   override def slice(from: Int, until: Int): String = {
     val start = from max 0
     val end   = until min length
 
-    if (start >= end) newSpecificBuilder().result()
-    else (newSpecificBuilder() ++= toString.substring(start, end)).result()
+    if (start >= end) ""
+    else s.substring(start, end)
   }
 
+  // Note: String.repeat is added in JDK 11.
   /** Return the current string concatenated `n` times.
    */
-  def * (n: Int): String = {
-    val buf = new StringBuilder
-    for (i <- 0 until n) buf ++= toString
-    buf.toString
+  def *(n: Int): String = {
+    val sb = new StringBuilder(s.length * n)
+    var i = 0
+    while (i < n) {
+      sb.append(s)
+      i += 1
+    }
+    sb.toString
   }
 
-  override def compare(other: String) = toString compareTo other
+  override def compare(other: String) = s compareTo other
 
-  private def isLineBreak(c: Char) = c == LF || c == FF
+  @inline private def isLineBreak(c: Char) = c == LF || c == FF
 
   /**
    *  Strip trailing line end character from this string if it has one.
@@ -197,14 +226,14 @@ final class StringOps(private val s: String)
    *  (`0x0D` hex), the `CR` character is also stripped (Windows convention).
    */
   def stripLineEnd: String = {
-    val len = toString.length
-    if (len == 0) toString
+    val len = s.length
+    if (len == 0) s
     else {
       val last = apply(len - 1)
       if (isLineBreak(last))
-        toString.substring(0, if (last == LF && len >= 2 && apply(len - 2) == CR) len - 2 else len - 1)
+        s.substring(0, if (last == LF && len >= 2 && apply(len - 2) == CR) len - 2 else len - 1)
       else
-        toString
+        s
     }
   }
 
@@ -220,8 +249,7 @@ final class StringOps(private val s: String)
    *  - `FF` - form feed   (`0x0C`)
    */
   def linesWithSeparators: Iterator[String] = new Iterator[String] {
-    val str = s.toString
-    private val len = str.length
+    private val len = s.length
     private var index = 0
     def hasNext: Boolean = index < len
     def next(): String = {
@@ -229,7 +257,7 @@ final class StringOps(private val s: String)
       val start = index
       while (index < len && !isLineBreak(apply(index))) index += 1
       index += 1
-      str.substring(start, index min len)
+      s.substring(start, index min len)
     }
   }
 
@@ -245,28 +273,22 @@ final class StringOps(private val s: String)
    * This method does not convert characters outside the Basic Multilingual Plane (BMP).
    */
   def capitalize: String =
-    if (toString == null) null
-    else if (toString.length == 0) ""
-    else if (toString.charAt(0).isUpper) toString
-    else {
-      val chars = toString.toCharArray
-      chars(0) = chars(0).toUpper
-      new String(chars)
-    }
+    if (s == null || s.length == 0 || !s.charAt(0).isLower) s
+    else updated(0, s.charAt(0).toUpper)
 
   /** Returns this string with the given `prefix` stripped. If this string does not
    *  start with `prefix`, it is returned unchanged.
    */
   def stripPrefix(prefix: String) =
-    if (toString.startsWith(prefix)) toString.substring(prefix.length)
-    else toString
+    if (s startsWith prefix) s.substring(prefix.length)
+    else s
 
   /** Returns this string with the given `suffix` stripped. If this string does not
    *  end with `suffix`, it is returned unchanged.
    */
   def stripSuffix(suffix: String) =
-    if (toString.endsWith(suffix)) toString.substring(0, toString.length() - suffix.length)
-    else toString
+    if (s endsWith suffix) s.substring(0, s.length - suffix.length)
+    else s
 
   /** Replace all literal occurrences of `literal` with the literal string `replacement`.
    *  This method is equivalent to [[java.lang.String#replace]].
@@ -275,7 +297,7 @@ final class StringOps(private val s: String)
    *  @param    replacement the replacement string
    *  @return               the resulting string
    */
-  def replaceAllLiterally(literal: String, replacement: String): String = toString.replace(literal, replacement)
+  def replaceAllLiterally(literal: String, replacement: String): String = s.replace(literal, replacement)
 
   /** For every line in this string:
    *
@@ -283,15 +305,17 @@ final class StringOps(private val s: String)
    *  followed by `marginChar` from the line.
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new StringBuilder
+    val sb = new StringBuilder(s.length)
     for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0
       while (index < len && line.charAt(index) <= ' ') index += 1
-      buf ++=
-        (if (index < len && line.charAt(index) == marginChar) line.substring(index + 1) else line)
+      sb.append {
+        if (index < len && line.charAt(index) == marginChar) line.substring(index + 1)
+        else line
+      }
     }
-    buf.toString
+    sb.toString
   }
 
   /** For every line in this string:
@@ -356,14 +380,13 @@ final class StringOps(private val s: String)
    *
    * @param separator the character used as a delimiter
    */
-  def split(separator: Char): Array[String] =
-    toString.split(escape(separator))
+  def split(separator: Char): Array[String] = s.split(escape(separator))
 
 
   @throws(classOf[java.util.regex.PatternSyntaxException])
   def split(separators: Array[Char]): Array[String] = {
     val re = separators.foldLeft("[")(_+escape(_)) + "]"
-    toString.split(re)
+    s.split(re)
   }
 
   /** You can follow a string with `.r`, turning it into a `Regex`. E.g.
@@ -381,44 +404,44 @@ final class StringOps(private val s: String)
    *
    *  @param groupNames The names of the groups in the pattern, in the order they appear.
    */
-  def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
+  def r(groupNames: String*): Regex = new Regex(s, groupNames: _*)
 
   /**
    * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
    */
-  def toBoolean: Boolean = parseBoolean(toString)
+  def toBoolean: Boolean = parseBoolean(s)
   /**
    * Parse as a `Byte` (string must contain only decimal digits and optional leading `-`).
    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Byte`.
    */
-  def toByte: Byte       = java.lang.Byte.parseByte(toString)
+  def toByte: Byte       = java.lang.Byte.parseByte(s)
   /**
    * Parse as a `Short` (string must contain only decimal digits and optional leading `-`).
    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Short`.
    */
-  def toShort: Short     = java.lang.Short.parseShort(toString)
+  def toShort: Short     = java.lang.Short.parseShort(s)
   /**
    * Parse as an `Int` (string must contain only decimal digits and optional leading `-`).
    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
    */
-  def toInt: Int         = java.lang.Integer.parseInt(toString)
+  def toInt: Int         = java.lang.Integer.parseInt(s)
   /**
    * Parse as a `Long` (string must contain only decimal digits and optional leading `-`).
    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Long`.
    */
-  def toLong: Long       = java.lang.Long.parseLong(toString)
+  def toLong: Long       = java.lang.Long.parseLong(s)
   /**
     * Parse as a `Float` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Float`.
     * @throws java.lang.NullPointerException  If the string is null.
    */
-  def toFloat: Float     = java.lang.Float.parseFloat(toString)
+  def toFloat: Float     = java.lang.Float.parseFloat(s)
   /**
     * Parse as a `Double` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Double`.
     * @throws java.lang.NullPointerException  If the string is null.
    */
-  def toDouble: Double   = java.lang.Double.parseDouble(toString)
+  def toDouble: Double   = java.lang.Double.parseDouble(s)
 
   private def parseBoolean(s: String): Boolean =
     if (s != null) s.toLowerCase match {
@@ -430,7 +453,7 @@ final class StringOps(private val s: String)
       throw new IllegalArgumentException("For input string: \"null\"")
 
   override def toArray[B >: Char : ClassTag]: Array[B] =
-    toString.toCharArray.asInstanceOf[Array[B]]
+    s.toCharArray.asInstanceOf[Array[B]]
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
     case x: ScalaNumber => x.underlying
@@ -451,7 +474,7 @@ final class StringOps(private val s: String)
    *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*): String =
-    java.lang.String.format(toString, args map unwrapArg: _*)
+    java.lang.String.format(s, args map unwrapArg: _*)
 
   /** Like `format(args*)` but takes an initial `Locale` parameter
    *  which influences formatting as in `java.lang.String`'s format.
@@ -467,7 +490,7 @@ final class StringOps(private val s: String)
    *  @throws java.lang.IllegalArgumentException
    */
   def formatLocal(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, toString, args map unwrapArg: _*)
+    java.lang.String.format(l, s, args map unwrapArg: _*)
 }
 
 case class StringView(s: String) extends IndexedView[Char] {
