@@ -45,7 +45,7 @@ jobs:
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
           - buildLocker
           - buildQuick
-          - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
+          - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
           - triggerScalaDist
 

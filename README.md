@@ -162,7 +162,7 @@ Assume the current `starr` version is `2.12.0` (defined in
     the version you published locally is binary compatible, i.e., if the current
     `starr` is a 2.12.x release and not a milestone / RC.
 
-The last step is required to resolve modules (scala-xml, scala-partest, etc). It
+The last step is required to resolve modules (scala-partest, etc). It
 assumes that the module releases for the current `starr` work (in terms of binary
 compatibility) with the local starr that you published locally. A full bootstrap
 requires re-building the all the modules. On our CI this is handled by the

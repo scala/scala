@@ -8,6 +8,8 @@
 
 
 # Modules and stages
+#  - TODO: xml is no longer in the bootstrap, so a lot of the complexity described in the following
+#    bullets no longer applies.
 #  - Each stage (starr, locker quick) builds the modules (if no binary compatible version exists)
 #  - The reason is: the compiler POM depends on the xml module of the previous stage, i.e., the
 #    locker compiler uses the starr modules. So the locker scaladoc (building the quick compiler)
@@ -34,7 +36,7 @@
 
 # Specifying module versions. We use release versions for modules.
 #  - Module versions are read from the versions.properties file.
-#  - Set <MODULE>_VER to override the default, e.g. XML_VER="1.0.4".
+#  - Set <MODULE>_VER to override the default, e.g. PARTEST_VER="1.0.4".
 #  - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
 
 
@@ -85,46 +87,13 @@ forceBuildModules=${forceBuildModules-no}
 clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
 
 
-docTask() {
-  # Build the module docs only in the last (quick) stage. The locker scaladoc may be binary
-  # incompatible with the starr scala-xml (on which it depends, by the pom file)
-  if [ "$1" = "quick" ]; then
-    echo "doc"
-  else
-    echo "set publishArtifact in (Compile, packageDoc) in ThisBuild := false"
-  fi
-}
-
-# Oh boy... can't use scaladoc to document scala-xml if scaladoc depends on the same version of scala-xml.
-# Even if that version is available through the project's resolvers, sbt won't look past this project.
-# SOOOOO, we set the version to a dummy (-DOC), generate documentation,
-# then set the version to the right one and publish (which won't re-gen the docs).
-# Also tried publish-local without docs using 'set publishArtifact in (Compile, packageDoc) := false' and republishing, no dice.
-buildXML() {
-  if [ "$XML_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules" "scala-xml" $XML_VER )
-  then echo "Found scala-xml $XML_VER; not building."
-  else
-    update scala scala-xml "$XML_REF" && gfxd
-    doc="$(docTask $1)"
-
-    # Exclude Scala JS https://github.com/scala/scala/pull/6341#issuecomment-372051392
-    buildTasksXml=("${buildTasks[@]/#/xmlJVM\/}")
-    docXml="$doc"
-    if [[ "$doc" == "doc" ]]; then docXml="xmlJVM/$doc"; fi
-
-    sbtBuild 'set every version := "'$XML_VER'-DOC"' $clean "$docXml" 'set every version := "'$XML_VER'"' xmlJVM/test "${buildTasksXml[@]}"
-    XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
-  fi
-}
-
 buildPartest() {
   if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
-    doc="$(docTask $1)"
     # disable -Xfatal-warnings until https://github.com/scala/scala-partest/pull/101 is released
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
+    sbtBuild 'set version :="'$PARTEST_VER'"' $clean doc 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
@@ -135,8 +104,7 @@ buildScalaCheck(){
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
-    doc="$(docTask $1)"
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean "$doc" publish # test times out NOTE: never published to sonatype
+    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean doc publish # test times out NOTE: never published to sonatype
     SCALACHECK_BUILT="yes"
   fi
 }
@@ -166,7 +134,6 @@ buildModules() {
     fi
   fi
 
-  buildXML $1
   # buildScalaCheck $1
   buildPartest $1
 
@@ -237,17 +204,14 @@ determineScalaVersion() {
 
 # determineScalaVersion must have been called (versions.properties is parsed to env vars)
 deriveModuleVersions() {
-         XML_VER=${XML_VER-$scala_xml_version_number}
      PARTEST_VER=${PARTEST_VER-$partest_version_number}
   SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
 
-         XML_REF="v$XML_VER"
      PARTEST_REF="v$PARTEST_VER"
   SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
 
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
-  echo "XML              = $XML_VER at $XML_REF"
 
 }
 
@@ -269,7 +233,7 @@ removeExistingBuilds() {
     createNetrcFile "$HOME/.credentials-private-repo"
     local netrcFile="$HOME/.credentials-private-repo-netrc"
 
-    # "module" is not a scala module (like scala-xml), but an artifact of a boostrap build. the variable
+    # "module" is not a scala module, but an artifact of a bootstrap build. the variable
     # contains: "org/scala-lang/modules", "org/scala-lang/scala-compiler", "org/scala-lang/scala-library", ...
     local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
 
@@ -289,8 +253,7 @@ constructUpdatedModuleVersions() {
   updatedModuleVersions=()
 
   # force the new module versions for building the core. these may be different from the values in versions.properties
-  # if the variables (XML_VER) were provided. in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
+  # if the variables (e.g. PARTEST_VER) were provided. in the common case, the values are the same as in versions.properties.
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
   # updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
