@@ -1,3 +1,3 @@
 object Test {
-  val m = scala.collection.IterableOps(1, 2, 3)
+  val m = scala.collection.IterableOnceOps(1, 2, 3)
 }

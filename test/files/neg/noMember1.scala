@@ -1,3 +1,3 @@
-import scala.collection.IterableOps._
+import scala.collection.IterableOnceOps._
 
 class A

@@ -476,7 +476,7 @@ private[collection] object RedBlackTree {
   private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B], start: Option[A], end: Option[A])
                                                     (implicit ord: Ordering[A]) extends Iterator[R] {
 
-    protected[this] def nextResult(node: Node[A, B]): R
+    protected def nextResult(node: Node[A, B]): R
 
     def hasNext: Boolean = nextNode ne null
 

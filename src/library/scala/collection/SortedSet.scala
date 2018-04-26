@@ -6,9 +6,17 @@ import scala.annotation.unchecked.uncheckedVariance
 trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] {
   def unsorted: Set[A] = this
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[A]): SortedIterableCC[A] = sortedIterableFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] = sortedIterableFactory.newBuilder[A]()
+  override protected def fromSpecificIterable(coll: Iterable[A] @uncheckedVariance): SortedIterableCC[A] @uncheckedVariance = sortedIterableFactory.from(coll)
+  override protected def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] @uncheckedVariance = sortedIterableFactory.newBuilder[A]()
 
+  /**
+    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
+    *       return a `SortedIterableFactory[SortedIterableCC]`. The implementation in `SortedSet` only returns
+    *       a `SortedIterableFactory[SortedSet]`, but the compiler will '''not''' throw an error if the
+    *       effective `SortedIterableCC` type constructor is more specific than `SortedSet`.
+    *
+    * @return The factory of this collection.
+    */
   def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
 
   override def empty: SortedIterableCC[A] = sortedIterableFactory.empty
@@ -18,14 +26,21 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  protected[this] type SortedIterableCC[X] = CC[X]
+  /**
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type SortedIterableCC[X] = CC[X] @uncheckedVariance
 
   def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
 
   /** Similar to `fromSpecificIterable`, but for a (possibly) different type of element.
     * Note that the return type is now `CC[B]` aka `SortedIterableCC[B]` rather than `IterableCC[B]`.
     */
-  @`inline` final protected[this] def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B] = sortedIterableFactory.from(it)
+  @`inline` final protected def sortedFromIterable[B: Ordering](it: Iterable[B]): CC[B] = sortedIterableFactory.from(it)
 
   def unsorted: Set[A]
 
@@ -65,21 +80,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
       rangeUntil(next)
   }
 
-  override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
-
-  /** Specialize `WithFilter` for sorted collections
-    *
-    * @define coll sorted collection
-    */
-  class SortedWithFilter(p: A => Boolean) extends WithFilter(p) {
-
-    def map[B : Ordering](f: A => B): CC[B] = sortedIterableFactory.from(new View.Map(filtered, f))
-
-    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(new View.FlatMap(filtered, f))
-
-    override def withFilter(q: A => Boolean): SortedWithFilter = new SortedWithFilter(a => p(a) && q(a))
-
-  }
+  override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, IterableCC, CC] = new SortedSetOps.WithFilter(this, p)
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll.
     *
@@ -125,6 +126,29 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     if (pf.isDefinedAt(a)) new View.Single(pf(a))
     else View.Empty
   )
+}
+
+object SortedSetOps {
+
+  /** Specialize `WithFilter` for sorted collections
+    *
+    * @define coll sorted collection
+    */
+  class WithFilter[+A, +IterableCC[_], +CC[X] <: SortedSet[X]](
+    self: SortedSetOps[A, CC, _] with IterableOps[A, IterableCC, _],
+    p: A => Boolean
+  ) extends IterableOps.WithFilter[A, IterableCC](self, p) {
+
+    def map[B : Ordering](f: A => B): CC[B] =
+      self.sortedIterableFactory.from(new View.Map(filtered, f))
+
+    def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] =
+      self.sortedIterableFactory.from(new View.FlatMap(filtered, f))
+
+    override def withFilter(q: A => Boolean): WithFilter[A, IterableCC, CC] =
+      new WithFilter[A, IterableCC, CC](self, (a: A) => p(a) && q(a))
+  }
+
 }
 
 object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)

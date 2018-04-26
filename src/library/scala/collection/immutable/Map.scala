@@ -2,6 +2,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 
 
@@ -47,7 +48,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C] {
 
-  protected[this] def coll: C with CC[K, V]
+  protected def coll: C with CC[K, V]
 
   /** Removes a key from this map, returning a new map.
     *
@@ -150,10 +151,10 @@ object Map extends MapFactory[Map] {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected def fromSpecificIterable(coll: collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
-    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
       Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 

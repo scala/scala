@@ -22,11 +22,19 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   final def toIterable: this.type = this
 
   //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
-  protected[this] def coll: this.type = this
+  protected def coll: this.type = this
 
-  protected[this] def fromSpecificIterable(coll: Iterable[A]): IterableCC[A] = iterableFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[A, IterableCC[A]] = iterableFactory.newBuilder[A]()
+  protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
+  protected def newSpecificBuilder(): Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
 
+  /**
+    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
+    *       return an `IterableFactory[IterableCC]`. The implementation in `Iterable` only returns
+    *       an `IterableFactory[Iterable]`, but the compiler will '''not''' throw an error if the
+    *       effective `IterableCC` type constructor is more specific than `Iterable`.
+    *
+    * @return The factory of this collection.
+    */
   def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
@@ -66,7 +74,14 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   */
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
 
-  protected[this] type IterableCC[X] = CC[X]
+  /**
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type IterableCC[X] = CC[X] @uncheckedVariance
 
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
@@ -76,7 +91,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /**
     * @return This collection as a `C`.
     */
-  protected[this] def coll: C
+  protected def coll: C
 
   /**
     * Defines how to turn a given `Iterable[A]` into a collection of type `C`.
@@ -84,13 +99,18 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * This process can be done in a strict way or a non-strict way (ie. without evaluating
     * the elements of the resulting collections). In other words, this methods defines
     * the evaluation model of the collection.
+    *
+    * @note As witnessed by the `@uncheckedVariance` annotation, using this method
+    *       might be unsound. However, as long as it is called with an
+    *       `Iterable[A]` obtained from `this` collection (as it is the case in the
+    *       implementations of operations where we use a `View[A]`), it is safe.
     */
-  protected[this] def fromSpecificIterable(coll: Iterable[A]): C
+  protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): C
 
   /** Similar to `fromSpecificIterable`, but for a (possibly) different type of element.
     * Note that the return type is now `CC[E]`.
     */
-  @`inline` final protected[this] def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.from(it)
+  @`inline` final protected def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.from(it)
 
   /**
     * @return The companion object of this ${coll}, providing various factory methods.
@@ -104,8 +124,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * it is possible to implement this method but the resulting `Builder` will break laziness.
     * As a consequence, operations should preferably be implemented with `fromSpecificIterable`
     * instead of this method.
+    *
+    * @note As witnessed by the `@uncheckedVariance` annotation, using this method might
+    *       be unsound. However, as long as the returned builder is only fed
+    *       with `A` values taken from `this` instance, it is safe.
     */
-  protected[this] def newSpecificBuilder(): Builder[A, C]
+  protected def newSpecificBuilder(): Builder[A @uncheckedVariance, C]
 
   /** Selects the first element of this $coll.
     *  $orderDependent
@@ -315,26 +339,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *             All these operations apply to those elements of this $coll
     *             which satisfy the predicate `p`.
     */
-  def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new WithFilter(p)
-
-  /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
-    * of trait `Iterable`.
-    *
-    * @define coll iterable collection
-    */
-  class WithFilter(p: A => Boolean) extends collection.WithFilter[A, CC] {
-
-    protected[this] def filtered = new View.Filter(IterableOps.this, p, isFlipped = false)
-
-    def map[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(filtered, f))
-
-    def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.from(new View.FlatMap(filtered, f))
-
-    def foreach[U](f: A => U): Unit = filtered.foreach(f)
-
-    def withFilter(q: A => Boolean): WithFilter = new WithFilter(a => p(a) && q(a))
-
-  }
+  def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new IterableOps.WithFilter(this, p)
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.
@@ -708,6 +713,39 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     val it = Iterator.iterate(toIterable)(f).takeWhile(x => !x.isEmpty)
     (it ++ Iterator(Iterable.empty)).map(fromSpecificIterable)
   }
+}
+
+object IterableOps {
+
+  /** A trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
+    * of trait `Iterable`.
+    *
+    * @tparam A Element type (e.g. `Int`)
+    * @tparam CC Collection type constructor (e.g. `List`)
+    *
+    * @define coll collection
+    */
+  class WithFilter[+A, +CC[_]](
+    self: IterableOps[A, CC, _],
+    p: A => Boolean
+  ) extends collection.WithFilter[A, CC] {
+
+    protected def filtered: Iterable[A] =
+      new View.Filter(self, p, isFlipped = false)
+
+    def map[B](f: A => B): CC[B] =
+      self.iterableFactory.from(new View.Map(filtered, f))
+
+    def flatMap[B](f: A => IterableOnce[B]): CC[B] =
+      self.iterableFactory.from(new View.FlatMap(filtered, f))
+
+    def foreach[U](f: A => U): Unit = filtered.foreach(f)
+
+    def withFilter(q: A => Boolean): WithFilter[A, CC] =
+      new WithFilter(self, (a: A) => p(a) && q(a))
+
+  }
+
 }
 
 object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {

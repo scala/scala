@@ -10,9 +10,11 @@ package scala.collection
 package immutable
 
 import java.lang.IllegalStateException
+
 import scala.collection.generic.BitOperations
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for integer maps.
   *  @author David MacIver
@@ -167,15 +169,15 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
   with Serializable {
 
-  override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[(Int, T)]): IntMap[T] =
+  override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Int, T) @uncheckedVariance]): IntMap[T] =
     intMapFromIterable[T](coll)
-  protected[this] def intMapFromIterable[V2](coll: scala.collection.Iterable[(Int, V2)]): IntMap[V2] = {
+  protected def intMapFromIterable[V2](coll: scala.collection.Iterable[(Int, V2)]): IntMap[V2] = {
     val b = IntMap.newBuilder[V2]()
     b.sizeHint(coll)
     b.addAll(coll)
     b.result()
   }
-  override protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
+  override protected def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }

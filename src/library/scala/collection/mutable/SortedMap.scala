@@ -68,10 +68,10 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
-    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
       SortedMap.newBuilder().mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

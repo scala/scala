@@ -13,12 +13,20 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MapCC[K, V] = mapFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] = mapFactory.newBuilder[K, V]()
+  override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
+  override protected def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]()
 
+  /**
+    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
+    *       return a `MapFactory[MapCC]`. The implementation in `Map` only returns
+    *       a `MapFactory[Map]`, but the compiler will '''not''' throw an error if the
+    *       effective `MapCC` type constructor is more specific than `Map`.
+    *
+    * @return The factory of this collection.
+    */
   def mapFactory: scala.collection.MapFactory[MapCC] = Map
 
-  def empty: MapCC[K, V] = mapFactory.empty
+  def empty: MapCC[K, V] @uncheckedVariance = mapFactory.empty
 
   def canEqual(that: Any): Boolean = true
 
@@ -60,12 +68,19 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override def view: MapView[K, V] = new MapView.Id(this)
 
-  protected[this] type MapCC[K, V] = CC[K, V]
+  /**
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type MapCC[K, V] = CC[K, V] @uncheckedVariance
 
   /** Similar to `fromIterable`, but returns a Map collection type.
     * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.
     */
-  @`inline` protected[this] final def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2] = mapFactory.from(it)
+  @`inline` protected final def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2] = mapFactory.from(it)
 
   def mapFactory: MapFactory[MapCC]
 
@@ -209,21 +224,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     */
   def empty: C
 
-  override def withFilter(p: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(p)
-
-  /** Specializes `WithFilter` for Map collection types
-    *
-    * @define coll map collection
-    */
-  class MapWithFilter(p: ((K, V)) => Boolean) extends WithFilter(p) {
-
-    def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(filtered, f))
-
-    def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(filtered, f))
-
-    override def withFilter(q: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(kv => p(kv) && q(kv))
-
-  }
+  override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, IterableCC, CC] = new MapOps.WithFilter(this, p)
 
   /** Builds a new map by applying a function to all elements of this $coll.
     *
@@ -278,6 +279,30 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))
+}
+
+object MapOps {
+  /** Specializes `WithFilter` for Map collection types by adding overloads to transformation
+    * operations that can return a Map.
+    *
+    * @define coll map collection
+    */
+  class WithFilter[K, +V, +IterableCC[_], +CC[_, _] <: IterableOps[_, AnyConstr, _]](
+    self: MapOps[K, V, CC, _] with IterableOps[(K, V), IterableCC, _],
+    p: ((K, V)) => Boolean
+  ) extends IterableOps.WithFilter[(K, V), IterableCC](self, p) {
+
+    def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
+      self.mapFactory.from(new View.Map(filtered, f))
+
+    def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
+      self.mapFactory.from(new View.FlatMap(filtered, f))
+
+    override def withFilter(q: ((K, V)) => Boolean): WithFilter[K, V, IterableCC, CC] =
+      new WithFilter[K, V, IterableCC, CC](self, (kv: (K, V)) => p(kv) && q(kv))
+
+  }
+
 }
 
 /**

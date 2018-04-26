@@ -24,7 +24,7 @@ sealed abstract class ImmutableArray[+A]
     with StrictOptimizedSeqOps[A, ImmutableArray, ImmutableArray[A]] {
 
   /** The tag of the element type */
-  protected[this] def elemTag: ClassTag[A]
+  protected def elemTag: ClassTag[A] @uncheckedVariance
 
   override def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
 
@@ -34,9 +34,9 @@ sealed abstract class ImmutableArray[+A]
   // uncheckedVariance should be safe: Array[A] for reference types A is covariant at the JVM level. Array[A] for
   // primitive types A can only be widened to Array[Any] which erases to Object.
 
-  override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[A]): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
+  override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  override protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected def newSpecificBuilder(): Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
@@ -200,7 +200,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofByte(val unsafeArray: Array[Byte]) extends ImmutableArray[Byte] with Serializable {
-    protected[this] def elemTag = ClassTag.Byte
+    protected def elemTag = ClassTag.Byte
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Byte = unsafeArray(i)
@@ -213,7 +213,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofShort(val unsafeArray: Array[Short]) extends ImmutableArray[Short] with Serializable {
-    protected[this] def elemTag = ClassTag.Short
+    protected def elemTag = ClassTag.Short
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Short = unsafeArray(i)
@@ -226,7 +226,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofChar(val unsafeArray: Array[Char]) extends ImmutableArray[Char] with Serializable {
-    protected[this] def elemTag = ClassTag.Char
+    protected def elemTag = ClassTag.Char
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Char = unsafeArray(i)
@@ -239,7 +239,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofInt(val unsafeArray: Array[Int]) extends ImmutableArray[Int] with Serializable {
-    protected[this] def elemTag = ClassTag.Int
+    protected def elemTag = ClassTag.Int
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Int = unsafeArray(i)
@@ -252,7 +252,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofLong(val unsafeArray: Array[Long]) extends ImmutableArray[Long] with Serializable {
-    protected[this] def elemTag = ClassTag.Long
+    protected def elemTag = ClassTag.Long
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Long = unsafeArray(i)
@@ -265,7 +265,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofFloat(val unsafeArray: Array[Float]) extends ImmutableArray[Float] with Serializable {
-    protected[this] def elemTag = ClassTag.Float
+    protected def elemTag = ClassTag.Float
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Float = unsafeArray(i)
@@ -278,7 +278,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofDouble(val unsafeArray: Array[Double]) extends ImmutableArray[Double] with Serializable {
-    protected[this] def elemTag = ClassTag.Double
+    protected def elemTag = ClassTag.Double
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Double = unsafeArray(i)
@@ -291,7 +291,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofBoolean(val unsafeArray: Array[Boolean]) extends ImmutableArray[Boolean] with Serializable {
-    protected[this] def elemTag = ClassTag.Boolean
+    protected def elemTag = ClassTag.Boolean
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Boolean = unsafeArray(i)
@@ -304,7 +304,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
 
   @SerialVersionUID(3L)
   final class ofUnit(val unsafeArray: Array[Unit]) extends ImmutableArray[Unit] with Serializable {
-    protected[this] def elemTag = ClassTag.Unit
+    protected def elemTag = ClassTag.Unit
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Unit = unsafeArray(i)

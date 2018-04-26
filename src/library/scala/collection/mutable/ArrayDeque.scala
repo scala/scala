@@ -14,6 +14,8 @@ import java.util.NoSuchElementException
   *  take amortized constant time. In general, removals and insertions at i-th index are O(min(i, n-i))
   *  and thus insertions and removals from end/beginning are fast.
   *
+  *  @note Subclasses ''must'' override the `ofArray` protected method to return a more specific type.
+  *
   *  @author  Pathikrit Bhowmick
   *  @version 2.13
   *  @since   2.13
@@ -368,7 +370,7 @@ class ArrayDeque[A] protected (
     elems.result()
   }
 
-  override def reverse: ArrayDeque[A] = {
+  override def reverse: IterableCC[A] = {
     val n = length
     val arr = ArrayDeque.alloc(n)
     var i = 0
@@ -376,7 +378,7 @@ class ArrayDeque[A] protected (
       arr(i) = this(n - i - 1).asInstanceOf[AnyRef]
       i += 1
     }
-    new ArrayDeque(arr, start = 0, end = n)
+    ofArray(arr, n)
   }
 
   @inline def ensureSize(hint: Int) = if (hint > length && isResizeNecessary(hint)) resize(hint + 1)
@@ -428,13 +430,13 @@ class ArrayDeque[A] protected (
   protected def ofArray(array: Array[AnyRef], end: Int): ArrayDeque[A] =
     new ArrayDeque[A](array, start = 0, end)
 
-  override def sliding(window: Int, step: Int): Iterator[ArrayDeque[A]] = {
+  override def sliding(window: Int, step: Int): Iterator[IterableCC[A]] = {
     require(window > 0 && step > 0, s"window=$window and step=$step, but both must be positive")
     val lag = if (window > step) window - step else 0
     Iterator.range(start = 0, end = length - lag, step = step).map(i => slice(i, i + window))
   }
 
-  override def grouped(n: Int): Iterator[ArrayDeque[A]] = sliding(n, n)
+  override def grouped(n: Int): Iterator[IterableCC[A]] = sliding(n, n)
 
   override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): dest.type =
     copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)

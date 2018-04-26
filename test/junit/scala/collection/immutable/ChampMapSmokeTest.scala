@@ -11,7 +11,7 @@ object ChampMapSmokeTest {
   private def mapOf[K, V](keyValuePairs: (K, V)*): ChampHashMap[K, V] = {
     val builder = ChampHashMap.newBuilder[K, V]()
     keyValuePairs.foreach(builder.addOne)
-    builder.result
+    builder.result()
   }
 
   def mkTuple[KV](keyValue: KV): (KV, KV) = keyValue -> keyValue

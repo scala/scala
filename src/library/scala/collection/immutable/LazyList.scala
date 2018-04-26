@@ -185,7 +185,7 @@ import scala.collection.mutable.StringBuilder
 sealed abstract class LazyList[+A] extends LinearSeq[A] with LazyListOps[A, LazyList, LazyList[A]] {
   override def iterableFactory: LazyListFactory[LazyList] = LazyList
 
-  protected[this] def cons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
+  protected def cons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
 
   /** Apply the given function `f` to each element of this linear sequence
     * (while respecting the order of the elements).
@@ -229,7 +229,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
 
   def tail: C
 
-  protected[this] def cons[T](hd: => T, tl: => CC[T]): CC[T]
+  protected def cons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
   /** Forces evaluation of the whole `LazyList` and returns it.
     *
@@ -464,7 +464,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
 
 sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]]] extends SeqFactory[CC] {
 
-  protected[this] def newCons[T](hd: => T, tl: => CC[T]): CC[T]
+  protected def newCons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
   private[immutable] def withFilter[A](l: CC[A] @uncheckedVariance, p: A => Boolean): collection.WithFilter[A, CC] =
     new WithFilter[A](l, p)
@@ -552,7 +552,7 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
   */
 object LazyList extends LazyListFactory[LazyList] {
 
-  protected[this] def newCons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
+  protected def newCons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
 
   object Empty extends LazyList[Nothing] {
     override def isEmpty: Boolean = true
@@ -659,7 +659,7 @@ sealed abstract class Stream[+A] extends LinearSeq[A] with LazyListOps[A, Stream
 
   override def className: String = "Stream"
 
-  protected[this] def cons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
+  protected def cons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 
   /** Apply the given function `f` to each element of this linear sequence
     * (while respecting the order of the elements).
@@ -702,7 +702,7 @@ sealed abstract class Stream[+A] extends LinearSeq[A] with LazyListOps[A, Stream
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
 object Stream extends LazyListFactory[Stream] {
 
-  protected[this] def newCons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
+  protected def newCons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 
   object Empty extends Stream[Nothing] {
     override def isEmpty: Boolean = true

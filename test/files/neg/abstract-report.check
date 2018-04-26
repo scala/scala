@@ -7,10 +7,10 @@ it has 6 unimplemented members.
   def iterator(): Iterator[String] = ???
 
   // Members declared in scala.collection.IterableOps
-  protected[this] def coll: List[String] = ???
-  protected[this] def fromSpecificIterable(coll: Iterable[String]): List[String] = ???
+  protected def coll: List[String] = ???
+  protected def fromSpecificIterable(coll: Iterable[String]): List[String] = ???
   def iterableFactory: scala.collection.IterableFactory[[X]List[X]] = ???
-  protected[this] def newSpecificBuilder(): scala.collection.mutable.Builder[String,List[String]] = ???
+  protected def newSpecificBuilder(): scala.collection.mutable.Builder[String,List[String]] = ???
   def toIterable: Iterable[String] = ???
 
 class Unimplemented extends scala.collection.IterableOps[String, List, List[String]] { }
