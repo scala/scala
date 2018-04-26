@@ -134,32 +134,32 @@ object IntegralParseTest extends Properties("ParseX") {
 
   //Byte
   property("nearUpperByte") = forAll(nearOverflowByteUpper){ 
-    bytestring: String => bytestring.parseByte == Try(java.lang.Byte.parseByte(bytestring)).toOption
+    bytestring: String => bytestring.toByteOption == Try(java.lang.Byte.parseByte(bytestring)).toOption
   }
 
   property("nearUpperByteNonstandard") = forAll(nearOverflowByteUpper.flatMap(nonStandardNumbers)){ 
-    bytestring: String => bytestring.parseByte == Try(java.lang.Byte.parseByte(bytestring)).toOption
+    bytestring: String => bytestring.toByteOption == Try(java.lang.Byte.parseByte(bytestring)).toOption
   }
 
   property("nearLowerByte") = forAll(nearOverflowByteLower){ 
-    bytestring: String => bytestring.parseByte == Try(java.lang.Byte.parseByte(bytestring)).toOption
+    bytestring: String => bytestring.toByteOption == Try(java.lang.Byte.parseByte(bytestring)).toOption
   }
 
   property("nearLowerByteNonstandard") = forAll(nearOverflowByteLower.flatMap(nonStandardNumbers)){ 
-    bytestring: String => bytestring.parseByte == Try(java.lang.Byte.parseByte(bytestring)).toOption
+    bytestring: String => bytestring.toByteOption == Try(java.lang.Byte.parseByte(bytestring)).toOption
   }
 
   property("overflowByteUpper") = forAll(overflowByteUpper){ 
-    bytestring: String => bytestring.parseByte == None
+    bytestring: String => bytestring.toByteOption == None
   }
 
   property("overflowByteLower") = forAll(overflowByteLower){ 
-    bytestring: String => bytestring.parseByte == None
+    bytestring: String => bytestring.toByteOption == None
   }
 
   property("validBytes") = forAll(validBytes){
     bytestring: String => {
-      val parsed = bytestring.parseByte
+      val parsed = bytestring.toByteOption
       parsed.isDefined &&
       parsed == Some(java.lang.Byte.parseByte(bytestring))
     }
@@ -167,7 +167,7 @@ object IntegralParseTest extends Properties("ParseX") {
 
   property("validBytesNonstandard") = forAll(validBytes.flatMap(nonStandardNumbers)){
     bytestring: String => {
-      val parsed = bytestring.parseByte
+      val parsed = bytestring.toByteOption
       parsed.isDefined &&
       parsed == Some(java.lang.Byte.parseByte(bytestring))
     }
@@ -176,32 +176,32 @@ object IntegralParseTest extends Properties("ParseX") {
   //Short
 
   property("nearUpperShort") = forAll(nearOverflowShortUpper){ 
-    shortstring: String => shortstring.parseShort == Try(java.lang.Short.parseShort(shortstring)).toOption
+    shortstring: String => shortstring.toShortOption == Try(java.lang.Short.parseShort(shortstring)).toOption
   }
 
   property("nearUpperShortNonstandard") = forAll(nearOverflowShortUpper.flatMap(nonStandardNumbers)){ 
-    shortstring: String => shortstring.parseShort == Try(java.lang.Short.parseShort(shortstring)).toOption
+    shortstring: String => shortstring.toShortOption == Try(java.lang.Short.parseShort(shortstring)).toOption
   }
 
   property("nearLowerShort") = forAll(nearOverflowShortLower){ 
-    shortstring: String => shortstring.parseShort == Try(java.lang.Short.parseShort(shortstring)).toOption
+    shortstring: String => shortstring.toShortOption == Try(java.lang.Short.parseShort(shortstring)).toOption
   }
 
   property("nearLowerShortNonstandard") = forAll(nearOverflowShortLower.flatMap(nonStandardNumbers)){ 
-    shortstring: String => shortstring.parseShort == Try(java.lang.Short.parseShort(shortstring)).toOption
+    shortstring: String => shortstring.toShortOption == Try(java.lang.Short.parseShort(shortstring)).toOption
   }
 
   property("overflowShortUpper") = forAll(overflowShortUpper){ 
-    shortstring: String => shortstring.parseShort == None
+    shortstring: String => shortstring.toShortOption == None
   }
 
   property("overflowShortLower") = forAll(overflowShortLower){ 
-    shortstring: String => shortstring.parseShort == None
+    shortstring: String => shortstring.toShortOption == None
   }
 
   property("validShorts") = forAll(validShorts){
     shortstring: String => {
-      val parsed = shortstring.parseShort
+      val parsed = shortstring.toShortOption
       parsed.isDefined &&
       parsed == Some(java.lang.Short.parseShort(shortstring))
     }
@@ -209,7 +209,7 @@ object IntegralParseTest extends Properties("ParseX") {
 
   property("validShortsNonstandard") = forAll(validShorts.flatMap(nonStandardNumbers)){
     shortstring: String => {
-      val parsed = shortstring.parseShort
+      val parsed = shortstring.toShortOption
       parsed.isDefined &&
       parsed == Some(java.lang.Short.parseShort(shortstring))
     }
@@ -218,32 +218,32 @@ object IntegralParseTest extends Properties("ParseX") {
   //Int
 
   property("nearUpperInt") = forAll(nearOverflowIntUpper){ 
-    intstring: String => intstring.parseInt == Try(java.lang.Integer.parseInt(intstring)).toOption
+    intstring: String => intstring.toIntOption == Try(java.lang.Integer.parseInt(intstring)).toOption
   }
 
   property("nearUpperIntNonstandard") = forAll(nearOverflowIntUpper.flatMap(nonStandardNumbers)){ 
-    intstring: String => intstring.parseInt == Try(java.lang.Integer.parseInt(intstring)).toOption
+    intstring: String => intstring.toIntOption == Try(java.lang.Integer.parseInt(intstring)).toOption
   }
 
   property("nearLowerInt") = forAll(nearOverflowIntLower){ 
-    intstring: String => intstring.parseInt == Try(java.lang.Integer.parseInt(intstring)).toOption
+    intstring: String => intstring.toIntOption == Try(java.lang.Integer.parseInt(intstring)).toOption
   }
 
   property("nearLowerIntNonstandard") = forAll(nearOverflowIntLower.flatMap(nonStandardNumbers)){ 
-    intstring: String => intstring.parseInt == Try(java.lang.Integer.parseInt(intstring)).toOption
+    intstring: String => intstring.toIntOption == Try(java.lang.Integer.parseInt(intstring)).toOption
   }
 
   property("overflowIntUpper") = forAll(overflowIntUpper){ 
-    intstring: String => intstring.parseInt == None
+    intstring: String => intstring.toIntOption == None
   }
 
   property("overflowIntLower") = forAll(overflowIntLower){ 
-    intstring: String => intstring.parseInt == None
+    intstring: String => intstring.toIntOption == None
   }
 
   property("validInts") = forAll(validInts){
     intstring: String => {
-      val parsed = intstring.parseInt
+      val parsed = intstring.toIntOption
       parsed.isDefined &&
       parsed == Some(java.lang.Integer.parseInt(intstring))
     }
@@ -251,7 +251,7 @@ object IntegralParseTest extends Properties("ParseX") {
 
   property("validIntsNonstandard") = forAll(validInts.flatMap(nonStandardNumbers)){
     intstring: String => {
-      val parsed = intstring.parseInt
+      val parsed = intstring.toIntOption
       parsed.isDefined &&
       parsed == Some(java.lang.Integer.parseInt(intstring))
     }
@@ -259,24 +259,24 @@ object IntegralParseTest extends Properties("ParseX") {
 
   //long
   property("nearUpperLong") = forAll(nearOverflowLongUpper){ 
-    longstring: String => longstring.parseLong == Try(java.lang.Long.parseLong(longstring)).toOption
+    longstring: String => longstring.toLongOption == Try(java.lang.Long.parseLong(longstring)).toOption
   }
 
   property("nearUpperLongNonstandard") = forAll(nearOverflowLongUpper.flatMap(nonStandardNumbers)){ 
-    longstring: String => longstring.parseLong == Try(java.lang.Long.parseLong(longstring)).toOption
+    longstring: String => longstring.toLongOption == Try(java.lang.Long.parseLong(longstring)).toOption
   }
 
   property("nearLowerLong") = forAll(nearOverflowLongLower){ 
-    longstring: String => longstring.parseLong == Try(java.lang.Long.parseLong(longstring)).toOption
+    longstring: String => longstring.toLongOption == Try(java.lang.Long.parseLong(longstring)).toOption
   }
 
   property("nearLowerLongNonstandard") = forAll(nearOverflowLongLower.flatMap(nonStandardNumbers)){ 
-    longstring: String => longstring.parseLong == Try(java.lang.Long.parseLong(longstring)).toOption
+    longstring: String => longstring.toLongOption == Try(java.lang.Long.parseLong(longstring)).toOption
   }
 
   property("validLongs") = forAll(validLongs){
     longstring: String => {
-      val parsed = longstring.parseLong
+      val parsed = longstring.toLongOption
       parsed.isDefined &&
       parsed == Some(java.lang.Long.parseLong(longstring))
     }
@@ -284,7 +284,7 @@ object IntegralParseTest extends Properties("ParseX") {
 
   property("validLongsNonstandard") = forAll(validLongs.flatMap(nonStandardNumbers)){
     longstring: String => {
-      val parsed = longstring.parseLong
+      val parsed = longstring.toLongOption
       parsed.isDefined &&
       parsed == Some(java.lang.Long.parseLong(longstring))
     }

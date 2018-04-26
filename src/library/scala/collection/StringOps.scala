@@ -756,7 +756,7 @@ final class StringOps(private val s: String) extends AnyVal {
   /**
    * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
    */
-  def toBoolean: Boolean            = toBooleanImpl(s)
+  def toBoolean: Boolean               = toBooleanImpl(s)
   
   /**
    * Try to parse as a `Boolean`
@@ -765,87 +765,87 @@ final class StringOps(private val s: String) extends AnyVal {
    * and `None` if the string is anything else
    * @throws java.lang.NullPointerException if the string is `null`
    */
-  def parseBoolean: Option[Boolean] = StringParsers.parseBool(s)
+  def toBooleanOption: Option[Boolean] = StringParsers.parseBool(s)
 
   /**
     * Parse as a `Byte` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Byte`.
     */
-  def toByte: Byte                  = java.lang.Byte.parseByte(s)
+  def toByte: Byte                     = java.lang.Byte.parseByte(s)
 
   /**
    * Try to parse as a `Byte`
    * @return `Some(value)` if the string contains a valid byte value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
-  def parseByte: Option[Byte]       = StringParsers.parseByte(s)
+  def toByteOption: Option[Byte]       = StringParsers.parseByte(s)
 
   /**
     * Parse as a `Short` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Short`.
     */
-  def toShort: Short                = java.lang.Short.parseShort(s)
+  def toShort: Short                   = java.lang.Short.parseShort(s)
 
   /**
    * Try to parse as a `Short`
    * @return `Some(value)` if the string contains a valid short value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
-  def parseShort: Option[Short]     = StringParsers.parseShort(s)
+  def toShortOption: Option[Short]     = StringParsers.parseShort(s)
 
   /**
     * Parse as an `Int` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
     */
-  def toInt: Int                    = java.lang.Integer.parseInt(s)
+  def toInt: Int                       = java.lang.Integer.parseInt(s)
   
   /**
    * Try to parse as an `Int`
    * @return `Some(value)` if the string contains a valid Int value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
-  def parseInt: Option[Int]         = StringParsers.parseInt(s)
+  def toIntOption: Option[Int]         = StringParsers.parseInt(s)
 
   /**
     * Parse as a `Long` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Long`.
     */
-  def toLong: Long                  = java.lang.Long.parseLong(s)
+  def toLong: Long                     = java.lang.Long.parseLong(s)
 
   /**
    * Try to parse as a `Long`
    * @return `Some(value)` if the string contains a valid long value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
-  def parseLong: Option[Long]       = StringParsers.parseLong(s)
+  def toLongOption: Option[Long]       = StringParsers.parseLong(s)
 
   /**
     * Parse as a `Float` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Float`.
     * @throws java.lang.NullPointerException  If the string is null.
     */
-  def toFloat: Float                = java.lang.Float.parseFloat(s)
+  def toFloat: Float                   = java.lang.Float.parseFloat(s)
 
   /**
    * Try to parse as a `Float`
    * @return `Some(value)` if the string is a parsable `Float`, `None` otherwise
    * @throws java.lang.NullPointerException If the string is null
    */
-  def parseFloat: Option[Float]     = StringParsers.parseFloat(s)
+  def toFloatOption: Option[Float]     = StringParsers.parseFloat(s)
 
   /**
     * Parse as a `Double` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Double`.
     * @throws java.lang.NullPointerException  If the string is null.
     */
-  def toDouble: Double              = java.lang.Double.parseDouble(s)
+  def toDouble: Double                 = java.lang.Double.parseDouble(s)
 
   /**
    * Try to parse as a `Double`
    * @return `Some(value)` if the string is a parsable `Double`, `None` otherwise
    * @throws java.lang.NullPointerException If the string is null
    */
-  def parseDouble: Option[Double] = StringParsers.parseDouble(s)
+  def toDoubleOption: Option[Double]   = StringParsers.parseDouble(s)
 
   private[this] def toBooleanImpl(s: String): Boolean =
     if (s == null) throw new IllegalArgumentException("For input string: \"null\"")

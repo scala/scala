@@ -161,14 +161,6 @@ final private[scala] object StringParsers {
     //thus start == end <=> empty slice
     //and format.substring(start, end) is equivalent to the slice
 
-    /*
-    def debug(message: String, start: Int, end: Int) = {
-      val substr = scala.util.Try(format.substring(start, end)).toOption.getOrElse(s"substring out of bounds: $start, $end")
-      println(s"$message: '$substr'")
-    }
-    */
-
-
     //some utilities for working with index bounds into the original string
     @inline
     def forAllBetween(start: Int, end: Int, pred: Char => Boolean): Boolean = {
@@ -200,14 +192,12 @@ final private[scala] object StringParsers {
         val len = endIndex - startIndex
         if(len == 0) false
         else {
-        //the prefix part is
-        //hexDigits 
-        //hexDigits.
-        //hexDigits.hexDigits 
-        //.hexDigits
-
-        //not .
-
+          //the prefix part is
+          //hexDigits 
+          //hexDigits.
+          //hexDigits.hexDigits 
+          //.hexDigits
+          //but notnot .
           if(format.charAt(startIndex) == '.') {
             (len > 1) && forAllBetween(startIndex + 1, endIndex, isHexDigit)
           } else {

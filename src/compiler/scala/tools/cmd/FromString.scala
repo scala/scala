@@ -58,7 +58,7 @@ object FromString {
   /** Implicit as the most likely to be useful as-is.
    */
   implicit val IntFromString: FromString[Int] = new FromString[Int] {
-    override def isDefinedAt(s: String)   = s.parseInt.isDefined
+    override def isDefinedAt(s: String)   = s.toIntOption.isDefined
     def apply(s: String)                  = s.toInt
   }
 }

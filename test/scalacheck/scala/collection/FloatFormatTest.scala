@@ -93,21 +93,21 @@ object FloatFormatTest extends Properties("FloatFormat") {
   }
 
   property("plausible string are same")= forAll(genPlausibleFloatString) {
-    str => deq(str.parseDouble, Try(str.toDouble).toOption)
+    str => deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
   property("possible strings are same") = forAll(genPossibleFloatString) { 
-    str => deq(str.parseDouble, Try(str.toDouble).toOption)
+    str => deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
   property("arbitrary strings are same") = forAll{ (str: String) =>
-    deq(str.parseDouble, Try(str.toDouble).toOption)
+    deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
   property("double.toString checks") = forAll{ (d: Double) => checkFloatFormat(d.toString)}
 
   property("nan and infinity check like toDouble") = forAll(genNanInf){ (str: String) =>
-    deq(str.parseDouble, Try(str.toDouble).toOption)
+    deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
 }
