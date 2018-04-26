@@ -28,7 +28,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   */
 @SerialVersionUID(3L)
 sealed abstract class HashMap[K, +V]
-  extends Map[K, V]
+  extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {

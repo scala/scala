@@ -431,7 +431,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] with mutable.Map[A, B] {
+  case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] {
     override def size: Int = underlying.size
 
     def get(k: A) = Option(underlying get k)

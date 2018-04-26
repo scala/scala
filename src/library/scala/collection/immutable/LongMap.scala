@@ -157,7 +157,7 @@ private[immutable] class LongMapKeyIterator[V](it: LongMap[V]) extends LongMapIt
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-sealed abstract class LongMap[+T] extends Map[Long, T]
+sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   with MapOps[Long, T, Map, LongMap[T]]
   with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]]
   with Serializable {

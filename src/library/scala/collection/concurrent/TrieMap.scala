@@ -10,16 +10,13 @@ package scala
 package collection
 package concurrent
 
-import java.lang.{Integer, Object, String}
-
 import java.util.concurrent.atomic._
 
-import scala.collection.mutable.{Builder, GrowableBuilder}
-import scala.collection.immutable.{List, Nil}
-
-import scala.util.hashing.Hashing
-import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
+import scala.collection.immutable.{List, Nil}
+import scala.collection.mutable.GrowableBuilder
+import scala.util.control.ControlThrowable
+import scala.util.hashing.Hashing
 
 private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
   import INodeBase._
@@ -642,7 +639,8 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   */
 @SerialVersionUID(3L)
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
-  extends scala.collection.concurrent.Map[K, V]
+  extends scala.collection.mutable.AbstractMap[K, V]
+    with scala.collection.concurrent.Map[K, V]
     with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]]
     with Serializable
 {

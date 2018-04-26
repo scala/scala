@@ -130,7 +130,7 @@ object Map extends MapFactory[Map] {
 
   @SerialVersionUID(3L)
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
-    extends Map[K, V]
+    extends AbstractMap[K, V]
       with MapOps[K, V, Map, WithDefault[K, V]]
       with Serializable{
 
@@ -170,7 +170,7 @@ object Map extends MapFactory[Map] {
     if (useBaseline) HashMap.newBuilder() else ChampHashMap.newBuilder()
 
   @SerialVersionUID(3L)
-  private object EmptyMap extends Map[Any, Nothing] with Serializable {
+  private object EmptyMap extends AbstractMap[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def knownSize: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
@@ -183,7 +183,7 @@ object Map extends MapFactory[Map] {
   }
 
   @SerialVersionUID(3L)
-  final class Map1[K, +V](key1: K, value1: V) extends Map[K, V] with Serializable {
+  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Serializable {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -204,7 +204,7 @@ object Map extends MapFactory[Map] {
   }
 
   @SerialVersionUID(3L)
-  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends Map[K, V] with Serializable {
+  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with Serializable {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -235,7 +235,7 @@ object Map extends MapFactory[Map] {
   }
 
   @SerialVersionUID(3L)
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends Map[K, V] with Serializable {
+  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Serializable {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -271,7 +271,7 @@ object Map extends MapFactory[Map] {
   }
 
   @SerialVersionUID(3L)
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends Map[K, V] with Serializable {
+  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with Serializable {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =
@@ -311,3 +311,6 @@ object Map extends MapFactory[Map] {
     }
   }
 }
+
+/** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
