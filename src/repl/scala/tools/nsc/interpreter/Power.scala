@@ -242,7 +242,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     // make an url out of the string
     def u: URL = (
       if (s contains ":") new URL(s)
-      else if ((new java.io.File(s)).exists) new java.io.File(s).toURI.toURL
+      else if (new java.io.File(s).exists) new java.io.File(s).toURI.toURL
       else new URL("http://" + s)
     )
   }
