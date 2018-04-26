@@ -184,7 +184,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.Set[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
+  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
 
     override def size = underlying.size
 

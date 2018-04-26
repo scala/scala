@@ -51,7 +51,7 @@ warning: there were two feature warnings; re-run with -feature for details
                 scala.collection.immutable.Set[Int]
                 scala.collection.immutable.Seq[Int]
                 Array[Int]
-                scala.collection.immutable.SortedSet[Int]
+                scala.collection.immutable.AbstractSet[Int]
                 Comparable[String]
                 scala.collection.immutable.LinearSeq[Int]
                 scala.collection.immutable.Iterable[Int]

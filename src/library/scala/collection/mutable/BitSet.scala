@@ -23,7 +23,8 @@ import BitSetOps.{LogWL, MaxSize}
   */
 @SerialVersionUID(3L)
 class BitSet(protected[collection] final var elems: Array[Long])
-  extends SortedSet[Int]
+  extends AbstractSet[Int]
+    with SortedSet[Int]
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]

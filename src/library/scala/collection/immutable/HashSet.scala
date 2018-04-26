@@ -26,7 +26,7 @@ import scala.annotation.tailrec
   */
 @SerialVersionUID(3L)
 sealed abstract class HashSet[A]
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
     with Serializable {

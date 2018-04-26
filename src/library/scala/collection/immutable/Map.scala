@@ -111,7 +111,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
 
   /** The implementation class of the set returned by `keySet` */
   @SerialVersionUID(3L)
-  protected class ImmutableKeySet extends Set[K] with GenKeySet {
+  protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet {
     def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
     def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
   }

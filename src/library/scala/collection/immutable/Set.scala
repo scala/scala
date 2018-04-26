@@ -79,7 +79,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable empty sets */
   @SerialVersionUID(3L)
-  private object EmptySet extends Set[Any] with Serializable {
+  private object EmptySet extends AbstractSet[Any] with Serializable {
     override def size: Int = 0
     def contains(elem: Any): Boolean = false
     def incl(elem: Any): Set[Any] = new Set1(elem)
@@ -91,7 +91,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(3L)
-  final class Set1[A] private[collection] (elem1: A) extends Set[A] with Serializable {
+  final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with Serializable {
     override def size: Int = 1
     def contains(elem: A): Boolean = elem == elem1
     def incl(elem: A): Set[A] =
@@ -114,7 +114,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 2 */
   @SerialVersionUID(3L)
-  final class Set2[A] private[collection] (elem1: A, elem2: A) extends Set[A] with Serializable {
+  final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] with Serializable {
     override def size: Int = 2
     def contains(elem: A): Boolean = elem == elem1 || elem == elem2
     def incl(elem: A): Set[A] =
@@ -146,7 +146,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 3 */
   @SerialVersionUID(3L)
-  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends Set[A] with Serializable {
+  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] with Serializable {
     override def size: Int = 3
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3
@@ -181,7 +181,7 @@ object Set extends IterableFactory[Set] {
 
   /** An optimized representation for immutable sets of size 4 */
   @SerialVersionUID(3L)
-  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends Set[A] with Serializable {
+  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with Serializable {
     override def size: Int = 4
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
@@ -215,5 +215,7 @@ object Set extends IterableFactory[Set] {
     override def tail: Set[A] = new Set3(elem2, elem3, elem4)
     override def className: String = "Set"
   }
-
 }
+
+/** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
+abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]

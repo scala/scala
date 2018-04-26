@@ -133,7 +133,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   @SerialVersionUID(3L)
-  protected class KeySet extends Set[K] with GenKeySet {
+  protected class KeySet extends AbstractSet[K] with GenKeySet {
     def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
   }
 
