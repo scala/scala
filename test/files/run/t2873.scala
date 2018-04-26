@@ -5,6 +5,8 @@ abstract class RedBlack[A] extends Serializable {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    println(classOf[RedBlack[_]].getMethod("Empty").getGenericReturnType)
+    val r = classOf[RedBlack[_]].getMethod("Empty").getGenericReturnType.toString
+    // Output changed in JDK 1.8.0_172: https://github.com/scala/bug/issues/10835
+    assert(r == "RedBlack<A>.Empty$" || r == "RedBlack<A>$Empty$", r)
   }
 }
