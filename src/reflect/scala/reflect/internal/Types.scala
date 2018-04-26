@@ -4870,11 +4870,11 @@ trait Types
   val shorthands = Set(
     "scala.collection.immutable.List",
     "scala.collection.immutable.Nil",
-    "scala.collection.Seq",
+    "scala.collection.immutable.Seq",
+    "scala.collection.immutable.IndexedSeq",
+    "scala.collection.mutable.StringBuilder",
     "scala.collection.Traversable",
     "scala.collection.Iterable",
-    "scala.collection.mutable.StringBuilder",
-    "scala.collection.IndexedSeq",
     "scala.collection.Iterator")
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------

@@ -48,7 +48,7 @@ warning: there were two feature warnings; re-run with -feature for details
                 scala.collection.immutable.Vector[Nothing]
                 scala.collection.immutable.Map[Int,Int]
                 scala.collection.immutable.Set[Int]
-                scala.collection.immutable.Seq[Int]
+                Seq[Int]
                 Array[Int]
                 scala.collection.immutable.SortedSet[Int]
                 Comparable[String]

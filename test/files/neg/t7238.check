@@ -1,6 +1,6 @@
 t7238.scala:6: error: type mismatch;
- found   : scala.collection.immutable.Seq[Any]
- required: scala.collection.immutable.Seq[String]
+ found   : Seq[Any]
+ required: Seq[String]
   c.c()(Seq[Any](): _*)
                 ^
 one error found
