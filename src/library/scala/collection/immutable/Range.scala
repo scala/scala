@@ -497,9 +497,11 @@ object Range {
     implicit val doubleAsIntegral = scala.math.Numeric.DoubleAsIfIntegral
     def toBD(x: Double): BigDecimal = scala.math.BigDecimal valueOf x
 
+    @deprecated("use Range.BigDecimal instead", "2.12.6")
     def apply(start: Double, end: Double, step: Double) =
       BigDecimal(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
 
+    @deprecated("use Range.BigDecimal.inclusive instead", "2.12.6")
     def inclusive(start: Double, end: Double, step: Double) =
       BigDecimal.inclusive(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
   }
