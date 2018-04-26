@@ -39,7 +39,7 @@ trait Growable[-A] extends Clearable {
    */
   @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
 
-  /** ${Add}s all elements produced by a IterableOnce to this $coll.
+  /** ${Add}s all elements produced by an IterableOnce to this $coll.
    *
    *  @param xs   the IterableOnce producing the elements to $add.
    *  @return  the $coll itself.

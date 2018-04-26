@@ -110,7 +110,14 @@ object IsIterableLike {
   implicit val stringRepr: IsIterableLike[String] { type A = Char } =
     new IsIterableLike[String] {
       type A = Char
-      val conversion = implicitly[String => IterableOps[Char, Iterable, String]]
+      val conversion: String => IterableOps[Char, Iterable, String] = s => new IterableOps[Char, Iterable, String] {
+        def toIterable: Iterable[Char] = new immutable.WrappedString(s)
+        protected[this] def coll: String = s
+        protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = coll.mkString
+        def iterableFactory: IterableFactory[Iterable] = Iterable
+        protected[this] def newSpecificBuilder(): mutable.Builder[Char, String] = new StringBuilder
+        def iterator(): Iterator[Char] = s.iterator()
+      }
     }
 
   implicit def arrayRepr[A0: ClassTag]: IsIterableLike[Array[A0]] { type A = A0 } =
