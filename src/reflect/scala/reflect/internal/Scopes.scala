@@ -8,6 +8,7 @@ package reflect
 package internal
 
 import scala.annotation.tailrec
+import scala.collection.AbstractIterable
 import scala.collection.generic.Clearable
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
@@ -57,7 +58,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    *  This is necessary because when run from reflection every scope needs to have a
    *  SynchronizedScope as mixin.
    */
-  class Scope protected[Scopes]() extends ScopeApi with MemberScopeApi {
+  class Scope protected[Scopes]() extends AbstractIterable[Symbol] with ScopeApi with MemberScopeApi {
 
     scopeCount += 1
     private[scala] var elems: ScopeEntry = _
