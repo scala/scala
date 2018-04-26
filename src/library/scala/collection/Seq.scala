@@ -938,18 +938,18 @@ object SeqOps {
     case iso: IndexedSeq[B] =>
       // Already optimized for indexing--use original (or custom view of original)
       if (forward && n0==0 && n1==W.length) iso.view
-      else if (forward) new IndexedView[B] {
+      else if (forward) new AbstractIndexedView[B] {
         val length = n1 - n0
         def apply(x: Int) = iso(n0 + x)
       }
-      else new IndexedView[B] {
+      else new AbstractIndexedView[B] {
         def length = n1 - n0
         def apply(x: Int) = iso(n1 - 1 - x)
       }
     case _ =>
       // W is probably bad at indexing.  Pack in array (in correct orientation)
       // Would be marginally faster to special-case each direction
-      new IndexedView[B] {
+      new AbstractIndexedView[B] {
         private[this] val Warr = new Array[AnyRef](n1-n0)
         private[this] val delta = if (forward) 1 else -1
         private[this] val done = if (forward) n1-n0 else -1

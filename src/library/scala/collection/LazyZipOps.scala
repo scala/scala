@@ -38,7 +38,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
   def lazyZip[B](that: Iterable[B]): LazyZip3[El1, El2, B, C1] = new LazyZip3(coll1, coll2, that)
 
   def map[B, C](f: (El1, El2) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -50,7 +50,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
   }
 
   def flatMap[B, C](f: (El1, El2) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -67,7 +67,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
   }
 
   def filter[C](p: (El1, El2) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2), C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[(El1, El2)] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2)] {
       def iterator() = new Iterator[(El1, El2)] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -111,7 +111,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
     while (elems1.hasNext && elems2.hasNext) f(elems1.next(), elems2.next())
   }
 
-  private def toIterable = new View[(El1, El2)] {
+  private def toIterable: View[(El1, El2)] = new AbstractView[(El1, El2)] {
     def iterator() = new Iterator[(El1, El2)] {
       private val elems1 = coll1.iterator()
       private val elems2 = coll2.iterator()
@@ -145,7 +145,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
   def lazyZip[B](that: Iterable[B]): LazyZip4[El1, El2, El3, B, C1] = new LazyZip4(coll1, coll2, coll3, that)
 
   def map[B, C](f: (El1, El2, El3) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -158,7 +158,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
   }
 
   def flatMap[B, C](f: (El1, El2, El3) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -176,7 +176,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
   }
 
   def filter[C](p: (El1, El2, El3) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2, El3), C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[(El1, El2, El3)] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2, El3)] {
       def iterator() = new Iterator[(El1, El2, El3)] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -226,7 +226,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
       f(elems1.next(), elems2.next(), elems3.next())
   }
 
-  private def toIterable = new View[(El1, El2, El3)] {
+  private def toIterable: View[(El1, El2, El3)] = new AbstractView[(El1, El2, El3)] {
     def iterator() = new Iterator[(El1, El2, El3)] {
       private val elems1 = coll1.iterator()
       private val elems2 = coll2.iterator()
@@ -253,7 +253,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
                                                                                   coll4: Iterable[El4]) {
 
   def map[B, C](f: (El1, El2, El3, El4) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -267,7 +267,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
   }
 
   def flatMap[B, C](f: (El1, El2, El3, El4) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[B] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
       def iterator() = new Iterator[B] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -286,7 +286,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
   }
 
   def filter[C](p: (El1, El2, El3, El4) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2, El3, El4), C]): C = {
-    bf.fromSpecificIterable(coll1)(new View[(El1, El2, El3, El4)] {
+    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2, El3, El4)] {
       def iterator() = new Iterator[(El1, El2, El3, El4)] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
@@ -340,7 +340,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
       f(elems1.next(), elems2.next(), elems3.next(), elems4.next())
   }
 
-  private def toIterable = new View[(El1, El2, El3, El4)] {
+  private def toIterable: View[(El1, El2, El3, El4)] = new AbstractView[(El1, El2, El3, El4)] {
     def iterator() = new Iterator[(El1, El2, El3, El4)] {
       private val elems1 = coll1.iterator()
       private val elems2 = coll2.iterator()
