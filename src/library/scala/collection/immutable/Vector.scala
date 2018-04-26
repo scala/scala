@@ -62,7 +62,8 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
  */
 @SerialVersionUID(3L)
 final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
-  extends IndexedSeq[A]
+  extends AbstractSeq[A]
+    with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
     with StrictOptimizedSeqOps[A, Vector, Vector[A]]
     with VectorPointer[A @uncheckedVariance]

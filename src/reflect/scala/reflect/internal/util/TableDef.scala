@@ -2,6 +2,7 @@ package scala
 package reflect.internal.util
 
 import TableDef._
+import scala.collection.immutable.AbstractSeq
 import scala.language.postfixOps
 
 /** A class for representing tabular data in a way that preserves
@@ -27,7 +28,7 @@ class TableDef[T](_cols: Column[T]*) {
   def colApply(el: T) = colFunctions map (f => f(el))
   def retThis(body: => Unit): this.type = { body ; this }
 
-  class Table(val rows: Seq[T]) extends Seq[T] {
+  class Table(val rows: Seq[T]) extends AbstractSeq[T] {
     def iterator          = rows.iterator
     def apply(index: Int) = rows(index)
     def length            = rows.length

@@ -36,7 +36,8 @@ sealed class NumericRange[T](
 )(implicit
   num: Integral[T]
 )
-  extends IndexedSeq[T]
+  extends AbstractSeq[T]
+    with IndexedSeq[T]
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable { self =>

@@ -50,7 +50,8 @@ sealed abstract class Range(
   val end: Int,
   val step: Int
 )
-  extends IndexedSeq[Int]
+  extends AbstractSeq[Int]
+    with IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with Serializable { range =>

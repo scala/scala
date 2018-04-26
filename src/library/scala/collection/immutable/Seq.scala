@@ -74,3 +74,6 @@ object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]]
   extends Any with SeqOps[A, CC, C]
     with collection.LinearSeqOps[A, CC, C]
+
+/** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+abstract class AbstractSeq[+A] extends scala.collection.AbstractSeq[A] with Seq[A]
