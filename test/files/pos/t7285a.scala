@@ -23,7 +23,7 @@ object Test1 {
     case object Up extends Base {
     }
 
-    (d1: Base, d2: Base) =>
+    def f = (d1: Base, d2: Base) =>
       (d1, d2) match {
         case (Up, Up) | (Down, Down) => false
         case (Down, Up)              => true
@@ -42,7 +42,7 @@ object Test2 {
     case object Up extends Base {
     }
 
-    (d1: Base, d2: Base) =>
+    def f = (d1: Base, d2: Base) =>
       (d1) match {
         case Up | Down => false
       }
@@ -55,7 +55,7 @@ object Test3 {
   object Base {
     case object Down extends Base
 
-    (d1: Base, d2: Base) =>
+    def f = (d1: Base, d2: Base) =>
       (d1, d2) match {
         case (Down, Down) => false
       }
@@ -74,7 +74,7 @@ object Test4 {
 
   }
   import Test4.Base._
-  (d1: Base, d2: Base) =>
+  def f = (d1: Base, d2: Base) =>
     (d1, d2) match {
       case (Up, Up) | (Down, Down) => false
       case (Down, Test4.Base.Up)   => true

@@ -35,23 +35,23 @@ object Test {
   type NonClassType = DerivedOneAbstract
 
   // errors:
-  (() => 0)      : NoAbstract
-  ((x: Int) => 0): TwoAbstract
-  ((x: Int) => 0): NoEmptyConstructor
-  ((x: Int) => 0): MultipleConstructorLists
-  ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
-  ((x: Int) => 0): MultipleMethodLists
-  ((x: Int) => 0): ImplicitConstructorParam
-  ((x: Int) => 0): ImplicitMethodParam
-  ((x: Int) => 0): PolyMethod
-  ((x: Int) => 0): SelfTp
-  ((x: Int) => 0): T1 with U1
-  ((x: Int) => 0): NonClassTypeRefinement
+  def f0 = (() => 0)      : NoAbstract
+  def f1 = ((x: Int) => 0): TwoAbstract
+  def f2 = ((x: Int) => 0): NoEmptyConstructor
+  def f3 = ((x: Int) => 0): MultipleConstructorLists
+  def f4 = ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
+  def f5 = ((x: Int) => 0): MultipleMethodLists
+  def f6 = ((x: Int) => 0): ImplicitConstructorParam
+  def f7 = ((x: Int) => 0): ImplicitMethodParam
+  def f8 = ((x: Int) => 0): PolyMethod
+  def f9 = ((x: Int) => 0): SelfTp
+  def g0 = ((x: Int) => 0): T1 with U1
+  def g1 = ((x: Int) => 0): NonClassTypeRefinement
 
   // allowed:
-  ((x: Int) => 0): OneEmptyConstructor
-  ((x: Int) => 0): DerivedOneAbstract
-  ((x: Int) => 0): NonClassType                 // we also allow type aliases in instantiation expressions, if they resolve to a class type
-  ((x: Int) => 0): PolyClass[Int]
-  ((x: Int) => 0): SelfVar
+  def g2 = ((x: Int) => 0): OneEmptyConstructor
+  def g3 = ((x: Int) => 0): DerivedOneAbstract
+  def g4 = ((x: Int) => 0): NonClassType                 // we also allow type aliases in instantiation expressions, if they resolve to a class type
+  def g5 = ((x: Int) => 0): PolyClass[Int]
+  def g6 = ((x: Int) => 0): SelfVar
 }

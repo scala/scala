@@ -3,7 +3,7 @@
  */
 
 trait Test1 {
-  def testFunc(i:Int): Unit = {
+  def testFunc(i:Int) = {
     (i:Int) => i + 5
   }
 }
