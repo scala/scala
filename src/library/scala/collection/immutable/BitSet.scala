@@ -16,7 +16,8 @@ import mutable.{Builder, GrowableBuilder}
   */
 @SerialVersionUID(3L)
 sealed abstract class BitSet
-  extends SortedSet[Int]
+  extends AbstractSet[Int]
+    with SortedSet[Int]
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]

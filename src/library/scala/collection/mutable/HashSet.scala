@@ -19,7 +19,7 @@ package mutable
   */
 @SerialVersionUID(3L)
 final class HashSet[A]
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
     with Serializable {

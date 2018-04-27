@@ -8,9 +8,11 @@ package scala
 package reflect
 package io
 
-import java.io.{ IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
-import java.io.{ File => JFile }
+import java.io.{BufferedOutputStream, ByteArrayOutputStream, IOException, InputStream, OutputStream}
+import java.io.{File => JFile}
 import java.net.URL
+
+import scala.collection.AbstractIterable
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
@@ -86,7 +88,7 @@ object AbstractFile {
  *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
-abstract class AbstractFile extends Iterable[AbstractFile] {
+abstract class AbstractFile extends AbstractIterable[AbstractFile] {
 
   /** Returns the name of this abstract file. */
   def name: String

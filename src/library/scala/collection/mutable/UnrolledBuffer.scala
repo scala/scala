@@ -9,7 +9,6 @@
 package scala.collection
 package mutable
 
-import java.lang.System
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.collection.immutable.Nil

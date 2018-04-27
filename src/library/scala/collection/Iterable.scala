@@ -752,4 +752,5 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
   implicit def toLazyZipOps[A, CC[X] <: Iterable[X]](that: CC[A]): LazyZipOps[A, CC[A]] = new LazyZipOps(that)
 }
 
+/** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 abstract class AbstractIterable[+A] extends Iterable[A]

@@ -45,7 +45,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
     /** The implementation class of the set returned by `keySet` */
     @SerialVersionUID(3L)
-    protected class ImmutableKeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
+    protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
       def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
         val map = self.rangeImpl(from, until)
         new map.ImmutableKeySortedSet

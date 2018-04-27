@@ -22,7 +22,7 @@ import java.lang.System.arraycopy
   */
 @SerialVersionUID(3L)
 final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int, val cachedSize: Int)
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, ChampHashSet, ChampHashSet[A]]
     with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]]
     with Serializable {

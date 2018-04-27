@@ -42,7 +42,7 @@ object IndexedView {
   class Take[A](underlying: SomeIndexedSeqOps[A], n: Int)
     extends SeqView.Take(underlying, n) with IndexedView[A]
 
-  class TakeRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends IndexedView[A] {
+  class TakeRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedView[A] {
     private[this] val delta = (underlying.size - (n max 0)) max 0
     def length = underlying.size - delta
     @throws[IndexOutOfBoundsException]
@@ -55,7 +55,7 @@ object IndexedView {
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
-  class DropRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends IndexedView[A] {
+  class DropRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedView[A] {
     private[this] val len = (underlying.size - (n max 0)) max 0
     def length = len
     @throws[IndexOutOfBoundsException]
@@ -65,13 +65,13 @@ object IndexedView {
   class Map[A, B](underlying: SomeIndexedSeqOps[A], f: A => B)
     extends SeqView.Map(underlying, f) with IndexedView[B]
 
-  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends IndexedView[A] {
+  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends AbstractIndexedView[A] {
     def length = underlying.size
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(size - 1 - i)
   }
 
-  class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends IndexedView[A] {
+  class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends AbstractIndexedView[A] {
     protected val lo = from max 0
     protected val hi = (until max 0) min underlying.length
     protected val len = (hi - lo) max 0
@@ -80,3 +80,6 @@ object IndexedView {
     def length: Int = len
   }
 }
+
+/** Explicit instantiation of the `IndexedView` trait to reduce class file size in subclasses. */
+abstract class AbstractIndexedView[+A] extends AbstractSeqView[A] with IndexedView[A]

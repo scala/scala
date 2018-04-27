@@ -26,7 +26,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 @SerialVersionUID(3L)
 final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V], val cachedJavaKeySetHashCode: Int, val cachedSize: Int)
-  extends Map[K, V]
+  extends AbstractMap[K, V]
     with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]]
     with Serializable {

@@ -30,7 +30,7 @@ import scala.annotation.tailrec
   */
 @SerialVersionUID(3L)
 sealed class ListSet[A]
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, ListSet, ListSet[A]]
     with StrictOptimizedIterableOps[A, ListSet, ListSet[A]]
     with Serializable {

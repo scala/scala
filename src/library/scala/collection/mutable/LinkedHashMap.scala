@@ -47,7 +47,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  */
 @SerialVersionUID(3L)
 class LinkedHashMap[K, V]
-  extends Map[K, V]
+  extends AbstractMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
     with Serializable {

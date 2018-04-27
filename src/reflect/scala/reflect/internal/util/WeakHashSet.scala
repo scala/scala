@@ -1,9 +1,10 @@
 package scala
 package reflect.internal.util
 
-import java.lang.ref.{WeakReference, ReferenceQueue}
+import java.lang.ref.{ReferenceQueue, WeakReference}
+
 import scala.annotation.tailrec
-import scala.collection.IndexedView
+import scala.collection.{AbstractIndexedView, IndexedView}
 import scala.collection.mutable.{Set => MSet}
 import scala.collection.immutable.ImmutableArray
 
@@ -365,7 +366,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      *  Produces a diagnostic dump of the table that underlies this hash set.
      */
     def dump = {
-      def deep[T](a: Array[T]): IndexedView[Any] = new IndexedView[Any] {
+      def deep[T](a: Array[T]): IndexedView[Any] = new AbstractIndexedView[Any] {
         def length = a.length
         def apply(idx: Int): Any = a(idx) match {
           case x: AnyRef if x.getClass.isArray => deep(x.asInstanceOf[Array[_]])

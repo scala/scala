@@ -56,13 +56,13 @@ private[collection] trait Wrappers {
   case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] { }
 
   @SerialVersionUID(3L)
-  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Iterable[A] {
+  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] {
     def iterator() = underlying.iterator().asScala
     override def iterableFactory = mutable.ArrayBuffer
   }
 
   @SerialVersionUID(3L)
-  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] with Iterable[A] {
+  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] {
     def iterator() = underlying.iterator().asScala
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
@@ -185,7 +185,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.Set[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
+  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
 
     override def size = underlying.size
 
@@ -433,7 +433,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] with mutable.Map[A, B] {
+  case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] {
     override def size: Int = underlying.size
 
     def get(k: A) = Option(underlying get k)
