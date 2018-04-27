@@ -28,7 +28,8 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def incl(elem: A): C
 
   /** Alias for `incl` */
-  override final def + (elem: A): C = incl(elem) // like in collection.Set but not deprecated
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  override /*final*/ def + (elem: A): C = incl(elem) // like in collection.Set but not deprecated
 
   /** Creates a new set with a given element removed from this set.
     *

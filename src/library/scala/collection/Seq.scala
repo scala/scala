@@ -83,7 +83,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /**
     * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
     */
-  def toSeq: Seq[A]
+  def toSeq: immutable.Seq[A]
 
   /** A copy of the $coll with an element prepended.
     *
