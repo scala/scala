@@ -108,6 +108,15 @@ private[process] trait ProcessBuilderImpl {
     def !!<                     = slurp(None, withIn = true)
     def !!<(log: ProcessLogger) = slurp(Some(log), withIn = true)
 
+    def lazyLines: LazyList[String]                       = lazyLines(withInput = false, nonZeroException = true, None, defaultStreamCapacity)
+    def lazyLines(log: ProcessLogger): LazyList[String]   = lazyLines(withInput = false, nonZeroException = true, Some(log), defaultStreamCapacity)
+    def lazyLines_! : LazyList[String]                    = lazyLines(withInput = false, nonZeroException = false, None, defaultStreamCapacity)
+    def lazyLines_!(log: ProcessLogger): LazyList[String] = lazyLines(withInput = false, nonZeroException = false, Some(log), defaultStreamCapacity)
+    def lazyLines(capacity: Integer): LazyList[String]                       = lazyLines(withInput = false, nonZeroException = true, None, capacity)
+    def lazyLines(log: ProcessLogger, capacity: Integer): LazyList[String]   = lazyLines(withInput = false, nonZeroException = true, Some(log), capacity)
+    def lazyLines_!(capacity: Integer) : LazyList[String]                    = lazyLines(withInput = false, nonZeroException = false, None, capacity)
+    def lazyLines_!(log: ProcessLogger, capacity: Integer): LazyList[String] = lazyLines(withInput = false, nonZeroException = false, Some(log), capacity)
+
     def lineStream: Stream[String]                       = lineStream(withInput = false, nonZeroException = true, None, defaultStreamCapacity)
     def lineStream(log: ProcessLogger): Stream[String]   = lineStream(withInput = false, nonZeroException = true, Some(log), defaultStreamCapacity)
     def lineStream_! : Stream[String]                    = lineStream(withInput = false, nonZeroException = false, None, defaultStreamCapacity)
@@ -140,6 +149,19 @@ private[process] trait ProcessBuilderImpl {
       else scala.sys.error("Nonzero exit value: " + code)
     }
 
+    private[this] def lazyLines(
+      withInput: Boolean,
+      nonZeroException: Boolean,
+      log: Option[ProcessLogger],
+      capacity: Integer
+    ): LazyList[String] = {
+      val streamed = Streamed[String](nonZeroException, capacity)
+      val process  = run(BasicIO(withInput, streamed.process, log))
+
+      Spawn(streamed done process.exitValue())
+      streamed.stream()
+    }
+
     private[this] def lineStream(
       withInput: Boolean,
       nonZeroException: Boolean,
@@ -150,7 +172,7 @@ private[process] trait ProcessBuilderImpl {
       val process  = run(BasicIO(withInput, streamed.process, log))
 
       Spawn(streamed done process.exitValue())
-      streamed.stream()
+      streamed.stream() to Stream
     }
 
     private[this] def runBuffered(log: ProcessLogger, connectInput: Boolean) =

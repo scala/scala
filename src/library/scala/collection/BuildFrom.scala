@@ -1,5 +1,7 @@
 package scala.collection
 
+import scala.language.higherKinds
+
 import scala.collection.mutable.Builder
 import scala.annotation.implicitNotFound
 

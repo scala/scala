@@ -2,6 +2,7 @@ package scala
 package collection
 
 import scala.annotation.tailrec
+import scala.language.higherKinds
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.

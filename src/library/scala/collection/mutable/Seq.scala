@@ -1,7 +1,7 @@
 package scala.collection.mutable
 
 import scala.collection.{IterableOnce, SeqFactory, toNewSeq, toOldSeq}
-
+import scala.language.higherKinds
 
 trait Seq[A]
   extends Iterable[A]

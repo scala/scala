@@ -1,5 +1,6 @@
 package scala
 
+import scala.language.higherKinds
 
 package object collection extends LowPriority {
   @deprecated("Use Iterable instead of Traversable", "2.13.0")

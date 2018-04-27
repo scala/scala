@@ -9,7 +9,7 @@
 package scala
 package io
 
-import scala.collection.AbstractIterator
+import scala.collection.{AbstractIterator, BufferedIterator}
 import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
 import java.net.{ URI, URL }
 

@@ -12,6 +12,7 @@ package scala
 import scala.collection.{Factory, immutable, mutable}
 import mutable.ArrayBuilder
 import immutable.ImmutableArray
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 import scala.runtime.ScalaRunTime.{array_apply, array_update}

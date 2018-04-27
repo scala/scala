@@ -3,7 +3,7 @@ package collection
 package mutable
 
 import scala.collection.{IterableOnce, MapFactory}
-
+import scala.language.higherKinds
 
 /** Base type of mutable Maps */
 trait Map[K, V]

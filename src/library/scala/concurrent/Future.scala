@@ -636,7 +636,7 @@ object Future {
         case some => some tryComplete v1
       }
     }
-    futures foreach { _ onComplete firstCompleteHandler }
+    futures.iterator() foreach { _ onComplete firstCompleteHandler }
     p.future
   }
 

@@ -2,6 +2,7 @@ package scala
 package collection.mutable
 
 import scala.collection.SortedMapFactory
+import scala.language.higherKinds
 
 /**
   * Base type for mutable sorted map collections

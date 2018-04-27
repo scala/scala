@@ -1,7 +1,7 @@
 package scala
 package collection
 
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.math.{Ordering, Numeric}
 import scala.reflect.ClassTag

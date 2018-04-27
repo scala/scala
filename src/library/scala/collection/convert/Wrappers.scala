@@ -16,6 +16,7 @@ import java.util.function.Predicate
 import java.lang.{IllegalStateException, Object, UnsupportedOperationException}
 
 import scala.collection.JavaConverters._
+import scala.language.higherKinds
 
 /** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
@@ -352,7 +353,8 @@ private[collection] trait Wrappers {
     */
   @SerialVersionUID(3L)
   class JMapWrapper[A, B](val underlying : ju.Map[A, B])
-    extends AbstractJMapWrapper[A, B] {
+    extends AbstractJMapWrapper[A, B]
+    with Serializable {
     override def empty = new JMapWrapper(new ju.HashMap[A, B])
   }
 

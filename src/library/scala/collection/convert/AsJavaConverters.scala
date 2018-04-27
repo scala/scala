@@ -11,6 +11,7 @@ package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
+import scala.{ unchecked => uc }
 
 /** Defines converter methods from Scala to Java collections. */
 trait AsJavaConverters {
@@ -196,9 +197,9 @@ trait AsJavaConverters {
    * @return  A Java `Map` view of the argument.
    */
   def mutableMapAsJavaMap[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = m match {
-    case null                 => null
-    case w: JMapWrapper[A, B] => w.underlying
-    case _                    => new MutableMapWrapper(m)
+    case null                         => null
+    case w: JMapWrapper[A @uc, B @uc] => w.underlying
+    case _                            => new MutableMapWrapper(m)
   }
 
   /**
@@ -235,9 +236,9 @@ trait AsJavaConverters {
    * @return  A Java `Map` view of the argument.
    */
   def mapAsJavaMap[A, B](m: Map[A, B]): ju.Map[A, B] = m match {
-    case null                 => null
-    case w: JMapWrapper[A, B] => w.underlying
-    case _                    => new MapWrapper(m)
+    case null                         => null
+    case w: JMapWrapper[A @uc, B @uc] => w.underlying
+    case _                            => new MapWrapper(m)
   }
 
   /**

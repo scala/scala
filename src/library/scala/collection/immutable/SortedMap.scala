@@ -4,6 +4,7 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
+import scala.language.higherKinds
 
 trait SortedMap[K, +V]
   extends Map[K, V]

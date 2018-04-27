@@ -1,5 +1,6 @@
 package scala.collection
 
+import scala.language.higherKinds
 
 /**
   * Trait that overrides operations on sequences in order

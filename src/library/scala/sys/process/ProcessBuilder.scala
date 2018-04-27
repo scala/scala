@@ -166,22 +166,100 @@ trait ProcessBuilder extends Source with Sink {
   def !!<(log: ProcessLogger): String
 
   /** Starts the process represented by this builder.  The output is returned as
+    * a LazyList that blocks when lines are not available but the process has not
+    * completed.  Standard error is sent to the console.  If the process exits
+    * with a non-zero value, the LazyList will provide all lines up to termination
+    * and then throw an exception.
+    */
+  def lazyLines: LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a LazyList that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the LazyList.
+   * Standard error is sent to the console.  If the process exits
+   * with a non-zero value, the LazyList will provide all lines up to termination
+   * and then throw an exception.
+   */
+  def lazyLines(capacity: Integer): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+    * a LazyList that blocks when lines are not available but the process has not
+    * completed.  Standard error is sent to the provided ProcessLogger.  If the
+    * process exits with a non-zero value, the LazyList will provide all lines up
+    * to termination and then throw an exception.
+    */
+  def lazyLines(log: ProcessLogger): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a LazyList that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the LazyList.
+   * Standard error is sent to the provided ProcessLogger.  If the
+   * process exits with a non-zero value, the LazyList will provide all lines up
+   * to termination and then throw an exception.
+   */
+  def lazyLines(log: ProcessLogger, capacity: Integer): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+    * a LazyList that blocks when lines are not available but the process has not
+    * completed.  Standard error is sent to the console. If the process exits
+    * with a non-zero value, the LazyList will provide all lines up to termination
+    * but will not throw an exception.
+    */
+  def lazyLines_! : LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a LazyList that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the console. If the process exits
+   * with a non-zero value, the LazyList will provide all lines up to termination
+   * but will not throw an exception.
+   */
+  def lazyLines_!(capacity: Integer): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+    * a LazyList that blocks when lines are not available but the process has not
+    * completed.  Standard error is sent to the provided ProcessLogger. If the
+    * process exits with a non-zero value, the LazyList will provide all lines up
+    * to termination but will not throw an exception.
+    */
+  def lazyLines_!(log: ProcessLogger): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
+   * a LazyList that blocks when lines are not available but the process has not
+   * completed.
+   * The producer process will block if the given capacity of lines if filled
+   * without being consumed from the stream.
+   * Standard error is sent to the provided ProcessLogger. If the
+   * process exits with a non-zero value, the LazyList will provide all lines up
+   * to termination but will not throw an exception.
+   */
+  def lazyLines_!(log: ProcessLogger, capacity: Integer): LazyList[String]
+
+  /** Starts the process represented by this builder.  The output is returned as
     * a Stream that blocks when lines are not available but the process has not
     * completed.  Standard error is sent to the console.  If the process exits
     * with a non-zero value, the Stream will provide all lines up to termination
     * and then throw an exception.
     */
+  @deprecated("use lazyLines", since = "2.13.0")
   def lineStream: Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
-   * a Stream that blocks when lines are not available but the process has not
-   * completed.
-   * The producer process will block if the given capacity of lines if filled
-   * without being consumed from the stream.
-   * Standard error is sent to the console.  If the process exits
-   * with a non-zero value, the Stream will provide all lines up to termination
-   * and then throw an exception.
-   */
+    * a Stream that blocks when lines are not available but the process has not
+    * completed.
+    * The producer process will block if the given capacity of lines if filled
+    * without being consumed from the stream.
+    * Standard error is sent to the console.  If the process exits
+    * with a non-zero value, the Stream will provide all lines up to termination
+    * and then throw an exception.
+    */
+  @deprecated("use lazyLines", since = "2.13.0")
   def lineStream(capacity: Integer): Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -190,17 +268,19 @@ trait ProcessBuilder extends Source with Sink {
     * process exits with a non-zero value, the Stream will provide all lines up
     * to termination and then throw an exception.
     */
+  @deprecated("use lazyLines", since = "2.13.0")
   def lineStream(log: ProcessLogger): Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
-   * a Stream that blocks when lines are not available but the process has not
-   * completed.
-   * The producer process will block if the given capacity of lines if filled
-   * without being consumed from the stream.
-   * Standard error is sent to the provided ProcessLogger.  If the
-   * process exits with a non-zero value, the Stream will provide all lines up
-   * to termination and then throw an exception.
-   */
+    * a Stream that blocks when lines are not available but the process has not
+    * completed.
+    * The producer process will block if the given capacity of lines if filled
+    * without being consumed from the stream.
+    * Standard error is sent to the provided ProcessLogger.  If the
+    * process exits with a non-zero value, the Stream will provide all lines up
+    * to termination and then throw an exception.
+    */
+  @deprecated("use lazyLines", since = "2.13.0")
   def lineStream(log: ProcessLogger, capacity: Integer): Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -209,17 +289,19 @@ trait ProcessBuilder extends Source with Sink {
     * with a non-zero value, the Stream will provide all lines up to termination
     * but will not throw an exception.
     */
+  @deprecated("use lazyLines_!", since = "2.13.0")
   def lineStream_! : Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
-   * a Stream that blocks when lines are not available but the process has not
-   * completed.
-   * The producer process will block if the given capacity of lines if filled
-   * without being consumed from the stream.
-   * Standard error is sent to the console. If the process exits
-   * with a non-zero value, the Stream will provide all lines up to termination
-   * but will not throw an exception.
-   */
+    * a Stream that blocks when lines are not available but the process has not
+    * completed.
+    * The producer process will block if the given capacity of lines if filled
+    * without being consumed from the stream.
+    * Standard error is sent to the console. If the process exits
+    * with a non-zero value, the Stream will provide all lines up to termination
+    * but will not throw an exception.
+    */
+  @deprecated("use lazyLines_!", since = "2.13.0")
   def lineStream_!(capacity: Integer): Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -228,17 +310,19 @@ trait ProcessBuilder extends Source with Sink {
     * process exits with a non-zero value, the Stream will provide all lines up
     * to termination but will not throw an exception.
     */
+  @deprecated("use lazyLines_!", since = "2.13.0")
   def lineStream_!(log: ProcessLogger): Stream[String]
 
   /** Starts the process represented by this builder.  The output is returned as
-   * a Stream that blocks when lines are not available but the process has not
-   * completed.
-   * The producer process will block if the given capacity of lines if filled
-   * without being consumed from the stream.
-   * Standard error is sent to the provided ProcessLogger. If the
-   * process exits with a non-zero value, the Stream will provide all lines up
-   * to termination but will not throw an exception.
-   */
+    * a Stream that blocks when lines are not available but the process has not
+    * completed.
+    * The producer process will block if the given capacity of lines if filled
+    * without being consumed from the stream.
+    * Standard error is sent to the provided ProcessLogger. If the
+    * process exits with a non-zero value, the Stream will provide all lines up
+    * to termination but will not throw an exception.
+    */
+  @deprecated("use lazyLines_!", since = "2.13.0")
   def lineStream_!(log: ProcessLogger, capacity: Integer): Stream[String]
 
   /** Starts the process represented by this builder, blocks until it exits, and

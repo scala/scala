@@ -1,6 +1,7 @@
 package scala.collection
 package mutable
 
+import scala.language.higherKinds
 
 trait IndexedSeq[T] extends Seq[T]
   with scala.collection.IndexedSeq[T]

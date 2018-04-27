@@ -5,6 +5,7 @@ import java.lang.{Object, String}
 import scala.collection.immutable.Range
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 import Searching.{SearchResult, Found, InsertionPoint}
 

@@ -2,7 +2,7 @@ package scala
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
 import java.lang.{String, UnsupportedOperationException}
 

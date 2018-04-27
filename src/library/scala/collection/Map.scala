@@ -4,7 +4,7 @@ package collection
 import collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.implicitConversions
+import scala.language.{higherKinds,implicitConversions}
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
