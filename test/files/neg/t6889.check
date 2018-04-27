@@ -1,7 +1,17 @@
-t6889.scala:16: error: the result type of an implicit conversion must be more specific than AnyRef
+t6889.scala:16: error: type mismatch;
+ found   : Test.Dingo
+ required: AnyRef
+Note that Dingo extends Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
   def f(x: Dingo): AnyRef = x   // fail - no conversion to AnyRef
                             ^
-t6889.scala:17: error: the result type of an implicit conversion must be more specific than Object
+t6889.scala:17: error: type mismatch;
+ found   : Test.Dingo
+ required: Object
+Note that Dingo extends Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
   def f2(x: Dingo): Object = x   // fail - no conversion to Object
                              ^
 t6889.scala:18: error: an expression of type Null is ineligible for implicit conversion

@@ -1061,11 +1061,16 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
+      def getPrefixParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]): Unit = {
+        val widen = tp.dealiasWiden
+        if (widen.typeSymbolDirect.isPackageClass) () // stop recursing when we hit a package
+        else getParts(widen)
+      }
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.
        */
-      def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
+      def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]): Unit = tp match {
         case TypeRef(pre, sym, args) =>
           infoMap.get(sym) match {
             case Some(infos1) =>
@@ -1090,7 +1095,7 @@ trait Implicits {
                 getParts(bts(i))
                 i += 1
               }
-            //            getParts(pre)-- let's see what breaks if we don't include the prefix
+            getPrefixParts(pre)
           }
       }
 
@@ -1137,7 +1142,7 @@ trait Implicits {
                 args foreach getParts
 
                 //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-//                getParts(pre)
+                getPrefixParts(pre)
               }
             }
           case ThisType(_) =>

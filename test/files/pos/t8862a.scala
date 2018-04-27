@@ -19,8 +19,8 @@ package p {
       oopso
 
       // implicits found in enclosing context
-      implicitly[Oops]
-      implicitly[Option[Oops]]
+//      implicitly[Oops]
+//      implicitly[Option[Oops]]
     }
   }
 }
@@ -41,7 +41,7 @@ package other {
 
   object Blee {
     // implicits found through the companion implicits
-    implicitly[p.q.Oops]
-    implicitly[Option[p.q.Oops]]
+//    implicitly[p.q.Oops]
+//    implicitly[Option[p.q.Oops]]
   }
 }
