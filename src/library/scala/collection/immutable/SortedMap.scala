@@ -63,6 +63,8 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
         while (it.hasNext) result = result + it.next()
         result
     }
+
+    override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
 }
 
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
