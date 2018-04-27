@@ -518,18 +518,20 @@ lazy val scalap = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
-lazy val partest = Project("partest", file(".") / "src" / "partest")
+lazy val partest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler, scalap, replFrontend, scaladoc)
-  .settings(commonSettings)
-  .settings(generatePropertiesFileSettings)
-  .settings(clearSourceAndResourceDirectories)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep),
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    fixPom(
+      "/project/name" -> <name>Scala Partest</name>,
+      "/project/description" -> <description>Scala Compiler Testing Tool</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    )
   )
 
 lazy val bench = project.in(file("test") / "benchmarks")
