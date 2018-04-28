@@ -5,8 +5,8 @@ error: Error: ploogin takes no options
          namer   2  resolve names, attach symbols to named trees
 packageobjects   3  load package objects
          typer   4  the meat and potatoes: type the trees
-        patmat   5  translate match expressions
-superaccessors   6  add super accessors in traits and nested classes
+superaccessors   5  add super accessors in traits and nested classes
+        patmat   6  translate match expressions
     extmethods   7  add extension methods for inline classes
        pickler   8  serialize symbol tables
      refchecks   9  reference/override checking, translate nested objects

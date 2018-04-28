@@ -452,23 +452,25 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // phaseName = "patmat"
   object patmat extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
+    // patmat does not need to run before the superaccessors phase, because
+    // patmat never emits `this.x` where `x` is a ParamAccessor.
+    // (However, patmat does need to run before outer accessors generation).
+    val runsAfter = List("superaccessors")
     val runsRightAfter = None
-    // patmat doesn't need to be right after typer, as long as we run before superaccessors
-    // (sbt does need to run right after typer, so don't conflict)
   } with PatternMatching
 
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("patmat")
+    val runsAfter = List("typer")
+    // sbt needs to run right after typer, so don't conflict
     val runsRightAfter = None
   } with SuperAccessors
 
   // phaseName = "extmethods"
   object extensionMethods extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("superaccessors")
+    val runsAfter = List("patmat")
     val runsRightAfter = None
   } with ExtensionMethods
 
@@ -632,8 +634,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
-      patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
+      patmat                  -> "translate match expressions",
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
