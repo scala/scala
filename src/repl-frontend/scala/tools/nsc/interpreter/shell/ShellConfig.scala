@@ -18,7 +18,6 @@ object ShellConfig {
   import scala.tools.nsc.Properties
 
   val EDITOR = Properties.envOrNone("EDITOR")
-  val isEmacsShell = Properties.isEmacsShell
   val InterruptedString = Properties.shellInterruptedString
 
   def apply(settings: Settings) = settings match {
@@ -28,7 +27,7 @@ object ShellConfig {
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
       val doCompletion: Boolean = !(settings.noCompletion || batchMode)
-      val haveInteractiveConsole: Boolean = !(settings.Xnojline || Properties.isEmacsShell)
+      val haveInteractiveConsole: Boolean = !settings.Xnojline
     }
     case _ => new ShellConfig {
       val filesToPaste: List[String] = Nil
@@ -36,7 +35,7 @@ object ShellConfig {
       val batchText: String = ""
       val batchMode: Boolean = false
       val doCompletion: Boolean = !settings.noCompletion
-      val haveInteractiveConsole: Boolean = !(settings.Xnojline || isEmacsShell)
+      val haveInteractiveConsole: Boolean = !settings.Xnojline
     }
   }
 }

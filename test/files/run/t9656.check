@@ -1,3 +1,9 @@
+t9656.scala:17: warning: method until in trait FractionalProxy is deprecated (since 2.12.6): use BigDecimal range instead
+  println(0.1 until 1.0 by 0.1)
+              ^
+t9656.scala:19: warning: method apply in object Double is deprecated (since 2.12.6): use Range.BigDecimal instead
+  println(Range.Double(0.1, 1.0, 0.1))
+                ^
 Range 1 to 10
 Range 1 to 10
 inexact Range 1 to 10 by 2

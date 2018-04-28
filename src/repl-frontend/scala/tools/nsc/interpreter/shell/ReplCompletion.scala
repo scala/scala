@@ -20,6 +20,7 @@ class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
   }
 
   def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] = None
+
   def complete(buffer: String, cursor: Int): CompletionResult = {
     shellCompletion(buffer, cursor) getOrElse {
       // special case for:
