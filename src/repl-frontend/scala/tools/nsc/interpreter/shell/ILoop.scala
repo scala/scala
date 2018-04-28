@@ -183,6 +183,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   /** Standard commands **/
   lazy val standardCommands = List(
+    cmd("completions", "<string>", "output completions for the given string", completionsCommand),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
@@ -409,6 +410,12 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     if (isReplPower) powerCommands else Nil
   )
 
+  private class ReplCompletionImpl(intp: Repl) extends ReplCompletion(intp) {
+    override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
+      if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
+      else None
+  }
+
   val replayQuestionMessage =
     """|That entry seems to have slain the compiler.  Shall I replay
        |your session? I can re-run each line except the last one.
@@ -549,6 +556,22 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def lineCommand(what: String): Result = editCommand(what, None)
+
+  def completionsCommand(what: String): Result = {
+    val completions = new ReplCompletionImpl(intp).complete(what, what.length)
+    val prefix = if (completions == NoCompletions) "" else what.substring(0, completions.cursor)
+
+    val completionLines =
+      completions.candidates.map { c =>
+        s"[completions] $prefix$c"
+      }
+
+    if (completionLines.nonEmpty) {
+      echo(completionLines.mkString("\n"))
+    }
+
+    Result.default // never record completions
+  }
 
   // :edit id or :edit line
   def editCommand(what: String): Result = editCommand(what, ShellConfig.EDITOR)
@@ -970,12 +993,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           // scala/bug#7418 Now that the interpreter is initialized, and `interpretPreamble` has populated the symbol table,
           // enable TAB completion (we do this before blocking on input from the splash loop,
           // so that it can offer tab completion as soon as we're ready).
-          if (doCompletion)
-            in.initCompletion(new ReplCompletion(intp) {
-              override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
-                if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
-                else None
-            })
+          if (doCompletion) {
+            in.initCompletion(new ReplCompletionImpl(intp))
+          }
 
         }
       } orNull // null is used by readLine to signal EOF (`loop` will exit)
