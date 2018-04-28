@@ -3096,13 +3096,16 @@ trait Types
     _constr: TypeConstraint,
     zippedArgs: List[(Symbol, Type)]
   ) extends TypeVar(_origin, _constr) {
-
     require(zippedArgs.nonEmpty, this)
-
     override def params: List[Symbol] = zippedArgs map (_._1)
     override def typeArgs: List[Type] = zippedArgs map (_._2)
-
     override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
+    override def setInst(tp: Type): this.type = super.setInst {
+      val instArgs = tp.typeArgs
+      if (sameLength(zippedArgs, instArgs) && forall3(params, typeArgs, instArgs) { (param, targ, inst) =>
+        param.isCovariant && targ <:< inst || param.isContravariant && inst <:< targ || targ =:= inst
+      }) tp.typeConstructor else NoType
+    }
   }
 
   trait UntouchableTypeVar extends TypeVar {
@@ -3422,7 +3425,7 @@ trait Types
         val newInst = wildcardToTypeVarMap(tp)
         (constr isWithinBounds newInst) && {
           setInst(newInst)
-          true
+          instValid
         }
       }
     }
