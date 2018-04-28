@@ -76,4 +76,20 @@ class TraversableOnceTest {
     assert(b1 == b2)
   }
 
+  @Test
+  def checkEmptyOption: Unit = {
+    assert(Seq.empty[Int].maxOption == None, "maxOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minOption == None, "minOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].maxByOption(identity) == None, "maxByOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minByOption(identity) == None, "minByOption on a Empty Iterable is None")
+  }
+
+  @Test
+  def checkNonEmptyOption: Unit = {
+    assert(Seq(1).maxOption == Some(1), "maxOption on a Non Empty Iterable has value")
+    assert(Seq(1).minOption == Some(1), "minOption on a Non Empty Iterable has value")
+    assert(Seq(1).maxByOption(identity) == Some(1), "maxByOption on a Non Empty Iterable has value")
+    assert(Seq(1).minByOption(identity) == Some(1), "minByOption on a Non Empty Iterable has value")
+  }
+
 }
