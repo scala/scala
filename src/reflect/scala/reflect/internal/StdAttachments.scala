@@ -64,12 +64,12 @@ trait StdAttachments {
   case object BackquotedIdentifierAttachment extends PlainAttachment
 
   /** A pattern binding exempt from unused warning.
-    *
-    * Its host `Ident` has been created from a pattern2 binding, `case x @ p`.
-    * In the absence of named parameters in patterns, allows nuanced warnings for unused variables.
-    * Hence, `case X(x = _) =>` would not warn; for now, `case X(x @ _) =>` is documentary if x is unused.
-    */
-  case object AtBoundIdentifierAttachment extends PlainAttachment
+   *
+   *  Its host `Ident` has been created from a pattern2 binding, `case x @ p`.
+   *  In the absence of named parameters in patterns, allows nuanced warnings for unused variables.
+   *  Hence, `case X(x = _) =>` would not warn; for now, `case X(x @ _) =>` is documentary if x is unused.
+   */
+  case object NoWarnAttachment extends PlainAttachment
 
   /** Indicates that a `ValDef` was synthesized from a pattern definition, `val P(x)`.
    */

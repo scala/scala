@@ -53,13 +53,13 @@ warn-unused-privates.scala:113: warning: local object HiObject in method l1 is n
     object HiObject { def f = this } // warn
            ^
 warn-unused-privates.scala:136: warning: private method x_= in class OtherNames is never used
-  private def x_=(i: Int): Unit = ???
+  private def x_=(i: Int): Unit = ()
               ^
 warn-unused-privates.scala:137: warning: private method x in class OtherNames is never used
   private def x: Int = 42
               ^
 warn-unused-privates.scala:138: warning: private method y_= in class OtherNames is never used
-  private def y_=(i: Int): Unit = ???
+  private def y_=(i: Int): Unit = ()
               ^
 warn-unused-privates.scala:97: warning: local var x in method f2 is never updated: consider using immutable val
     var x = 100 // warn about it being a var
@@ -110,10 +110,10 @@ warn-unused-privates.scala:20: warning: parameter value msg0 in class B3 is neve
 class B3(msg0: String) extends A("msg")
          ^
 warn-unused-privates.scala:136: warning: parameter value i in method x_= is never used
-  private def x_=(i: Int): Unit = ???
+  private def x_=(i: Int): Unit = ()
                   ^
 warn-unused-privates.scala:138: warning: parameter value i in method y_= is never used
-  private def y_=(i: Int): Unit = ???
+  private def y_=(i: Int): Unit = ()
                   ^
 error: No warnings can be incurred under -Xfatal-warnings.
 39 warnings found

@@ -80,7 +80,7 @@ trait TypeDiagnostics {
   }
 
   // Bind of pattern var was `x @ _`
-  private def atBounded(t: Tree) = t.hasAttachment[AtBoundIdentifierAttachment.type]
+  private def atBounded(t: Tree) = t.hasAttachment[NoWarnAttachment.type]
 
   // ValDef was a PatVarDef `val P(x) = ???`
   private def wasPatVarDef(t: Tree) = t.hasAttachment[PatVarDefAttachment.type]
@@ -513,7 +513,7 @@ trait TypeDiagnostics {
                   if (sym.isPrimaryConstructor)
                     for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
                   else if (sym.isSynthetic && sym.isImplicit) return
-                  else if (!sym.isConstructor)
+                  else if (!sym.isConstructor && rhs.symbol != Predef_???)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                   defnTrees += m
                 case _ =>

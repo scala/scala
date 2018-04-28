@@ -67,3 +67,7 @@ class Reusing(u: Int) extends Unusing(u)   // no warn
 class Main {
   def main(args: Array[String]): Unit = println("hello, args")  // no warn
 }
+
+trait Unimplementation {
+  def f(u: Int): Int = ???        // no warn for param in unimplementation
+}

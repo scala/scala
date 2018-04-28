@@ -1977,7 +1977,7 @@ self =>
           atPos(p.pos.start, p.pos.start, body.pos.end) {
             val t = Bind(name, body)
             body match {
-              case Ident(nme.WILDCARD) if settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
+              case Ident(nme.WILDCARD) if settings.warnUnusedPatVars => t updateAttachment NoWarnAttachment
               case _ => t
             }
           }

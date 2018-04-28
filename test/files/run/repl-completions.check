@@ -1,0 +1,35 @@
+
+scala> // completions!
+
+scala> object O { def x_y_x = 1; def x_y_z = 2; def getFooBarZot = 3}
+defined object O
+
+scala> :completions O.x
+[completions] O.x_y_x
+[completions] O.x_y_z
+
+scala> :completions O.x_y_x
+
+scala> :completions O.x_y_a
+
+scala> import O._
+import O._
+
+scala> :completions x_y_
+[completions] x_y_x
+[completions] x_y_z
+
+scala> :completions x_y_a
+
+scala> :completions fBZ
+[completions] getFooBarZot
+
+scala> :completions object O2 { val x = O.
+[completions] object O2 { val x = O.getFooBarZot
+[completions] object O2 { val x = O.x_y_x
+[completions] object O2 { val x = O.x_y_z
+
+scala> :completions :completion
+[completions] :completions 
+
+scala> :quit

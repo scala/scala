@@ -732,19 +732,19 @@ abstract class TreeGen {
   def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
     mkPatDef(Modifiers(0), pat, rhs)
 
-  private def propagateAtBoundAttachment(from: Tree, to: ValDef): to.type =
-    if (isPatVarWarnable && from.hasAttachment[AtBoundIdentifierAttachment.type]) to.updateAttachment(AtBoundIdentifierAttachment)
+  private def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
+    if (isPatVarWarnable && from.hasAttachment[NoWarnAttachment.type]) to.updateAttachment(NoWarnAttachment)
     else to
 
   // Keep marker for `x@_`, add marker for `val C(x) = ???` to distinguish from ordinary `val x = ???`.
   private def propagatePatVarDefAttachments(from: Tree, to: ValDef): to.type =
-    propagateAtBoundAttachment(from, to).updateAttachment(PatVarDefAttachment)
+    propagateNoWarnAttachment(from, to).updateAttachment(PatVarDefAttachment)
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
       List(atPos(pat.pos union rhs.pos) {
-        propagateAtBoundAttachment(pat, ValDef(mods, name.toTermName, tpt, rhs))
+        propagateNoWarnAttachment(pat, ValDef(mods, name.toTermName, tpt, rhs))
       })
 
     case None =>
@@ -813,11 +813,19 @@ abstract class TreeGen {
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
 
+  private def unwarnable(pat: Tree): Tree = {
+    pat foreach {
+      case b @ Bind(_, _) => b updateAttachment NoWarnAttachment
+      case _ =>
+    }
+    pat
+  }
+
   def mkCheckIfRefutable(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator) =
     if (treeInfo.isVarPatternDeep(pat)) rhs
     else {
       val cases = List(
-        CaseDef(pat.duplicate updateAttachment AtBoundIdentifierAttachment, EmptyTree, Literal(Constant(true))),
+        CaseDef(unwarnable(pat.duplicate), EmptyTree, Literal(Constant(true))),
         CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
       )
       val visitor = mkVisitor(cases, checkExhaustive = false, nme.CHECK_IF_REFUTABLE_STRING)
@@ -909,7 +917,7 @@ abstract class TreeGen {
       case Ident(name) if treeInfo.isVarPattern(tree) && name != nme.WILDCARD =>
         atPos(tree.pos) {
           val b = Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
-          if (forFor && isPatVarWarnable) b updateAttachment AtBoundIdentifierAttachment
+          if (forFor && isPatVarWarnable) b updateAttachment NoWarnAttachment
           else b
         }
       case Typed(id @ Ident(name), tpt) if treeInfo.isVarPattern(id) && name != nme.WILDCARD =>
