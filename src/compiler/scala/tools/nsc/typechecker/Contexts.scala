@@ -1122,24 +1122,24 @@ trait Contexts { self: Analyzer =>
        *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
        *     as the reference, have lowest precedence.
        */
-      def depthOk(imp: ImportInfo) = (
-          imp.depth > symbolDepth
-        ||
-          imp.depth == symbolDepth && (
-             if (unit.isJava) imp.isExplicitImport(name)
-             else (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))  // SI-2458
-          )
+      def foreignDefined = defSym.exists && isPackageOwnedInDifferentUnit(defSym)  // SI-2458
+      // can an import at this depth possibly shadow the definition found in scope if any?
+      def importCanShadowAtDepth(imp: ImportInfo) = imp.depth > symbolDepth || (
+        if (unit.isJava) imp.depth == symbolDepth && imp.isExplicitImport(name)
+        else foreignDefined
       )
-
-      while (!impSym.exists && imports.nonEmpty && depthOk(imp1)) {
+      while (!impSym.exists && imports.nonEmpty && importCanShadowAtDepth(imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           imports = imports.tail
       }
 
       if (defSym.exists && impSym.exists) {
-        // 4) imported symbols take precedence over package-owned symbols in different compilation units.
-        if (isPackageOwnedInDifferentUnit(defSym))
+        // 4) root imported symbols have same (lowest) precedence as package-owned symbols in different compilation units.
+        if (imp1.depth < symbolDepth && imp1.isRootImport && foreignDefined)
+          impSym = NoSymbol
+        // 4) imported symbols have higher precedence than package-owned symbols in different compilation units.
+        else if (imp1.depth >= symbolDepth && foreignDefined)
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
@@ -1259,7 +1259,7 @@ trait Contexts { self: Analyzer =>
   /** A `Context` focussed on an `Import` tree */
   trait ImportContext extends Context {
     private val impInfo: ImportInfo = {
-      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
+      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
@@ -1446,7 +1446,7 @@ trait Contexts { self: Analyzer =>
     protected def handleError(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
   }
 
-  class ImportInfo(val tree: Import, val depth: Int) {
+  class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
     def pos = tree.pos
     def posOf(sel: ImportSelector) =
       if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos

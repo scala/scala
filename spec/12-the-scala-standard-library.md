@@ -628,9 +628,10 @@ trait Node {
 ## The `Predef` Object
 
 The `Predef` object defines standard functions and type aliases
-for Scala programs. It is always implicitly imported, so that all its
-defined members are available without qualification. Its definition
-for the JVM environment conforms to the following signature:
+for Scala programs. It is implicitly imported, as described in
+[the chapter on name binding](02-identifiers-names-and-scopes.html),
+so that all its defined members are available without qualification.
+Its definition for the JVM environment conforms to the following signature:
 
 ```scala
 package scala
