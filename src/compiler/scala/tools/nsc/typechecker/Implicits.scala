@@ -735,6 +735,16 @@ trait Implicits {
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+
+            // In case we stepped on a macro along the way, the macro was expanded during the call to adapt. Along the way,
+            // any type parameters that were instantiated were NOT yet checked for bounds, so we need to repeat the above
+            // bounds check on the expandee tree
+            itree3.attachments.get[MacroExpansionAttachment] match {
+              case Some(MacroExpansionAttachment(exp @ TypeApply(fun, targs), _)) =>
+                checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targs.map(_.tpe), "inferred ")
+              case _ => ()
+            }
+
             context.reporter.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
