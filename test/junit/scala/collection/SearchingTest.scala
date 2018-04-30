@@ -16,7 +16,6 @@ class SearchingTest {
       var elementsAccessed = immutable.Set.empty[Int]
 
       protected[this] def newBuilder = ??? // not needed for this test
-      def seq = list
       def iterator = list.iterator
       def length = list.length
       def apply(idx: Int) = { elementsAccessed += idx; list(idx) }
@@ -35,7 +34,6 @@ class SearchingTest {
       var elementsAccessed = immutable.Set.empty[Int]
 
       protected[this] def newBuilder = ??? // not needed for this test
-      def seq = vec
       def length = vec.length
       def apply(idx: Int) = { elementsAccessed += idx; vec(idx) }
     }

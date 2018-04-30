@@ -36,6 +36,9 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
     * @return The factory of this collection.
     */
   def iterableFactory: IterableFactory[IterableCC] = Iterable
+
+  @deprecated("Iterable.seq always returns the iterable itself", "2.13.0")
+  def seq: this.type = this
 }
 
 /** Base trait for Iterable operations

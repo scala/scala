@@ -823,6 +823,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *  @note    Reuse: $preservesIterator
    */
   override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
+
+  @deprecated("Iterator.seq always returns the iterator itself", "2.13.0")
+  def seq: this.type = this
 }
 
 object Iterator extends IterableFactory[Iterator] {
