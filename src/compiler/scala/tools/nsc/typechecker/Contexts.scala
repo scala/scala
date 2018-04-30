@@ -153,7 +153,7 @@ trait Contexts { self: Analyzer =>
    *
    *   - The central point for issuing errors and warnings from the typechecker, with a means
    *     to buffer these for use in 'silent' type checking, when some recovery might be possible.
-   *  -  `Context` is something of a Zipper for the tree were are typechecking: it `enclosingContextChain`
+   *  -  `Context` is something of a Zipper for the tree we are typechecking: its `enclosingContextChain`
    *     is the path back to the root. This is exactly what we need to resolve names (`lookupSymbol`)
    *     and to collect in-scope implicit definitions (`implicitss`)
    *     Supporting these are `imports`, which represents all `Import` trees in in the enclosing context chain.
@@ -201,9 +201,7 @@ trait Contexts { self: Analyzer =>
     var contextMode: ContextMode = ContextMode.DefaultMode
 
     /** Update all modes in `mask` to `value` */
-    def update(mask: ContextMode, value: Boolean) {
-      contextMode = contextMode.set(value, mask)
-    }
+    def update(mask: ContextMode, value: Boolean): Unit = contextMode = contextMode.set(value, mask)
 
     /** Set all modes in the mask `enable` to true, and all in `disable` to false. */
     def set(enable: ContextMode = NOmode, disable: ContextMode = NOmode): this.type = {
@@ -913,12 +911,9 @@ trait Contexts { self: Analyzer =>
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
-          // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
-          //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
-          //     remedied nonetheless.
           Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
         }
-      } else if (scope != nextOuter.scope && !owner.isPackageClass) {
+      } else if (scope != nextOuter.scope && !owner.isClass) {
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
@@ -942,9 +937,11 @@ trait Contexts { self: Analyzer =>
      *    import foo._, java.io._
      */
     private def resolveAmbiguousImport(name: Name, imp1: ImportInfo, imp2: ImportInfo): Option[ImportInfo] = {
+      //debuglog(s"resolve ambiguous $name ($imp1, $imp2)")
       val imp1Explicit = imp1 isExplicitImport name
       val imp2Explicit = imp2 isExplicitImport name
       val ambiguous    = if (imp1.depth == imp2.depth) imp1Explicit == imp2Explicit else !imp1Explicit && imp2Explicit
+// TODO use record = false
       val imp1Symbol   = (imp1 importedSymbol name).initialize filter (s => isAccessible(s, imp1.qual.tpe, superAccess = false))
       val imp2Symbol   = (imp2 importedSymbol name).initialize filter (s => isAccessible(s, imp2.qual.tpe, superAccess = false))
 
@@ -1012,10 +1009,12 @@ trait Contexts { self: Analyzer =>
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
     /** Find the symbol of a simple name starting from this context.
-     *  All names are filtered through the "qualifies" predicate,
+     *  All names are filtered through the `qualifies` predicate,
      *  the search continuing as long as no qualifying name is found.
      */
-    def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
+    def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = lookupSymbol(name, qualifies, record = true)
+
+    def lookupSymbol(name: Name, qualifies: Symbol => Boolean, record: Boolean): NameLookup = {
       var lookupError: NameLookup  = null       // set to non-null if a definite error is encountered
       var inaccessible: NameLookup = null       // records inaccessible symbol for error reporting in case none is found
       var defSym: Symbol           = NoSymbol   // the directly found symbol
@@ -1037,12 +1036,6 @@ trait Contexts { self: Analyzer =>
         else
           finish(EmptyTree, sym)
 
-      def isPackageOwnedInDifferentUnit(s: Symbol) = (
-        s.isDefinedInPackage && (
-             !currentRun.compiles(s)
-          || unit.exists && s.sourceFile != unit.source.file
-        )
-      )
       def lookupInPrefix(name: Name)    = {
         val sym = pre.member(name).filter(qualifies)
         def isNonPackageNoModuleClass(sym: Symbol) =
@@ -1110,34 +1103,41 @@ trait Contexts { self: Analyzer =>
       def imp2Explicit   = imp2 isExplicitImport name
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
-        importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
+        importedAccessibleSymbol(imp, name, requireExplicit, record = record) filter qualifies
 
-      // Java: A single-type-import declaration d in a compilation unit c of package p
-      // that imports a type named n shadows, throughout c, the declarations of:
-      //
-      //  1) any top level type named n declared in another compilation unit of p
-      //
-      // A type-import-on-demand declaration never causes any other declaration to be shadowed.
-      //
-      // Scala: Bindings of different kinds have a precedence defined on them:
-      //
-      //  1) Definitions and declarations that are local, inherited, or made available by a
-      //     package clause in the same compilation unit where the definition occurs have
-      //     highest precedence.
-      //  2) Explicit imports have next highest precedence.
+      /* Java: A single-type-import declaration d in a compilation unit c of package p
+       * that imports a type named n shadows, throughout c, the declarations of:
+       *
+       *  1) any top level type named n declared in another compilation unit of p
+       *
+       * A type-import-on-demand declaration never causes any other declaration to be shadowed.
+       *
+       * Scala: Bindings of different kinds have a precedence defined on them:
+       *
+       *  1) Definitions and declarations that are local, inherited, or made available by
+       *     a package clause and also defined in the same compilation unit as the reference, have highest precedence.
+       *  2) Explicit imports have next highest precedence.
+       *  3) Wildcard imports have next highest precedence.
+       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
+       *     as the reference, have lowest precedence.
+       */
       def depthOk(imp: ImportInfo) = (
-           imp.depth > symbolDepth
-        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+          imp.depth > symbolDepth
+        ||
+          imp.depth == symbolDepth && (
+             if (unit.isJava) imp.isExplicitImport(name)
+             else (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))  // SI-2458
+          )
       )
 
-      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
+      while (!impSym.exists && imports.nonEmpty && depthOk(imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           imports = imports.tail
       }
 
       if (defSym.exists && impSym.exists) {
-        // imported symbols take precedence over package-owned symbols in different compilation units.
+        // 4) imported symbols take precedence over package-owned symbols in different compilation units.
         if (isPackageOwnedInDifferentUnit(defSym))
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
@@ -1247,6 +1247,12 @@ trait Contexts { self: Analyzer =>
       }
     }
 
+    def isPackageOwnedInDifferentUnit(s: Symbol) = (
+      s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file
+      )
+    )
   } //class Context
 
   /** A `Context` focussed on an `Import` tree */

@@ -14,7 +14,7 @@ package typechecker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import mutable.{ LinkedHashMap, ListBuffer }
+import mutable.{LinkedHashMap, ListBuffer}
 import scala.util.matching.Regex
 import symtab.Flags._
 import scala.reflect.internal.util.{TriState, Statistics, StatisticsStatics}
@@ -88,7 +88,7 @@ trait Implicits {
     val subtypeStart    = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeImpl) else null
     val start           = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(implicitNanos) else null
     if (shouldPrint)
-      typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
+      typingStack.printTyping(tree, s"typing implicit: ${tree} ${context.undetparamsString}")
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val search = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos)
     pluginsNotifyImplicitSearch(search)
@@ -375,10 +375,8 @@ trait Implicits {
    */
   class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
-    private def typingLog(what: String, msg: => String) = {
-      if (printingOk(tree))
-        typingStack.printTyping(f"[search #$searchId] $what $msg")
-    }
+    private def typingLog(what: String, msg: => String): Unit = 
+      if (printingOk(tree)) typingStack.printTyping(f"[search #$searchId] $what $msg")
 
     import infer._
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(implicitSearchCount)
@@ -403,7 +401,7 @@ trait Implicits {
 
     def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
       if (settings.XlogImplicits)
-        reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
+        reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -501,7 +499,7 @@ trait Implicits {
         case OpenImplicit(nfo, tp, tree1) => !nfo.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)
       }
 
-        if(existsDominatedImplicit) {
+        if (existsDominatedImplicit) {
           //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
           DivergentSearchFailure
         } else {
@@ -843,26 +841,6 @@ trait Implicits {
      *                             enclosing scope, and so on.
      */
     class ImplicitComputation(iss: Infoss, isLocalToCallsite: Boolean) {
-      abstract class Shadower {
-        def addInfos(infos: Infos)
-        def isShadowed(name: Name): Boolean
-      }
-      private val shadower: Shadower = {
-        /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
-        final class LocalShadower extends Shadower {
-          val shadowed = util.HashSet[Name](512)
-          def addInfos(infos: Infos) {
-            infos.foreach(i => shadowed.addEntry(i.name))
-          }
-          def isShadowed(name: Name) = shadowed(name)
-        }
-        /** Used for the implicits of expected type, when no shadowing checks are needed. */
-        object NoShadower extends Shadower {
-          def addInfos(infos: Infos) {}
-          def isShadowed(name: Name) = false
-        }
-        if (isLocalToCallsite) new LocalShadower else NoShadower
-      }
 
       private var best: SearchResult = SearchFailure
 
@@ -872,12 +850,39 @@ trait Implicits {
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
 
+      // if isLocal mode, sym must be accessible by simple name; check that name lookup returns this implicit.
+      // To reduce errors, filter out duplicates of ambiguous names.
+      val duplicates = util.HashSet[Name](if (isLocalToCallsite) 256 else 0)
+      private def looksupOK(info: ImplicitInfo): Boolean = {
+        def symOK(sym: Symbol): Boolean =
+          if (sym.isOverloaded) sym.info match {
+            case OverloadedType(pre, alts) => alts.contains(info.sym)
+            case _                         => false
+          }
+          else sym == info.sym
+
+        def lookedup: Boolean = context.lookupSymbol(info.name, _ => true, record = false) match {
+          case LookupSucceeded(qual, sym)       =>
+            val checkPrefix =
+              if (qual.isEmpty) info.pre == NoPrefix
+              else if (qual.symbol.hasPackageFlag && info.pre.typeSymbol.isPackageObjectClass) qual.symbol == info.pre.typeSymbol.owner
+              else qual.tpe =:= info.pre
+//println(s"res $checkPrefix for ${info.name}, qual $qual/${qual.tpe}, ${info.pre}, symOK ${symOK(sym)}")
+            symOK(sym) && checkPrefix
+          case LookupAmbiguous(msg@_)           => duplicates.addEntry(info.name) ; true
+          case LookupInaccessible(sym@_, msg@_) => true
+          case LookupNotFound                   => duplicates.addEntry(info.name) ; false   // shouldn't happen
+          case _                                => false     // shouldn't happen
+        }
+        !duplicates(info.name) && lookedup
+      }
+
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
       def survives(info: ImplicitInfo) = (
-           !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
+           !isIneligible(info)                      // cyclic, erroneous, or specially excluded
+        && (!isLocalToCallsite || looksupOK(info))  // name is accessible
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
-        && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
         && matchesPt(info)                          // stable and matches expected type
       )
       /** The implicits that are not valid because they come later in the source and
@@ -931,17 +936,13 @@ trait Implicits {
       /** Sorted list of eligible implicits.
        */
       val eligible = {
-        val matches = iss flatMap { is =>
-          val result = is filter (info => checkValid(info.sym) && survives(info))
-          shadower addInfos is
-          result
-        }
+        val matches = iss.flatMap(_.filter(info => checkValid(info.sym) && survives(info)))
 
         // most frequent one first
         matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
       }
       if (eligible.nonEmpty)
-        printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, s"${eligible.size} eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -1028,7 +1029,7 @@ trait Implicits {
      */
     def applicableInfos(iss: Infoss, isLocalToCallsite: Boolean): mutable.LinkedHashMap[ImplicitInfo, SearchResult] = {
       val start       = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeAppInfos) else null
-      val computation = new ImplicitComputation(iss, isLocalToCallsite) { }
+      val computation = new ImplicitComputation(iss, isLocalToCallsite)
       val applicable  = computation.findAll()
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeAppInfos, start)
@@ -1046,7 +1047,7 @@ trait Implicits {
      */
     def searchImplicit(implicitInfoss: Infoss, isLocalToCallsite: Boolean): SearchResult =
       if (implicitInfoss.forall(_.isEmpty)) SearchFailure
-      else new ImplicitComputation(implicitInfoss, isLocalToCallsite) findBest()
+      else new ImplicitComputation(implicitInfoss, isLocalToCallsite).findBest()
 
     /** Produce an implicit info map, i.e. a map from the class symbols C of all parts of this type to
      *  the implicit infos in the companion objects of these class symbols C.
@@ -1246,7 +1247,7 @@ trait Implicits {
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
-      if (settings.XlogImplicits) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
+      if (settings.XlogImplicits) reporter.echo(pos, s"materializing requested $pre.${tagClass.name}[$tp] using $materializer")
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
       // otherwise -Xlog-implicits will spam the long with zillions of "macros are disabled"
@@ -1412,19 +1413,17 @@ trait Implicits {
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
-      val stats = StatisticsStatics.areSomeColdStatsEnabled
+      val stats     = StatisticsStatics.areSomeColdStatsEnabled
       val failstart = if (stats) statistics.startTimer(inscopeFailNanos) else null
       val succstart = if (stats) statistics.startTimer(inscopeSucceedNanos) else null
+      var result    = searchImplicit(context.implicitss, isLocalToCallsite = true)
 
-      var result = searchImplicit(context.implicitss, isLocalToCallsite = true)
-
-      if (stats) {
+      if (stats)
         if (result.isFailure) statistics.stopTimer(inscopeFailNanos, failstart)
         else {
           statistics.stopTimer(inscopeSucceedNanos, succstart)
           statistics.incCounter(inscopeImplicitHits)
         }
-      }
 
       if (result.isFailure) {
         val failstart = if (stats) statistics.startTimer(oftypeFailNanos) else null
@@ -1447,13 +1446,12 @@ trait Implicits {
         if (result.isFailure)
           context.reporter ++= previousErrs
 
-        if (stats) {
+        if (stats)
           if (result.isFailure) statistics.stopTimer(oftypeFailNanos, failstart)
           else {
             statistics.stopTimer(oftypeSucceedNanos, succstart)
             statistics.incCounter(oftypeImplicitHits)
           }
-        }
       }
       if (result.isSuccess && isView) {
         def maybeInvalidConversionError(msg: String): Boolean = {
