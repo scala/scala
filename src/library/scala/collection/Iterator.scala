@@ -732,6 +732,46 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     hasNext == those.hasNext
   }
 
+  /** Creates two new iterators that both iterate over the same elements
+    *  as this iterator (in the same order).  The duplicate iterators are
+    *  considered equal if they are positioned at the same element.
+    *
+    *  Given that most methods on iterators will make the original iterator
+    *  unfit for further use, this methods provides a reliable way of calling
+    *  multiple such methods on an iterator.
+    *
+    *  @return a pair of iterators
+    *  @note   The implementation may allocate temporary storage for elements
+    *          iterated by one iterator but not yet by the other.
+    *  @note   Reuse: $consumesOneAndProducesTwoIterators
+    */
+  def duplicate: (Iterator[A], Iterator[A]) = {
+    val gap = new scala.collection.mutable.Queue[A]
+    var ahead: Iterator[A] = null
+    class Partner extends AbstractIterator[A] {
+      def hasNext: Boolean = self.synchronized {
+        (this ne ahead) && !gap.isEmpty || self.hasNext
+      }
+      def next(): A = self.synchronized {
+        if (gap.isEmpty) ahead = this
+        if (this eq ahead) {
+          val e = self.next()
+          gap enqueue e
+          e
+        } else gap.dequeue()
+      }
+      // to verify partnerhood we use reference equality on gap because
+      // type testing does not discriminate based on origin.
+      private def compareGap(queue: scala.collection.mutable.Queue[A]) = gap eq queue
+      override def hashCode = gap.hashCode()
+      override def equals(other: Any) = other match {
+        case x: Partner   => x.compareGap(gap) && gap.isEmpty
+        case _            => super.equals(other)
+      }
+    }
+    (new Partner, new Partner)
+  }
+
   /** Returns this iterator with patched values.
     * Patching at negative indices is the same as patching starting at 0.
     * Patching at indices at or larger than the length of the original iterator appends the patch to the end.
