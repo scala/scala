@@ -328,4 +328,50 @@ class LazyListTest {
     assertEquals(1, seedCounter)
     assertEquals(9, fCounter)
   }
+
+  @Test
+  def t8680: Unit = {
+    def pre(n: Int) = (-n to -1).to(Stream)
+
+    def cyc(m: Int) = {
+      lazy val s: Stream[Int] = (0 until m).to(Stream) #::: s
+      s
+    }
+
+    def precyc(n: Int, m: Int) = pre(n) #::: cyc(m)
+
+    def str(s: Stream[Int]) = {
+      val b = new StringBuilder
+      s.addString(b, "", "", "")
+      b.toString
+    }
+
+    def goal(n: Int, m: Int) = (-n until m).mkString + "..."
+
+    // Check un-forced cyclic and non-cyclic streams
+    assertEquals(pre(2).take(1).toList.mkString + "?", str(pre(2)))
+    assertEquals(cyc(2).take(1).toList.mkString + "?", str(cyc(2)))
+    assertEquals(precyc(2,2).take(1).toList.mkString + "?", str(precyc(2,2)))
+
+    // Check forced cyclic and non-cyclic streams
+    assertEquals((-2 to -1).mkString, str(pre(2).force))
+    assertEquals((0 until 2).mkString + "...", str(cyc(2).force))
+    assertEquals((-2 until 2).mkString + "...", str(precyc(2,2).force))
+
+    // Special cases
+    assertEquals(goal(0,1), str(cyc(1).force))
+    assertEquals(goal(1,6), str(precyc(1,6).force))
+    assertEquals(goal(6,1), str(precyc(6,1).force))
+
+    // Make sure there are no odd/even problems
+    for (n <- 3 to 4; m <- 3 to 4) {
+      assertEquals(s"mkString $n $m", precyc(n,m).mkString, goal(n,m))
+    }
+
+    // Make sure there are no cycle/prefix modulus problems
+    for (i <- 6 to 8) {
+      assertEquals(s"mkString $i 3", goal(i,3), precyc(i,3).mkString)
+      assertEquals(s"mkString 3 $i", goal(3,i), precyc(3,i).mkString)
+    }
+  }
 }
