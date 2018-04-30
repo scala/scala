@@ -90,13 +90,30 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
       else Some(remove(i))
     }
 
-  /**
-    * Returns and removes all elements from the end of this queue which satisfy the given predicate
-    *
-    *  @param f   the predicate used for choosing elements
-    *  @return
-    */
-  def dequeueAll(f: A => Boolean): scala.collection.immutable.Seq[A] = removeHeadWhile(f)
+   /** Returns all elements in the queue which satisfy the
+   *  given predicate, and removes those elements from the queue.
+   *
+   *  @param p   the predicate used for choosing elements
+   *  @return    a sequence of all elements in the queue for which
+   *             p yields true.
+   */
+  def dequeueAll(p: A => Boolean): scala.collection.immutable.Seq[A] = {
+    val res = scala.collection.immutable.Seq.newBuilder[A]()
+    var i, j = 0
+    while (i < size) {
+      if (p(apply(i))) {
+        res += this(i)
+      } else {
+        if (i != j) {
+          this(j) = this(i)
+        }
+        j += 1
+      }
+      i += 1
+    }
+    if (i != j) takeInPlace(j)
+    res.result()
+  }
 
   /** Returns the first element in the queue, or throws an error if there
     *  is no element contained in the queue.
