@@ -1830,7 +1830,7 @@ self =>
      *  Enumerators ::= Generator {semi Enumerator}
      *  Enumerator  ::=  Generator
      *                |  Guard
-     *                |  val Pattern1 `=' Expr
+     *                |  Pattern1 `=' Expr
      *  }}}
      */
     def enumerators(): List[Tree] = {
@@ -1862,8 +1862,13 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
-        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated", "2.10.0")
-        else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
+        def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
+        if (hasEq) {
+          val without = "instead, bind the value without `val`"
+          if (settings.isScala214) syntaxError(in.offset, msg("unsupported", without))
+          else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
+        }
+        else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
       }
 
       if (hasEq && eqOK) in.nextToken()
