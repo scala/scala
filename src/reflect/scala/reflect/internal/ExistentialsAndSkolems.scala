@@ -51,7 +51,7 @@ trait ExistentialsAndSkolems {
     def safeBound(t: Type): Type =
       if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.bounds.hi) else t
 
-    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi) match {
+    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi).resultType match {
       case tp @ RefinedType(parents, decls) =>
         val parents1 = parents mapConserve safeBound
         if (parents eq parents1) tp
@@ -62,7 +62,7 @@ trait ExistentialsAndSkolems {
     // Hanging onto lower bound in case anything interesting
     // happens with it.
     mapFrom(hidden)(s => s.existentialBound match {
-      case GenPolyType(tparams, TypeBounds(lo, _)) => GenPolyType(tparams, TypeBounds(lo, hiBound(s)))
+      case GenPolyType(tparams, TypeBounds(lo, _)) => genPolyType(tparams, TypeBounds(lo, hiBound(s)))
       case _ => hiBound(s)
     })
   }
