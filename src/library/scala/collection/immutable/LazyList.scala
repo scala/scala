@@ -183,7 +183,7 @@ import scala.language.higherKinds
   *  @define orderDependent
   *  @define orderDependentFold
   */
-sealed abstract class LazyList[+A] extends LinearSeq[A] with LazyListOps[A, LazyList, LazyList[A]] {
+sealed abstract class LazyList[+A] extends AbstractSeq[A] with LinearSeq[A] with LazyListOps[A, LazyList, LazyList[A]] {
   override def iterableFactory: LazyListFactory[LazyList] = LazyList
 
   protected def cons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
@@ -655,7 +655,7 @@ object LazyList extends LazyListFactory[LazyList] {
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
-sealed abstract class Stream[+A] extends LinearSeq[A] with LazyListOps[A, Stream, Stream[A]] {
+sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with LazyListOps[A, Stream, Stream[A]] {
   override def iterableFactory: LazyListFactory[Stream] = Stream
 
   override def className: String = "Stream"

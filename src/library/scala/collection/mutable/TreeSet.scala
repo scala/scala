@@ -22,7 +22,8 @@ import java.lang.String
 // Original API designed in part by Lucien Pereira
 @SerialVersionUID(3L)
 sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
-  extends SortedSet[A]
+  extends AbstractSet[A]
+    with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
     with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]

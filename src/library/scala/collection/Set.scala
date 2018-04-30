@@ -49,7 +49,8 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param elem the element to test for membership.
     *  @return  `true` if `elem` is contained in this set, `false` otherwise.
     */
-  @`inline` final def apply(elem: A): Boolean = this.contains(elem)
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /*@`inline` final*/ def apply(elem: A): Boolean = this.contains(elem)
 
   /** Tests whether this set is a subset of another set.
     *
@@ -199,3 +200,6 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   * @define Coll `Set`
   */
 object Set extends IterableFactory.Delegate[Set](immutable.Set)
+
+/** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
+abstract class AbstractSet[A] extends AbstractIterable[A] with Set[A]

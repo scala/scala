@@ -19,7 +19,8 @@ import java.util.Arrays
   * @define Coll `ImmutableArray`
   */
 sealed abstract class ImmutableArray[+A]
-  extends IndexedSeq[A]
+  extends AbstractSeq[A]
+    with IndexedSeq[A]
     with IndexedSeqOps[A, ImmutableArray, ImmutableArray[A]]
     with StrictOptimizedSeqOps[A, ImmutableArray, ImmutableArray[A]] {
 

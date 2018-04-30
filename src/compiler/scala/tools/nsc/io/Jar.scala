@@ -7,11 +7,13 @@ package scala.tools.nsc
 package io
 
 import scala.language.postfixOps
-
-import java.io.{ InputStream, OutputStream, DataOutputStream }
+import java.io.{DataOutputStream, InputStream, OutputStream}
 import java.util.jar._
+
 import scala.collection.JavaConverters._
 import Attributes.Name
+
+import scala.collection.AbstractIterable
 
 // Attributes.Name instances:
 //
@@ -33,7 +35,7 @@ import Attributes.Name
 // static Attributes.Name   SPECIFICATION_VENDOR
 // static Attributes.Name   SPECIFICATION_VERSION
 
-class Jar(file: File) extends Iterable[JarEntry] {
+class Jar(file: File) extends AbstractIterable[JarEntry] {
   def this(jfile: JFile) = this(File(jfile))
   def this(path: String) = this(File(path))
 

@@ -169,7 +169,7 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
   @SerialVersionUID(3L)
   class WithDefault[K, V](val underlying: Map[K, V], val defaultValue: K => V)
-    extends Map[K, V]
+    extends AbstractMap[K, V]
       with MapOps[K, V, Map, WithDefault[K, V]]
       with Serializable {
 
@@ -199,4 +199,4 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-abstract class AbstractMap[A, B] extends scala.collection.AbstractMap[A, B] with Map[A, B]
+abstract class AbstractMap[K, V] extends scala.collection.AbstractMap[K, V] with Map[K, V]

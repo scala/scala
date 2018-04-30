@@ -86,7 +86,8 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   *  section on `StringBuilders` for more information.
   */
 @SerialVersionUID(3L)
-class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Char, String]
+class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq[Char]
+  with Builder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
   with IndexedOptimizedSeq[Char]

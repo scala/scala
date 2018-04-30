@@ -23,7 +23,7 @@ package mutable
  */
 @SerialVersionUID(3L)
 class LinkedHashSet[A]
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
     with Serializable {
 

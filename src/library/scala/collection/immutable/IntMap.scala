@@ -164,7 +164,7 @@ import IntMap._
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-sealed abstract class IntMap[+T] extends Map[Int, T]
+sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   with MapOps[Int, T, Map, IntMap[T]]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
   with Serializable {
