@@ -856,23 +856,32 @@ abstract class TreeInfo {
     }
   }
 
-  /** Is this file the body of a compilation unit which should not
-   *  have Predef imported?
-   */
-  def noPredefImportForUnit(body: Tree) = {
-    // Top-level definition whose leading imports include Predef.
-    def isLeadingPredefImport(defn: Tree): Boolean = defn match {
-      case PackageDef(_, defs1) => defs1 exists isLeadingPredefImport
-      case Import(expr, _)      => isReferenceToPredef(expr)
-      case _                    => false
+  // Filter the list of preamble imports by the predef exclusion clause.
+  // Also don't import a preamble import into itself. That would be bad.
+  def preambleImportsForUnit(body: Tree, imports: List[Symbol], report: Symbol => Unit): List[Symbol] = {
+    // Explicit import of preamble imports at top level or in package
+    def hasExplicitImport(defn: Tree, pkg: Name, sym: Name): Boolean = {
+      def loop(t: Tree): Boolean = t match {
+        case PackageDef(_, defs1) => defs1.exists(loop(_))
+        case Import(expr, _)      => isReferenceToMember(expr, pkg, sym)
+        case _                    => false
+      }
+      loop(defn)
     }
-    // Compilation unit is class or object 'name' in package 'scala'
-    def isUnitInScala(tree: Tree, name: Name) = tree match {
-      case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
-      case _                                   => false
+    // Compilation unit defines class or object 'name' in package 'pkg'
+    def unitDefinesClassOrObject(pkg: Name, name: Name) = body match {
+      case PackageDef(Ident(pkg), defs) => firstDefinesClassOrObject(defs, name)
+      case _                            => false
     }
-
-    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
+    def goodPreambleImport(sym: Symbol): Boolean = {
+      val ok = sym.hasPackageFlag || {
+        val pkg = sym.enclosingPackage.name
+        !unitDefinesClassOrObject(pkg, sym.name) && !hasExplicitImport(body, pkg, sym.name)
+      }
+      if (!ok) report(sym)
+      ok
+    }
+    imports.filter(goodPreambleImport)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {

@@ -980,13 +980,14 @@ trait Trees extends api.Trees {
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from Printers.
-  def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
-    case Ident(Id)                                          => true
-    case Select(Ident(nme.scala_), Id)                      => true
-    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
-    case _                                                  => false
+  def isReferenceToMember(t: Tree, pkg: Name, id: Name) = t match {
+    case Ident(`id`)                                     => true
+    case Select(Ident(`pkg`), `id`)                      => true
+    case Select(Select(Ident(nme.ROOTPKG), `pkg`), `id`) => true
+    case _                                               => false
   }
+  // Belongs in TreeInfo but then I can't reach it from Printers.
+  def isReferenceToScalaMember(t: Tree, id: Name) = isReferenceToMember(t, nme.scala_, id)
   /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
    */
   def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
