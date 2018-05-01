@@ -526,7 +526,7 @@ object Predef extends LowPriorityImplicits {
    *  @define sameDiff but with a (potentially) different type
    *  @define tp <:<
    */
-  // All of these methods are reimplemented unsafely in the singleton to avoid any indirection.
+  // All of these methods are reimplemented unsafely in =:=.singleton to avoid any indirection.
   // They are here simply for reference as the "correct", safe implementations.
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
@@ -613,19 +613,6 @@ object Predef extends LowPriorityImplicits {
   }
   /** @group type-constraints */
   object <:< {
-    // instead of making a gazillion identical <:< instances, make one and cast it for every use
-    private[Predef] final val singleton = new <:<[Any,Any] {
-      override def substituteBoth[F[-_, +_]](ftf: F[Any, Any]) = ftf
-      override def substituteCo    [F[+_]](ff: F[Any]) = ff
-      override def substituteContra[F[-_]](ft: F[Any]) = ft
-      override def apply(x: Any): Any = x
-      override def compose[C](r: C =>  Any) = r
-      override def compose[C](r: C <:< Any) = r
-      override def andThen[C](r: Any =>  C) = r
-      override def andThen[C](r: Any <:< C) = r
-      override def liftCo    [F[+_]] = asInstanceOf[F[Any] <:< F[Any]]
-      override def liftContra[F[-_]] = asInstanceOf[F[Any] <:< F[Any]]
-    }
     /** If `A <: B` and `B <: A`, then `A = B` (subtyping is antisymmetric) */
     def antisymm[A, B](implicit l: A <:< B, r: B <:< A): A =:= B = =:=.singleton.asInstanceOf[A =:= B]
     // = ??? (I don't think this is possible to implement "safely")
@@ -638,8 +625,7 @@ object Predef extends LowPriorityImplicits {
   // $ to avoid accidental shadowing (e.g. scala/bug#7788)
   // ideally implicit def $conforms[A]: A => A, with a <:< implicit in the companion
   // but $conforms is a bit too magic for that
-  implicit def $conforms[A]: A <:< A = <:<.singleton.asInstanceOf[A <:< A]
-  // = new <:<[A, A] { override def subsituteBoth[F[-_, +_]](faa: F[A, A]): F[A, A] = faa }
+  implicit def $conforms[A]: A <:< A = =:=.refl
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal. It also acts as a `A <:< B`,
    *  but not a `B <:< A` (directly) due to restrictions on subclassing.
@@ -711,6 +697,7 @@ object Predef extends LowPriorityImplicits {
   }
   /** @group type-constraints */
   object =:= {
+    // the only instance for <:< and =:=, used to avoid overhead
     private[Predef] final val singleton = new =:=[Any,Any] {
       override def substituteBoth[F[_, _]](ftf: F[Any, Any]) = ftf
       override def substituteCo    [F[_]](ff: F[Any]) = ff
@@ -725,6 +712,7 @@ object Predef extends LowPriorityImplicits {
       override def andThen[C](r: Any =:= C) = r
       override def liftCo    [F[_]] = asInstanceOf[F[Any] =:= F[Any]]
       override def liftContra[F[_]] = asInstanceOf[F[Any] =:= F[Any]]
+      override def toString = "generalized constraint"
     }
     /** `A = A` for all `A` (equality is reflexive) */
     implicit def refl[A]: A =:= A = singleton.asInstanceOf[A =:= A]
