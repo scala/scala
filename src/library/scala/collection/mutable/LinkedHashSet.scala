@@ -35,6 +35,9 @@ class LinkedHashSet[A]
   @transient protected var lastEntry: Entry = null
   @transient private[this] var table: HashTable[A, AnyRef, Entry] = newHashTable
 
+  // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
+  private[mutable] def getTable: HashTable[A, AnyRef, Entry] = table
+
   private def newHashTable =
     new HashTable[A, AnyRef, Entry] {
       def createNewEntry(key: A, value: AnyRef) = {
@@ -140,7 +143,7 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
    *  @since 2.10
    */
   @SerialVersionUID(3L)
-  private[scala] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
+  private[mutable] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
     var earlier: Entry[A] = null
     var later: Entry[A] = null
   }

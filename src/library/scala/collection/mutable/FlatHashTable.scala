@@ -333,28 +333,6 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
     tableSize = 0
     nnSizeMapReset(table.length)
   }
-
-  private[collection] def hashTableContents = new FlatHashTable.Contents[A](
-    _loadFactor,
-    table,
-    tableSize,
-    threshold,
-    seedvalue,
-    sizemap
-  )
-
-  protected def initWithContents(c: FlatHashTable.Contents[A]) = {
-    if (c != null) {
-      _loadFactor = c.loadFactor
-      table = c.table
-      tableSize = c.tableSize
-      threshold = c.threshold
-      seedvalue = c.seedvalue
-      sizemap = c.sizemap
-    }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
-  }
-
 }
 
 
@@ -387,15 +365,6 @@ private[collection] object FlatHashTable {
     assert(lf < (loadFactorDenum / 2), "loadFactor too large; must be < 0.5")
     (size.toLong * lf / loadFactorDenum ).toInt
   }
-
-  class Contents[A](
-    val loadFactor: Int,
-    val table: Array[AnyRef],
-    val tableSize: Int,
-    val threshold: Int,
-    val seedvalue: Int,
-    val sizemap: Array[Int]
-  )
 
   trait HashUtils[A] {
     protected final def sizeMapBucketBitSize = 5

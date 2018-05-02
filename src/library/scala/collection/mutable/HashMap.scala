@@ -20,24 +20,24 @@ import java.lang.String
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
+class HashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with Serializable {
 
-  override def mapFactory = HashMap
+  override def mapFactory: MapFactory[HashMap] = HashMap
 
-  @transient private[this] var table: HashTable[K, V, DefaultEntry[K, V]] = newHashTable
-  table.initWithContents(contents)
+  private[mutable] type Entry = DefaultEntry[K, V]
 
-  type Entry = DefaultEntry[K, V]
+  @transient private[this] var table: HashTable[K, V, Entry] = newHashTable
 
-  def this() = this(null)
+  // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
+  private[mutable] def getTable: HashTable[K, V, Entry] = table
 
-  private def newHashTable =
-    new HashTable[K, V, DefaultEntry[K, V]] {
-      def createNewEntry(key: K, value: V): DefaultEntry[K, V] = new Entry(key, value)
+  private def newHashTable: HashTable[K, V, Entry] =
+    new HashTable[K, V, Entry] {
+      def createNewEntry(key: K, value: V): Entry = new Entry(key, value)
     }
 
   def iterator(): Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
@@ -132,7 +132,7 @@ object HashMap extends MapFactory[HashMap] {
   *  @since 2.3
   */
 @SerialVersionUID(3L)
-final class DefaultEntry[A, B](val key: A, var value: B)
+private[mutable] final class DefaultEntry[A, B](val key: A, var value: B)
   extends HashEntry[A, DefaultEntry[A, B]]
     with Serializable {
 
