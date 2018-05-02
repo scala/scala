@@ -203,24 +203,38 @@ trait Interface extends ast.TreeDSL {
       import global.{Transformer, Ident, NoType, TypeTree, SingleType}
 
       private val toIdents = to.forall(_.isInstanceOf[Ident])
+      private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
+      lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
 
       // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
       // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
       def apply(tree: Tree): Tree = {
         // according to -Ystatistics 10% of translateMatch's time is spent in this method...
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
+
+        val checkType = new TypeCollector[Boolean](false) {
+          def traverse(tp: Type) {
+            if (!result) {
+              tp match {
+                case SingleType(_, sym) =>
+                  if (from contains sym) {
+                    if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree, subst= $this")
+                    result = true
+                  }
+                case _ =>
+              }
+              mapOver(tp)
+            }
+          }
+        }
         val containsSym = tree.exists {
           case i@Ident(_) => from contains i.symbol
-          case tt: TypeTree => tt.tpe.exists {
-            case SingleType(_, sym) =>
-              (from contains sym) && {
-                if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree `$tt`, subst= $this")
-                true
-              }
-            case _ => false
-          }
+          case tt: TypeTree =>
+            checkType.result = false
+            checkType.collect(tt.tpe)
           case _          => false
         }
+
         object substIdentsForTrees extends Transformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
@@ -228,8 +242,6 @@ trait Interface extends ast.TreeDSL {
             // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
             else typer.typed(to)
 
-          def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
-          lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
 
           override def transform(tree: Tree): Tree = {
             def subst(from: List[Symbol], to: List[Tree]): Tree =
