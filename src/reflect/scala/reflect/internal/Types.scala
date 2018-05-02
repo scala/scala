@@ -4994,6 +4994,7 @@ trait TypesStats {
   val noMemberCount       = newSubCounter("  of which not found", findMemberCount)
   val multMemberCount     = newSubCounter("  of which multiple overloaded", findMemberCount)
   val typerNanos          = newTimer     ("time spent typechecking", "typer")
+  val postTyperNanos      = newTimer     ("time spent validating after typer", "postTyperChecks")
   val lubNanos            = newStackableTimer("time spent in lubs", typerNanos)
   val subtypeNanos        = newStackableTimer("time spent in <:<", typerNanos)
   val findMemberNanos     = newStackableTimer("time spent in findmember", typerNanos)
