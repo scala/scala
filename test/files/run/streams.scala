@@ -23,7 +23,7 @@ object Test extends App {
   println(s1.lengthCompare(5) < 0)
   println
 
-  val s2 = s1.lazyAppendAll(LazyList.cons(2, LazyList.empty))
+  val s2 = s1.lazyAppendedAll(LazyList.cons(2, LazyList.empty))
   println(s2.toArray.deep)
   println(s2.drop(1))
   println(s2.drop(2))
