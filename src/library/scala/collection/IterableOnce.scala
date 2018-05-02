@@ -723,6 +723,25 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       throw new UnsupportedOperationException("empty.min")
     reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
   }
+  
+  /** Finds the smallest element.
+    *
+    *  @param    ord   An ordering to be used for comparing elements.
+    *  @tparam   B    The type over which the ordering is defined.
+    *  @return   an option value containing the smallest element of this $coll
+    *            with respect to the ordering `ord`.
+    *
+    *  @usecase def min: A
+    *    @inheritdoc
+    *
+    *    @return   an option value containing the smallest element of this $coll.
+    */
+  def minOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
+    if (isEmpty)
+      None
+    else
+      Some(min(ord))
+  }
 
   /** Finds the largest element.
     *
@@ -740,6 +759,25 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (isEmpty)
       throw new UnsupportedOperationException("empty.max")
     reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
+  }
+  
+  /** Finds the largest element.
+    *
+    *  @param    ord   An ordering to be used for comparing elements.
+    *  @tparam   B    The type over which the ordering is defined.
+    *  @return   an option value containing the largest element of this $coll with
+    *            respect to the ordering `ord`.
+    *
+    *  @usecase def max: A
+    *    @inheritdoc
+    *
+    *    @return   an option value containing the largest element of this $coll.
+    */
+  def maxOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
+    if (isEmpty)
+      None
+    else
+      Some(max(ord))
   }
 
   /** Finds the first element which yields the largest value measured by function f.
@@ -775,6 +813,27 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     maxElem
   }
 
+  /** Finds the first element which yields the largest value measured by function f.
+    *
+    *  @param    cmp   An ordering to be used for comparing elements.
+    *  @tparam   B     The result type of the function f.
+    *  @param    f     The measuring function.
+    *  @return   an option value containing the first element of this $coll with the
+    *            largest value measured by function f with respect to the ordering `cmp`.
+    *
+    *  @usecase def maxBy[B](f: A => B): A
+    *    @inheritdoc
+    *
+    *    @return   an option value containing the first element of this $coll with
+    *              the largest value measured by function f.
+    */
+  def maxByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
+    if (isEmpty)
+      None
+    else
+      Some(maxBy(f)(cmp))
+  }
+
   /** Finds the first element which yields the smallest value measured by function f.
     *
     *  @param    cmp   An ordering to be used for comparing elements.
@@ -806,6 +865,28 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       }
     }
     minElem
+  }
+
+  /** Finds the first element which yields the smallest value measured by function f.
+    *
+    *  @param    cmp   An ordering to be used for comparing elements.
+    *  @tparam   B     The result type of the function f.
+    *  @param    f     The measuring function.
+    *  @return   an option value containing the first element of this $coll
+    *            with the smallest value measured by function f
+    *            with respect to the ordering `cmp`.
+    *
+    *  @usecase def minBy[B](f: A => B): A
+    *    @inheritdoc
+    *
+    *    @return  an option value containing the first element of this $coll with
+    *             the smallest value measured by function f.
+    */
+  def minByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
+    if (isEmpty)
+      None
+    else
+      Some(minBy(f)(cmp))
   }
 
   /** Finds the first element of the $coll for which the given partial
