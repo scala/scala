@@ -47,6 +47,12 @@ object ScalaCompilerOptionsExporter {
   )
   case class Choice(choice: String, description: Option[String] = None, deprecated: Option[String] = None)
 
+  private val quoted = """`([^`']+)'""".r
+
+  def markdownifyBackquote(string: String) : String = {
+    quoted.replaceAllIn(string, "`$1`")
+  }
+
   def main(args: Array[String]): Unit = {
     val runtimeMirror = scala.reflect.runtime.currentMirror
 
@@ -63,7 +69,7 @@ object ScalaCompilerOptionsExporter {
       } yield {
         Choice(
           choice,
-          description = Option(d).filter(_.nonEmpty),
+          description = Option(d).map(markdownifyBackquote).filter(_.nonEmpty),
           deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => d.toLowerCase.contains("deprecated"))
         )
       }
@@ -91,7 +97,7 @@ object ScalaCompilerOptionsExporter {
         new ScalacOption(
           option = s.name,
           schema = schema,
-          description = s.helpDescription,
+          description = markdownifyBackquote(s.helpDescription),
           abbreviations = s.abbreviations,
           deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => s.helpDescription.toLowerCase.contains("deprecated"))
         )
