@@ -422,6 +422,22 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
+lazy val exporter = configureAsSubproject(project)
+  .dependsOn(compiler, reflect, library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.5",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5",
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.5",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5"
+    )
+  )
+
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
