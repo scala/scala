@@ -83,23 +83,31 @@ object ScalaCompilerOptionsExporter {
     val extractedSettings : List[ScalacOption] = accessors.map(acc => instanceMirror.reflectMethod(acc).apply()).collect {
       case s: settings.Setting =>
         val schema = s match {
-          case b: settings.BooleanSetting => new Schema(_type="Boolean")
-          case i: settings.IntSetting => new Schema(_type="Int", default = Some(i.default), min = i.range.map(_._1), max = i.range.map(_._2))
+          case b: settings.BooleanSetting =>
+            Schema(_type = "Boolean")
+          case i: settings.IntSetting =>
+            Schema(_type="Int", default = Some(i.default), min = i.range.map(_._1), max = i.range.map(_._2))
           case c: settings.ChoiceSetting =>
             val choices = mergeChoice(c.choices, c.choicesHelp)
-            new Schema(_type="Choice", arg = Some(c.helpArg).map(dehtmlfy), default = Option(c.default), choices = choices)
+            Schema(_type="Choice", arg = Some(c.helpArg).map(dehtmlfy), default = Option(c.default), choices = choices)
           case mc: settings.MultiChoiceSetting[_] =>
             val choices = mergeChoice(mc.choices, mc.descriptions)
-            new Schema(_type="Choice", multiple = Some(true), arg = Some(mc.helpArg).map(dehtmlfy), choices = choices)
-          case ps: settings.PhasesSetting => new Schema(_type="Phases", default = Option(ps.default))
-          case px: settings.PrefixSetting => new Schema(_type="Prefix")
-          case sv: settings.ScalaVersionSetting => new Schema(_type="ScalaVerion", arg = Some(sv.arg).map(dehtmlfy), default = Some(sv.initial.unparse))
-          case pathStr: settings.PathSetting => new Schema(_type="Path", arg = Some(pathStr.arg), default = Some(pathStr.default))
-          case str: settings.StringSetting => new Schema(_type="String", arg = Some(str.arg).map(dehtmlfy), default = Some(str.default))
-          case ms: settings.MultiStringSetting => new Schema(_type="String", multiple = Some(true), arg = Some(ms.arg).map(dehtmlfy))
+            Schema(_type="Choice", multiple = Some(true), arg = Some(mc.helpArg).map(dehtmlfy), choices = choices)
+          case ps: settings.PhasesSetting =>
+            Schema(_type="Phases", default = Option(ps.default))
+          case px: settings.PrefixSetting =>
+            Schema(_type="Prefix")
+          case sv: settings.ScalaVersionSetting =>
+            Schema(_type="ScalaVersion", arg = Some(sv.arg).map(dehtmlfy), default = Some(sv.initial.unparse))
+          case pathStr: settings.PathSetting =>
+            Schema(_type="Path", arg = Some(pathStr.arg), default = Some(pathStr.default))
+          case str: settings.StringSetting =>
+            Schema(_type="String", arg = Some(str.arg).map(dehtmlfy), default = Some(str.default))
+          case ms: settings.MultiStringSetting =>
+            Schema(_type="String", multiple = Some(true), arg = Some(ms.arg).map(dehtmlfy))
         }
 
-        new ScalacOption(
+        ScalacOption(
           option = s.name,
           schema = schema,
           description = dehtmlfy(markdownifyBackquote(s.helpDescription)),
@@ -127,7 +135,7 @@ object ScalaCompilerOptionsExporter {
     }
 
     val source = categoriezed.toSeq.sortBy(_._1).map { case (key, options) =>
-      new Section(key, Some("ADD_NICE_DESCRIPTION_HERE"),options = options)
+      Section(key, Some("ADD_NICE_DESCRIPTION_HERE"),options = options)
     }
 
     val yamlFactory = new YAMLFactory()
