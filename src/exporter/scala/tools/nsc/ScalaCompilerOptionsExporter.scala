@@ -100,7 +100,7 @@ object ScalaCompilerOptionsExporter {
 
     val categoriezed = extractedSettings.groupBy { option =>
       val name = option.option
-      if (name.startsWith("-Xfatal-warnings") || name.startsWith("-Ywarn")) {
+      if (name.startsWith("-Xfatal-warnings") || name == "-Xlint" || name.startsWith("-Ywarn")) {
         WarningSettings
       } else if (name.startsWith("-X")) {
         AdvancedSettings
