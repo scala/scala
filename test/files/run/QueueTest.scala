@@ -1,14 +1,6 @@
 import scala.collection.mutable.Queue
 
 object Test {
-  // TODO-newColl: remove this workaround, https://github.com/scala/collection-strawman/issues/530
-  implicit class DQA(val q: Queue[Int]) {
-    def dqa(p: Int => Boolean) = {
-      val es = q.filter(p)
-      q.filterInPlace(x => !p(x))
-      es
-    }
-  }
 
   def main(args: Array[String]): Unit = {
     testEmpty
@@ -25,14 +17,14 @@ object Test {
     assert(queue.size == 0)
     assert(queue.length == 0)
     assert(queue.dequeueFirst(_ > 500) == None)
-    assert(queue.dqa(_ > 500).isEmpty)
+    assert(queue.dequeueAll(_ > 500).isEmpty)
 
     queue.clear
     assert(queue.isEmpty)
     assert(queue.size == 0)
     assert(queue.length == 0)
     assert(queue.dequeueFirst(_ > 500) == None)
-    assert(queue.dqa(_ > 500).isEmpty)
+    assert(queue.dequeueAll(_ > 500).isEmpty)
   }
 
   def testEnqueue: Unit = {
@@ -82,7 +74,7 @@ object Test {
     assert(queue.nonEmpty)
     assert(queue.front == 30)
 
-    val all = queue.dqa(_ > 20)
+    val all = queue.dequeueAll(_ > 20)
     assert(all.size == 2)
     assert(all.contains(30))
     assert(all.contains(40))
@@ -120,7 +112,7 @@ object Test {
     assert(queue.length == 1)
 
     queue.enqueue(40)
-    val all = queue.dqa(_ > 20)
+    val all = queue.dequeueAll(_ > 20)
     assert(all.size == 2)
     assert(all.contains(30))
     assert(all.contains(40))
@@ -129,14 +121,14 @@ object Test {
 
     queue.enqueue(50)
     queue.enqueue(60)
-    val allgt55 = queue.dqa(_ > 55)
+    val allgt55 = queue.dequeueAll(_ > 55)
     assert(allgt55.size == 1)
     assert(allgt55.contains(60))
     assert(queue.length == 1)
 
     queue.enqueue(70)
     queue.enqueue(80)
-    val alllt75 = queue.dqa(_ < 75)
+    val alllt75 = queue.dequeueAll(_ < 75)
     assert(alllt75.size == 2)
     assert(alllt75.contains(70))
     assert(alllt75.contains(50))
@@ -162,7 +154,7 @@ object Test {
     assert(queue.length == 10)
     assert(queue.nonEmpty)
 
-    val gt5 = queue.dqa(_ > 4)
+    val gt5 = queue.dequeueAll(_ > 4)
     assert(gt5.size == 7)
     assert(queue.length == 3)
     assert(queue.nonEmpty)
@@ -174,14 +166,14 @@ object Test {
     for (i <- 0 until 10) queue.enqueue(i)
     assert(queue.length == 10)
 
-    val even = queue.dqa(_ % 2 == 0)
+    val even = queue.dequeueAll(_ % 2 == 0)
     assert(even.size == 5)
     assert(even.sameElements(List(0, 2, 4, 6, 8)))
     assert(queue.length == 5)
     assert(queue.head == 1)
     assert(queue.last == 9)
 
-    val odd = queue.dqa(_ %2 == 1)
+    val odd = queue.dequeueAll(_ %2 == 1)
     assert(odd.size == 5)
     assert(queue.length == 0)
     assert(queue.isEmpty)
@@ -197,7 +189,7 @@ object Test {
     assert(queue.length == 9)
     assert(queue.nonEmpty)
 
-    val lt30 = queue.dqa(_ < 30)
+    val lt30 = queue.dequeueAll(_ < 30)
     assert(lt30.size == 6)
     assert(queue.length == 3)
 
@@ -225,7 +217,7 @@ object Test {
     assert(queue.isEmpty)
 
     for (i <- 0 until 4) queue.enqueue(i)
-    val interv = queue.dqa(n => n > 0 && n < 3)
+    val interv = queue.dequeueAll(n => n > 0 && n < 3)
     assert(interv.sameElements(List(1, 2)))
     assert(queue.length == 2)
     assert(queue.head == 0)
@@ -244,14 +236,14 @@ object Test {
     for (i <- -100 until 100) queue.enqueue(i * i + i % 7 + 5)
     assert(queue.length == 200)
 
-    val manyodds = queue.dqa(_ % 2 == 1)
+    val manyodds = queue.dequeueAll(_ % 2 == 1)
     assert((manyodds.size + queue.length) == 200)
 
-    queue.dqa(_ > -10000)
+    queue.dequeueAll(_ > -10000)
     assert(queue.isEmpty)
 
     for (i <- 0 until 100) queue.enqueue(i)
-    val multof3 = queue.dqa(_ % 3 == 0)
+    val multof3 = queue.dequeueAll(_ % 3 == 0)
     assert(multof3.size == 34)
     assert(queue.size == 66)
 
