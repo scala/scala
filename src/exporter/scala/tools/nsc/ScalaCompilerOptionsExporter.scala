@@ -5,7 +5,7 @@ import collection.JavaConverters._
 import com.fasterxml.jackson.annotation._
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.dataformat.yaml.{YAMLFactory, YAMLGenerator}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 object ScalaCompilerOptionsExporter {
@@ -119,8 +119,9 @@ object ScalaCompilerOptionsExporter {
       new Section(key, Some("ADD_NICE_DESCRIPTION_HERE"),options = options)
     }
 
-    val mapper = new ObjectMapper(new YAMLFactory())
-    mapper
+    val yamlFactory = new YAMLFactory()
+      .disable(YAMLGenerator.Feature.SPLIT_LINES)
+    val mapper = new ObjectMapper(yamlFactory)
       .registerModule(DefaultScalaModule)
       .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 
