@@ -68,4 +68,29 @@ class HashMapTest {
     assert(hm.size == 1)
     assert(hm.toList.head._2 > 1)
   }
+
+  @Test
+  def flatMapInPlace(): Unit = {
+    val hm = mutable.HashMap(1 -> 1, 2 -> 2)
+    val fmip = hm.flatMapInPlace { case (k, v) => HashMap(k * 2 -> v * 2) }
+    assert(fmip.size == 2)
+    assert(fmip == HashMap(2 -> 2, 4 -> 4))
+  }
+
+  @Test
+  def flatMapInPlace_reducedToOneKey(): Unit = {
+    val hm = mutable.HashMap(1 -> 1, 2 -> 2, 3->3)
+    val fmip = hm.flatMapInPlace { case (_, v) => HashMap(1 -> v) }
+    assert(fmip.size == 1)
+    assert(fmip.contains(1))
+    assert(fmip(1) == 1 || fmip(1) == 2 || fmip(1) == 3)
+  }
+
+  @Test // From collection/strawman #509
+  def flatMapInPlace_dropElements(): Unit = {
+    val hm = mutable.HashMap(1 -> 1)
+    val empty = mutable.HashMap.empty[Int, Int]
+    val fmip = hm.flatMapInPlace(_ => empty)
+    assert(fmip.size == 0)
+  }
 }
