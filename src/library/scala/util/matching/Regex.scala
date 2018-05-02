@@ -182,7 +182,6 @@ import java.util.regex.{ Pattern, Matcher }
  *  @author  Thibaud Hottelier
  *  @author  Philipp Haller
  *  @author  Martin Odersky
- *  @version 1.1, 29/01/2008
  *
  *  @param pattern    The compiled pattern
  *  @param groupNames A mapping from names to indices in capture groups

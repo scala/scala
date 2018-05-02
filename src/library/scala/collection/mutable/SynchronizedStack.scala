@@ -20,7 +20,6 @@ package mutable
  *  @tparam A    type of the elements contained in this stack.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 03/05/2004
  *  @since   1
  *  @define Coll `SynchronizedStack`
  *  @define coll synchronized stack

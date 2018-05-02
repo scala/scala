@@ -13,7 +13,6 @@ package collection
  *  to a different iterable object.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.3")

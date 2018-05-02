@@ -19,7 +19,6 @@ import generic._
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   1
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#double-linked-lists "Scala's Collection Library overview"]]
  *  section on `Double Linked Lists` for more information.

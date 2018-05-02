@@ -13,7 +13,6 @@ package scala
  *
  *  @author Martin Odersky
  *  @author Burak Emir
- *  @version 1.0
  *
  *  @see class Responder
  *  @since 2.1
@@ -56,7 +55,6 @@ object Responder {
  *
  *  @author Martin Odersky
  *  @author Burak Emir
- *  @version 1.0
  *  @since 2.1
  */
 @deprecated("this class will be removed", "2.11.0")

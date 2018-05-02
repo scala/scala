@@ -21,7 +21,6 @@ import scala.language.implicitConversions
  *  All views for iterable collections are defined by re-interpreting the `iterator` method.
  *
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @tparam A    the element type of the view
  *  @tparam Coll the type of the underlying collection containing the elements.

@@ -39,7 +39,6 @@ import immutable.Stream
  *    `TraversableLike` by an iterator version.
  *
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @tparam A    the element type of the collection
  *  @tparam Repr the type of the actual collection containing the elements.

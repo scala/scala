@@ -24,7 +24,6 @@ import scala.reflect.ClassTag
  *  All calls creating a new traversable of the same kind.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  */
 @deprecated("forwarding is inherently unreliable since it is not automated and new methods can be forgotten", "2.11.0")

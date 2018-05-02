@@ -17,7 +17,6 @@ package mutable
  *  return the representation of an empty set.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
  *  @since   1
  */
 @deprecated("adaptors are inherently unreliable and prone to performance problems", "2.11.0")

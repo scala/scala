@@ -18,7 +18,6 @@ import immutable.Stream
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
- *  @version 2.8
  *  @since   2.8
  */
 object Iterator {
@@ -323,7 +322,6 @@ import Iterator.empty
  *  }}}
  *
  *  @author  Martin Odersky, Matthias Zenger
- *  @version 2.8
  *  @since   1
  *  @define willNotTerminateInf
  *  Note: will not terminate for infinite iterators.

@@ -19,7 +19,6 @@ import scala.annotation.migration
  *  @tparam B     type of the values associated with keys.
  *
  *  @author  Matthias Zenger, Martin Odersky
- *  @version 2.0, 31/12/2006
  *  @since   1
  *  @define Coll `SynchronizedMap`
  *  @define coll synchronized map

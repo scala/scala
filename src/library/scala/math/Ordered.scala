@@ -52,7 +52,6 @@ import scala.language.implicitConversions
  *
  *  @see [[scala.math.Ordering]], [[scala.math.PartiallyOrdered]]
  *  @author  Martin Odersky
- *  @version 1.1, 2006-07-24
  */
 trait Ordered[A] extends Any with java.lang.Comparable[A] {
 

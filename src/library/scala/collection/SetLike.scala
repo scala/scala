@@ -48,7 +48,6 @@ import parallel.ParSet
  *  @tparam This the type of the set itself.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *
  *  @define coll set
  *  @define Coll Set

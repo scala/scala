@@ -47,7 +47,6 @@ import parallel.ParMap
  *  @tparam This the type of the map itself.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *
  *  @define coll map
  *  @define Coll Map

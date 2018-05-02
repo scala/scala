@@ -16,7 +16,6 @@ import scala.collection.JavaConverters._
  *  world outside of it.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 package object sys {

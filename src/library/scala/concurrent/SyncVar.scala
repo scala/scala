@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit
  *
  *  @tparam A type of the contained value
  *  @author  Martin Odersky
- *  @version 1.0, 10/03/2003
  */
 class SyncVar[A] {
   private var isDefined: Boolean = false

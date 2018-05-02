@@ -16,7 +16,6 @@ package mutable
  *  @tparam A   type of the elements in this stack proxy.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 10/05/2004
  *  @since   1
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")

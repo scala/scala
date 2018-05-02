@@ -14,7 +14,6 @@ package script
  *  objects of that class.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 09/05/2004
  *  @since   2.8
  */
 @deprecated("scripting is deprecated", "2.11.0")

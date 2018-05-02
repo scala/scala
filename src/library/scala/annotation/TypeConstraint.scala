@@ -20,7 +20,6 @@ package scala.annotation
  *  would rewrite a type constraint.
  *
  *  @author  Lex Spoon
- *  @version 1.1, 2007-11-5
  *  @since   2.6
  */
 trait TypeConstraint extends Annotation

@@ -22,7 +22,6 @@ import TraversableView.NoBuilder
  *  others will just yield a plain indexed sequence of type `collection.IndexedSeq`.
  *  Because this is a leaf class there is no associated `Like` class.
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @tparam A    the element type of the view
  *  @tparam Coll the type of the underlying collection containing the elements.

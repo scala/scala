@@ -20,7 +20,6 @@ import parallel.mutable.ParArray
  *  primitive types are boxed.
  *
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-sequences "Scala's Collection Library overview"]]
  *  section on `Array Sequences` for more information.

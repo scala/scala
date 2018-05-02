@@ -18,7 +18,6 @@ package mutable
  *  @tparam A   type of the elements in this queue proxy.
  *
  *  @author  Matthias Zenger
- *  @version 1.1, 03/05/2004
  *  @since   1
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")

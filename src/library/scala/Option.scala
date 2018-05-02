@@ -76,7 +76,7 @@ object Option {
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
- *  @version 1.1, 16/01/2007
+ *  @since   1.1
  *  @define none `None`
  *  @define some [[scala.Some]]
  *  @define option [[scala.Option]]
@@ -327,7 +327,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
  *  `A`.
  *
  *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class Some[+A](@deprecatedName('x, "2.12.0") value: A) extends Option[A] {
@@ -341,7 +341,7 @@ final case class Some[+A](@deprecatedName('x, "2.12.0") value: A) extends Option
 /** This case object represents non-existent values.
  *
  *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 @SerialVersionUID(5066590221178148012L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 case object None extends Option[Nothing] {

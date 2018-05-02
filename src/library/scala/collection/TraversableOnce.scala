@@ -21,7 +21,6 @@ import scala.reflect.ClassTag
  *
  *  @author Martin Odersky
  *  @author Paul Phillips
- *  @version 2.8
  *  @since   2.8
  *
  *  @define coll traversable or iterator

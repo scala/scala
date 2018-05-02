@@ -36,7 +36,6 @@ import generic._
  *  @param ord   implicit ordering used to compare the elements of type `A`.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 03/05/2004
  *  @since   1
  *
  *  @define Coll PriorityQueue
@@ -357,7 +356,6 @@ object PriorityQueue extends OrderedTraversableFactory[PriorityQueue] {
   *  `Ordered[T]` class.
   *
   *  @author  Matthias Zenger
-  *  @version 1.0, 03/05/2004
   *  @since   1
   */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
@@ -442,7 +440,6 @@ sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends P
   *  @param ord   implicit ordering used to compared elements of type `A`
   *
   *  @author  Matthias Zenger
-  *  @version 1.0, 03/05/2004
   *  @since   1
   *  @define Coll `SynchronizedPriorityQueue`
   *  @define coll synchronized priority queue

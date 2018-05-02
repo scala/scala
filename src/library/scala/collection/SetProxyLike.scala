@@ -15,7 +15,7 @@ package collection
  *  all calls to a different set.
  *
  *  @author  Martin Odersky
- *  @version 2.8
+ *  @since   2.8
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
 trait SetProxyLike[A, +This <: SetLike[A, This] with Set[A]] extends SetLike[A, This] with IterableProxyLike[A, This] {

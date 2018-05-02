@@ -15,7 +15,7 @@ package collection
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 01/01/2007
+ *  @since   2.0
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.3")
 trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]

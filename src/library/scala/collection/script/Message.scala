@@ -18,7 +18,6 @@ import mutable.ArrayBuffer
  *  `Remove`, `Include`, `Reset`, and `Script`.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   2.8
  */
 @deprecated("scripting is deprecated", "2.11.0")
@@ -28,7 +27,6 @@ trait Message[+A]
  *  to collection classes.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  */
 @deprecated("scripting is deprecated", "2.11.0")
 case class Include[+A](location: Location, elem: A) extends Message[A] {
@@ -39,7 +37,6 @@ case class Include[+A](location: Location, elem: A) extends Message[A] {
  *  of elements from collection classes.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  */
 @deprecated("scripting is deprecated", "2.11.0")
 case class Update[+A](location: Location, elem: A) extends Message[A] {
@@ -50,7 +47,6 @@ case class Update[+A](location: Location, elem: A) extends Message[A] {
  *  from collection classes.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  */
 @deprecated("scripting is deprecated", "2.11.0")
 case class Remove[+A](location: Location, elem: A) extends Message[A] {
@@ -60,7 +56,6 @@ case class Remove[+A](location: Location, elem: A) extends Message[A] {
 /** This command refers to reset operations.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  */
 @deprecated("scripting is deprecated", "2.11.0")
 case class Reset[+A]() extends Message[A]
@@ -69,7 +64,6 @@ case class Reset[+A]() extends Message[A]
  *  of a sequence of other messages.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 10/05/2004
  */
 @deprecated("scripting is deprecated", "2.11.0")
 class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {

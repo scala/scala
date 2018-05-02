@@ -41,7 +41,6 @@ import parallel.immutable.ParMap
  *  @tparam This  The type of the actual map implementation.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @define Coll immutable.Map
  *  @define coll immutable map

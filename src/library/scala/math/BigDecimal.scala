@@ -18,7 +18,6 @@ import scala.collection.immutable.NumericRange
 /**
  *  @author  Stephane Micheloud
  *  @author  Rex Kerr
- *  @version 1.1
  *  @since 2.7
  */
 object BigDecimal {
@@ -394,7 +393,6 @@ object BigDecimal {
  *
  *  @author  Stephane Micheloud
  *  @author  Rex Kerr
- *  @version 1.1
  */
 final class BigDecimal(val bigDecimal: BigDec, val mc: MathContext)
 extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[BigDecimal] {

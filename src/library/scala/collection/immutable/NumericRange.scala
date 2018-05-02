@@ -30,7 +30,6 @@ package immutable
  *  }}}
  *
  *  @author  Paul Phillips
- *  @version 2.8
  *  @define Coll `NumericRange`
  *  @define coll numeric range
  *  @define mayNotTerminateInf

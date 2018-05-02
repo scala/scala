@@ -22,7 +22,6 @@ package mutable
  *  @tparam Pub   type of the publisher
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   2.8
  */
 class RevertibleHistory[Evt <: Undoable, Pub] extends History[Evt, Pub] with Undoable with Serializable {

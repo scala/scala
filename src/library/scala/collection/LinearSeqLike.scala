@@ -21,7 +21,6 @@ import scala.annotation.tailrec
  *  Linear sequences do not add any new methods to `Seq`, but promise efficient implementations
  *  of linear access patterns.
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *
  *  @tparam A    the element type of the $coll

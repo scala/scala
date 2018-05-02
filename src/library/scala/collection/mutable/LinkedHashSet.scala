@@ -19,7 +19,6 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @author  Pavel Pavlov
- *  @version 2.0, 31/12/2006
  *  @since   1
  *
  *  @tparam A     the type of the elements contained in this set.

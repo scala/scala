@@ -40,7 +40,6 @@ object TreeSet extends MutableSortedSetFactory[TreeSet] {
  * @tparam A the type of the keys contained in this tree set.
  *
  * @author Rui Gonçalves
- * @version 2.12
  * @since 2.10
  *
  * @define Coll mutable.TreeSet
