@@ -106,7 +106,7 @@ import scala.util.DynamicVariable
  *  </table>
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 03/09/2003
+ *  @since   1.0
  *
  *  @groupname console-output Console Output
  *  @groupprio console-output 30

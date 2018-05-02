@@ -35,7 +35,7 @@ import java.lang.InheritableThreadLocal
  *  are independent of those for the original thread.
  *
  *  @author  Lex Spoon
- *  @version 1.1, 2007-5-21
+ *  @since   2.6
  */
 class DynamicVariable[T](init: T) {
   private val tl = new InheritableThreadLocal[T] {

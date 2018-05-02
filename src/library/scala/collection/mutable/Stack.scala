@@ -9,7 +9,6 @@ import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, St
   *  @tparam A    type of the elements contained in this stack.
   *
   *  @author  Pathikrit Bhowmick
-  *  @version 2.13
   *  @since   2.13
   *
   *  @define Coll `Stack`

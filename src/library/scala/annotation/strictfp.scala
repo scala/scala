@@ -12,7 +12,6 @@ package scala.annotation
  *  the strictfp flag will be emitted.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since 2.9
  */
 class strictfp extends scala.annotation.StaticAnnotation

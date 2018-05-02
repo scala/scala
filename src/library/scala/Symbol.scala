@@ -18,7 +18,7 @@ package scala
  *  `Symbol("mysym")`.
  *
  *  @author  Martin Odersky, Iulian Dragos
- *  @version 1.8
+ *  @since   1.7
  */
 final class Symbol private (val name: String) extends Serializable {
   /** Converts this symbol to a string.

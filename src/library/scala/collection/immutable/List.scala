@@ -56,7 +56,6 @@ import mutable.{Builder, ListBuffer, ReusableBuilder}
   *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
   *
   *  @author  Martin Odersky and others
-  *  @version 2.8
   *  @since   1.0
   *  @see  [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
   *  section on `Lists` for more information.

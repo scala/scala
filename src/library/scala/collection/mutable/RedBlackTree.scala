@@ -12,7 +12,6 @@ import java.lang.String
  * The trees implemented in this object are *not* thread safe.
  *
  * @author Rui Gonçalves
- * @version 2.12
  * @since 2.12
  */
 private[collection] object RedBlackTree {

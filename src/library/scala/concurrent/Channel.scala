@@ -15,7 +15,6 @@ package scala.concurrent
  *
  *  @tparam A type of data exchanged
  *  @author  Martin Odersky
- *  @version 1.0, 10/03/2003
  */
 class Channel[A] {
   class LinkedList[A] {

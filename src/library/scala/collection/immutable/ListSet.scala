@@ -21,7 +21,6 @@ import scala.annotation.tailrec
   * @tparam A the type of the elements contained in this list set
   *
   * @author Matthias Zenger
-  * @version 1.0, 09/07/2003
   * @since 1
   * @define Coll ListSet
   * @define coll list set

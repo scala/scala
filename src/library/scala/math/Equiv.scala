@@ -26,7 +26,6 @@ import java.util.Comparator
  *       `equiv(x, z) == true` for any `x`, `y`, and `z` of type `T`.
  *
  *  @author  Geoffrey Washburn, Paul Phillips
- *  @version 1.0, 2008-04-03
  *  @since 2.7
  */
 

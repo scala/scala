@@ -17,7 +17,6 @@ import java.net.{ URI, URL }
  *  representation of a source file.
  *
  *  @author  Burak Emir, Paul Phillips
- *  @version 1.0, 19/08/2004
  */
 object Source {
   val DefaultBufSize = 2048
