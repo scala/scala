@@ -53,6 +53,11 @@ object ScalaCompilerOptionsExporter {
     quoted.replaceAllIn(string, "`$1`")
   }
 
+  private val htmlTag = """<([^>]+)>""".r
+  def dehtmlfy(string: String) : String = {
+    htmlTag.replaceAllIn(string, "$1")
+  }
+
   def main(args: Array[String]): Unit = {
     val runtimeMirror = scala.reflect.runtime.currentMirror
 
@@ -69,7 +74,7 @@ object ScalaCompilerOptionsExporter {
       } yield {
         Choice(
           choice,
-          description = Option(d).map(markdownifyBackquote).filter(_.nonEmpty),
+          description = Option(d).map(markdownifyBackquote).map(dehtmlfy).filter(_.nonEmpty),
           deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => d.toLowerCase.contains("deprecated"))
         )
       }
@@ -82,22 +87,22 @@ object ScalaCompilerOptionsExporter {
           case i: settings.IntSetting => new Schema(_type="Int", default = Some(i.default), min = i.range.map(_._1), max = i.range.map(_._2))
           case c: settings.ChoiceSetting =>
             val choices = mergeChoice(c.choices, c.choicesHelp)
-            new Schema(_type="Choice", arg = Some(c.helpArg), default = Option(c.default), choices = choices)
+            new Schema(_type="Choice", arg = Some(c.helpArg).map(dehtmlfy), default = Option(c.default), choices = choices)
           case mc: settings.MultiChoiceSetting[_] =>
             val choices = mergeChoice(mc.choices, mc.descriptions)
-            new Schema(_type="Choice", multiple = Some(true), arg = Some(mc.helpArg), choices = choices)
+            new Schema(_type="Choice", multiple = Some(true), arg = Some(mc.helpArg).map(dehtmlfy), choices = choices)
           case ps: settings.PhasesSetting => new Schema(_type="Phases", default = Option(ps.default))
           case px: settings.PrefixSetting => new Schema(_type="Prefix")
-          case sv: settings.ScalaVersionSetting => new Schema(_type="ScalaVerion", arg = Some(sv.arg), default = Some(sv.initial.unparse))
+          case sv: settings.ScalaVersionSetting => new Schema(_type="ScalaVerion", arg = Some(sv.arg).map(dehtmlfy), default = Some(sv.initial.unparse))
           case pathStr: settings.PathSetting => new Schema(_type="Path", arg = Some(pathStr.arg), default = Some(pathStr.default))
-          case str: settings.StringSetting => new Schema(_type="String", arg = Some(str.arg), default = Some(str.default))
-          case ms: settings.MultiStringSetting => new Schema(_type="String", multiple = Some(true), arg = Some(ms.arg))
+          case str: settings.StringSetting => new Schema(_type="String", arg = Some(str.arg).map(dehtmlfy), default = Some(str.default))
+          case ms: settings.MultiStringSetting => new Schema(_type="String", multiple = Some(true), arg = Some(ms.arg).map(dehtmlfy))
         }
 
         new ScalacOption(
           option = s.name,
           schema = schema,
-          description = markdownifyBackquote(s.helpDescription),
+          description = dehtmlfy(markdownifyBackquote(s.helpDescription)),
           abbreviations = s.abbreviations,
           deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => s.helpDescription.toLowerCase.contains("deprecated"))
         )
