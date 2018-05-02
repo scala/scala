@@ -695,8 +695,8 @@ sealed abstract class Stream[+A] extends LinearSeq[A] with LazyListOps[A, Stream
     else tail.foldLeft(op(z, head))(op)
   }
 
-  @deprecated("The `append` operation has been renamed `lazyAppendAll`", "2.13.0")
-  @inline final def append[B >: A](suffix: IterableOnce[B]): Stream[B] = lazyAppendAll(suffix)
+  @deprecated("The `append` operation has been renamed `lazyAppendedAll`", "2.13.0")
+  @inline final def append[B >: A](suffix: IterableOnce[B]): Stream[B] = lazyAppendedAll(suffix)
 
 }
 

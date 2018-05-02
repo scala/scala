@@ -215,8 +215,8 @@ class StreamTest {
   }
 
   @Test
-  def testAppendAliasToLazyAppendAll: Unit = {
+  def testAppendAliasToLazyAppendedAll: Unit = {
     val l = 1 #:: 2 #:: 3 #:: Stream.Empty
-    assertEquals(l.append(l), l.lazyAppendAll(l))
+    assertEquals(l.append(l), l.lazyAppendedAll(l))
   }
 }
