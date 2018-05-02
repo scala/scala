@@ -1,1 +1,4 @@
+pkg2.scala:3: warning: package objects with parent classes or traits are deprecated
+package object xml extends PullIteratees
+               ^
 ok!

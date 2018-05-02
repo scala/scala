@@ -1,0 +1,6 @@
+package-inheritance-deprecation.scala:39: warning: package objects with parent classes or traits are deprecated
+  package object bar extends Duh with Duh2 { }
+                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

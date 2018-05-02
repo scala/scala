@@ -1,3 +1,6 @@
+t5604.scala:26: warning: package objects with parent classes or traits are deprecated
+  package object bar extends Duh {
+                 ^
 long
 double
 long

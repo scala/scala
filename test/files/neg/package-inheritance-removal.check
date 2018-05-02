@@ -1,0 +1,4 @@
+package-inheritance-removal.scala:39: error: package objects with parent classes or traits are unsupported
+  package object bar extends Duh with Duh2 { }
+                 ^
+one error found

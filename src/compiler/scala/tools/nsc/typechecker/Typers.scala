@@ -1881,8 +1881,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (settings.isScala211  && mdef.symbol == PredefModule)
         ensurePredefParentsAreInSameSourceFile(impl2)
+      if (mdef.name == nme.PACKAGEkw)
+        ensurePackageObjectDoesNotInherit(impl2, mdef.symbol, mdef.pos)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+    }
+
+    private def ensurePackageObjectDoesNotInherit(template: Template, sym: Symbol, pos: Position): Unit = {
+      def msg(what: String): String = s"package objects with parent classes or traits are $what"
+      def okSymbol(symbol: Symbol): Boolean = (symbol == AnyRefClass) || (symbol == AnyValClass)
+      template.parents match {
+        case Nil => ()
+        case parent :: Nil if okSymbol(parent.symbol) => ()
+        case _ =>
+          if (settings.isScala214) context.error(pos, msg("unsupported"))
+          else context.deprecationWarning(pos, sym, msg("deprecated"), "2.13.0")
+      }
     }
 
     private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
@@ -1891,6 +1905,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (parentSyms exists (_.associatedFile != PredefModuleFile))
         context.error(template.pos, s"All parents of Predef must be defined in ${PredefModuleFile}.")
     }
+
     /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
      *  all the time, it is exposed here the module/class typing methods go through it.
      *  ...but it turns out it's also the ideal spot for namer/typer coordination for
