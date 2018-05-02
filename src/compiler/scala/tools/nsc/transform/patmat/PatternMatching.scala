@@ -273,15 +273,13 @@ trait Interface extends ast.TreeDSL {
         // HOT
         val newFrom = new ListBuffer[Symbol]
         val newTo = new ListBuffer[Tree]
-        newFrom ++= other.from
-        for (t <- other.to) newTo += apply(t)
         foreach2(from, to) { (f, t) =>
           if (!other.from.contains(f)) {
             newFrom += f
             newTo += t
           }
         }
-        new Substitution(newFrom.toList, newTo.toList)
+        new Substitution(newFrom.prependToList(other.from), newTo.prependToList(other.to.mapConserve(apply)))
       }
       override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")
     }
