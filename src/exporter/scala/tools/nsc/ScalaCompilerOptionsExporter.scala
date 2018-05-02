@@ -32,7 +32,7 @@ object ScalaCompilerOptionsExporter {
     option: String,
     schema: Schema,
     description: String,
-    abbreviation: Option[String] = None,
+    abbreviations: Seq[String] = Seq.empty,
     deprecated: Option[String] = None,
     note: Option[String] = None
   )
@@ -87,8 +87,14 @@ object ScalaCompilerOptionsExporter {
           case str: settings.StringSetting => new Schema(_type="String", arg = Some(str.arg), default = Some(str.default))
           case ms: settings.MultiStringSetting => new Schema(_type="String", multiple = Some(true), arg = Some(ms.arg))
         }
-        new ScalacOption(option = s.name, schema = schema, description = s.helpDescription,
-          deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => s.helpDescription.toLowerCase.contains("deprecated")))
+
+        new ScalacOption(
+          option = s.name,
+          schema = schema,
+          description = s.helpDescription,
+          abbreviations = s.abbreviations,
+          deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => s.helpDescription.toLowerCase.contains("deprecated"))
+        )
     }
 
 
