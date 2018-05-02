@@ -104,7 +104,7 @@ object ScalaCompilerOptionsExporter {
         WarningSettings
       } else if (name.startsWith("-X")) {
         AdvancedSettings
-      } else if (name.startsWith("-Y") || name.startsWith("-opt")) {
+      } else if (name.startsWith("-Y") || name.startsWith("-opt") && name != "-optimise") {
         PrivateSettings
       } else if (name.startsWith("-P")) {
         PluginSettings
