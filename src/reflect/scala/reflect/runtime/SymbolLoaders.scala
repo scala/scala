@@ -42,9 +42,10 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     val module = owner.newModule(name.toTermName)
     // without this check test/files/run/t5256g and test/files/run/t5256h will crash
     // todo. reflection meeting verdict: need to enter the symbols into the first symbol in the owner chain that has a non-empty scope
-    if (owner.info.decls != EmptyScope) {
-      owner.info.decls enter clazz
-      owner.info.decls enter module
+    val rawInfo = owner.rawInfo
+    if (rawInfo.decls != EmptyScope) {
+      rawInfo.decls enter clazz
+      rawInfo.decls enter module
     }
     initClassAndModule(clazz, module, completer(clazz, module))
     (clazz, module)

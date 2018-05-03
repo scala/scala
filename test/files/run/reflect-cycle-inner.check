@@ -1,0 +1,4 @@
+Scope{
+  def iterator(): java.util.Iterator[example.Example.Inner];
+  def <init>(): example.Example
+}

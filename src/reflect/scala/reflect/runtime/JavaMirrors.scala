@@ -755,6 +755,20 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       def completeRest(): Unit = gilSynchronized {
         val tparams = clazz.rawInfo.typeParams
 
+
+        // Assign a temporary, parent-less type to the class can enter the inner classes
+        // here before we resolve the parents list, which could refer to them (test/files/run/reflect-cycle-inner)
+        val classScope = newScope
+        clazz setInfo GenPolyType(tparams, new ClassInfoType(Nil, newScope, clazz))
+        val moduleScope = newScope
+        if (module != NoSymbol) {
+          module.moduleClass setInfo new ClassInfoType(Nil, moduleScope, module.moduleClass)
+        }
+
+        for (jinner <- jclazz.getDeclaredClasses) {
+          jclassAsScala(jinner) // inner class is entered as a side-effect
+        }
+
         val parents = try {
           parentsLevel += 1
           val jsuperclazz = jclazz.getGenericSuperclass
@@ -766,21 +780,14 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         } finally {
           parentsLevel -= 1
         }
-        clazz setInfo GenPolyType(tparams, new ClassInfoType(parents, newScope, clazz))
-        if (module != NoSymbol) {
-          module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
-        }
+
+        clazz setInfo GenPolyType(tparams, new ClassInfoType(parents, classScope, clazz))
 
         def enter(sym: Symbol, mods: JavaAccFlags) = followStatic(clazz, module, mods).info.decls enter sym
 
         def enterEmptyCtorIfNecessary(): Unit = {
           if (jclazz.getConstructors.isEmpty)
             clazz.info.decls.enter(clazz.newClassConstructor(NoPosition))
-        }
-
-        for (jinner <- jclazz.getDeclaredClasses) {
-          jclassAsScala(jinner) // inner class is entered as a side-effect
-                                // no need to call enter explicitly
         }
 
         pendingLoadActions ::= { () =>
