@@ -244,6 +244,18 @@ span.symbol > a {
   background: url("package.svg") no-repeat center;
 }
 
+.big-circle.annotation {
+  background: url("annotation.svg") no-repeat center;
+}
+
+.big-circle.object-companion-annotation {
+  background: url("object_comp_annotation.svg") no-repeat center;
+}
+
+.big-circle.annotation-companion-object {
+  background: url("annotation_comp.svg") no-repeat center;
+}
+
 body.abstract.type div.big-circle {
   background: url("abstract_type.svg") no-repeat center;
 }

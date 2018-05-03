@@ -545,6 +545,11 @@ div#packages > ul > li > a.abstract.type {
   background-size: 0.9rem;
 }
 
+div#packages > ul > li > a.annotation {
+  background: url("annotation.svg") no-repeat center;
+  background-size: 0.9rem;
+}
+
 div#packages > ul > li > a {
   text-decoration: none !important;
   margin-left: 1px;
@@ -699,6 +704,12 @@ div#results-content > div#entity-results > ul.entities > li > .icon {
 div#results-content > div#member-results > ul.entities > li > .icon.class,
 div#results-content > div#entity-results > ul.entities > li > .icon.class {
   background: url("class.svg") no-repeat center;
+  background-size: 1em 1em;
+}
+
+div#results-content > div#member-results > ul.entities > li > .icon.annotation,
+div#results-content > div#entity-results > ul.entities > li > .icon.annotation {
+  background: url("annotation.svg") no-repeat center;
   background-size: 1em 1em;
 }
 
