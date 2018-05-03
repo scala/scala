@@ -620,18 +620,20 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use `dest ++= coll` instead", "2.13.0")
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
-  /** Copy elements of this collection to an array.
-    *  Fills the given array `xs` starting at index `start`.
-    *  Copying will stop once either the all elements of this collection have been copied,
+  /** Copy elements to an array.
+    *
+    *  Fills the given array `xs` starting at index `start` with values of this $coll.
+    *
+    *  Copying will stop once either all the elements of this $coll have been copied,
     *  or the end of the array is reached.
     *
     *  @param  xs     the array to fill.
-    *  @param  start  the starting index.
+    *  @param  start  the starting index of xs.
     *  @tparam B      the type of the elements of the array.
     *
     *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
     *
-    *    $willNotTerminateInf
+    *  $willNotTerminateInf
     */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
     val it = iterator()
@@ -643,14 +645,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     xs
   }
 
-  /** Copy elements of this collection to an array.
-    *  Fills the given array `xs` starting at index `start` with at most
-    *  `len` values produced by this iterator.
-    *  Copying will stop once either the all elements of this collection have been copied,
+  /** Copy elements to an array.
+    *
+    *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
+    *
+    *  Copying will stop once either all the elements of this $coll have been copied,
     *  or the end of the array is reached, or `len` elements have been copied.
     *
     *  @param  xs     the array to fill.
-    *  @param  start  the starting index.
+    *  @param  start  the starting index of xs.
     *  @param  len    the maximal number of elements to copy.
     *  @tparam B      the type of the elements of the array.
     *
@@ -723,7 +726,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       throw new UnsupportedOperationException("empty.min")
     reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
   }
-  
+
   /** Finds the smallest element.
     *
     *  @param    ord   An ordering to be used for comparing elements.
@@ -760,7 +763,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       throw new UnsupportedOperationException("empty.max")
     reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
   }
-  
+
   /** Finds the largest element.
     *
     *  @param    ord   An ordering to be used for comparing elements.
