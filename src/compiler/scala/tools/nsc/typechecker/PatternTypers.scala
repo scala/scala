@@ -179,7 +179,7 @@ trait PatternTypers {
       def eligible(tparam: Symbol) = (
            tparam.isTypeParameterOrSkolem
         && tparam.owner.isTerm
-        && (settings.strictInference || !variance.isInvariant)
+        && !variance.isInvariant
       )
 
       def skolems = try skolemBuffer.toList finally skolemBuffer.clear()
@@ -225,19 +225,11 @@ trait PatternTypers {
      *
      * see test/files/../t5189*.scala
      */
-    private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
-      // TODO scala/bug#7886 / scala/bug#5900 This is well intentioned but doesn't quite hit the nail on the head.
-      //      For now, I've put it completely behind -Xstrict-inference.
-      val untrustworthyPt = settings.strictInference && (
-           ptIn =:= AnyTpe
-        || ptIn =:= NothingTpe
-        || ptIn.typeSymbol != caseClass
-      )
+    private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, pt: Type): Tree = {
       val variantToSkolem     = new VariantToSkolemMap
       val caseClassType       = tree.tpe.prefix memberType caseClass
       val caseConstructorType = caseClassType memberType caseClass.primaryConstructor
       val tree1               = TypeTree(caseConstructorType) setOriginal tree
-      val pt                  = if (untrustworthyPt) caseClassType else ptIn
 
       // have to open up the existential and put the skolems in scope
       // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
