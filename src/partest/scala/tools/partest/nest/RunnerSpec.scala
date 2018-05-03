@@ -41,7 +41,6 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   
   heading("Other options:")
   val optVersion      = "version"      / "show Scala version and exit"  --?
-  val optSelfTest     = "self-test"    / "run tests for partest itself" --?
   val optHelp         = "help"         / "show this page and exit"      --?
 
 }
