@@ -133,7 +133,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   @SerialVersionUID(3L)
-  protected class KeySet extends Set[K] with GenKeySet {
+  protected class KeySet extends AbstractSet[K] with GenKeySet {
     def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
   }
 
@@ -315,4 +315,4 @@ object Map extends MapFactory.Delegate[Map](immutable.Map) {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]
+abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]

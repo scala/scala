@@ -28,7 +28,7 @@ package mutable
  */
 @SerialVersionUID(3L)
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
-  extends Map[K, V]
+  extends AbstractMap[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]]
     with Serializable {

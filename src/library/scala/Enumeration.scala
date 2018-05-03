@@ -266,7 +266,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *  @define Coll `collection.immutable.SortedSet`
    */
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
-    extends immutable.SortedSet[Value]
+    extends immutable.AbstractSet[Value]
+      with immutable.SortedSet[Value]
       with immutable.SetOps[Value, immutable.Set, ValueSet]
       with StrictOptimizedIterableOps[Value, immutable.Set, ValueSet]
       with Serializable {

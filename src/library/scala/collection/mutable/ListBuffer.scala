@@ -29,7 +29,7 @@ import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
   */
 @SerialVersionUID(3L)
 class ListBuffer[A]
-  extends Buffer[A]
+  extends AbstractBuffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
      with ReusableBuilder[A, immutable.List[A]]

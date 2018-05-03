@@ -70,7 +70,8 @@ import mutable.{Builder, ListBuffer, ReusableBuilder}
   */
 @SerialVersionUID(3L)
 sealed abstract class List[+A]
-  extends LinearSeq[A]
+  extends AbstractSeq[A]
+    with LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
     with StrictOptimizedSeqOps[A, List, List[A]]
     with Serializable {

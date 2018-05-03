@@ -20,7 +20,7 @@ object SeqView {
   type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
 
   /** A view that doesn’t apply any transformation to an underlying sequence */
-  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends SeqView[A] {
+  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends AbstractSeqView[A] {
     def apply(idx: Int): A = underlying.apply(idx)
     def length: Int = underlying.length
     def iterator(): Iterator[A] = underlying.iterator()
@@ -41,5 +41,7 @@ object SeqView {
     def apply(idx: Int): A = if (idx < n) underlying(idx) else throw new IndexOutOfBoundsException(idx.toString)
     def length: Int = underlying.length min normN
   }
-
 }
+
+/** Explicit instantiation of the `SeqView` trait to reduce class file size in subclasses. */
+abstract class AbstractSeqView[+A] extends AbstractView[A] with SeqView[A]

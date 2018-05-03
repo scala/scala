@@ -24,7 +24,7 @@ package mutable
   */
 @SerialVersionUID(3L)
 final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBufferSize: Int, initBlank: Boolean)
-  extends Map[Long, V]
+  extends AbstractMap[Long, V]
     with MapOps[Long, V, Map, LongMap[V]]
     with StrictOptimizedIterableOps[(Long, V), Iterable, LongMap[V]]
     with Serializable
