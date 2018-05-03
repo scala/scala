@@ -141,7 +141,6 @@ trait ScalaSettings extends AbsScalaSettings
   val showPhases         = BooleanSetting      ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
-  val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
   val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.13"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
