@@ -19,6 +19,7 @@ object ScalaCompilerOptionsExporter {
   val AdvancedSettings = Category("Advanced Settings", 3)
   val PrivateSettings = Category("Private Settings", 4)
   val WarningSettings = Category("Warning Settings", 5)
+  val IDESpecificSettings = Category("IDE Specific Settings", 6)
 
   trait JacksonWorkaround {
      val category: String
@@ -121,6 +122,8 @@ object ScalaCompilerOptionsExporter {
       val name = option.option
       if (name.startsWith("-Xfatal-warnings") || name == "-Xlint" || name.startsWith("-Ywarn")) {
         WarningSettings
+      } else if (name.startsWith("-Ypresentation")) {
+        IDESpecificSettings
       } else if (name.startsWith("-X")) {
         AdvancedSettings
       } else if (name.startsWith("-Y") || name.startsWith("-opt") && name != "-optimise") {
