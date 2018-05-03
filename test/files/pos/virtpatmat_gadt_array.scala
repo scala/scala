@@ -11,5 +11,5 @@ object Test {
   //     (OptionMatching.guard(null.==(x1), x1.asInstanceOf[Array[T]]).flatMap(((x3: Array[T]) =>
   //         OptionMatching.one(null))): Option[scala.collection.mutable.ArrayOps[T]])): Option[scala.collection.mutable.ArrayOps[T]]).orElse((OptionMatching.zero: Option[scala.collection.mutable.ArrayOps[T]]))))
 
-  def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = collection.arrayToArrayOps(xs)
+  def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps(xs)
 }

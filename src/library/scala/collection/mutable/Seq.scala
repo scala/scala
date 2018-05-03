@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import scala.collection.{IterableOnce, SeqFactory, toNewSeq, toOldSeq}
+import scala.collection.{IterableOnce, SeqFactory}
 import scala.language.higherKinds
 
 trait Seq[A]

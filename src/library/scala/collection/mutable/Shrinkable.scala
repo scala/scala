@@ -3,8 +3,6 @@ package collection.mutable
 
 import scala.annotation.tailrec
 
-import collection.toNewSeq
-
 /** This trait forms part of collections that can be reduced
   *  using a `-=` operator.
   *

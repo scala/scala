@@ -10,7 +10,6 @@ package scala
 package collection.mutable
 
 import collection.Iterator
-import collection.arrayToWrappedArray
 
 import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
 import scala.util.hashing.byteswap32

@@ -3,8 +3,6 @@ package collection.mutable
 
 import collection.Iterator
 
-import collection.arrayToWrappedArray
-
 import java.lang.{Integer, ThreadLocal}
 
 import java.lang.Integer.rotateRight
