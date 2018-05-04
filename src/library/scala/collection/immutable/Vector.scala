@@ -6,6 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.runtime.ScalaRunTime
 
 /** $factoryInfo
   * @define Coll `Vector`
@@ -219,6 +220,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.dirty = dirty
     s.gotoPosWritable(focus, idx, focus ^ idx)  // if dirty commit changes; go to new pos and prepare for writing
     s.display0(idx & 31) = elem.asInstanceOf[AnyRef]
+    ScalaRunTime.releaseFence()
     s
   }
 
@@ -237,7 +239,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   override def prepended[B >: A](value: B): Vector[B] = {
-    if (endIndex != startIndex) {
+    val result = if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
 
@@ -312,10 +314,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       s.display0 = elems
       s
     }
+    ScalaRunTime.releaseFence()
+    result
   }
 
   override def appended[B >: A](value: B): Vector[B] = {
-    if (endIndex != startIndex) {
+    val result = if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31
 
@@ -374,6 +378,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       s.display0 = elems
       s
     }
+    ScalaRunTime.releaseFence()
+    result
   }
 
 
@@ -510,6 +516,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
     s.preClean(d)
     s.cleanLeftEdge(cutIndex - shift)
+    ScalaRunTime.releaseFence()
     s
   }
 
@@ -525,6 +532,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
     s.preClean(d)
     s.cleanRightEdge(cutIndex - shift)
+    ScalaRunTime.releaseFence()
     s
   }
 
@@ -617,6 +625,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     val s = new Vector[A](0, size, 0) // should focus front or back?
     s.initFrom(this)
     if (depth > 1) s.gotoPos(0, size - 1) // we're currently focused to size - 1, not size!
+    ScalaRunTime.releaseFence()
     s
   }
 
