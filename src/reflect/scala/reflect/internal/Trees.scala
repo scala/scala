@@ -545,8 +545,6 @@ trait Trees extends api.Trees {
   object Select extends SelectExtractor
 
   case class Ident(name: Name) extends RefTree with IdentApi {
-    if (name.string_==("rc6"))
-      "".reverse
     def qualifier: Tree = EmptyTree
     def isBackquoted = this.hasAttachment[BackquotedIdentifierAttachment.type]
   }
