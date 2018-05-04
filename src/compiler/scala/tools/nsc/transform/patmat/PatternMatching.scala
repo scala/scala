@@ -81,10 +81,6 @@ trait PatternMatching extends Transform
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
-  }
 
   class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
                                                              with MatchOptimizer

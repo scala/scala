@@ -682,8 +682,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // Note that the presence of the `FINAL` flag on a symbol does not correspond 1:1 to emitting
     // ACC_FINAL in bytecode.
     //
-    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag). Nested
-    // objects don't get the flag to allow overriding (under -Yoverride-objects, scala/bug#5676).
+    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag).
+    // Currently, nested objects don't get the flag (originally, to allow overriding under the now-removed -Yoverride-objects, scala/bug#5676).
+    // TODO: give nested objects the ACC_FINAL flag again, since we won't let them be overridden
     //
     // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
     // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3

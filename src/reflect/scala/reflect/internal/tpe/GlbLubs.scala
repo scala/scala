@@ -15,7 +15,6 @@ private[internal] trait GlbLubs {
   import statistics._
 
   private final val printLubs = System.getProperty("scalac.debug.lub") != null
-  private final val strictInference = settings.strictInference
 
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
@@ -62,26 +61,6 @@ private[internal] trait GlbLubs {
       for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
         p -> in
     }
-  }
-
-  // only called when strictInference
-  private def willViolateRecursiveBounds(tp: Type, ts: List[Type], tsElimSub: List[Type]) = {
-    val typeSym     = ts.head.typeSymbol // we're uniform, the `.head` is as good as any.
-    def fbounds     = findRecursiveBounds(ts) map (_._2)
-    def isRecursive = typeSym.typeParams exists fbounds.contains
-
-    isRecursive && (transposeSafe(tsElimSub map (_.normalize.typeArgs)) match {
-      case Some(arggsTransposed) =>
-        val mergedTypeArgs = (tp match { case et: ExistentialType => et.underlying; case _ => tp}).typeArgs
-        exists3(typeSym.typeParams, mergedTypeArgs, arggsTransposed) {
-          (param, arg, lubbedArgs) =>
-            val isExistential = arg.typeSymbol.isExistentiallyBound
-            val isInFBound    = fbounds contains param
-            val wasLubbed     = !lubbedArgs.exists(_ =:= arg)
-            (!isExistential && isInFBound && wasLubbed)
-        }
-      case None => false
-    })
   }
 
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
@@ -136,9 +115,6 @@ private[internal] trait GlbLubs {
           val ts1   = elimSub(ts0, depth) map elimHigherOrderTypeParam
           mergePrefixAndArgs(ts1, Covariant, depth) match {
             case NoType => loop(pretypes, tails)
-            case tp if strictInference && willViolateRecursiveBounds(tp, ts0, ts1) =>
-              log(s"Breaking recursion in lublist, advancing frontier and discarding merged prefix/args from $tp")
-              loop(pretypes, tails)
             case tp =>
               loop(tp :: pretypes, tails)
           }
