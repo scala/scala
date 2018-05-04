@@ -2584,7 +2584,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match)), reportAmbiguousErrors = false) orElse (_ => null)
 
       if (matchStrategy ne null) // virtualize
-        typed((new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)).translateMatch(match_), mode, pt)
+        typed((new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy, match_.selector.pos.focusEnd)).translateMatch(match_), mode, pt)
       else
         match_ // will be translated in phase `patmat`
     }
