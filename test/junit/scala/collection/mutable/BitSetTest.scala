@@ -48,4 +48,14 @@ class BitSetTest {
     val bsFromEmptyBitMaskNoCopy = BitSet.fromBitMaskNoCopy(Array.empty[Long])
     assert(bsFromEmptyBitMaskNoCopy.add(0))
   }
+
+  @Test def strawman_508: Unit = {
+    val m = BitSet(1)
+    assert(m.map(i => i.toLong).isInstanceOf[TreeSet[Long]])
+    assert(m.map(i => i + 1).isInstanceOf[BitSet])
+
+    val im = collection.immutable.BitSet(1)
+    assert(im.map(i=>i.toLong).isInstanceOf[collection.immutable.TreeSet[Long]])
+    assert(im.map(i=>i + 1).isInstanceOf[collection.immutable.BitSet])
+  } 
 }
