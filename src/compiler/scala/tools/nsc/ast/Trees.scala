@@ -287,6 +287,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 transform(fn)
               case EmptyTree =>
                 tree
+              // The typer does not accept UnApply. Replace it to Apply, which can be retyped.
+              case UnApply(Apply(Select(prefix, termNames.unapply | termNames.unapplySeq),
+                                 List(Ident(termNames.SELECTOR_DUMMY))), args) =>
+                Apply(prefix, transformTrees(args))
               case _ =>
                 val dupl = tree.duplicate
                 // Typically the resetAttrs transformer cleans both symbols and types.
