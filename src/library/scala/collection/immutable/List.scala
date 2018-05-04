@@ -7,6 +7,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}
+import scala.runtime.ScalaRunTime
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -147,6 +148,7 @@ sealed abstract class List[+A]
       t = nx
       rest = rest.tail
     }
+    ScalaRunTime.releaseFence()
     h
   }
 
@@ -216,6 +218,7 @@ sealed abstract class List[+A]
         t = nx
         rest = rest.tail
       }
+      ScalaRunTime.releaseFence()
       h
     }
   }
@@ -242,7 +245,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       } while (rest ne Nil)
-      h
+      {ScalaRunTime.releaseFence(); h}
     }
   }
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
@@ -266,7 +269,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       }
-      if (!found) Nil else h
+      if (!found) Nil else {ScalaRunTime.releaseFence(); h}
     }
   }
 
@@ -449,7 +452,9 @@ sealed abstract class List[+A]
         }
       }
     }
-    loop(null, null, this, this)
+    val result = loop(null, null, this, this)
+    ScalaRunTime.releaseFence()
+    result
   }
 
   override def filter(p: A => Boolean): List[A] = filterImpl(p, isFlipped = false)
@@ -531,7 +536,9 @@ sealed abstract class List[+A]
       newHead
     }
 
-    noneIn(this)
+    val result = noneIn(this)
+    ScalaRunTime.releaseFence()
+    result
   }
 
   final override def toList: List[A] = this
@@ -560,6 +567,7 @@ sealed abstract class List[+A]
 
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
+  ScalaRunTime.releaseFence()
   override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
