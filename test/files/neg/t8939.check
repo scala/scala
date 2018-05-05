@@ -1,0 +1,33 @@
+t8939.scala:7: warning: Option[UserId] and UserId are unrelated: they will most likely never compare equal
+  l.find(_.id == UserId(1))
+              ^
+t8939.scala:8: warning: Option[UserId] and Option[Int] are unrelated: they will most likely never compare equal
+  l.find(_.id == Option(1))
+              ^
+t8939.scala:9: warning: Option[UserId] and List[UserId] are unrelated: they will most likely never compare equal
+  l.find(_.id == List(UserId(1)))
+              ^
+t8939.scala:11: warning: OtherUser and UserId are unrelated: they will most likely never compare equal
+  val c1 = OtherUser(Some(UserId(1)), 2) == UserId(3)
+                                         ^
+t8939.scala:12: warning: OtherUser and User are unrelated: they will most likely never compare equal
+  val c2 = OtherUser(Some(UserId(1)), 2) == User(Some(UserId(1)), 2)
+                                         ^
+t8939.scala:13: warning: Some[OtherUser] and Some[User] are unrelated: they will most likely never compare equal
+  val c3 = Some(OtherUser(Some(UserId(1)), 2)) == Some(User(Some(UserId(1)), 2))
+                                               ^
+t8939.scala:14: warning: Any and User are unrelated: they will most likely never compare equal
+  val c4 = (OtherUser(Some(UserId(1)), 2): Any) == User(Some(UserId(1)), 2)
+                                                ^
+t8939.scala:15: warning: comparing values of types Boolean and Long using `==' will always yield false
+  val c5 = true == 1L
+                ^
+t8939.scala:16: warning: String and Long are unrelated: they will most likely never compare equal
+  val c6 = "" == 1L
+              ^
+t8939.scala:17: warning: String and Int are unrelated: they will most likely never compare equal
+  val c7 = "" == 42
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+10 warnings found
+one error found

@@ -29,9 +29,10 @@ trait Warnings {
       "Inspect both user-written code and expanded trees when generating unused symbol warnings."
     )
   )
-  val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
-  val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
-  val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
+  val warnDeadCode               = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
+  val warnValueDiscard           = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
+  val warnNumericWiden           = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
+  val warnStrictEquals  = BooleanSetting("-Ywarn-strict-equals", "Comparison of mismatched types")
 
   object UnusedWarnings extends MultiChoiceEnumeration {
     val Imports   = Choice("imports",   "Warn if an import selector is not referenced.")
