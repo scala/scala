@@ -141,7 +141,7 @@ object Numeric {
     // logic in Numeric base trait mishandles abs(-0.0f)
     override def abs(x: Float): Float = math.abs(x)
   }
-  implicit object FloatIsFractional extends FloatIsFractional with Ordering.FloatOrdering
+  implicit object FloatIsFractional extends FloatIsFractional with Ordering.Float.IeeeOrdering
 
   trait DoubleIsFractional extends Fractional[Double] {
     def plus(x: Double, y: Double): Double = x + y
@@ -158,7 +158,7 @@ object Numeric {
     // logic in Numeric base trait mishandles abs(-0.0)
     override def abs(x: Double): Double = math.abs(x)
   }
-  implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
+  implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.Double.IeeeOrdering
 
   trait BigDecimalIsConflicted extends Numeric[BigDecimal] {
     def plus(x: BigDecimal, y: BigDecimal): BigDecimal = x + y

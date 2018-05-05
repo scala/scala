@@ -1,4 +1,4 @@
-
+import scala.math.Ordering.Double.IeeeOrdering
 
 
 object Test {

@@ -11,7 +11,7 @@ package runtime
 
 final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Double] {
   protected def num: Fractional[Double] = scala.math.Numeric.DoubleIsFractional
-  protected def ord: Ordering[Double]   = scala.math.Ordering.Double
+  protected def ord: Ordering[Double]   = scala.math.Ordering.Double.TotalOrdering
 
   override def doubleValue() = self
   override def floatValue()  = self.toFloat
