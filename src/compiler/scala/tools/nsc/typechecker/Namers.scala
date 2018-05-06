@@ -52,6 +52,8 @@ trait Namers extends MethodSynthesis {
     // overridden by the presentation compiler
     def saveDefaultGetter(meth: Symbol, default: Symbol): Unit = { }
 
+    def expandMacroAnnotations(stats: List[Tree]): List[Tree] = stats
+
     import NamerErrorGen._
     val typer = newTyper(context)
 
@@ -465,6 +467,7 @@ trait Namers extends MethodSynthesis {
 
       val m = tree.symbol
       if (m.isTopLevel && !m.hasPackageFlag) {
+        // TODO: I've seen crashes where m.moduleClass == NoSymbol
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
@@ -1189,6 +1192,7 @@ trait Namers extends MethodSynthesis {
         cda.companionModuleClassNamer = templateNamer
       }
       val classTp = ClassInfoType(parents, decls, clazz)
+      templateNamer.expandMacroAnnotations(templ.body)
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
     }
 
@@ -1199,6 +1203,7 @@ trait Namers extends MethodSynthesis {
       val resultType = templateSig(impl)
 
       val res = GenPolyType(tparams0, resultType)
+
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
@@ -1210,6 +1215,10 @@ trait Namers extends MethodSynthesis {
         // Don't force the owner's info lest we create cycles as in scala/bug#6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
+
+      if (settings.YmacroAnnotations && treeInfo.isMacroAnnotation(cdef))
+        typer.typedMacroAnnotation(cdef)
+
       pluginsTp
     }
 

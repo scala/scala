@@ -379,6 +379,10 @@ trait StdNames {
     val STAR: NameType                     = "*"
     val THIS: NameType                     = "_$this"
 
+
+    val annottees: NameType               = "annottees"       // for macro annotations
+    val macroTransform: NameType          = "macroTransform"  // for macro annotations
+
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
