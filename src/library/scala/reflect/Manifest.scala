@@ -93,6 +93,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedArray.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
+    override def unapply(x: Any): Option[Byte] = {
+      x match {
+        case d: Byte => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Byte
   }
   val Byte: AnyValManifest[Byte] = new ByteManifest
@@ -103,6 +109,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedArray.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
+    override def unapply(x: Any): Option[Short] = {
+      x match {
+        case d: Short => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Short
   }
   val Short: AnyValManifest[Short] = new ShortManifest
@@ -113,6 +125,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedArray.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
+    override def unapply(x: Any): Option[Char] = {
+      x match {
+        case d: Char => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Char
   }
   val Char: AnyValManifest[Char] = new CharManifest
@@ -123,6 +141,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedArray.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
+    override def unapply(x: Any): Option[Int] = {
+      x match {
+        case d: Int => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Int
   }
   val Int: AnyValManifest[Int] = new IntManifest
@@ -133,6 +157,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedArray.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
+    override def unapply(x: Any): Option[Long] = {
+      x match {
+        case d: Long => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Long
   }
   val Long: AnyValManifest[Long] = new LongManifest
@@ -143,6 +173,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedArray.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
+    override def unapply(x: Any): Option[Float] = {
+      x match {
+        case d: Float => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Float
   }
   val Float: AnyValManifest[Float] = new FloatManifest
@@ -150,9 +186,18 @@ object ManifestFactory {
   @SerialVersionUID(1L)
   private class DoubleManifest extends AnyValManifest[scala.Double]("Double") {
     def runtimeClass = java.lang.Double.TYPE
-    override def newArray(len: Int): Array[Double] = new Array[Double](len)
+    override def newArray(len: Int): Array[Double] = {
+      new Array[Double](len)
+    }
     override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedArray.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
+
+    override def unapply(x: Any): Option[Double] = {
+      x match {
+        case d: Double => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Double
   }
   val Double: AnyValManifest[Double] = new DoubleManifest
@@ -163,6 +208,12 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedArray.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
+    override def unapply(x: Any): Option[Boolean] = {
+      x match {
+        case d: Boolean => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Boolean
   }
   val Boolean: AnyValManifest[Boolean] = new BooleanManifest
@@ -176,6 +227,12 @@ object ManifestFactory {
     override protected def arrayClass[T](tp: Class[_]): Class[Array[T]] =
       if (tp eq runtimeClass) classOf[Array[scala.runtime.BoxedUnit]].asInstanceOf[Class[Array[T]]]
       else super.arrayClass(tp)
+    override def unapply(x: Any): Option[Unit] = {
+      x match {
+        case d: Unit => Some(d)
+        case _ => None
+      }
+    }
     private def readResolve(): Any = Manifest.Unit
   }
   val Unit: AnyValManifest[Unit] = new UnitManifest
