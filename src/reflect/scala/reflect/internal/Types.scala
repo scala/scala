@@ -2573,20 +2573,72 @@ trait Types
 
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
-      if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams(params))
+      if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams)
       toBoolean(trivial)
     }
 
     private def isTrivialResult =
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
-    private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
-      case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
-        areTrivialParams(rest)
-      case _ =>
-        true
-    }
+    /*- Imperative encoding for:
+     *  `lazy val paramsContainsCollectors = params.map( new ContainsCollector(_) ).toArray`
+     *  `lazy val paramTpes = params.map( _.tpe).toArray`
+     */
+    private[this] var paramsContainsCollectors: Array[ContainsCollector] = null
+    private[this] var paramsTpes: Array[Type] = null
+    private[this] def buildParamsContainsCollectors: Unit =
+      if (paramsContainsCollectors == null) {
+        val len = params.length
+        paramsContainsCollectors = new Array[ContainsCollector](len)
+        paramsTpes = new Array[Type](len)
+        @tailrec
+        def buildPCC(syms: List[Symbol], ix: Int): Unit = syms match {
+          case sym :: tailSyms =>
+            paramsContainsCollectors(ix) = new ContainsCollector(sym)
+            paramsTpes(ix) = sym.tpe
+            buildPCC(tailSyms, ix+1)
+          case Nil =>
+        }
+        buildPCC(params, ix = 0)
+      }
+    /* End of paramsContainsCollector */
+
+    // areTrivialParams = params.forall(
+    private def areTrivialParams: Boolean =
+      if (params.isEmpty) true else {
+
+        def typeContains(pcc: ContainsCollector, tp: Type): Boolean = {
+          pcc.result = false
+          pcc.collect(tp)
+        }
+
+        // Imperative rewrite of paramsTpes.exists( typeContains(pcc, _) )
+        def anyTypeContains(pcc: ContainsCollector): Boolean = {
+          var existsContains = false
+          var tpeIx = 0
+          while(tpeIx < paramsTpes.length && !existsContains){
+            existsContains = typeContains(pcc, paramsTpes(tpeIx) )
+            tpeIx = tpeIx + 1
+          }
+          existsContains
+        }
+
+        def isTrivialParam(paramIx: Int): Boolean =
+          paramsTpes(paramIx).isTrivial && {
+            val pcc = paramsContainsCollectors(paramIx)
+            !typeContains(pcc, resultType) && !anyTypeContains(pcc)
+          }
+
+        buildParamsContainsCollectors
+        // Imperative rewrite of `params.forall( isTrivialParam )`
+        var paramIdx = 0
+        var allIsTrivial = true
+        while(paramIdx < paramsTpes.length && allIsTrivial){
+          allIsTrivial = isTrivialParam(paramIdx)
+          paramIdx = paramIdx + 1
+        }
+        allIsTrivial
+      }
 
     def isImplicit = (params ne Nil) && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
