@@ -2580,32 +2580,25 @@ trait Types
     private def isTrivialResult =
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
-    /*- Imperative encoding for:
-     *  `lazy val paramsContainsCollectors = params.map( new ContainsCollector(_) ).toArray`
-     *  `lazy val paramTpes = params.map( _.tpe).toArray`
-     */
-    private[this] var paramsContainsCollectors: Array[ContainsCollector] = null
-    private[this] var paramsTpes: Array[Type] = null
-    private[this] def buildParamsContainsCollectors: Unit =
-      if (paramsContainsCollectors == null) {
-        val len = params.length
-        paramsContainsCollectors = new Array[ContainsCollector](len)
-        paramsTpes = new Array[Type](len)
-        @tailrec
-        def buildPCC(syms: List[Symbol], ix: Int): Unit = syms match {
-          case sym :: tailSyms =>
-            paramsContainsCollectors(ix) = new ContainsCollector(sym)
-            paramsTpes(ix) = sym.tpe
-            buildPCC(tailSyms, ix+1)
-          case Nil =>
-        }
-        buildPCC(params, ix = 0)
-      }
-    /* End of paramsContainsCollector */
-
-    // areTrivialParams = params.forall(
     private def areTrivialParams: Boolean =
       if (params.isEmpty) true else {
+        val len = params.length
+        val paramsTpes: Array[Type] = new Array[Type](len)
+
+        // returns the result of ```params.forall(_.tpe.isTrivial))```
+        // along the way, it loads each param' tpe into array
+        def forallIsTrivial: Boolean = {
+          var res = true
+          var pps = params
+          var ix = 0
+          while(res && ix < len){
+            paramsTpes(ix) = pps.head.tpe
+            res = paramsTpes(ix).isTrivial
+            pps = pps.tail
+            ix = ix + 1
+          }
+          res
+        }
 
         def typeContains(pcc: ContainsCollector, tp: Type): Boolean = {
           pcc.result = false
@@ -2616,28 +2609,24 @@ trait Types
         def anyTypeContains(pcc: ContainsCollector): Boolean = {
           var existsContains = false
           var tpeIx = 0
-          while(tpeIx < paramsTpes.length && !existsContains){
+          while(tpeIx < len && !existsContains){
             existsContains = typeContains(pcc, paramsTpes(tpeIx) )
             tpeIx = tpeIx + 1
           }
           existsContains
         }
 
-        def isTrivialParam(paramIx: Int): Boolean =
-          paramsTpes(paramIx).isTrivial && {
-            val pcc = paramsContainsCollectors(paramIx)
-            !typeContains(pcc, resultType) && !anyTypeContains(pcc)
+        @tailrec
+        def forallParamsNoTypeContains(params: List[Symbol]): Boolean =
+          params match {
+            case Nil => true
+            case pp :: pps =>
+              val pcc = new ContainsCollector(pp)
+              !typeContains(pcc, resultType) && ! anyTypeContains(pcc) &&
+              forallParamsNoTypeContains(pps)
           }
 
-        buildParamsContainsCollectors
-        // Imperative rewrite of `params.forall( isTrivialParam )`
-        var paramIdx = 0
-        var allIsTrivial = true
-        while(paramIdx < paramsTpes.length && allIsTrivial){
-          allIsTrivial = isTrivialParam(paramIdx)
-          paramIdx = paramIdx + 1
-        }
-        allIsTrivial
+        forallIsTrivial && forallParamsNoTypeContains(params)
       }
 
     def isImplicit = (params ne Nil) && params.head.isImplicit
