@@ -173,16 +173,40 @@ trait Logic extends Debugging  {
      */
     def simplify(f: Prop): Prop = {
 
-      // limit size to avoid blow up
       def hasImpureAtom(ops0: collection.Iterable[Prop]): Boolean = {
+        // HOT method, imperative rewrite of:
+        // ops.combinations(2).exists {
+        //   case Seq(a, Not(b)) if a == b => true
+        //   case Seq(Not(a), b) if a == b => true
+        //   case _                        => false
+        // }
+
+        def checkPair(a: Prop, b: Prop): Boolean = {
+          b match {
+            case Not(b) if a == b => true
+            case _ =>
+              a match {
+                case Not(a) if a == b => true
+                case _ => false
+              }
+          }
+        }
         val size = ops0.size
-        size < 10 && {
-          // HOT method, imperative rewrite of:
-          // ops.combinations(2).exists {
-          //   case Seq(a, Not(b)) if a == b => true
-          //   case Seq(Not(a), b) if a == b => true
-          //   case _                        => false
-          // }
+        if (size > 10) false // limit size to avoid blow up
+        else if (size < 2) false // no combinations
+        else if (size == 2) { // Specialized versions for size 2+3
+          val it = ops0.iterator
+          val result = checkPair(it.next(), it.next())
+          assert(!it.hasNext)
+          result
+        } else if (size == 3) {
+          val it = ops0.iterator
+          val a = it.next()
+          val b = it.next()
+          val c = it.next()
+          assert(!it.hasNext)
+          checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
+        } else {
           val ops = new Array[Prop](size)
           ops0.copyToArray(ops)
           var i = 0
@@ -190,14 +214,7 @@ trait Logic extends Debugging  {
           while (i < len - 1) {
             var j = i + 1
             while (j < len) {
-              ops(j) match {
-                case Not(b) if ops(i) == b => return true
-                case _ =>
-                  ops(i) match {
-                    case Not(a) if a == ops(j) => return true
-                    case _ =>
-                  }
-              }
+              if (checkPair(ops(i), ops(j))) return true
               j += 1
             }
             i += 1
