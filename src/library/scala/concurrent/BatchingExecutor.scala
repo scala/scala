@@ -8,8 +8,17 @@
 
 package scala.concurrent
 
+import java.util.ArrayDeque
 import java.util.concurrent.Executor
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
+/**
+ * Marker trait to indicate that a Runnable is Batchable by BatchingExecutors
+ */
+trait Batchable {
+  self: Runnable =>
+}
 
 /**
  * Mixin trait for an Executor
@@ -39,79 +48,90 @@ import scala.annotation.tailrec
  * WARNING: The underlying Executor's execute-method must not execute the submitted Runnable
  * in the calling thread synchronously. It must enqueue/handoff the Runnable.
  */
-private[concurrent] trait BatchingExecutor extends Executor {
+ private[concurrent] trait BatchingExecutor extends Executor {
+  private[this] final val _tasksLocal = new ThreadLocal[Batch]()
 
-  // invariant: if "_tasksLocal.get ne null" then we are inside BatchingRunnable.run; if it is null, we are outside
-  private[this] val _tasksLocal = new ThreadLocal[List[Runnable]]()
+  private[this] final class Batch(capacity: Int) extends ArrayDeque[Runnable](capacity) with Runnable with BlockContext with (BlockContext => Unit) {
+    private[this] final var parentBlockContext: BlockContext = _
 
-  private class Batch(val initial: List[Runnable]) extends Runnable with BlockContext {
-    private[this] var parentBlockContext: BlockContext = _
+    def this(r: Runnable, capacity: Int) = {
+      this(capacity)
+      addLast(r)
+    }
+
+    final def executor: BatchingExecutor = BatchingExecutor.this
+
     // this method runs in the delegate ExecutionContext's thread
-    override def run(): Unit = {
-      require(_tasksLocal.get eq null)
+    override final def run(): Unit = BlockContext.usingBlockContext(this)(this)
 
-      val prevBlockContext = BlockContext.current
-      BlockContext.withBlockContext(this) {
-        try {
-          parentBlockContext = prevBlockContext
-
-          @tailrec def processBatch(batch: List[Runnable]): Unit = batch match {
-            case Nil => ()
-            case head :: tail =>
-              _tasksLocal set tail
-              try {
-                head.run()
-              } catch {
-                case t: Throwable =>
-                  // if one task throws, move the
-                  // remaining tasks to another thread
-                  // so we can throw the exception
-                  // up to the invoking executor
-                  val remaining = _tasksLocal.get
-                  _tasksLocal set Nil
-                  unbatchedExecute(new Batch(remaining)) //TODO what if this submission fails?
-                  throw t // rethrow
-              }
-              processBatch(_tasksLocal.get) // since head.run() can add entries, always do _tasksLocal.get here
-          }
-
-          processBatch(initial)
-        } finally {
-          _tasksLocal.remove()
-          parentBlockContext = null
-        }
+    override final def apply(prevBlockContext: BlockContext): Unit = {
+      //This invariant needs to hold: require(_tasksLocal.get eq null)
+      parentBlockContext = prevBlockContext
+      try {
+        _tasksLocal.set(this)
+        runAll()
+        _tasksLocal.remove() // Will be cleared in the throwing-case by runAll()
+      } finally {
+        parentBlockContext = null
       }
     }
 
+    @tailrec private[this] final def runAll(): Unit = {
+      val next = pollLast()
+      if (next ne null) {
+        try next.run() catch {
+          case t: Throwable =>
+            parentBlockContext = null // Need to reset this before re-submitting it
+            _tasksLocal.remove() // If unbatchedExecute runs synchronously
+            handleRunFailure(t)
+         }
+        runAll()
+      }
+    }
+
+    private[this] final def handleRunFailure(cause: Throwable): Nothing =
+      if (NonFatal(cause) || cause.isInstanceOf[InterruptedException]) {
+        try unbatchedExecute(this) catch {
+          case inner: Throwable =>
+            if (NonFatal(inner)) {
+              val e = new ExecutionException("Non-fatal error occurred and resubmission failed, see suppressed exception.", cause)
+              e.addSuppressed(inner)
+              throw e
+            } else throw inner
+        }
+        throw cause
+      } else throw cause
+
     override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
-      // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
-      {
-        val tasks = _tasksLocal.get
-        _tasksLocal set Nil
-        if ((tasks ne null) && tasks.nonEmpty)
-          unbatchedExecute(new Batch(tasks))
+      val pbc = parentBlockContext
+      if(!isEmpty) { // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
+        val b = new Batch(math.max(4, this.size))
+        b.addAll(this)
+        this.clear()
+        unbatchedExecute(b)
       }
 
-      // now delegate the blocking to the previous BC
-      require(parentBlockContext ne null)
-      parentBlockContext.blockOn(thunk)
+      if (pbc ne null) pbc.blockOn(thunk) // now delegate the blocking to the previous BC
+      else {
+        try thunk finally throw new IllegalStateException("BUG in BatchingExecutor.Batch: parentBlockContext is null")
+      }
     }
   }
 
   protected def unbatchedExecute(r: Runnable): Unit
 
-  override def execute(runnable: Runnable): Unit = {
-    if (batchable(runnable)) { // If we can batch the runnable
-      _tasksLocal.get match {
-        case null => unbatchedExecute(new Batch(runnable :: Nil)) // If we aren't in batching mode yet, enqueue batch
-        case some => _tasksLocal.set(runnable :: some) // If we are already in batching mode, add to batch
-      }
-    } else unbatchedExecute(runnable) // If not batchable, just delegate to underlying
+  private[this] final def batchedExecute(runnable: Runnable): Unit = {
+    val b = _tasksLocal.get
+    if (b ne null) b.addLast(runnable)
+    else unbatchedExecute(new Batch(runnable, 4))
   }
 
-  /** Override this to define which runnables will be batched. */
-  def batchable(runnable: Runnable): Boolean = runnable match {
-    case _: OnCompleteRunnable => true
-    case _                     => false
-  }
+  override def execute(runnable: Runnable): Unit =
+    if(batchable(runnable)) batchedExecute(runnable)
+    else unbatchedExecute(runnable)
+
+  /** Override this to define which runnables will be batched.
+    * By default it tests the Runnable for being an instance of [Batchable].
+   **/
+  protected def batchable(runnable: Runnable): Boolean = runnable.isInstanceOf[Batchable]
 }

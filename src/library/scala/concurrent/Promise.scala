@@ -60,18 +60,19 @@ trait Promise[T] {
    *
    *  @return   This promise
    */
-  final def completeWith(other: Future[T]): this.type = tryCompleteWith(other)
-
-  /** Attempts to complete this promise with the specified future, once that future is completed.
-   *
-   *  @return   This promise
-   */
-  final def tryCompleteWith(other: Future[T]): this.type = {
+   def completeWith(other: Future[T]): this.type = {
     if (other ne this.future) { // this tryCompleteWith this doesn't make much sense
       other.onComplete(this tryComplete _)(Future.InternalCallbackExecutor)
     }
     this
   }
+
+  /** Attempts to complete this promise with the specified future, once that future is completed.
+   *
+   *  @return   This promise
+   */
+  @deprecated("Since this method is semantically equivalent to `completeWith`, use that instead.", "2.13.0")
+  final def tryCompleteWith(other: Future[T]): this.type = completeWith(other)
 
   /** Completes the promise with a value.
    *
@@ -108,32 +109,32 @@ trait Promise[T] {
   def tryFailure(cause: Throwable): Boolean = tryComplete(Failure(cause))
 }
 
-object Promise {
+final object Promise {
   /** Creates a promise object which can be completed with a value.
    *
    *  @tparam T       the type of the value in the promise
-   *  @return         the newly created `Promise` object
+   *  @return         the newly created `Promise` instance
    */
-  def apply[T](): Promise[T] = new impl.Promise.DefaultPromise[T]()
+  final def apply[T](): Promise[T] = new impl.Promise.DefaultPromise[T]()
 
   /** Creates an already completed Promise with the specified exception.
    *
    *  @tparam T       the type of the value in the promise
-   *  @return         the newly created `Promise` object
+   *  @return         the newly created `Promise` instance
    */
-  def failed[T](exception: Throwable): Promise[T] = fromTry(Failure(exception))
+  final def failed[T](exception: Throwable): Promise[T] = fromTry(Failure(exception))
 
   /** Creates an already completed Promise with the specified result.
    *
    *  @tparam T       the type of the value in the promise
-   *  @return         the newly created `Promise` object
+   *  @return         the newly created `Promise` instance
    */
-  def successful[T](result: T): Promise[T] = fromTry(Success(result))
+  final def successful[T](result: T): Promise[T] = fromTry(Success(result))
 
   /** Creates an already completed Promise with the specified result or exception.
    *
    *  @tparam T       the type of the value in the promise
-   *  @return         the newly created `Promise` object
+   *  @return         the newly created `Promise` instance
    */
-  def fromTry[T](result: Try[T]): Promise[T] = impl.Promise.KeptPromise[T](result)
+  final def fromTry[T](result: Try[T]): Promise[T] = new impl.Promise.DefaultPromise[T](result)
 }

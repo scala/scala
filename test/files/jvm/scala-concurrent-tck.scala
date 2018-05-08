@@ -10,6 +10,7 @@ import scala.concurrent.{
 }
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.reflect.{ classTag, ClassTag }
 import scala.tools.partest.TestUtil.intercept
 import scala.annotation.tailrec
@@ -25,6 +26,13 @@ trait TestBase {
     assert(Option(q.poll(2000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
     // Check that we don't get more than one completion
     assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
+  }
+
+  def test[T](name: String)(body: => T): T = {
+    println(s"starting $name")
+    val r = body
+    println(s"finished $name")
+    r
   }
 }
 
@@ -91,7 +99,7 @@ trait FutureCallbacks extends TestBase {
 
   def testThatNestedCallbacksDoNotYieldStackOverflow(): Unit = {
     val promise = Promise[Int]
-    (0 to 10000).map(Future(_)).foldLeft(promise.future)((f1, f2) => f2.flatMap(i => f1))
+    (0 to 10000).map(Future(_)).foldLeft(promise.future)((pf, f) => f.flatMap(i => pf))
     promise.success(-1)
   }
 
@@ -99,11 +107,12 @@ trait FutureCallbacks extends TestBase {
     done =>
       val promise = Promise[Unit]
       val otherPromise = Promise[Unit]
-      def attachMeaninglessCallbacksTo(f: Future[Any]): Unit = (1 to 1000).foreach(_ => f.onComplete(_ => ()))
-      attachMeaninglessCallbacksTo(promise.future)
-      val future = promise.future.flatMap { _ =>
+      def attachMeaninglessCallbacksTo[T](f: Future[T]): Future[T] = {
+        (1 to 20000).foreach(_ => f.onComplete(_ => ()))
+        f
+      }
+      val future = attachMeaninglessCallbacksTo(promise.future).flatMap { _ =>
         attachMeaninglessCallbacksTo(otherPromise.future)
-        otherPromise.future
       }
       val numbers = new java.util.concurrent.ConcurrentHashMap[Int, Unit]()
       (0 to 10000) foreach { x => numbers.put(x, ()) }
@@ -114,17 +123,17 @@ trait FutureCallbacks extends TestBase {
       otherPromise.success(())
   }
 
-  testOnSuccess()
-  testOnSuccessWhenCompleted()
-  testOnSuccessWhenFailed()
-  testOnFailure()
-  testOnFailureWhenSpecialThrowable(5, new Error)
+  test("testOnSuccess")(testOnSuccess())
+  test("testOnSuccessWhenCompleted")(testOnSuccessWhenCompleted())
+  test("testOnSuccessWhenFailed")(testOnSuccessWhenFailed())
+  test("testOnFailure")(testOnFailure())
+  test("testOnFailureWhenSpecialThrowable")(testOnFailureWhenSpecialThrowable(5, new Error))
   // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
   //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
-  testThatNestedCallbacksDoNotYieldStackOverflow()
-  testOnFailureWhenTimeoutException()
-  stressTestNumberofCallbacks()
+  test("testThatNestedCallbacksDoNotYieldStackOverflow")(testThatNestedCallbacksDoNotYieldStackOverflow())
+  test("testOnFailureWhenTimeoutException")(testOnFailureWhenTimeoutException())
+  test("stressTestNumberofCallbacks")(stressTestNumberofCallbacks())
 }
 
 
@@ -382,9 +391,6 @@ def testTransformFailure(): Unit = once {
       }
   }
 
-  /* TODO: Test for NonFatal in collect (more of a regression test at this point).
-   */
-
   def testForeachSuccess(): Unit = once {
     done =>
       val p = Promise[Int]()
@@ -540,38 +546,61 @@ def testTransformFailure(): Unit = once {
     check(Future.failed[Int](new Exception))
   }
 
-  testMapSuccess()
-  testMapFailure()
-  testFlatMapSuccess()
-  testFlatMapFailure()
-  testFlatMapDelayed()
-  testFilterSuccess()
-  testFilterFailure()
-  testCollectSuccess()
-  testCollectFailure()
-  testForeachSuccess()
-  testForeachFailure()
-  testRecoverSuccess()
-  testRecoverFailure()
-  testRecoverWithSuccess()
-  testRecoverWithFailure()
-  testZipSuccess()
-  testZipFailureLeft()
-  testZipFailureRight()
-  testFallbackTo()
-  testFallbackToFailure()
-  testTransformSuccess()
-  testTransformSuccessPF()
-  testTransformFailure()
-  testTransformFailurePF()
-  testTransformResultToResult()
-  testTransformResultToFailure()
-  testTransformFailureToResult()
-  testTransformFailureToFailure()
-  testTransformWithResultToResult()
-  testTransformWithResultToFailure()
-  testTransformWithFailureToResult()
-  testTransformWithFailureToFailure()
+  private[this] final def testMulti(f: Future[String] => Future[String]): Unit = {
+    val p = Promise[String]()
+    val f1, f2, f3 = f(p.future)
+
+    val p2 = Promise[String]()
+    val f4, f5, f6 = f(p.future)
+
+    p.success("foo")
+    p2.success("bar")
+
+    List(f1,f2,f3).foreach(f => Await.ready(f, 2.seconds))
+    assert(f1.value == f2.value && f2.value == f2.value)
+    List(f4,f5,f6).foreach(f => Await.ready(f, 2.seconds))
+    assert(f4.value == f5.value && f5.value == f6.value)
+  }
+
+  def testMultiFlatMap(): Unit = testMulti((to) => Future.unit.flatMap(_ => to))
+  def testMultiRecoverWith(): Unit = testMulti((to) => Future.failed[String](new NullPointerException).recoverWith { case _ => to })
+  def testMultiTransformWith(): Unit = testMulti((to) => Future.unit.transformWith(_ => to))
+
+  test("testMapSuccess")(testMapSuccess())
+  test("testMapFailure")(testMapFailure())
+  test("testFlatMapSuccess")(testFlatMapSuccess())
+  test("testFlatMapFailure")(testFlatMapFailure())
+  test("testFlatMapDelayed")(testFlatMapDelayed())
+  test("testFilterSuccess")(testFilterSuccess())
+  test("testFilterFailure")(testFilterFailure())
+  test("testCollectSuccess")(testCollectSuccess())
+  test("testCollectFailure")(testCollectFailure())
+  test("testForeachSuccess")(testForeachSuccess())
+  test("testForeachFailure")(testForeachFailure())
+  test("testRecoverSuccess")(testRecoverSuccess())
+  test("testRecoverFailure")(testRecoverFailure())
+  test("testRecoverWithSuccess")(testRecoverWithSuccess())
+  test("testRecoverWithFailure")(testRecoverWithFailure())
+  test("testZipSuccess")(testZipSuccess())
+  test("testZipFailureLeft")(testZipFailureLeft())
+  test("testZipFailureRight")(testZipFailureRight())
+  test("testFallbackTo")(testFallbackTo())
+  test("testFallbackToFailure")(testFallbackToFailure())
+  test("testTransformSuccess")(testTransformSuccess())
+  test("testTransformSuccessPF")(testTransformSuccessPF())
+  test("testTransformFailure")(testTransformFailure())
+  test("testTransformFailurePF")(testTransformFailurePF())
+  test("testTransformResultToResult")(testTransformResultToResult())
+  test("testTransformResultToFailure")(testTransformResultToFailure())
+  test("testTransformFailureToResult")(testTransformFailureToResult())
+  test("testTransformFailureToFailure")(testTransformFailureToFailure())
+  test("testTransformWithResultToResult")(testTransformWithResultToResult())
+  test("testTransformWithResultToFailure")(testTransformWithResultToFailure())
+  test("testTransformWithFailureToResult")(testTransformWithFailureToResult())
+  test("testTransformWithFailureToFailure")(testTransformWithFailureToFailure())
+  test("testMultiFlatMap")(testMultiFlatMap())
+  test("testMultiRecoverWith")(testMultiRecoverWith())
+  test("testMultiTransformWith")(testMultiTransformWith())
 }
 
 
@@ -656,14 +685,14 @@ trait FutureProjections extends TestBase {
     } onComplete { case Failure(x) => done(throw x); case _ => }
   }
 
-  testFailedFailureOnComplete()
-  testFailedFailureOnSuccess()
-  testFailedSuccessOnComplete()
-  testFailedSuccessOnFailure()
-  testFailedFailureAwait()
-  testFailedSuccessAwait()
-  testAwaitPositiveDuration()
-  testAwaitNegativeDuration()
+  test("testFailedFailureOnComplete")(testFailedFailureOnComplete())
+  test("testFailedFailureOnSuccess")(testFailedFailureOnSuccess())
+  test("testFailedSuccessOnComplete")(testFailedSuccessOnComplete())
+  test("testFailedSuccessOnFailure")(testFailedSuccessOnFailure())
+  test("testFailedFailureAwait")(testFailedFailureAwait())
+  test("testFailedSuccessAwait")(testFailedSuccessAwait())
+  test("testAwaitPositiveDuration")(testAwaitPositiveDuration())
+  test("testAwaitNegativeDuration")(testAwaitNegativeDuration())
 }
 
 
@@ -694,9 +723,9 @@ trait Blocking extends TestBase {
          Await.getClass.getName == "scala.concurrent.Await")
   }
 
-  testAwaitSuccess()
-  testAwaitFailure()
-  testFQCNForAwaitAPI()
+  test("testAwaitSuccess")(testAwaitSuccess())
+  test("testAwaitFailure")(testAwaitFailure())
+  test("testFQCNForAwaitAPI")(testFQCNForAwaitAPI())
 }
 
 trait BlockContexts extends TestBase {
@@ -750,10 +779,10 @@ trait BlockContexts extends TestBase {
     assert(bc ne customBC)
   }
 
-  testDefaultOutsideFuture()
-  testDefaultFJP()
-  testPushCustom()
-  testPopCustom()
+  test("testDefaultOutsideFuture")(testDefaultOutsideFuture())
+  test("testDefaultFJP")(testDefaultFJP())
+  test("testPushCustom")(testPushCustom())
+  test("testPopCustom")(testPopCustom())
 }
 
 trait Promises extends TestBase {
@@ -786,14 +815,35 @@ trait Promises extends TestBase {
       p.failure(e)
   }
 
-  testSuccess()
-  testFailure()
+  test("testSuccess")(testSuccess())
+  test("testFailure")(testFailure())
 }
 
 
 trait Exceptions extends TestBase {
-  import ExecutionContext.Implicits._
+  import java.util.concurrent.{Executors, RejectedExecutionException}
+  def interruptHandling(): Unit = {
+    implicit val e = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
+    val p = Promise[String]()
+    val f = p.future.map(_ => Thread.sleep(2000))
+    p.success("foo")
+    Thread.sleep(20)
+    e.shutdownNow()
 
+    val Failure(ee: ExecutionException) = Await.ready(f, 2.seconds).value.get
+    assert(ee.getCause.isInstanceOf[InterruptedException])
+  }
+
+  def rejectedExecutionException(): Unit = {
+    implicit val e = ExecutionContext.fromExecutor((r: Runnable) => throw new RejectedExecutionException("foo"))
+    val p = Promise[String]()
+    p.success("foo")
+    val f = p.future.map(identity)
+    val Failure(t: RejectedExecutionException) = Await.ready(f, 2.seconds).value.get
+  }
+
+  test("interruptHandling")(interruptHandling())
+  test("rejectedExecutionException")(rejectedExecutionException())
 }
 
 trait GlobalExecutionContext extends TestBase {
@@ -806,7 +856,7 @@ trait GlobalExecutionContext extends TestBase {
       })(ExecutionContext.global)
   }
 
-  testNameOfGlobalECThreads()
+  test("testNameOfGlobalECThreads")(testNameOfGlobalECThreads())
 }
 
 trait CustomExecutionContext extends TestBase {
@@ -952,10 +1002,10 @@ trait CustomExecutionContext extends TestBase {
       }
   }
 
-  testUncaughtExceptionReporting()
-  testOnSuccessCustomEC()
-  testKeptPromiseCustomEC()
-  testCallbackChainCustomEC()
+  test("testUncaughtExceptionReporting")(testUncaughtExceptionReporting())
+  test("testOnSuccessCustomEC")(testOnSuccessCustomEC())
+  test("testKeptPromiseCustomEC")(testKeptPromiseCustomEC())
+  test("testCallbackChainCustomEC")(testCallbackChainCustomEC())
 }
 
 trait ExecutionContextPrepare extends TestBase {
@@ -1007,8 +1057,8 @@ trait ExecutionContextPrepare extends TestBase {
     fut map { x => done(theLocal.get == "secret2") }
   }
 
-  testOnComplete()
-  testMap()
+  test("testOnComplete")(testOnComplete())
+  test("testMap")(testMap())
 }
 
 object Test

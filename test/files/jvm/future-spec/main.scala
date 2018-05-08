@@ -76,7 +76,7 @@ trait MinimalScalaTest extends Output with Features {
       throw new Exception("Exception of type %s was not thrown".format(manifest[T]))
     } catch {
       case t: Throwable =>
-        if (manifest[T].runtimeClass != t.getClass) throw t
+        if (!manifest[T].runtimeClass.isAssignableFrom(t.getClass)) throw t
         else t.asInstanceOf[T]
     }
   }

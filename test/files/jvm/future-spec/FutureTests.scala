@@ -178,14 +178,18 @@ class FutureTests extends MinimalScalaTest {
   }
 
   "The default ExecutionContext" should {
+    import ExecutionContext.Implicits._
     "report uncaught exceptions" in {
       val p = Promise[Throwable]()
-      val logThrowable: Throwable => Unit = p.trySuccess(_)
-      val ec: ExecutionContext = ExecutionContext.fromExecutor(null, logThrowable)
+      val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(null, p.trySuccess(_))
+      val t = new Exception()
+      try {
+        ec.execute(() => throw t)
+        Await.result(p.future, 4.seconds) mustBe t
+      } finally {
+        ec.shutdown()
+      }
 
-      val t = new InterruptedException()
-      val f = Future(throw t)(ec)
-      Await.result(p.future, 4.seconds) mustBe t
     }
   }
 
@@ -794,6 +798,26 @@ class FutureTests extends MinimalScalaTest {
       val expected = try Success(5 / 0) catch { case a: ArithmeticException => Failure(a) }
       val f = Future(5).map(_ / 0)
       Await.ready(f, defaultTimeout).value.get.toString mustBe expected.toString
+    }
+
+    "should delegate equivalently to unit.flatMap on failure" in {
+      val t = new Exception("test")
+      val df = Future.delegate(throw t)
+      val fm = Future.unit.flatMap(_ => throw t)
+
+      Await.ready(df, defaultTimeout)
+      Await.ready(fm, defaultTimeout)
+      df.value mustBe fm.value
+    }
+
+    "should delegate equivalently to unit.flatMap on success" in {
+      val f = Future.successful("test")
+      val df = Future.delegate(f)
+      val fm = Future.unit.flatMap(_ => f)
+
+      Await.ready(df, defaultTimeout)
+      Await.ready(fm, defaultTimeout)
+      df.value mustBe fm.value
     }
 
   }
