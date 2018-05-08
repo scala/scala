@@ -14,13 +14,10 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   override def distinctBy[B](f: A => B): C = {
     val builder = newSpecificBuilder
     val seen = mutable.HashSet.empty[B]
-
-    for (x <- this) {
-      val y = f(x)
-      if (!seen.contains(y)) {
-        seen += y
-        builder += x
-      }
+    val it = this.iterator
+    while (it.hasNext) {
+      val next = it.next()
+      if (seen.add(f(next))) builder += next
     }
     builder.result()
   }
