@@ -469,13 +469,29 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    var v = z
-    var i = 0
-    while(i < xs.length) {
-      v = op(v, xs(i))
-      i += 1
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      val length = xs.length
+      var v: Any = z
+      var i = 0
+      while(i < length) {
+        v = op(v, xs(i))
+        i += 1
+      }
+      v
     }
-    v
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[B]
   }
 
    /** Produces an array containing cumulative results of applying the binary
@@ -548,13 +564,29 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
-    var v = z
-    var i = xs.length - 1
-    while(i >= 0) {
-      v = op(xs(i), v)
-      i -= 1
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      var v = z
+      var i = xs.length - 1
+      while(i >= 0) {
+        v = op(xs(i), v)
+        i -= 1
+      }
+      v
     }
-    v
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[B]
+
   }
 
   /** Folds the elements of this array using the specified associative binary operator.
@@ -564,9 +596,38 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
     *                 0 for addition, or 1 for multiplication).
     *  @param op      a binary operator that must be associative.
-    *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this array is empty.
+    *  @return        the result of applying the fold operator `op` between all the elements, or `z` if this array is empty.
     */
-  @`inline` final def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
+  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = {
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      // Start with the last element and run the loop from 0 until length-1. It would be more logical to start with
+      // the first element and loop from 1 until length but hotspot performs special optimizations for loops starting
+      // at 0 which have a huge impact when the actual folding operation is fast.
+      val length = xs.length-1
+      if(length >= 0) {
+        var v: Any = xs(length)
+        var i = 0
+        while(i < length) {
+          v = op(v, xs(i))
+          i += 1
+        }
+        v
+      } else z
+    }
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[A1]
+  }
 
   /** Builds a new array by applying a function to all elements of this array.
     *
