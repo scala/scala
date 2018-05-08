@@ -126,7 +126,7 @@ trait ForwardingReporter extends Reporter {
   protected val delegate: Reporter
 
   /* Always throws `UnsupportedOperationException`. */
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Nothing =
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
     throw new UnsupportedOperationException(s"$msg ($pos)")
 
   override def echo(pos: Position, msg: String)    = delegate.echo(pos, msg)
