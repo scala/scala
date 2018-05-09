@@ -58,7 +58,7 @@ val partestDependencies =  Seq(
   "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
 ).map(bootstrapDep("test/files/lib")) ++ Seq(
   bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test",
-  bootstrapDep("test/files/speclib")("instrumented" -> "9d6d56916c54219a33370fd9bb40a47b22566938") % "test"
+  bootstrapDep("test/files/speclib")("instrumented" -> "d015eff38243f1c2edb44ac3b6a0ce99bc5656db") % "test"
 )
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(

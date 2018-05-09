@@ -1,7 +1,7 @@
 package scala.collection
 
 import scala.collection.mutable.{ArrayBuffer, Builder}
-import scala.collection.immutable.{ImmutableArray, LazyList}
+import scala.collection.immutable.{ArraySeq, LazyList}
 
 
 /** Views are collections whose transformation operations are non strict: the resulting elements

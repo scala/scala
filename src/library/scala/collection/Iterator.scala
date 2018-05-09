@@ -191,7 +191,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       buf
     }
 
-    private def padding(x: Int) = immutable.ImmutableArray.untagged.fill(x)(pad.get())
+    private def padding(x: Int) = immutable.ArraySeq.untagged.fill(x)(pad.get())
     private def gap = (step - size) max 0
 
     private def go(count: Int) = {
@@ -250,7 +250,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       if (!filled)
         throw new NoSuchElementException("next on empty iterator")
       filled = false
-      immutable.ImmutableArray.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ImmutableArray[B]]
+      immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
     }
   }
 

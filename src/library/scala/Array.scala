@@ -11,7 +11,7 @@ package scala
 //import scala.collection.generic._
 import scala.collection.{Factory, immutable, mutable}
 import mutable.ArrayBuilder
-import immutable.ImmutableArray
+import immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
@@ -494,10 +494,10 @@ object Array {
    *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    if (x == null) None else Some(ImmutableArray.unsafeWrapArray[T](x))
+    if (x == null) None else Some(ArraySeq.unsafeWrapArray[T](x))
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
-    // Is ImmutableArray safe here? In 2.12 we used to call .toIndexedSeq which copied the array
+    // Is ArraySeq safe here? In 2.12 we used to call .toIndexedSeq which copied the array
     // instead of wrapping it in a WrappedArray but it appears unnecessary.
 }
 

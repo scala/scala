@@ -3,7 +3,7 @@ package collection
 
 import java.lang.{String, Class}
 import mutable.{ArrayBuilder, WrappedArray}
-import immutable.{ImmutableArray, Range}
+import immutable.{ArraySeq, Range}
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
@@ -113,9 +113,9 @@ object ArrayOps {
   *
   *  Neither Array` nor `ArrayOps` are proper collection types
   *  (i.e. they do not extend `Iterable` or even `IterableOnce`). `WrappedArray` and
-  *  `ImmutableArray` serve this purpose.
+  *  `ArraySeq` serve this purpose.
   *
-  *  The difference between this class and `WrappedArray` and `ImmutableArray` is that calling
+  *  The difference between this class and `WrappedArray` and `ArraySeq` is that calling
   *  transformer methods such as `filter` and `map` will yield an array, whereas a `WrappedArray`
   *  will remain a `WrappedArray`.
   *
@@ -1015,5 +1015,5 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
 
   def toIndexedSeq: immutable.IndexedSeq[A] =
-    ImmutableArray.unsafeWrapArray(Array.copyOf(xs, xs.length))
+    ArraySeq.unsafeWrapArray(Array.copyOf(xs, xs.length))
 }

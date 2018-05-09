@@ -12,7 +12,7 @@ import scala.language.{ higherKinds, implicitConversions }
 
 import scala.collection.{ StringOps, StringView }
 import scala.collection.{ mutable, immutable, ArrayOps }
-import scala.collection.immutable.{ ImmutableArray, WrappedString }
+import scala.collection.immutable.{ ArraySeq, WrappedString }
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 
@@ -806,7 +806,7 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
 }
 
 private[scala] abstract class LowPriorityImplicits2 {
-  @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ImmutableArray.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
+  @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
   implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =
     if (xs eq null) null
     else new ArrayOps(xs).toIndexedSeq

@@ -221,7 +221,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
       true
     } else {
       val randomSamples = scala.util.Random.nextInt(inputSet.size)
-      val randomIndices = ImmutableArray.fill(randomSamples)(scala.util.Random.nextInt(inputSet.size))
+      val randomIndices = ArraySeq.fill(randomSamples)(scala.util.Random.nextInt(inputSet.size))
 
       val inputArray = inputSet.toArray
       val smallerSet = ChampHashSet.from(randomIndices.map(inputArray).toSet)

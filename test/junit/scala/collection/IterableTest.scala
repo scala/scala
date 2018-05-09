@@ -3,7 +3,7 @@ package scala.collection
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.collection.immutable.{ImmutableArray, List, Range}
+import scala.collection.immutable.{ArraySeq, List, Range}
 import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
@@ -16,7 +16,7 @@ class IterableTest {
 
   @Test
   def flattenTest: Unit = {
-    f(List(ImmutableArray(1, 2, 3)), List(1, 2, 3))
+    f(List(ArraySeq(1, 2, 3)), List(1, 2, 3))
   }
 
   @Test
