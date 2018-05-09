@@ -25,10 +25,10 @@ trait TypingTransformers {
     override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
-      val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(tree, if (owner.isModuleNotMethod) owner.moduleClass else owner)
+      val savedContext = localTyper.context
+      localTyper.context = localTyper.context.make(tree, if (owner.isModuleNotMethod) owner.moduleClass else owner)
       val result = super.atOwner(owner)(trans)
-      localTyper = savedLocalTyper
+      localTyper.context = savedContext
       result
     }
 
