@@ -38,11 +38,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-  // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
-  // is cached here and re-used in typedDefDef / typedValDef
-  // Also used to cache imports type-checked by namer.
-  val transformed = new mutable.AnyRefMap[Tree, Tree]
-
   final val shortenImports = false
 
   // All typechecked RHS of ValDefs for right-associative operator desugaring
@@ -200,7 +195,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
 
-    private val transformed: mutable.Map[Tree, Tree] = unit.transformed
+    private def transformed: mutable.Map[Tree, Tree] = unit.transformed
 
     val infer = new Inferencer {
       def context = Typer.this.context
