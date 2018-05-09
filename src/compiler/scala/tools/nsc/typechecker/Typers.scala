@@ -189,7 +189,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
-    import context0.unit
+    private def unit = context.unit
     import typeDebug.ptTree
     import TyperErrorGen._
 
@@ -3942,7 +3942,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
-    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
+    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context.owner)
 
     def isReferencedFrom(ctx: Context, sym: Symbol): Boolean = (
        ctx.owner.isTerm && (ctx.scope.exists { dcl => dcl.isInitialized && (dcl.info contains sym) }) || {
