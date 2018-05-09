@@ -405,6 +405,9 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
 
+    @inline final def withSuppressDeadArgWarning[T](suppress: Boolean)(op: => T): T =
+      if (suppress) withMode(enabled = SuppressDeadArgWarning)(op) else withMode(disabled = SuppressDeadArgWarning)(op)
+
     /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
      *  adapt should then check kind-arity based on the prototypical type's kind
      *  arity. Type arguments should not be inferred.
@@ -1581,6 +1584,9 @@ object ContextMode {
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
+  /** Should a dead code warning be issued for a Nothing-typed argument to the current application. */
+  final val SuppressDeadArgWarning: ContextMode   = 1 << 17
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1604,7 +1610,8 @@ object ContextMode {
     StarPatterns           -> "StarPatterns",
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
-    TypeConstructorAllowed -> "TypeConstructorAllowed"
+    TypeConstructorAllowed -> "TypeConstructorAllowed",
+    SuppressDeadArgWarning -> "SuppressDeadArgWarning"
   )
 }
 
