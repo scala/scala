@@ -185,8 +185,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import context0.unit
     import typeDebug.ptTree
     import TyperErrorGen._
-    val runDefinitions = currentRun.runDefinitions
-    import runDefinitions._
 
     private def transformed: mutable.Map[Tree, Tree] = unit.transformed
 
@@ -757,7 +755,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String) = tpe match {
       case extp: ExistentialType if !extp.isRepresentableWithWildcards =>
-        checkFeature(pos, ExistentialsFeature, prefix+" "+tpe)
+        checkFeature(pos, currentRun.runDefinitions.ExistentialsFeature, prefix+" "+tpe)
       case _ =>
     }
 
@@ -1734,7 +1732,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def validateParentClasses(parents: List[Tree], selfType: Type) {
       val pending = ListBuffer[AbsTypeError]()
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
-        if (parent == DynamicClass) checkFeature(parentPos, DynamicsFeature)
+        if (parent == DynamicClass) checkFeature(parentPos, currentRun.runDefinitions.DynamicsFeature)
 
       def validateParentClass(parent: Tree, superclazz: Symbol) =
         if (!parent.isErrorTyped) {
@@ -2333,7 +2331,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
           case List(param) :: _ if !param.isImplicit =>
-            checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
+            checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
           case _ =>
         }
       }
@@ -2371,7 +2369,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
       if (tdef.symbol.isDeferred && tdef.symbol.info.isHigherKinded)
-        checkFeature(tdef.pos, HigherKindsFeature)
+        checkFeature(tdef.pos, currentRun.runDefinitions.HigherKindsFeature)
 
       treeCopy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
@@ -3460,7 +3458,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           handleOverloaded
 
-        case _ if isPolymorphicSignature(fun.symbol) =>
+        case _ if currentRun.runDefinitions.isPolymorphicSignature(fun.symbol) =>
           // Mimic's Java's treatment of polymorphic signatures as described in
           // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
           //
@@ -4095,7 +4093,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (sameLength(tparams, args)) {
           val targs = mapList(args)(treeTpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
-          if (isPredefClassOf(fun.symbol))
+          if (fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol))
             typedClassOf(tree, args.head, noGen = true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
@@ -5065,10 +5063,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val tree1 = typedSelect(tree, qualTyped, name)
 
             if (tree.isInstanceOf[PostfixSelect])
-              checkFeature(tree.pos, PostfixOpsFeature, name.decode)
+              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-              checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
+              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
 
             qualTyped.symbol match {
               case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
@@ -5127,7 +5125,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             (// this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)
-            else if (isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
+            else if (sym.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
               // Inferring classOf type parameter from expected type.  Otherwise an
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
