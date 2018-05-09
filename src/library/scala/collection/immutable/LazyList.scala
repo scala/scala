@@ -352,6 +352,104 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   protected def headDefined: Boolean
   protected def tailDefined: Boolean
 
+  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
+    *  The written text begins with the string `start` and ends with the string `end`.
+    *  Inside, the string representations (w.r.t. the method `toString`)
+    *  of all elements of this $coll are separated by the string `sep`.
+    *
+    * Undefined elements are represented with `"_"`, an undefined tail is represented with `"?"`,
+    * and cycles are represented with `"..."`.
+    *
+    *  @param  b    the string builder to which elements are appended.
+    *  @param start the starting string.
+    *  @param sep   the separator string.
+    *  @param end   the ending string.
+    *  @return      the string builder `b` to which elements were appended.
+    */
+  override def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
+    b append start
+    if (nonEmpty) {
+      if (headDefined) b append head else b append "_"
+      var cursor = this
+      def appendCursorElement(): Unit = {
+        b append sep
+        if (cursor.headDefined) b append cursor.head else b append "_"
+      }
+      if (tailDefined) {  // If tailDefined, also !isEmpty
+        var scout = tail
+        if (cursor ne scout) {
+          cursor = scout
+          if (scout.tailDefined) {
+            scout = scout.tail
+            // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
+            while ((cursor ne scout) && scout.tailDefined) {
+              appendCursorElement()
+              cursor = cursor.tail
+              scout = scout.tail
+              if (scout.tailDefined) scout = scout.tail
+            }
+          }
+        }
+        if (!scout.tailDefined) {  // Not a cycle, scout hit an end
+          while (cursor ne scout) {
+            appendCursorElement()
+            cursor = cursor.tail
+          }
+          if (cursor.nonEmpty) {
+            appendCursorElement()
+          }
+        }
+        else {
+          // Cycle.
+          // If we have a prefix of length P followed by a cycle of length C,
+          // the scout will be at position (P%C) in the cycle when the cursor
+          // enters it at P.  They'll then collide when the scout advances another
+          // C - (P%C) ahead of the cursor.
+          // If we run the scout P farther, then it will be at the start of
+          // the cycle: (C - (P%C) + (P%C)) == C == 0.  So if another runner
+          // starts at the beginning of the prefix, they'll collide exactly at
+          // the start of the loop.
+          var runner = this
+          var k = 0
+          while (runner ne scout) {
+            runner = runner.tail
+            scout = scout.tail
+            k += 1
+          }
+          // Now runner and scout are at the beginning of the cycle.  Advance
+          // cursor, adding to string, until it hits; then we'll have covered
+          // everything once.  If cursor is already at beginning, we'd better
+          // advance one first unless runner didn't go anywhere (in which case
+          // we've already looped once).
+          if ((cursor eq scout) && (k > 0)) {
+            appendCursorElement()
+            cursor = cursor.tail
+          }
+          while (cursor ne scout) {
+            appendCursorElement()
+            cursor = cursor.tail
+          }
+        }
+      }
+      if (cursor.nonEmpty) {
+        // Either undefined or cyclic; we can check with tailDefined
+        if (!cursor.tailDefined) b append sep append "?"
+        else b append sep append "..."
+      }
+    }
+    b append end
+    b
+  }
+
+  override def mkString(start: String, sep: String, end: String): String = {
+    this.force
+    super.mkString(start, sep, end)
+  }
+
+  // override here to ensure disambiguation between the overloaded methods works correctly
+  override def mkString(sep: String): String = super.mkString(sep)
+  override def mkString: String = super.mkString
+
   /**
     * @return a string representation of this collection. Undefined elements are
     *         represented with `"_"`, an undefined tail is represented with `"?"`,
@@ -366,101 +464,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     *           - `"LazyList(1, 2, 3, ...)"`, an infinite lazy list that contains
     *             a cycle at the fourth element.
     */
-  override def toString: String = {
-    /** Write all defined elements of this iterable into given string builder.
-      *  The written text begins with the string `start` and is finished by the string
-      *  `end`. Inside, the string representations of defined elements (w.r.t.
-      *  the method `toString()`) are separated by the string `sep`. The method will
-      *  not force evaluation of undefined elements. Undefined heads will be represented
-      *  by a `"_"`. An undefined tail is
-      * represented by a `"?"`.  A cyclic stream is represented by a `"..."`
-      * at the point where the cycle repeats.
-      *
-      * @param b The [[collection.mutable.StringBuilder]] factory to which we need
-      * to add the string elements.
-      * @param start The prefix of the resulting string (e.g. "LazyList(")
-      * @param sep The separator between elements of the resulting string (e.g. ",")
-      * @param end The end of the resulting string (e.g. ")")
-      * @return The original [[collection.mutable.StringBuilder]] containing the
-      * resulting string.
-      */
-    def toStringBuilder(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
-      b append start
-      if (nonEmpty) {
-        if (headDefined) b append head else b append "_"
-        var cursor = this
-        def appendCursorElement(): Unit = {
-          b append sep
-          if (cursor.headDefined) b append cursor.head else b append "_"
-        }
-        if (tailDefined) {  // If tailDefined, also !isEmpty
-          var scout = tail
-          if (cursor ne scout) {
-            cursor = scout
-            if (scout.tailDefined) {
-              scout = scout.tail
-              // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
-              while ((cursor ne scout) && scout.tailDefined) {
-                appendCursorElement()
-                cursor = cursor.tail
-                scout = scout.tail
-                if (scout.tailDefined) scout = scout.tail
-              }
-            }
-          }
-          if (!scout.tailDefined) {  // Not a cycle, scout hit an end
-            while (cursor ne scout) {
-              appendCursorElement()
-              cursor = cursor.tail
-            }
-            if (cursor.nonEmpty) {
-              appendCursorElement()
-            }
-          }
-          else {
-            // Cycle.
-            // If we have a prefix of length P followed by a cycle of length C,
-            // the scout will be at position (P%C) in the cycle when the cursor
-            // enters it at P.  They'll then collide when the scout advances another
-            // C - (P%C) ahead of the cursor.
-            // If we run the scout P farther, then it will be at the start of
-            // the cycle: (C - (P%C) + (P%C)) == C == 0.  So if another runner
-            // starts at the beginning of the prefix, they'll collide exactly at
-            // the start of the loop.
-            var runner = this
-            var k = 0
-            while (runner ne scout) {
-              runner = runner.tail
-              scout = scout.tail
-              k += 1
-            }
-            // Now runner and scout are at the beginning of the cycle.  Advance
-            // cursor, adding to string, until it hits; then we'll have covered
-            // everything once.  If cursor is already at beginning, we'd better
-            // advance one first unless runner didn't go anywhere (in which case
-            // we've already looped once).
-            if ((cursor eq scout) && (k > 0)) {
-              appendCursorElement()
-              cursor = cursor.tail
-            }
-            while (cursor ne scout) {
-              appendCursorElement()
-              cursor = cursor.tail
-            }
-          }
-        }
-        if (cursor.nonEmpty) {
-          // Either undefined or cyclic; we can check with tailDefined
-          if (!cursor.tailDefined) b append sep append "?"
-          else b append sep append "..."
-        }
-      }
-      b append end
-    }
-
-    s"$className${toStringBuilder(new StringBuilder, "(", ", ", ")").result()}"
-  }
-
+  override def toString = super.mkString(className + "(", ", ", ")")
 }
 
 sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]]] extends SeqFactory[CC] {
