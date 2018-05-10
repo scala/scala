@@ -31,7 +31,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 // the making of the trees
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   trait TreeMakers extends TypedSubstitution with CodegenCore {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree])
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree])
     def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit
 
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
@@ -551,14 +551,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     }
 
     // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
+    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
       // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
       val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, matchFailGenOverride)
+      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, selectorPos, owner, matchFailGenOverride)
     }
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
-    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
+    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type,
+                                selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
       fixerUpper(owner, scrut.pos) {
         def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
 
@@ -614,7 +615,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
             analyzeCases(scrutSym, casesNoSubstOnly, pt, suppression)
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, selectorPos)
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
