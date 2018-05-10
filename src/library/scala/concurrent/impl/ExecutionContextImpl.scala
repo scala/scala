@@ -9,7 +9,7 @@
 package scala.concurrent.impl
 
 import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.Collection
 import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.annotation.tailrec
@@ -24,26 +24,25 @@ private[scala] class ExecutionContextImpl private[impl] (val executor: Executor,
 
 private[concurrent] object ExecutionContextImpl {
 
-  // Implement BlockContext on FJP threads
   final class DefaultThreadFactory(
     daemonic: Boolean,
-    maxThreads: Int,
+    maxBlockers: Int,
     prefix: String,
     uncaught: Thread.UncaughtExceptionHandler) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
 
     require(prefix ne null, "DefaultThreadFactory.prefix must be non null")
-    require(maxThreads > 0, "DefaultThreadFactory.maxThreads must be greater than 0")
+    require(maxBlockers >= 0, "DefaultThreadFactory.maxBlockers must be greater-or-equal-to 0")
 
-    private final val currentNumberOfThreads = new AtomicInteger(0)
+    private final val currentNumberOfBlockers = new AtomicInteger(0)
 
-    @tailrec private final def reserveThread(): Boolean = currentNumberOfThreads.get() match {
-      case `maxThreads` | Int.`MaxValue` => false
-      case other => currentNumberOfThreads.compareAndSet(other, other + 1) || reserveThread()
+    @tailrec private final def newBlocker(): Boolean = currentNumberOfBlockers.get() match {
+      case `maxBlockers` | Int.`MaxValue` => false
+      case other => currentNumberOfBlockers.compareAndSet(other, other + 1) || newBlocker()
     }
 
-    @tailrec private final def deregisterThread(): Boolean = currentNumberOfThreads.get() match {
+    @tailrec private final def freeBlocker(): Boolean = currentNumberOfBlockers.get() match {
       case 0 => false
-      case other => currentNumberOfThreads.compareAndSet(other, other - 1) || deregisterThread()
+      case other => currentNumberOfBlockers.compareAndSet(other, other - 1) || freeBlocker()
     }
 
     def wire[T <: Thread](thread: T): T = {
@@ -53,39 +52,42 @@ private[concurrent] object ExecutionContextImpl {
       thread
     }
 
-    // As per ThreadFactory contract newThread should return `null` if cannot create new thread.
-    def newThread(runnable: Runnable): Thread =
-      if (reserveThread())
-        wire(new Thread(new Runnable {
-          // We have to decrement the current thread count when the thread exits
-          override def run() = try runnable.run() finally deregisterThread()
-        })) else null
+    def newThread(runnable: Runnable): Thread = wire(new Thread(runnable))
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
-      if (reserveThread()) {
-        wire(new ForkJoinWorkerThread(fjp) with BlockContext {
-          // We have to decrement the current thread count when the thread exits
-          final override def onTermination(exception: Throwable): Unit = deregisterThread()
-          final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
-            var result: T = null.asInstanceOf[T]
-            ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
-              @volatile var isdone = false
-              override def block(): Boolean = {
-                result = try {
-                    // When we block, switch out the BlockContext temporarily so that nested blocking does not created N new Threads
-                    BlockContext.withBlockContext(BlockContext.defaultBlockContext) { thunk }
-                  } finally {
-                    isdone = true
+      wire(new ForkJoinWorkerThread(fjp) with BlockContext {
+        private[this] var isBlocked: Boolean = false // This is only ever read & written if this thread is the current thread
+        final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T =
+          if ((Thread.currentThread eq this) && !isBlocked && newBlocker()) {
+            try {
+              isBlocked = true
+              val b: ForkJoinPool.ManagedBlocker with (() => T) =
+                new ForkJoinPool.ManagedBlocker with (() => T) {
+                  private[this] var result: T = null.asInstanceOf[T]
+                  private[this] var done: Boolean = false
+                  final override def block(): Boolean = {
+                    try {
+                      if (!done)
+                        result = thunk
+                    } finally {
+                      done = true
+                    }
+
+                    true
                   }
 
-                true
-              }
-              override def isReleasable = isdone
-            })
-            result
-          }
-        })
-      } else null
+                  final override def isReleasable = done
+
+                  final override def apply(): T = result
+                }
+              ForkJoinPool.managedBlock(b)
+              b()
+            } finally {
+              isBlocked = false
+              freeBlocker()
+            }
+          } else thunk // Unmanaged blocking
+      })
   }
 
   def createDefaultExecutorService(reporter: Throwable => Unit): ExecutorService = {
@@ -99,8 +101,6 @@ private[concurrent] object ExecutionContextImpl {
     def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
     val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
     // The hard limit on the number of active threads that the thread factory will produce
-    // scala/bug#8955 Deadlocks can happen if maxNoOfThreads is too low, although we're currently not sure
-    //         about what the exact threshold is. numThreads + 256 is conservatively high.
     val maxNoOfThreads = getInt("scala.concurrent.context.maxThreads", "x1")
 
     val desiredParallelism = range(
@@ -116,7 +116,7 @@ private[concurrent] object ExecutionContextImpl {
     }
 
     val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
-                                                                      maxThreads = maxNoOfThreads + maxExtraThreads,
+                                                                      maxBlockers = maxExtraThreads,
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
