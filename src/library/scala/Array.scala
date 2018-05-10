@@ -498,7 +498,7 @@ object Array {
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
     // Is ArraySeq safe here? In 2.12 we used to call .toIndexedSeq which copied the array
-    // instead of wrapping it in a WrappedArray but it appears unnecessary.
+    // instead of wrapping it in a ArraySeq but it appears unnecessary.
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
@@ -518,12 +518,12 @@ object Array {
  *
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
  *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
- *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collection.Seq]]).
+ *  to [[scala.collection.mutable.ArraySeq]] (a subtype of [[scala.collection.Seq]]).
  *  Both types make available many of the standard operations found in the Scala collections API.
  *  The conversion to `ArrayOps` is temporary, as all operations defined on `ArrayOps` return an `Array`,
- *  while the conversion to `WrappedArray` is permanent as all operations return a `WrappedArray`.
+ *  while the conversion to `ArraySeq` is permanent as all operations return a `ArraySeq`.
  *
- *  The conversion to `ArrayOps` takes priority over the conversion to `WrappedArray`. For instance,
+ *  The conversion to `ArrayOps` takes priority over the conversion to `ArraySeq`. For instance,
  *  consider the following code:
  *
  *  {{{
@@ -534,8 +534,8 @@ object Array {
  *
  *  Value `arrReversed` will be of type `Array[Int]`, with an implicit conversion to `ArrayOps` occurring
  *  to perform the `reverse` operation. The value of `seqReversed`, on the other hand, will be computed
- *  by converting to `WrappedArray` first and invoking the variant of `reverse` that returns another
- *  `WrappedArray`.
+ *  by converting to `ArraySeq` first and invoking the variant of `reverse` that returns another
+ *  `ArraySeq`.
  *
  *  @author Martin Odersky
  *  @version 1.0

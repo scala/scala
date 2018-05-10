@@ -283,7 +283,7 @@ object Test3_mutable {
   import scala.collection.mutable.{
     ArrayBuffer, ArrayBuilder, BitSet,
     HashMap, HashSet, LinkedHashMap, LinkedHashSet, ListBuffer,
-    Queue, Stack, StringBuilder, WrappedArray, TreeSet}
+    Queue, Stack, StringBuilder, ArraySeq, TreeSet}
   import scala.collection.concurrent.TrieMap
 
   // in alphabetic order
@@ -367,9 +367,9 @@ object Test3_mutable {
     val _sb1: StringBuilder = read(write(sb1))
     check(sb1, _sb1)
 
-    // WrappedArray
-    val wa1 = WrappedArray.make(Array(1, 2, 3))
-    val _wa1: WrappedArray[Int] = read(write(wa1))
+    // ArraySeq
+    val wa1 = ArraySeq.make(Array(1, 2, 3))
+    val _wa1: ArraySeq[Int] = read(write(wa1))
     check(wa1, _wa1)
 
     // TreeSet

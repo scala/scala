@@ -261,7 +261,7 @@ object ScalaRunTime {
     nl + s + "\n"
   }
 
-  // Convert arrays to ArraySeq for use with Java varargs:
+  // Convert arrays to immutable.ArraySeq for use with Java varargs:
   def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =
     if (xs eq null) null
     else ArraySeq.unsafeWrapArray(xs)

@@ -588,7 +588,7 @@ object ClassTagIterableFactory {
 }
 
 /**
-  * @tparam CC Collection type constructor (e.g. `WrappedArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
 trait ClassTagSeqFactory[+CC[_]] extends ClassTagIterableFactory[CC] {
   def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
