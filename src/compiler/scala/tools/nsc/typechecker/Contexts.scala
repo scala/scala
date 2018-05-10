@@ -222,9 +222,6 @@ trait Contexts { self: Analyzer =>
       */
     var enclMethod: Context = _
 
-    /** Variance relative to enclosing class */
-    var variance: Variance = Variance.Invariant
-
     private var _undetparams: List[Symbol] = List()
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
@@ -489,7 +486,6 @@ trait Contexts { self: Analyzer =>
         new Context(tree, owner, scope, unit, this, reporter)
 
       // Fields that are directly propagated
-      c.variance           = variance
       c.diagUsedDefaults   = diagUsedDefaults
       c.openImplicits      = openImplicits
       c.contextMode        = contextMode // note: ConstructorSuffix, a bit within `mode`, is conditionally overwritten below.
