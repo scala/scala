@@ -251,7 +251,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import infer._
 
     private var namerCache: Namer = null
-    def namer = {
+    def namer: Namer = {
       if ((namerCache eq null) || namerCache.context != context)
         namerCache = newNamer(context)
       namerCache
@@ -1968,7 +1968,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope, clazz)
-      val body1 = pluginsEnterStats(this, templ.body)
+      val body1 = pluginsEnterStats(this, namer.expandMacroAnnotations(templ.body))
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
       validateParentClasses(parents1, selfType)
@@ -2422,7 +2422,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val syntheticPrivates = new ListBuffer[Symbol]
       try {
         namer.enterSyms(block0.stats)
-        val block = treeCopy.Block(block0, pluginsEnterStats(this, block0.stats), block0.expr)
+        val block = treeCopy.Block(block0, pluginsEnterStats(this, namer.expandMacroAnnotations(block0.stats)), block0.expr)
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
@@ -3943,6 +3943,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+    def typedMacroAnnotation(cdef: ClassDef) = {
+      val clazz = cdef.symbol
+      if (!isPastTyper) {
+        if (clazz != null && (clazz isNonBottomSubClass AnnotationClass)) {
+          val macroTransform = clazz.info.member(nme.macroTransform)
+          if (macroTransform != NoSymbol) {
+            clazz.setFlag(MACRO)
+            if (clazz.getAnnotation(CompileTimeOnlyAttr).isEmpty) clazz.addAnnotation(AnnotationInfo(CompileTimeOnlyAttr.tpe, List(Literal(Constant(MacroAnnotationNotExpandedMessage)) setType StringClass.tpe), Nil))
+            def flavorOk = macroTransform.isMacro
+            def paramssOk = mmap(macroTransform.paramss)(p => (p.name, p.info)) == List(List((nme.annottees, scalaRepeatedType(AnyTpe))))
+            def tparamsOk = macroTransform.typeParams.isEmpty
+            def everythingOk = flavorOk && paramssOk && tparamsOk
+            if (!everythingOk) MacroAnnotationShapeError(clazz)
+            if (!(clazz isNonBottomSubClass StaticAnnotationClass)) MacroAnnotationMustBeStaticError(clazz)
+            // TODO: revisit the decision about @Inherited
+            if (clazz.getAnnotation(InheritedAttr).nonEmpty) MacroAnnotationCannotBeInheritedError(clazz)
+            if (!clazz.isStatic) MacroAnnotationCannotBeMemberError(clazz)
+          }
+        }
+      }
+      cdef
+    }
+
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
     def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
@@ -5305,7 +5328,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
 
       def typedPackageDef(pdef0: PackageDef) = {
-        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, pdef0.stats))
+        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, namer.expandMacroAnnotations(pdef0.stats)))
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         if(pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule ))

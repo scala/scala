@@ -391,7 +391,18 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           val macroDdef: self.global.DefDef = macroDdef1
         } with DefaultMacroCompiler
         val macroImplRef = macroCompiler.resolveMacroImpl
-        if (macroImplRef.isEmpty) fail() else success(macroImplRef)
+        if (macroImplRef.isEmpty) fail() else {
+          def hasTypeTag = {
+            val marker = NoSymbol.newErrorValue("restricted")
+            val xformed = transformTypeTagEvidenceParams(macroImplRef, (_, _) => marker)
+            xformed.nonEmpty && xformed.last.contains(marker)
+          }
+          if (macroDdef.name == nme.macroTransform && hasTypeTag) {
+            typer.context.error(macroDdef.pos, "implementation restriction: macro annotation impls cannot have typetag context bounds " +
+                                               "(consider taking apart c.macroApplication and manually calling c.typecheck on the type arguments)")
+            fail()
+          } else success(macroImplRef)
+        }
       }
     }
   }

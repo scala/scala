@@ -6,12 +6,14 @@
 package scala.tools.nsc
 package ast
 
+import scala.reflect.internal.MacroAnnotionTreeInfo
+
 /** This class ...
  *
  *  @author Martin Odersky
  *  @version 1.0
  */
-abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
+abstract class TreeInfo extends scala.reflect.internal.TreeInfo with MacroAnnotionTreeInfo {
   val global: Global
   import global._
   import definitions._

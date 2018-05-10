@@ -1172,6 +1172,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val MethodTargetClass          = requiredClass[meta.companionMethod]    // TODO: module, moduleClass? package, packageObject?
     lazy val LanguageFeatureAnnot       = requiredClass[meta.languageFeature]
 
+    // Used by macro annotations
+    lazy val InheritedAttr = requiredClass[java.lang.annotation.Inherited]
+
     lazy val JUnitAnnotations = List("Test", "Ignore", "Before", "After", "BeforeClass", "AfterClass").map(n => getClassIfDefined("org.junit." + n))
 
     // Language features

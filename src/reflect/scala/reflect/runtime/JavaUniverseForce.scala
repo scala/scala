@@ -424,6 +424,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ClassTargetClass
     definitions.MethodTargetClass
     definitions.LanguageFeatureAnnot
+    definitions.InheritedAttr
     definitions.JUnitAnnotations
     definitions.languageFeatureModule
     definitions.metaAnnotations
