@@ -100,44 +100,6 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait PureMatchMonadInterface extends MatchMonadInterface {
-    val matchStrategy: Tree
-    import CODE._
-    def _match(n: Name): SelectStart = matchStrategy DOT n
-
-    // TODO: error message
-    private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
-    override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
-  }
-
-  trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
-    def codegen: AbsCodegen = pureCodegen
-
-    object pureCodegen extends CommonCodegen with Casegen { import CODE._
-      //// methods in MatchingStrategy (the monad companion) -- used directly in translation
-      // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
-      // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
-        _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
-
-      // __match.one(`res`)
-      def one(res: Tree): Tree = (_match(vpmName.one)) (res)
-      // __match.zero
-      protected def zero: Tree = _match(vpmName.zero)
-      // __match.guard(`c`, `then`)
-      def guard(c: Tree, thenp: Tree): Tree = _match(vpmName.guard) APPLY (c, thenp)
-
-      //// methods in the monad instance -- used directly in translation
-      // `prev`.flatMap(`b` => `next`)
-      def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = (prev DOT vpmName.flatMap)(fun(b, next))
-      // `thisCase`.orElse(`elseCase`)
-      def typedOrElse(thisCase: Tree, elseCase: Tree): Tree = (thisCase DOT vpmName.orElse) APPLY (elseCase)
-      //  __match.guard(`cond`, `res`).flatMap(`nextBinder` => `next`)
-      def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = flatMap(guard(cond, res), nextBinder, next)
-      //  __match.guard(`guardTree`, ()).flatMap((_: P[Unit]) => `next`)
-      def flatMapGuard(guardTree: Tree, next: Tree): Tree = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, pureType(UnitTpe)), next)
-    }
-  }
 
   trait OptimizedCodegen extends CodegenCore with TypedSubstitution with MatchMonadInterface {
     override def codegen: AbsCodegen = optimizedCodegen

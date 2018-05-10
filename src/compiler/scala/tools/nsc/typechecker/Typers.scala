@@ -251,7 +251,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import infer._
 
     private var namerCache: Namer = null
-    def namer = {
+    def namer: Namer = {
       if ((namerCache eq null) || namerCache.context != context)
         namerCache = newNamer(context)
       namerCache
@@ -1968,7 +1968,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope, clazz)
-      val body1 = pluginsEnterStats(this, templ.body)
+      val body1 = pluginsEnterStats(this, namer.expandMacroAnnotations(templ.body))
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
       validateParentClasses(parents1, selfType)
@@ -2422,7 +2422,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val syntheticPrivates = new ListBuffer[Symbol]
       try {
         namer.enterSyms(block0.stats)
-        val block = treeCopy.Block(block0, pluginsEnterStats(this, block0.stats), block0.expr)
+        val block = treeCopy.Block(block0, pluginsEnterStats(this, namer.expandMacroAnnotations(block0.stats)), block0.expr)
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
@@ -2581,21 +2581,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val lub = weakLub(packed)
           finish(casesTyped map (adaptCase(_, mode, lub)), lub)
       }
-    }
-
-    // match has been typed -- virtualize it during type checking so the full context is available
-    def virtualizedMatch(match_ : Match, mode: Mode, pt: Type) = {
-      import patmat.{ vpmName, PureMatchTranslator }
-
-      // TODO: add fallback __match sentinel to predef
-      val matchStrategy: Tree =
-        if (!(settings.Yvirtpatmat && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
-        else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match)), reportAmbiguousErrors = false) orElse (_ => null)
-
-      if (matchStrategy ne null) // virtualize
-        typed((new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)).translateMatch(match_), mode, pt)
-      else
-        match_ // will be translated in phase `patmat`
     }
 
     /** synthesize and type check a PartialFunction implementation based on the match in `tree`
@@ -2763,8 +2748,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           vd
         }
 
-        val rhs    = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
-        val defdef = newDefDef(methodSym, rhs)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
+        val defdef = newDefDef(methodSym, match_)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
 
         (defdef, matchResTp)
       }
@@ -2781,7 +2765,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val defaultCase = mkDefaultCase(FALSE)
         val match_ = methodBodyTyper.typedMatch(selector(paramSym), casesTrue :+ defaultCase, mode, BooleanTpe)
 
-        DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanTpe))
+        DefDef(methodSym, match_)
       }
 
       // only used for @cps annotated partial functions
@@ -2800,7 +2784,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val matchResTp = match_.tpe
         methodSym setInfo MethodType(List(paramSym), matchResTp) // patch info
 
-        (DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, matchResTp)), matchResTp)
+        (DefDef(methodSym, match_), matchResTp)
       }
 
       def parents(resTp: Type) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, List(argTp, resTp)))
@@ -3959,6 +3943,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+    def typedMacroAnnotation(cdef: ClassDef) = {
+      val clazz = cdef.symbol
+      if (!isPastTyper) {
+        if (clazz != null && (clazz isNonBottomSubClass AnnotationClass)) {
+          val macroTransform = clazz.info.member(nme.macroTransform)
+          if (macroTransform != NoSymbol) {
+            clazz.setFlag(MACRO)
+            if (clazz.getAnnotation(CompileTimeOnlyAttr).isEmpty) clazz.addAnnotation(AnnotationInfo(CompileTimeOnlyAttr.tpe, List(Literal(Constant(MacroAnnotationNotExpandedMessage)) setType StringClass.tpe), Nil))
+            def flavorOk = macroTransform.isMacro
+            def paramssOk = mmap(macroTransform.paramss)(p => (p.name, p.info)) == List(List((nme.annottees, scalaRepeatedType(AnyTpe))))
+            def tparamsOk = macroTransform.typeParams.isEmpty
+            def everythingOk = flavorOk && paramssOk && tparamsOk
+            if (!everythingOk) MacroAnnotationShapeError(clazz)
+            if (!(clazz isNonBottomSubClass StaticAnnotationClass)) MacroAnnotationMustBeStaticError(clazz)
+            // TODO: revisit the decision about @Inherited
+            if (clazz.getAnnotation(InheritedAttr).nonEmpty) MacroAnnotationCannotBeInheritedError(clazz)
+            if (!clazz.isStatic) MacroAnnotationCannotBeMemberError(clazz)
+          }
+        }
+      }
+      cdef
+    }
+
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
     def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
@@ -4521,7 +4528,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
           }
         } else
-          virtualizedMatch(typedMatch(selector, cases, mode, pt, tree), mode, pt)
+          typedMatch(selector, cases, mode, pt, tree)
       }
 
       def typedReturn(tree: Return) = {
@@ -5321,7 +5328,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
 
       def typedPackageDef(pdef0: PackageDef) = {
-        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, pdef0.stats))
+        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, namer.expandMacroAnnotations(pdef0.stats)))
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         if(pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule ))

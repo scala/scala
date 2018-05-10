@@ -52,6 +52,8 @@ trait Namers extends MethodSynthesis {
     // overridden by the presentation compiler
     def saveDefaultGetter(meth: Symbol, default: Symbol): Unit = { }
 
+    def expandMacroAnnotations(stats: List[Tree]): List[Tree] = stats
+
     import NamerErrorGen._
     val typer = newTyper(context)
 
@@ -465,6 +467,7 @@ trait Namers extends MethodSynthesis {
 
       val m = tree.symbol
       if (m.isTopLevel && !m.hasPackageFlag) {
+        // TODO: I've seen crashes where m.moduleClass == NoSymbol
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
@@ -1189,6 +1192,7 @@ trait Namers extends MethodSynthesis {
         cda.companionModuleClassNamer = templateNamer
       }
       val classTp = ClassInfoType(parents, decls, clazz)
+      templateNamer.expandMacroAnnotations(templ.body)
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
     }
 
@@ -1199,6 +1203,7 @@ trait Namers extends MethodSynthesis {
       val resultType = templateSig(impl)
 
       val res = GenPolyType(tparams0, resultType)
+
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
@@ -1210,6 +1215,10 @@ trait Namers extends MethodSynthesis {
         // Don't force the owner's info lest we create cycles as in scala/bug#6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
+
+      if (settings.YmacroAnnotations && treeInfo.isMacroAnnotation(cdef))
+        typer.typedMacroAnnotation(cdef)
+
       pluginsTp
     }
 
@@ -1301,8 +1310,6 @@ trait Namers extends MethodSynthesis {
       // ignore missing types unless we can look to overridden method to recover the missing information
       val canOverride = methOwner.isClass && !meth.isConstructor
       val inferResTp  = canOverride && tpt.isEmpty
-      val inferArgTp  = canOverride && settings.YmethodInfer && mexists(vparamss)(_.tpt.isEmpty)
-
 
       /*
        * Find the overridden method that matches a schematic method type,
@@ -1315,20 +1322,13 @@ trait Namers extends MethodSynthesis {
        *
        * NOTE: mutates info of symbol of vparamss that don't specify a type
        */
-      val methodSigApproxUnknownArgs: () => Type =
-        if (!inferArgTp) () => deskolemizedPolySig(vparamSymss, resTpGiven)
-        else () => {
-          // for all params without type set WildcardType
-          mforeach(vparamss)(v => if (v.tpt.isEmpty) v.symbol setInfo WildcardType)
-          // must wait to call deskolemizedPolySig until we've temporarily set the WildcardType info for the vparamSymss
-          // (Otherwise, valDefSig will complain about missing argument types.)
-          deskolemizedPolySig(vparamSymss, resTpGiven)
-        }
+      def methodSigApproxUnknownArgs(): Type =
+        deskolemizedPolySig(vparamSymss, resTpGiven)
 
       // Must be lazy about the schema to avoid cycles in neg/t5093.scala
       val overridden =
         if (!canOverride) NoSymbol
-        else safeNextOverriddenSymbolLazySchema(meth, methodSigApproxUnknownArgs)
+        else safeNextOverriddenSymbolLazySchema(meth, methodSigApproxUnknownArgs _)
 
       /*
        * If `meth` doesn't have an explicit return type, extract the return type from the method
@@ -1339,11 +1339,9 @@ trait Namers extends MethodSynthesis {
        * If the result type is missing, assign a MethodType to `meth` that's constructed using this return type.
        * This allows omitting the result type for recursive methods.
        *
-       * Missing parameter types are also recovered from the overridden method (by mutating the info of their symbols).
-       * (The parser accepts missing parameter types under -Yinfer-argument-types.)
        */
       val resTpFromOverride =
-        if (!(inferArgTp || inferResTp) || overridden == NoSymbol || overridden.isOverloaded) resTpGiven
+        if (!inferResTp || overridden == NoSymbol || overridden.isOverloaded) resTpGiven
         else {
           overridden.cookJavaRawInfo() // #3404 xform java rawtypes into existentials
 
@@ -1352,23 +1350,6 @@ trait Namers extends MethodSynthesis {
               case PolyType(tparams, mt) => (tparams, mt.substSym(tparams, tparamSkolems))
               case mt => (Nil, mt)
             }
-
-          // try to derive empty parameter types from the overridden method's argument types
-          if (inferArgTp) {
-            val overriddenSyms = overriddenTparams ++ overridden.paramss.flatten
-            val ourSyms = tparamSkolems ++ vparamSymss.flatten
-            foreach2(vparamss, overridden.paramss) { foreach2(_, _) { (vparam, overriddenParam) =>
-              // println(s"infer ${vparam.symbol} from ${overriddenParam}? ${vparam.tpt}")
-              if (vparam.tpt.isEmpty) {
-                val overriddenParamTp = overriddenParam.tpe.substSym(overriddenSyms, ourSyms)
-                // println(s"inferred ${vparam.symbol} : $overriddenParamTp")
-                // references to type parameters in overriddenParamTp link to the type skolems, so the
-                // assigned type is consistent with the other / existing parameter types in vparamSymss.
-                vparam.symbol setInfo overriddenParamTp
-                vparam.tpt defineType overriddenParamTp setPos vparam.pos.focus
-              }
-            }}
-          }
 
           @tailrec @inline def applyFully(tp: Type, paramss: List[List[Symbol]]): Type =
             if (paramss.isEmpty) tp match {

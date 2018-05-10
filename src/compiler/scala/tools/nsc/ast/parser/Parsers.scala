@@ -2370,10 +2370,7 @@ self =>
       val nameOffset = in.offset
       val name = ident()
       var bynamemod = 0
-      val tpt =
-        if ((settings.YmethodInfer && !owner.isTypeName) && in.token != COLON) {
-          TypeTree()
-        } else { // XX-METHOD-INFER
+      val tpt = {
           accept(COLON)
           if (in.token == ARROW) {
             if (owner.isTypeName && !mods.isLocalToThis)

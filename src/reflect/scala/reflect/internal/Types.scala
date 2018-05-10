@@ -4139,13 +4139,11 @@ trait Types
    *  as a function over the maximum depth `td` of these types, and
    *  the maximum depth `bd` of all types in the base type sequences of these types.
    */
-  private def lubDepthAdjust(td: Depth, bd: Depth): Depth = (
-    if (settings.XfullLubs) bd
-    else if (bd <= Depth(3)) bd
+  private def lubDepthAdjust(td: Depth, bd: Depth): Depth =
+    if (bd <= Depth(3)) bd
     else if (bd <= Depth(5)) td max bd.decr
     else if (bd <= Depth(7)) td max (bd decr 2)
     else td.decr max (bd decr 3)
-  )
 
   private def symTypeDepth(syms: List[Symbol]): Depth  = typeDepth(syms map (_.info))
   private def typeDepth(tps: List[Type]): Depth        = maxDepth(tps)

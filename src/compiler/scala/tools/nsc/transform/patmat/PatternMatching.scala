@@ -59,7 +59,7 @@ trait PatternMatching extends Transform
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
-        val translated = translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
+        val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
           localTyper.typed(translated) setType origTp
         } catch {
@@ -69,24 +69,21 @@ trait PatternMatching extends Transform
             translated
         }
       case Try(block, catches, finalizer) =>
-        treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
+        val selectorPos = catches.headOption.getOrElse(EmptyTree).orElse(finalizer).pos.focusEnd
+        treeCopy.Try(tree, transform(block), translator(selectorPos).translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
     }
 
     // TODO: only instantiate new match translator when localTyper has changed
     // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
     // as this is the only time TypingTransformer changes it
-    def translator: MatchTranslator with CodegenCore = {
-      new OptimizingMatchTranslator(localTyper)
+    def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
+      new OptimizingMatchTranslator(localTyper, selectorPos)
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
-  }
 
-  class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
+  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position) extends MatchTranslator
                                                              with MatchOptimizer
                                                              with MatchAnalyzer
                                                              with Solver
