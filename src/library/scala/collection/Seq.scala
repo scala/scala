@@ -935,22 +935,22 @@ object SeqOps {
    *  @param  n1   The far end of the target sequence that we should use (exclusive)
    *  @return Target packed in an IndexedSeq (taken from iterator unless W already is an IndexedSeq)
    */
-  private def kmpOptimizeWord[B](W: Seq[B], n0: Int, n1: Int, forward: Boolean): IndexedView[B] = W match {
+  private def kmpOptimizeWord[B](W: Seq[B], n0: Int, n1: Int, forward: Boolean): IndexedSeqView[B] = W match {
     case iso: IndexedSeq[B] =>
       // Already optimized for indexing--use original (or custom view of original)
       if (forward && n0==0 && n1==W.length) iso.view
-      else if (forward) new AbstractIndexedView[B] {
+      else if (forward) new AbstractIndexedSeqView[B] {
         val length = n1 - n0
         def apply(x: Int) = iso(n0 + x)
       }
-      else new AbstractIndexedView[B] {
+      else new AbstractIndexedSeqView[B] {
         def length = n1 - n0
         def apply(x: Int) = iso(n1 - 1 - x)
       }
     case _ =>
       // W is probably bad at indexing.  Pack in array (in correct orientation)
       // Would be marginally faster to special-case each direction
-      new AbstractIndexedView[B] {
+      new AbstractIndexedSeqView[B] {
         private[this] val Warr = new Array[AnyRef](n1-n0)
         private[this] val delta = if (forward) 1 else -1
         private[this] val done = if (forward) n1-n0 else -1
@@ -974,7 +974,7 @@ object SeqOps {
    *  @param  wlen Just in case we're only IndexedSeq and not IndexedSeqOptimized
    *  @return KMP jump table for target sequence
    */
- private def kmpJumpTable[B](Wopt: IndexedView[B], wlen: Int) = {
+ private def kmpJumpTable[B](Wopt: IndexedSeqView[B], wlen: Int) = {
     val arr = new Array[Int](wlen)
     var pos = 2
     var cnd = 0
