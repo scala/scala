@@ -3587,7 +3587,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   checkNotMacro()
-                  context.diagUsedDefaults = true
+                  context.set(ContextMode.DiagUsedDefaults)
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
