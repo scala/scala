@@ -667,14 +667,14 @@ trait ContextErrors {
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
         val f = meth.name.decoded
         val paf = s"$f(${ meth.asMethod.paramLists map (_ map (_ => "_") mkString ",") mkString ")(" })"
-        val advice = s"""
-          |Unapplied methods are only converted to functions when a function type is expected.
-          |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin
+        val advice =
+          if (meth.isConstructor || meth.info.params.length > definitions.MaxFunctionArity) ""
+          else s"""
+            |Unapplied methods are only converted to functions when a function type is expected.
+            |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin
         val message =
           if (meth.isMacro) MacroTooFewArgumentListsMessage
-          else s"""missing argument list for ${meth.fullLocationString}${
-            if (!meth.isConstructor) advice else ""
-          }"""
+          else s"""missing argument list for ${meth.fullLocationString}$advice"""
         issueNormalTypeError(tree, message)
         setError(tree)
       }
@@ -730,9 +730,12 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type): Tree = {
+        issueNormalTypeError(tree, "method with dependent type " + tp + " cannot be converted to function value")
+        setError(tree)
+      }
+
       // cases where we do not necessarily return trees
-      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type) =
-        issueNormalTypeError(tree, "method with dependent type "+tp+" cannot be converted to function value")
 
       //checkStarPatOK
       def StarPatternWithVarargParametersError(tree: Tree) =
@@ -1375,9 +1378,11 @@ trait ContextErrors {
           )
         }
 
+        // Note that treeInfo.Applied always matches, it just returns Nil when no application was found...
         def treeTypeArgs(annotatedTree: Tree): List[String] = annotatedTree match {
-          case TypeApply(_, args) => args.map(_.toString)
           case Block(_, Function(_, treeInfo.Applied(_, targs, _))) => targs.map(_.toString) // eta expansion, see neg/t9527b.scala
+          case Function(_, treeInfo.Applied(_, targs, _)) => targs.map(_.toString) // eta expansion, see neg/t9527b.scala
+          case treeInfo.Applied(_, targs, _) => targs.map(_.toString)
           case _ => Nil
         }
 
