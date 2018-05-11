@@ -16,9 +16,7 @@ before_script:
 
 stages:
   - name: build # also builds the spec using jekyll
-  # tests are running into time limits (will re-enable once Jason's partest speedups are in)
   - name: test
-    if: env(bla) = thisVarIsNotSet AND type != pull_request # just disabling tests for now, but commenting the stage here doesn't do the trick
   - name: publish
     if: type != pull_request
 
