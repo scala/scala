@@ -63,7 +63,7 @@ jobs:
         if: type = pull_request
         script:
           - source scripts/common
-          - $SBT_CMD --warn setupPublishCore testAll
+          - $SBT_CMD -debug setupPublishCore testAll
 
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
