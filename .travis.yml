@@ -16,11 +16,12 @@ before_script:
 
 stages:
   - name: build # also builds the spec using jekyll
-  - name: validate
-    if: type = pull_request
   - name: test
+    if: env(bla) = thisVarIsNotSet AND type != pull_request # just disabling tests for now, but commenting the stage here doesn't do the trick
   - name: publish
     if: type != pull_request
+  - name: validate
+    if: type = pull_request
 
 # see comment in `bootstrap_fun` for details on the procedure
 # env available in each stage
