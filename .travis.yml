@@ -31,9 +31,7 @@ stages:
 jobs:
     include:
       - stage: build
-        # currently, not touching PR validation
-        # (also, we couldn't even, because the password to publish to artifactory is not there :-/)
-        if: type != pull_request
+        # TODO: publishing. we don't even have the password to publish to artifactory
         script:
           - source scripts/common
           - source scripts/bootstrap_fun
@@ -45,7 +43,7 @@ jobs:
           - buildQuick
           - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
-          - triggerScalaDist
+          # TODO needed for publishing? - triggerScalaDist
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
