@@ -12,7 +12,7 @@ cache:
 
 
 before_script:
-  - (cd admin && ./init.sh)
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
 
 stages:
   - name: build # also builds the spec using jekyll
