@@ -48,12 +48,6 @@ jobs:
           - cat build/env
           - triggerScalaDist
 
-      - stage: build
-        if: type = pull_request
-        script:
-          - source scripts/common
-          - $SBT_CMD --warn setupPublishCore test:compile
-
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
       - stage: build
@@ -63,6 +57,8 @@ jobs:
         # the key is restricted using forced commands so that it can only upload to the directory we need here
         after_success: ./scripts/travis-publish-spec.sh
 
+      # TODO: first publish to scala-pr-validation-snapshots, then point STARR to that,
+      # and only *then* run the tests
       - stage: validate
         if: type = pull_request
         script:
