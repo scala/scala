@@ -87,7 +87,7 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
     val n = it.knownSize
     if (n > -1) {
       val elements = scala.Array.ofDim[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())

@@ -213,14 +213,14 @@ class OpenHashMap[Key, Value](initialSize : Int)
     None
   }
 
-  def clear(): Unit = keysIterator().foreach(-=)
+  def clear(): Unit = keysIterator.foreach(-=)
 
   /** An iterator over the elements of this map. Use of this iterator follows
     *  the same contract for concurrent modification as the foreach method.
     *
     *  @return   the iterator
     */
-  def iterator(): Iterator[(Key, Value)] = new AbstractIterator[(Key, Value)] {
+  def iterator: Iterator[(Key, Value)] = new AbstractIterator[(Key, Value)] {
     var index = 0
     val initialModCount = modCount
 

@@ -141,7 +141,7 @@ private[scala] class PlainNioFile(nioPath: java.nio.file.Path) extends AbstractF
   def iterator: Iterator[AbstractFile] = {
     try {
       import scala.collection.JavaConverters._
-      val it = Files.newDirectoryStream(nioPath).iterator()
+      val it = Files.newDirectoryStream(nioPath).iterator
       it.asScala.map(new PlainNioFile(_))
     } catch {
       case _: NotDirectoryException => Iterator.empty

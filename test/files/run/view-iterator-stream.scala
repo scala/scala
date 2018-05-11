@@ -29,13 +29,13 @@ object Test {
 
   def naturals = LazyList from 1
   val toV : Perturber = Perturber("view", LazyList.from(_).view)
-  val toI : Perturber = Perturber("iterator", _.iterator())
+  val toI : Perturber = Perturber("iterator", _.iterator)
   val toS : Perturber = Perturber("LazyList.from", LazyList.from(_))
   val toIS : Perturber = Perturber("IndexedSeq.from", IndexedSeq.from(_))
 
   def p(ps: Perturber*): Perturber = if (ps.isEmpty) Id else ps.reduceLeft(_ and _)
-  def drop(n: Int): Perturber = Perturber("drop " + n, _.iterator() drop n)
-  def take(n: Int): Perturber = Perturber("take " + n, _.iterator() take n)
+  def drop(n: Int): Perturber = Perturber("drop " + n, _.iterator drop n)
+  def take(n: Int): Perturber = Perturber("take " + n, _.iterator take n)
   def slice(from: Int, until: Int): Perturber =
     Perturber(
       "slice(%d, %d)".format(from, until),

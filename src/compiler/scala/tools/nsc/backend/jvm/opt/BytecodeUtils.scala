@@ -294,7 +294,7 @@ object BytecodeUtils {
   }
 
   def removeLineNumberNodes(instructions: InsnList): Unit = {
-    val iter = instructions.iterator()
+    val iter = instructions.iterator
     while (iter.hasNext) iter.next() match {
       case _: LineNumberNode => iter.remove()
       case _ =>
@@ -302,7 +302,7 @@ object BytecodeUtils {
   }
 
   def cloneLabels(methodNode: MethodNode): Map[LabelNode, LabelNode] = {
-    methodNode.instructions.iterator().asScala.collect({
+    methodNode.instructions.iterator.asScala.collect({
       case labelNode: LabelNode => (labelNode, newLabelNode)
     }).toMap
   }
@@ -322,7 +322,7 @@ object BytecodeUtils {
    * according to the `labelMap`.
    */
   def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
-    methodNode.localVariables.iterator().asScala.map(localVariable => {
+    methodNode.localVariables.iterator.asScala.map(localVariable => {
       val name =
         if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
           calleeMethodName + "_" + localVariable.name
@@ -355,7 +355,7 @@ object BytecodeUtils {
    * labels according to the `labelMap`.
    */
   def cloneTryCatchBlockNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): List[TryCatchBlockNode] = {
-    methodNode.tryCatchBlocks.iterator().asScala.map(tryCatch => new TryCatchBlockNode(
+    methodNode.tryCatchBlocks.iterator.asScala.map(tryCatch => new TryCatchBlockNode(
       labelMap(tryCatch.start),
       labelMap(tryCatch.end),
       labelMap(tryCatch.handler),

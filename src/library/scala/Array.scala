@@ -57,7 +57,7 @@ object Array {
     val n = it.knownSize
     if (n > -1) {
       val elements = new Array[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())
@@ -66,7 +66,7 @@ object Array {
       elements
     } else {
       val b = ArrayBuilder.make[A]()
-      val iterator = it.iterator()
+      val iterator = it.iterator
       while (iterator.hasNext)
         b += iterator.next()
       b.result()

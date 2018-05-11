@@ -195,7 +195,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     *
     * @return an iterator over pairs of integer keys and corresponding values.
     */
-  def iterator(): Iterator[(Int, T)] = this match {
+  def iterator: Iterator[(Int, T)] = this match {
     case IntMap.Nil => Iterator.empty
     case _ => new IntMapEntryIterator(this)
   }
@@ -209,7 +209,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil =>
   }
 
-  override def keysIterator(): Iterator[Int] = this match {
+  override def keysIterator: Iterator[Int] = this match {
     case IntMap.Nil => Iterator.empty
     case _ => new IntMapKeyIterator(this)
   }
@@ -226,7 +226,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil =>
   }
 
-  override def valuesIterator(): Iterator[T] = this match {
+  override def valuesIterator: Iterator[T] = this match {
     case IntMap.Nil => Iterator.empty
     case _ => new IntMapValueIterator(this)
   }

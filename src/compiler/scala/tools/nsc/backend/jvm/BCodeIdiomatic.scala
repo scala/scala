@@ -667,7 +667,7 @@ abstract class BCodeIdiomatic {
   implicit class InsnIterInsnList(lst: asm.tree.InsnList) {
 
     @inline final def foreachInsn(f: (asm.tree.AbstractInsnNode) => Unit): Unit = {
-      val insnIter = lst.iterator()
+      val insnIter = lst.iterator
       while (insnIter.hasNext) {
         f(insnIter.next())
       }

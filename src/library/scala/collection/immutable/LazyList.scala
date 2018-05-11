@@ -119,7 +119,7 @@ import scala.language.higherKinds
   *
   *  // Because lazylist1 is a val, everything that the iterator produces is held
   *  // by virtue of the fact that the head of the LazyList is held in lazylist1
-  *  val it1 = lazylist1.iterator()
+  *  val it1 = lazylist1.iterator
   *  loop("Iterator1: ", it1.next(), it1)
   *
   *  // We can redefine this LazyList such that all we have is the Iterator left
@@ -130,7 +130,7 @@ import scala.language.higherKinds
   *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
   *    loop(0)
   *  }
-  *  val it2 = stream2.iterator()
+  *  val it2 = stream2.iterator
   *  loop("Iterator2: ", it2.next(), it2)
   *
   *  // And, of course, we don't actually need a LazyList at all for such a simple
@@ -636,7 +636,7 @@ object LazyList extends LazyListFactory[LazyList] {
 
   def from[A](coll: collection.IterableOnce[A]): LazyList[A] = coll match {
     case coll: LazyList[A] => coll
-    case _ => fromIterator(coll.iterator())
+    case _ => fromIterator(coll.iterator)
   }
 
   /**
@@ -794,7 +794,7 @@ object Stream extends LazyListFactory[Stream] {
 
   def from[A](coll: collection.IterableOnce[A]): Stream[A] = coll match {
     case coll: Stream[A] => coll
-    case _ => fromIterator(coll.iterator())
+    case _ => fromIterator(coll.iterator)
   }
 
   /**

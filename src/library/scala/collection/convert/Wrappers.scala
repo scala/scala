@@ -23,7 +23,7 @@ private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
     def size = underlying.size
-    override def iterator() = IteratorWrapper(underlying.iterator())
+    override def iterator = IteratorWrapper(underlying.iterator)
     override def isEmpty = underlying.isEmpty
   }
 
@@ -57,13 +57,13 @@ private[collection] trait Wrappers {
 
   @SerialVersionUID(3L)
   case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] {
-    def iterator() = underlying.iterator().asScala
+    def iterator = underlying.iterator.asScala
     override def iterableFactory = mutable.ArrayBuffer
   }
 
   @SerialVersionUID(3L)
   case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] {
-    def iterator() = underlying.iterator().asScala
+    def iterator = underlying.iterator.asScala
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterableFactory = mutable.ArrayBuffer
@@ -96,7 +96,7 @@ private[collection] trait Wrappers {
   case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
-    override def iterator(): Iterator[A] = underlying.iterator().asScala
+    override def iterator: Iterator[A] = underlying.iterator.asScala
     def apply(i: Int) = underlying.get(i)
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
@@ -104,7 +104,7 @@ private[collection] trait Wrappers {
     def insert(idx: Int,elem: A): Unit = underlying.subList(0, idx).add(elem)
     def insertAll(i: Int, elems: IterableOnce[A]) = {
       val ins = underlying.subList(0, i)
-      elems.iterator().foreach(ins.add(_))
+      elems.iterator.foreach(ins.add(_))
     }
     def remove(i: Int) = underlying.remove(i)
     def clear() = underlying.clear()
@@ -118,7 +118,7 @@ private[collection] trait Wrappers {
         val e = it.next()
         it.remove()
         val es = f(e)
-        es.iterator().foreach(it.add)
+        es.iterator.foreach(it.add)
       }
       this
     }
@@ -152,7 +152,7 @@ private[collection] trait Wrappers {
     override def isEmpty = underlying.isEmpty
     def size = underlying.size
     def iterator = new ju.Iterator[A] {
-      val ui = underlying.iterator()
+      val ui = underlying.iterator
       var prev: Option[A] = None
       def hasNext = ui.hasNext
       def next = { val e = ui.next(); prev = Some(e); e }
@@ -189,7 +189,7 @@ private[collection] trait Wrappers {
 
     override def size = underlying.size
 
-    def iterator() = underlying.iterator().asScala
+    def iterator = underlying.iterator.asScala
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
@@ -228,7 +228,7 @@ private[collection] trait Wrappers {
       def size = self.size
 
       def iterator = new ju.Iterator[ju.Map.Entry[A, B]] {
-        val ui = underlying.iterator()
+        val ui = underlying.iterator
         var prev : Option[A] = None
 
         def hasNext = ui.hasNext
@@ -334,7 +334,7 @@ private[collection] trait Wrappers {
 
     override def remove(k: K): Option[V] = Option(underlying remove k)
 
-    def iterator(): Iterator[(K, V)] = new AbstractIterator[(K, V)] {
+    def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
       def next() = { val e = ui.next(); (e.getKey, e.getValue) }
@@ -408,8 +408,8 @@ private[collection] trait Wrappers {
   case class DictionaryWrapper[A, B](underlying: mutable.Map[A, B]) extends ju.Dictionary[A, B] {
     def size: Int = underlying.size
     def isEmpty: Boolean = underlying.isEmpty
-    def keys: ju.Enumeration[A] = asJavaEnumeration(underlying.keysIterator())
-    def elements: ju.Enumeration[B] = asJavaEnumeration(underlying.valuesIterator())
+    def keys: ju.Enumeration[A] = asJavaEnumeration(underlying.keysIterator)
+    def elements: ju.Enumeration[B] = asJavaEnumeration(underlying.valuesIterator)
     def get(key: AnyRef) = try {
       underlying get key.asInstanceOf[A] match {
         case None => null.asInstanceOf[B]
@@ -447,9 +447,9 @@ private[collection] trait Wrappers {
 
     override def remove(k: A): Option[B] = Option(underlying remove k)
 
-    def iterator() = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
+    def iterator = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
 
-    def clear() = iterator().foreach(entry => underlying.remove(entry._1))
+    def clear() = iterator.foreach(entry => underlying.remove(entry._1))
 
     override def mapFactory = mutable.HashMap
   }
@@ -480,7 +480,7 @@ private[collection] trait Wrappers {
       if (r != null) Some(r.asInstanceOf[String]) else None
     }
 
-    def iterator(): Iterator[(String, String)] = new AbstractIterator[(String, String)] {
+    def iterator: Iterator[(String, String)] = new AbstractIterator[(String, String)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
       def next() = {

@@ -132,7 +132,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
   override def addAll(xs: IterableOnce[A]): this.type = {
     val from = resarr.p_size0
-    for (x <- xs.iterator()) unsafeAdd(x)
+    for (x <- xs.iterator) unsafeAdd(x)
     heapify(from)
     this
   }
@@ -249,7 +249,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  @return  an iterator over all the elements.
     */
-  override def iterator(): Iterator[A] = new AbstractIterator[A] {
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 1
     def hasNext: Boolean = i < resarr.p_size0
     def next(): A = {
@@ -308,7 +308,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  Note: the order of elements is undefined.
     */
-  def toQueue: Queue[A] = new Queue[A] ++= this.iterator()
+  def toQueue: Queue[A] = new Queue[A] ++= this.iterator
 
   /** Returns a textual representation of a queue as a string.
     *
@@ -322,7 +322,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  @return a list containing all elements of this $coll.
     */
-  override def toList: immutable.List[A] = immutable.List.from(this.iterator())
+  override def toList: immutable.List[A] = immutable.List.from(this.iterator)
 
   /** This method clones the priority queue.
     *

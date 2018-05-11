@@ -425,7 +425,7 @@ abstract class LocalOpt {
       // cannot change instructions while iterating, it gets the analysis out of synch (indexed by instructions)
       val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
 
-      val it = method.instructions.iterator()
+      val it = method.instructions.iterator
       while (it.hasNext) it.next() match {
         case vi: VarInsnNode if isNull(vi, vi.`var`) =>
           if (vi.getOpcode == ALOAD)
@@ -506,7 +506,7 @@ abstract class LocalOpt {
     var changed = false
     var maxLocals = parametersSize(method)
     var maxStack = 0
-    val itr = method.instructions.iterator()
+    val itr = method.instructions.iterator
     while (itr.hasNext) {
       val insn = itr.next()
       val isLive = frames(i) != null
@@ -568,7 +568,7 @@ abstract class LocalOpt {
       // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
       val toRemove = mutable.Set.empty[TypeInsnNode]
 
-      val it = method.instructions.iterator()
+      val it = method.instructions.iterator
       while (it.hasNext) it.next() match {
         case ti: TypeInsnNode if ti.getOpcode == CHECKCAST =>
           val frame = typeAnalyzer.frameAt(ti)
@@ -614,7 +614,7 @@ object LocalOptImpls {
 
     var result: RemoveHandlersResult = RemoveHandlersResult.NoneRemoved
 
-    val handlersIter = method.tryCatchBlocks.iterator()
+    val handlersIter = method.tryCatchBlocks.iterator
     while (handlersIter.hasNext) {
       val handler = handlersIter.next()
       if (!containsExecutableCode(handler.start, handler.end)) {
@@ -661,7 +661,7 @@ object LocalOptImpls {
     }
 
     val initialNumVars = method.localVariables.size
-    val localsIter = method.localVariables.iterator()
+    val localsIter = method.localVariables.iterator
     while (localsIter.hasNext) {
       val local = localsIter.next()
       val index = local.index
@@ -707,7 +707,7 @@ object LocalOptImpls {
 
     val firstLocalIndex = parametersSize(method)
     for (i <- 0 until firstLocalIndex) renumber += i // parameters and `this` are always used.
-    method.instructions.iterator().asScala foreach {
+    method.instructions.iterator.asScala foreach {
       case VarInstruction(varIns, slot) => addVar(varIns, slot)
       case _ =>
     }
@@ -728,7 +728,7 @@ object LocalOptImpls {
     else {
       // update variable instructions according to the renumber table
       method.maxLocals = nextIndex
-      method.instructions.iterator().asScala.foreach {
+      method.instructions.iterator.asScala.foreach {
         case VarInstruction(varIns, slot) =>
           val oldIndex = slot
           if (oldIndex >= firstLocalIndex && renumber(oldIndex) != oldIndex) varIns match {
@@ -759,7 +759,7 @@ object LocalOptImpls {
     }
 
     val initialSize = method.instructions.size
-    val iterator = method.instructions.iterator()
+    val iterator = method.instructions.iterator
     var previousLabel: LabelNode = null
     while (iterator.hasNext) {
       iterator.next match {
@@ -788,7 +788,7 @@ object LocalOptImpls {
 
     val jumpInsns = mutable.LinkedHashMap.empty[JumpInsnNode, Boolean]
 
-    for (insn <- method.instructions.iterator().asScala) insn match {
+    for (insn <- method.instructions.iterator.asScala) insn match {
       case l: LabelNode =>
         activeHandlers ++= allHandlers.filter(_.start == l)
         activeHandlers = activeHandlers.filter(_.end != l)

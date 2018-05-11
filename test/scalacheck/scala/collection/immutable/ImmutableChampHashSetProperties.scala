@@ -206,11 +206,11 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     subtractDefault == subtractNative
   }
 
-  property("iterator() equals reverseIterator().reverse()") = forAll { (input: ChampHashSet[K]) =>
-    val xs: List[K] = input.iterator()
+  property("iterator equals reverseIterator.reverse()") = forAll { (input: ChampHashSet[K]) =>
+    val xs: List[K] = input.iterator
       .foldLeft(List.empty[K])((list: List[K], item: K) => list prepended item)
 
-    val ys: List[K] = input.reverseIterator()
+    val ys: List[K] = input.reverseIterator
       .foldLeft(List.empty[K])((list: List[K], item: K) => list appended item)
 
     xs == ys

@@ -250,7 +250,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     slice(lo, xs.length)
   }
 
-  def iterator(): Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
+  def iterator: Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`
@@ -300,7 +300,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @return  an iterator yielding the elements of this array in reversed order
     */
-  def reverseIterator(): Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
+  def reverseIterator: Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
 
   /** Selects all elements of this array which satisfy a predicate.
     *
@@ -737,7 +737,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val k = that.knownSize
     b.sizeHint(if(k >= 0) min(k, xs.length) else xs.length)
     var i = 0
-    val it = that.iterator()
+    val it = that.iterator
     while(i < xs.length && it.hasNext) {
       b += ((xs(i), it.next()))
       i += 1
@@ -937,7 +937,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     * @return a new array consisting of all the elements of this array without duplicates.
     */
   def distinctBy[B](f: A => B): Array[A] =
-    ArrayBuilder.make[A]().addAll(iterator().distinctBy(f)).result()
+    ArrayBuilder.make[A]().addAll(iterator.distinctBy(f)).result()
 
   /** A copy of this array with an element value appended until a given target length is reached.
     *

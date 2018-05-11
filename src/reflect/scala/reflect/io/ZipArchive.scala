@@ -295,7 +295,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
     val manifest = new Manifest(input)
-    val iter     = manifest.getEntries().keySet().iterator().asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
+    val iter     = manifest.getEntries().keySet().iterator.asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
 
     for (zipEntry <- iter) {
       val dir = getDir(dirs, zipEntry)

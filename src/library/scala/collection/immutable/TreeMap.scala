@@ -38,7 +38,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def sortedMapFactory = TreeMap
 
-  def iterator(): collection.Iterator[(K, V)] = RB.iterator(tree)
+  def iterator: collection.Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
 
@@ -129,7 +129,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   private[this] def countWhile(p: ((K, V)) => Boolean): Int = {
     var result = 0
-    val it = iterator()
+    val it = iterator
     while (it.hasNext && p(it.next())) result += 1
     result
   }

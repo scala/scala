@@ -36,7 +36,7 @@ class ListMap[K, V]
   private var siz: Int = 0
 
   def get(key: K): Option[V] = elems find (_._1 == key) map (_._2)
-  def iterator(): Iterator[(K, V)] = elems.iterator()
+  def iterator: Iterator[(K, V)] = elems.iterator
 
   final override def addOne(kv: (K, V)) = { elems = remove(kv._1, elems, List()); elems = kv :: elems; siz += 1; this }
 

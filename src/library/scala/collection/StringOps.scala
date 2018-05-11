@@ -96,7 +96,7 @@ final class StringOps(private val s: String)
     */
   def concat(suffix: IterableOnce[Char]): String = {
     val sb = new StringBuilder(s)
-    for (ch <- suffix.iterator()) sb.append(ch)
+    for (ch <- suffix.iterator) sb.append(ch)
     sb.toString
   }
 

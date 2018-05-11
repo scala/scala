@@ -33,7 +33,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
 
   def this() = this(LongMap.exceptionDefault, 16, true)
 
-  def clear(): Unit = { keysIterator() foreach -= } // TODO optimize
+  def clear(): Unit = { keysIterator foreach -= } // TODO optimize
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, V)]): LongMap[V] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder()
@@ -364,7 +364,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     this
   }
 
-  def iterator(): Iterator[(Long, V)] = new Iterator[(Long, V)] {
+  def iterator: Iterator[(Long, V)] = new Iterator[(Long, V)] {
     private[this] val kz = _keys
     private[this] val vz = _values
 
@@ -564,7 +564,7 @@ object LongMap {
     var sz = elems.knownSize
     if(sz < 0) sz = 4
     val lm = new LongMap[V](sz * 2)
-    elems.iterator().foreach{ case (k,v) => lm(k) = v }
+    elems.iterator.foreach{ case (k,v) => lm(k) = v }
     if (lm.size < (sz>>3)) lm.repack()
     lm
   }
@@ -605,8 +605,8 @@ object LongMap {
   def fromZip[V](keys: scala.collection.Iterable[Long], values: scala.collection.Iterable[V]): LongMap[V] = {
     val sz = math.min(keys.size, values.size)
     val lm = new LongMap[V](sz * 2)
-    val ki = keys.iterator()
-    val vi = values.iterator()
+    val ki = keys.iterator
+    val vi = values.iterator
     while (ki.hasNext && vi.hasNext) lm(ki.next()) = vi.next()
     if (lm.size < (sz >> 3)) lm.repack()
     lm

@@ -136,7 +136,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return  the first element of this $coll.
     *  @throws NoSuchElementException if the $coll is empty.
     */
-  def head: A = iterator().next()
+  def head: A = iterator.next()
 
   /** Optionally selects the first element.
     *  $orderDependent
@@ -144,7 +144,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *           `None` if it is empty.
     */
   def headOption: Option[A] = {
-    val it = iterator()
+    val it = iterator
     if(it.hasNext) Some(it.next()) else None
   }
 
@@ -154,7 +154,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    val it = iterator()
+    val it = iterator
     var lst = it.next()
     while (it.hasNext) lst = it.next()
     lst
@@ -171,7 +171,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @`inline` final def hasDefiniteSize = knownSize >= 0
 
   /** A view over the elements of this collection. */
-  def view: View[A] = View.fromIteratorProvider(() => iterator())
+  def view: View[A] = View.fromIteratorProvider(() => iterator)
 
   /** A view over a slice of the elements of this collection. */
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
@@ -308,7 +308,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
     val headSize = asIterable(head).size
     val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B]())
-    for (xs <- iterator()) {
+    for (xs <- iterator) {
       var i = 0
       for (x <- asIterable(xs)) {
         if (i >= headSize) fail
@@ -370,8 +370,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def takeRight(n: Int): C = {
     val b = newSpecificBuilder()
     b.sizeHintBounded(n, toIterable)
-    val lead = iterator() drop n
-    val it = iterator()
+    val lead = iterator drop n
+    val it = iterator
     while (lead.hasNext) {
       lead.next()
       it.next()
@@ -392,8 +392,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def dropRight(n: Int): C = {
     val b = newSpecificBuilder()
     if (n >= 0) b.sizeHint(toIterable, delta = -n)
-    val lead = iterator() drop n
-    val it = iterator()
+    val lead = iterator drop n
+    val it = iterator
     while (lead.hasNext) {
       b += it.next()
       lead.next()
@@ -411,7 +411,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
    *          last will be less than size `size` if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[C] =
-    iterator().grouped(size).map(fromSpecificIterable)
+    iterator.grouped(size).map(fromSpecificIterable)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in `grouped`.)
@@ -437,7 +437,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *          if there are fewer than `size` elements remaining to be grouped.
     */
   def sliding(size: Int, step: Int): Iterator[C] =
-    iterator().sliding(size, step).map(fromSpecificIterable)
+    iterator.sliding(size, step).map(fromSpecificIterable)
 
   /** The rest of the collection without its first element. */
   def tail: C = {
@@ -470,7 +470,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
     val m = mutable.Map.empty[K, Builder[A, C]]
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       val elem = it.next()
       val key = f(elem)
@@ -478,7 +478,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       bldr += elem
     }
     var result = immutable.HashMap.empty[K, C]
-    val mapIt = m.iterator()
+    val mapIt = m.iterator
     while (mapIt.hasNext) {
       val (k, v) = mapIt.next()
       result = result.updated(k, v.result())

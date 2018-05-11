@@ -60,14 +60,14 @@ sealed class ListMap[K, +V]
 
   def remove(key: K): ListMap[K, V] = this
 
-  def iterator(): Iterator[(K, V)] = {
+  def iterator: Iterator[(K, V)] = {
     var curr: ListMap[K, V] = this
     var res: List[(K, V)] = Nil
     while (!curr.isEmpty) {
       res = (curr.key, curr.value) :: res
       curr = curr.next
     }
-    res.iterator()
+    res.iterator
   }
 
   protected def key: K = throw new NoSuchElementException("key of empty map")

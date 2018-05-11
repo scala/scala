@@ -56,7 +56,7 @@ sealed abstract class Range(
     with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with Serializable { range =>
 
-  override def iterator(): Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
+  override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
   private def gap           = end.toLong - start.toLong
   private def isExact       = gap % step == 0

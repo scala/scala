@@ -7,7 +7,7 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 
   override def view: IndexedSeqView[A] = this
 
-  override def iterator(): Iterator[A] = new AbstractIterator[A] {
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
     private var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size

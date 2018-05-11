@@ -67,7 +67,7 @@ it has 7 unimplemented members.
  *  For convenience, these are usable as stub implementations.
  */
   // Members declared in scala.collection.IterableOnce
-  def iterator(): Iterator[(Set[Int], String)] = ???
+  def iterator: Iterator[(Set[Int], String)] = ???
 
   // Members declared in scala.collection.IterableOps
   protected def coll: List[(Set[Int], String)] = ???

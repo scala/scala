@@ -254,7 +254,7 @@ sealed abstract class List[+A]
       var h: ::[B] = null
       var t: ::[B] = null
       while (rest ne Nil) {
-        f(rest.head).iterator().foreach { b =>
+        f(rest.head).iterator.foreach { b =>
           if (!found) {
             h = new ::(b, Nil)
             t = h

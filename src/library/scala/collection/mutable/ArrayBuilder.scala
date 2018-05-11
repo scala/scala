@@ -52,7 +52,7 @@ sealed abstract class ArrayBuilder[T]
       ensureSize(this.size + k)
       xs match {
         case xs: Iterable[T] => xs.copyToArray(elems, this.size)
-        case _ => xs.iterator().copyToArray(elems, this.size)
+        case _ => xs.iterator.copyToArray(elems, this.size)
       }
       size += k
     } else if(k < 0) super.addAll(xs)
@@ -464,7 +464,7 @@ object ArrayBuilder {
     }
 
     override def addAll(xs: IterableOnce[Unit]): this.type = {
-      size += xs.iterator().size
+      size += xs.iterator.size
       this
     }
 

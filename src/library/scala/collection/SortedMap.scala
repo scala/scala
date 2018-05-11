@@ -104,7 +104,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   def maxBefore(key: K): Option[(K, V)] = rangeUntil(key).lastOption
 
   def rangeTo(to: K): C = {
-    val i = keySet.rangeFrom(to).iterator()
+    val i = keySet.rangeFrom(to).iterator
     if (i.isEmpty) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)

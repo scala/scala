@@ -18,6 +18,6 @@ class JSetWrapperTest {
     val sSet: Set[Int] = jSet.asScala
 
     assertTrue(sSet.isInstanceOf[Wrappers.JSetWrapper[_]])
-    assertTrue(sSet.iterator().sameElements(Set(1, 2, 3)))
+    assertTrue(sSet.iterator.sameElements(Set(1, 2, 3)))
   }
 }

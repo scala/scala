@@ -19,6 +19,6 @@ class JListWrapperTest {
     val sList: Buffer[Int] = jList.asScala
 
     assertTrue(sList.isInstanceOf[Wrappers.JListWrapper[_]])
-    assertTrue(sList.iterator().sameElements(List(1, 2, 3)))
+    assertTrue(sList.iterator.sameElements(List(1, 2, 3)))
   }
 }

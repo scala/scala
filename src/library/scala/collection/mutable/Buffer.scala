@@ -162,7 +162,7 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
       update(i + j, patch(j))
       j += 1
     }
-    if (j < patch.length) insertAll(i + j, patch.iterator().drop(j))
+    if (j < patch.length) insertAll(i + j, patch.iterator.drop(j))
     else if (j < replaced0) remove(i + j, replaced0 - j)
     this
   }

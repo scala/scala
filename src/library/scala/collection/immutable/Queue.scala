@@ -64,7 +64,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   /** Returns the elements in the list as an iterator
     */
-  override def iterator(): Iterator[A] = (out ::: in.reverse).iterator()
+  override def iterator: Iterator[A] = (out ::: in.reverse).iterator
 
   /** Checks if the queue is empty.
     *

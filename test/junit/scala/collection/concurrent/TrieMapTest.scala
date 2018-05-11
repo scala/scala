@@ -14,7 +14,7 @@ class TrieMapTest {
   }
 
   @Test
-  def iterator(): Unit = {
+  def iterator: Unit = {
     check(List(("k", "v")))(_.iterator)
   }
 
@@ -24,7 +24,7 @@ class TrieMapTest {
   }
 
   @Test
-  def valuesIterator(): Unit = {
+  def valuesIterator: Unit = {
     check(List("v"))(_.valuesIterator)
   }
 
@@ -34,7 +34,7 @@ class TrieMapTest {
   }
 
   @Test
-  def keysIterator(): Unit = {
+  def keysIterator: Unit = {
     check(List("k"))(_.keysIterator)
   }
 

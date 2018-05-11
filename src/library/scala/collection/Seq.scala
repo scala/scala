@@ -226,7 +226,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *
    *  @return  an iterator yielding the elements of this $coll in reversed order
    */
-  def reverseIterator(): Iterator[A] = reversed.iterator()
+  def reverseIterator: Iterator[A] = reversed.iterator
 
   /** Tests whether this $coll contains the given sequence at a given index.
     *
@@ -239,8 +239,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *         index `offset`, otherwise `false`.
     */
   def startsWith[B >: A](that: IterableOnce[B], offset: Int = 0): Boolean = {
-    val i = iterator() drop offset
-    val j = that.iterator()
+    val i = iterator drop offset
+    val j = that.iterator
     while (j.hasNext && i.hasNext)
       if (i.next() != j.next())
         return false
@@ -254,8 +254,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
   def endsWith[B >: A](that: Iterable[B]): Boolean = {
-    val i = iterator().drop(length - that.size)
-    val j = that.iterator()
+    val i = iterator.drop(length - that.size)
+    val j = that.iterator
     while (i.hasNext && j.hasNext)
       if (i.next() != j.next())
         return false
@@ -295,7 +295,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def segmentLength(p: A => Boolean, from: Int = 0): Int = {
     var i = 0
-    val it = iterator().drop(from)
+    val it = iterator.drop(from)
     while (it.hasNext && p(it.next()))
       i += 1
     i
@@ -321,7 +321,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def indexWhere(p: A => Boolean, from: Int = 0): Int = iterator().indexWhere(p, from)
+  def indexWhere(p: A => Boolean, from: Int = 0): Int = iterator.indexWhere(p, from)
 
   /** Finds index of first occurrence of some value in this $coll after or at some start index.
     *
@@ -351,7 +351,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def lastIndexWhere(p: A => Boolean, end: Int = length - 1): Int = {
     var i = length - 1
-    val it = reverseIterator()
+    val it = reverseIterator
     while (it.hasNext && { val elem = it.next(); (i > end || !p(elem)) }) i -= 1
     i
   }
@@ -424,8 +424,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    */
   def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
 
-  @deprecated("Use .reverseIterator().map(f).to(...) instead of .reverseMap(f)", "2.13.0")
-  def reverseMap[B](f: A => B): CC[B] = fromIterable(new View.Map(View.fromIteratorProvider(() => reverseIterator()), f))
+  @deprecated("Use .reverseIterator.map(f).to(...) instead of .reverseMap(f)", "2.13.0")
+  def reverseMap[B](f: A => B): CC[B] = fromIterable(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
 
   /** Iterates over distinct permutations.
     *
@@ -671,7 +671,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     if (len < 0) 1
     else {
       var i = 0
-      val it = iterator()
+      val it = iterator
       while (it.hasNext) {
         if (i == len) return if (it.hasNext) 1 else 0
         it.next()
@@ -687,7 +687,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * as those of `that`?
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean =
-    iterator().sameElements(that)
+    iterator.sameElements(that)
 
   /** Tests whether every element of this $coll relates to the
     * corresponding element of another sequence by satisfying a test predicate.
@@ -700,8 +700,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                  and `y` of `that`, otherwise `false`.
     */
   def corresponds[B](that: Seq[B])(p: (A, B) => Boolean): Boolean = {
-    val i = iterator()
-    val j = that.iterator()
+    val i = iterator
+    val j = that.iterator
     while (i.hasNext && j.hasNext)
       if (!p(i.next(), j.next()))
         return false
@@ -822,7 +822,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   private[this] def linearSearch[B >: A](c: View[A], elem: B, offset: Int)
                                         (implicit ord: Ordering[B]): SearchResult = {
     var idx = offset
-    val it = c.iterator()
+    val it = c.iterator
     while (it.hasNext) {
       val cur = it.next()
       if (ord.equiv(elem, cur)) return Found(idx)
@@ -865,7 +865,7 @@ object SeqOps {
     // Check for redundant case when both sequences are same size
     else if (m1-m0 == n1-n0) {
       // Accepting a little slowness for the uncommon case.
-      if (S.iterator().slice(m0, m1).sameElements(W.iterator().slice(n0, n1))) m0
+      if (S.iterator.slice(m0, m1).sameElements(W.iterator.slice(n0, n1))) m0
       else -1
     }
     // Now we know we actually need KMP search, so do it
@@ -891,7 +891,7 @@ object SeqOps {
         -1
       case _ =>
         // We had better not index into S directly!
-        val iter = S.iterator().drop(m0)
+        val iter = S.iterator.drop(m0)
         val Wopt = kmpOptimizeWord(W, n0, n1, forward = true)
         val T = kmpJumpTable(Wopt, n1-n0)
         val cache = new Array[AnyRef](n1-n0)  // Ring buffer--need a quick way to do a look-behind
@@ -954,7 +954,7 @@ object SeqOps {
         private[this] val Warr = new Array[AnyRef](n1-n0)
         private[this] val delta = if (forward) 1 else -1
         private[this] val done = if (forward) n1-n0 else -1
-        val wit = W.iterator().drop(n0)
+        val wit = W.iterator.drop(n0)
         var i = if (forward) 0 else (n1-n0-1)
         while (i != done) {
           Warr(i) = wit.next().asInstanceOf[AnyRef]

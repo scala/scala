@@ -45,14 +45,14 @@ sealed class ListSet[A]
   def incl(elem: A): ListSet[A] = new Node(elem)
   def excl(elem: A): ListSet[A] = this
 
-  def iterator(): scala.collection.Iterator[A] = {
+  def iterator: scala.collection.Iterator[A] = {
     var curr: ListSet[A] = this
     var res: List[A] = Nil
     while (!curr.isEmpty) {
       res = curr.elem :: res
       curr = curr.next
     }
-    res.iterator()
+    res.iterator
   }
 
   protected def elem: A = throw new NoSuchElementException("elem of empty set")

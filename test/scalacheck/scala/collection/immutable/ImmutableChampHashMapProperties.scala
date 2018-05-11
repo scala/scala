@@ -49,11 +49,11 @@ object ImmutableChampHashMapProperties extends Properties("immutable.ChampHashMa
     inputValues.forall { case (key, value) => testMap.get(key).contains(value) }
   }
 
-  property("iterator() equals reverseIterator().reverse()") = forAll { (input: ChampHashMap[K, V]) =>
-    val xs: List[(K, V)] = input.iterator()
+  property("iterator equals reverseIterator.reverse()") = forAll { (input: ChampHashMap[K, V]) =>
+    val xs: List[(K, V)] = input.iterator
       .foldLeft(List.empty[(K, V)])((list: List[(K, V)], item: (K, V)) => list prepended item)
 
-    val ys: List[(K, V)] = input.reverseIterator()
+    val ys: List[(K, V)] = input.reverseIterator
       .foldLeft(List.empty[(K, V)])((list: List[(K, V)], item: (K, V)) => list appended item)
 
     xs == ys

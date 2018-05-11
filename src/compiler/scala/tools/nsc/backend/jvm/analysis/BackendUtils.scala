@@ -476,7 +476,7 @@ abstract class BackendUtils extends PerRunInit {
         }
       }
 
-      val tcbIt = method.tryCatchBlocks.iterator()
+      val tcbIt = method.tryCatchBlocks.iterator
       while (tcbIt.hasNext) {
         val tcb = tcbIt.next()
         enqInsn(tcb.handler, 1)
@@ -641,7 +641,7 @@ object BackendUtils {
         m.exceptions.asScala foreach visitInternalName
         for (tcb <- m.tryCatchBlocks.asScala) visitInternalName(tcb.`type`)
 
-        val iter = m.instructions.iterator()
+        val iter = m.instructions.iterator
         while (iter.hasNext) iter.next() match {
           case ti: TypeInsnNode           => visitInternalNameOrArrayReference(ti.desc)
           case fi: FieldInsnNode          => visitInternalNameOrArrayReference(fi.owner); visitDescriptor(fi.desc)

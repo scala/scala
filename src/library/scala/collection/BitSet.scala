@@ -62,7 +62,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
-  def iterator(): Iterator[Int] = iteratorFrom(0)
+  def iterator: Iterator[Int] = iteratorFrom(0)
 
   def iteratorFrom(start: Int) = new Iterator[Int] {
     private var current = start

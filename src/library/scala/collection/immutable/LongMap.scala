@@ -187,7 +187,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @return an iterator over pairs of long keys and corresponding values.
     */
-  def iterator(): Iterator[(Long, T)] = this match {
+  def iterator: Iterator[(Long, T)] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapEntryIterator(this)
   }
@@ -201,7 +201,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override def keysIterator(): Iterator[Long] = this match {
+  override def keysIterator: Iterator[Long] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapKeyIterator(this)
   }
@@ -218,7 +218,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override def valuesIterator(): Iterator[T] = this match {
+  override def valuesIterator: Iterator[T] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapValueIterator(this)
   }

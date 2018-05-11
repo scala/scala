@@ -60,7 +60,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
     override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = {
         var result: CC[K, V2] = coll
-        val it = xs.iterator()
+        val it = xs.iterator
         while (it.hasNext) result = result + it.next()
         result
     }

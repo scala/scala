@@ -71,7 +71,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   def maxBefore(key: A): Option[A] = rangeUntil(key).lastOption
 
   def rangeTo(to: A): C = {
-    val i = rangeFrom(to).iterator()
+    val i = rangeFrom(to).iterator
     if (i.isEmpty) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)

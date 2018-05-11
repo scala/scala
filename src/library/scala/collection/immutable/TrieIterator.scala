@@ -132,7 +132,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
       next0(getElems(m), 0)
     }
     else {
-      subIter = m.iterator()
+      subIter = m.iterator
       next()
     }
     // The much slower version:
@@ -168,7 +168,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     if (subIter ne null) {
       val buff = ArrayBuffer.empty.++=(subIter)
       subIter = null
-      ((buff.iterator(), buff.length), this)
+      ((buff.iterator, buff.length), this)
     }
     else {
       // otherwise find the topmost array stack element

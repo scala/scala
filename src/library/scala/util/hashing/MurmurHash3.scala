@@ -88,7 +88,7 @@ private[hashing] class MurmurHash3 {
   final def unorderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.iterator() foreach { x =>
+    xs.iterator foreach { x =>
       val h = x.##
       a += h
       b ^= h
@@ -106,7 +106,7 @@ private[hashing] class MurmurHash3 {
   final def orderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var n = 0
     var h = seed
-    xs.iterator() foreach { x =>
+    xs.iterator foreach { x =>
       h = mix(h, x.##)
       n += 1
     }

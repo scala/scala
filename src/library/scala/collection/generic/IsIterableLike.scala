@@ -122,7 +122,7 @@ object IsIterableLike {
         protected def fromSpecificIterable(coll: Iterable[A]): Array[A] = Array.from(coll)
         def iterableFactory: IterableFactory[Iterable] = Iterable
         protected def newSpecificBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder
-        def iterator(): Iterator[A] = a.iterator()
+        def iterator: Iterator[A] = a.iterator
       }
     }
 

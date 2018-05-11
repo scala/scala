@@ -4,7 +4,7 @@ it has 6 unimplemented members.
  *  For convenience, these are usable as stub implementations.
  */
   // Members declared in scala.collection.IterableOnce
-  def iterator(): Iterator[String] = ???
+  def iterator: Iterator[String] = ???
 
   // Members declared in scala.collection.IterableOps
   protected def coll: List[String] = ???

@@ -121,7 +121,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     sz = 0
   }
 
-  def iterator(): Iterator[T] = new AbstractIterator[T] {
+  def iterator: Iterator[T] = new AbstractIterator[T] {
     var pos: Int = -1
     var node: Unrolled[T] = headptr
     scan()
@@ -374,7 +374,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         // insert everything from iterable to this
         var curr = this
         var appended = 0
-        for (elem <- t.iterator()) {
+        for (elem <- t.iterator) {
           curr = curr append elem
           appended += 1
         }
@@ -388,7 +388,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       else if (idx == size || (next eq null)) {
         var curr = this
         var appended = 0
-        for (elem <- t.iterator()) {
+        for (elem <- t.iterator) {
           curr = curr append elem
           appended += 1
         }

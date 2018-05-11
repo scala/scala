@@ -17,14 +17,14 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   // Optimized, push-based version of `partition`
   override def partition(p: A => Boolean): (C, C) = {
     val l, r = newSpecificBuilder()
-    iterator().foreach(x => (if (p(x)) l else r) += x)
+    iterator.foreach(x => (if (p(x)) l else r) += x)
     (l.result(), r.result())
   }
 
   override def span(p: A => Boolean): (C, C) = {
     val first = newSpecificBuilder()
     val second = newSpecificBuilder()
-    val it = iterator()
+    val it = iterator
     var inFirst = true
     while (it.hasNext && inFirst) {
       val a = it.next()
@@ -72,7 +72,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def map[B](f: A => B): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       b += f(it.next())
     }
@@ -81,7 +81,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def flatMap[B](f: A => IterableOnce[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       b ++= f(it.next())
     }
@@ -90,7 +90,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def collect[B](pf: PartialFunction[A, B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       val elem = it.next()
       if (pf.isDefinedAt(elem)) {
@@ -102,7 +102,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def flatten[B](implicit toIterableOnce: A => IterableOnce[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       b ++= toIterableOnce(it.next())
     }
@@ -111,8 +111,8 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] = {
     val b = iterableFactory.newBuilder[(A, B)]()
-    val it1 = iterator()
-    val it2 = that.iterator()
+    val it1 = iterator
+    val it2 = that.iterator
     while (it1.hasNext && it2.hasNext) {
       b += ((it1.next(), it2.next()))
     }
@@ -122,7 +122,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   override def zipWithIndex: CC[(A @uncheckedVariance, Int)] = {
     val b = iterableFactory.newBuilder[(A, Int)]()
     var i = 0
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       b += ((it.next(), i))
       i += 1
@@ -135,7 +135,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.sizeHint(toIterable, delta = 0)
     var acc = z
     b += acc
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       acc = op(acc, it.next())
       b += acc
@@ -149,7 +149,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): C = {
     val b = newSpecificBuilder()
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       val elem = it.next()
       if (pred(elem) != isFlipped) {

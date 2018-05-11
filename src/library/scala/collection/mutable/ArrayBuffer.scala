@@ -131,7 +131,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
             Array.copy(elems.array, 0, array, idx, elemsLength)
           case _ =>
             var i = 0
-            val it = elems.iterator()
+            val it = elems.iterator
             while (i < elemsLength) {
               this(idx + i) = it.next()
               i += 1
@@ -184,7 +184,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
       val array = new Array[AnyRef](coll.knownSize)
-      val it = coll.iterator()
+      val it = coll.iterator
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
     }
