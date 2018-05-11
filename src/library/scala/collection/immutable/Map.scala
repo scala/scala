@@ -126,8 +126,10 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   */
 object Map extends MapFactory[Map] {
 
+  // getenv not getProperty for Scala.js friendliness.
+  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
   private final val useBaseline: Boolean =
-    scala.sys.props.get("scala.collection.immutable.useBaseline").contains("true")
+    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 
   @SerialVersionUID(3L)
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
