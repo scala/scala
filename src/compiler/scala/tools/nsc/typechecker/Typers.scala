@@ -685,8 +685,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
           context1.namedApplyBlockInfo = context.namedApplyBlockInfo
-          val typer1 = newTyper(context1)
-          val result = op(typer1)
+          val saved = context
+          val result = try {
+            context = context1
+            op(this)
+          } finally {
+            context = saved
+          }
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
