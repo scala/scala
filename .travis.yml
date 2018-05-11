@@ -12,7 +12,7 @@ cache:
 
 
 before_script:
-  - (cd admin && ./init.sh)
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
 
 stages:
   - name: build # also builds the spec using jekyll
@@ -43,7 +43,7 @@ jobs:
           - buildQuick
           - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
-          # TODO needed for publishing? - triggerScalaDist
+          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then triggerScalaDist; fi'
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
