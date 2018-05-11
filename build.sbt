@@ -117,7 +117,7 @@ lazy val instanceSettings = Seq[Setting[_]](
   Quiet.silenceScalaBinaryVersionWarning
 )
 
-// be careful with using this instance, as it may cause performance problems (e.g., MetaSpace exhaustion)r
+// be careful with using this instance, as it may cause performance problems (e.g., MetaSpace exhaustion)
 lazy val quickInstanceSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   // we don't cross build Scala itself
@@ -129,8 +129,14 @@ lazy val quickInstanceSettings = Seq[Setting[_]](
   scalaInstance := {
     // TODO: express in terms of distDependencies?
     val cpElems: Seq[java.io.File] = (fullClasspath in Compile in replFrontend).value.map(_.data) ++ (fullClasspath in Compile in scaladoc).value.map(_.data)
-    val libraryJar = cpElems.find(_.getPath.endsWith("classes/library")).get
-    val compilerJar = cpElems.find(_.getPath.endsWith("classes/compiler")).get
+    def findJar(name: String): java.io.File = {
+      import java.io.File.separatorChar
+      val target = s"classes$separatorChar$name"
+      cpElems.find(_.getPath.endsWith(target))
+        .getOrElse(throw new RuntimeException(
+          s"""$target not found in:\n${cpElems.mkString("\n")}"""))
+    }
+    val (libraryJar, compilerJar) = (findJar("library"), findJar("compiler"))
     val extraJars = cpElems.filter(f => (f ne libraryJar) && (f ne compilerJar))
     val v = (version in Global).value
     new ScalaInstance(v, new URLClassLoader(cpElems.map(_.toURI.toURL).toArray[URL], null), libraryJar, compilerJar, extraJars, Some(v))
