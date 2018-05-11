@@ -61,8 +61,10 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   */
 object Set extends IterableFactory[Set] {
 
+  // getenv not getProperty for Scala.js friendliness.
+  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
   private final val useBaseline: Boolean =
-    scala.sys.props.get("scala.collection.immutable.useBaseline").contains("true")
+    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
