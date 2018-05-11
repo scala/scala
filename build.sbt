@@ -39,16 +39,15 @@ import scala.build._
 import VersionUtil._
 import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 
-// Scala dependencies:
-val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest", versionProp = "partest")
-
 // Non-Scala dependencies:
-val junitDep          = "junit"                  % "junit"                            % "4.11"
-val junitInterfaceDep = "com.novocode"           % "junit-interface"                  % "0.11"                            % "test"
-val scalacheckDep     = "org.scala-lang.modules" % "scalacheck_2.13.0-M4-pre-20d3c21" % "1.14.0-newCollections"           % "test"
-val jolDep            = "org.openjdk.jol"        % "jol-core"                         % "0.5"
-val asmDep            = "org.scala-lang.modules" % "scala-asm"                        % versionProps("scala-asm.version")
-val jlineDep          = "jline"                  % "jline"                            % versionProps("jline.version")
+val junitDep          = "junit"                          % "junit"                            % "4.11"
+val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
+val scalacheckDep     = "org.scala-lang.modules"         % "scalacheck_2.13.0-M4-pre-20d3c21" % "1.14.0-newCollections"           % "test"
+val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.5"
+val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
+val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
+val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
+val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
 val partestDependencies =  Seq(
   "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
@@ -552,18 +551,20 @@ lazy val scalap = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
-lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-extras")
-  .dependsOn(replFrontend, scaladoc)
-  .settings(commonSettings)
-  .settings(generatePropertiesFileSettings)
-  .settings(clearSourceAndResourceDirectories)
+lazy val partest = configureAsSubproject(project)
+  .dependsOn(library, reflect, compiler, scalap, replFrontend, scaladoc)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
-    name := "scala-partest-extras",
-    description := "Scala Compiler Testing Tool (compiler-specific extras)",
-    libraryDependencies += partestDep,
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    name := "scala-partest",
+    description := "Scala Compiler Testing Tool",
+    libraryDependencies ++= List(testInterfaceDep, diffUtilsDep),
+    fixPom(
+      "/project/name" -> <name>Scala Partest</name>,
+      "/project/description" -> <description>Scala Compiler Testing Tool</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    )
   )
 
 lazy val bench = project.in(file("test") / "benchmarks")
@@ -579,7 +580,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
   )
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
+  .dependsOn(library, reflect, compiler, partest, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
@@ -703,7 +704,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
   )
 
 lazy val test = project
-  .dependsOn(compiler, interactive, replFrontend, scalap, partestExtras, partestJavaAgent, scaladoc)
+  .dependsOn(compiler, interactive, replFrontend, scalap, partest, partestJavaAgent, scaladoc)
   .disablePlugins(plugins.JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(commonSettings)
@@ -711,7 +712,7 @@ lazy val test = project
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep),
+    libraryDependencies ++= Seq(asmDep),
     libraryDependencies ++= partestDependencies,
     // no main sources
     sources in Compile := Seq.empty,
@@ -926,7 +927,7 @@ lazy val root: Project = (project in file("."))
     }
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, partestExtras, junit, scalaDist, macroAnnot).settings(
+    scaladoc, scalap, partest, junit, scalaDist, macroAnnot).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
@@ -1102,7 +1103,7 @@ intellij := {
       moduleDeps(junit).value,
       moduleDeps(library).value,
       moduleDeps(manual).value,
-      moduleDeps(partestExtras).value,
+      moduleDeps(partest).value,
       moduleDeps(partestJavaAgent).value,
       moduleDeps(reflect).value,
       moduleDeps(repl).value,
