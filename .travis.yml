@@ -63,7 +63,10 @@ jobs:
         if: type = pull_request
         script:
           - source scripts/common
-          - $SBT_CMD -debug setupPublishCore testAll
+          - $SBT_CMD -warn setupPublishCore test:compile
+          - $SBT_CMD -warn setupPublishCore junit/test
+          - $SBT_CMD -warn setupPublishCore scalacheck/test
+          - $SBT_CMD -warn setupPublishCore "partest run"
 
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
