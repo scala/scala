@@ -16,6 +16,8 @@ before_script:
 
 stages:
   - name: build # also builds the spec using jekyll
+  - name: validate
+    if: type = pull_request
   - name: test
   - name: publish
     if: type != pull_request
@@ -31,7 +33,7 @@ stages:
 jobs:
     include:
       - stage: build
-        # TODO: publishing. we don't even have the password to publish to artifactory
+        if: type != pull_request
         script:
           - source scripts/common
           - source scripts/bootstrap_fun
@@ -43,7 +45,13 @@ jobs:
           - buildQuick
           - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
-          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then triggerScalaDist; fi'
+          - triggerScalaDist
+
+      - stage: build
+        if: type = pull_request
+        script:
+          - source scripts/common
+          - $SBT_CMD --warn setupPublishCore test:compile
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
@@ -53,6 +61,12 @@ jobs:
         install: bundle install
         # the key is restricted using forced commands so that it can only upload to the directory we need here
         after_success: ./scripts/travis-publish-spec.sh
+
+      - stage: validate
+        if: type = pull_request
+        script:
+          - source scripts/common
+          - $SBT_CMD --warn setupPublishCore testAll
 
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
