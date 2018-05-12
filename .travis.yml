@@ -14,6 +14,8 @@ stages:
 
 jobs:
     include:
+
+      # full bootstrap and publish
       - stage: build
         if: type != pull_request
         script:
@@ -33,6 +35,7 @@ jobs:
           - buildQuick
           - triggerScalaDist
 
+      # pull request validation (w/ mini-bootstrap)
       - stage: build
         if: type = pull_request
         script:
