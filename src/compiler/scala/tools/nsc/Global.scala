@@ -20,9 +20,9 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, U
 
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, SourceReader}
-import reporters.Reporter
 import util.{ClassPath, returning}
 import scala.reflect.ClassTag
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
@@ -95,6 +95,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         new reporters.LimitingReporter(settings, newReporter)
       case _ => newReporter
     }
+  def reporter_=(oldReporter: reporters.Reporter): Unit = reporter_=(oldReporter.asInstanceOf[Reporter])
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
@@ -104,6 +105,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def this(settings: Settings) =
     this(settings, Global.reporter(settings))
+
+  def this(settings: Settings, reporter: reporters.Reporter) = this(settings, reporter.asInstanceOf[Reporter])
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -267,7 +270,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
     //       in any case don't use reporter for parser hooks
-    reporter.comment(pos, comment)
+    reporter match {
+      case hooker: reporters.Reporter => hooker.comment(pos, comment)
+      case _ => ()
+    }
   }
 
   /** Register new context; called for every created context
@@ -410,8 +416,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
-      if (Thread.interrupted()) reporter.cancelled = true
-      reporter.cancelled || unit.isJava && shouldSkipThisPhaseForJava
+      val isCanceled = reporter match {
+        case cancelable: reporters.Reporter =>
+          if (Thread.interrupted()) cancelable.cancelled = true
+          cancelable.cancelled
+        case _ => Thread.interrupted()
+      }
+      isCanceled || unit.isJava && shouldSkipThisPhaseForJava
     }
 
     private def beforeUnit(unit: CompilationUnit): Unit = {
@@ -1310,7 +1321,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     // for sbt
-    def cancel() { reporter.cancelled = true }
+    def cancel(): Unit = reporter match {
+      case cancelable: reporters.Reporter => cancelable.cancelled = true
+      case _ => ()
+    }
 
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
@@ -1509,7 +1523,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
         val profileBefore=profiler.beforePhase(phase)
         try globalPhase.run()
-        catch { case _: InterruptedException => reporter.cancelled = true }
+        catch { case _: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => } }
         finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
@@ -1596,7 +1610,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case ex: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => }
         case ex: IOException => globalError(ex.getMessage())
       }
     }
@@ -1614,7 +1628,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case ex: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => }
         case ex: IOException => globalError(ex.getMessage())
       }
     }

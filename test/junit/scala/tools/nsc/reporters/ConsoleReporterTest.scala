@@ -203,6 +203,6 @@ class ConsoleReporterTest {
   def filteredInfoTest(): Unit = {
     val reporter = new LimitingReporter(new Settings, new StoreReporter)
     // test obsolete API, make sure it doesn't throw
-    reporter.info(NoPosition, "goodbye, cruel world", force = false)
+    reporter.echo(NoPosition, "goodbye, cruel world")
   }
 }

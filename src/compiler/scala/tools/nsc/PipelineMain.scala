@@ -25,11 +25,12 @@ import scala.collection.JavaConverters._
 import scala.collection.{immutable, mutable, parallel}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success}
 
@@ -554,7 +555,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               diagnostic.getKind match {
                 case Kind.ERROR => reporter.error(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
-                case Kind.NOTE => reporter.info(position, msg, true)
+                case Kind.NOTE => reporter.echo(position, msg)
                 case Kind.OTHER => reporter.echo(position, msg)
               }
             }

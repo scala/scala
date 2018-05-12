@@ -17,8 +17,7 @@ import java.io.{FileInputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
-
-import scala.tools.nsc.reporters._
+import scala.reflect.internal.Reporter
 
 /** This class implements methods to read and decode source files. */
 class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {

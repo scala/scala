@@ -2,8 +2,8 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import reporters.{Reporter => CompilerReporter}
 import scala.tools.nsc.interactive.InteractiveReporter
+import scala.reflect.internal.{Reporter => CompilerReporter}
 import scala.reflect.internal.util.SourceFile
 
 /** Deterministically interrupts typechecking of `code` when a definition named
