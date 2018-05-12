@@ -50,7 +50,7 @@ jobs:
           - triggerScalaDist
 
       - stage: build
-        if: type != pull_request
+        if: type = pull_request
         script:
           - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
           - source scripts/common
