@@ -18,10 +18,10 @@ stages:
   - name: build # also builds the spec using jekyll
   - name: test
     if: env(bla) = thisVarIsNotSet AND type != pull_request # just disabling tests for now, but commenting the stage here doesn't do the trick
-  - name: publish
-    if: type != pull_request
   - name: validate
     if: type = pull_request
+  - name: publish
+    if: type != pull_request
 
 # see comment in `bootstrap_fun` for details on the procedure
 # env available in each stage
@@ -36,6 +36,7 @@ jobs:
       - stage: build
         if: type != pull_request
         script:
+          - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
           - source scripts/common
           - source scripts/bootstrap_fun
           - determineScalaVersion
@@ -47,6 +48,23 @@ jobs:
           - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^XML_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^XML_BUILT=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
           - cat build/env
           - triggerScalaDist
+
+      - stage: build
+        if: type != pull_request
+        script:
+          - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
+          - source scripts/common
+          - generateRepositoriesConfig $prRepoUrl
+          - export SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+          - $SBT --warn "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
+          - $SBT_CMD "setupPublishCore $prRepoUrl"
+          - parseScalaProperties buildcharacter.properties # produce maven_version_number
+          - echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
+          - checkAvailability "org.scala-lang" "scala-library"  "${maven_version_number}" $prRepoUrl; libraryAvailable=$RES
+          - checkAvailability "org.scala-lang" "scala-reflect"  "${maven_version_number}" $prRepoUrl; reflectAvailable=$RES
+          - checkAvailability "org.scala-lang" "scala-compiler" "${maven_version_number}" $prRepoUrl; compilerAvailable=$RES
+          - if $libraryAvailable && $reflectAvailable && $compilerAvailable; then echo "Scala core already built!" else $SBT --warn "setupPublishCore $prRepoUrl" publish fi
+          - mv buildcharacter.properties jenkins.properties
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
@@ -60,8 +78,14 @@ jobs:
       - stage: validate
         if: type = pull_request
         script:
+          - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
           - source scripts/common
-          - $SBT_CMD setupPublishCore testAll
+          - generateRepositoriesConfig $prRepoUrl
+          - export SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+          # build quick using STARR built upstream, as specified by scalaVersion
+          # (in that sense it's locker, since it was built with starr by that upstream job);
+          # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
+          - $SBT -Dstarr.version=$scalaVersion --warn "setupValidateTest $prRepoUrl" $testExtraArgs testAll
 
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
