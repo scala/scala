@@ -246,8 +246,6 @@ trait Contexts { self: Analyzer =>
       openImplicits.nonEmpty && openImplicits.exists(x => !x.isView)
     }
 
-    /* For a named application block (`Tree`) the corresponding `NamedApplyInfo`. */
-    var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
 
     def inSuperInit_=(value: Boolean)         = this(SuperInit) = value
@@ -1580,6 +1578,9 @@ object ContextMode {
 
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
+
+  /** Were default arguments used? */
+  final val DiagUsedDefaults: ContextMode         = 1 << 18
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
