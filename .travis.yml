@@ -53,7 +53,8 @@ jobs:
           - source scripts/common
           - $SBT_CMD setupPublishCore generateBuildCharacterPropertiesFile publishLocal
           - parseScalaProperties buildcharacter.properties
-          - $SBT -Dstarr.version=$maven_version_number setupValidateTest testAll
+          - echo "** using $maven_version_number as STARR"
+          - $SBT_CMD -Dstarr.version=$maven_version_number setupValidateTest testAll
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
