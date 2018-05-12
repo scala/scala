@@ -61,7 +61,7 @@ trait StdNames {
      */
     val marker = "$$$$"
     val maxSuffixLength = "$.class".length + 1 // potential module class suffix and file extension
-    val MaxNameLength = math.min(
+    val MaxNameLength = Math.min(
       settings.maxClassfileName.value - maxSuffixLength,
       2 * (settings.maxClassfileName.value - maxSuffixLength - 2*marker.length - 32)
     )

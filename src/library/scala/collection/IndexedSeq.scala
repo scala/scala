@@ -61,7 +61,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
                                         (implicit ord: Ordering[B]): SearchResult = {
     if (to == from) InsertionPoint(from) else {
       val idx = from+(to-from-1)/2
-      math.signum(ord.compare(elem, apply(idx))) match {
+      Math.signum(ord.compare(elem, apply(idx))) match {
         case -1 => binarySearch(elem, from, idx)(ord)
         case  1 => binarySearch(elem, idx + 1, to)(ord)
         case  _ => Found(idx)

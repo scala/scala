@@ -510,7 +510,7 @@ abstract class LocalOpt {
     while (itr.hasNext) {
       val insn = itr.next()
       val isLive = frames(i) != null
-      if (isLive) maxStack = math.max(maxStack, frames(i).getStackSize)
+      if (isLive) maxStack = Math.max(maxStack, frames(i).getStackSize)
 
       insn match {
         case l: LabelNode =>
@@ -519,10 +519,10 @@ abstract class LocalOpt {
 
         case v: VarInsnNode if isLive =>
           val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
+          maxLocals = Math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
         case i: IincInsnNode if isLive =>
-          maxLocals = math.max(maxLocals, i.`var` + 1)
+          maxLocals = Math.max(maxLocals, i.`var` + 1)
 
         case _: LineNumberNode =>
         case _ =>

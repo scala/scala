@@ -211,7 +211,7 @@ object RefArrayUtils {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     def growArray = {
-      var newSize: Long = math.max(arrayLength * 2, 8)
+      var newSize: Long = Math.max(arrayLength * 2, 8)
       while (n > newSize)
         newSize = newSize * 2
       // Clamp newSize to Int.MaxValue

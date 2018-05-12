@@ -138,7 +138,7 @@ object Numeric {
     def toFloat(x: Float): Float = x
     def toDouble(x: Float): Double = x.toDouble
     // logic in Numeric base trait mishandles abs(-0.0f)
-    override def abs(x: Float): Float = math.abs(x)
+    override def abs(x: Float): Float = Math.abs(x)
   }
   trait FloatIsFractional extends FloatIsConflicted with Fractional[Float] {
     def div(x: Float, y: Float): Float = x / y
@@ -163,7 +163,7 @@ object Numeric {
     def toFloat(x: Double): Float = x.toFloat
     def toDouble(x: Double): Double = x
     // logic in Numeric base trait mishandles abs(-0.0)
-    override def abs(x: Double): Double = math.abs(x)
+    override def abs(x: Double): Double = Math.abs(x)
   }
   trait DoubleIsFractional extends DoubleIsConflicted with Fractional[Double] {
     def div(x: Double, y: Double): Double = x / y

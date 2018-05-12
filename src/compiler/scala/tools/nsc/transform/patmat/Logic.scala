@@ -295,7 +295,7 @@ trait Logic extends Debugging  {
     // to govern how much time we spend analyzing matches for unreachability/exhaustivity
     object AnalysisBudget {
       val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
-      val maxFormulaSize = 100 * math.min(Int.MaxValue / 100, maxDPLLdepth)
+      val maxFormulaSize = 100 * Math.min(Int.MaxValue / 100, maxDPLLdepth)
 
       private def advice =
         s"Please try with scalac -Ypatmat-exhaust-depth ${maxDPLLdepth * 2} or -Ypatmat-exhaust-depth off."

@@ -445,7 +445,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   private def earliestPosition(tree: Tree): Int = {
     var pos = Int.MaxValue
     tree foreach { t =>
-      pos = math.min(pos, safePos(t, Int.MaxValue))
+      pos = Math.min(pos, safePos(t, Int.MaxValue))
     }
     pos
   }

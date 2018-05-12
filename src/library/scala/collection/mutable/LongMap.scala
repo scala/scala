@@ -591,7 +591,7 @@ object LongMap {
     *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
     */
   def fromZip[V](keys: Array[Long], values: Array[V]): LongMap[V] = {
-    val sz = math.min(keys.length, values.length)
+    val sz = Math.min(keys.length, values.length)
     val lm = new LongMap[V](sz * 2)
     var i = 0
     while (i < sz) { lm(keys(i)) = values(i); i += 1 }
@@ -603,7 +603,7 @@ object LongMap {
     *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
     */
   def fromZip[V](keys: scala.collection.Iterable[Long], values: scala.collection.Iterable[V]): LongMap[V] = {
-    val sz = math.min(keys.size, values.size)
+    val sz = Math.min(keys.size, values.size)
     val lm = new LongMap[V](sz * 2)
     val ki = keys.iterator()
     val vi = values.iterator()

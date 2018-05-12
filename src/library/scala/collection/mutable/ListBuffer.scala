@@ -271,11 +271,11 @@ class ListBuffer[A]
   }
 
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
-    val i = math.min(math.max(from, 0), length)
-    val n = math.min(math.max(replaced, 0), length)
+    val i = Math.min(Math.max(from, 0), length)
+    val n = Math.min(Math.max(replaced, 0), length)
     ensureUnaliased()
     val p = locate(i)
-    removeAfter(p, math.min(n, len - i))
+    removeAfter(p, Math.min(n, len - i))
     insertAfter(p, patch.iterator())
     this
   }

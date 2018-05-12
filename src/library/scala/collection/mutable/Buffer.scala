@@ -108,7 +108,7 @@ trait Buffer[A]
   }
   def takeRightInPlace(n: Int): this.type = { remove(0, length - normalized(n)); this }
   def sliceInPlace(start: Int, end: Int): this.type = takeInPlace(end).dropInPlace(start)
-  private def normalized(n: Int): Int = math.min(math.max(n, 0), length)
+  private def normalized(n: Int): Int = Math.min(Math.max(n, 0), length)
 
   def dropWhileInPlace(p: A => Boolean): this.type = {
     val idx = indexWhere(!p(_))
@@ -154,10 +154,10 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
   }
 
   def patchInPlace(from: Int, patch: scala.collection.Seq[A], replaced: Int): this.type = {
-    val replaced0 = math.min(math.max(replaced, 0), length)
-    val i = math.min(math.max(from, 0), length)
+    val replaced0 = Math.min(Math.max(replaced, 0), length)
+    val i = Math.min(Math.max(from, 0), length)
     var j = 0
-    val n = math.min(patch.length, replaced0)
+    val n = Math.min(patch.length, replaced0)
     while (j < n && i + j < length) {
       update(i + j, patch(j))
       j += 1

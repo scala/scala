@@ -329,7 +329,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
-    var i = math.max(from, 0)
+    var i = Math.max(from, 0)
     drop(from)
     while (hasNext) {
       if (p(next())) return i

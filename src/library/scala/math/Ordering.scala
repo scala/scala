@@ -315,8 +315,8 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def lt(x: Float, y: Float): Boolean = x < y
     override def gt(x: Float, y: Float): Boolean = x > y
     override def equiv(x: Float, y: Float): Boolean = x == y
-    override def max(x: Float, y: Float): Float = math.max(x, y)
-    override def min(x: Float, y: Float): Float = math.min(x, y)
+    override def max(x: Float, y: Float): Float = Math.max(x, y)
+    override def min(x: Float, y: Float): Float = Math.min(x, y)
 
     override def reverse: Ordering[Float] = new FloatOrdering {
       override def reverse = outer
@@ -343,8 +343,8 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def lt(x: Double, y: Double): Boolean = x < y
     override def gt(x: Double, y: Double): Boolean = x > y
     override def equiv(x: Double, y: Double): Boolean = x == y
-    override def max(x: Double, y: Double): Double = math.max(x, y)
-    override def min(x: Double, y: Double): Double = math.min(x, y)
+    override def max(x: Double, y: Double): Double = Math.max(x, y)
+    override def min(x: Double, y: Double): Double = Math.min(x, y)
 
     override def reverse: Ordering[Double] = new DoubleOrdering {
       override def reverse = outer

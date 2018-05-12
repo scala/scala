@@ -38,26 +38,26 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
-  override def abs: Float              = math.abs(self)
-  override def max(that: Float): Float = math.max(self, that)
-  override def min(that: Float): Float = math.min(self, that)
-  override def signum: Int             = math.signum(self).toInt  // !!! NaN
+  override def abs: Float              = Math.abs(self)
+  override def max(that: Float): Float = Math.max(self, that)
+  override def min(that: Float): Float = Math.min(self, that)
+  override def signum: Int             = Math.signum(self).toInt  // !!! NaN
 
-  def round: Int   = math.round(self)
-  def ceil: Float  = math.ceil(self.toDouble).toFloat
-  def floor: Float = math.floor(self.toDouble).toFloat
+  def round: Int   = Math.round(self)
+  def ceil: Float  = Math.ceil(self.toDouble).toFloat
+  def floor: Float = Math.floor(self.toDouble).toFloat
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
    *
    *  @return the measurement of the angle `x` in radians.
    */
-  def toRadians: Float = math.toRadians(self.toDouble).toFloat
+  def toRadians: Float = Math.toRadians(self.toDouble).toFloat
 
   /** Converts an angle measured in radians to an approximately equivalent
    *  angle measured in degrees.
    *
    *  @return the measurement of the angle `x` in degrees.
    */
-  def toDegrees: Float = math.toDegrees(self.toDouble).toFloat
+  def toDegrees: Float = Math.toDegrees(self.toDouble).toFloat
 }

@@ -246,8 +246,8 @@ sealed class NumericRange[T](
         // Try to compute sum with reasonable accuracy, avoiding over/underflow
         val numAsIntegral = num.asInstanceOf[Integral[B]]
         import numAsIntegral._
-        val a = math.abs(head.toDouble)
-        val b = math.abs(last.toDouble)
+        val a = Math.abs(head.toDouble)
+        val b = Math.abs(last.toDouble)
         val two = num fromInt 2
         val nre = num fromInt size
         if (a > 1e38 || b > 1e38) nre * ((head / two) + (last / two))  // Compute in parts to avoid Infinity if possible

@@ -164,7 +164,7 @@ object HashMap extends MapFactory[HashMap] {
     * @param size the maximum size of the collection to be generated
     * @return the maximum buffer size
     */
-  @`inline` private def bufferSize(size: Int): Int = math.min(size + 6, 32 * 7)
+  @`inline` private def bufferSize(size: Int): Int = Math.min(size + 6, 32 * 7)
 
   /**
     * In many internal operations the empty map is represented as null for performance reasons. This method converts

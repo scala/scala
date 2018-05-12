@@ -494,7 +494,7 @@ object AnyRefMap {
    *  Equivalent to but more efficient than `AnyRefMap((keys zip values): _*)`.
    */
   def fromZip[K <: AnyRef, V](keys: Array[K], values: Array[V]): AnyRefMap[K, V] = {
-    val sz = math.min(keys.length, values.length)
+    val sz = Math.min(keys.length, values.length)
     val arm = new AnyRefMap[K, V](sz * 2)
     var i = 0
     while (i < sz) { arm(keys(i)) = values(i); i += 1 }
@@ -506,7 +506,7 @@ object AnyRefMap {
    *  Equivalent to but more efficient than `AnyRefMap((keys zip values): _*)`.
    */
   def fromZip[K <: AnyRef, V](keys: Iterable[K], values: Iterable[V]): AnyRefMap[K, V] = {
-    val sz = math.min(keys.size, values.size)
+    val sz = Math.min(keys.size, values.size)
     val arm = new AnyRefMap[K, V](sz * 2)
     val ki = keys.iterator()
     val vi = values.iterator()

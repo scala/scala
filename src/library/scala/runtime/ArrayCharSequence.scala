@@ -18,7 +18,7 @@ final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends
   //
   // def this(xs: Array[Char]) = this(xs, 0, xs.length)
 
-  def length: Int = math.max(0, end - start)
+  def length: Int = Math.max(0, end - start)
   def charAt(index: Int): Char = {
     if (0 <= index && index < length)
       xs(start + index)
@@ -35,8 +35,8 @@ final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends
     }
   }
   override def toString = {
-    val start = math.max(this.start, 0)
-    val end = math.min(xs.length, start + length)
+    val start = Math.max(this.start, 0)
+    val end = Math.min(xs.length, start + length)
 
     if (start >= end) "" else new String(xs, start, end - start)
   }

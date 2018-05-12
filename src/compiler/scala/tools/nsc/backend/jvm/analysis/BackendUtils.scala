@@ -501,10 +501,10 @@ abstract class BackendUtils extends PerRunInit {
           insn match {
             case v: VarInsnNode =>
               val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
+              maxLocals = Math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
             case i: IincInsnNode =>
-              maxLocals = math.max(maxLocals, i.`var` + 1)
+              maxLocals = Math.max(maxLocals, i.`var` + 1)
 
             case _ =>
           }

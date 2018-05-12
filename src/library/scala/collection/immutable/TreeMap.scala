@@ -122,9 +122,9 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     else new TreeMap(RB.slice(tree, from, until))
   }
 
-  override def dropRight(n: Int): TreeMap[K, V] = take(size - math.max(n, 0))
+  override def dropRight(n: Int): TreeMap[K, V] = take(size - Math.max(n, 0))
 
-  override def takeRight(n: Int): TreeMap[K, V] = drop(size - math.max(n, 0))
+  override def takeRight(n: Int): TreeMap[K, V] = drop(size - Math.max(n, 0))
 
   private[this] def countWhile(p: ((K, V)) => Boolean): Int = {
     var result = 0

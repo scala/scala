@@ -16,7 +16,7 @@ object HashSet {
 class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] with scala.collection.mutable.Clearable {
   private var used = 0
   private var table = new Array[AnyRef](initialCapacity)
-  private def index(x: Int): Int = math.abs(x % table.length)
+  private def index(x: Int): Int = Math.abs(x % table.length)
 
   def size: Int = used
   def clear() {

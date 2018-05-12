@@ -485,7 +485,7 @@ trait MatchTranslation {
       def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
         val paramAccessors = expectedExtractedType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
-        def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
+        def paramAccessorAt(subPatIndex: Int) = paramAccessors(Math.min(subPatIndex, numParams - 1))
         // binders corresponding to mutable fields should be stored (scala/bug#5158, scala/bug#6070)
         // make an exception for classes under the scala package as they should be well-behaved,
         // to optimize matching on List

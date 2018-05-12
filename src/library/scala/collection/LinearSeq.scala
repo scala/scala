@@ -147,7 +147,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
 
 
   override def indexWhere(p: A => Boolean, from: Int): Int = {
-    var i = math.max(from, 0)
+    var i = Math.max(from, 0)
     var these: LinearSeq[A] = this drop from
     while (these.nonEmpty) {
       if (p(these.head))

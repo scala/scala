@@ -563,7 +563,7 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
 
-  private var endLo = math.min(endIndex - blockIndex, 32)
+  private var endLo = Math.min(endIndex - blockIndex, 32)
 
   def hasNext = _hasNext
 
@@ -581,7 +581,7 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
         gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
 
         blockIndex = newBlockIndex
-        endLo = math.min(endIndex - blockIndex, 32)
+        endLo = Math.min(endIndex - blockIndex, 32)
         lo = 0
       } else {
         _hasNext = false
@@ -1006,7 +1006,7 @@ private[immutable] trait VectorPointer[T] {
 
     private[immutable] final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
       val elems = new Array[AnyRef](32)
-      java.lang.System.arraycopy(array, oldLeft, elems, newLeft, 32 - math.max(newLeft, oldLeft))
+      java.lang.System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft, oldLeft))
       elems
     }
 

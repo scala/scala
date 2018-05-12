@@ -61,7 +61,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   override def padTo[B >: A](len: Int, elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]()
     val L = size
-    b.sizeHint(math.max(L, len))
+    b.sizeHint(Math.max(L, len))
     var diff = len - L
     b ++= this
     while (diff > 0) {

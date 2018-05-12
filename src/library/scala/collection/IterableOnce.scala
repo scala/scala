@@ -660,7 +660,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
     val it = iterator()
     var i = start
-    val end = start + math.min(len, xs.length - start)
+    val end = start + Math.min(len, xs.length - start)
     while (i < end && it.hasNext) {
       xs(i) = it.next()
       i += 1

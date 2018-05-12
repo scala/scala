@@ -540,7 +540,7 @@ abstract class Inliner {
       callsiteStackHeight + stackSlotForNullCheck
     }
 
-    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
+    callsiteMethod.maxStack = Math.max(callsiteMethod.maxStack, Math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
     val added = addIndyLambdaImplMethod(callsiteClass.internalName, targetHandles)
     undo { removeIndyLambdaImplMethod(callsiteClass.internalName, added) }

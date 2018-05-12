@@ -96,7 +96,7 @@ trait Names extends api.Names {
   final def newTermName(cs: Array[Char], offset: Int, len0: Int, cachedString: String): TermName = {
     def body = {
       require(offset >= 0, "offset must be non-negative, got " + offset)
-      val len = math.max(len0, 0)
+      val len = Math.max(len0, 0)
       val h = hashValue(cs, offset, len) & HASH_MASK
       var n = termHashtable(h)
       while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))

@@ -619,8 +619,8 @@ private[internal] trait TypeMaps {
     private[this] var fromSize = 0
     from.foreach {
       sym =>
-        fromMin = math.min(fromMin, sym.id)
-        fromMax = math.max(fromMax, sym.id)
+        fromMin = Math.min(fromMin, sym.id)
+        fromMax = Math.max(fromMax, sym.id)
         fromSize += 1
         if (sym.isTerm) fromHasTermSymbol = true
     }

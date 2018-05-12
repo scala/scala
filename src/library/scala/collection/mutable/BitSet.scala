@@ -30,7 +30,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     with StrictOptimizedIterableOps[Int, Set, BitSet]
     with Serializable {
 
-  def this(initSize: Int) = this(new Array[Long](math.max((initSize + 63) >> 6, 1)))
+  def this(initSize: Int) = this(new Array[Long](Math.max((initSize + 63) >> 6, 1)))
 
   def this() = this(0)
 
@@ -76,7 +76,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     require(idx < MaxSize)
     if (idx >= nwords) {
       var newlen = nwords
-      while (idx >= newlen) newlen = math.min(newlen * 2, MaxSize)
+      while (idx >= newlen) newlen = Math.min(newlen * 2, MaxSize)
       val elems1 = new Array[Long](newlen)
       Array.copy(elems, 0, elems1, 0, nwords)
       elems = elems1

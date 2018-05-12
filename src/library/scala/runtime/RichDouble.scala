@@ -38,25 +38,25 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   def isPosInfinity: Boolean = Double.PositiveInfinity == self
   def isNegInfinity: Boolean = Double.NegativeInfinity == self
 
-  override def abs: Double               = math.abs(self)
-  override def max(that: Double): Double = math.max(self, that)
-  override def min(that: Double): Double = math.min(self, that)
-  override def signum: Int               = math.signum(self).toInt  // !!! NaN
+  override def abs: Double               = Math.abs(self)
+  override def max(that: Double): Double = Math.max(self, that)
+  override def min(that: Double): Double = Math.min(self, that)
+  override def signum: Int               = Math.signum(self).toInt  // !!! NaN
 
-  def round: Long   = math.round(self)
-  def ceil: Double  = math.ceil(self)
-  def floor: Double = math.floor(self)
+  def round: Long   = Math.round(self)
+  def ceil: Double  = Math.ceil(self)
+  def floor: Double = Math.floor(self)
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
    *
    *  @return the measurement of the angle x in radians.
    */
-  def toRadians: Double = math.toRadians(self)
+  def toRadians: Double = Math.toRadians(self)
 
   /** Converts an angle measured in radians to an approximately equivalent
    *  angle measured in degrees.
    *  @return the measurement of the angle x in degrees.
    */
-  def toDegrees: Double = math.toDegrees(self)
+  def toDegrees: Double = Math.toDegrees(self)
 }

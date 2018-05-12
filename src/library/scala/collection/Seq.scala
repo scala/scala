@@ -358,7 +358,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       val l = knownSize
       val tl = that.knownSize
       if (l >= 0 && tl >= 0) {
-        val clippedFrom = math.max(0, from)
+        val clippedFrom = Math.max(0, from)
         if (from > l) -1
         else if (tl < 1) clippedFrom
         else if (l < tl) -1
@@ -387,7 +387,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def lastIndexOfSlice[B >: A](that: Seq[B], end: Int = length - 1): Int = {
     val l = length
     val tl = that.length
-    val clippedL = math.min(l-tl, end)
+    val clippedL = Math.min(l-tl, end)
 
     if (end < 0) -1
     else if (tl < 1) clippedL
