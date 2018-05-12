@@ -7,7 +7,8 @@ package scala.tools
 package nsc
 package doc
 
-import reporters._
+import reporters.ConsoleReporter
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util._
 import DocParser.Parsed
 

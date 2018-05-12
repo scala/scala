@@ -4,9 +4,9 @@ package reporters
 import scala.reflect.internal.{Reporter => InternalReporter, FilteringReporter}
 import scala.reflect.internal.util.Position
 
-/** A `Filter` that respects `-Xmaxerrs` and `-Xmaxwarns`.
+/** A `FilteringReporter` that respects `-Xmaxerrs` and `-Xmaxwarns`.
  */
-class LimitingReporter(settings: Settings, override protected val delegate: InternalReporter) extends Reporter with FilteringReporter {
+class LimitingReporter(settings: Settings, override protected val delegate: InternalReporter) extends InternalReporter with FilteringReporter {
   override protected def filter(pos: Position, msg: String, severity: Severity) =
     severity match {
       case ERROR   => errorCount   < settings.maxerrs.value

@@ -1,8 +1,9 @@
 package scala
 package tools.nsc
 
-import scala.tools.nsc.reporters.{ ConsoleReporter, Reporter }
+import scala.tools.nsc.reporters.ConsoleReporter
 import Properties.{ versionMsg, residentPromptString }
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.FakePos
 
 abstract class Driver {

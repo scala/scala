@@ -57,7 +57,6 @@ abstract class AbstractReporter extends Reporter {
     }
   }
 
-
   /** Logs a position and returns true if it was already logged.
    *  @note  Two positions are considered identical for logging if they have the same point.
    */

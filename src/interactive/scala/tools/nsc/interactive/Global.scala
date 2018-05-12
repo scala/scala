@@ -10,8 +10,8 @@ import scala.collection.mutable
 import mutable.{LinkedHashMap, HashSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.SourceFile
-import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}

@@ -17,8 +17,7 @@ import scala.tools.util.SystemExit
  */
 class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter, echoWriter: PrintWriter) extends AbstractReporter {
   def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
-  def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) =
-    this(settings, reader, writer, writer)
+  def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) = this(settings, reader, writer, writer)
 
   /** Whether a short file name should be displayed before errors */
   var shortname: Boolean = false

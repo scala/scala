@@ -7,7 +7,7 @@ package interactive
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.Position
-import reporters.Reporter
+import scala.reflect.internal.Reporter
 
 case class Problem(pos: Position, msg: String, severityLevel: Int)
 

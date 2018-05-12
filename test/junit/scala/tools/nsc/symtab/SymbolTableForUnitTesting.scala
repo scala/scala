@@ -81,7 +81,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def erasurePhase: scala.reflect.internal.Phase = SomePhase
 
   // Members declared in scala.reflect.internal.Reporting
-  def reporter = new scala.reflect.internal.ReporterImpl {
+  def reporter = new scala.reflect.internal.Reporter {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 

@@ -8,7 +8,8 @@ trait FrontEnds {
 
   def echo(pos: Position, msg: String): Unit = universe.reporter.echo(pos, msg)
 
-  def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.info(pos, msg, force)
+  @deprecated("Use echo, info messages are always forced", since="2.13.0")
+  def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.echo(pos, msg)
 
   def hasWarnings: Boolean = universe.reporter.hasErrors
 

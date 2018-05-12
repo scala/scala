@@ -74,22 +74,23 @@ import util.Position
 /** Report information, warnings and errors.
  *
  *  This describes the (future) external interface for issuing information, warnings and errors.
- *  Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
+ *  Currently, scala.tools.nsc.Reporter is used by sbt/ide.
  */
 abstract class Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
+  def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
   def echo(pos: Position, msg: String): Unit    = info0(pos, msg, INFO, force = true)
   def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
   def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
 
-  type Severity
-  val INFO: Severity
-  val WARNING: Severity
-  val ERROR: Severity
+  class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
+  object INFO    extends Severity(0)("INFO")
+  object WARNING extends Severity(1)("WARNING")
+  object ERROR   extends Severity(2)("ERROR")
 
-  def count(severity: Severity): Int
-  def resetCount(severity: Severity): Unit
+  def count(severity: Severity): Int       = severity.count
+  def resetCount(severity: Severity): Unit = severity.count = 0
 
   def errorCount: Int   = count(ERROR)
   def warningCount: Int = count(WARNING)
@@ -163,15 +164,4 @@ trait FilteringReporter extends ForwardingReporter {
   override def echo(pos: Position, msg: String)    = if (filter(pos, msg, INFO)) delegate.echo(pos, msg)
   override def warning(pos: Position, msg: String) = if (filter(pos, msg, WARNING)) delegate.warning(pos, msg)
   override def error(pos: Position, msg: String)   = if (filter(pos, msg, ERROR)) delegate.error(pos, msg)
-}
-
-// TODO: move into superclass once partest cuts tie on Severity
-abstract class ReporterImpl extends Reporter {
-  class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
-  object INFO    extends Severity(0)("INFO")
-  object WARNING extends Severity(1)("WARNING")
-  object ERROR   extends Severity(2)("ERROR")
-
-  def count(severity: Severity): Int       = severity.count
-  def resetCount(severity: Severity): Unit = severity.count = 0
 }

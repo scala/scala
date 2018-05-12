@@ -13,9 +13,9 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, U
 
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
-import reporters.Reporter
 import util.{ClassPath, returning}
 import scala.reflect.ClassTag
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
@@ -86,6 +86,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         new reporters.LimitingReporter(settings, newReporter)
       case _ => newReporter
     }
+  def reporter_=(oldReporter: reporters.Reporter): Unit = reporter_=(oldReporter.asInstanceOf[Reporter])
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
@@ -95,6 +96,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def this(settings: Settings) =
     this(settings, Global.reporter(settings))
+
+  def this(settings: Settings, reporter: reporters.Reporter) = this(settings, reporter.asInstanceOf[Reporter])
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -258,7 +261,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
     //       in any case don't use reporter for parser hooks
-    reporter.comment(pos, comment)
+    reporter match {
+      case hooker: reporters.Reporter => hooker.comment(pos, comment)
+      case _ => ()
+    }
   }
 
   /** Register new context; called for every created context
@@ -395,9 +401,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
+      val isCanceled = reporter match {
+        case cancelable: reporters.Reporter => cancelable.cancelled
+        case _ => false
+      }
       // run the typer only if in `createJavadoc` mode
       val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
-      reporter.cancelled || unit.isJava && this.id > maxJavaPhase
+      isCanceled || unit.isJava && this.id > maxJavaPhase
     }
 
     final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
@@ -1266,7 +1276,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     // for sbt
-    def cancel(): Unit = { reporter.cancelled = true }
+    def cancel(): Unit = reporter match {
+      case cancelable: reporters.Reporter => cancelable.cancelled = true
+      case _ => ()
+    }
 
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
