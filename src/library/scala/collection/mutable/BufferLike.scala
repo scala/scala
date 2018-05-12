@@ -100,7 +100,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     *
     *  @param n  the index which refers to the element to delete.
     *  @return   the previous element at index `n`
-    *   @throws   IndexOutOfBoundsException if the if the index `n` is not in the valid range
+    *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
     *            `0 <= n < length`.
     */
   def remove(n: Int): A
