@@ -63,7 +63,7 @@ jobs:
           - checkAvailability "org.scala-lang" "scala-library"  "${maven_version_number}" $prRepoUrl; libraryAvailable=$RES
           - checkAvailability "org.scala-lang" "scala-reflect"  "${maven_version_number}" $prRepoUrl; reflectAvailable=$RES
           - checkAvailability "org.scala-lang" "scala-compiler" "${maven_version_number}" $prRepoUrl; compilerAvailable=$RES
-          - if $libraryAvailable && $reflectAvailable && $compilerAvailable; then echo "Scala core already built!" else $SBT --warn "setupPublishCore $prRepoUrl" publish fi
+          - if $libraryAvailable && $reflectAvailable && $compilerAvailable; then echo "Scala core already built!"; else $SBT --warn "setupPublishCore $prRepoUrl" publish; fi
           - mv buildcharacter.properties jenkins.properties
 
       # this builds the spec using jekyll
