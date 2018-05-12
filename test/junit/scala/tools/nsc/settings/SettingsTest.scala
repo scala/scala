@@ -34,9 +34,9 @@ class SettingsTest {
     b(s)
   }
   @Test def userSettingsHavePrecedenceOverLint(): Unit = {
-    assertTrue(check("-Xlint")(_.warnAdaptedArgs))
-    assertFalse(check("-Xlint", "-Ywarn-adapted-args:false")(_.warnAdaptedArgs))
-    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint")(_.warnAdaptedArgs))
+    assertTrue(check("-Xlint")(_.warnUnusedImport))
+    assertFalse(check("-Xlint", "-Ywarn-unused:-imports")(_.warnUnusedImport))
+    assertFalse(check("-Ywarn-unused:-imports", "-Xlint")(_.warnUnusedImport))
   }
 
   @Test def anonymousLintersCanBeNamed(): Unit = {
@@ -93,18 +93,6 @@ class SettingsTest {
     assertFalse(check("-Xlint:_,-adapted-args")(t(_, "adapted-args")))
     assertFalse(check("-Xlint:-adapted-args,_")(t(_, "adapted-args")))
     assertTrue(check("-Xlint:-adapted-args,_,adapted-args")(t(_, "adapted-args")))
-  }
-
-  @Test def xLintDeprecatedAlias(): Unit = {
-    assertTrue(check("-Ywarn-adapted-args")(_.warnAdaptedArgs))
-    assertTrue(check("-Xlint:_,-adapted-args", "-Ywarn-adapted-args")(_.warnAdaptedArgs))
-    assertTrue(check("-Xlint:-adapted-args", "-Ywarn-adapted-args")(_.warnAdaptedArgs))
-    assertTrue(check("-Ywarn-adapted-args", "-Xlint:-adapted-args,_")(_.warnAdaptedArgs))
-
-    assertFalse(check("-Ywarn-adapted-args:false")(_.warnAdaptedArgs))
-    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint:_")(_.warnAdaptedArgs))
-    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint:_,-adapted-args")(_.warnAdaptedArgs))
-    assertTrue(check("-Ywarn-adapted-args:false", "-Xlint:_,adapted-args")(_.warnAdaptedArgs))
   }
 
   @Test def expandingMultichoice(): Unit = {
