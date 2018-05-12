@@ -18,8 +18,6 @@ stages:
   - name: build # also builds the spec using jekyll
   - name: test
     if: env(bla) = thisVarIsNotSet AND type != pull_request # just disabling tests for now, but commenting the stage here doesn't do the trick
-  - name: validate
-    if: type = pull_request
   - name: publish
     if: type != pull_request
 
@@ -54,13 +52,6 @@ jobs:
         script:
           - source scripts/common
           - $SBT_CMD setupPublishCore generateBuildCharacterPropertiesFile publishLocal
-          - cp buildcharacter.properties build/
-
-      - stage: validate
-        if: type = pull_request
-        script:
-          - cp build/buildcharacter.properties .
-          - source scripts/common
           - parseScalaProperties buildcharacter.properties
           - $SBT -Dstarr.version=$maven_version_number setupValidateTest testAll
 
