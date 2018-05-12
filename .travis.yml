@@ -41,15 +41,13 @@ jobs:
           - parseScalaProperties buildcharacter.properties && echo $maven_version_number
           - $SBT_CMD -Dstarr.version=$maven_version_number -warn setupValidateTest test:compile info testAll
 
-      # this builds the spec using jekyll
-      # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
+      # build the spec using jekyll
       - stage: build
         rvm: 2.2
         install: bundle install
         script:
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
         - bundle exec jekyll build -s spec/ -d build/spec
-        # the key is restricted using forced commands so that it can only upload to the directory we need here
         after_success:
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
 
