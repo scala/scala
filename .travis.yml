@@ -54,10 +54,12 @@ jobs:
         script:
           - source scripts/common
           - $SBT_CMD setupPublishCore generateBuildCharacterPropertiesFile publishLocal
+          - cp buildcharacter.properties build/
 
       - stage: validate
         if: type = pull_request
         script:
+          - cp build/buildcharacter.properties .
           - source scripts/common
           - parseScalaProperties buildcharacter.properties
           - $SBT -Dstarr.version=$maven_version_number setupValidateTest testAll
