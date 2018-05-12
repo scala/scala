@@ -39,10 +39,9 @@ jobs:
       - stage: build
         if: type = pull_request
         script:
-          - source scripts/common
           - $SBT_CMD -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
-          - parseScalaProperties buildcharacter.properties && echo $maven_version_number
-          - $SBT_CMD -Dstarr.version=$maven_version_number -warn setupValidateTest test:compile info testAll
+          - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2`
+          - $SBT_CMD -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 
       # build the spec using jekyll
       - stage: build
