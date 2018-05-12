@@ -25,6 +25,7 @@
 # Developer specific properties
 /build.properties
 /buildcharacter.properties
+/buildcharacter.properties.sh
 
 # might get generated when testing Jenkins scripts locally
 /jenkins.properties

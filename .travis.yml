@@ -52,19 +52,15 @@ jobs:
       - stage: build
         if: type = pull_request
         script:
-          - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
           - source scripts/common
-          - generateRepositoriesConfig $prRepoUrl
-          - export SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
-          - $SBT --warn "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
-          - $SBT_CMD "setupPublishCore $prRepoUrl"
-          - parseScalaProperties buildcharacter.properties # produce maven_version_number
-          - echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
-          - checkAvailability "org.scala-lang" "scala-library"  "${maven_version_number}" $prRepoUrl; libraryAvailable=$RES
-          - checkAvailability "org.scala-lang" "scala-reflect"  "${maven_version_number}" $prRepoUrl; reflectAvailable=$RES
-          - checkAvailability "org.scala-lang" "scala-compiler" "${maven_version_number}" $prRepoUrl; compilerAvailable=$RES
-          - if $libraryAvailable && $reflectAvailable && $compilerAvailable; then echo "Scala core already built!"; else $SBT --warn "setupPublishCore $prRepoUrl" publish; fi
-          - mv buildcharacter.properties jenkins.properties
+          - $SBT_CMD setupPublishCore generateBuildCharacterPropertiesFile publishLocal
+
+      - stage: validate
+        if: type = pull_request
+        script:
+          - source scripts/common
+          - parseScalaProperties buildcharacter.properties
+          - $SBT -Dstarr.version=$maven_version_number setupValidateTest testAll
 
       # this builds the spec using jekyll
       # based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
@@ -74,18 +70,6 @@ jobs:
         install: bundle install
         # the key is restricted using forced commands so that it can only upload to the directory we need here
         after_success: ./scripts/travis-publish-spec.sh
-
-      - stage: validate
-        if: type = pull_request
-        script:
-          - export prRepoUrl="https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
-          - source scripts/common
-          - generateRepositoriesConfig $prRepoUrl
-          - export SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
-          # build quick using STARR built upstream, as specified by scalaVersion
-          # (in that sense it's locker, since it was built with starr by that upstream job);
-          # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
-          - $SBT -Dstarr.version=$scalaVersion --warn "setupValidateTest $prRepoUrl" $testExtraArgs testAll
 
         # be careful to not set any env vars, as this will result in a cache miss
       - &test
