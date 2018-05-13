@@ -219,4 +219,22 @@ class StreamTest {
     val l = 1 #:: 2 #:: 3 #:: Stream.Empty
     assertEquals(l.append(l), l.lazyAppendedAll(l))
   }
+
+  class CountingIt extends Iterator[Int] {
+    var current = 0
+    def hasNext = current+1 < 10
+    def next(): Int = if(hasNext) { current+= 1; current } else throw new NoSuchElementException
+  }
+
+  @Test
+  def testLazyListIterator: Unit = {
+    val it1 = new CountingIt
+    val s2 = it1.toStream
+    s2.iterator.next()
+    assertEquals(1, it1.current)
+    s2.flatMap { i => (if(i < 3) None else Some(i)): Option[Int] }.iterator.next
+    assertEquals(3, it1.current)
+    s2.flatMap { i => (if(i < 5) None else Some(i)): Option[Int] }.headOption
+    assertEquals(5, it1.current)
+  }
 }
