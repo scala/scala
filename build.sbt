@@ -42,7 +42,6 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.11"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
-val scalacheckDep     = "org.scala-lang.modules"         % "scalacheck_2.13.0-M4-pre-20d3c21" % "1.14.0-newCollections"           % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.5"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
@@ -567,6 +566,17 @@ lazy val partest = configureAsSubproject(project)
     )
   )
 
+lazy val scalacheckLib = project.in(file("src") / "scalacheck")
+  .dependsOn(library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    name := "scalacheck-lib",
+    libraryDependencies += testInterfaceDep
+  )
+
 lazy val bench = project.in(file("test") / "benchmarks")
   .dependsOn(library)
   .settings(instanceSettings)
@@ -616,7 +626,7 @@ lazy val macroAnnot = project.in(file("test") / "macro-annot")
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
-  .dependsOn(library, reflect, compiler, scaladoc)
+  .dependsOn(library, reflect, compiler, scaladoc, scalacheckLib)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
@@ -628,7 +638,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
-    libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   ).settings(
