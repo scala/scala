@@ -37,7 +37,7 @@ sealed abstract class ImmutableArray[+A]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  override protected def newSpecificBuilder(): Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected def newSpecificBuilder: Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A

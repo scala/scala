@@ -15,7 +15,7 @@ trait SortedMap[K, +V]
   def unsorted: Map[K, V] = this
 
   override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.from(coll)
-  override protected def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]()
+  override protected def newSpecificBuilder: mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]()
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively

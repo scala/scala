@@ -81,7 +81,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
-  override protected def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
+  override protected def newSpecificBuilder: Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)

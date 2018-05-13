@@ -157,7 +157,7 @@ object Map extends MapFactory[Map] {
     override protected def fromSpecificIterable(coll: collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
-    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
+    override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
       Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 

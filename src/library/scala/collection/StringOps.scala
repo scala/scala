@@ -37,7 +37,7 @@ final class StringOps(private val s: String)
 
   def iterableFactory = immutable.IndexedSeq
 
-  protected def newSpecificBuilder() = new mutable.StringBuilder
+  protected def newSpecificBuilder = new mutable.StringBuilder
 
   def length = s.length
 

@@ -25,7 +25,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   protected def coll: this.type = this
 
   protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
-  protected def newSpecificBuilder(): Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
+  protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -129,7 +129,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *       be unsound. However, as long as the returned builder is only fed
     *       with `A` values taken from `this` instance, it is safe.
     */
-  protected def newSpecificBuilder(): Builder[A @uncheckedVariance, C]
+  protected def newSpecificBuilder: Builder[A @uncheckedVariance, C]
 
   /** Selects the first element of this $coll.
     *  $orderDependent
@@ -368,7 +368,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /** A collection containing the last `n` elements of this collection. */
   def takeRight(n: Int): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     b.sizeHintBounded(n, toIterable)
     val lead = iterator drop n
     val it = iterator
@@ -390,7 +390,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  linear, immutable collections this should avoid making a copy.
     */
   def dropRight(n: Int): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     if (n >= 0) b.sizeHint(toIterable, delta = -n)
     val lead = iterator drop n
     val it = iterator
@@ -474,7 +474,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     while (it.hasNext) {
       val elem = it.next()
       val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newSpecificBuilder())
+      val bldr = m.getOrElseUpdate(key, newSpecificBuilder)
       bldr += elem
     }
     var result = immutable.HashMap.empty[K, C]

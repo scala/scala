@@ -8,7 +8,7 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] 
   def unsorted: Set[A] = this
 
   override protected def fromSpecificIterable(coll: Iterable[A] @uncheckedVariance): SortedIterableCC[A] @uncheckedVariance = sortedIterableFactory.from(coll)
-  override protected def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] @uncheckedVariance = sortedIterableFactory.newBuilder[A]()
+  override protected def newSpecificBuilder: mutable.Builder[A, SortedIterableCC[A]] @uncheckedVariance = sortedIterableFactory.newBuilder[A]()
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively

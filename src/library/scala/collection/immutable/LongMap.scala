@@ -164,12 +164,12 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     b.sizeHint(coll)
     b.addAll(coll)
     b.result()
   }
-  override protected def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] @uncheckedVariance =
+  override protected def newSpecificBuilder: Builder[(Long, T), LongMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
       def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }

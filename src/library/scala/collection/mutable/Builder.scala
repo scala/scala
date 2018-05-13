@@ -106,7 +106,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
  override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
     new StringBuilder() ++= coll
 
-  override protected def newSpecificBuilder(): Builder[Char, StringBuilder] =
+  override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
 
   def length: Int = sb.length()

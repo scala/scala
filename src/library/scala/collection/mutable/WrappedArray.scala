@@ -41,7 +41,7 @@ abstract class WrappedArray[T]
     b ++= coll
     WrappedArray.make(b.result())
   }
-  override protected def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
+  override protected def newSpecificBuilder: Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
 
   /** The tag of the element type */
   def elemTag: ClassTag[T]

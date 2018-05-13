@@ -16,14 +16,14 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   // Optimized, push-based version of `partition`
   override def partition(p: A => Boolean): (C, C) = {
-    val l, r = newSpecificBuilder()
+    val l, r = newSpecificBuilder
     iterator.foreach(x => (if (p(x)) l else r) += x)
     (l.result(), r.result())
   }
 
   override def span(p: A => Boolean): (C, C) = {
-    val first = newSpecificBuilder()
-    val second = newSpecificBuilder()
+    val first = newSpecificBuilder
+    val second = newSpecificBuilder
     val it = iterator
     var inFirst = true
     while (it.hasNext && inFirst) {
@@ -148,7 +148,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   override def filterNot(pred: A => Boolean): C = filterImpl(pred, isFlipped = true)
 
   protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     val it = iterator
     while (it.hasNext) {
       val elem = it.next()

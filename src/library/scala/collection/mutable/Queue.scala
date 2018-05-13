@@ -121,7 +121,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   @`inline` final def front: A = head
 
   override def clone(): Queue[A] = {
-    val bf = newSpecificBuilder()
+    val bf = newSpecificBuilder
     bf ++= this
     bf.result()
   }

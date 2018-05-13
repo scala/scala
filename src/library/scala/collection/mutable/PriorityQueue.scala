@@ -79,7 +79,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   override def isEmpty: Boolean = resarr.p_size0 < 2
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A]): PriorityQueue[A] = PriorityQueue.from(coll)
-  override protected def newSpecificBuilder(): Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder()
+  override protected def newSpecificBuilder: Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder()
 
   def mapInPlace(f: A => A): this.type = {
     resarr.mapInPlace(f)

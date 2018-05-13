@@ -464,7 +464,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         Iterator.empty.next()
 
       val forcedElms = new mutable.ArrayBuffer[A](elms.size) ++= elms
-      val result = (newSpecificBuilder() ++= forcedElms).result()
+      val result = (newSpecificBuilder ++= forcedElms).result()
       var i = idxs.length - 2
       while(i >= 0 && idxs(i) >= idxs(i+1))
         i -= 1
@@ -516,7 +516,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         Iterator.empty.next()
 
       /* Calculate this result. */
-      val buf = newSpecificBuilder()
+      val buf = newSpecificBuilder
       for(k <- 0 until nums.length; j <- 0 until nums(k))
         buf += elms(offs(k)+j)
       val res = buf.result()
@@ -584,7 +584,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def sorted[B >: A](implicit ord: Ordering[B]): C = {
     val len = this.length
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     if (len == 1) b ++= toIterable
     else if (len > 1) {
       b.sizeHint(len)
@@ -721,7 +721,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
     //TODO diff and intersect could have efficient lazy implementations if fromSpecificIterable accepted an IterableOnce, i.e. it guaranteed doing only a single traversal
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     for (x <- this) {
       val ox = occ(x)  // Avoid multiple map lookups
       if (ox == 0) b += x
@@ -742,7 +742,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def intersect(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     for (x <- this) {
       val ox = occ(x)  // Avoid multiple map lookups
       if (ox > 0) {

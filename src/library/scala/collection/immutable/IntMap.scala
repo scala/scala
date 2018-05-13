@@ -177,7 +177,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     b.addAll(coll)
     b.result()
   }
-  override protected def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] @uncheckedVariance =
+  override protected def newSpecificBuilder: Builder[(Int, T), IntMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }

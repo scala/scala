@@ -12,7 +12,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {
-    val builder = newSpecificBuilder()
+    val builder = newSpecificBuilder
     val seen = mutable.HashSet.empty[B]
 
     for (x <- this) {
