@@ -3,8 +3,9 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
+
+import scala.tools.cmd._
 
 /** The trait mixed into each instance of a specification.
  *

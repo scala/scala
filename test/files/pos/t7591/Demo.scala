@@ -4,7 +4,7 @@
  */
 
 import scala.tools.cmd._
-import scala.tools.partest.nest.Meta
+import scala.tools.partest.nest._
 
 /** A sample command specification for illustrative purposes.
  *  First take advantage of the meta-options:

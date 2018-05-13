@@ -3,10 +3,10 @@
  * @author Paul Phillips
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
 import scala.collection.mutable.ListBuffer
+import scala.tools.cmd._
 
 trait CommandLineConfig {
   def enforceArity: Boolean = true
