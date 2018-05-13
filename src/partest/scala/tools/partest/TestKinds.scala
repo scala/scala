@@ -45,9 +45,6 @@ object TestKinds {
     (candidates exists matches)
   }
 
-  def groupedTests(paths: List[Path]): List[(String, List[Path])] =
-    (paths.distinct groupBy kindOf).toList sortBy (standardKinds indexOf _._1)
-
   def testsFor(kind: String): List[Path] = (srcDir / kind toDirectory).list.toList filter denotesTestPath
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))
   def standardTests: List[Path]          = standardKinds flatMap testsFor
