@@ -30,7 +30,7 @@ object Meta {
     self: Spec with Interpolation =>
 
                                 Bash.name   --> runAndExit(Bash.action())
-    val selfUpdateName  = SelfUpdate.name   --| ;
+    val selfUpdateName  = SelfUpdate.name.--|
 
     if (selfUpdateName.isDefined)
       runAndExit(SelfUpdate.action())

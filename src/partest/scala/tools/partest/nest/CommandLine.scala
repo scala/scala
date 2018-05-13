@@ -85,7 +85,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
       }
     }
 
-    (loop(originalArgs), residualBuffer map stripQuotes toList)
+    (loop(originalArgs), residualBuffer.map(stripQuotes).toList)
   }
 
   def apply(arg: String)  = argMap(arg)

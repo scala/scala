@@ -99,7 +99,7 @@ object Reference {
     lazy val binary         = _binary.distinct
     lazy val all            = unary ++ binary
     lazy val expansionMap   = _expand
-    lazy val helpMsg        = _help map (f => f() + "\n") mkString
-    lazy val longestArg     = all map (_.length) max
+    lazy val helpMsg        = _help.map(f => f() + "\n").mkString
+    lazy val longestArg     = all.map(_.length).max
   }
 }

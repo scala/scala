@@ -12,8 +12,6 @@
 
 package scala.tools.partest.nest
 
-import language.postfixOps
-
 trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = RunnerSpec
   def programInfo         = Spec.Info(
