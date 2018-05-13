@@ -210,7 +210,7 @@ determineScalaVersion() {
     echo "No SCALA_VER_BASE specified."
 
     travis_fold_start determineScalaVersion "Determining Scala version"
-    $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
+    "${sbt[@]}" 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
     travis_fold_end determineScalaVersion
     parseScalaProperties "buildcharacter.properties"
     SCALA_VER_BASE="$maven_version_base"
@@ -354,7 +354,7 @@ buildStarr() {
     cd $STARR_DIR
     git checkout $STARR_REF
     travis_fold_start starr "Building starr"
-    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
+    "${sbt[@]}" -no-colors "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
     travis_fold_end starr
   )
   SET_STARR=-Dstarr.version=$STARR_VER
@@ -374,9 +374,9 @@ buildLocker() {
   cd $WORKSPACE
 
   travis_fold_start locker "Building locker"
-  $SBT_CMD -no-colors $sbtArgs \
+  "${sbt[@]}" -no-colors \
     $SET_STARR \
-    ${updatedModuleVersions[@]} \
+    "${updatedModuleVersions[@]}" \
     "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
     $clean publish
   travis_fold_end locker
@@ -392,9 +392,9 @@ invokeQuickInternal() {
   shift
 
   travis_fold_start quick "Building bootstrapped"
-  $SBT_CMD $sbtArgs \
+  "${sbt[@]}" \
       -Dstarr.version=$SCALA_VER \
-      ${updatedModuleVersions[@]} \
+      "${updatedModuleVersions[@]}" \
       "$setupCmd" \
       "$@"
   travis_fold_end quick

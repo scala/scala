@@ -7,8 +7,7 @@
 
 source scripts/common
 
-generateRepositoriesConfig $prRepoUrl
-SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+sbt=("${sbt[@]}" "set resolvers in Global += \"pr-repo\" at \"$prRepoUrl\"")
 
 case $prDryRun in
   yep)
@@ -17,7 +16,7 @@ case $prDryRun in
     ;;
   *)
     echo ">>> Getting Scala version number."
-    $SBT --warn "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
+    "${sbt[@]}" --warn "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
     parseScalaProperties buildcharacter.properties # produce maven_version_number
 
     echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
@@ -28,7 +27,7 @@ case $prDryRun in
     if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
       echo "Scala core already built!"
     else
-      $SBT --warn "setupPublishCore $prRepoUrl" publish
+      "${sbt[@]}" --warn "setupPublishCore $prRepoUrl" publish
     fi
 
     mv buildcharacter.properties jenkins.properties # parsed by the jenkins job
