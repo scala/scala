@@ -13,18 +13,9 @@ object TestKinds {
   }
   def denotesTestPath(p: Path) = denotesTestDir(p) || denotesTestFile(p)
 
-  def kindOf(p: Path) = {
-    p.toAbsolute.segments takeRight 2 head
+  def kindOf(p: Path) = p.toAbsolute.segments takeRight 2 head
 
-    // (srcDir relativize p.toCanonical).segments match {
-    //   case (".." :: "scaladoc" :: xs) => xs.head
-    //   case xs => xs.head
-    // }
-  }
-  def logOf(p: Path) = {
-    p.parent / s"${p.stripExtension}-${kindOf(p)}.log"
-    // p.parent / s"${p.stripExtension}.log"
-  }
+  def logOf(p: Path) = p.parent / s"${p.stripExtension}-${kindOf(p)}.log"
 
   // true if a test path matches the --grep expression.
   private def pathMatchesExpr(path: Path, expr: String) = {
