@@ -50,6 +50,9 @@ sealed abstract class BitSet
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
     */
   protected def updateWord(idx: Int, w: Long): BitSet
+
+  override def map(f: Int => Int): BitSet = super[BitSet].map(f)
+  override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
 }
 
 /**

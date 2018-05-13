@@ -139,6 +139,10 @@ class BitSet(protected[collection] final var elems: Array[Long])
     new BitSet(java.util.Arrays.copyOf(elems, elems.length))
 
   def toImmutable: immutable.BitSet = immutable.BitSet.fromBitMask(elems)
+
+  override def map(f: Int => Int): BitSet = super[BitSet].map(f)
+  override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
+
 }
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
