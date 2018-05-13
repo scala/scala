@@ -103,6 +103,6 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
-      SortedMap.newBuilder().mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
+      SortedMap.newBuilder.mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

@@ -190,7 +190,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     }
     else new ArrayBuffer[B] ++= coll
 
-  def newBuilder[A](): Builder[A, ArrayBuffer[A]] =
+  def newBuilder[A]: Builder[A, ArrayBuffer[A]] =
     new GrowableBuilder[A, ArrayBuffer[A]](empty) {
       override def sizeHint(size: Int): Unit = elems.ensureSize(size)
     }

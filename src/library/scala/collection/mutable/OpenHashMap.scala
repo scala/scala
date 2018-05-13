@@ -23,7 +23,7 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
   def empty[K, V] = new OpenHashMap[K, V]
   def from[K, V](it: IterableOnce[(K, V)]): OpenHashMap[K,V] = empty ++= it
 
-  def newBuilder[K, V](): Builder[(K, V), OpenHashMap[K,V]] =
+  def newBuilder[K, V]: Builder[(K, V), OpenHashMap[K,V]] =
     new GrowableBuilder[(K, V), OpenHashMap[K, V]](empty)
 
   /** A hash table entry.

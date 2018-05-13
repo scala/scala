@@ -59,7 +59,7 @@ object View extends IterableFactory[View] {
 
   def empty[A]: View[A] = Empty
 
-  def newBuilder[A](): Builder[A, View[A]] = ArrayBuffer.newBuilder[A]().mapResult(from)
+  def newBuilder[A]: Builder[A, View[A]] = ArrayBuffer.newBuilder[A].mapResult(from)
 
   override def apply[A](xs: A*): View[A] = new Elems(xs: _*)
 

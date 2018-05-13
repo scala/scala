@@ -197,7 +197,7 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] =
-      Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
+      Map.newBuilder.mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 
 }

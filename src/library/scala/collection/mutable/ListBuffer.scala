@@ -288,7 +288,7 @@ object ListBuffer extends StrictOptimizedSeqFactory[ListBuffer] {
 
   def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
-  def newBuilder[A](): Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
+  def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
 
   def empty[A]: ListBuffer[A] = new ListBuffer[A]
 }

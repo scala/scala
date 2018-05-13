@@ -143,10 +143,10 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
   def from[E: Ordering](it: scala.collection.IterableOnce[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => (newBuilder[E]() ++= it).result()
+      case _ => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =
+  def newBuilder[A : Ordering]: Builder[A, TreeSet[A]] =
     new ImmutableBuilder[A, TreeSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }

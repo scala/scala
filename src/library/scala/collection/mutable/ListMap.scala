@@ -61,5 +61,5 @@ class ListMap[K, V]
 object ListMap extends MapFactory[ListMap] {
   def empty[K, V]: ListMap[K, V] = new ListMap[K, V]
   def from[K, V](it: IterableOnce[(K, V)]): ListMap[K,V] = Growable.from(empty[K, V], it)
-  def newBuilder[K, V](): Builder[(K, V), ListMap[K,V]] = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V]: Builder[(K, V), ListMap[K,V]] = new GrowableBuilder(empty[K, V])
 }

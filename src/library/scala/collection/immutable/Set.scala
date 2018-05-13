@@ -72,13 +72,13 @@ object Set extends IterableFactory[Set] {
     it match {
       // We want `SortedSet` (and subclasses, such as `BitSet`) to
       // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E] => (newBuilder[E]() ++= it).result()
+      case _: SortedSet[E] => (newBuilder[E] ++= it).result()
       case s: Set[E]       => s
-      case _               => (newBuilder[E]() ++= it).result()
+      case _               => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A](): Builder[A, Set[A]] =
-    if (useBaseline) HashSet.newBuilder() else ChampHashSet.newBuilder()
+  def newBuilder[A]: Builder[A, Set[A]] =
+    if (useBaseline) HashSet.newBuilder else ChampHashSet.newBuilder
 
   /** An optimized representation for immutable empty sets */
   @SerialVersionUID(3L)

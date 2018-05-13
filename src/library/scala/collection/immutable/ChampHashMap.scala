@@ -629,10 +629,10 @@ object ChampHashMap extends MapFactory[ChampHashMap] {
   def from[K, V](source: collection.IterableOnce[(K, V)]): ChampHashMap[K, V] =
     source match {
       case hs: ChampHashMap[K, V] => hs
-      case _ => (newBuilder[K, V]() ++= source).result()
+      case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), ChampHashMap[K, V]] =
+  def newBuilder[K, V]: Builder[(K, V), ChampHashMap[K, V]] =
     new ImmutableBuilder[(K, V), ChampHashMap[K, V]](empty) {
       def addOne(element: (K, V)): this.type = {
         elems = elems + element

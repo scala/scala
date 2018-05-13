@@ -607,10 +607,10 @@ object ChampHashSet extends IterableFactory[ChampHashSet] {
   def from[A](source: collection.IterableOnce[A]): ChampHashSet[A] =
     source match {
       case hs: ChampHashSet[A] => hs
-      case _ => (newBuilder[A]() ++= source).result()
+      case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A](): Builder[A, ChampHashSet[A]] =
+  def newBuilder[A]: Builder[A, ChampHashSet[A]] =
     new ImmutableBuilder[A, ChampHashSet[A]](empty) {
       def addOne(element: A): this.type = {
         elems = elems + element

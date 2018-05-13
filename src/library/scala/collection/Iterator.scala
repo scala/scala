@@ -815,7 +815,7 @@ object Iterator extends IterableFactory[Iterator] {
     * @return A builder for $Coll objects.
     * @tparam A the type of the ${coll}’s elements
     */
-  def newBuilder[A](): Builder[A, Iterator[A]] =
+  def newBuilder[A]: Builder[A, Iterator[A]] =
     new ImmutableBuilder[A, Iterator[A]](empty[A]) {
       override def addOne(elem: A): this.type = { elems = elems ++ single(elem); this }
     }

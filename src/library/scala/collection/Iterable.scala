@@ -25,7 +25,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   protected def coll: this.type = this
 
   protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
-  protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
+  protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -307,7 +307,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
 
     val headSize = asIterable(head).size
-    val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B]())
+    val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B])
     for (xs <- iterator) {
       var i = 0
       for (x <- asIterable(xs)) {
@@ -508,7 +508,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     val m = mutable.Map.empty[K, Builder[B, CC[B]]]
     for (elem <- this) {
       val k = key(elem)
-      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B]())
+      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B])
       bldr += f(elem)
     }
     var result = immutable.Map.empty[K, CC[B]]

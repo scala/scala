@@ -11,7 +11,7 @@ trait MapView[K, +V]
 
   def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] =
     new MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
-      def newBuilder[X, Y](): Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]()
+      def newBuilder[X, Y]: Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]
       def empty[X, Y]: View[(X, Y)] = View.empty
       def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
     }

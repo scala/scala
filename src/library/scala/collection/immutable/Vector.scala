@@ -17,10 +17,10 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
       case v: Vector[E] => v
-      case _            => (newBuilder() ++= it).result()
+      case _            => (newBuilder ++= it).result()
     }
 
-  def newBuilder[A](): Builder[A, Vector[A]] = new VectorBuilder[A]
+  def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
 
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
 

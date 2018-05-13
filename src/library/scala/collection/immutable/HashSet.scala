@@ -159,12 +159,12 @@ object HashSet extends IterableFactory[HashSet] {
   def from[A](it: collection.IterableOnce[A]): HashSet[A] =
     it match {
       case hs: HashSet[A] => hs
-      case _ => (newBuilder[A]() ++= it).result()
+      case _ => (newBuilder[A] ++= it).result()
     }
 
   def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
-  def newBuilder[A](): Builder[A, HashSet[A]] =
+  def newBuilder[A]: Builder[A, HashSet[A]] =
     new ImmutableBuilder[A, HashSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }

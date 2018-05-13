@@ -155,10 +155,10 @@ object ListMap extends MapFactory[ListMap] {
   def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
     it match {
       case lm: ListMap[K, V] => lm
-      case _ => (newBuilder[K, V]() ++= it).result()
+      case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), ListMap[K, V]] =
+  def newBuilder[K, V]: Builder[(K, V), ListMap[K, V]] =
     new ImmutableBuilder[(K, V), ListMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }

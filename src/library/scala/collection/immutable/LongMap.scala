@@ -51,9 +51,9 @@ object LongMap {
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
   def from[V](coll: IterableOnce[(Long, V)]): LongMap[V] =
-    newBuilder[V]().addAll(coll).result()
+    newBuilder[V].addAll(coll).result()
 
-  def newBuilder[V](): Builder[(Long, V), LongMap[V]] =
+  def newBuilder[V]: Builder[(Long, V), LongMap[V]] =
     new ImmutableBuilder[(Long, V), LongMap[V]](empty) {
       def addOne(elem: (Long, V)): this.type = { elems = elems + elem; this }
     }

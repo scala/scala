@@ -42,8 +42,8 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
-    val first = iterableFactory.newBuilder[A1]()
-    val second = iterableFactory.newBuilder[A2]()
+    val first = iterableFactory.newBuilder[A1]
+    val second = iterableFactory.newBuilder[A2]
     foreach { a =>
       val pair = asPair(a)
       first += pair._1
@@ -53,9 +53,9 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
-    val b1 = iterableFactory.newBuilder[A1]()
-    val b2 = iterableFactory.newBuilder[A2]()
-    val b3 = iterableFactory.newBuilder[A3]()
+    val b1 = iterableFactory.newBuilder[A1]
+    val b2 = iterableFactory.newBuilder[A2]
+    val b3 = iterableFactory.newBuilder[A3]
 
     foreach { xyz =>
       val triple = asTriple(xyz)
@@ -71,7 +71,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   // a couple of indirection levels are removed
 
   override def map[B](f: A => B): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     val it = iterator
     while (it.hasNext) {
       b += f(it.next())
@@ -80,7 +80,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def flatMap[B](f: A => IterableOnce[B]): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     val it = iterator
     while (it.hasNext) {
       b ++= f(it.next())
@@ -89,7 +89,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def collect[B](pf: PartialFunction[A, B]): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     val it = iterator
     while (it.hasNext) {
       val elem = it.next()
@@ -101,7 +101,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def flatten[B](implicit toIterableOnce: A => IterableOnce[B]): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     val it = iterator
     while (it.hasNext) {
       b ++= toIterableOnce(it.next())
@@ -110,7 +110,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] = {
-    val b = iterableFactory.newBuilder[(A, B)]()
+    val b = iterableFactory.newBuilder[(A, B)]
     val it1 = iterator
     val it2 = that.iterator
     while (it1.hasNext && it2.hasNext) {
@@ -120,7 +120,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def zipWithIndex: CC[(A @uncheckedVariance, Int)] = {
-    val b = iterableFactory.newBuilder[(A, Int)]()
+    val b = iterableFactory.newBuilder[(A, Int)]
     var i = 0
     val it = iterator
     while (it.hasNext) {
@@ -131,7 +131,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
   }
 
   override def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     b.sizeHint(toIterable, delta = 0)
     var acc = z
     b += acc

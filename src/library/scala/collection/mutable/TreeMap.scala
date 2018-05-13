@@ -186,6 +186,6 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
 
-  def newBuilder[K: Ordering, V](): Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder(empty[K, V])
+  def newBuilder[K: Ordering, V]: Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder(empty[K, V])
 
 }

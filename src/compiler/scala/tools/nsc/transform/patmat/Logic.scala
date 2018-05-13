@@ -357,7 +357,7 @@ trait Logic extends Debugging  {
 
       val pure = props map (p => rewriteEqualsToProp(p))
 
-      val eqAxioms = ImmutableArray.newBuilder[Prop]()
+      val eqAxioms = ImmutableArray.newBuilder[Prop]
       @inline def addAxiom(p: Prop) = eqAxioms += p
 
       debug.patmat("removeVarEq vars: "+ vars)

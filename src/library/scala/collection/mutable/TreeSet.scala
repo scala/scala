@@ -177,6 +177,6 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def from[E : Ordering](it: collection.IterableOnce[E]): TreeSet[E] = Growable.from(empty[E], it)
 
-  def newBuilder[A: Ordering](): Builder[A, TreeSet[A]] = new GrowableBuilder(empty[A])
+  def newBuilder[A: Ordering]: Builder[A, TreeSet[A]] = new GrowableBuilder(empty[A])
 
 }

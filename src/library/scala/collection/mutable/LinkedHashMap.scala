@@ -17,7 +17,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
       case _ => Growable.from(empty[K, V], it)
     }
 
-  def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   /** Class for the linked hash map entry, used internally.
     *  @since 2.8

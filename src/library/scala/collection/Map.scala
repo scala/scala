@@ -14,7 +14,7 @@ trait Map[K, +V]
     with Equals {
 
   override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]()
+  override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively

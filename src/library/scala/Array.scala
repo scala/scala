@@ -45,7 +45,7 @@ object Array {
   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] =
     new Factory[A, Array[A]] {
       def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
-      def newBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder[A]
+      def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
     }
 
   /**

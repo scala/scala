@@ -119,6 +119,6 @@ object Stack extends StrictOptimizedSeqFactory[Stack] {
 
   def empty[A]: Stack[A] = new Stack
 
-  def newBuilder[A](): Builder[A, Stack[A]] = new GrowableBuilder[A, Stack[A]](empty)
+  def newBuilder[A]: Builder[A, Stack[A]] = new GrowableBuilder[A, Stack[A]](empty)
 
 }

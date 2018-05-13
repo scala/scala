@@ -983,7 +983,7 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def from[K, V](it: IterableOnce[(K, V)]) = new TrieMap[K, V]() ++= it
 
-  def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 

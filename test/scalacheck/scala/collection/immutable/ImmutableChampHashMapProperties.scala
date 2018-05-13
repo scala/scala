@@ -32,7 +32,7 @@ object ImmutableChampHashMapProperties extends Properties("immutable.ChampHashMa
   }
 
   property("input.equals(duplicate)") = forAll { (inputMap: ChampHashMap[K, V]) =>
-    val builder = ChampHashMap.newBuilder[K, V]()
+    val builder = ChampHashMap.newBuilder[K, V]
     inputMap.foreach(builder.addOne)
 
     val duplicateMap = builder.result

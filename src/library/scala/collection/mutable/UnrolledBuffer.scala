@@ -232,9 +232,9 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
 
   def empty[A : ClassTag]: UnrolledBuffer[A] = new UnrolledBuffer[A]
 
-  def from[A : ClassTag](source: scala.collection.IterableOnce[A]): UnrolledBuffer[A] = newBuilder[A]().addAll(source)
+  def from[A : ClassTag](source: scala.collection.IterableOnce[A]): UnrolledBuffer[A] = newBuilder[A].addAll(source)
 
-  def newBuilder[A : ClassTag](): UnrolledBuffer[A] = new UnrolledBuffer[A]
+  def newBuilder[A : ClassTag]: UnrolledBuffer[A] = new UnrolledBuffer[A]
 
   val waterline = 50
   val waterlineDelim = 100    // TODO -- fix this name!  It's a denominator, not a delimiter.  (But it's part of the API so we can't just change it.)

@@ -538,7 +538,7 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
     loop(init)
   }
 
-  def newBuilder[A](): Builder[A, CC[A]] = ArrayBuffer.newBuilder[A]().mapResult(array => from(array))
+  def newBuilder[A]: Builder[A, CC[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
 
   private[immutable] def filteredTail[A](lazyList: CC[A] @uncheckedVariance, p: A => Boolean, isFlipped: Boolean) = {
     newCons(lazyList.head, lazyList.tail.filterImpl(p, isFlipped))

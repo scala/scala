@@ -158,7 +158,7 @@ object Map extends MapFactory[Map] {
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
-      Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
+      Map.newBuilder.mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
@@ -166,11 +166,11 @@ object Map extends MapFactory[Map] {
   def from[K, V](it: collection.IterableOnce[(K, V)]): Map[K, V] =
     it match {
       case m: Map[K, V] => m
-      case _ => (newBuilder[K, V]() ++= it).result()
+      case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), Map[K, V]] =
-    if (useBaseline) HashMap.newBuilder() else ChampHashMap.newBuilder()
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
+    if (useBaseline) HashMap.newBuilder else ChampHashMap.newBuilder
 
   @SerialVersionUID(3L)
   private object EmptyMap extends AbstractMap[Any, Nothing] with Serializable {

@@ -384,12 +384,12 @@ class IteratorTest {
 
   @Test
   def emptyIteratorBuilder: Unit = {
-    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int]().result())
+    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int].result())
   }
 
   @Test
   def nonEmptyIteratorBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]()
+    var iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 5
     iteratorBuilder += 4
     iteratorBuilder += 3
@@ -398,7 +398,7 @@ class IteratorTest {
 
   @Test
   def nonEmptyIteratorAndClearBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]()
+    var iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 1
     iteratorBuilder.clear()
     assertSame(Iterator.empty, iteratorBuilder.result())

@@ -37,7 +37,7 @@ sealed abstract class ImmutableArray[+A]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  override protected def newSpecificBuilder: Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected def newSpecificBuilder: Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A](elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
@@ -145,8 +145,8 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     } else ArrayBuffer.from(it).toArray
   }
 
-  def newBuilder[A : ClassTag](): Builder[A, ImmutableArray[A]] =
-    ArrayBuffer.newBuilder[A]().mapResult(b => unsafeWrapArray[A](b.toArray))
+  def newBuilder[A : ClassTag]: Builder[A, ImmutableArray[A]] =
+    ArrayBuffer.newBuilder[A].mapResult(b => unsafeWrapArray[A](b.toArray))
 
   override def fill[A : ClassTag](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 

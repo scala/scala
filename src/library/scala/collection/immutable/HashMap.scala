@@ -107,10 +107,10 @@ object HashMap extends MapFactory[HashMap] {
   def from[K, V](it: collection.IterableOnce[(K, V)]): HashMap[K, V] =
     it match {
       case hm: HashMap[K, V] => hm
-      case _ => (newBuilder[K, V]() ++= it).result()
+      case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] =
+  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
     new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
