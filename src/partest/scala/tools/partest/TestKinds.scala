@@ -13,12 +13,6 @@ object TestKinds {
   }
   def denotesTestPath(p: Path) = denotesTestDir(p) || denotesTestFile(p)
 
-  // TODO
-  def isTestForPartest(p: Path) = (
-       (p.name == "intentional-failure.scala")
-    || (p.path contains "test-for-partest")
-  )
-
   def kindOf(p: Path) = {
     p.toAbsolute.segments takeRight 2 head
 
