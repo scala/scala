@@ -81,7 +81,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def reporter: Reporter = currentReporter
   def reporter_=(newReporter: Reporter): Unit =
     currentReporter = newReporter match {
-      case _: reporters.ConsoleReporter | _: reporters.LimitingReporter => newReporter
+      case _: reporters.ConsoleReporter | _: reporters.DefaultReporter | _: reporters.LimitingReporter => newReporter
       case _ if settings.maxerrs.isSetByUser && settings.maxerrs.value < settings.maxerrs.default =>
         new reporters.LimitingReporter(settings, newReporter)
       case _ => newReporter

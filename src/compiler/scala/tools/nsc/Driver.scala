@@ -1,7 +1,7 @@
 package scala
 package tools.nsc
 
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.DisplayReporter
 import Properties.{ versionMsg, residentPromptString }
 import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.FakePos
@@ -40,7 +40,7 @@ abstract class Driver {
 
   def process(args: Array[String]): Boolean = {
     val ss   = new Settings(scalacError)
-    reporter = new ConsoleReporter(ss)    // for reporting early config errors, before compiler is constructed
+    reporter = DisplayReporter(ss)    // for reporting early config errors, before compiler is constructed
     command  = new CompilerCommand(args.toList, ss)
     settings = command.settings
 

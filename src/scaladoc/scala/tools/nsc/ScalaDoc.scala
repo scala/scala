@@ -44,7 +44,7 @@ class ScalaDoc {
           if (docSettings.debug.value) ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }
-      finally reporter.printSummary()
+      finally reporter.finish()
 
     !reporter.reallyHasErrors
   }

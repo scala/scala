@@ -126,6 +126,15 @@ trait ForwardingReporter extends Reporter {
   /* Receiver of all forwarded calls. */
   protected val delegate: Reporter
 
+  /* Convenience method to forward a given message to the delegate reporter. */
+  protected def forward(pos: Position, msg: String, severity: Severity): Unit =
+    severity match {
+      case ERROR   => delegate.error(pos, msg)
+      case WARNING => delegate.warning(pos, msg)
+      case INFO    => delegate.echo(pos, msg)
+      case _       => throw new IllegalArgumentException(s"Unknown severity: $severity")
+    }
+
   /* Always throws `UnsupportedOperationException`. */
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Nothing =
     throw new UnsupportedOperationException(s"$msg ($pos)")
@@ -151,17 +160,4 @@ trait ForwardingReporter extends Reporter {
   override def finish()     = delegate.finish()
   override def rerunWithDetails(setting: MutableSettings#Setting, name: String) =
                               delegate.rerunWithDetails(setting, name)
-}
-
-/** A `ForwardingReporter` that filters events before delegating.
- *
- *  Concrete subclasses should implement just the abstract `filter` method.
- */
-trait FilteringReporter extends ForwardingReporter {
-  /* True to permit the message. */
-  protected def filter(pos: Position, msg: String, severity: Severity): Boolean
-
-  override def echo(pos: Position, msg: String)    = if (filter(pos, msg, INFO)) delegate.echo(pos, msg)
-  override def warning(pos: Position, msg: String) = if (filter(pos, msg, WARNING)) delegate.warning(pos, msg)
-  override def error(pos: Position, msg: String)   = if (filter(pos, msg, ERROR)) delegate.error(pos, msg)
 }
