@@ -493,7 +493,7 @@ final class StringOps(private val s: String)
     java.lang.String.format(l, s, args map unwrapArg: _*)
 }
 
-case class StringView(s: String) extends AbstractIndexedView[Char] {
+case class StringView(s: String) extends AbstractIndexedSeqView[Char] {
   def length = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
