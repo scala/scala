@@ -10,11 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
 import scala.collection.mutable.ListBuffer
-import nsc.Properties.envOrNone
+import scala.tools.cmd._
+import scala.tools.nsc.Properties.envOrNone
 
 /** Mixes in the specification trait and uses the vals therein to
  *  side-effect private accumulators.  From this emerges formatted help,

@@ -10,10 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
-import nsc.Properties.envOrElse
+import scala.tools.cmd._
+import scala.tools.nsc.Properties.envOrElse
 import Spec.Info
 
 /** Machinery for what amounts to a command line specification DSL.

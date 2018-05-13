@@ -12,6 +12,7 @@
 
 import scala.tools.cmd._
 import scala.tools.nsc.io._
+import scala.tools.partest.nest._
 import java.util.Properties
 import java.io.FileInputStream
 
