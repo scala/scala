@@ -66,7 +66,7 @@ sealed abstract class ImmutableArray[+A]
   }
 
   override def appendedAll[B >: A](suffix: collection.Iterable[B]): ImmutableArray[B] = {
-    val b = ArrayBuilder.make[Any]()
+    val b = ArrayBuilder.make[Any]
     val k = suffix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
     b.addAll(unsafeArray)
@@ -75,7 +75,7 @@ sealed abstract class ImmutableArray[+A]
   }
 
   override def prependedAll[B >: A](prefix: collection.Iterable[B]): ImmutableArray[B] = {
-    val b = ArrayBuilder.make[Any]()
+    val b = ArrayBuilder.make[Any]
     val k = prefix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
     b.addAll(prefix)

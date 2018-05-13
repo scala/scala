@@ -283,7 +283,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insertAll(index: Int, xs: IterableOnce[Char]): StringBuilder =
-    insertAll(index, (ArrayBuilder.make[Char]() ++= xs).result())
+    insertAll(index, (ArrayBuilder.make[Char] ++= xs).result())
 
   /** Inserts the given Array[Char] into this sequence at the given index.
     *

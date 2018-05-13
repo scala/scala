@@ -35,7 +35,7 @@ abstract class WrappedArray[T]
   override def iterableFactory: scala.collection.SeqFactory[WrappedArray] = WrappedArray.untagged
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]): WrappedArray[T] = {
-    val b = ArrayBuilder.make()(elemTag)
+    val b = ArrayBuilder.make(elemTag)
     val s = coll.knownSize
     if(s > 0) b.sizeHint(s)
     b ++= coll
@@ -97,7 +97,7 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
     } else make(ArrayBuffer.from(it).toArray)
   }
 
-  def newBuilder[A : ClassTag]: Builder[A, WrappedArray[A]] = ArrayBuilder.make[A]().mapResult(make)
+  def newBuilder[A : ClassTag]: Builder[A, WrappedArray[A]] = ArrayBuilder.make[A].mapResult(make)
 
   /**
    * Wrap an existing `Array` into a `WrappedArray` of the proper primitive specialization type

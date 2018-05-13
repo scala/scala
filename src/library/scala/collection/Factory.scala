@@ -53,7 +53,7 @@ object Factory {
         b ++= it
         b.result()
       }
-      def newBuilder: Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]()
+      def newBuilder: Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]
     }
 
 }
