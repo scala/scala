@@ -1376,7 +1376,7 @@ trait Contexts { self: Analyzer =>
     final def firstError: Option[AbsTypeError] = errorBuffer.headOption
 
     // TODO: remove ++= and clearAll* entirely in favor of more high-level combinators like withFreshErrorBuffer
-    final private[typechecker] def ++=(errors: Traversable[AbsTypeError]): Unit = errorBuffer ++= errors
+    final private[typechecker] def ++=(errors: Iterable[AbsTypeError]): Unit = errorBuffer ++= errors
 
     // null references to buffers instead of clearing them,
     // as the buffers may be shared between different reporters
