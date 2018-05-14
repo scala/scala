@@ -29,7 +29,6 @@ stages:
 #  - by `bootstrap_fun`: publishPrivateTask, ...
 # env computed in first stage, passed on to later stages with the `build/env` file
 #  - by `determineScalaVersion`: SCALA_VER, publishToSonatype
-#  - by `buildModules` / `constructUpdatedModuleVersions`: updatedModuleVersions
 jobs:
     include:
       - stage: build
@@ -40,12 +39,11 @@ jobs:
           - source scripts/common
           - source scripts/bootstrap_fun
           - determineScalaVersion
-          - deriveModuleVersions
           - removeExistingBuilds $integrationRepoUrl
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
           - buildLocker
           - buildQuick
-          - set | grep -E '^SCALA_VER=|^SCALA_BINARY_VER=|^PARTEST_VER=|^SCALACHECK_VER=|^PARTEST_BUILT=|^SCALACHECK_BUILT=|^updatedModuleVersions=|^publishToSonatype=' > build/env
+          - set | grep -E '^SCALA_VER=|^publishToSonatype=' > build/env
           - cat build/env
           - triggerScalaDist
 
