@@ -150,16 +150,28 @@ object Array {
     * @see `java.util.Arrays#copyOf`
     */
   def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
-    val destClass = ct.runtimeClass
-    if (destClass.isAssignableFrom(original.getClass)) {
-      if(destClass.getComponentType.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
+    val destClass = ct.runtimeClass.asInstanceOf[Class[A]]
+    if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
+      if(destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
+      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, getArrayClass(destClass).asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
     } else {
       val dest = new Array[A](newLength)
       Array.copy(original, 0, dest, 0, original.length)
       dest
     }
   }
+
+  private def getArrayClass[A](c: Class[A]): Class[Array[A]] = {
+    if(c eq classOf[Int]) classOf[Array[Int]]
+    else if(c eq classOf[Long]) classOf[Array[Long]]
+    else if(c eq classOf[Char]) classOf[Array[Char]]
+    else if(c eq classOf[Boolean]) classOf[Array[Boolean]]
+    else if(c eq classOf[Double]) classOf[Array[Double]]
+    else if(c eq classOf[Byte]) classOf[Array[Byte]]
+    else if(c eq classOf[Float]) classOf[Array[Float]]
+    else if(c eq classOf[Short]) classOf[Array[Short]]
+    else Class.forName(if(c.isArray) "["+c.getName else "[L"+c.getName+";", true, c.getClassLoader)
+  }.asInstanceOf[Class[Array[A]]]
 
   /** Returns an array of length 0 */
   def empty[T: ClassTag]: Array[T] = new Array[T](0)
