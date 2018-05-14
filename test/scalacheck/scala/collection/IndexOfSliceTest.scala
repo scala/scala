@@ -12,7 +12,7 @@ object IndexOfSliceTest extends Properties("indexOfSlice") {
     Gen.oneOf[Seq[Int]](
       Arbitrary.arbitrary[collection.immutable.List[Int]],
       Arbitrary.arbitrary[collection.immutable.Vector[Int]],
-      Arbitrary.arbitrary[collection.immutable.ImmutableArray[Int]],
+      Arbitrary.arbitrary[collection.immutable.ArraySeq[Int]],
       Arbitrary.arbitrary[collection.mutable.ListBuffer[Int]],
       Arbitrary.arbitrary[collection.mutable.ArrayBuffer[Int]],
       Arbitrary.arbitrary[collection.mutable.WrappedArray[Int]]

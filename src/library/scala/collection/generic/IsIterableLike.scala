@@ -117,12 +117,12 @@ object IsIterableLike {
     new IsIterableLike[Array[A0]] {
       type A = A0
       val conversion: Array[A] => IterableOps[A, Iterable, Array[A]] = a => new IterableOps[A, Iterable, Array[A]] {
-        def toIterable: Iterable[A] = mutable.WrappedArray.make(a)
+        def toIterable: Iterable[A] = mutable.ArraySeq.make(a)
         protected def coll: Array[A] = a
         protected def fromSpecificIterable(coll: Iterable[A]): Array[A] = Array.from(coll)
         def iterableFactory: IterableFactory[Iterable] = Iterable
-        protected def newSpecificBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder
-        def iterator(): Iterator[A] = a.iterator()
+        protected def newSpecificBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder
+        def iterator: Iterator[A] = a.iterator
       }
     }
 

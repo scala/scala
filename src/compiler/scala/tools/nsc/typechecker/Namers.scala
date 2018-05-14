@@ -52,6 +52,8 @@ trait Namers extends MethodSynthesis {
     // overridden by the presentation compiler
     def saveDefaultGetter(meth: Symbol, default: Symbol): Unit = { }
 
+    def expandMacroAnnotations(stats: List[Tree]): List[Tree] = stats
+
     import NamerErrorGen._
     val typer = newTyper(context)
 
@@ -465,6 +467,7 @@ trait Namers extends MethodSynthesis {
 
       val m = tree.symbol
       if (m.isTopLevel && !m.hasPackageFlag) {
+        // TODO: I've seen crashes where m.moduleClass == NoSymbol
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
@@ -1189,6 +1192,7 @@ trait Namers extends MethodSynthesis {
         cda.companionModuleClassNamer = templateNamer
       }
       val classTp = ClassInfoType(parents, decls, clazz)
+      templateNamer.expandMacroAnnotations(templ.body)
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
     }
 
@@ -1199,6 +1203,7 @@ trait Namers extends MethodSynthesis {
       val resultType = templateSig(impl)
 
       val res = GenPolyType(tparams0, resultType)
+
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
@@ -1210,6 +1215,10 @@ trait Namers extends MethodSynthesis {
         // Don't force the owner's info lest we create cycles as in scala/bug#6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
+
+      if (settings.YmacroAnnotations && treeInfo.isMacroAnnotation(cdef))
+        typer.typedMacroAnnotation(cdef)
+
       pluginsTp
     }
 
@@ -1419,7 +1428,7 @@ trait Namers extends MethodSynthesis {
      * flag.
      */
     private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol): Unit = {
-      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(ddef.duplicate)
+      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
       def rtparams = rtparams0.map(_.duplicate)
@@ -1505,7 +1514,7 @@ trait Namers extends MethodSynthesis {
                     return // fix #3649 (prevent crash in erroneous source code)
                 }
               }
-              val ClassDef(_, _, rtparams, _) = resetAttrs(cdef.duplicate)
+              val ClassDef(_, _, rtparams, _) = resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate)
               defTparams = rtparams.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
               nmr
             }

@@ -97,7 +97,9 @@ trait ContextErrors {
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
-    def typeErrorMsg(found: Type, req: Type) = "type mismatch" + foundReqMsg(found, req)
+    def typeErrorMsg(context: Context, found: Type, req: Type) =
+      if (context.openImplicits.nonEmpty && !settings.XlogImplicits.value) "type mismatch"
+      else "type mismatch" + foundReqMsg(found, req)
   }
 
   def notAnyRefMessage(found: Type): String = {
@@ -208,7 +210,7 @@ trait ContextErrors {
         assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
         assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
 
-        issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(foundType, req)))
+        issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(context, foundType, req)))
         infer.explainTypes(foundType, req)
       }
 
@@ -667,14 +669,14 @@ trait ContextErrors {
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
         val f = meth.name.decoded
         val paf = s"$f(${ meth.asMethod.paramLists map (_ map (_ => "_") mkString ",") mkString ")(" })"
-        val advice = s"""
-          |Unapplied methods are only converted to functions when a function type is expected.
-          |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin
+        val advice =
+          if (meth.isConstructor || meth.info.params.length > definitions.MaxFunctionArity) ""
+          else s"""
+            |Unapplied methods are only converted to functions when a function type is expected.
+            |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin
         val message =
           if (meth.isMacro) MacroTooFewArgumentListsMessage
-          else s"""missing argument list for ${meth.fullLocationString}${
-            if (!meth.isConstructor) advice else ""
-          }"""
+          else s"""missing argument list for ${meth.fullLocationString}$advice"""
         issueNormalTypeError(tree, message)
         setError(tree)
       }
@@ -730,9 +732,12 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type): Tree = {
+        issueNormalTypeError(tree, "method with dependent type " + tp + " cannot be converted to function value")
+        setError(tree)
+      }
+
       // cases where we do not necessarily return trees
-      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type) =
-        issueNormalTypeError(tree, "method with dependent type "+tp+" cannot be converted to function value")
 
       //checkStarPatOK
       def StarPatternWithVarargParametersError(tree: Tree) =
@@ -898,6 +903,68 @@ trait ContextErrors {
 
       def MacroImplementationNotFoundError(expandee: Tree) =
         macroExpansionError(expandee, macroImplementationNotFoundMessage(expandee.symbol.name))
+
+      def MacroAnnotationShapeError(clazz: Symbol) = {
+        val sym = clazz.info.member(nme.macroTransform)
+        var actualSignature = sym.toString
+        if (sym.isOverloaded) actualSignature += "(...) = ..."
+        else if (sym.isMethod) {
+          if (sym.typeParams.nonEmpty) {
+            def showTparam(tparam: Symbol) =
+              tparam.typeSignature match {
+                case tpe @ TypeBounds(_, _) => s"${tparam.name}$tpe"
+                case _ => tparam.name
+              }
+            def showTparams(tparams: List[Symbol]) = "[" + (tparams map showTparam mkString ", ") + "]"
+            actualSignature += showTparams(sym.typeParams)
+          }
+          if (sym.paramss.nonEmpty) {
+            def showParam(param: Symbol) = s"${param.name}: ${param.typeSignature}"
+            def showParams(params: List[Symbol]) = {
+              val s_mods = if (params.nonEmpty && params(0).hasFlag(scala.reflect.internal.Flags.IMPLICIT)) "implicit " else ""
+              val s_params = params map showParam mkString ", "
+              "(" + s_mods + s_params + ")"
+            }
+            def showParamss(paramss: List[List[Symbol]]) = paramss map showParams mkString ""
+            actualSignature += showParamss(sym.paramss)
+          }
+          if (sym.isTermMacro) actualSignature = actualSignature.replace("macro method", "def") + " = macro ..."
+          else actualSignature = actualSignature.replace("method", "def") + " = ..."
+        }
+        issueSymbolTypeError(clazz, s"""
+                                       |macro annotation has wrong shape:
+                                       |  required: def macroTransform(annottees: Any*) = macro ...
+                                       |  found   : $actualSignature
+      """.trim.stripMargin)
+      }
+
+      def MacroAnnotationMustBeStaticError(clazz: Symbol) =
+        issueSymbolTypeError(clazz, s"macro annotation must extend scala.annotation.StaticAnnotation")
+
+      def MacroAnnotationCannotBeInheritedError(clazz: Symbol) =
+        issueSymbolTypeError(clazz, s"macro annotation cannot be @Inherited")
+
+      def MacroAnnotationCannotBeMemberError(clazz: Symbol) =
+        issueSymbolTypeError(clazz, s"macro annotation cannot be a member of another class")
+
+      def MacroAnnotationNotExpandedMessage: String = {
+        "macro annotation could not be expanded " + (
+          if (!settings.YmacroAnnotations) "(since these are experimental, you must enable them with -Ymacro-annotations)"
+          else "(you cannot use a macro annotation in the same compilation run that defines it)")
+      }
+
+      def MacroAnnotationOnlyDefinitionError(ann: Tree) =
+        issueNormalTypeError(ann, "macro annotations can only be put on definitions")
+
+      def MacroAnnotationTopLevelClassWithCompanionBadExpansion(ann: Tree) =
+        issueNormalTypeError(ann, "top-level class with companion can only expand into a block consisting in eponymous companions")
+
+      def MacroAnnotationTopLevelClassWithoutCompanionBadExpansion(ann: Tree) =
+        issueNormalTypeError(ann, "top-level class without companion can only expand either into an eponymous class or into a block consisting in eponymous companions")
+
+      def MacroAnnotationTopLevelModuleBadExpansion(ann: Tree) =
+        issueNormalTypeError(ann, "top-level object can only expand into an eponymous object")
+
     }
 
     /** This file will be the death of me. */
@@ -1041,7 +1108,7 @@ trait ContextErrors {
       }
 
       def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt)))
+        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(context, tree.symbol.tpe, pt)))
         setErrorOnLastTry(lastTry, tree)
       }
 
@@ -1308,14 +1375,16 @@ trait ContextErrors {
                sm"""|Note that implicit conversions are not applicable because they are ambiguous:
                     |${coreMsg}are possible conversion functions from $found to $req"""
           }
-          typeErrorMsg(found, req) + (
+          typeErrorMsg(context, found, req) + (
             if (explanation == "") "" else "\n" + explanation
           )
         }
 
+        // Note that treeInfo.Applied always matches, it just returns Nil when no application was found...
         def treeTypeArgs(annotatedTree: Tree): List[String] = annotatedTree match {
-          case TypeApply(_, args) => args.map(_.toString)
           case Block(_, Function(_, treeInfo.Applied(_, targs, _))) => targs.map(_.toString) // eta expansion, see neg/t9527b.scala
+          case Function(_, treeInfo.Applied(_, targs, _)) => targs.map(_.toString) // eta expansion, see neg/t9527b.scala
+          case treeInfo.Applied(_, targs, _) => targs.map(_.toString)
           case _ => Nil
         }
 

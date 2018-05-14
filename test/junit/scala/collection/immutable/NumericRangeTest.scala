@@ -9,14 +9,14 @@ import org.junit.runners.JUnit4
 class NumericRangeTest {
 
   @Test
-  def emptyIterator(): Unit = {
-    assertFalse(NumericRange(1, 0, 1).iterator().hasNext)
-    assertFalse(NumericRange(0, 10, -1).iterator().hasNext)
+  def emptyiterator: Unit = {
+    assertFalse(NumericRange(1, 0, 1).iterator.hasNext)
+    assertFalse(NumericRange(0, 10, -1).iterator.hasNext)
   }
 
   @Test
-  def nonEmptyIterator(): Unit = {
-    val it = NumericRange(0, 3, 1).iterator()
+  def nonEmptyiterator: Unit = {
+    val it = NumericRange(0, 3, 1).iterator
 
     assertTrue(it.hasNext)
     assertEquals(0, it.next())

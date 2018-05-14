@@ -18,6 +18,6 @@ class JIterableWrapperTest {
     val sIterable: Iterable[Int] = jIterable.asScala
 
     assertTrue(sIterable.isInstanceOf[Wrappers.JIterableWrapper[_]])
-    assertTrue(sIterable.iterator().sameElements(Iterable(1, 2, 3)))
+    assertTrue(sIterable.iterator.sameElements(Iterable(1, 2, 3)))
   }
 }

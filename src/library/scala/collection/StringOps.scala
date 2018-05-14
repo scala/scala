@@ -37,7 +37,7 @@ final class StringOps(private val s: String)
 
   def iterableFactory = immutable.IndexedSeq
 
-  protected def newSpecificBuilder() = new mutable.StringBuilder
+  protected def newSpecificBuilder = new mutable.StringBuilder
 
   def length = s.length
 
@@ -96,7 +96,7 @@ final class StringOps(private val s: String)
     */
   def concat(suffix: IterableOnce[Char]): String = {
     val sb = new StringBuilder(s)
-    for (ch <- suffix.iterator()) sb.append(ch)
+    for (ch <- suffix.iterator) sb.append(ch)
     sb.toString
   }
 
@@ -493,7 +493,7 @@ final class StringOps(private val s: String)
     java.lang.String.format(l, s, args map unwrapArg: _*)
 }
 
-case class StringView(s: String) extends AbstractIndexedView[Char] {
+case class StringView(s: String) extends AbstractIndexedSeqView[Char] {
   def length = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)

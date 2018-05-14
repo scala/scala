@@ -98,7 +98,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   @`inline` final def top: A = head
 
   override def clone(): Stack[A] = {
-    val bf = newSpecificBuilder()
+    val bf = newSpecificBuilder
     bf ++= this
     bf.result()
   }
@@ -119,6 +119,6 @@ object Stack extends StrictOptimizedSeqFactory[Stack] {
 
   def empty[A]: Stack[A] = new Stack
 
-  def newBuilder[A](): Builder[A, Stack[A]] = new GrowableBuilder[A, Stack[A]](empty)
+  def newBuilder[A]: Builder[A, Stack[A]] = new GrowableBuilder[A, Stack[A]](empty)
 
 }

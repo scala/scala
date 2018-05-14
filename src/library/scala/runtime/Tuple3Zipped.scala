@@ -25,7 +25,7 @@ trait ZippedIterable3[+El1, +El2, +El3] extends Any {
 object ZippedIterable3 {
   implicit def zippedIterable3ToIterable[El1, El2, El3](zz: ZippedIterable3[El1, El2, El3]): Iterable[(El1, El2, El3)] = {
     new scala.collection.AbstractIterable[(El1, El2, El3)] {
-      def iterator(): Iterator[(El1, El2, El3)] = zz.iterator
+      def iterator: Iterator[(El1, El2, El3)] = zz.iterator
     }
   }
 }
@@ -110,7 +110,7 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
   def forall(p: (El1, El2, El3) => Boolean): Boolean =
     !exists((x, y, z) => !p(x, y, z))
 
-  def iterator(): Iterator[(El1, El2, El3)] = coll1.iterator().zip(coll2.iterator()).zip(coll3.iterator()).map { case ((a, b), c) => (a, b, c)}
+  def iterator: Iterator[(El1, El2, El3)] = coll1.iterator.zip(coll2.iterator).zip(coll3.iterator).map { case ((a, b), c) => (a, b, c)}
 
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
     val elems2 = coll2.iterator

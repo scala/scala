@@ -60,7 +60,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
     override def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = {
         var result: CC[K, V2] = coll
-        val it = xs.iterator()
+        val it = xs.iterator
         while (it.hasNext) result = result + it.next()
         result
     }
@@ -102,7 +102,7 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
     override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
-    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
-      SortedMap.newBuilder().mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
+    override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
+      SortedMap.newBuilder.mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

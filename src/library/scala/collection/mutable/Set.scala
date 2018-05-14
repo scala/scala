@@ -77,7 +77,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     toRemove ++= this
 
     for (elem <- this){
-      for (mapped <- f(elem).iterator())
+      for (mapped <- f(elem).iterator)
         if(contains(mapped)) {
           toRemove -= mapped 
         } else  {

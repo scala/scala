@@ -24,7 +24,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): WrappedString =
     WrappedString.fromSpecific(coll)
-  override protected def newSpecificBuilder(): Builder[Char, WrappedString] = WrappedString.newBuilder()
+  override protected def newSpecificBuilder: Builder[Char, WrappedString] = WrappedString.newBuilder
 
   override def slice(from: Int, until: Int): WrappedString = {
     val start = if (from < 0) 0 else from
@@ -45,13 +45,13 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   */
 object WrappedString extends SpecificIterableFactory[Char, WrappedString] {
   def fromSpecific(it: IterableOnce[Char]): WrappedString = {
-    val b = newBuilder()
+    val b = newBuilder
     val s = it.knownSize
     if(s >= 0) b.sizeHint(s)
     b ++= it
     b.result()
   }
   val empty: WrappedString = new WrappedString("")
-  def newBuilder(): Builder[Char, WrappedString] =
+  def newBuilder: Builder[Char, WrappedString] =
     new StringBuilder().mapResult(x => new WrappedString(x))
 }

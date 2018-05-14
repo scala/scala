@@ -31,38 +31,38 @@ object BuildFrom extends BuildFromLowPriority1 {
   /** Build the source collection type from a MapOps */
   implicit def buildFromMapOps[CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _], K0, V0, K, V]: BuildFrom[CC[K0, V0], (K, V), CC[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
     //TODO: Reuse a prototype instance
-    def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = from.mapFactory.newBuilder[K, V]()
+    def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = from.mapFactory.newBuilder[K, V]
     def fromSpecificIterable(from: CC[K0, V0])(it: Iterable[(K, V)]): CC[K, V] = from.mapFactory.from(it)
   }
 
   /** Build the source collection type from a SortedMapOps */
   implicit def buildFromSortedMapOps[CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], K0, V0, K : Ordering, V]: BuildFrom[CC[K0, V0], (K, V), CC[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
-    def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = from.sortedMapFactory.newBuilder[K, V]()
+    def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = from.sortedMapFactory.newBuilder[K, V]
     def fromSpecificIterable(from: CC[K0, V0])(it: Iterable[(K, V)]): CC[K, V] = from.sortedMapFactory.from(it)
   }
 
   implicit def buildFromBitSet[C <: BitSet with BitSetOps[C]]: BuildFrom[C, Int, C] =
     new BuildFrom[C, Int, C] {
       def fromSpecificIterable(from: C)(it: Iterable[Int]): C = from.bitSetFactory.fromSpecific(it)
-      def newBuilder(from: C): Builder[Int, C] = from.bitSetFactory.newBuilder()
+      def newBuilder(from: C): Builder[Int, C] = from.bitSetFactory.newBuilder
     }
 
   implicit val buildFromString: BuildFrom[String, Char, String] =
     new BuildFrom[String, Char, String] {
       def fromSpecificIterable(from: String)(it: Iterable[Char]): String = Factory.stringFactory.fromSpecific(it)
-      def newBuilder(from: String): Builder[Char, String] = Factory.stringFactory.newBuilder()
+      def newBuilder(from: String): Builder[Char, String] = Factory.stringFactory.newBuilder
     }
 
   implicit def buildFromArray[A : ClassTag]: BuildFrom[Array[_], A, Array[A]] =
     new BuildFrom[Array[_], A, Array[A]] {
       def fromSpecificIterable(from: Array[_])(it: Iterable[A]): Array[A] = Factory.arrayFactory[A].fromSpecific(it)
-      def newBuilder(from: Array[_]): Builder[A, Array[A]] = Factory.arrayFactory[A].newBuilder()
+      def newBuilder(from: Array[_]): Builder[A, Array[A]] = Factory.arrayFactory[A].newBuilder
     }
 
   implicit def buildFromView[A, B]: BuildFrom[View[A], B, View[B]] =
     new BuildFrom[View[A], B, View[B]] {
       def fromSpecificIterable(from: View[A])(it: Iterable[B]): View[B] = View.from(it)
-      def newBuilder(from: View[A]): Builder[B, View[B]] = View.newBuilder()
+      def newBuilder(from: View[A]): Builder[B, View[B]] = View.newBuilder
     }
 
 }
@@ -71,7 +71,7 @@ trait BuildFromLowPriority1 extends BuildFromLowPriority2 {
 
   /** Build the source collection type from an Iterable with SortedOps */
   implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
-    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]()
+    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]
     def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.sortedIterableFactory.from(it)
   }
 
@@ -86,12 +86,12 @@ trait BuildFromLowPriority2 {
   /** Build the source collection type from an IterableOps */
   implicit def buildFromIterableOps[CC[X] <: Iterable[X] with IterableOps[X, CC, _], A0, A]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
     //TODO: Reuse a prototype instance
-    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.iterableFactory.newBuilder[A]()
+    def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.iterableFactory.newBuilder[A]
     def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.iterableFactory.from(it)
   }
 
   implicit def buildFromIterator[A]: BuildFrom[Iterator[_], A, Iterator[A]] = new BuildFrom[Iterator[_], A, Iterator[A]] {
-    def newBuilder(from: Iterator[_]): mutable.Builder[A, Iterator[A]] = Iterator.newBuilder()
+    def newBuilder(from: Iterator[_]): mutable.Builder[A, Iterator[A]] = Iterator.newBuilder
     def fromSpecificIterable(from: Iterator[_])(it: Iterable[A]): Iterator[A] = Iterator.from(it)
   }
 }

@@ -442,7 +442,7 @@ private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Eq
     val updmap = entries.filterNot(entry => equiv.equiv(entry._1, k))
     if (updmap.size > 1) new LNode(updmap, equiv)
     else {
-      val (k, v) = updmap.iterator().next()
+      val (k, v) = updmap.iterator.next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }
@@ -668,7 +668,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     out.writeObject(hashingobj)
     out.writeObject(equalityobj)
 
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
       out.writeObject(k)
@@ -932,8 +932,8 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     insertifhc(k, hc, v, INode.KEY_PRESENT)
   }
 
-  def iterator(): Iterator[(K, V)] =
-    if (nonReadOnly) readOnlySnapshot().iterator()
+  def iterator: Iterator[(K, V)] =
+    if (nonReadOnly) readOnlySnapshot().iterator
     else new TrieMapIterator(0, this)
 
   ////////////////////////////////////////////////////////////////////////////
@@ -983,7 +983,7 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def from[K, V](it: IterableOnce[(K, V)]) = new TrieMap[K, V]() ++= it
 
-  def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
@@ -1026,7 +1026,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     case tn: TNode[K, V] =>
       current = tn
     case ln: LNode[K, V] =>
-      subiter = ln.entries.iterator()
+      subiter = ln.entries.iterator
       checkSubiter()
     case null =>
       current = null
@@ -1076,8 +1076,8 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     if (this.subiter == null) it.subiter = null
     else {
       val lst = this.subiter.to(immutable.List)
-      this.subiter = lst.iterator()
-      it.subiter = lst.iterator()
+      this.subiter = lst.iterator
+      it.subiter = lst.iterator
     }
   }
 
@@ -1128,22 +1128,3 @@ private[concurrent] object RestartException extends ControlThrowable
 /** Only used for ctrie serialization. */
 @SerialVersionUID(3L)
 private[concurrent] case object TrieMapSerializationEnd
-
-
-private[concurrent] object Debug {
-
-  lazy val logbuffer = new java.util.concurrent.ConcurrentLinkedQueue[AnyRef]
-
-  def log(s: AnyRef) = logbuffer.add(s)
-
-  def flush(): Unit = {
-    val it = logbuffer.iterator()
-    while (it.hasNext) Console.out.println(it.next().toString)
-    logbuffer.clear()
-  }
-
-  def clear(): Unit = {
-    logbuffer.clear()
-  }
-
-}

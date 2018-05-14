@@ -25,7 +25,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   protected def coll: this.type = this
 
   protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
-  protected def newSpecificBuilder(): Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
+  protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -36,6 +36,9 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
     * @return The factory of this collection.
     */
   def iterableFactory: IterableFactory[IterableCC] = Iterable
+
+  @deprecated("Iterable.seq always returns the iterable itself", "2.13.0")
+  def seq: this.type = this
 }
 
 /** Base trait for Iterable operations
@@ -129,14 +132,14 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *       be unsound. However, as long as the returned builder is only fed
     *       with `A` values taken from `this` instance, it is safe.
     */
-  protected def newSpecificBuilder(): Builder[A @uncheckedVariance, C]
+  protected def newSpecificBuilder: Builder[A @uncheckedVariance, C]
 
   /** Selects the first element of this $coll.
     *  $orderDependent
     *  @return  the first element of this $coll.
     *  @throws NoSuchElementException if the $coll is empty.
     */
-  def head: A = iterator().next()
+  def head: A = iterator.next()
 
   /** Optionally selects the first element.
     *  $orderDependent
@@ -144,7 +147,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *           `None` if it is empty.
     */
   def headOption: Option[A] = {
-    val it = iterator()
+    val it = iterator
     if(it.hasNext) Some(it.next()) else None
   }
 
@@ -154,7 +157,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * @throws NoSuchElementException If the $coll is empty.
     */
   def last: A = {
-    val it = iterator()
+    val it = iterator
     var lst = it.next()
     while (it.hasNext) lst = it.next()
     lst
@@ -171,7 +174,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @`inline` final def hasDefiniteSize = knownSize >= 0
 
   /** A view over the elements of this collection. */
-  def view: View[A] = View.fromIteratorProvider(() => iterator())
+  def view: View[A] = View.fromIteratorProvider(() => iterator)
 
   /** A view over a slice of the elements of this collection. */
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
@@ -307,8 +310,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
 
     val headSize = asIterable(head).size
-    val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B]())
-    for (xs <- iterator()) {
+    val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B])
+    for (xs <- iterator) {
       var i = 0
       for (x <- asIterable(xs)) {
         if (i >= headSize) fail
@@ -368,10 +371,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /** A collection containing the last `n` elements of this collection. */
   def takeRight(n: Int): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     b.sizeHintBounded(n, toIterable)
-    val lead = iterator() drop n
-    val it = iterator()
+    val lead = iterator drop n
+    val it = iterator
     while (lead.hasNext) {
       lead.next()
       it.next()
@@ -390,10 +393,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  linear, immutable collections this should avoid making a copy.
     */
   def dropRight(n: Int): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     if (n >= 0) b.sizeHint(toIterable, delta = -n)
-    val lead = iterator() drop n
-    val it = iterator()
+    val lead = iterator drop n
+    val it = iterator
     while (lead.hasNext) {
       b += it.next()
       lead.next()
@@ -411,7 +414,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
    *          last will be less than size `size` if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[C] =
-    iterator().grouped(size).map(fromSpecificIterable)
+    iterator.grouped(size).map(fromSpecificIterable)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in `grouped`.)
@@ -437,7 +440,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *          if there are fewer than `size` elements remaining to be grouped.
     */
   def sliding(size: Int, step: Int): Iterator[C] =
-    iterator().sliding(size, step).map(fromSpecificIterable)
+    iterator.sliding(size, step).map(fromSpecificIterable)
 
   /** The rest of the collection without its first element. */
   def tail: C = {
@@ -470,15 +473,15 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
     val m = mutable.Map.empty[K, Builder[A, C]]
-    val it = iterator()
+    val it = iterator
     while (it.hasNext) {
       val elem = it.next()
       val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newSpecificBuilder())
+      val bldr = m.getOrElseUpdate(key, newSpecificBuilder)
       bldr += elem
     }
     var result = immutable.HashMap.empty[K, C]
-    val mapIt = m.iterator()
+    val mapIt = m.iterator
     while (mapIt.hasNext) {
       val (k, v) = mapIt.next()
       result = result.updated(k, v.result())
@@ -508,7 +511,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     val m = mutable.Map.empty[K, Builder[B, CC[B]]]
     for (elem <- this) {
       val k = key(elem)
-      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B]())
+      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B])
       bldr += f(elem)
     }
     var result = immutable.Map.empty[K, CC[B]]

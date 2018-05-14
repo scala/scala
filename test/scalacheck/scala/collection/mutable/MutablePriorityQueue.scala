@@ -20,7 +20,7 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   }
 
   property("newBuilder (in companion)") = forAll { list: List[E] =>
-    val builder = PriorityQueue.newBuilder[E]()
+    val builder = PriorityQueue.newBuilder[E]
     for (x <- list) builder += x
     val pq = builder.result()
     checkInvariant(pq) &&

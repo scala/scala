@@ -2,7 +2,7 @@ import scala.collection.{mutable, StrictOptimizedIterableOps}
 object Test extends App {
   class Test(n: Int) extends Iterable[Int] {
     private var i = 0
-    def iterator() = new Iterator[Int] {
+    def iterator = new Iterator[Int] {
       def hasNext = i < n
       def next =
         if (hasNext) { val v = i; i += 1; v }

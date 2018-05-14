@@ -88,7 +88,7 @@ private[hashing] class MurmurHash3 {
   final def unorderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.iterator() foreach { x =>
+    xs.iterator foreach { x =>
       val h = x.##
       a += h
       b ^= h
@@ -106,7 +106,7 @@ private[hashing] class MurmurHash3 {
   final def orderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var n = 0
     var h = seed
-    xs.iterator() foreach { x =>
+    xs.iterator foreach { x =>
       h = mix(h, x.##)
       n += 1
     }
@@ -212,8 +212,8 @@ object MurmurHash3 extends MurmurHash3 {
   def stringHash(x: String): Int                   = stringHash(x, stringSeed)
   def unorderedHash(xs: IterableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
 
-  private[scala] def wrappedArrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
-  private[scala] def wrappedBytesHash(data: Array[Byte]): Int            = bytesHash(data, seqSeed)
+  private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
+  private[scala] def byteArraySeqHash(data: Array[Byte]): Int        = bytesHash(data, seqSeed)
 
   /** To offer some potential for optimization.
    */

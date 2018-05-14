@@ -251,7 +251,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import infer._
 
     private var namerCache: Namer = null
-    def namer = {
+    def namer: Namer = {
       if ((namerCache eq null) || namerCache.context != context)
         namerCache = newNamer(context)
       namerCache
@@ -346,24 +346,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         tpt setType ErrorType
         defn.symbol.setInfo(ErrorType)
       }
-    }
-
-    def checkParamsConvertible(tree: Tree, tpe0: Type): Unit = {
-      def checkParamsConvertible0(tpe: Type) =
-        tpe match {
-          case MethodType(formals, restpe) =>
-            /*
-            if (formals.exists(_.typeSymbol == ByNameParamClass) && formals.length != 1)
-              error(pos, "methods with `=>`-parameter can be converted to function values only if they take no other parameters")
-            if (formals exists (isRepeatedParamType(_)))
-              error(pos, "methods with `*`-parameters cannot be converted to function values");
-            */
-            if (tpe.isDependentMethodType)
-              DependentMethodTpeConversionToFunctionError(tree, tpe)
-            checkParamsConvertible(tree, restpe)
-          case _ =>
-        }
-      checkParamsConvertible0(tpe0)
     }
 
     /** Check that type of given tree does not contain local or private
@@ -803,10 +785,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *      unless followed by explicit type application.
      *  (4) Do the following to unapplied methods used as values:
      *  (4.1) If the method has only implicit parameters pass implicit arguments
-     *  (4.2) otherwise, if `pt` is a function type and method is not a constructor,
-     *        convert to function by eta-expansion,
-     *  (4.3) otherwise, if the method is nullary with a result type compatible to `pt`
+     *  (4.2) otherwise, if the method is nullary with a result type compatible to `pt`
      *        and it is not a constructor, apply it to ()
+     *  (4.3) otherwise, if `pt` is a function type and method is not a constructor,
+     *        convert to function by eta-expansion,
      *  otherwise issue an error
      *  (5) Convert constructors in a pattern as follows:
      *  (5.1) If constructor refers to a case class factory, set tree's type to the unique
@@ -900,62 +882,42 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def instantiateToMethodType(mt: MethodType): Tree = {
         val meth = tree match {
           // a partial named application is a block (see comment in EtaExpansion)
+          //
+          // TODO: document why we need to peel off one layer to begin with, and, if we do, why we don't need to recurse??
+          // (and why we don't need to look at the stats to make sure it's the block created by eta-expansion)
+          // I don't see how we call etaExpand on a constructor..
+          //
+          // I guess we don't need to recurse because the outer block and a nested block will refer to the same method
+          // after eta-expansion (if that's what generated these blocks), so we can just look at the outer one.
+          //
+          // How about user-written blocks? Can they ever have a MethodType?
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
 
         def cantAdapt =
-          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
-          else UnstableTreeError(tree)
-
-        def emptyApplication: Tree = adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth) else UnstableTreeError(tree)
 
         // constructors do not eta-expand
         if (meth.isConstructor) cantAdapt
-        // (4.2) eta-expand method value when function or sam type is expected
-        else if (isFunctionType(pt) || (!mt.params.isEmpty && samOf(pt).exists)) {
-          // scala/bug#9536 `!mt.params.isEmpty &&`: for backwards compatibility with 2.11,
-          // we don't adapt a zero-arg method value to a SAM
-          // In 2.13, we won't do any eta-expansion for zero-arg methods, but we should deprecate first
-
-          debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
-          checkParamsConvertible(tree, tree.tpe)
-
-          // method values (`m _`) are always eta-expanded (this syntax will disappear once we eta-expand regardless of expected type, at least for arity > 0)
-          // a "naked" method reference (`m`) may or not be eta expanded -- currently, this depends on the expected type and the arity (the conditions for this are in flux)
-          def isMethodValue = tree.getAndRemoveAttachment[MethodValueAttachment.type].isDefined
-          val nakedZeroAryMethod = mt.params.isEmpty && !isMethodValue
-
-          // scala/bug#7187 eta-expansion of zero-arg method value is deprecated
-          // 2.13 will switch order of (4.3) and (4.2), always inserting () before attempting eta expansion
-          // (This effectively disables implicit eta-expansion of 0-ary methods.)
-          // See mind-bending stuff like scala/bug#9178
-          if (nakedZeroAryMethod && settings.isScala213) emptyApplication
-          else {
-            // eventually, we will deprecate insertion of `()` (except for java-defined methods) -- this is already the case in dotty
-            // Once that's done, we can more aggressively eta-expand method references, even if they are 0-arity
-            // 2.13 will already eta-expand non-zero-arity methods regardless of expected type (whereas 2.12 requires a function-equivalent type)
-            if (nakedZeroAryMethod && settings.isScala212) {
-              currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
-                                                       s"Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write ${Function(Nil, Apply(tree, Nil))}.", "2.12.0")
-            }
-
-            val tree0 = etaExpand(context.unit, tree, this)
-
-            // #2624: need to infer type arguments for eta expansion of a polymorphic method
-            // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
-            // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
-            // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
-            // (note that (3) does not call typed to do the polymorphic type instantiation --
-            //  it is called after the tree has been typed with a polymorphic expected result type)
-            if (hasUndets)
-              instantiate(typed(tree0, mode), mode, pt)
-            else
-              typed(tree0, mode, pt)
-          }
+        // (4.2) apply to empty argument list
+        else if (mt.params.isEmpty && (settings.isScala213 || !isFunctionType(pt))) {
+          // Starting with 2.13, always insert `()`, regardless of expected type.
+          // On older versions, expected type must not be a FunctionN (can be a SAM)
+          //
+          // scala/bug#7187 deprecates eta-expansion of zero-arg method values (since 2.12; was never introduced for SAM types: scala/bug#9536).
+          // The next step is to also deprecate insertion of `()` (except for java-defined methods), as dotty already requires explicitly writing them.
+          // Once explicit application to () is required, we can more aggressively eta-expand method references, even if they are 0-arity
+          adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
         }
-        // (4.3) apply to empty argument list
-        else if (mt.params.isEmpty) emptyApplication
+        // (4.3) eta-expand method value when function or sam type is expected (for experimentation, always eta-expand under 2.14 source level)
+        else if (isFunctionType(pt) || samOf(pt).exists || settings.isScala214) { // TODO: decide on `settings.isScala214`
+          if (settings.isScala212 && mt.params.isEmpty) // implies isFunctionType(pt)
+             currentRun.reporting.deprecationWarning(tree.pos, NoSymbol, "Eta-expansion of zero-argument methods is deprecated. "+
+                    s"To avoid this warning, write ${Function(Nil, Apply(tree, Nil))}.", "2.12.0")
+
+          typedEtaExpansion(tree, mode, pt)
+        }
         else cantAdapt
       }
 
@@ -1645,7 +1607,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
 
           if (superCall1 == cunit) EmptyTree
-          else cbody2 match {
+          else cbody2 match { // ???
             case Block(_, expr) => expr
             case tree => tree
           }
@@ -1968,7 +1930,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope, clazz)
-      val body1 = pluginsEnterStats(this, templ.body)
+      val body1 = pluginsEnterStats(this, namer.expandMacroAnnotations(templ.body))
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
       validateParentClasses(parents1, selfType)
@@ -2422,7 +2384,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val syntheticPrivates = new ListBuffer[Symbol]
       try {
         namer.enterSyms(block0.stats)
-        val block = treeCopy.Block(block0, pluginsEnterStats(this, block0.stats), block0.expr)
+        val block = treeCopy.Block(block0, pluginsEnterStats(this, namer.expandMacroAnnotations(block0.stats)), block0.expr)
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
@@ -3003,7 +2965,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // This tree is the result from one of:
         //   - manual eta-expansion with named arguments (x => f(x));
         //   - wildcard-style eta expansion (`m(_, _,)`);
-        //   - instantiateToMethodType adapting a tree of method type to a function type using etaExpand.
+        //   - (I don't think it can result from etaExpand, because we know the argument types there.)
         //
         // Note that method values are a separate thing (`m _`): they have the idiosyncratic shape
         // of `Typed(expr, Function(Nil, EmptyTree))`
@@ -3079,6 +3041,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               treeCopy.Function(fun, vparamsTyped, body1) setType funtpe
           }
         }
+      }
+    }
+
+    // #2624: need to infer type arguments for eta expansion of a polymorphic method
+    // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
+    // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
+    // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
+    // (note that (3) does not call typed to do the polymorphic type instantiation --
+    //  it is called after the tree has been typed with a polymorphic expected result type)
+    def typedEtaExpansion(tree: Tree, mode: Mode, pt: Type): Tree = {
+      debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
+
+      if (tree.tpe.isDependentMethodType) DependentMethodTpeConversionToFunctionError(tree, tree.tpe) // TODO: support this
+      else {
+        val expansion = etaExpand(context.unit, tree, this)
+        if (context.undetparams.isEmpty) typed(expansion, mode, pt)
+        else instantiate(typed(expansion, mode), mode, pt)
       }
     }
 
@@ -3943,6 +3922,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+    def typedMacroAnnotation(cdef: ClassDef) = {
+      val clazz = cdef.symbol
+      if (!isPastTyper) {
+        if (clazz != null && (clazz isNonBottomSubClass AnnotationClass)) {
+          val macroTransform = clazz.info.member(nme.macroTransform)
+          if (macroTransform != NoSymbol) {
+            clazz.setFlag(MACRO)
+            if (clazz.getAnnotation(CompileTimeOnlyAttr).isEmpty) clazz.addAnnotation(AnnotationInfo(CompileTimeOnlyAttr.tpe, List(Literal(Constant(MacroAnnotationNotExpandedMessage)) setType StringClass.tpe), Nil))
+            def flavorOk = macroTransform.isMacro
+            def paramssOk = mmap(macroTransform.paramss)(p => (p.name, p.info)) == List(List((nme.annottees, scalaRepeatedType(AnyTpe))))
+            def tparamsOk = macroTransform.typeParams.isEmpty
+            def everythingOk = flavorOk && paramssOk && tparamsOk
+            if (!everythingOk) MacroAnnotationShapeError(clazz)
+            if (!(clazz isNonBottomSubClass StaticAnnotationClass)) MacroAnnotationMustBeStaticError(clazz)
+            // TODO: revisit the decision about @Inherited
+            if (clazz.getAnnotation(InheritedAttr).nonEmpty) MacroAnnotationCannotBeInheritedError(clazz)
+            if (!clazz.isStatic) MacroAnnotationCannotBeMemberError(clazz)
+          }
+        }
+      }
+      cdef
+    }
+
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
     def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
@@ -4590,14 +4592,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           treeCopy.New(tree, tpt1).setType(tp)
       }
 
-      def functionTypeWildcard(arity: Int): Type =
-        functionType(List.fill(arity)(WildcardType), WildcardType)
-
-      def checkArity(tree: Tree)(tp: Type): tp.type = tp match {
-        case NoType => MaxFunctionArityError(tree); tp
-        case _ => tp
-      }
-
 
       /** Eta expand an expression like `m _`, where `m` denotes a method or a by-name argument
         *
@@ -4610,9 +4604,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         */
       def typedEta(methodValue: Tree): Tree = methodValue.tpe match {
         case tp@(MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
-          val formals = tp.params
-          if (isFunctionType(pt) || samMatchesFunctionBasedOnArity(samOf(pt), formals)) methodValue
-          else adapt(methodValue, mode, checkArity(methodValue)(functionTypeWildcard(formals.length)))
+          val etaPt =
+            if (pt ne WildcardType) pt
+            else functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
+
+          // We know syntactically methodValue can't refer to a constructor because you can't write `this _` for that (right???)
+          typedEtaExpansion(methodValue, mode, etaPt)
 
         case TypeRef(_, ByNameParamClass, _) |  NullaryMethodType(_) => // (2)
           val pos = methodValue.pos
@@ -5305,7 +5302,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
 
       def typedPackageDef(pdef0: PackageDef) = {
-        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, pdef0.stats))
+        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, namer.expandMacroAnnotations(pdef0.stats)))
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         if(pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule ))
@@ -5397,14 +5394,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // that typecheck must not trigger macro expansions, so we explicitly prohibit them
           // however we cannot do `context.withMacrosDisabled`
           // because `expr` might contain nested macro calls (see scala/bug#6673).
-          // Otherwise, eta-expand, passing the original tree, which is required in adapt
-          // for trees of the form `f() _`: if the method type takes implicits, the fallback
-          // strategy will use `f()`; else if not, original is used to distinguish an explicit
-          // method value from eta-expansion driven by an expected function type.
+          // Otherwise, (check for dead code, and) eta-expand.
           case MethodValue(expr) =>
-            typed1(suppressMacroExpansion(expr), mode, pt) match {
+            // Need to type in FUNmode so that we accept a method type (which also means we can't use our pt),
+            // this does mean no overloading is performed. The main reason to ignore pt and move to FUNmode is that
+            // the `m` in `m _` could involve an implicit conversion, which will go through adapt after converting,
+            // which will run afoul of the restriction that a method-typed tree is only allowed when a function type is expected.
+            // We peeled off the `_` marker for the typed1 call, so we don't know that the user has requested eta-expansion.
+            // See scala/bug#8299.
+            val funTyped = typed1(suppressMacroExpansion(expr), mode | FUNmode, WildcardType)
+            if (funTyped.tpe.isInstanceOf[OverloadedType]) inferExprAlternative(funTyped, pt)
+            funTyped match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
-              case methodValue                                       => typedEta(checkDead(methodValue).updateAttachment(MethodValueAttachment))
+              case methodValue                                       => typedEta(checkDead(methodValue))
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first

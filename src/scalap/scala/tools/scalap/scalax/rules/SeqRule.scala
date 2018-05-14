@@ -15,7 +15,7 @@ package scalax
 package rules
 
 import language.postfixOps
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 
 /**
  * A workaround for the difficulties of dealing with
@@ -88,7 +88,7 @@ class SeqRule[S, +A, +X](rule: Rule[S, S, A, X]) {
     val result = new Array[AnyRef](num)
     // more compact using HoF but written this way so it's tail-recursive
     def rep(i: Int, in: S): Result[S, Seq[A], X] = {
-      if (i == num) Success(in, ImmutableArray.unsafeWrapArray(result).asInstanceOf[ImmutableArray[A]])
+      if (i == num) Success(in, ArraySeq.unsafeWrapArray(result).asInstanceOf[ArraySeq[A]])
       else rule(in) match {
        case Success(out, a) => {
          result(i) = a.asInstanceOf[AnyRef]

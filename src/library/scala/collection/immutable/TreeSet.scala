@@ -76,7 +76,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   private[this] def countWhile(p: A => Boolean): Int = {
     var result = 0
-    val it = iterator()
+    val it = iterator
     while (it.hasNext && p(it.next())) result += 1
     result
   }
@@ -98,7 +98,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     if (v eq null) Option.empty else Some(v.key)
   }
 
-  def iterator(): Iterator[A] = RB.keysIterator(tree)
+  def iterator: Iterator[A] = RB.keysIterator(tree)
 
   def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
@@ -143,10 +143,10 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
   def from[E: Ordering](it: scala.collection.IterableOnce[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => (newBuilder[E]() ++= it).result()
+      case _ => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A : Ordering](): Builder[A, TreeSet[A]] =
+  def newBuilder[A : Ordering]: Builder[A, TreeSet[A]] =
     new ImmutableBuilder[A, TreeSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }

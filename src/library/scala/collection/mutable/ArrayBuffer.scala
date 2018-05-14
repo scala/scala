@@ -131,7 +131,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
             Array.copy(elems.array, 0, array, idx, elemsLength)
           case _ =>
             var i = 0
-            val it = elems.iterator()
+            val it = elems.iterator
             while (i < elemsLength) {
               this(idx + i) = it.next()
               i += 1
@@ -184,13 +184,13 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
       val array = new Array[AnyRef](coll.knownSize)
-      val it = coll.iterator()
+      val it = coll.iterator
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
     }
     else new ArrayBuffer[B] ++= coll
 
-  def newBuilder[A](): Builder[A, ArrayBuffer[A]] =
+  def newBuilder[A]: Builder[A, ArrayBuffer[A]] =
     new GrowableBuilder[A, ArrayBuffer[A]](empty) {
       override def sizeHint(size: Int): Unit = elems.ensureSize(size)
     }
@@ -198,7 +198,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 
-class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedView[A] {
+class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
   @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
   override def className = "ArrayBufferView"

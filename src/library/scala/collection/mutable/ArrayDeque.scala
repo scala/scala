@@ -87,7 +87,7 @@ class ArrayDeque[A] protected (
   }
 
   override def prependAll(elems: IterableOnce[A]): this.type = {
-    val it = elems.iterator()
+    val it = elems.iterator
     if (it.nonEmpty) {
       val n = length
       // The following code resizes the current collection atmost once and traverses elems atmost twice
@@ -122,8 +122,8 @@ class ArrayDeque[A] protected (
     elems.knownSize match {
       case srcLength if srcLength > 0 =>
         ensureSize(srcLength + length)
-        elems.iterator().foreach(appendAssumingCapacity)
-      case _ => elems.iterator().foreach(+=)
+        elems.iterator.foreach(appendAssumingCapacity)
+      case _ => elems.iterator.foreach(+=)
     }
     this
   }
@@ -174,10 +174,10 @@ class ArrayDeque[A] protected (
       // Get both an iterator and the length of the source (by copying the source to an IndexedSeq if needed)
       val (it, srcLength) = {
         val _srcLength = elems.knownSize
-        if (_srcLength >= 0) (elems.iterator(), _srcLength)
+        if (_srcLength >= 0) (elems.iterator, _srcLength)
         else {
           val indexed = IndexedSeq.from(elems)
-          (indexed.iterator(), indexed.size)
+          (indexed.iterator, indexed.size)
         }
       }
       if (it.nonEmpty) {
@@ -321,7 +321,7 @@ class ArrayDeque[A] protected (
     * @return
     */
   def removeAll(): scala.collection.immutable.Seq[A] = {
-    val elems = scala.collection.immutable.Seq.newBuilder[A]()
+    val elems = scala.collection.immutable.Seq.newBuilder[A]
     elems.sizeHint(length)
     while(nonEmpty) {
       elems += removeHeadAssumingNonEmpty()
@@ -334,7 +334,7 @@ class ArrayDeque[A] protected (
     * @return
     */
   def removeAllReverse(): scala.collection.immutable.Seq[A] = {
-    val elems = scala.collection.immutable.Seq.newBuilder[A]()
+    val elems = scala.collection.immutable.Seq.newBuilder[A]
     elems.sizeHint(length)
     while(nonEmpty) {
       elems += removeLastAssumingNonEmpty()
@@ -349,7 +349,7 @@ class ArrayDeque[A] protected (
     *  @return
     */
   def removeHeadWhile(f: A => Boolean): scala.collection.immutable.Seq[A] = {
-    val elems = scala.collection.immutable.Seq.newBuilder[A]()
+    val elems = scala.collection.immutable.Seq.newBuilder[A]
     while(headOption.exists(f)) {
       elems += removeHeadAssumingNonEmpty()
     }
@@ -363,7 +363,7 @@ class ArrayDeque[A] protected (
     *  @return
     */
   def removeLastWhile(f: A => Boolean): scala.collection.immutable.Seq[A] = {
-    val elems = scala.collection.immutable.Seq.newBuilder[A]()
+    val elems = scala.collection.immutable.Seq.newBuilder[A]
     while(lastOption.exists(f)) {
       elems += removeLastAssumingNonEmpty()
     }
@@ -509,7 +509,7 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      val it = coll.iterator()
+      val it = coll.iterator
       var i = 0
       while (it.hasNext) {
         array(i) = it.next().asInstanceOf[AnyRef]
@@ -519,7 +519,7 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     } else empty[B] ++= coll
   }
 
-  def newBuilder[A](): Builder[A, ArrayDeque[A]] =
+  def newBuilder[A]: Builder[A, ArrayDeque[A]] =
     new GrowableBuilder[A, ArrayDeque[A]](empty) {
       override def sizeHint(size: Int): Unit = {
         elems.ensureSize(size)

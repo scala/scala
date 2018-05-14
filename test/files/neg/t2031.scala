@@ -5,5 +5,5 @@ object Test extends App {
 
  //res0.map(x => x)(TreeSet.newBuilder[Int])
 
- res0.map(x => x)(TreeSet.newBuilder())
+ res0.map(x => x)(TreeSet.newBuilder)
 }

@@ -78,7 +78,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def hasNext: Boolean
   @throws[NoSuchElementException]
   def next(): A
-  def iterator() = this
+  def iterator = this
 
   /** Wraps the value of `next()` in an option.
     *
@@ -191,7 +191,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       buf
     }
 
-    private def padding(x: Int) = immutable.ImmutableArray.untagged.fill(x)(pad.get())
+    private def padding(x: Int) = immutable.ArraySeq.untagged.fill(x)(pad.get())
     private def gap = (step - size) max 0
 
     private def go(count: Int) = {
@@ -250,7 +250,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       if (!filled)
         throw new NoSuchElementException("next on empty iterator")
       filled = false
-      immutable.ImmutableArray.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ImmutableArray[B]]
+      immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
     }
   }
 
@@ -499,7 +499,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private var myCurrent: Iterator[B] = Iterator.empty
     private def current = {
       while (!myCurrent.hasNext && self.hasNext)
-        myCurrent = f(self.next()).iterator()
+        myCurrent = f(self.next()).iterator
       myCurrent
     }
     def hasNext = current.hasNext
@@ -696,13 +696,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
-    val thatIterator = that.iterator()
+    val thatIterator = that.iterator
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
   }
 
   def zipAll[A1 >: A, B](that: IterableOnce[B], thisElem: A1, thatElem: B): Iterator[(A1, B)] = new AbstractIterator[(A1, B)] {
-    val thatIterator = that.iterator()
+    val thatIterator = that.iterator
     def hasNext = self.hasNext || thatIterator.hasNext
     def next(): (A1, B) = {
       val next1 = self.hasNext
@@ -723,13 +723,53 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
-    val those = that.iterator()
+    val those = that.iterator
     while (hasNext && those.hasNext)
       if (next() != those.next())
         return false
     // At that point we know that *at least one* iterator has no next element
     // If *both* of them have no elements then the collections are the same
     hasNext == those.hasNext
+  }
+
+  /** Creates two new iterators that both iterate over the same elements
+    *  as this iterator (in the same order).  The duplicate iterators are
+    *  considered equal if they are positioned at the same element.
+    *
+    *  Given that most methods on iterators will make the original iterator
+    *  unfit for further use, this methods provides a reliable way of calling
+    *  multiple such methods on an iterator.
+    *
+    *  @return a pair of iterators
+    *  @note   The implementation may allocate temporary storage for elements
+    *          iterated by one iterator but not yet by the other.
+    *  @note   Reuse: $consumesOneAndProducesTwoIterators
+    */
+  def duplicate: (Iterator[A], Iterator[A]) = {
+    val gap = new scala.collection.mutable.Queue[A]
+    var ahead: Iterator[A] = null
+    class Partner extends AbstractIterator[A] {
+      def hasNext: Boolean = self.synchronized {
+        (this ne ahead) && !gap.isEmpty || self.hasNext
+      }
+      def next(): A = self.synchronized {
+        if (gap.isEmpty) ahead = this
+        if (this eq ahead) {
+          val e = self.next()
+          gap enqueue e
+          e
+        } else gap.dequeue()
+      }
+      // to verify partnerhood we use reference equality on gap because
+      // type testing does not discriminate based on origin.
+      private def compareGap(queue: scala.collection.mutable.Queue[A]) = gap eq queue
+      override def hashCode = gap.hashCode()
+      override def equals(other: Any) = other match {
+        case x: Partner   => x.compareGap(gap) && gap.isEmpty
+        case _            => super.equals(other)
+      }
+    }
+    (new Partner, new Partner)
   }
 
   /** Returns this iterator with patched values.
@@ -783,6 +823,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *  @note    Reuse: $preservesIterator
    */
   override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
+
+  @deprecated("Iterator.seq always returns the iterator itself", "2.13.0")
+  def seq: this.type = this
 }
 
 object Iterator extends IterableFactory[Iterator] {
@@ -798,7 +841,7 @@ object Iterator extends IterableFactory[Iterator] {
     * @tparam A the type of the collection’s elements
     * @return a new $coll with the elements of `source`
     */
-  override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator()
+  override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator
 
   /** The iterator which produces no values. */
   @`inline` final def empty[T]: Iterator[T] = _empty
@@ -809,13 +852,13 @@ object Iterator extends IterableFactory[Iterator] {
     def next() = if (consumed) empty.next() else { consumed = true; a }
   }
 
-  override def apply[A](xs: A*): Iterator[A] = xs.iterator()
+  override def apply[A](xs: A*): Iterator[A] = xs.iterator
 
   /**
     * @return A builder for $Coll objects.
     * @tparam A the type of the ${coll}’s elements
     */
-  def newBuilder[A](): Builder[A, Iterator[A]] =
+  def newBuilder[A]: Builder[A, Iterator[A]] =
     new ImmutableBuilder[A, Iterator[A]](empty[A]) {
       override def addOne(elem: A): this.type = { elems = elems ++ single(elem); this }
     }
@@ -1001,7 +1044,7 @@ object Iterator extends IterableFactory[Iterator] {
   }
 
   private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A]) {
-    def headIterator: Iterator[A] = head.iterator()
+    def headIterator: Iterator[A] = head.iterator
   }
 
   /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.

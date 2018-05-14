@@ -49,5 +49,6 @@
 /project/target/
 /project/project/target/
 /project/project/project/target/
+/test/macro-annot/target/
 /build-sbt/
 local.sbt

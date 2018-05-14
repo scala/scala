@@ -45,7 +45,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   override def concat(that: collection.Iterable[A]): C = {
     var result: C = coll
-    val it = that.iterator()
+    val it = that.iterator
     while (it.hasNext) result = result + it.next()
     result
   }
@@ -61,8 +61,10 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   */
 object Set extends IterableFactory[Set] {
 
+  // getenv not getProperty for Scala.js friendliness.
+  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
   private final val useBaseline: Boolean =
-    scala.sys.props.get("scala.collection.immutable.useBaseline").contains("true")
+    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
@@ -70,13 +72,13 @@ object Set extends IterableFactory[Set] {
     it match {
       // We want `SortedSet` (and subclasses, such as `BitSet`) to
       // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E] => (newBuilder[E]() ++= it).result()
+      case _: SortedSet[E] => (newBuilder[E] ++= it).result()
       case s: Set[E]       => s
-      case _               => (newBuilder[E]() ++= it).result()
+      case _               => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A](): Builder[A, Set[A]] =
-    if (useBaseline) HashSet.newBuilder() else ChampHashSet.newBuilder()
+  def newBuilder[A]: Builder[A, Set[A]] =
+    if (useBaseline) HashSet.newBuilder else ChampHashSet.newBuilder
 
   /** An optimized representation for immutable empty sets */
   @SerialVersionUID(3L)
@@ -85,7 +87,7 @@ object Set extends IterableFactory[Set] {
     def contains(elem: Any): Boolean = false
     def incl(elem: Any): Set[Any] = new Set1(elem)
     def excl(elem: Any): Set[Any] = this
-    def iterator(): Iterator[Any] = Iterator.empty
+    def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any => U): Unit = ()
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
@@ -101,7 +103,7 @@ object Set extends IterableFactory[Set] {
     def excl(elem: A): Set[A] =
       if (elem == elem1) Set.empty
       else this
-    def iterator(): Iterator[A] = Iterator.single(elem1)
+    def iterator: Iterator[A] = Iterator.single(elem1)
     override def foreach[U](f: A => U): Unit = f(elem1)
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
@@ -125,7 +127,7 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
-    def iterator(): Iterator[A] = (elem1 :: elem2 :: Nil).iterator()
+    def iterator: Iterator[A] = (elem1 :: elem2 :: Nil).iterator
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
@@ -159,7 +161,7 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
       else this
-    def iterator(): Iterator[A] = (elem1 :: elem2 :: elem3 :: Nil).iterator()
+    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: Nil).iterator
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -195,7 +197,7 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def iterator(): Iterator[A] = (elem1 :: elem2 :: elem3 :: elem4 :: Nil).iterator()
+    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: elem4 :: Nil).iterator
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }

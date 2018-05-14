@@ -132,7 +132,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     val toAdd = Map[K, V]()
     val toKeep = Map[K, V]()
     for (elem <- this) {
-      for ((k,v) <- f(elem).iterator()){
+      for ((k,v) <- f(elem).iterator){
         if (contains(k) && this(k) == v) {
           toKeep += ((k,v)) 
         } else {
@@ -179,7 +179,7 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     override def default(key: K): V = defaultValue(key)
 
-    def iterator(): scala.collection.Iterator[(K, V)] = underlying.iterator()
+    def iterator: scala.collection.Iterator[(K, V)] = underlying.iterator
 
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
@@ -196,8 +196,8 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
     override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
-    override protected def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
-      Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
+    override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] =
+      Map.newBuilder.mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 
 }

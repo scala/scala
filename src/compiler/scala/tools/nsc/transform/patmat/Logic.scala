@@ -9,7 +9,7 @@ package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
 
 trait Logic extends Debugging  {
@@ -357,7 +357,7 @@ trait Logic extends Debugging  {
 
       val pure = props map (p => rewriteEqualsToProp(p))
 
-      val eqAxioms = ImmutableArray.newBuilder[Prop]()
+      val eqAxioms = ArraySeq.newBuilder[Prop]
       @inline def addAxiom(p: Prop) = eqAxioms += p
 
       debug.patmat("removeVarEq vars: "+ vars)

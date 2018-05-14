@@ -23,7 +23,7 @@ object PathResolver {
   import AccessControl._
   import java.lang.System.{lineSeparator => EOL}
 
-  implicit class MkLines(val t: TraversableOnce[_]) extends AnyVal {
+  implicit class MkLines(val t: IterableOnce[_]) extends AnyVal {
     def mkLines: String = t.mkString("", EOL, EOL)
     def mkLines(header: String, indented: Boolean = false, embraced: Boolean = false): String = {
       val space = "\u0020"
@@ -242,7 +242,7 @@ final class PathResolver(settings: Settings) {
     import classPathFactory._
 
     // Assemble the elements!
-    def basis = List[Traversable[ClassPath]](
+    def basis = List[Iterable[ClassPath]](
       JrtClassPath.apply(settings.releaseValue),    // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.

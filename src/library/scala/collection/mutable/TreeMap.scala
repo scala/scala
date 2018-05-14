@@ -37,7 +37,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     */
   def this()(implicit ord: Ordering[K]) = this(RB.Tree.empty)(ord)
 
-  def iterator(): Iterator[(K, V)] = RB.iterator(tree)
+  def iterator: Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
 
@@ -136,13 +136,13 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
     override def get(key: K) = if (isInsideViewBounds(key)) RB.get(tree, key) else None
 
-    override def iterator() = RB.iterator(tree, from, until)
+    override def iterator = RB.iterator(tree, from, until)
     override def keysIteratorFrom(start: K) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
     override def iteratorFrom(start: K) = RB.iterator(tree, pickLowerBound(Some(start)), until)
     override def valuesIteratorFrom(start: K) = RB.valuesIterator(tree, pickLowerBound(Some(start)), until)
 
-    override def size = iterator().length
-    override def isEmpty = !iterator().hasNext
+    override def size = iterator.length
+    override def isEmpty = !iterator.hasNext
     override def contains(key: K) = isInsideViewBounds(key) && RB.contains(tree, key)
 
     override def head = headOption.get
@@ -166,7 +166,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     // Using the iterator should be efficient enough; if performance is deemed a problem later, specialized
     // `foreach(f, from, until)` and `transform(f, from, until)` methods can be created in `RedBlackTree`. See
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
-    override def foreach[U](f: ((K, V)) => U): Unit = iterator().foreach(f)
+    override def foreach[U](f: ((K, V)) => U): Unit = iterator.foreach(f)
 
     override def clone() = super.clone().rangeImpl(from, until)
   }
@@ -186,6 +186,6 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()
 
-  def newBuilder[K: Ordering, V](): Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder(empty[K, V])
+  def newBuilder[K: Ordering, V]: Builder[(K, V), TreeMap[K, V]] = new GrowableBuilder(empty[K, V])
 
 }

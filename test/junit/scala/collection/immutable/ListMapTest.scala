@@ -41,7 +41,7 @@ class ListMapTest {
   }
 
   @Test
-  def hasCorrectIterator(): Unit = {
+  def hasCorrectiterator: Unit = {
     val m = ListMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
     assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator.toList)
   }

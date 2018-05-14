@@ -9,17 +9,17 @@ import org.junit.runners.JUnit4
 class SerializationTest {
 
   @Test
-  def immutableArray(): Unit = {
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array("1", "2", "3")))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Int.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Long.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Double.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Float.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Char.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Byte.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(Short.MinValue)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(true)))
-    assertEqualsAfterDeserialization(ImmutableArray.unsafeWrapArray(Array(())))
+  def arraySeq(): Unit = {
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array("1", "2", "3")))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Int.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Long.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Double.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Float.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Char.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Byte.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(Short.MinValue)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(true)))
+    assertEqualsAfterDeserialization(ArraySeq.unsafeWrapArray(Array(())))
   }
 
   @Test

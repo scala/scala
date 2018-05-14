@@ -85,6 +85,6 @@ package object sys {
     val tarray = new Array[Thread](num)
     val got    = Thread.enumerate(tarray)
 
-    immutable.ImmutableArray.unsafeWrapArray(tarray).take(got)
+    immutable.ArraySeq.unsafeWrapArray(tarray).take(got)
   }
 }

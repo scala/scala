@@ -51,9 +51,9 @@ object LongMap {
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
   def from[V](coll: IterableOnce[(Long, V)]): LongMap[V] =
-    newBuilder[V]().addAll(coll).result()
+    newBuilder[V].addAll(coll).result()
 
-  def newBuilder[V](): Builder[(Long, V), LongMap[V]] =
+  def newBuilder[V]: Builder[(Long, V), LongMap[V]] =
     new ImmutableBuilder[(Long, V), LongMap[V]](empty) {
       def addOne(elem: (Long, V)): this.type = { elems = elems + elem; this }
     }
@@ -164,12 +164,12 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     b.sizeHint(coll)
     b.addAll(coll)
     b.result()
   }
-  override protected def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] @uncheckedVariance =
+  override protected def newSpecificBuilder: Builder[(Long, T), LongMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
       def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }
@@ -187,7 +187,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @return an iterator over pairs of long keys and corresponding values.
     */
-  def iterator(): Iterator[(Long, T)] = this match {
+  def iterator: Iterator[(Long, T)] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapEntryIterator(this)
   }
@@ -201,7 +201,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override def keysIterator(): Iterator[Long] = this match {
+  override def keysIterator: Iterator[Long] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapKeyIterator(this)
   }
@@ -218,7 +218,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override def valuesIterator(): Iterator[T] = this match {
+  override def valuesIterator: Iterator[T] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapValueIterator(this)
   }

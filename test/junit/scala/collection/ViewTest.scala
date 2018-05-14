@@ -47,7 +47,7 @@ class ViewTest {
     }
     check(immutable.Set(1, 2, 3)) // View
     check(List(1, 2, 3)) // SeqView
-    check(immutable.Vector(1, 2, 3)) // IndexedView
+    check(immutable.Vector(1, 2, 3)) // IndexedSeqView
     check(immutable.Map(1 -> "a", 2 -> "b")) // MapView
   }
 

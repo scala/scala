@@ -2807,6 +2807,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isValue     = !(isModule && hasFlag(PACKAGE | JAVA))
     override def isVariable  = isMutable && !isMethod
     override def isTermMacro = hasFlag(MACRO)
+    def isAnnotationMacro    = hasFlag(MACRO) && name == nme.macroTransform && owner.isClass && owner.hasFlag(MACRO)
 
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     override def isCapturedVariable = hasAllFlags(MUTABLE | CAPTURED) && !hasFlag(METHOD)

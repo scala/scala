@@ -110,7 +110,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     def next(): C = {
       if (!hasNext) Iterator.empty.next()
 
-      val buf = newSpecificBuilder()
+      val buf = newSpecificBuilder
       idxs.slice(0, len) foreach (idx => buf += elms(idx))
       val result = buf.result()
 

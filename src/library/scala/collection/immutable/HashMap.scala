@@ -107,10 +107,10 @@ object HashMap extends MapFactory[HashMap] {
   def from[K, V](it: collection.IterableOnce[(K, V)]): HashMap[K, V] =
     it match {
       case hm: HashMap[K, V] => hm
-      case _ => (newBuilder[K, V]() ++= it).result()
+      case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] =
+  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
     new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
@@ -188,7 +188,7 @@ object HashMap extends MapFactory[HashMap] {
 
     protected def merge0[V1 >: Nothing](that: HashMap[Any, V1], level: Int, merger: Merger[Any, V1]): HashMap[Any, V1] = that
 
-    def iterator(): Iterator[(Any, Nothing)] = Iterator.empty
+    def iterator: Iterator[(Any, Nothing)] = Iterator.empty
 
     override def foreach[U](f: ((Any, Nothing)) => U): Unit = ()
 
@@ -207,7 +207,7 @@ object HashMap extends MapFactory[HashMap] {
   @SerialVersionUID(3L)
   final class HashMap1[K, +V](private[collection] val key: K, private[collection] val hash: Int, private[collection] val value: V, private[collection] var kv: (K, V@uV)) extends HashMap[K, V] {
 
-    def iterator(): Iterator[(K, V)] = Iterator.single(ensurePair)
+    def iterator: Iterator[(K, V)] = Iterator.single(ensurePair)
 
     def get0(key: K, hash: Int, level: Int): Option[V] =
       if (hash == this.hash && key == this.key) Some(value) else None
@@ -317,7 +317,7 @@ object HashMap extends MapFactory[HashMap] {
       m
     }
 
-    override def iterator(): Iterator[(K, V)] = kvs.iterator()
+    override def iterator: Iterator[(K, V)] = kvs.iterator
 
     override def foreach[U](f: ((K, V)) => U): Unit = kvs.foreach(f)
 
@@ -477,7 +477,7 @@ object HashMap extends MapFactory[HashMap] {
       }
     }
 
-    override def iterator(): Iterator[(K, V)] = new TrieIterator[(K, V)](elems.asInstanceOf[Array[Iterable[(K, V)]]]) {
+    override def iterator: Iterator[(K, V)] = new TrieIterator[(K, V)](elems.asInstanceOf[Array[Iterable[(K, V)]]]) {
       final override def getElem(cc: AnyRef): (K, V) = cc.asInstanceOf[HashMap1[K, V]].ensurePair
     }
 

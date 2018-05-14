@@ -11,7 +11,7 @@ package scala
 //import scala.collection.generic._
 import scala.collection.{Factory, immutable, mutable}
 import mutable.ArrayBuilder
-import immutable.ImmutableArray
+import immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
@@ -45,19 +45,19 @@ object Array {
   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] =
     new Factory[A, Array[A]] {
       def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
-      def newBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder[A]
+      def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
     }
 
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].
    */
-  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T]()(t)
+  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
 
   def from[A : ClassTag](it: IterableOnce[A]): Array[A] = {
     val n = it.knownSize
     if (n > -1) {
       val elements = new Array[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())
@@ -65,8 +65,8 @@ object Array {
       }
       elements
     } else {
-      val b = ArrayBuilder.make[A]()
-      val iterator = it.iterator()
+      val b = ArrayBuilder.make[A]
+      val iterator = it.iterator
       while (iterator.hasNext)
         b += iterator.next()
       b.result()
@@ -494,11 +494,11 @@ object Array {
    *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    if (x == null) None else Some(ImmutableArray.unsafeWrapArray[T](x))
+    if (x == null) None else Some(ArraySeq.unsafeWrapArray[T](x))
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
-    // Is ImmutableArray safe here? In 2.12 we used to call .toIndexedSeq which copied the array
-    // instead of wrapping it in a WrappedArray but it appears unnecessary.
+    // Is ArraySeq safe here? In 2.12 we used to call .toIndexedSeq which copied the array
+    // instead of wrapping it in a ArraySeq but it appears unnecessary.
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
@@ -518,12 +518,12 @@ object Array {
  *
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
  *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
- *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collection.Seq]]).
+ *  to [[scala.collection.mutable.ArraySeq]] (a subtype of [[scala.collection.Seq]]).
  *  Both types make available many of the standard operations found in the Scala collections API.
  *  The conversion to `ArrayOps` is temporary, as all operations defined on `ArrayOps` return an `Array`,
- *  while the conversion to `WrappedArray` is permanent as all operations return a `WrappedArray`.
+ *  while the conversion to `ArraySeq` is permanent as all operations return a `ArraySeq`.
  *
- *  The conversion to `ArrayOps` takes priority over the conversion to `WrappedArray`. For instance,
+ *  The conversion to `ArrayOps` takes priority over the conversion to `ArraySeq`. For instance,
  *  consider the following code:
  *
  *  {{{
@@ -534,8 +534,8 @@ object Array {
  *
  *  Value `arrReversed` will be of type `Array[Int]`, with an implicit conversion to `ArrayOps` occurring
  *  to perform the `reverse` operation. The value of `seqReversed`, on the other hand, will be computed
- *  by converting to `WrappedArray` first and invoking the variant of `reverse` that returns another
- *  `WrappedArray`.
+ *  by converting to `ArraySeq` first and invoking the variant of `reverse` that returns another
+ *  `ArraySeq`.
  *
  *  @author Martin Odersky
  *  @version 1.0

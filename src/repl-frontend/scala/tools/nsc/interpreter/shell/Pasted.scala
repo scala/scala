@@ -113,7 +113,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   }
 
   // Run transcript and return incomplete line if any.
-  def transcript(lines: TraversableOnce[String]): Option[String] = {
+  def transcript(lines: IterableOnce[String]): Option[String] = {
     echo("\n// Detected repl transcript. Paste more, or ctrl-D to finish.\n")
     apply(lines)
   }
@@ -123,7 +123,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
    *  Everything else is discarded.  When the end of the transcript is spotted,
    *  all the commands are replayed.
    */
-  def apply(lines: TraversableOnce[String]): Option[String] = {
+  def apply(lines: IterableOnce[String]): Option[String] = {
     isRunning = true
     try new PasteAnalyzer(lines.toList).run()
     finally isRunning = false

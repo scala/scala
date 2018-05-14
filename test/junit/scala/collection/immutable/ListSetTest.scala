@@ -46,7 +46,7 @@ class ListSetTest {
   }
 
   @Test
-  def hasCorrectIterator(): Unit = {
+  def hasCorrectiterator: Unit = {
     val s = ListSet(1, 2, 3, 5, 4)
     assertEquals(List(1, 2, 3, 5, 4), s.iterator.toList)
   }

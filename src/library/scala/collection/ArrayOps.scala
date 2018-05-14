@@ -1,9 +1,8 @@
 package scala
 package collection
 
-import java.lang.{String, Class}
-import mutable.{ArrayBuilder, WrappedArray}
-import immutable.{ImmutableArray, Range}
+import mutable.ArrayBuilder
+import immutable.Range
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
@@ -35,7 +34,7 @@ object ArrayOps {
       *                `f` to each element of this array and collecting the results.
       */
     def map[B: ClassTag](f: A => B): Array[B] = {
-      val b = ArrayBuilder.make[B]()
+      val b = ArrayBuilder.make[B]
       var i = 0
       while (i < xs.length) {
         val x = xs(i)
@@ -54,7 +53,7 @@ object ArrayOps {
       *                `f` to each element of this array and concatenating the results.
       */
     def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = {
-      val b = ArrayBuilder.make[B]()
+      val b = ArrayBuilder.make[B]
       var i = 0
       while(i < xs.length) {
         val x = xs(i)
@@ -111,13 +110,12 @@ object ArrayOps {
   *  the implicit conversion to `ArrayOps` when calling a method (which does not actually
   *  allocate an instance of `ArrayOps` because it is a value class).
   *
-  *  Neither Array` nor `ArrayOps` are proper collection types
-  *  (i.e. they do not extend `Iterable` or even `IterableOnce`). `WrappedArray` and
-  *  `ImmutableArray` serve this purpose.
+  *  Neither `Array` nor `ArrayOps` are proper collection types
+  *  (i.e. they do not extend `Iterable` or even `IterableOnce`). `mutable.ArraySeq` and
+  *  `immutable.ArraySeq` serve this purpose.
   *
-  *  The difference between this class and `WrappedArray` and `ImmutableArray` is that calling
-  *  transformer methods such as `filter` and `map` will yield an array, whereas a `WrappedArray`
-  *  will remain a `WrappedArray`.
+  *  The difference between this class and `ArraySeq`s is that calling transformer methods such as
+ *   `filter` and `map` will yield an array, whereas an `ArraySeq` will remain an `ArraySeq`.
   *
   *  @since 2.8
   *
@@ -250,7 +248,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     slice(lo, xs.length)
   }
 
-  def iterator(): Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
+  def iterator: Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`
@@ -272,7 +270,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second, all elements that do not. */
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
-    var res1, res2 = ArrayBuilder.make[A]()
+    var res1, res2 = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -300,7 +298,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @return  an iterator yielding the elements of this array in reversed order
     */
-  def reverseIterator(): Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
+  def reverseIterator: Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
 
   /** Selects all elements of this array which satisfy a predicate.
     *
@@ -308,7 +306,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return   a new array consisting of all elements of this array that satisfy the given predicate `p`.
     */
   def filter(p: A => Boolean): Array[A] = {
-    var res = ArrayBuilder.make[A]()
+    var res = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -469,13 +467,29 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    var v = z
-    var i = 0
-    while(i < xs.length) {
-      v = op(v, xs(i))
-      i += 1
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      val length = xs.length
+      var v: Any = z
+      var i = 0
+      while(i < length) {
+        v = op(v, xs(i))
+        i += 1
+      }
+      v
     }
-    v
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[B]
   }
 
    /** Produces an array containing cumulative results of applying the binary
@@ -548,13 +562,29 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
-    var v = z
-    var i = xs.length - 1
-    while(i >= 0) {
-      v = op(xs(i), v)
-      i -= 1
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      var v = z
+      var i = xs.length - 1
+      while(i >= 0) {
+        v = op(xs(i), v)
+        i -= 1
+      }
+      v
     }
-    v
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[B]
+
   }
 
   /** Folds the elements of this array using the specified associative binary operator.
@@ -564,9 +594,38 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
     *                 0 for addition, or 1 for multiplication).
     *  @param op      a binary operator that must be associative.
-    *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this array is empty.
+    *  @return        the result of applying the fold operator `op` between all the elements, or `z` if this array is empty.
     */
-  @`inline` final def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
+  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = {
+    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+      // Start with the last element and run the loop from 0 until length-1. It would be more logical to start with
+      // the first element and loop from 1 until length but hotspot performs special optimizations for loops starting
+      // at 0 which have a huge impact when the actual folding operation is fast.
+      val length = xs.length-1
+      if(length >= 0) {
+        var v: Any = xs(length)
+        var i = 0
+        while(i < length) {
+          v = op(v, xs(i))
+          i += 1
+        }
+        v
+      } else z
+    }
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
+      case null => throw new NullPointerException
+    }).asInstanceOf[A1]
+  }
 
   /** Builds a new array by applying a function to all elements of this array.
     *
@@ -603,7 +662,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `f` to each element of this array and concatenating the results.
     */
   def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     var i = 0
     while(i < xs.length) {
       b ++= f(xs(i))
@@ -623,7 +682,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return           An array obtained by concatenating rows of this array.
     */
   def flatten[B](implicit asIterable: A => scala.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val sizes = map {
       case is: IndexedSeq[_] => is.size
       case _ => 0
@@ -650,7 +709,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       matched = false
       null.asInstanceOf[B]
     }
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     while(i < xs.length) {
       matched = true
       val v = f.applyOrElse(xs(i), d)
@@ -676,7 +735,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val k = that.knownSize
     b.sizeHint(if(k >= 0) min(k, xs.length) else xs.length)
     var i = 0
-    val it = that.iterator()
+    val it = that.iterator
     while(i < xs.length && it.hasNext) {
       b += ((xs(i), it.next()))
       i += 1
@@ -720,7 +779,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with all elements of a collection prepended. */
   def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = prefix.knownSize
     if(k >= 0) b.sizeHint(k + xs.length)
     b.addAll(prefix)
@@ -733,7 +792,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with all elements of a collection appended. */
   def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = suffix.knownSize
     if(k >= 0) b.sizeHint(k + xs.length)
     b.addAll(xs)
@@ -755,7 +814,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @param replaced   The number of values in the original array that are replaced by the patch.
     */
   def patch[B >: A : ClassTag](from: Int, other: IterableOnce[B], replaced: Int): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = other.knownSize
     if(k >= 0) b.sizeHint(xs.length + k - replaced)
     val chunk1 = if(from > 0) min(from, xs.length) else 0
@@ -835,7 +894,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val bb = new ArrayBuilder.ofRef[Array[B]]()(ClassTag[Array[B]](aClass))
     if (xs.length == 0) bb.result()
     else {
-      def mkRowBuilder() = ArrayBuilder.make[B]()(ClassTag[B](aClass.getComponentType))
+      def mkRowBuilder() = ArrayBuilder.make[B](ClassTag[B](aClass.getComponentType))
       val bs = asArray(xs(0)) map ((x: B) => mkRowBuilder())
       var j = 0
       for (xs <- this) {
@@ -876,7 +935,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     * @return a new array consisting of all the elements of this array without duplicates.
     */
   def distinctBy[B](f: A => B): Array[A] =
-    ArrayBuilder.make[A]().addAll(iterator().distinctBy(f)).result()
+    ArrayBuilder.make[A].addAll(iterator.distinctBy(f)).result()
 
   /** A copy of this array with an element value appended until a given target length is reached.
     *
@@ -913,7 +972,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  def diff(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).diff(that).array
+  def diff(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).diff(that).array
 
   /** Computes the multiset intersection between this array and another sequence.
     *
@@ -924,7 +983,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  def intersect(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).intersect(that).array
+  def intersect(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).intersect(that).array
 
   /** Partitions this array into a map of arrays according to some discriminator function.
     *
@@ -944,7 +1003,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     while(i < len) {
       val elem = xs(i)
       val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A]())
+      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A])
       bldr += elem
       i += 1
     }
@@ -954,5 +1013,5 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
 
   def toIndexedSeq: immutable.IndexedSeq[A] =
-    ImmutableArray.unsafeWrapArray(Array.copyOf(xs, xs.length))
+    immutable.ArraySeq.unsafeWrapArray(Array.copyOf(xs, xs.length))
 }

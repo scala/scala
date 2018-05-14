@@ -81,7 +81,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
-  override protected def newSpecificBuilder(): Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
+  override protected def newSpecificBuilder: Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)
@@ -297,7 +297,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     this
   }
 
-  def iterator(): Iterator[(K, V)] = new Iterator[(K, V)] {
+  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
     private[this] val hz = _hashes
     private[this] val kz = _keys
     private[this] val vz = _values
@@ -419,7 +419,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   }
 
   //TODO Replace this default implementation that used to be in MapLike
-  def clear(): Unit = keysIterator() foreach -=
+  def clear(): Unit = keysIterator foreach -=
 
   // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
   def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2)): AnyRefMap[K2, V2] =
@@ -466,7 +466,7 @@ object AnyRefMap {
     var sz = elems.knownSize
     if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
-    elems.iterator().foreach{ case (k,v) => arm(k) = v }
+    elems.iterator.foreach{ case (k,v) => arm(k) = v }
     if (arm.size < (sz>>3)) arm.repack()
     arm
   }
@@ -508,8 +508,8 @@ object AnyRefMap {
   def fromZip[K <: AnyRef, V](keys: Iterable[K], values: Iterable[V]): AnyRefMap[K, V] = {
     val sz = math.min(keys.size, values.size)
     val arm = new AnyRefMap[K, V](sz * 2)
-    val ki = keys.iterator()
-    val vi = values.iterator()
+    val ki = keys.iterator
+    val vi = values.iterator
     while (ki.hasNext && vi.hasNext) arm(ki.next()) = vi.next()
     if (arm.size < (sz >> 3)) arm.repack()
     arm

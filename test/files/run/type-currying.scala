@@ -17,10 +17,10 @@ object Partial {
 
   def apply[CC[K, V] <: collection.Map[K, V]] : KnownContainer[CC] = new {
     def values[V] : KnownValues[CC, V] = new {
-      def apply[K](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder().result
+      def apply[K](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder.result
     }
     def apply[K] = new {
-      def apply[V](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder().result
+      def apply[V](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder.result
     }
   }
 }

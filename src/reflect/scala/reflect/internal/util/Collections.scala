@@ -45,7 +45,7 @@ trait Collections {
    *  but people are branching out in their collections so here's an overload.
    */
   final def mforeach[A](xss: List[List[A]])(f: A => Unit) = xss foreach (_ foreach f)
-  final def mforeach[A](xss: Traversable[Traversable[A]])(f: A => Unit) = xss foreach (_ foreach f)
+  final def mforeach[A](xss: Iterable[Iterable[A]])(f: A => Unit) = xss foreach (_ foreach f)
 
   /** A version of List#map, specialized for List, and optimized to avoid allocation if `as` is empty */
   final def mapList[A, B](as: List[A])(f: A => B): List[B] = if (as eq Nil) Nil else {
@@ -151,7 +151,7 @@ trait Collections {
     if (lb eq null) Nil else lb.result
   }
 
-  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
+  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Iterable[B]]): List[B] = {
     val lb = new ListBuffer[B]
     for (x <- elems ; if pf isDefinedAt x)
       lb ++= pf(x)
@@ -187,7 +187,7 @@ trait Collections {
   }
 
   // @inline
-  final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+  final def findOrElse[A](xs: IterableOnce[A])(p: A => Boolean)(orElse: => A): A = {
     xs find p getOrElse orElse
   }
 
