@@ -266,7 +266,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  @see map
    *  @see flatMap
    */
-  @inline final def foreach[U](f: A => U) {
+  @inline final def foreach[U](f: A => U): Unit = {
     if (!isEmpty) f(this.get)
   }
 

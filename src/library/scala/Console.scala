@@ -243,7 +243,7 @@ object Console extends AnsiColor {
    *  @param obj the object to print; may be null.
    *  @group console-output
    */
-  def print(obj: Any) {
+  def print(obj: Any): Unit = {
     out.print(if (null == obj) "null" else obj.toString())
   }
 
@@ -252,19 +252,19 @@ object Console extends AnsiColor {
    *  to be made visible on the terminal.
     * @group console-output
    */
-  def flush() { out.flush() }
+  def flush(): Unit = { out.flush() }
 
   /** Prints a newline character on the default output.
     * @group console-output
    */
-  def println() { out.println() }
+  def println(): Unit = { out.println() }
 
   /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
    *  @group console-output
    */
-  def println(x: Any) { out.println(x) }
+  def println(x: Any): Unit = { out.println(x) }
 
   /** Prints its arguments as a formatted string to the default output,
    *  based on a string pattern (in a fashion similar to printf in C).
@@ -276,5 +276,5 @@ object Console extends AnsiColor {
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *  @group console-output
    */
-  def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
+  def printf(text: String, args: Any*): Unit = { out.print(text format (args : _*)) }
 }

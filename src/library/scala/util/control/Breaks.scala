@@ -33,7 +33,7 @@ class Breaks {
    * executed further down in the call stack provided that it is called on the
    * exact same instance of `Breaks`.
    */
-  def breakable(op: => Unit) {
+  def breakable(op: => Unit): Unit = {
     try {
       op
     } catch {

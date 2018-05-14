@@ -255,7 +255,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION)
-  def assert(assertion: Boolean) {
+  def assert(assertion: Boolean): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
@@ -270,7 +270,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION) @inline
-  final def assert(assertion: Boolean, message: => Any) {
+  final def assert(assertion: Boolean, message: => Any): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
@@ -286,7 +286,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION)
-  def assume(assumption: Boolean) {
+  def assume(assumption: Boolean): Unit = {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed")
   }
@@ -303,7 +303,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION) @inline
-  final def assume(assumption: Boolean, message: => Any) {
+  final def assume(assumption: Boolean, message: => Any): Unit = {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)
   }
@@ -315,7 +315,7 @@ object Predef extends LowPriorityImplicits {
    *  @param requirement   the expression to test
    *  @group assertions
    */
-  def require(requirement: Boolean) {
+  def require(requirement: Boolean): Unit = {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed")
   }
@@ -328,7 +328,7 @@ object Predef extends LowPriorityImplicits {
    *  @param message       a String to include in the failure message
    *  @group assertions
    */
-  @inline final def require(requirement: Boolean, message: => Any) {
+  @inline final def require(requirement: Boolean, message: => Any): Unit = {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
