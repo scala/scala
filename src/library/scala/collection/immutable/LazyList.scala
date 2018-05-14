@@ -232,6 +232,8 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
 
   protected def cons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
+  override def iterator(): Iterator[A] = new LazyListIterator[A, CC, C](this)
+
   /** Forces evaluation of the whole `LazyList` and returns it.
     *
     * @note Often we use `LazyList`s to represent an infinite set or series.  If
@@ -814,4 +816,26 @@ object Stream extends LazyListFactory[Stream] {
     } else Stream.Empty
 
   def empty[A]: Stream[A] = Empty
+}
+
+/** A specialized, extra-lazy implementation of a stream iterator, so it can
+  *  iterate as lazily as it traverses the tail.
+  */
+private[immutable] final class LazyListIterator[+A, +CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]], +C <: CC[A] with LazyListOps[A, CC, C]](self: LazyListOps[A, CC, C]) extends AbstractIterator[A] {
+  // A call-by-need cell.
+  final class LazyCell(st: => LazyListOps[A, CC, C]) {
+    lazy val v = st
+  }
+
+  private var these: LazyCell = new LazyCell(self)
+
+  def hasNext: Boolean = these.v.nonEmpty
+  def next(): A =
+    if (isEmpty) Iterator.empty.next()
+    else {
+      val cur    = these.v
+      val result = cur.head
+      these = new LazyCell(cur.tail)
+      result
+    }
 }
