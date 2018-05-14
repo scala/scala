@@ -868,7 +868,7 @@ lazy val root: Project = (project in file("."))
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-        (Keys.test in Test in macroAnnot).result map (_ -> "macroAnnot/test"),
+//        (Keys.test in Test in macroAnnot).result map (_ -> "macroAnnot/test"),
         (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
         (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
