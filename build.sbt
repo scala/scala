@@ -552,7 +552,6 @@ lazy val scalap = configureAsSubproject(project)
 
 lazy val partest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler, scalap, replFrontend, scaladoc)
-  .settings(disableDocs)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
