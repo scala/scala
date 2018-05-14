@@ -1128,22 +1128,3 @@ private[concurrent] object RestartException extends ControlThrowable
 /** Only used for ctrie serialization. */
 @SerialVersionUID(3L)
 private[concurrent] case object TrieMapSerializationEnd
-
-
-private[concurrent] object Debug {
-
-  lazy val logbuffer = new java.util.concurrent.ConcurrentLinkedQueue[AnyRef]
-
-  def log(s: AnyRef) = logbuffer.add(s)
-
-  def flush(): Unit = {
-    val it = logbuffer.iterator
-    while (it.hasNext) Console.out.println(it.next().toString)
-    logbuffer.clear()
-  }
-
-  def clear(): Unit = {
-    logbuffer.clear()
-  }
-
-}
