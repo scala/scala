@@ -77,7 +77,7 @@ trait TypeDebugging {
     private def to_s(x: Any): String = x match {
       // otherwise case classes are caught looking like products
       case _: Tree | _: Type     => "" + x
-      case x: TraversableOnce[_] => x mkString ", "
+      case x: IterableOnce[_]    => x mkString ", "
       case x: Product            => x.productIterator mkString ("(", ", ", ")")
       case _                     => "" + x
     }

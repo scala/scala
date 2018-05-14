@@ -190,10 +190,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  /** Adds all elements provided by a `TraversableOnce` object
+  /** Adds all elements provided by a `IterableOnce` object
     *  into the priority queue.
     *
-    *  @param  xs    a traversable object.
+    *  @param  xs    a iterable object.
     *  @return       a new priority queue containing elements of both `xs` and `this`.
     */
   def ++(xs: IterableOnce[A]): PriorityQueue[A] = { this.clone() ++= xs }
