@@ -436,7 +436,7 @@ package IndexedTestImpl {
   }
   @Ignore
   abstract class StringOpsBaseTest extends IndexedTest[StringOps, Char] with DataProvider[Char]  {
-    override final def length(underTest: StringOps) = underTest.length
+    override final def length(underTest: StringOps) = underTest.size
 
     override def get(underTest: StringOps, i: Int) = underTest(i)
 

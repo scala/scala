@@ -54,7 +54,7 @@ object ArrayOps {
       var i = 0
       while(i < len) {
         val x = xs(i)
-        if(p(x)) f(xs(i))
+        if(p(x)) f(x)
         i += 1
       }
     }
@@ -352,12 +352,12 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     * Note: `c splitAt n` is equivalent to `(c take n, c drop n)`.
     *
     *  @param n the position at which to split.
-    *  @return  a pair of arrayss consisting of the first `n`
+    *  @return  a pair of arrays consisting of the first `n`
     *           elements of this array, and the other elements.
     */
   def splitAt(n: Int): (Array[A], Array[A]) = (take(n), drop(n))
 
-  /** A pair of, first, all elements that satisfy prediacte `p` and, second, all elements that do not. */
+  /** A pair of, first, all elements that satisfy predicate `p` and, second, all elements that do not. */
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
     var res1, res2 = ArrayBuilder.make[A]
     var i = 0

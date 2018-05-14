@@ -2,7 +2,6 @@ package scala.collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.collection.immutable.ArraySeq
 
 /** A builder class for arrays.
  *
