@@ -79,7 +79,7 @@ class FactoriesTest {
         immutable.List,
         immutable.LazyList,
         immutable.Vector,
-        immutable.ImmutableArray.untagged,
+        immutable.ArraySeq.untagged,
         mutable.ListBuffer,
         mutable.ArrayBuffer
       )

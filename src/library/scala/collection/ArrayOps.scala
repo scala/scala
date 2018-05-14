@@ -1,9 +1,8 @@
 package scala
 package collection
 
-import java.lang.{String, Class}
-import mutable.{ArrayBuilder, WrappedArray}
-import immutable.{ImmutableArray, Range}
+import mutable.ArrayBuilder
+import immutable.Range
 import scala.reflect.ClassTag
 import scala.math.{max, min, Ordering}
 
@@ -111,13 +110,12 @@ object ArrayOps {
   *  the implicit conversion to `ArrayOps` when calling a method (which does not actually
   *  allocate an instance of `ArrayOps` because it is a value class).
   *
-  *  Neither Array` nor `ArrayOps` are proper collection types
-  *  (i.e. they do not extend `Iterable` or even `IterableOnce`). `WrappedArray` and
-  *  `ImmutableArray` serve this purpose.
+  *  Neither `Array` nor `ArrayOps` are proper collection types
+  *  (i.e. they do not extend `Iterable` or even `IterableOnce`). `mutable.ArraySeq` and
+  *  `immutable.ArraySeq` serve this purpose.
   *
-  *  The difference between this class and `WrappedArray` and `ImmutableArray` is that calling
-  *  transformer methods such as `filter` and `map` will yield an array, whereas a `WrappedArray`
-  *  will remain a `WrappedArray`.
+  *  The difference between this class and `ArraySeq`s is that calling transformer methods such as
+ *   `filter` and `map` will yield an array, whereas an `ArraySeq` will remain an `ArraySeq`.
   *
   *  @since 2.8
   *
@@ -974,7 +972,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  def diff(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).diff(that).array
+  def diff(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).diff(that).array
 
   /** Computes the multiset intersection between this array and another sequence.
     *
@@ -985,7 +983,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  def intersect(that: Seq[_ >: A]): Array[A] = WrappedArray.make(xs).intersect(that).array
+  def intersect(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).intersect(that).array
 
   /** Partitions this array into a map of arrays according to some discriminator function.
     *
@@ -1015,5 +1013,5 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq
 
   def toIndexedSeq: immutable.IndexedSeq[A] =
-    ImmutableArray.unsafeWrapArray(Array.copyOf(xs, xs.length))
+    immutable.ArraySeq.unsafeWrapArray(Array.copyOf(xs, xs.length))
 }

@@ -212,8 +212,8 @@ object MurmurHash3 extends MurmurHash3 {
   def stringHash(x: String): Int                   = stringHash(x, stringSeed)
   def unorderedHash(xs: IterableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
 
-  private[scala] def wrappedArrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
-  private[scala] def wrappedBytesHash(data: Array[Byte]): Int            = bytesHash(data, seqSeed)
+  private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
+  private[scala] def byteArraySeqHash(data: Array[Byte]): Int        = bytesHash(data, seqSeed)
 
   /** To offer some potential for optimization.
    */

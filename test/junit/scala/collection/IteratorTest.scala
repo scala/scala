@@ -354,7 +354,7 @@ class IteratorTest {
 
     indexedSeq(Vector(1, 2, 3))
     indexedSeq(mutable.ArrayBuffer(1, 2, 3))
-    indexedSeq(immutable.ImmutableArray(1, 2, 3))
+    indexedSeq(immutable.ArraySeq(1, 2, 3))
     indexedSeq(Range(start = 1, end = 3, step = 1))
     indexedSeq(Range(start = 9, end = 2, step = -2))
     indexedSeq(immutable.NumericRange(start = 1, end = 3, step = 1))

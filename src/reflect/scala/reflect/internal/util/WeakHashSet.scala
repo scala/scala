@@ -6,7 +6,7 @@ import java.lang.ref.{ReferenceQueue, WeakReference}
 import scala.annotation.tailrec
 import scala.collection.{AbstractIndexedSeqView, IndexedSeqView}
 import scala.collection.mutable.{Set => MSet}
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 
 /**
  * A HashSet where the elements are stored weakly. Elements in this set are eligible for GC if no other

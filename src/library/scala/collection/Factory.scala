@@ -371,7 +371,7 @@ object MapFactory {
 }
 
 /** Base trait for companion objects of collections that require an implicit evidence.
-  * @tparam CC Collection type constructor (e.g. `ImmutableArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   * @tparam Ev Unary type constructor for the implicit evidence required for an element type
   *            (typically `Ordering` or `ClassTag`)
   *
@@ -449,7 +449,7 @@ object SortedIterableFactory {
 }
 
 /** Base trait for companion objects of collections that require an implicit `ClassTag`.
-  * @tparam CC Collection type constructor (e.g. `ImmutableArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
 trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassTag] {
 
@@ -588,7 +588,7 @@ object ClassTagIterableFactory {
 }
 
 /**
-  * @tparam CC Collection type constructor (e.g. `WrappedArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
 trait ClassTagSeqFactory[+CC[_]] extends ClassTagIterableFactory[CC] {
   def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?

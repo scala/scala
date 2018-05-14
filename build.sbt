@@ -42,7 +42,6 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.11"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
-val scalacheckDep     = "org.scala-lang.modules"         % "scalacheck_2.13.0-M4-pre-20d3c21" % "1.14.0-newCollections"           % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.5"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
@@ -59,7 +58,7 @@ val partestDependencies =  Seq(
   "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
 ).map(bootstrapDep("test/files/lib")) ++ Seq(
   bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test",
-  bootstrapDep("test/files/speclib")("instrumented" -> "9d6d56916c54219a33370fd9bb40a47b22566938") % "test"
+  bootstrapDep("test/files/speclib")("instrumented" -> "d015eff38243f1c2edb44ac3b6a0ce99bc5656db") % "test"
 )
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
@@ -567,6 +566,17 @@ lazy val partest = configureAsSubproject(project)
     )
   )
 
+lazy val scalacheckLib = project.in(file("src") / "scalacheck")
+  .dependsOn(library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    name := "scalacheck-lib",
+    libraryDependencies += testInterfaceDep
+  )
+
 lazy val bench = project.in(file("test") / "benchmarks")
   .dependsOn(library)
   .settings(instanceSettings)
@@ -616,7 +626,7 @@ lazy val macroAnnot = project.in(file("test") / "macro-annot")
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
-  .dependsOn(library, reflect, compiler, scaladoc)
+  .dependsOn(library, reflect, compiler, scaladoc, scalacheckLib)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
@@ -628,7 +638,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
-    libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   ).settings(
@@ -859,7 +868,7 @@ lazy val root: Project = (project in file("."))
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-        (Keys.test in Test in macroAnnot).result map (_ -> "macroAnnot/test"),
+//        (Keys.test in Test in macroAnnot).result map (_ -> "macroAnnot/test"),
         (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
         (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),

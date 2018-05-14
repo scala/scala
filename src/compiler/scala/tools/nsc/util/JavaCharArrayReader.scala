@@ -8,12 +8,12 @@ package tools.nsc
 package util
 
 import scala.reflect.internal.Chars._
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 
-class JavaCharArrayReader(buf: ImmutableArray.ofChar, start: Int, /* startline: int, startcol: int, */
+class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, startcol: int, */
                       decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
 
-  def this(buf: ImmutableArray.ofChar, decodeUni: Boolean, error: String => Unit) =
+  def this(buf: ArraySeq.ofChar, decodeUni: Boolean, error: String => Unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
 
   /** the line and column position of the current character

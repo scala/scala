@@ -12,7 +12,7 @@ import scala.reflect.internal.Chars._
 import JavaTokens._
 import scala.annotation.{ switch, tailrec }
 import scala.language.implicitConversions
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {
@@ -874,7 +874,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   }
 
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
-    in = new JavaCharArrayReader(new ImmutableArray.ofChar(unit.source.content), !settings.nouescape.value, syntaxError)
+    in = new JavaCharArrayReader(new ArraySeq.ofChar(unit.source.content), !settings.nouescape.value, syntaxError)
     init()
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)
