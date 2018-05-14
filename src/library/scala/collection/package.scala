@@ -48,32 +48,6 @@ package object collection {
    */
   type AnyConstr[X] = Any
 
-  /** Collection internal utility functions.
-    */
-  private[collection] object DebugUtils {
-    def unsupported(msg: String)     = throw new UnsupportedOperationException(msg)
-    def noSuchElement(msg: String)   = throw new NoSuchElementException(msg)
-    def indexOutOfBounds(index: Int) = throw new IndexOutOfBoundsException(index.toString)
-    def illegalArgument(msg: String) = throw new IllegalArgumentException(msg)
-
-    def buildString(closure: (Any => Unit) => Unit): String = {
-      val output = new collection.mutable.StringBuilder
-      closure { any =>
-        output ++= any.toString
-        output += '\n'
-      }
-
-      output.result()
-    }
-
-    def arrayString[T](array: Array[T], from: Int, until: Int): String = {
-      array.slice(from, until) map ({
-        case null => "n/a"
-        case x    => "" + x
-      }: scala.PartialFunction[T, String]) mkString " | "
-    }
-  }
-
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
     /** Splits a sequence into head :+ tail.
