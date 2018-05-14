@@ -65,7 +65,7 @@ object Test extends DirectTest {
     AsmUtils.traceMethod(method)
 
     val insns = method.instructions
-    val it = insns.iterator()
+    val it = insns.iterator
     while (it.hasNext) {
       val in = it.next()
       if (in.getOpcode == Opcodes.IRETURN) {

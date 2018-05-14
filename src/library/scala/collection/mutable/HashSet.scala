@@ -29,7 +29,7 @@ final class HashSet[A]
   // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
   private[mutable] def getTable: FlatHashTable[A] = table
 
-  override def iterator(): Iterator[A] = table.iterator
+  override def iterator: Iterator[A] = table.iterator
 
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
@@ -82,6 +82,6 @@ object HashSet extends IterableFactory[HashSet] {
 
   def empty[A]: HashSet[A] = new HashSet[A]
 
-  def newBuilder[A](): Builder[A, HashSet[A]] = new GrowableBuilder(empty[A])
+  def newBuilder[A]: Builder[A, HashSet[A]] = new GrowableBuilder(empty[A])
 
 }

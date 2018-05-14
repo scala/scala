@@ -13,12 +13,12 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
 
   override def updated[B >: A](index: Int, elem: B): CC[B] = {
     if (index < 0) throw new IndexOutOfBoundsException(index.toString)
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size)
     }
     var i = 0
-    val it = iterator()
+    val it = iterator
     while (i < index && it.hasNext) {
       b += it.next()
       i += 1
@@ -31,9 +31,9 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   }
 
   override def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     var i = 0
-    val it = iterator()
+    val it = iterator
     while (i < from && it.hasNext) {
       b += it.next()
       i += 1

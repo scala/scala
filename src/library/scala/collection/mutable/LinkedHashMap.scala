@@ -17,7 +17,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
       case _ => Growable.from(empty[K, V], it)
     }
 
-  def newBuilder[K, V]() = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   /** Class for the linked hash map entry, used internally.
     *  @since 2.8
@@ -116,7 +116,7 @@ class LinkedHashMap[K, V]
 
   def subtractOne(key: K): this.type = { remove(key); this }
 
-  def iterator(): Iterator[(K, V)] = new Iterator[(K, V)] {
+  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
@@ -131,7 +131,7 @@ class LinkedHashMap[K, V]
 
   override def keySet: collection.Set[K] = new LinkedKeySet
 
-  override def keysIterator(): Iterator[K] = new Iterator[K] {
+  override def keysIterator: Iterator[K] = new Iterator[K] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
@@ -139,7 +139,7 @@ class LinkedHashMap[K, V]
       else Iterator.empty.next()
   }
 
-  override def valuesIterator(): Iterator[V] = new Iterator[V] {
+  override def valuesIterator: Iterator[V] = new Iterator[V] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =

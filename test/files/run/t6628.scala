@@ -1,6 +1,6 @@
 object Test {
   def coll = new Iterable[String] {
-    override def iterator(): Iterator[String] = Iterator("1")
+    override def iterator: Iterator[String] = Iterator("1")
   }
   val dropped = coll.view drop 1
 

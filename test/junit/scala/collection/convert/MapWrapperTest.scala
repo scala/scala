@@ -15,7 +15,7 @@ class MapWrapperTest {
     import scala.collection.JavaConverters.mapAsJavaMapConverter
     import scala.language.reflectiveCalls  // for accessing containsCounter
 
-    // A HashMap which throws an exception when the iterator() method is called.
+    // A HashMap which throws an exception when the iterator method is called.
     // Before the fix for scala/bug#7883, calling MapWrapper.containsKey() used to
     // iterate through every element of the wrapped Map, and thus would crash
     // in this case.
@@ -70,7 +70,7 @@ class MapWrapperTest {
     jmap.put(null, "null keys are you serious??")
 
     // manually convert to scala map
-    val scalaMap = jmap.entrySet().iterator().asScala.map { e => e.getKey -> e.getValue}.toMap
+    val scalaMap = jmap.entrySet().iterator.asScala.map { e => e.getKey -> e.getValue}.toMap
 
     val mapWrapper = scalaMap.asJava
 

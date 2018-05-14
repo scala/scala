@@ -35,7 +35,7 @@ object ArrayOps {
       *                `f` to each element of this array and collecting the results.
       */
     def map[B: ClassTag](f: A => B): Array[B] = {
-      val b = ArrayBuilder.make[B]()
+      val b = ArrayBuilder.make[B]
       var i = 0
       while (i < xs.length) {
         val x = xs(i)
@@ -54,7 +54,7 @@ object ArrayOps {
       *                `f` to each element of this array and concatenating the results.
       */
     def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = {
-      val b = ArrayBuilder.make[B]()
+      val b = ArrayBuilder.make[B]
       var i = 0
       while(i < xs.length) {
         val x = xs(i)
@@ -250,7 +250,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     slice(lo, xs.length)
   }
 
-  def iterator(): Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
+  def iterator: Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`
@@ -272,7 +272,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A pair of, first, all elements that satisfy prediacte `p` and, second, all elements that do not. */
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
-    var res1, res2 = ArrayBuilder.make[A]()
+    var res1, res2 = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -300,7 +300,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @return  an iterator yielding the elements of this array in reversed order
     */
-  def reverseIterator(): Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
+  def reverseIterator: Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
 
   /** Selects all elements of this array which satisfy a predicate.
     *
@@ -308,7 +308,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return   a new array consisting of all elements of this array that satisfy the given predicate `p`.
     */
   def filter(p: A => Boolean): Array[A] = {
-    var res = ArrayBuilder.make[A]()
+    var res = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -664,7 +664,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `f` to each element of this array and concatenating the results.
     */
   def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     var i = 0
     while(i < xs.length) {
       b ++= f(xs(i))
@@ -684,7 +684,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return           An array obtained by concatenating rows of this array.
     */
   def flatten[B](implicit asIterable: A => scala.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val sizes = map {
       case is: IndexedSeq[_] => is.size
       case _ => 0
@@ -711,7 +711,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       matched = false
       null.asInstanceOf[B]
     }
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     while(i < xs.length) {
       matched = true
       val v = f.applyOrElse(xs(i), d)
@@ -737,7 +737,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val k = that.knownSize
     b.sizeHint(if(k >= 0) min(k, xs.length) else xs.length)
     var i = 0
-    val it = that.iterator()
+    val it = that.iterator
     while(i < xs.length && it.hasNext) {
       b += ((xs(i), it.next()))
       i += 1
@@ -781,7 +781,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with all elements of a collection prepended. */
   def prependedAll[B >: A : ClassTag](prefix: Iterable[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = prefix.knownSize
     if(k >= 0) b.sizeHint(k + xs.length)
     b.addAll(prefix)
@@ -794,7 +794,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A copy of this array with all elements of a collection appended. */
   def appendedAll[B >: A : ClassTag](suffix: Iterable[B]): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = suffix.knownSize
     if(k >= 0) b.sizeHint(k + xs.length)
     b.addAll(xs)
@@ -816,7 +816,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @param replaced   The number of values in the original array that are replaced by the patch.
     */
   def patch[B >: A : ClassTag](from: Int, other: IterableOnce[B], replaced: Int): Array[B] = {
-    val b = ArrayBuilder.make[B]()
+    val b = ArrayBuilder.make[B]
     val k = other.knownSize
     if(k >= 0) b.sizeHint(xs.length + k - replaced)
     val chunk1 = if(from > 0) min(from, xs.length) else 0
@@ -896,7 +896,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val bb = new ArrayBuilder.ofRef[Array[B]]()(ClassTag[Array[B]](aClass))
     if (xs.length == 0) bb.result()
     else {
-      def mkRowBuilder() = ArrayBuilder.make[B]()(ClassTag[B](aClass.getComponentType))
+      def mkRowBuilder() = ArrayBuilder.make[B](ClassTag[B](aClass.getComponentType))
       val bs = asArray(xs(0)) map ((x: B) => mkRowBuilder())
       var j = 0
       for (xs <- this) {
@@ -937,7 +937,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     * @return a new array consisting of all the elements of this array without duplicates.
     */
   def distinctBy[B](f: A => B): Array[A] =
-    ArrayBuilder.make[A]().addAll(iterator().distinctBy(f)).result()
+    ArrayBuilder.make[A].addAll(iterator.distinctBy(f)).result()
 
   /** A copy of this array with an element value appended until a given target length is reached.
     *
@@ -1005,7 +1005,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     while(i < len) {
       val elem = xs(i)
       val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A]())
+      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A])
       bldr += elem
       i += 1
     }

@@ -161,7 +161,7 @@ object AsmUtils {
   /**
    * Returns a human-readable representation of the given instruction sequence.
    */
-  def textify(insns: InsnList): String = textify(insns.iterator().asScala)
+  def textify(insns: InsnList): String = textify(insns.iterator.asScala)
 
   /**
    * Run ASM's CheckClassAdapter over a class. Returns None if no problem is found, otherwise

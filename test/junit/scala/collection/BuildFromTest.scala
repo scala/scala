@@ -9,12 +9,12 @@ class BuildFromTest {
 
   // You can either overload methods for IterableOps and Iterable with SortedOps (if you want to support constrained collection types)
   def optionSequence1[CC[X] <: IterableOps[X, CC, _], A](xs: CC[Option[A]]): Option[CC[A]] =
-    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.iterableFactory.newBuilder[A]())) {
+    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.iterableFactory.newBuilder[A])) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result())
   def optionSequence1[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, CC[X]], A : Ordering](xs: CC[Option[A]]): Option[CC[A]] =
-    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.sortedIterableFactory.newBuilder[A]())) {
+    xs.foldLeft[Option[Builder[A, CC[A]]]](Some(xs.sortedIterableFactory.newBuilder[A])) {
       case (Some(builder), Some(a)) => Some(builder += a)
       case _ => None
     }.map(_.result())

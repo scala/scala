@@ -14,7 +14,7 @@ trait Map[K, +V]
     with Equals {
 
   override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
-  override protected def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]()
+  override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -139,7 +139,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** A generic trait that is reused by keyset implementations */
   protected trait GenKeySet extends Serializable { this: Set[K] =>
-    def iterator(): Iterator[K] = MapOps.this.keysIterator()
+    def iterator: Iterator[K] = MapOps.this.keysIterator
     def contains(key: K): Boolean = MapOps.this.contains(key)
     override def size: Int = MapOps.this.size
   }
@@ -154,14 +154,14 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *
     *  @return the values of this map as an iterable.
     */
-  def values: Iterable[V] = View.fromIteratorProvider(() => valuesIterator())
+  def values: Iterable[V] = View.fromIteratorProvider(() => valuesIterator)
 
   /** Creates an iterator for all keys.
     *
     *  @return an iterator over all keys.
     */
-  def keysIterator(): Iterator[K] = new Iterator[K] {
-    val iter = MapOps.this.iterator()
+  def keysIterator: Iterator[K] = new Iterator[K] {
+    val iter = MapOps.this.iterator
     def hasNext = iter.hasNext
     def next() = iter.next()._1
   }
@@ -170,8 +170,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *
     *  @return an iterator over all values that are associated with some key in this map.
     */
-  def valuesIterator(): Iterator[V] = new Iterator[V] {
-    val iter = MapOps.this.iterator()
+  def valuesIterator: Iterator[V] = new Iterator[V] {
+    val iter = MapOps.this.iterator
     def hasNext = iter.hasNext
     def next() = iter.next()._2
   }
@@ -275,7 +275,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def toString(): String = super[IterableOps].toString()
 
   override def mkString(start: String, sep: String, end: String): String =
-    iterator().map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
+    iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))

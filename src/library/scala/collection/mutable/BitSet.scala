@@ -151,7 +151,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
   def empty: BitSet = new BitSet()
 
-  def newBuilder(): Builder[Int, BitSet] = new GrowableBuilder(empty)
+  def newBuilder: Builder[Int, BitSet] = new GrowableBuilder(empty)
 
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {

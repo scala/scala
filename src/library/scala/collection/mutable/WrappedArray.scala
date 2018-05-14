@@ -35,13 +35,13 @@ abstract class WrappedArray[T]
   override def iterableFactory: scala.collection.SeqFactory[WrappedArray] = WrappedArray.untagged
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]): WrappedArray[T] = {
-    val b = ArrayBuilder.make()(elemTag)
+    val b = ArrayBuilder.make(elemTag)
     val s = coll.knownSize
     if(s > 0) b.sizeHint(s)
     b ++= coll
     WrappedArray.make(b.result())
   }
-  override protected def newSpecificBuilder(): Builder[T, WrappedArray[T]] = WrappedArray.newBuilder()(elemTag)
+  override protected def newSpecificBuilder: Builder[T, WrappedArray[T]] = WrappedArray.newBuilder(elemTag)
 
   /** The tag of the element type */
   def elemTag: ClassTag[T]
@@ -87,7 +87,7 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
     val n = it.knownSize
     if (n > -1) {
       val elements = scala.Array.ofDim[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())
@@ -97,7 +97,7 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
     } else make(ArrayBuffer.from(it).toArray)
   }
 
-  def newBuilder[A : ClassTag](): Builder[A, WrappedArray[A]] = ArrayBuilder.make[A]().mapResult(make)
+  def newBuilder[A : ClassTag]: Builder[A, WrappedArray[A]] = ArrayBuilder.make[A].mapResult(make)
 
   /**
    * Wrap an existing `Array` into a `WrappedArray` of the proper primitive specialization type

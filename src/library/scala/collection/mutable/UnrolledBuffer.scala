@@ -63,7 +63,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   private[collection] def size_=(s: Int) = sz = s
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]) = UnrolledBuffer.from(coll)
-  override protected def newSpecificBuilder(): Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
+  override protected def newSpecificBuilder: Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
 
   override def iterableFactory: SeqFactory[UnrolledBuffer] = UnrolledBuffer.untagged
 
@@ -121,7 +121,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     sz = 0
   }
 
-  def iterator(): Iterator[T] = new AbstractIterator[T] {
+  def iterator: Iterator[T] = new AbstractIterator[T] {
     var pos: Int = -1
     var node: Unrolled[T] = headptr
     scan()
@@ -232,9 +232,9 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
 
   def empty[A : ClassTag]: UnrolledBuffer[A] = new UnrolledBuffer[A]
 
-  def from[A : ClassTag](source: scala.collection.IterableOnce[A]): UnrolledBuffer[A] = newBuilder[A]().addAll(source)
+  def from[A : ClassTag](source: scala.collection.IterableOnce[A]): UnrolledBuffer[A] = newBuilder[A].addAll(source)
 
-  def newBuilder[A : ClassTag](): UnrolledBuffer[A] = new UnrolledBuffer[A]
+  def newBuilder[A : ClassTag]: UnrolledBuffer[A] = new UnrolledBuffer[A]
 
   val waterline = 50
   val waterlineDelim = 100    // TODO -- fix this name!  It's a denominator, not a delimiter.  (But it's part of the API so we can't just change it.)
@@ -374,7 +374,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         // insert everything from iterable to this
         var curr = this
         var appended = 0
-        for (elem <- t.iterator()) {
+        for (elem <- t.iterator) {
           curr = curr append elem
           appended += 1
         }
@@ -388,7 +388,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       else if (idx == size || (next eq null)) {
         var curr = this
         var appended = 0
-        for (elem <- t.iterator()) {
+        for (elem <- t.iterator) {
           curr = curr append elem
           appended += 1
         }

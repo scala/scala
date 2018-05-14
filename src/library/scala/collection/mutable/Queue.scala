@@ -96,7 +96,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
    *             p yields true.
    */
   def dequeueAll(p: A => Boolean): scala.collection.immutable.Seq[A] = {
-    val res = scala.collection.immutable.Seq.newBuilder[A]()
+    val res = scala.collection.immutable.Seq.newBuilder[A]
     var i, j = 0
     while (i < size) {
       if (p(apply(i))) {
@@ -121,7 +121,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   @`inline` final def front: A = head
 
   override def clone(): Queue[A] = {
-    val bf = newSpecificBuilder()
+    val bf = newSpecificBuilder
     bf ++= this
     bf.result()
   }
@@ -142,6 +142,6 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
 
   def empty[A]: Queue[A] = new Queue
 
-  def newBuilder[A](): Builder[A, Queue[A]] = new GrowableBuilder[A, Queue[A]](empty)
+  def newBuilder[A]: Builder[A, Queue[A]] = new GrowableBuilder[A, Queue[A]](empty)
 
 }

@@ -42,7 +42,7 @@ class ListBuffer[A]
 
   private type Predecessor[A] = ::[A] /*| Null*/
 
-  def iterator() = first.iterator()
+  def iterator = first.iterator
 
   override def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
 
@@ -195,7 +195,7 @@ class ListBuffer[A]
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
     ensureUnaliased()
-    val it = elems.iterator()
+    val it = elems.iterator
     if (it.hasNext) {
       ensureUnaliased()
       if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(idx.toString)
@@ -247,7 +247,7 @@ class ListBuffer[A]
       val follow = cur.tail
       setNext(prev, follow)
       len -= 1
-      prev = insertAfter(prev, f(cur.head).iterator())
+      prev = insertAfter(prev, f(cur.head).iterator)
       cur = follow
     }
     this
@@ -276,7 +276,7 @@ class ListBuffer[A]
     ensureUnaliased()
     val p = locate(i)
     removeAfter(p, math.min(n, len - i))
-    insertAfter(p, patch.iterator())
+    insertAfter(p, patch.iterator)
     this
   }
 
@@ -288,7 +288,7 @@ object ListBuffer extends StrictOptimizedSeqFactory[ListBuffer] {
 
   def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
 
-  def newBuilder[A](): Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
+  def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
 
   def empty[A]: ListBuffer[A] = new ListBuffer[A]
 }

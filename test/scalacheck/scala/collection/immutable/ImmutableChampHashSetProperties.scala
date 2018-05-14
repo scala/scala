@@ -38,7 +38,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   }
 
   property("input.equals(duplicate)") = forAll { (inputSet: ChampHashSet[K]) =>
-    val builder = ChampHashSet.newBuilder[K]()
+    val builder = ChampHashSet.newBuilder[K]
     inputSet.foreach(builder.addOne)
 
     val duplicateSet = builder.result
@@ -64,7 +64,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   }
 
   property("intersectIdentityStructural") = forAll { (inputShared: ChampHashSet[K]) =>
-    val builder = ChampHashSet.newBuilder[K]()
+    val builder = ChampHashSet.newBuilder[K]
     inputShared.foreach(builder.addOne)
 
     val duplicateSet = builder.result
@@ -121,7 +121,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   }
 
   property("unionIdentityStructural") = forAll { (inputShared: ChampHashSet[K]) =>
-    val builder = ChampHashSet.newBuilder[K]()
+    val builder = ChampHashSet.newBuilder[K]
     inputShared.foreach(builder.addOne)
 
     val duplicateSet = builder.result
@@ -166,7 +166,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   }
 
   property("subtractIdentityStructural") = forAll { (inputShared: ChampHashSet[K]) =>
-    val builder = ChampHashSet.newBuilder[K]()
+    val builder = ChampHashSet.newBuilder[K]
     inputShared.foreach(builder.addOne)
 
     val duplicateSet = builder.result
@@ -206,11 +206,11 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     subtractDefault == subtractNative
   }
 
-  property("iterator() equals reverseIterator().reverse()") = forAll { (input: ChampHashSet[K]) =>
-    val xs: List[K] = input.iterator()
+  property("iterator equals reverseIterator.reverse()") = forAll { (input: ChampHashSet[K]) =>
+    val xs: List[K] = input.iterator
       .foldLeft(List.empty[K])((list: List[K], item: K) => list prepended item)
 
-    val ys: List[K] = input.reverseIterator()
+    val ys: List[K] = input.reverseIterator
       .foldLeft(List.empty[K])((list: List[K], item: K) => list appended item)
 
     xs == ys

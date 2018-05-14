@@ -103,13 +103,13 @@ class NestedClassesCollectorTest {
     import scala.collection.JavaConverters._
     val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/rt.jar")
     val fs = FileSystems.newFileSystem(zipfile, null)
-    val root = fs.getRootDirectories.iterator().next()
-    val contents = Files.walk(root).iterator().asScala.toList
+    val root = fs.getRootDirectories.iterator.next()
+    val contents = Files.walk(root).iterator.asScala.toList
     for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
       val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
       c.visitClassSignature(classNode.signature)
-      classNode.methods.iterator().asScala.map(_.signature).foreach(c.visitMethodSignature)
-      classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
+      classNode.methods.iterator.asScala.map(_.signature).foreach(c.visitMethodSignature)
+      classNode.fields.iterator.asScala.map(_.signature).foreach(c.visitFieldSignature)
     }
   }
 
@@ -128,14 +128,14 @@ class NestedClassesCollectorTest {
         val zipfile = Paths.get(path)
         println(path)
         val fs = FileSystems.newFileSystem(zipfile, null)
-        val root = fs.getRootDirectories.iterator().next()
-        val contents = Files.walk(root).iterator().asScala.toList
+        val root = fs.getRootDirectories.iterator.next()
+        val contents = Files.walk(root).iterator.asScala.toList
         for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
           currentClass = f
           val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
           c.visitClassSignature(classNode.signature)
-          classNode.methods.iterator().asScala.map(_.signature).foreach(c.visitMethodSignature)
-          classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
+          classNode.methods.iterator.asScala.map(_.signature).foreach(c.visitMethodSignature)
+          classNode.fields.iterator.asScala.map(_.signature).foreach(c.visitFieldSignature)
         }
       } catch {
         case t: Throwable =>

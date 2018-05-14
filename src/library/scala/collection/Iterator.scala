@@ -78,7 +78,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def hasNext: Boolean
   @throws[NoSuchElementException]
   def next(): A
-  def iterator() = this
+  def iterator = this
 
   /** Wraps the value of `next()` in an option.
     *
@@ -499,7 +499,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private var myCurrent: Iterator[B] = Iterator.empty
     private def current = {
       while (!myCurrent.hasNext && self.hasNext)
-        myCurrent = f(self.next()).iterator()
+        myCurrent = f(self.next()).iterator
       myCurrent
     }
     def hasNext = current.hasNext
@@ -696,13 +696,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
-    val thatIterator = that.iterator()
+    val thatIterator = that.iterator
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
   }
 
   def zipAll[A1 >: A, B](that: IterableOnce[B], thisElem: A1, thatElem: B): Iterator[(A1, B)] = new AbstractIterator[(A1, B)] {
-    val thatIterator = that.iterator()
+    val thatIterator = that.iterator
     def hasNext = self.hasNext || thatIterator.hasNext
     def next(): (A1, B) = {
       val next1 = self.hasNext
@@ -723,7 +723,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
-    val those = that.iterator()
+    val those = that.iterator
     while (hasNext && those.hasNext)
       if (next() != those.next())
         return false
@@ -841,7 +841,7 @@ object Iterator extends IterableFactory[Iterator] {
     * @tparam A the type of the collection’s elements
     * @return a new $coll with the elements of `source`
     */
-  override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator()
+  override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator
 
   /** The iterator which produces no values. */
   @`inline` final def empty[T]: Iterator[T] = _empty
@@ -852,13 +852,13 @@ object Iterator extends IterableFactory[Iterator] {
     def next() = if (consumed) empty.next() else { consumed = true; a }
   }
 
-  override def apply[A](xs: A*): Iterator[A] = xs.iterator()
+  override def apply[A](xs: A*): Iterator[A] = xs.iterator
 
   /**
     * @return A builder for $Coll objects.
     * @tparam A the type of the ${coll}’s elements
     */
-  def newBuilder[A](): Builder[A, Iterator[A]] =
+  def newBuilder[A]: Builder[A, Iterator[A]] =
     new ImmutableBuilder[A, Iterator[A]](empty[A]) {
       override def addOne(elem: A): this.type = { elems = elems ++ single(elem); this }
     }
@@ -1044,7 +1044,7 @@ object Iterator extends IterableFactory[Iterator] {
   }
 
   private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A]) {
-    def headIterator: Iterator[A] = head.iterator()
+    def headIterator: Iterator[A] = head.iterator
   }
 
   /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.

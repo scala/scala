@@ -45,14 +45,14 @@ sealed class ListSet[A]
   def incl(elem: A): ListSet[A] = new Node(elem)
   def excl(elem: A): ListSet[A] = this
 
-  def iterator(): scala.collection.Iterator[A] = {
+  def iterator: scala.collection.Iterator[A] = {
     var curr: ListSet[A] = this
     var res: List[A] = Nil
     while (!curr.isEmpty) {
       res = curr.elem :: res
       curr = curr.next
     }
-    res.iterator()
+    res.iterator
   }
 
   protected def elem: A = throw new NoSuchElementException("elem of empty set")
@@ -112,7 +112,7 @@ object ListSet extends IterableFactory[ListSet] {
   def from[E](it: scala.collection.IterableOnce[E]): ListSet[E] =
     it match {
       case ls: ListSet[E] => ls
-      case _ => (newBuilder[E]() ++= it).result()
+      case _ => (newBuilder[E] ++= it).result()
     }
 
   @SerialVersionUID(3L)
@@ -121,7 +121,7 @@ object ListSet extends IterableFactory[ListSet] {
 
   def empty[A]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]
 
-  def newBuilder[A](): Builder[A, ListSet[A]] =
+  def newBuilder[A]: Builder[A, ListSet[A]] =
     new ImmutableBuilder[A, ListSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }

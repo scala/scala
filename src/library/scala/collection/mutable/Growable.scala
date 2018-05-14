@@ -45,7 +45,7 @@ trait Growable[-A] extends Clearable {
    *  @return  the $coll itself.
    */
   def addAll(xs: IterableOnce[A]): this.type = {
-    val it = xs.iterator()
+    val it = xs.iterator
     while (it.hasNext) {
       addOne(it.next())
     }

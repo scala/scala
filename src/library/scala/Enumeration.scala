@@ -288,7 +288,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def toBitMask: Array[Long] = nnIds.toBitMask
 
     override protected def fromSpecificIterable(coll: Iterable[Value]) = ValueSet.fromSpecific(coll)
-    override protected def newSpecificBuilder() = ValueSet.newBuilder
+    override protected def newSpecificBuilder = ValueSet.newBuilder
 
     def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
     def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))

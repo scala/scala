@@ -12,7 +12,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {
-    val builder = newSpecificBuilder()
+    val builder = newSpecificBuilder
     val seen = mutable.HashSet.empty[B]
 
     for (x <- this) {
@@ -26,7 +26,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   }
 
   override def prepended[B >: A](elem: B): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
     }
@@ -36,7 +36,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   }
 
   override def appended[B >: A](elem: B): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
     }
@@ -46,21 +46,21 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   }
 
   override def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     b ++= this
     b ++= suffix
     b.result()
   }
 
   override def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     b ++= prefix
     b ++= this
     b.result()
   }
 
   override def padTo[B >: A](len: Int, elem: B): CC[B] = {
-    val b = iterableFactory.newBuilder[B]()
+    val b = iterableFactory.newBuilder[B]
     val L = size
     b.sizeHint(math.max(L, len))
     var diff = len - L

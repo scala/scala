@@ -45,19 +45,19 @@ object Array {
   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] =
     new Factory[A, Array[A]] {
       def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
-      def newBuilder(): mutable.Builder[A, Array[A]] = Array.newBuilder[A]
+      def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
     }
 
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].
    */
-  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T]()(t)
+  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
 
   def from[A : ClassTag](it: IterableOnce[A]): Array[A] = {
     val n = it.knownSize
     if (n > -1) {
       val elements = new Array[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())
@@ -65,8 +65,8 @@ object Array {
       }
       elements
     } else {
-      val b = ArrayBuilder.make[A]()
-      val iterator = it.iterator()
+      val b = ArrayBuilder.make[A]
+      val iterator = it.iterator
       while (iterator.hasNext)
         b += iterator.next()
       b.result()

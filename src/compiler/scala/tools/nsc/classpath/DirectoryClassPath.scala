@@ -176,9 +176,9 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
 
   // e.g. "java.lang" -> Seq("/modules/java.base")
   private val packageToModuleBases: Map[String, Seq[Path]] = {
-    val ps = Files.newDirectoryStream(dir).iterator().asScala
+    val ps = Files.newDirectoryStream(dir).iterator.asScala
     def lookup(pack: Path): Seq[Path] = {
-      Files.list(pack).iterator().asScala.map(l => if (Files.isSymbolicLink(l)) Files.readSymbolicLink(l) else l).toList
+      Files.list(pack).iterator.asScala.map(l => if (Files.isSymbolicLink(l)) Files.readSymbolicLink(l) else l).toList
     }
     ps.map(p => (p.toString.stripPrefix("/packages/"), lookup(p))).toMap
   }
@@ -192,7 +192,7 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
     if (inPackage == "") Nil
     else {
       packageToModuleBases.getOrElse(inPackage, Nil).flatMap(x =>
-        Files.list(x.resolve(inPackage.replace('.', '/'))).iterator().asScala.filter(_.getFileName.toString.endsWith(".class"))).map(x =>
+        Files.list(x.resolve(inPackage.replace('.', '/'))).iterator.asScala.filter(_.getFileName.toString.endsWith(".class"))).map(x =>
         ClassFileEntryImpl(new PlainNioFile(x))).toVector
     }
   }
@@ -225,8 +225,8 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   import java.nio.file.Path, java.nio.file._
 
   private val fileSystem: FileSystem = FileSystems.newFileSystem(ctSym, null)
-  private val root: Path = fileSystem.getRootDirectories.iterator().next
-  private val roots = Files.newDirectoryStream(root).iterator().asScala.toList
+  private val root: Path = fileSystem.getRootDirectories.iterator.next
+  private val roots = Files.newDirectoryStream(root).iterator.asScala.toList
 
   // http://mail.openjdk.java.net/pipermail/compiler-dev/2018-March/011737.html
   private def codeFor(major: Int): String = if (major < 10) major.toString else ('A' + (major - 10)).toChar.toString
@@ -238,7 +238,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   // e.g. "java.lang" -> Seq(/876/java/lang, /87/java/lang, /8/java/lang))
   private val packageIndex: scala.collection.Map[String, scala.collection.Seq[Path]] = {
     val index = collection.mutable.AnyRefMap[String, collection.mutable.ListBuffer[Path]]()
-    rootsForRelease.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach { p =>
+    rootsForRelease.foreach(root => Files.walk(root).iterator.asScala.filter(Files.isDirectory(_)).foreach { p =>
       if (p.getNameCount > 1) {
         val packageDotted = p.subpath(1, p.getNameCount).toString.replace('/', '.')
         index.getOrElseUpdate(packageDotted, new collection.mutable.ListBuffer) += p
@@ -256,7 +256,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
     if (inPackage == "") Nil
     else {
       val sigFiles = packageIndex.getOrElse(inPackage, Nil).iterator.flatMap(p =>
-        Files.list(p).iterator().asScala.filter(_.getFileName.toString.endsWith(".sig")))
+        Files.list(p).iterator.asScala.filter(_.getFileName.toString.endsWith(".sig")))
       sigFiles.map(f => ClassFileEntryImpl(new PlainNioFile(f))).toVector
     }
   }

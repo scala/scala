@@ -37,7 +37,7 @@ sealed abstract class ImmutableArray[+A]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  override protected def newSpecificBuilder(): Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected def newSpecificBuilder: Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A](elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
@@ -66,7 +66,7 @@ sealed abstract class ImmutableArray[+A]
   }
 
   override def appendedAll[B >: A](suffix: collection.Iterable[B]): ImmutableArray[B] = {
-    val b = ArrayBuilder.make[Any]()
+    val b = ArrayBuilder.make[Any]
     val k = suffix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
     b.addAll(unsafeArray)
@@ -75,7 +75,7 @@ sealed abstract class ImmutableArray[+A]
   }
 
   override def prependedAll[B >: A](prefix: collection.Iterable[B]): ImmutableArray[B] = {
-    val b = ArrayBuilder.make[Any]()
+    val b = ArrayBuilder.make[Any]
     val k = prefix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
     b.addAll(prefix)
@@ -135,7 +135,7 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     val n = it.knownSize
     if (n > -1) {
       val elements = Array.ofDim[A](n)
-      val iterator = it.iterator()
+      val iterator = it.iterator
       var i = 0
       while (i < n) {
         ScalaRunTime.array_update(elements, i, iterator.next())
@@ -145,8 +145,8 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
     } else ArrayBuffer.from(it).toArray
   }
 
-  def newBuilder[A : ClassTag](): Builder[A, ImmutableArray[A]] =
-    ArrayBuffer.newBuilder[A]().mapResult(b => unsafeWrapArray[A](b.toArray))
+  def newBuilder[A : ClassTag]: Builder[A, ImmutableArray[A]] =
+    ArrayBuffer.newBuilder[A].mapResult(b => unsafeWrapArray[A](b.toArray))
 
   override def fill[A : ClassTag](n: Int)(elem: => A): ImmutableArray[A] = tabulate(n)(_ => elem)
 

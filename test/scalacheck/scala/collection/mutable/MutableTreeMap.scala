@@ -160,7 +160,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
   }
 
   property("lastOption") = forAll { (map: mutable.TreeMap[K, V]) =>
-    map.lastOption == Try(map.iterator().max).toOption
+    map.lastOption == Try(map.iterator.max).toOption
   }
 
   property("minAfter") = forAll { (allEntries: Map[K, V]) =>
@@ -224,7 +224,7 @@ object MutableTreeMapProjectionProperties extends Properties("mutable.TreeMapPro
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
   def entriesInView[This <: IterableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, (K, V), That]) = {
-    (bf.newBuilder(entries) ++= entries.iterator().filter { case (k, _) => in(k, from, until) }).result()
+    (bf.newBuilder(entries) ++= entries.iterator.filter { case (k, _) => in(k, from, until) }).result()
   }
 
   property("get, contains") = forAll { (allEntries: Map[K, V], from: Option[K], until: Option[K]) =>

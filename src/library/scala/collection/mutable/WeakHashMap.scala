@@ -43,6 +43,6 @@ class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
 object WeakHashMap extends MapFactory[WeakHashMap] {
   def empty[K, V]: WeakHashMap[K,V] = new WeakHashMap[K, V]
   def from[K, V](it: collection.IterableOnce[(K, V)]): WeakHashMap[K,V] = Growable.from(empty[K, V], it)
-  def newBuilder[K, V](): Builder[(K, V), WeakHashMap[K,V]] = new GrowableBuilder(WeakHashMap.empty[K, V])
+  def newBuilder[K, V]: Builder[(K, V), WeakHashMap[K,V]] = new GrowableBuilder(WeakHashMap.empty[K, V])
 }
 
