@@ -770,6 +770,15 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
     fromIterable(new View.Patched(this, from, other, replaced))
 
+  /** A copy of this $coll with one single replaced element.
+    *  @param  index  the position of the replacement
+    *  @param  elem   the replacing element
+    *  @tparam B        the element type of the returned $coll.
+    *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
+    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
+    */
+  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
+
   private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- sq) occ(y) += 1
