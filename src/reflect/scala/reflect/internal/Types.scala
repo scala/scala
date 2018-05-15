@@ -1774,53 +1774,9 @@ trait Types
       throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
   }
 
-  object baseClassesCycleMonitor {
-    private[this] var open: List[Symbol] = Nil
-    @inline private def cycleLog(msg: => String): Unit = {
-      if (settings.debug)
-        Console.err.println(msg)
-    }
-    def size = open.size
-    def push(clazz: Symbol): Unit = {
-      cycleLog("+ " + ("  " * size) + clazz.fullNameString)
-      open ::= clazz
-    }
-    def pop(clazz: Symbol): Unit = {
-      assert(open.head eq clazz, (clazz, open))
-      open = open.tail
-    }
-    def isOpen(clazz: Symbol) = open contains clazz
-  }
-
-  protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
-    def define() = defineBaseClassesOfCompoundType(tpe, force = false)
-    if (!breakCycles || isPastTyper) define()
-    else tpe match {
-      // non-empty parents helpfully excludes all package classes
-      case tpe @ ClassInfoType(_ :: _, _, clazz) if !clazz.isAnonOrRefinementClass =>
-        // Cycle: force update
-        if (baseClassesCycleMonitor isOpen clazz)
-          defineBaseClassesOfCompoundType(tpe, force = true)
-        else {
-          baseClassesCycleMonitor push clazz
-          try define()
-          finally baseClassesCycleMonitor pop clazz
-        }
-      case _ =>
-        define()
-    }
-  }
-  private def defineBaseClassesOfCompoundType(tpe: CompoundType, force: Boolean): Unit = {
+  protected def defineBaseClassesOfCompoundType(tpe: CompoundType) {
     val period = tpe.baseClassesPeriod
-    if (period == currentPeriod) {
-      if (force && breakCycles) {
-        def what = tpe.typeSymbol.toString + " in " + tpe.typeSymbol.owner.fullNameString
-        val bcs  = computeBaseClasses(tpe)
-        tpe.baseClassesCache = bcs
-        warning(s"Breaking cycle in base class computation of $what ($bcs)")
-      }
-    }
-    else {
+    if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
@@ -3964,6 +3920,8 @@ trait Types
     override def complete(sym: Symbol): Unit
     override def safeToString = "<?>"
     override def kind = "LazyType"
+    def isJavaVarargsMethod: Boolean = false
+    def javaThrownExceptions: List[Symbol] = Nil
   }
 
   /** A marker trait representing an as-yet unevaluated type

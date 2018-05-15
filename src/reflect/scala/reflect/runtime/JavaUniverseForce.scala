@@ -163,7 +163,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SuperType
     this.TypeBounds
     this.CompoundType
-    this.baseClassesCycleMonitor
     this.RefinedType
     this.ClassInfoType
     this.ConstantType

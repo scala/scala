@@ -7,7 +7,7 @@ object Test extends ReplTest {
   val clazz = rootMirror.getClassByName(newTermName("test.ThrowsDeclaration_2"));
   {
   	val method = clazz.info.member(newTermName("foo"))
-  	val throwsAnn = method.annotations.head
+  	val throwsAnn = method.initialize.annotations.head
   	val atp = throwsAnn.atp
   	println("foo")
   	println("atp.typeParams.isEmpty: " + atp.typeParams.isEmpty)
@@ -17,7 +17,7 @@ object Test extends ReplTest {
 
   {
   	val method = clazz.info.member(newTermName("bar"))
-  	val throwsAnn = method.annotations.head
+  	val throwsAnn = method.initialize.annotations.head
   	val Literal(const) = throwsAnn.args.head
   	val tp = const.typeValue
   	println("bar")

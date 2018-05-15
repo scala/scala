@@ -417,7 +417,10 @@ trait Definitions extends api.StandardDefinitions {
     def isByName(param: Symbol)            = isByNameParamType(param.tpe_*)
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
 
-    def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
+    def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && (m.rawInfo match {
+      case completer: LazyType => completer.isJavaVarargsMethod
+      case _ => isJavaVarArgs(m.info.params)
+    })
     def isJavaVarArgs(params: scala.collection.Seq[Symbol])  = !params.isEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: scala.collection.Seq[Symbol]) = !params.isEmpty && isScalaRepeatedParamType(params.last.tpe)
     def isVarArgsList(params: scala.collection.Seq[Symbol])  = !params.isEmpty && isRepeatedParamType(params.last.tpe)
