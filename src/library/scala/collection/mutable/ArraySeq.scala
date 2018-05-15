@@ -34,22 +34,26 @@ abstract class ArraySeq[T]
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]): ArraySeq[T] = {
-    val b = ArrayBuilder.make(elemTag)
+    val b = ArrayBuilder.make(elemTag).asInstanceOf[ArrayBuilder[T]]
     val s = coll.knownSize
     if(s > 0) b.sizeHint(s)
     b ++= coll
     ArraySeq.make(b.result())
   }
-  override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(elemTag)
+  override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(elemTag).asInstanceOf[Builder[T, ArraySeq[T]]]
 
-  /** The tag of the element type */
-  def elemTag: ClassTag[T]
+  /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
+    * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
+    * or subtype of the element type. */
+  def elemTag: ClassTag[_]
 
   /** Update element at given index */
   def update(index: Int, elem: T): Unit
 
-  /** The underlying array */
-  def array: Array[T]
+  /** The underlying array. Its element type does not have to be equal to the element type of this ArraySeq. A primitive
+    * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
+    * or subtype of the element type. */
+  def array: Array[_]
 
   override def toArray[U >: T : ClassTag]: Array[U] = {
     val thatElementClass = implicitly[ClassTag[U]].runtimeClass
@@ -62,7 +66,7 @@ abstract class ArraySeq[T]
   override def className = "ArraySeq"
 
   /** Clones this object, including the underlying Array. */
-  override def clone(): ArraySeq[T] = ArraySeq.make(array.clone())
+  override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]
 
   override def copyToArray[B >: T](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
 
