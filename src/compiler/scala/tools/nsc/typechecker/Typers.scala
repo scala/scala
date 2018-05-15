@@ -38,11 +38,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-  // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
-  // is cached here and re-used in typedDefDef / typedValDef
-  // Also used to cache imports type-checked by namer.
-  val transformed = new mutable.AnyRefMap[Tree, Tree]
-
   final val shortenImports = false
 
   // All typechecked RHS of ValDefs for right-associative operator desugaring
@@ -115,14 +110,90 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
+  /** Check that type of given tree does not contain local or private
+   *  components.
+   */
+  object checkNoEscaping extends TypeMap {
+    private var owner: Symbol = _
+    private var scope: Scope = _
+    private var hiddenSymbols: List[Symbol] = _
+
+    /** Check that type `tree` does not refer to private
+     *  components unless itself is wrapped in something private
+     *  (`owner` tells where the type occurs).
+     */
+    def privates[T <: Tree](typer: Typer, owner: Symbol, tree: T): T =
+      check(typer, owner, EmptyScope, WildcardType, tree)
+
+    private def check[T <: Tree](typer: Typer, owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
+      this.owner = owner
+      this.scope = scope
+      hiddenSymbols = List()
+      import typer.TyperErrorGen._
+      val tp1 = apply(tree.tpe)
+      if (hiddenSymbols.isEmpty) tree setType tp1
+      else if (hiddenSymbols exists (_.isErroneous)) HiddenSymbolWithError(tree)
+      else if (isFullyDefined(pt)) tree setType pt
+      else if (tp1.typeSymbol.isAnonymousClass)
+        check(typer, owner, scope, pt, tree setType tp1.typeSymbol.classBound)
+      else if (owner == NoSymbol)
+        tree setType packSymbols(hiddenSymbols.reverse, tp1)
+      else if (!isPastTyper) { // privates
+        val badSymbol = hiddenSymbols.head
+        SymbolEscapesScopeError(tree, badSymbol)
+      } else tree
+    }
+
+    def addHidden(sym: Symbol) =
+      if (!(hiddenSymbols contains sym)) hiddenSymbols = sym :: hiddenSymbols
+
+    override def apply(t: Type): Type = {
+      def checkNoEscape(sym: Symbol): Unit = {
+        if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
+          var o = owner
+          while (o != NoSymbol && o != sym.owner && o != sym.owner.linkedClassOfClass &&
+                 !o.isLocalToBlock && !o.isPrivate &&
+                 !o.privateWithin.hasTransOwner(sym.owner))
+            o = o.owner
+          if (o == sym.owner || o == sym.owner.linkedClassOfClass)
+            addHidden(sym)
+        } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
+          var e = scope.lookupEntry(sym.name)
+          var found = false
+          while (!found && (e ne null) && e.owner == scope) {
+            if (e.sym == sym) {
+              found = true
+              addHidden(sym)
+            } else {
+              e = scope.lookupNextEntry(e)
+            }
+          }
+        }
+      }
+      mapOver(
+        t match {
+          case TypeRef(_, sym, args) =>
+            checkNoEscape(sym)
+            if (!hiddenSymbols.isEmpty && hiddenSymbols.head == sym &&
+                sym.isAliasType && sameLength(sym.typeParams, args)) {
+              hiddenSymbols = hiddenSymbols.tail
+              t.dealias
+            } else t
+          case SingleType(_, sym) =>
+            checkNoEscape(sym)
+            t
+          case _ =>
+            t
+        })
+    }
+  }
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
-    import context0.unit
+    private def unit = context.unit
     import typeDebug.ptTree
     import TyperErrorGen._
-    val runDefinitions = currentRun.runDefinitions
-    import runDefinitions._
 
-    private val transformed: mutable.Map[Tree, Tree] = unit.transformed
+    private def transformed: mutable.Map[Tree, Tree] = unit.transformed
 
     val infer = new Inferencer {
       def context = Typer.this.context
@@ -345,83 +416,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!checkNonCyclic(defn.pos, tpt.tpe, defn.symbol)) {
         tpt setType ErrorType
         defn.symbol.setInfo(ErrorType)
-      }
-    }
-
-    /** Check that type of given tree does not contain local or private
-     *  components.
-     */
-    object checkNoEscaping extends TypeMap {
-      private var owner: Symbol = _
-      private var scope: Scope = _
-      private var hiddenSymbols: List[Symbol] = _
-
-      /** Check that type `tree` does not refer to private
-       *  components unless itself is wrapped in something private
-       *  (`owner` tells where the type occurs).
-       */
-      def privates[T <: Tree](owner: Symbol, tree: T): T =
-        check(owner, EmptyScope, WildcardType, tree)
-
-      private def check[T <: Tree](owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
-        this.owner = owner
-        this.scope = scope
-        hiddenSymbols = List()
-        val tp1 = apply(tree.tpe)
-        if (hiddenSymbols.isEmpty) tree setType tp1
-        else if (hiddenSymbols exists (_.isErroneous)) HiddenSymbolWithError(tree)
-        else if (isFullyDefined(pt)) tree setType pt
-        else if (tp1.typeSymbol.isAnonymousClass)
-          check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
-        else if (owner == NoSymbol)
-          tree setType packSymbols(hiddenSymbols.reverse, tp1)
-        else if (!isPastTyper) { // privates
-          val badSymbol = hiddenSymbols.head
-          SymbolEscapesScopeError(tree, badSymbol)
-        } else tree
-      }
-
-      def addHidden(sym: Symbol) =
-        if (!(hiddenSymbols contains sym)) hiddenSymbols = sym :: hiddenSymbols
-
-      override def apply(t: Type): Type = {
-        def checkNoEscape(sym: Symbol): Unit = {
-          if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
-            var o = owner
-            while (o != NoSymbol && o != sym.owner && o != sym.owner.linkedClassOfClass &&
-                   !o.isLocalToBlock && !o.isPrivate &&
-                   !o.privateWithin.hasTransOwner(sym.owner))
-              o = o.owner
-            if (o == sym.owner || o == sym.owner.linkedClassOfClass)
-              addHidden(sym)
-          } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
-            var e = scope.lookupEntry(sym.name)
-            var found = false
-            while (!found && (e ne null) && e.owner == scope) {
-              if (e.sym == sym) {
-                found = true
-                addHidden(sym)
-              } else {
-                e = scope.lookupNextEntry(e)
-              }
-            }
-          }
-        }
-        mapOver(
-          t match {
-            case TypeRef(_, sym, args) =>
-              checkNoEscape(sym)
-              if (!hiddenSymbols.isEmpty && hiddenSymbols.head == sym &&
-                  sym.isAliasType && sameLength(sym.typeParams, args)) {
-                hiddenSymbols = hiddenSymbols.tail
-                t.dealias
-              } else t
-            case SingleType(_, sym) =>
-              checkNoEscape(sym)
-              t
-            case _ =>
-              t
-          })
       }
     }
 
@@ -750,7 +744,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String) = tpe match {
       case extp: ExistentialType if !extp.isRepresentableWithWildcards =>
-        checkFeature(pos, ExistentialsFeature, prefix+" "+tpe)
+        checkFeature(pos, currentRun.runDefinitions.ExistentialsFeature, prefix+" "+tpe)
       case _ =>
     }
 
@@ -1121,7 +1115,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def hasPolymorphicApply = applyMeth.alternatives exists (_.tpe.typeParams.nonEmpty)
           def hasMonomorphicApply = applyMeth.alternatives exists (_.tpe.paramSectionCount > 0)
 
-          dyna.acceptsApplyDynamic(tree.tpe) || (
+          acceptsApplyDynamic(tree.tpe) || (
             if (mode.inTappMode)
               tree.tpe.typeParams.isEmpty && hasPolymorphicApply
             else
@@ -1675,7 +1669,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (treeInfo.hasUntypedPreSuperFields(templ.body))
             typedPrimaryConstrBody(templ)(EmptyTree)
 
-          supertpts mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
+          supertpts mapConserve (tpt => checkNoEscaping.privates(this, context.owner, tpt))
         }
         catch {
           case ex: TypeError if !global.propagateCyclicReferences =>
@@ -1707,7 +1701,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def validateParentClasses(parents: List[Tree], selfType: Type): Unit = {
       val pending = ListBuffer[AbsTypeError]()
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
-        if (parent == DynamicClass) checkFeature(parentPos, DynamicsFeature)
+        if (parent == DynamicClass) checkFeature(parentPos, currentRun.runDefinitions.DynamicsFeature)
 
       def validateParentClass(parent: Tree, superclazz: Symbol) =
         if (!parent.isErrorTyped) {
@@ -1910,6 +1904,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val self1 = (templ.self: @unchecked) match {
         case vd @ ValDef(_, _, tpt, EmptyTree) =>
           val tpt1 = checkNoEscaping.privates(
+            this,
             clazz.thisSym,
             treeCopy.TypeTree(tpt).setOriginal(tpt) setType vd.symbol.tpe
           )
@@ -2016,7 +2011,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else typedModifiers(vdef.mods)
 
       sym.annotations.map(_.completeInfo())
-      val tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt))
+      val tpt1 = checkNoEscaping.privates(this, sym, typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
       // allow trait accessors: it's the only vehicle we have to hang on to annotations that must be passed down to
@@ -2251,7 +2246,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (isRepeatedParamType(vparam1.symbol.tpe))
           StarParamNotLastError(vparam1)
 
-      val tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
+      val tpt1 = checkNoEscaping.privates(this, meth, typedType(ddef.tpt))
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = typedModifiers(ddef.mods)
@@ -2301,7 +2296,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
           case List(param) :: _ if !param.isImplicit =>
-            checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
+            checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
           case _ =>
         }
       }
@@ -2330,7 +2325,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         tdef.symbol.deSkolemize.removeAnnotation(definitions.SpecializedClass)
       }
 
-      val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
+      val rhs1 = checkNoEscaping.privates(this, tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
       if (tdef.symbol.owner.isType)
         rhs1.tpe match {
@@ -2339,7 +2334,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
       if (tdef.symbol.isDeferred && tdef.symbol.info.isHigherKinded)
-        checkFeature(tdef.pos, HigherKindsFeature)
+        checkFeature(tdef.pos, currentRun.runDefinitions.HigherKindsFeature)
 
       treeCopy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
@@ -3455,7 +3450,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           handleOverloaded
 
-        case _ if isPolymorphicSignature(fun.symbol) =>
+        case _ if currentRun.runDefinitions.isPolymorphicSignature(fun.symbol) =>
           // Mimic's Java's treatment of polymorphic signatures as described in
           // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
           //
@@ -3606,7 +3601,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               (args exists isNamedArg) ||     // uses a named argument
               isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
-            if (dyna.isApplyDynamicNamed(fun) && isDynamicRewrite(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
+            if (isApplyDynamicNamed(fun) && isDynamicRewrite(fun)) typedNamedApply(tree, fun, args, mode, pt)
             else tryNamesDefaults
           } else {
             val tparams = context.extractUndetparams()
@@ -3953,7 +3948,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
-    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
+    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context.owner)
 
     def isReferencedFrom(ctx: Context, sym: Symbol): Boolean = (
        ctx.owner.isTerm && (ctx.scope.exists { dcl => dcl.isInitialized && (dcl.info contains sym) }) || {
@@ -4131,7 +4126,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (sameLength(tparams, args)) {
           val targs = mapList(args)(treeTpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
-          if (isPredefClassOf(fun.symbol))
+          if (fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol))
             typedClassOf(tree, args.head, noGen = true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
@@ -4164,121 +4159,125 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
-    object dyna {
-      import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
+    //
+    // START: applyDynamic suport
+    //
+    import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
 
-      def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
+    private def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
 
-      /** Returns `Some(t)` if `name` can be selected dynamically on `qual`, `None` if not.
-       * `t` specifies the type to be passed to the applyDynamic/selectDynamic call (unless it is NoType)
-       * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
-       */
-      def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
-        // don't selectDynamic selectDynamic, do select dynamic at unknown type,
-        // in scala-virtualized, we may return a Some(tp) where tp ne NoType
-        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
-        else None
+    /** Returns `Some(t)` if `name` can be selected dynamically on `qual`, `None` if not.
+     * `t` specifies the type to be passed to the applyDynamic/selectDynamic call (unless it is NoType)
+     * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
+     */
+    private def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
+      // don't selectDynamic selectDynamic, do select dynamic at unknown type,
+      // in scala-virtualized, we may return a Some(tp) where tp ne NoType
+      if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
+      else None
 
-      def isDynamicallyUpdatable(tree: Tree) = tree match {
-        // if the qualifier is a Dynamic, that's all we need to know
-        case DynamicUpdate(qual, name) => acceptsApplyDynamic(qual.tpe)
-        case _ => false
-      }
-
-      def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
-        case DynamicApplicationNamed(qual, _) => acceptsApplyDynamic(qual.tpe.widen)
-        case _ => false
-          // look deeper?
-          // val treeInfo.Applied(methPart, _, _) = fun
-          // println("methPart of "+ fun +" is "+ methPart)
-          // if (methPart ne fun) isApplyDynamicNamed(methPart)
-          // else false
-      }
-
-      def typedNamedApply(orig: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
-        def argToBinding(arg: Tree): Tree = arg match {
-          case NamedArg(i @ Ident(name), rhs) =>
-            atPos(i.pos.withEnd(rhs.pos.end)) {
-              gen.mkTuple(List(atPos(i.pos)(CODE.LIT(name.toString)), rhs))
-            }
-          case _ =>
-            gen.mkTuple(List(CODE.LIT(""), arg))
-        }
-
-        val t = treeCopy.Apply(orig, unmarkDynamicRewrite(fun), args map argToBinding)
-        wrapErrors(t, _.typed(t, mode, pt))
-      }
-
-      /** Translate selection that does not typecheck according to the normal rules into a selectDynamic/applyDynamic.
-       *
-       * foo.method("blah")  ~~> foo.applyDynamic("method")("blah")
-       * foo.method(x = "blah")  ~~> foo.applyDynamicNamed("method")(("x", "blah"))
-       * foo.varia = 10      ~~> foo.updateDynamic("varia")(10)
-       * foo.field           ~~> foo.selectDynamic("field")
-       * foo.arr(10) = 13    ~~> foo.selectDynamic("arr").update(10, 13)
-       *
-       * what if we want foo.field == foo.selectDynamic("field") == 1, but `foo.field = 10` == `foo.selectDynamic("field").update(10)` == ()
-       * what would the signature for selectDynamic be? (hint: it needs to depend on whether an update call is coming or not)
-       *
-       * need to distinguish selectDynamic and applyDynamic somehow: the former must return the selected value, the latter must accept an apply or an update
-       *  - could have only selectDynamic and pass it a boolean whether more is to come,
-       *    so that it can either return the bare value or something that can handle the apply/update
-       *      HOWEVER that makes it hard to return unrelated values for the two cases
-       *      --> selectDynamic's return type is now dependent on the boolean flag whether more is to come
-       *  - simplest solution: have two method calls
-       *
-       */
-      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
-        val cxTree = context.enclosingNonImportContext.tree // scala/bug#8364
-        debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
-        val treeInfo.Applied(treeSelection, _, _) = tree
-        def isDesugaredApply = {
-          val protoQual = macroExpandee(qual) orElse qual
-          treeSelection match {
-            case Select(`protoQual`, nme.apply) => true
-            case _                              => false
-          }
-        }
-        acceptsApplyDynamicWithType(qual, name) map { tp =>
-          // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
-          // here - it is for scala-virtualized, where tp will be passed as an argument (for
-          // selection on a staged Struct)
-          def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
-
-          /* Note that the trees which arrive here are potentially some distance from
-           * the trees of direct interest. `cxTree` is some enclosing expression which
-           * may apparently be arbitrarily larger than `tree`; and `tree` itself is
-           * too small, having at least in some cases lost its explicit type parameters.
-           * This logic is designed to use `tree` to pinpoint the immediately surrounding
-           * Apply/TypeApply/Select node, and only then creates the dynamic call.
-           * See scala/bug#6731 among others.
-           */
-          def findSelection(t: Tree): Option[(TermName, Tree)] = t match {
-            case Apply(fn, args) if matches(fn) =>
-              val op = if(args.exists(_.isInstanceOf[NamedArg])) nme.applyDynamicNamed else nme.applyDynamic
-              // not supported: foo.bar(a1,..., an: _*)
-              val fn1 = if(treeInfo.isWildcardStarArgList(args)) DynamicVarArgUnsupported(fn, op) else fn
-              Some((op, fn1))
-            case Assign(lhs, _) if matches(lhs) => Some((nme.updateDynamic, lhs))
-            case _ if matches(t)                => Some((nme.selectDynamic, t))
-            case _                              => t.children.flatMap(findSelection).headOption
-          }
-          findSelection(cxTree) map { case (opName, treeInfo.Applied(_, targs, _)) =>
-            val fun = gen.mkTypeApply(Select(qual, opName), targs)
-            if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
-            val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
-             Literal(Constant(name.decode))
-            }
-            markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
-          } getOrElse {
-            // While there may be an error in the found tree itself, it should not be possible to *not find* it at all.
-            devWarning(s"Tree $tree not found in the context $cxTree while trying to do a dynamic application")
-            setError(tree)
-          }
-        }
-      }
-      def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
+    private def isDynamicallyUpdatable(tree: Tree) = tree match {
+      // if the qualifier is a Dynamic, that's all we need to know
+      case DynamicUpdate(qual, name) => acceptsApplyDynamic(qual.tpe)
+      case _ => false
     }
+
+    private def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
+      case DynamicApplicationNamed(qual, _) => acceptsApplyDynamic(qual.tpe.widen)
+      case _ => false
+        // look deeper?
+        // val treeInfo.Applied(methPart, _, _) = fun
+        // println("methPart of "+ fun +" is "+ methPart)
+        // if (methPart ne fun) isApplyDynamicNamed(methPart)
+        // else false
+    }
+
+    private def typedNamedApply(orig: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
+      def argToBinding(arg: Tree): Tree = arg match {
+        case NamedArg(i @ Ident(name), rhs) =>
+          atPos(i.pos.withEnd(rhs.pos.end)) {
+            gen.mkTuple(List(atPos(i.pos)(CODE.LIT(name.toString)), rhs))
+          }
+        case _ =>
+          gen.mkTuple(List(CODE.LIT(""), arg))
+      }
+
+      val t = treeCopy.Apply(orig, unmarkDynamicRewrite(fun), args map argToBinding)
+      wrapErrors(t, _.typed(t, mode, pt))
+    }
+
+    /** Translate selection that does not typecheck according to the normal rules into a selectDynamic/applyDynamic.
+     *
+     * foo.method("blah")  ~~> foo.applyDynamic("method")("blah")
+     * foo.method(x = "blah")  ~~> foo.applyDynamicNamed("method")(("x", "blah"))
+     * foo.varia = 10      ~~> foo.updateDynamic("varia")(10)
+     * foo.field           ~~> foo.selectDynamic("field")
+     * foo.arr(10) = 13    ~~> foo.selectDynamic("arr").update(10, 13)
+     *
+     * what if we want foo.field == foo.selectDynamic("field") == 1, but `foo.field = 10` == `foo.selectDynamic("field").update(10)` == ()
+     * what would the signature for selectDynamic be? (hint: it needs to depend on whether an update call is coming or not)
+     *
+     * need to distinguish selectDynamic and applyDynamic somehow: the former must return the selected value, the latter must accept an apply or an update
+     *  - could have only selectDynamic and pass it a boolean whether more is to come,
+     *    so that it can either return the bare value or something that can handle the apply/update
+     *      HOWEVER that makes it hard to return unrelated values for the two cases
+     *      --> selectDynamic's return type is now dependent on the boolean flag whether more is to come
+     *  - simplest solution: have two method calls
+     *
+     */
+    private def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+      val cxTree = context.enclosingNonImportContext.tree // scala/bug#8364
+      debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
+      val treeInfo.Applied(treeSelection, _, _) = tree
+      def isDesugaredApply = {
+        val protoQual = macroExpandee(qual) orElse qual
+        treeSelection match {
+          case Select(`protoQual`, nme.apply) => true
+          case _                              => false
+        }
+      }
+      acceptsApplyDynamicWithType(qual, name) map { tp =>
+        // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
+        // here - it is for scala-virtualized, where tp will be passed as an argument (for
+        // selection on a staged Struct)
+        def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
+
+        /* Note that the trees which arrive here are potentially some distance from
+         * the trees of direct interest. `cxTree` is some enclosing expression which
+         * may apparently be arbitrarily larger than `tree`; and `tree` itself is
+         * too small, having at least in some cases lost its explicit type parameters.
+         * This logic is designed to use `tree` to pinpoint the immediately surrounding
+         * Apply/TypeApply/Select node, and only then creates the dynamic call.
+         * See scala/bug#6731 among others.
+         */
+        def findSelection(t: Tree): Option[(TermName, Tree)] = t match {
+          case Apply(fn, args) if matches(fn) =>
+            val op = if(args.exists(_.isInstanceOf[NamedArg])) nme.applyDynamicNamed else nme.applyDynamic
+            // not supported: foo.bar(a1,..., an: _*)
+            val fn1 = if(treeInfo.isWildcardStarArgList(args)) DynamicVarArgUnsupported(fn, op) else fn
+            Some((op, fn1))
+          case Assign(lhs, _) if matches(lhs) => Some((nme.updateDynamic, lhs))
+          case _ if matches(t)                => Some((nme.selectDynamic, t))
+          case _                              => t.children.flatMap(findSelection).headOption
+        }
+        findSelection(cxTree) map { case (opName, treeInfo.Applied(_, targs, _)) =>
+          val fun = gen.mkTypeApply(Select(qual, opName), targs)
+          if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
+          val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
+           Literal(Constant(name.decode))
+          }
+          markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+        } getOrElse {
+          // While there may be an error in the found tree itself, it should not be possible to *not find* it at all.
+          devWarning(s"Tree $tree not found in the context $cxTree while trying to do a dynamic application")
+          setError(tree)
+        }
+      }
+    }
+    private def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
+    //
+    // END: applyDynamic support
+    //
 
     def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
       // Lookup in the given class using the root mirror.
@@ -4441,11 +4440,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(context, rhs1)) setType UnitTpe
         }
-        else if(dyna.isDynamicallyUpdatable(lhs1)) {
+        else if(isDynamicallyUpdatable(lhs1)) {
           val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
             Apply(lhs1, List(rhs))
           }
-          dyna.wrapErrors(t, _.typed1(t, mode, pt))
+          wrapErrors(t, _.typed1(t, mode, pt))
         }
         else fail()
       }
@@ -4953,8 +4952,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (tree.isInstanceOf[SelectFromTypeTree]) TypeSelectionFromVolatileTypeError(tree, qual)
           else UnstableTreeError(qual)
         else {
-          def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
-            dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
+          def asDynamicCall = mkInvoke(context, tree, qual, name) map { t =>
+            wrapErrors(t, (_.typed1(t, mode, pt)))
           }
 
           val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
@@ -5114,10 +5113,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val tree1 = typedSelect(tree, qualTyped, name)
 
             if (tree.isInstanceOf[PostfixSelect])
-              checkFeature(tree.pos, PostfixOpsFeature, name.decode)
+              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-              checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
+              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
 
             qualTyped.symbol match {
               case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
@@ -5176,7 +5175,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             (// this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)
-            else if (isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
+            else if (sym.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
               // Inferring classOf type parameter from expected type.  Otherwise an
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))

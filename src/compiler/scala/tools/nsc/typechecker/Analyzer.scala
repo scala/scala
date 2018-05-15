@@ -108,7 +108,7 @@ trait Analyzer extends AnyRef
           if (settings.warnUnusedImport)
             warnUnusedImports(unit)
           if (settings.warnUnused.isSetByUser)
-            typer checkUnused unit
+            new checkUnused(typer).apply(unit)
         }
         finally {
           unit.toCheck.clear()
