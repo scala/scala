@@ -71,7 +71,7 @@ sealed abstract class Range(
       || (start == end && !isInclusive)
     )
 
-  val numRangeElements: Int = {
+  private val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
     else {
