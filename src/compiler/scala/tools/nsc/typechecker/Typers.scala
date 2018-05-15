@@ -2048,7 +2048,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else tpt1.tpe
           transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
-      val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(rhs1)) setType NoType
+      val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
       if (sym.isSynthetic && sym.name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX))
         rightAssocValDefs += ((sym, vdef1.rhs))
       vdef1
@@ -2282,7 +2282,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
-        rhs1 = checkDead(rhs1)
+        rhs1 = checkDead(context, rhs1)
 
       if (!isPastTyper && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
@@ -2528,7 +2528,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     // takes untyped sub-trees of a match and type checks them
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
-      val selector1  = checkDead(typedByValueExpr(selector))
+      val selector1  = checkDead(context, typedByValueExpr(selector))
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
@@ -3104,7 +3104,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                            else newTyper(context.make(stat, exprOwner))
           // XXX this creates a spurious dead code warning if an exception is thrown
           // in a constructor, even if it is the only thing in the constructor.
-          val result = checkDead(localTyper.typedByValueExpr(stat))
+          val result = checkDead(context, localTyper.typedByValueExpr(stat))
 
           if (treeInfo.isSelfOrSuperConstrCall(result)) {
             context.inConstructorSuffix = true
@@ -3265,7 +3265,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedArg(arg: Tree, mode: Mode, newmode: Mode, pt: Type): Tree = {
       val typedMode = mode.onlySticky | newmode
       val t = withCondConstrTyper(mode.inSccMode)(_.typed(arg, typedMode, pt))
-      checkDead.inMode(typedMode, t)
+      checkDead.inMode(context, typedMode, t)
     }
 
     def typedArgs(args: List[Tree], mode: Mode) =
@@ -3662,9 +3662,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else
                   constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe))
               }
-              checkDead.updateExpr(fun) {
-                handleMonomorphicCall
-              }
+              if (settings.warnDeadCode) {
+                val sym = fun.symbol
+                if (sym != null && sym.isMethod && !sym.isConstructor) {
+                  val suppress = sym == Object_synchronized || (sym.isLabel && treeInfo.isSynthCaseSymbol(sym))
+                  context.withSuppressDeadArgWarning(suppress) {
+                    handleMonomorphicCall
+                  }
+                } else handleMonomorphicCall
+              } else handleMonomorphicCall
             } else if (needsInstantiation(tparams, formals, args)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
               inferExprInstance(fun, tparams)
@@ -4433,7 +4439,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
         if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
-          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
+          treeCopy.Assign(tree, lhs1, checkDead(context, rhs1)) setType UnitTpe
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
           val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
@@ -4445,7 +4451,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedIf(tree: If): If = {
-        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanTpe))
+        val cond1 = checkDead(context, typedByValueExpr(tree.cond, BooleanTpe))
         // One-legged ifs don't need a lot of analysis
         if (tree.elsep.isEmpty)
           return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
@@ -4533,7 +4539,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (typed(expr).tpe.typeSymbol != UnitClass)
                 context.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded")
             }
-            val res = treeCopy.Return(tree, checkDead(expr1)).setSymbol(enclMethod.owner)
+            val res = treeCopy.Return(tree, checkDead(context, expr1)).setSymbol(enclMethod.owner)
             val tp = pluginsTypedReturn(NothingTpe, this, res, restpt.tpe)
             res.setType(tp)
           }
@@ -5104,7 +5110,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             typedSelect(tree, qualStableOrError, name)
           } else {
             if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedSelectCount)
-            val qualTyped = checkDead(typedQualifier(qual, mode))
+            val qualTyped = checkDead(context, typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
 
             if (tree.isInstanceOf[PostfixSelect])
@@ -5406,7 +5412,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (funTyped.tpe.isInstanceOf[OverloadedType]) inferExprAlternative(funTyped, pt)
             funTyped match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
-              case methodValue                                       => typedEta(checkDead(methodValue))
+              case methodValue                                       => typedEta(checkDead(context, methodValue))
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first
