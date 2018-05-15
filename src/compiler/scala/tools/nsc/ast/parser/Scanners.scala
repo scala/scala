@@ -235,6 +235,17 @@ trait Scanners extends ScannersCommon {
       cbuf.clear()
     }
 
+    /** Process unicode escapes and set string*/
+    private def setUEscapeStrVal(): Unit = {
+      strVal = cbuf.toString
+      val replacement = StringContext.processUnicodeEscapes(strVal)
+      if(strVal != replacement) {
+        deprecationWarning("Unicode escapes in triple quoted strings are deprecated", "2.13.0")
+        strVal = replacement
+      }
+      cbuf.clear()
+    }
+
     /** a stack of tokens which indicates whether line-ends can be statement separators
      *  also used for keeping track of nesting levels.
      *  We keep track of the closing symbol of a region. This can be
@@ -566,7 +577,7 @@ trait Scanners extends ScannersCommon {
               charLitOr(getIdentRest)
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
-            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
+            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF)) {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
@@ -756,7 +767,7 @@ trait Scanners extends ScannersCommon {
       if (ch == '\"') {
         nextRawChar()
         if (isTripleQuote()) {
-          setStrVal()
+          setUEscapeStrVal()
           token = STRINGLIT
         } else
           getRawStringLit()
@@ -820,7 +831,7 @@ trait Scanners extends ScannersCommon {
           syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
-        val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
+        val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))
         if (isUnclosedLiteral) {
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
@@ -867,6 +878,7 @@ trait Scanners extends ScannersCommon {
       if (ch == '\\') {
         nextChar()
         if ('0' <= ch && ch <= '7') {
+          //octal escape
           val start = charOffset - 2
           val leadch: Char = ch
           var oct: Int = digit2int(ch, 8)
@@ -886,7 +898,35 @@ trait Scanners extends ScannersCommon {
           else
             deprecationWarning(start, msg("deprecated"), "2.11.0")
           putChar(oct.toChar)
-        } else {
+        } else if(ch == 'u'){
+          //unicode escape
+          while(ch == 'u') nextChar() //as many u's as you like
+          //four hexdigits: only BMP code points are supported.
+          var codepoint = 0
+          var digit = digit2int(ch, 16)
+          if(digit >= 0) {
+            codepoint += (0x1000 * digit)
+            nextChar()
+            digit = digit2int(ch, 16)
+            if(digit >= 0) {
+              codepoint += (0x100 * digit)
+              nextChar()
+              digit = digit2int(ch, 16)
+              if(digit >= 0) {
+                codepoint += (0x10 * digit)
+                nextChar()
+                digit = digit2int(ch, 16)
+                if(digit >= 0) {
+                  codepoint += digit
+                  val ch = codepoint.asInstanceOf[Char]
+                  putChar(ch)
+                  nextChar()
+                } else invalidUnicodeEscape(4)
+              } else invalidUnicodeEscape(3)
+            } else invalidUnicodeEscape(2)
+          } else invalidUnicodeEscape(1)
+        }
+        else {
           ch match {
             case 'b'  => putChar('\b')
             case 't'  => putChar('\t')
@@ -910,8 +950,13 @@ trait Scanners extends ScannersCommon {
       putChar(ch)
     }
 
+    protected def invalidUnicodeEscape(n: Int): Unit = {
+      syntaxError(charOffset -n, "invalid unicode escape")
+      putChar(ch)
+    }
+
     private def getLitChars(delimiter: Char) = {
-      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF))
         getLitChar()
     }
 
@@ -1283,7 +1328,6 @@ trait Scanners extends ScannersCommon {
    */
   class SourceFileScanner(val source: SourceFile) extends Scanner {
     val buf = source.content
-    override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
     def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()

@@ -1,0 +1,10 @@
+warning: Unicode escapes in raw interpolators are deprecated since scala 2.13.0
+warning: Unicode escapes in raw interpolators are deprecated since scala 2.13.0
+warning: Unicode escapes in raw interpolators are deprecated since scala 2.13.0
+warning: there were two deprecation warnings (since 2.13.0); re-run with -deprecation for details
+resonable ways to output a tab character
+written: tab	tab - ways: literal tab in single quoted raw interpolator, literal tab in single quoted s interpolator, literal tab in single quoted string, literal tab in triple quoted raw interpolator, literal tab in triple quoted s interpolator, literal tab in triple quoted string, tab escape char in single quoted s interpolator, tab escape char in single quoted string, tab escape char in triple quoted s interpolator, tab unicode escape in single quoted s interpolator, tab unicode escape in single quoted string, tab unicode escape in triple quoted s interpolator
+reasonable ways to output the character sequence \t
+written: tab\ttab - ways: tab escape char in raw interpolator, tab escape char in triple quoted string
+unreasonable ways to output a tab character
+written: tab	tab - ways: tab unicode escape in raw interpolator, tab unicode escape in triple quoted string

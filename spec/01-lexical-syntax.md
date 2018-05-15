@@ -14,14 +14,6 @@ otherwise mentioned, the following descriptions of Scala tokens refer
 to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment
 `\u0000` – `\u007F`.
 
-In Scala mode, _Unicode escapes_ are replaced by the corresponding
-Unicode character with the given hexadecimal code.
-
-```ebnf
-UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
-hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
-```
-
 <!--
 TODO scala/bug#4583: UnicodeEscape used to allow additional backslashes,
 and there is something in the code `evenSlashPrefix` that alludes to it,
