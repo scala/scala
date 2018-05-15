@@ -16,7 +16,7 @@ class ThePlugin(val global: Global) extends Plugin {
   private object thePhase extends PluginComponent {
     val global = ThePlugin.this.global
 
-    val runsAfter = List[String]("postTyperChecks")
+    val runsAfter = List[String]("typerchecks")
 
     val phaseName = ThePlugin.this.name
 

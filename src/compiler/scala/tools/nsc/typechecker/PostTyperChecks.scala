@@ -36,7 +36,7 @@ trait PostTyperChecks extends AnyRef
 
     import global.statistics
 
-    val phaseName = "postTyperChecks"
+    val phaseName = "typerchecks"
     val runsAfter = List[String]("typer")
     val runsRightAfter = None
 
