@@ -4840,7 +4840,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
 
-        def mkUpdate(table: Tree, indices: List[Tree], argss: List[List[Tree]]) =
+        def mkUpdate(table: Tree, indices: List[Tree], args_? : Option[List[Tree]]) =
           gen.evalOnceAll(table :: indices, context.owner, context.unit) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
@@ -4849,7 +4849,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   is.map(i => i()) ++ extraArgs
                 ) setPos tree.pos
               )
-              def mkApplies(core: Tree) = argss.foldLeft(core)((x, args) => Apply(x, args))
+              def mkApplies(core: Tree) = args_?.fold(core) { args =>
+                Apply(core, args) setPos wrappingPos(core :: args)
+              }
               mkCall(
                 nme.update,
                 Apply(Select(mkApplies(mkCall(nme.apply)), prefix) setPos fun.pos, args) setPos tree.pos
@@ -4871,14 +4873,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             fn match {
               case treeInfo.Applied(Select(table, nme.apply), _, indices :: Nil) =>
                 // table(indices)(implicits)
-                mkUpdate(table, indices, extra :: Nil)
+                mkUpdate(table, indices, Some(extra))
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
 
           case Apply(fn, indices) =>
             fn match {
               case treeInfo.Applied(Select(table, nme.apply), _, Nil) =>
-                mkUpdate(table, indices, Nil)
+                mkUpdate(table, indices, None)
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }
