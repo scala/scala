@@ -92,7 +92,7 @@ trait ExprTyper {
         case tpe                     => tpe
       }
     }
-    val typeOpt = (properTypeOpt /: (1 to MaxFunctionArity)) {
+    val typeOpt = (1 to MaxFunctionArity).foldLeft(properTypeOpt){
       (acc, n: Int) => acc orElse typeFromTypeString(n) }
     typeOpt getOrElse NoType
   }

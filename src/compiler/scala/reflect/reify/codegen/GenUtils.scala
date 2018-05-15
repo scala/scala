@@ -76,7 +76,7 @@ trait GenUtils {
     val lastName = mkName(parts.last)
     if (prefixParts.isEmpty) Ident(lastName)
     else {
-      val prefixTree = ((Ident(prefixParts.head): Tree) /: prefixParts.tail)(Select(_, _))
+      val prefixTree = prefixParts.tail.foldLeft(Ident(prefixParts.head): Tree)(Select(_, _))
       Select(prefixTree, lastName)
     }
   }

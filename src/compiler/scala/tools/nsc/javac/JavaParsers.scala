@@ -666,7 +666,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         syntaxError(pos, "illegal import", skipIt = false)
         List()
       } else {
-        val qual = ((Ident(names.head): Tree) /: names.tail.init) (Select(_, _))
+        val qual = names.tail.init.foldLeft(Ident(names.head): Tree)(Select(_, _))
         val lastname = names.last
         val selector = lastname match {
           case nme.WILDCARD => ImportSelector(lastname, lastnameOffset, null, -1)

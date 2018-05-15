@@ -449,7 +449,7 @@ trait NamesDefaults { self: Analyzer =>
             }
             default1 = if (targs.isEmpty) default1
                        else TypeApply(default1, targs.map(_.duplicate))
-            val default2 = (default1 /: previousArgss)((tree, args) =>
+            val default2 = previousArgss.foldLeft(default1)((tree, args) =>
               Apply(tree, args.map(_.duplicate)))
             Some(atPos(pos) {
               if (positional) default2

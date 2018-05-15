@@ -101,7 +101,7 @@ trait Contexts { self: Analyzer =>
 
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
+    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym)))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)

@@ -637,7 +637,7 @@ abstract class Erasure extends InfoTransform
         case MethodType(Nil, FoldableConstantType(c)) => Literal(c)
         case _                                =>
           val sel: Tree    = Select(This(root), member)
-          val bridgingCall = (sel /: bridge.paramss)((fun, vparams) => Apply(fun, vparams map Ident))
+          val bridgingCall = bridge.paramss.foldLeft(sel)((fun, vparams) => Apply(fun, vparams map Ident))
 
           maybeWrap(bridgingCall)
       }
