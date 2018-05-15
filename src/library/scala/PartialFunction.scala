@@ -177,6 +177,8 @@ object PartialFunction {
 
     override def andThen[C](k: B => C) =
       new OrElse[A, C] (f1 andThen k, f2 andThen k)
+
+    override def toString: String = s"$f1.orElse($f2)"
   }
 
   /** Composite function produced by `PartialFunction#andThen` method
@@ -190,6 +192,8 @@ object PartialFunction {
       val z = pf.applyOrElse(x, checkFallback[B])
       if (!fallbackOccurred(z)) k(z) else default(x)
     }
+
+    override def toString: String = s"$pf.andThen($k)"
   }
 
   /** To implement patterns like {{{ if(pf isDefinedAt x) f1(pf(x)) else f2(x) }}} efficiently
