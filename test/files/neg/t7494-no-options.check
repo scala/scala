@@ -25,5 +25,5 @@ postTyperChecks   5  validate the result of typer
         cleanup  22  platform-specific cleanups, generate reflective calls
      delambdafy  23  remove lambdas
             jvm  24  generate JVM bytecode
-        ploogin  25  A sample phase that does so many things it's kind of hard...
+        ploogin  25  A sample phase that does so many things it's kind of har...
        terminal  26  the last phase during a compilation run

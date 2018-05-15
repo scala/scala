@@ -128,9 +128,9 @@ trait Nested {
 trait Outsiders {
   {
     //implicit search should not disable warning
-    import Sample._
-    import Sample.Implicits._   // warn
-    f(42)                       // error
+//    import Sample._
+//    import Sample.Implicits._   // warn
+//    f(42)                       // error
   }
   {
     import Sample._
