@@ -466,6 +466,22 @@ trait TypeDiagnostics {
     }
   }
 
+  object checkDead {
+    private def treeOK(tree: Tree) = {
+      val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+      tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+    }
+
+    def apply(context: Context, tree: Tree): Tree = {
+      if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
+        context.warning(tree.pos, "dead code following this construct")
+      tree
+    }
+
+    // The checkDead call from typedArg is more selective.
+    def inMode(context: Context, mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(context, tree) else tree
+  }
+
   class checkUnused(typer: Typer) {
     val ignoreNames: Set[TermName] = Set(
       "readResolve", "readObject", "writeObject", "writeReplace"
@@ -708,41 +724,12 @@ trait TypeDiagnostics {
     }
   }
 
+
   trait TyperDiagnostics {
     self: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
-
-    object checkDead {
-      private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
-      // The method being applied to `tree` when `apply` is called.
-      private def expr = exprStack.top
-
-      private def exprOK =
-        (expr != Object_synchronized) &&
-        !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
-
-      private def treeOK(tree: Tree) = {
-        val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
-        tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
-      }
-
-      @inline def updateExpr[A](fn: Tree)(f: => A) = {
-        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
-          exprStack push fn.symbol
-          try f finally exprStack.pop()
-        } else f
-      }
-      def apply(tree: Tree): Tree = {
-        if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
-          context.warning(tree.pos, "dead code following this construct")
-        tree
-      }
-
-      // The checkDead call from typedArg is more selective.
-      def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
-    }
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
     private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"

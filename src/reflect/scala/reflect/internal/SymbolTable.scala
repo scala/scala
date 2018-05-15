@@ -164,7 +164,7 @@ abstract class SymbolTable extends macros.Universe
   private[internal] def throwRequirementError(msg: Any): Nothing =
     throw new java.lang.IllegalArgumentException(s"requirement failed: ${supplementErrorMessage(String valueOf msg)}")
 
-  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+  @inline final def findSymbol(xs: IterableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
     xs find p getOrElse NoSymbol
   }
 

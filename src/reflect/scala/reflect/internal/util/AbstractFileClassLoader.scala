@@ -6,7 +6,7 @@ package scala
 package reflect.internal.util
 
 import scala.collection.mutable
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 import scala.reflect.io.AbstractFile
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import java.security.cert.Certificate
@@ -40,7 +40,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     else s"${name.replace('.', '/')}.class"
 
   protected def findAbstractFile(name: String): AbstractFile = {
-    AbstractFileClassLoader.lookupPath(root)(ImmutableArray.unsafeWrapArray(name split '/'), directory = false)
+    AbstractFileClassLoader.lookupPath(root)(ArraySeq.unsafeWrapArray(name split '/'), directory = false)
   }
 
   protected def dirNameToPath(name: String): String =

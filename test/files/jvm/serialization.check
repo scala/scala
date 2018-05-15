@@ -136,8 +136,8 @@ x = ArrayBuilder.ofFloat
 y = ArrayBuilder.ofFloat
 x equals y: true, y equals x: true
 
-x = WrappedArray(1, 2, 3)
-y = WrappedArray(1, 2, 3)
+x = ArraySeq(1, 2, 3)
+y = ArraySeq(1, 2, 3)
 x equals y: true, y equals x: true
 
 x = Stack(20, 2, 3)
@@ -194,10 +194,6 @@ x equals y: true, y equals x: true
 
 x = abc
 y = abc
-x equals y: true, y equals x: true
-
-x = WrappedArray(1, 2, 3)
-y = WrappedArray(1, 2, 3)
 x equals y: true, y equals x: true
 
 x = TreeSet(1, 2, 3)

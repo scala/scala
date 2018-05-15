@@ -30,7 +30,7 @@ trait Factory[-A, +C] extends Any {
 
   /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
     * Building collections with `fromSpecific` is preferred because it can be lazy for lazy collections. */
-  def newBuilder(): Builder[A, C]
+  def newBuilder: Builder[A, C]
 }
 
 object Factory {
@@ -42,18 +42,18 @@ object Factory {
         b ++= it
         b.result()
       }
-      def newBuilder(): Builder[Char, String] = new mutable.StringBuilder()
+      def newBuilder: Builder[Char, String] = new mutable.StringBuilder()
     }
 
   implicit def arrayFactory[A: ClassTag]: Factory[A, Array[A]] =
     new Factory[A, Array[A]] {
       def fromSpecific(it: IterableOnce[A]): Array[A] = {
-        val b = newBuilder()
+        val b = newBuilder
         b.sizeHint(scala.math.max(0, it.knownSize))
         b ++= it
         b.result()
       }
-      def newBuilder(): Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]()
+      def newBuilder: Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]
     }
 
 }
@@ -121,7 +121,7 @@ trait IterableFactory[+CC[_]] {
     * @return A builder for $Coll objects.
     * @tparam A the type of the ${coll}’s elements
     */
-  def newBuilder[A](): Builder[A, CC[A]]
+  def newBuilder[A]: Builder[A, CC[A]]
 
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.
@@ -240,19 +240,19 @@ object IterableFactory {
   implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
     new Factory[A, CC[A]] {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
-      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
+      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
     }
 
   implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
     new BuildFrom[Any, A, CC[A]] {
       def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder()
+      def newBuilder(from: Any) = factory.newBuilder
     }
 
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
-    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+    def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder[A]
   }
 }
 
@@ -267,14 +267,14 @@ object SeqFactory {
   class Delegate[CC[_]](delegate: SeqFactory[CC]) extends SeqFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
-    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+    def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder[A]
   }
 }
 
 trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
 
   override def fill[A](n: Int)(elem: => A): CC[A] = {
-    val b = newBuilder[A]()
+    val b = newBuilder[A]
     b.sizeHint(n)
     var i = 0
     while (i < n) {
@@ -285,7 +285,7 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
   }
 
   override def tabulate[A](n: Int)(f: Int => A): CC[A] = {
-    val b = newBuilder[A]()
+    val b = newBuilder[A]
     b.sizeHint(n)
     var i = 0
     while (i < n) {
@@ -312,7 +312,7 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
   def apply(xs: A*): C = fromSpecific(new View.Elems(xs: _*))
   def fill(n: Int)(elem: => A): C = fromSpecific(new View.Fill(n)(elem))
-  def newBuilder(): Builder[A, C]
+  def newBuilder: Builder[A, C]
 
   implicit def specificIterableFactory: Factory[A, C] = this
 }
@@ -334,7 +334,7 @@ trait MapFactory[+CC[_, _]] {
 
   def apply[K, V](elems: (K, V)*): CC[K, V] = from(elems)
 
-  def newBuilder[K, V](): Builder[(K, V), CC[K, V]]
+  def newBuilder[K, V]: Builder[(K, V), CC[K, V]]
 
   implicit def mapFactory[K, V]: Factory[(K, V), CC[K, V]] = MapFactory.toFactory(this)
 
@@ -354,24 +354,24 @@ object MapFactory {
   implicit def toFactory[K, V, CC[_, _]](factory: MapFactory[CC]): Factory[(K, V), CC[K, V]] =
     new Factory[(K, V), CC[K, V]] {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
-      def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
+      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
     }
 
   implicit def toBuildFrom[K, V, CC[_, _]](factory: MapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
     new BuildFrom[Any, (K, V), CC[K, V]] {
       def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder[K, V]()
+      def newBuilder(from: Any) = factory.newBuilder[K, V]
     }
 
   class Delegate[C[_, _]](delegate: MapFactory[C]) extends MapFactory[C] {
     def from[K, V](it: IterableOnce[(K, V)]): C[K, V] = delegate.from(it)
     def empty[K, V]: C[K, V] = delegate.empty
-    def newBuilder[K, V](): Builder[(K, V), C[K, V]] = delegate.newBuilder()
+    def newBuilder[K, V]: Builder[(K, V), C[K, V]] = delegate.newBuilder
   }
 }
 
 /** Base trait for companion objects of collections that require an implicit evidence.
-  * @tparam CC Collection type constructor (e.g. `ImmutableArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   * @tparam Ev Unary type constructor for the implicit evidence required for an element type
   *            (typically `Ordering` or `ClassTag`)
   *
@@ -403,7 +403,7 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] {
     */
   def tabulate[A : Ev](n: Int)(f: Int => A): CC[A] = from(new View.Tabulate(n)(f))
 
-  def newBuilder[A : Ev](): Builder[A, CC[A]]
+  def newBuilder[A : Ev]: Builder[A, CC[A]]
 
   implicit def evidenceIterableFactory[A : Ev]: Factory[A, CC[A]] = EvidenceIterableFactory.toFactory(this)
 }
@@ -422,19 +422,19 @@ object EvidenceIterableFactory {
   implicit def toFactory[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): Factory[A, CC[A]] =
     new Factory[A, CC[A]] {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
-      def newBuilder(): Builder[A, CC[A]] = factory.newBuilder[A]()
+      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
     }
 
   implicit def toBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): BuildFrom[Any, A, CC[A]] =
     new BuildFrom[Any, A, CC[A]] {
       def fromSpecificIterable(from: Any)(it: Iterable[A]): CC[A] = factory.from[A](it)
-      def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]()
+      def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]
     }
 
   class Delegate[CC[_], Ev[_]](delegate: EvidenceIterableFactory[CC, Ev]) extends EvidenceIterableFactory[CC, Ev] {
     def empty[A : Ev]: CC[A] = delegate.empty
     def from[E : Ev](it: IterableOnce[E]): CC[E] = delegate.from(it)
-    def newBuilder[A : Ev](): Builder[A, CC[A]] = delegate.newBuilder[A]()
+    def newBuilder[A : Ev]: Builder[A, CC[A]] = delegate.newBuilder[A]
   }
 }
 
@@ -449,7 +449,7 @@ object SortedIterableFactory {
 }
 
 /** Base trait for companion objects of collections that require an implicit `ClassTag`.
-  * @tparam CC Collection type constructor (e.g. `ImmutableArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
 trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassTag] {
 
@@ -577,7 +577,7 @@ object ClassTagIterableFactory {
   class AnyIterableDelegate[CC[_]](delegate: ClassTagIterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty(ClassTag.Any).asInstanceOf[CC[A]]
     def from[A](it: IterableOnce[A]): CC[A] = delegate.from[Any](it)(ClassTag.Any).asInstanceOf[CC[A]]
-    def newBuilder[A](): Builder[A, CC[A]] = delegate.newBuilder()(ClassTag.Any).asInstanceOf[Builder[A, CC[A]]]
+    def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder(ClassTag.Any).asInstanceOf[Builder[A, CC[A]]]
     override def apply[A](elems: A*): CC[A] = delegate.apply[Any](elems: _*)(ClassTag.Any).asInstanceOf[CC[A]]
     override def iterate[A](start: A, len: Int)(f: A => A): CC[A] = delegate.iterate[A](start, len)(f)(ClassTag.Any.asInstanceOf[ClassTag[A]])
     override def range[A](start: A, end: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end)(i, ClassTag.Any.asInstanceOf[ClassTag[A]])
@@ -588,7 +588,7 @@ object ClassTagIterableFactory {
 }
 
 /**
-  * @tparam CC Collection type constructor (e.g. `WrappedArray`)
+  * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
 trait ClassTagSeqFactory[+CC[_]] extends ClassTagIterableFactory[CC] {
   def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
@@ -607,7 +607,7 @@ object ClassTagSeqFactory {
 trait StrictOptimizedClassTagSeqFactory[+CC[_]] extends ClassTagSeqFactory[CC] {
 
   override def fill[A : ClassTag](n: Int)(elem: => A): CC[A] = {
-    val b = newBuilder[A]()
+    val b = newBuilder[A]
     b.sizeHint(n)
     var i = 0
     while (i < n) {
@@ -618,7 +618,7 @@ trait StrictOptimizedClassTagSeqFactory[+CC[_]] extends ClassTagSeqFactory[CC] {
   }
 
   override def tabulate[A : ClassTag](n: Int)(f: Int => A): CC[A] = {
-    val b = newBuilder[A]()
+    val b = newBuilder[A]
     b.sizeHint(n)
     var i = 0
     while (i < n) {
@@ -647,7 +647,7 @@ trait SortedMapFactory[+CC[_, _]] {
 
   def apply[K : Ordering, V](elems: (K, V)*): CC[K, V] = from(elems)
 
-  def newBuilder[K : Ordering, V](): Builder[(K, V), CC[K, V]]
+  def newBuilder[K : Ordering, V]: Builder[(K, V), CC[K, V]]
 
   implicit def sortedMapFactory[K : Ordering, V]: Factory[(K, V), CC[K, V]] = SortedMapFactory.toFactory(this)
 
@@ -669,18 +669,18 @@ object SortedMapFactory {
   implicit def toFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): Factory[(K, V), CC[K, V]] =
     new Factory[(K, V), CC[K, V]] {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
-      def newBuilder(): Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]()
+      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
     }
 
   implicit def toBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
     new BuildFrom[Any, (K, V), CC[K, V]] {
       def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder[K, V]()
+      def newBuilder(from: Any) = factory.newBuilder[K, V]
     }
 
   class Delegate[CC[_, _]](delegate: SortedMapFactory[CC]) extends SortedMapFactory[CC] {
     def from[K : Ordering, V](it: IterableOnce[(K, V)]): CC[K, V] = delegate.from(it)
     def empty[K : Ordering, V]: CC[K, V] = delegate.empty
-    def newBuilder[K : Ordering, V](): Builder[(K, V), CC[K, V]] = delegate.newBuilder()
+    def newBuilder[K : Ordering, V]: Builder[(K, V), CC[K, V]] = delegate.newBuilder
   }
 }

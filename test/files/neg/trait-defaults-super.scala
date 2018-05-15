@@ -9,6 +9,6 @@ trait T extends java.lang.Iterable[String] {
     super[Iterable].spliterator
     super.spliterator
   }
-  def iterator(): java.util.Iterator[String] = java.util.Collections.emptyList().iterator()
+  def iterator: java.util.Iterator[String] = java.util.Collections.emptyList().iterator()
 }
 class C extends T

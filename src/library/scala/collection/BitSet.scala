@@ -19,13 +19,13 @@ import scala.collection.mutable.Builder
   */
 trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override protected def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
-  override protected def newSpecificBuilder(): Builder[Int, BitSetC] = bitSetFactory.newBuilder()
+  override protected def newSpecificBuilder: Builder[Int, BitSetC] = bitSetFactory.newBuilder
   override def empty: BitSetC = bitSetFactory.empty
 }
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
   def empty: BitSet = immutable.BitSet.empty
-  def newBuilder(): Builder[Int, BitSet] = immutable.BitSet.newBuilder()
+  def newBuilder: Builder[Int, BitSet] = immutable.BitSet.newBuilder
   def fromSpecific(it: IterableOnce[Int]): BitSet = immutable.BitSet.fromSpecific(it)
 }
 
@@ -62,7 +62,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
-  def iterator(): Iterator[Int] = iteratorFrom(0)
+  def iterator: Iterator[Int] = iteratorFrom(0)
 
   def iteratorFrom(start: Int) = new Iterator[Int] {
     private var current = start

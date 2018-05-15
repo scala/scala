@@ -15,7 +15,7 @@ trait SortedMap[K, +V]
   def unsorted: Map[K, V] = this
 
   override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.from(coll)
-  override protected def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]()
+  override protected def newSpecificBuilder: mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -104,7 +104,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   def maxBefore(key: K): Option[(K, V)] = rangeUntil(key).lastOption
 
   def rangeTo(to: K): C = {
-    val i = keySet.rangeFrom(to).iterator()
+    val i = keySet.rangeFrom(to).iterator
     if (i.isEmpty) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)

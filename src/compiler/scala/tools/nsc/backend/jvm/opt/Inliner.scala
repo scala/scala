@@ -482,7 +482,7 @@ abstract class Inliner {
     // large methods are not added to the call graph.
     val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
 
-    for (originalReturn <- callee.instructions.iterator().asScala if isReturn(originalReturn)) {
+    for (originalReturn <- callee.instructions.iterator.asScala if isReturn(originalReturn)) {
       val frame = analyzer.frameAt(originalReturn)
       var stackHeight = frame.getStackSize
 

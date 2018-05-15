@@ -2,7 +2,7 @@ import scala.collection._
 
 object Test {
   def collect[A, Res](r: Iterable[A])(implicit bf: Factory[A, Res]) = {
-    val b: collection.mutable.Builder[A, Res] = bf.newBuilder()
+    val b: collection.mutable.Builder[A, Res] = bf.newBuilder
     r foreach ((a: A) => b += a)
     b.result
   }

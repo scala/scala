@@ -97,7 +97,7 @@ abstract class PostProcessor extends PerRunInit {
     }
   }
 
-  def runGlobalOptimizations(generatedUnits: Traversable[GeneratedCompilationUnit]): Unit = {
+  def runGlobalOptimizations(generatedUnits: Iterable[GeneratedCompilationUnit]): Unit = {
     // add classes to the bytecode repo before building the call graph: the latter needs to
     // look up classes and methods in the code repo.
     if (compilerSettings.optAddToBytecodeRepository) {

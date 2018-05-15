@@ -39,13 +39,13 @@ trait Growable[-A] extends Clearable {
    */
   @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
 
-  /** ${Add}s all elements produced by a TraversableOnce to this $coll.
+  /** ${Add}s all elements produced by an IterableOnce to this $coll.
    *
-   *  @param xs   the TraversableOnce producing the elements to $add.
+   *  @param xs   the IterableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
   def addAll(xs: IterableOnce[A]): this.type = {
-    val it = xs.iterator()
+    val it = xs.iterator
     while (it.hasNext) {
       addOne(it.next())
     }

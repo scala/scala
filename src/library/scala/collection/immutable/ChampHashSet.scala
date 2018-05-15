@@ -35,9 +35,9 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator(): Iterator[A] = new SetIterator[A](rootNode)
+  def iterator: Iterator[A] = new SetIterator[A](rootNode)
 
-  protected[immutable] def reverseIterator(): Iterator[A] = new SetReverseIterator[A](rootNode)
+  protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
   def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
 
@@ -65,9 +65,9 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   override def init: ChampHashSet[A] = this - last
 
-  override def head: A = iterator().next()
+  override def head: A = iterator.next()
 
-  override def last: A = reverseIterator().next()
+  override def last: A = reverseIterator.next()
 
   override def foreach[U](f: A => U): Unit = rootNode.foreach(f)
 
@@ -607,10 +607,10 @@ object ChampHashSet extends IterableFactory[ChampHashSet] {
   def from[A](source: collection.IterableOnce[A]): ChampHashSet[A] =
     source match {
       case hs: ChampHashSet[A] => hs
-      case _ => (newBuilder[A]() ++= source).result()
+      case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A](): Builder[A, ChampHashSet[A]] =
+  def newBuilder[A]: Builder[A, ChampHashSet[A]] =
     new ImmutableBuilder[A, ChampHashSet[A]](empty) {
       def addOne(element: A): this.type = {
         elems = elems + element

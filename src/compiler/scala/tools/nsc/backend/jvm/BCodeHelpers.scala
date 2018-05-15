@@ -787,25 +787,22 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol): Unit = {
       assert(moduleClass.isModuleClass, moduleClass)
-      debuglog(s"Dumping mirror class for object: $moduleClass")
 
-      val linkedClass  = moduleClass.companionClass
+      val linkedClass = moduleClass.companionClass
       lazy val conflictingNames: Set[Name] = {
         (linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name }).toSet
       }
-      debuglog(s"Potentially conflicting names for forwarders: $conflictingNames")
 
-      for (m <- moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD)) {
-        if (m.isType || m.isDeferred || (m.owner eq definitions.ObjectClass) || m.isConstructor)
-          debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass': ${m.isType} || ${m.isDeferred} || ${m.owner eq definitions.ObjectClass} || ${m.isConstructor}")
-        else if (conflictingNames(m.name))
-          log(s"No forwarder for $m due to conflict with ${linkedClass.info.member(m.name)}")
-        else if (m.hasAccessBoundary)
-          log(s"No forwarder for non-public member $m")
-        else {
-          log(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
-          addForwarder(jclass, moduleClass, m)
-        }
+      // Before erasure * to exclude bridge methods. Excluding them by flag doesn't work, because then
+      // the the method from the base class that the bridge overrides is included (scala/bug#10812).
+      // * using `exitingPickler` (not `enteringErasure`) because erasure enters bridges in traversal,
+      //   not in the InfoTransform, so it actually modifies the type from the previous phase.
+      val members = exitingPickler(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
+      for (m <- members) {
+        val excl = m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
+          { val o = m.owner; (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass) } ||
+          conflictingNames(m.name)
+        if (!excl) addForwarder(jclass, moduleClass, m)
       }
     }
 
@@ -971,10 +968,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 }
 
 object BCodeHelpers {
-  val ExcludedForwarderFlags = {
+  val ExcludedForwarderFlags: Long = {
     import scala.tools.nsc.symtab.Flags._
-    // Should include DEFERRED but this breaks findMember.
-    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
+    // Don't include DEFERRED but filter afterwards, see comment on `findMembers`
+    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | PRIVATE | MACRO
   }
 
   /**

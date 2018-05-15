@@ -18,6 +18,6 @@ class JCollectionWrapperTest {
     val sIterable: Iterable[Int] = jCol.asScala
 
     assertTrue(sIterable.isInstanceOf[Wrappers.JCollectionWrapper[_]])
-    assertTrue(sIterable.iterator().sameElements(Iterable(1, 2, 3)))
+    assertTrue(sIterable.iterator.sameElements(Iterable(1, 2, 3)))
   }
 }

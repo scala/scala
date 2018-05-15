@@ -40,7 +40,7 @@ class HashMap[K, V]
       def createNewEntry(key: K, value: V): Entry = new Entry(key, value)
     }
 
-  def iterator(): Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
+  def iterator: Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)
@@ -124,7 +124,7 @@ object HashMap extends MapFactory[HashMap] {
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): HashMap[K, V] = Growable.from(empty[K, V], it)
 
-  def newBuilder[K, V](): Builder[(K, V), HashMap[K, V]] = new GrowableBuilder(HashMap.empty[K, V])
+  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] = new GrowableBuilder(HashMap.empty[K, V])
 
 }
 

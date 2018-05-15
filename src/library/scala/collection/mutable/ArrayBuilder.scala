@@ -2,7 +2,6 @@ package scala.collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.collection.immutable.ImmutableArray
 
 /** A builder class for arrays.
  *
@@ -52,7 +51,7 @@ sealed abstract class ArrayBuilder[T]
       ensureSize(this.size + k)
       xs match {
         case xs: Iterable[T] => xs.copyToArray(elems, this.size)
-        case _ => xs.iterator().copyToArray(elems, this.size)
+        case _ => xs.iterator.copyToArray(elems, this.size)
       }
       size += k
     } else if(k < 0) super.addAll(xs)
@@ -71,7 +70,7 @@ object ArrayBuilder {
    *  @tparam T     type of the elements for the array builder, with a `ClassTag` context bound.
    *  @return       a new empty array builder.
    */
-  def make[T: ClassTag](): ArrayBuilder[T] = {
+  def make[T: ClassTag]: ArrayBuilder[T] = {
     val tag = implicitly[ClassTag[T]]
     tag.runtimeClass match {
       case java.lang.Byte.TYPE      => new ArrayBuilder.ofByte().asInstanceOf[ArrayBuilder[T]]
@@ -464,7 +463,7 @@ object ArrayBuilder {
     }
 
     override def addAll(xs: IterableOnce[Unit]): this.type = {
-      size += xs.iterator().size
+      size += xs.iterator.size
       this
     }
 

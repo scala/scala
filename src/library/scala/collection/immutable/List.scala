@@ -254,7 +254,7 @@ sealed abstract class List[+A]
       var h: ::[B] = null
       var t: ::[B] = null
       while (rest ne Nil) {
-        f(rest.head).iterator().foreach { b =>
+        f(rest.head).iterator.foreach { b =>
           if (!found) {
             h = new ::(b, Nil)
             t = h
@@ -508,7 +508,7 @@ object List extends StrictOptimizedSeqFactory[List] {
     case _ => ListBuffer.from(coll).toList
   }
 
-  def newBuilder[A](): Builder[A, List[A]] = new ListBuffer()
+  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer()
 
   def empty[A]: List[A] = Nil
 
@@ -531,7 +531,7 @@ object List extends StrictOptimizedSeqFactory[List] {
     // Read the whole list and store it in `orig`.
     private def readObject(in: ObjectInputStream): Unit = {
       in.defaultReadObject()
-      val builder = List.newBuilder[A]()
+      val builder = List.newBuilder[A]
       while (true) in.readObject match {
         case ListSerializeEnd =>
           orig = builder.result()

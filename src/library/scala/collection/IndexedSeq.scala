@@ -14,9 +14,9 @@ object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 /** Base trait for indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
-  def iterator(): Iterator[A] = view.iterator()
+  def iterator: Iterator[A] = view.iterator
 
-  override def reverseIterator(): Iterator[A] = new AbstractIterator[A] {
+  override def reverseIterator: Iterator[A] = new AbstractIterator[A] {
     private var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =
@@ -26,26 +26,26 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
       } else Iterator.empty.next()
   }
 
-  override def view: IndexedView[A] = new IndexedView.Id[A](this)
+  override def view: IndexedSeqView[A] = new IndexedSeqView.Id[A](this)
 
-  override protected def reversed: Iterable[A] = new IndexedView.Reverse(this)
+  override protected def reversed: Iterable[A] = new IndexedSeqView.Reverse(this)
 
   // Override transformation operations to use more efficient views than the default ones
-  override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedView.Prepended(elem, this))
+  override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedSeqView.Prepended(elem, this))
 
-  override def take(n: Int): C = fromSpecificIterable(new IndexedView.Take(this, n))
+  override def take(n: Int): C = fromSpecificIterable(new IndexedSeqView.Take(this, n))
 
-  override def takeRight(n: Int): C = fromSpecificIterable(new IndexedView.TakeRight(this, n))
+  override def takeRight(n: Int): C = fromSpecificIterable(new IndexedSeqView.TakeRight(this, n))
 
-  override def drop(n: Int): C = fromSpecificIterable(new IndexedView.Drop(this, n))
+  override def drop(n: Int): C = fromSpecificIterable(new IndexedSeqView.Drop(this, n))
 
-  override def dropRight(n: Int): C = fromSpecificIterable(new IndexedView.DropRight(this, n))
+  override def dropRight(n: Int): C = fromSpecificIterable(new IndexedSeqView.DropRight(this, n))
 
-  override def map[B](f: A => B): CC[B] = iterableFactory.from(new IndexedView.Map(this, f))
+  override def map[B](f: A => B): CC[B] = iterableFactory.from(new IndexedSeqView.Map(this, f))
 
-  override def reverse: C = fromSpecificIterable(new IndexedView.Reverse(this))
+  override def reverse: C = fromSpecificIterable(new IndexedSeqView.Reverse(this))
 
-  override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedView.Slice(this, from, until))
+  override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedSeqView.Slice(this, from, until))
 
   override def lengthCompare(len: Int): Int = length - len
 

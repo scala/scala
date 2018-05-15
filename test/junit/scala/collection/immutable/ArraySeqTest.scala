@@ -8,12 +8,12 @@ import org.junit.runners.JUnit4
 import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnit4])
-class ImmutableArrayTest {
+class ArraySeqTest {
   @Test
   def slice(): Unit = {
 
-    implicit def array2ImmutableArray[T](array: Array[T]): ImmutableArray[T] =
-      ImmutableArray.unsafeWrapArray(array)
+    implicit def array2ArraySeq[T](array: Array[T]): ArraySeq[T] =
+      ArraySeq.unsafeWrapArray(array)
 
     val booleanArray = Array(true, false, true, false)
     check(booleanArray, Array(true, false), Array(false, true))
@@ -47,17 +47,17 @@ class ImmutableArrayTest {
     Assert.assertEquals(unit1(), unit2())
     // unitArray is actually an instance of Immutable[BoxedUnit], the check to which is actually checked slice
     // implementation of ofRef
-    val unitArray: ImmutableArray[Unit] = Array(unit1(), unit2(), unit1(), unit2())
+    val unitArray: ArraySeq[Unit] = Array(unit1(), unit2(), unit1(), unit2())
     check(unitArray, Array(unit1(), unit1()), Array(unit1(), unit1()))
   }
 
-  private def check[T : ClassTag](array: ImmutableArray[T], expectedSliceResult1: ImmutableArray[T], expectedSliceResult2: ImmutableArray[T]) {
+  private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
     Assert.assertEquals(array, array.slice(-1, 4))
     Assert.assertEquals(array, array.slice(0, 5))
     Assert.assertEquals(array, array.slice(-1, 5))
     Assert.assertEquals(expectedSliceResult1, array.slice(0, 2))
     Assert.assertEquals(expectedSliceResult2, array.slice(1, 3))
-    Assert.assertEquals(ImmutableArray.empty[T], array.slice(1, 1))
-    Assert.assertEquals(ImmutableArray.empty[T], array.slice(2, 1))
+    Assert.assertEquals(ArraySeq.empty[T], array.slice(1, 1))
+    Assert.assertEquals(ArraySeq.empty[T], array.slice(2, 1))
   }
 }

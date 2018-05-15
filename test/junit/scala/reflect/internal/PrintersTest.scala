@@ -779,7 +779,7 @@ class ClassPrintTest {
 
   @Test def testObjectWithPatternMatch7 = assertPrintedCode(sm"""
     |object PM7 {
-    |  scala.Predef.augmentString("abcde").toList match {
+    |  scala.Predef.wrapString("abcde").toList match {
     |    case scala.collection.Seq((car @ _), _*) => car
     |  }
     |}""")

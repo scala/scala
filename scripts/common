@@ -10,10 +10,6 @@ else
   IVY2_DIR="$WORKSPACE/.ivy2"
 fi
 
-# used by `sbtResolve`
-rm -rf "$WORKSPACE/resolutionScratch_"
-mkdir -p "$WORKSPACE/resolutionScratch_"
-
 SBT_CMD=${SBT_CMD-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
 
@@ -35,8 +31,6 @@ mkdir "${BOOTSTRAP_REPO_DIR}"
 
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
 addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
-# Gets set to addIntegrationResolver or addBootstrapResolver for use in sbtBuild and sbtResolve:
-addResolvers=""
 
 stApi="https://oss.sonatype.org/service/local"
 
@@ -170,34 +164,9 @@ st_stagingRepoClose() {
 
 #### sbt tools
 
-sbtBuild() {
-  travis_fold_start build "Building $(basename $PWD) with $@"
-  $SBT_CMD -no-colors $sbtArgs "$addResolvers" 'set scalacOptions += "-Xfatal-warnings:false"' "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
-  travis_fold_end build
-}
-
-sbtResolve() {
-  cd "$WORKSPACE/resolutionScratch_"
-  touch build.sbt
-  # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
-  cross=${4-binary}
-  # echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  travis_fold_start resolve "Resolving \"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
-    "$addResolvers" \
-    "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
-    "show update"
-  res=$?
-  cd $WORKSPACE
-  travis_fold_end resolve
-  return $res
-}
-
 clearIvyCache() {
   travis_fold_start clearIvy "Clearing ivy cache"
   rm -fv $IVY2_DIR/exclude_classifiers $IVY2_DIR/exclude_classifiers.lock
-  rm -rfv $IVY2_DIR/cache/org.scala-lang $IVY2_DIR/cache/org.scala-lang.modules
-  rm -rfv $IVY2_DIR/local/org.scala-lang $IVY2_DIR/local/org.scala-lang.modules
   if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
   if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
   travis_fold_end clearIvy

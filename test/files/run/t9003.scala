@@ -62,7 +62,7 @@ object Test {
 
     case class CaseSequence(as: Int*)
     val a = Array(0, 0)
-    val aArgs = collection.immutable.ImmutableArray.unsafeWrapArray(a)
+    val aArgs = collection.immutable.ArraySeq.unsafeWrapArray(a)
     CaseSequence(aArgs: _*) match {
       case CaseSequence(_, i) =>
         a(1) = 1

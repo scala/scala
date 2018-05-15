@@ -6,7 +6,7 @@ import scala.language.existentials
 
 import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
-import scala.collection.immutable.ImmutableArray
+import scala.collection.immutable.ArraySeq
 
 import java.lang.{Class => jClass, Package => jPackage}
 import java.lang.reflect.{
@@ -438,7 +438,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           )
           i += 1
         }
-        jinvoke(ImmutableArray.unsafeWrapArray(args1))
+        jinvoke(ArraySeq.unsafeWrapArray(args1))
       }
     }
 

@@ -616,7 +616,7 @@ object Future {
    * @return          the `Future` of the `IterableOnce` of results
    */
   def sequence[A, CC[X] <: IterableOnce[X], To](in: CC[Future[A]])(implicit bf: BuildFrom[CC[Future[A]], A, To], executor: ExecutionContext): Future[To] = {
-    in.iterator().foldLeft(successful(bf.newBuilder(in))) {
+    in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, fa) => fr.zipWith(fa)(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
   }
@@ -636,7 +636,7 @@ object Future {
         case some => some tryComplete v1
       }
     }
-    futures.iterator() foreach { _ onComplete firstCompleteHandler }
+    futures.iterator foreach { _ onComplete firstCompleteHandler }
     p.future
   }
 
@@ -764,7 +764,7 @@ object Future {
    * @return          the `Future` of the `IterableOnce` of results
    */
   def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
-    in.iterator().foldLeft(successful(bf.newBuilder(in))) {
+    in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, a) => fr.zipWith(fn(a))(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
 

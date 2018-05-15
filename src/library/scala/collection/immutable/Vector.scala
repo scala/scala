@@ -17,10 +17,10 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
       case v: Vector[E] => v
-      case _            => (newBuilder() ++= it).result()
+      case _            => (newBuilder ++= it).result()
     }
 
-  def newBuilder[A](): Builder[A, Vector[A]] = new VectorBuilder[A]
+  def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
 
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
 
@@ -83,7 +83,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
 
-  override def iterator(): VectorIterator[A] = {
+  override def iterator: VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     initIterator(s)
     s
@@ -179,7 +179,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           v
         case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
           var v = suffix.asInstanceOf[Vector[B]]
-          val ri = this.reverseIterator()
+          val ri = this.reverseIterator
           while (ri.hasNext) v = ri.next() +: v
           v
         case _ => super.appendedAll(suffix)
@@ -196,12 +196,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       prefix.size match {
         case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
           var v: Vector[B] = this
-          val it = prefix.toIndexedSeq.reverseIterator()
+          val it = prefix.toIndexedSeq.reverseIterator
           while (it.hasNext) v = it.next() +: v
           v
         case n if this.size < (n >>> Log2ConcatFaster) && prefix.isInstanceOf[Vector[_]] =>
           var v = prefix.asInstanceOf[Vector[B]]
-          val it = this.iterator()
+          val it = this.iterator
           while (it.hasNext) v = v :+ it.next()
           v
         case _ => super.prependedAll(prefix)

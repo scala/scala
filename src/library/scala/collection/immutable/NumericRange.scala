@@ -42,7 +42,7 @@ sealed class NumericRange[T](
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable { self =>
 
-  override def iterator() = new Iterator[T] {
+  override def iterator = new Iterator[T] {
     import num.mkNumericOps
 
     private var _hasNext = !self.isEmpty

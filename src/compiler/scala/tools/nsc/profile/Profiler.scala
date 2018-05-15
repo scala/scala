@@ -87,7 +87,7 @@ private [profile] object RealProfiler {
   val threadMx = ExtendedThreadMxBean.proxy
   if (threadMx.isThreadCpuTimeSupported) threadMx.setThreadCpuTimeEnabled(true)
   private val idGen = new AtomicInteger()
-  lazy val allPlugins = ServiceLoader.load(classOf[ProfilerPlugin]).iterator().asScala.toList
+  lazy val allPlugins = ServiceLoader.load(classOf[ProfilerPlugin]).iterator.asScala.toList
 }
 
 private [profile] class RealProfiler(reporter : ProfileReporter, val settings: Settings) extends Profiler with NotificationListener {

@@ -28,7 +28,7 @@ trait SeqOps[A, +CC[_], +C <: AnyRef]
     with Cloneable[C] {
 
   override def clone(): C = {
-    val b = newSpecificBuilder()
+    val b = newSpecificBuilder
     b ++= toIterable
     b.result()
   }

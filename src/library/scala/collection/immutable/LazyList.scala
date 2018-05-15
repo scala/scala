@@ -119,7 +119,7 @@ import scala.language.higherKinds
   *
   *  // Because lazylist1 is a val, everything that the iterator produces is held
   *  // by virtue of the fact that the head of the LazyList is held in lazylist1
-  *  val it1 = lazylist1.iterator()
+  *  val it1 = lazylist1.iterator
   *  loop("Iterator1: ", it1.next(), it1)
   *
   *  // We can redefine this LazyList such that all we have is the Iterator left
@@ -130,7 +130,7 @@ import scala.language.higherKinds
   *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
   *    loop(0)
   *  }
-  *  val it2 = stream2.iterator()
+  *  val it2 = stream2.iterator
   *  loop("Iterator2: ", it2.next(), it2)
   *
   *  // And, of course, we don't actually need a LazyList at all for such a simple
@@ -231,6 +231,8 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   def tail: C
 
   protected def cons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
+
+  override def iterator(): Iterator[A] = new LazyListIterator[A, CC, C](this)
 
   /** Forces evaluation of the whole `LazyList` and returns it.
     *
@@ -538,7 +540,7 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
     loop(init)
   }
 
-  def newBuilder[A](): Builder[A, CC[A]] = ArrayBuffer.newBuilder[A]().mapResult(array => from(array))
+  def newBuilder[A]: Builder[A, CC[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
 
   private[immutable] def filteredTail[A](lazyList: CC[A] @uncheckedVariance, p: A => Boolean, isFlipped: Boolean) = {
     newCons(lazyList.head, lazyList.tail.filterImpl(p, isFlipped))
@@ -636,7 +638,7 @@ object LazyList extends LazyListFactory[LazyList] {
 
   def from[A](coll: collection.IterableOnce[A]): LazyList[A] = coll match {
     case coll: LazyList[A] => coll
-    case _ => fromIterator(coll.iterator())
+    case _ => fromIterator(coll.iterator)
   }
 
   /**
@@ -794,7 +796,7 @@ object Stream extends LazyListFactory[Stream] {
 
   def from[A](coll: collection.IterableOnce[A]): Stream[A] = coll match {
     case coll: Stream[A] => coll
-    case _ => fromIterator(coll.iterator())
+    case _ => fromIterator(coll.iterator)
   }
 
   /**
@@ -814,4 +816,26 @@ object Stream extends LazyListFactory[Stream] {
     } else Stream.Empty
 
   def empty[A]: Stream[A] = Empty
+}
+
+/** A specialized, extra-lazy implementation of a stream iterator, so it can
+  *  iterate as lazily as it traverses the tail.
+  */
+private[immutable] final class LazyListIterator[+A, +CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]], +C <: CC[A] with LazyListOps[A, CC, C]](self: LazyListOps[A, CC, C]) extends AbstractIterator[A] {
+  // A call-by-need cell.
+  final class LazyCell(st: => LazyListOps[A, CC, C]) {
+    lazy val v = st
+  }
+
+  private var these: LazyCell = new LazyCell(self)
+
+  def hasNext: Boolean = these.v.nonEmpty
+  def next(): A =
+    if (isEmpty) Iterator.empty.next()
+    else {
+      val cur    = these.v
+      val result = cur.head
+      these = new LazyCell(cur.tail)
+      result
+    }
 }

@@ -21,7 +21,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   def tail: LinearSeq[A]
 
   // `iterator` is implemented in terms of `head` and `tail`
-  def iterator() = new Iterator[A] {
+  def iterator = new Iterator[A] {
     private[this] var current: Iterable[A] = toIterable
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
@@ -173,5 +173,5 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   }
 
   override def tails: Iterator[C] =
-    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder().result())
+    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder.result())
 }

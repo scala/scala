@@ -206,13 +206,13 @@ class IteratorTest {
 
   @Test def lazyListIsLazy(): Unit = {
     val results = mutable.ListBuffer.empty[Int]
-    def mkIterator = Range.inclusive(1, 5).iterator() map (x => { results += x ; x })
+    def mkIterator = Range.inclusive(1, 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
     val s1 = LazyList.fromIterator(mkIterator)
     val s2 = LazyList.fromIterator(mkInfinite)
     // back and forth without slipping into nontermination.
-    results += LazyList.from(1).iterator().drop(10).to(LazyList).drop(10).iterator().next()
+    results += LazyList.from(1).iterator.drop(10).to(LazyList).drop(10).iterator.next()
     assertTrue(List(21).sameElements(results))
   }
 
@@ -312,7 +312,7 @@ class IteratorTest {
 
   @Test
   def hasCorrectDistinct: Unit = {
-    val result = List(1, 1, 2, 3, 3, 3, 4, 5, 5).iterator().distinct
+    val result = List(1, 1, 2, 3, 3, 3, 4, 5, 5).iterator.distinct
 
     assertTrue(result.hasNext)
     assertEquals(1, result.next())
@@ -329,7 +329,7 @@ class IteratorTest {
 
   @Test
   def hasCorrectDistinctBy: Unit = {
-    val result = List("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").iterator().distinctBy(_.length)
+    val result = List("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").iterator.distinctBy(_.length)
 
     assertTrue(result.hasNext)
     assertEquals("a", result.next())
@@ -346,7 +346,7 @@ class IteratorTest {
   def knownSize: Unit = {
 
     def indexedSeq[A](xs: IndexedSeq[A]): Unit = {
-      val it = xs.iterator()
+      val it = xs.iterator
       assertEquals(xs.size, it.knownSize)
       it.next()
       assertEquals(xs.size - 1, it.knownSize)
@@ -354,7 +354,7 @@ class IteratorTest {
 
     indexedSeq(Vector(1, 2, 3))
     indexedSeq(mutable.ArrayBuffer(1, 2, 3))
-    indexedSeq(immutable.ImmutableArray(1, 2, 3))
+    indexedSeq(immutable.ArraySeq(1, 2, 3))
     indexedSeq(Range(start = 1, end = 3, step = 1))
     indexedSeq(Range(start = 9, end = 2, step = -2))
     indexedSeq(immutable.NumericRange(start = 1, end = 3, step = 1))
@@ -363,7 +363,7 @@ class IteratorTest {
 
   @Test
   def mkString: Unit = {
-    val it = List("a", null, "b", null, "c", null).iterator()
+    val it = List("a", null, "b", null, "c", null).iterator
 
     assertEquals("a,null,b,null,c,null", it.mkString(","))
   }
@@ -377,19 +377,19 @@ class IteratorTest {
 
   @Test
   def emptyIteratorInHigherOrderFunctions: Unit = {
-    val seqOfIterators = Seq(Seq(1, 2, 3).iterator(), Seq(3, 2, 1).iterator(), Seq(1, 3, 2).iterator())
+    val seqOfIterators = Seq(Seq(1, 2, 3).iterator, Seq(3, 2, 1).iterator, Seq(1, 3, 2).iterator)
     val unified = seqOfIterators.foldLeft(Iterator.empty[Int])((a, b) => a ++ b)
     assertEquals(List(1, 2, 3, 3, 2, 1, 1, 3, 2), List.from(unified))
   }
 
   @Test
   def emptyIteratorBuilder: Unit = {
-    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int]().result())
+    assertSame(Iterator.empty[Int], Iterator.newBuilder[Int].result())
   }
 
   @Test
   def nonEmptyIteratorBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]()
+    var iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 5
     iteratorBuilder += 4
     iteratorBuilder += 3
@@ -398,7 +398,7 @@ class IteratorTest {
 
   @Test
   def nonEmptyIteratorAndClearBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]()
+    var iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 1
     iteratorBuilder.clear()
     assertSame(Iterator.empty, iteratorBuilder.result())
@@ -422,7 +422,7 @@ class IteratorTest {
     }
 
     val far = 100000
-    def l = Iterable.from(Range(0, 100)).iterator()
+    def l = Iterable.from(Range(0, 100)).iterator
     check(l.copyToArray(new Array(100)),
       0, far)
     check(l.copyToArray(new Array(10)),

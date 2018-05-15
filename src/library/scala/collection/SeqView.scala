@@ -23,7 +23,7 @@ object SeqView {
   class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends AbstractSeqView[A] {
     def apply(idx: Int): A = underlying.apply(idx)
     def length: Int = underlying.length
-    def iterator(): Iterator[A] = underlying.iterator()
+    def iterator: Iterator[A] = underlying.iterator
     override def knownSize: Int = underlying.knownSize
   }
 

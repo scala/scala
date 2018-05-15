@@ -1,27 +1,9 @@
 # Bootstrap procedure
 #  - determine scala version
-#  - determine module versions
 #  - optionally build a fresh "starr", publish to BOOTSTRAP_REPO_DIR
 #  - build minimal core (aka "locker") of Scala, publish to BOOTSTRAP_REPO_DIR
 #  - build Scala (aka "quick") using locker, publish to scala-integration (or sonatype for releases)
 #  - run tests
-
-
-# Modules and stages
-#  - TODO: xml is no longer in the bootstrap, so a lot of the complexity described in the following
-#    bullets no longer applies.
-#  - Each stage (starr, locker quick) builds the modules (if no binary compatible version exists)
-#  - The reason is: the compiler POM depends on the xml module of the previous stage, i.e., the
-#    locker compiler uses the starr modules. So the locker scaladoc (building the quick compiler)
-#    runs with a re-built xml, which may be necessary under binary incompatible changes.
-#  - In the starr / locker stages, the modules are built using the compiler just built at this stage.
-#    So the locker modules are built using locker, unlike the locker compiler, which is built by starr.
-#  - The quick (the actual release) compiler POM depends on the locker xml module. Therefore we need
-#    to use the same Scala version number in locker and quick, so that the modules built in the quick
-#    stage can be swapped in (quick compiler and modules are released to scala-integration / sonatype).
-#  - Final quirk: in the quick stage, the modules are built using the locker compiler. The reason:
-#    the quick compiler lives in scala-integration / sonatype, but there's no xml module there yet
-#    (we're just about to build it), which we need to run scaladoc. So we use the locker compiler.
 
 
 # Specifying the Scala version:
@@ -34,46 +16,6 @@
 #    - version number is read from the build.sbt, extended with -[bin|pre]-$sha
 
 
-# Specifying module versions. We use release versions for modules.
-#  - Module versions are read from the versions.properties file.
-#  - Set <MODULE>_VER to override the default, e.g. PARTEST_VER="1.0.4".
-#  - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
-
-
-# Modules are automatically built if necessary.
-#  - A module is built if it doesn't exist in the maven repository. Note that the lookup uses two versions:
-#    - The version of the module (see below how it's determined)
-#    - The binary version of of the SCALA_VER release that is being built
-#  - sbt computes the binary version when looking up / building modules (*). Examples:
-#    - 2.12.0-M1, 2.12.0-RC3: the full version is used
-#    - 2.12.0, 2.12.1-M1, 2.12.1-RC3, 2.12.1: the binary version 2.12 is used
-#
-#  - Example: assume that `scala-xml_2.11 % 1.0.3` and `scala-xml_2.12.0-M1 % 1.0.3` both exists
-#    - XML_VER=1.0.3 and SCALA_VER=2.11.7    => no rebuild (binary version remains 2.11)
-#    - XML_VER=1.0.3 and SCALA_VER=2.12.0-M2 => rebuild (new binary version 2.12.0-M2)
-#    - XML_VER=1.0.4 and SCALA_VER=2.11.7    => rebuild (new version for the module, not yet on maven)
-#      NOTE: this is not the recommended way of publishing a module. Instead, prefer to release `scala-xml_2.11 % 1.0.4`
-#            using the existing scala 2.11.6 compiler before releasing 2.11.7. Sometimes it's necessary though. One
-#            example was 2.11.1, which contained a fix in the backend (SerialVersionUID was ignored). All modules needed
-#            to be re-built using the 2.11.1 release, we could not use 2.11.0. We could also not release the modules
-#            after 2.11.1 was out, because that way the scala-library-all pom of 2.11.1 would depend on the old modules.
-#
-# (*) https://github.com/sbt/sbt/blob/v0.13.13/util/cross/src/main/input_sources/CrossVersionUtil.scala#L41
-
-
-# Binary incompatible changes in Modules: example with Scala 2.11 / 2.12 and scala-parser-combinators
-#  - The 1.0.x branch on scala-parser-combinators remains binary compatible with 1.0.0
-#  - Scala 2.11 will always use 1.0.x releases: we ship scala-parser-combinators with the distribution,
-#    so we cannot introduce incompatible changes in a minor release.
-#  - The master branch of scala-parser-combinators contains binary incompatible changes, versioned 1.1.x
-#  - Scala 2.12 will use 1.1.x releases
-#  - No changes to the build script required: just put the 1.1.x version number into versions.properties
-#
-# Note: It's still OK for a module to release a binary incompatible version to maven, for example
-# scala-parser-combinators_2.11 % 1.1.0. Users can depend on this in their sbt build. But for the
-# distribution (tar/zip archives) we have to stay on the binary compatible version.
-
-
 # Credentials
 #  - `PRIVATE_REPO_PASS` password for `scala-ci` user on scala-ci.typesafe.com/artifactory
 #  - `SONA_USER` / `SONA_PASS` for sonatype
@@ -81,98 +23,10 @@
 
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
-publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
-forceBuildModules=${forceBuildModules-no}
 clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
 
-
-buildPartest() {
-  if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
-  then echo "Found scala-partest $PARTEST_VER; not building."
-  else
-    update scala scala-partest "$PARTEST_REF" && gfxd
-    # disable -Xfatal-warnings until https://github.com/scala/scala-partest/pull/101 is released
-    sbtBuild 'set version :="'$PARTEST_VER'"' $clean doc 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
-    PARTEST_BUILT="yes"
-  fi
-}
-
-# should only be called with publishTasks publishing to artifactory
-buildScalaCheck(){
-  if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
-  then echo "Found scalacheck $SCALACHECK_VER; not building."
-  else
-    update rickynils scalacheck $SCALACHECK_REF && gfxd
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean doc publish # test times out NOTE: never published to sonatype
-    SCALACHECK_BUILT="yes"
-  fi
-}
-
-buildModules() {
-  clearIvyCache
-
-  if [ "$1" = "starr" ]; then
-    scalaVersionTasks=('set every scalaVersion := "'$STARR_VER'"')
-  else
-    scalaVersionTasks=('set every scalaVersion := "'$SCALA_VER'"')
-  fi
-
-  if [[ "$1" = "starr" || "$1" == "locker" ]]; then
-    addResolvers="$addBootstrapResolver"
-    publishTasks=("set every publishTo := Some(\"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\")")
-    buildTasks=($publishPrivateTask)
-  else
-    if [ "$publishToSonatype" == "yes" ]; then
-      addResolvers="$addBootstrapResolver" # locker compiler builds quick modules, see comment on top of this file
-      publishTasks=('set credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv("SONA_USER"), System.getenv("SONA_PASS"))' 'set pgpSigningKey := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' "set pgpPassphrase := Some(Array.empty)")
-      buildTasks=($publishSonatypeTaskModules)
-    else
-      addResolvers="$addBootstrapResolver" # locker compiler builds quick modules, see comment on top of this file
-      publishTasks=('set credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", System.getenv("PRIVATE_REPO_PASS"))' "set every publishTo := Some(\"publish-repo\" at \"$integrationRepoUrl\")")
-      buildTasks=($publishPrivateTask)
-    fi
-  fi
-
-  # buildScalaCheck $1
-  buildPartest $1
-
-  constructUpdatedModuleVersions $1
-
-  cd $WORKSPACE
-}
-
-
 ## BUILD STEPS:
-
-scalaVerToBinary() {
-  # $1 = SCALA_VER
-  # $2 = SCALA_VER_BASE
-  # $3 = SCALA_VER_SUFFIX
-
-  local RE='\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)'
-  local majMin="$(echo $2 | sed -e "s#$RE#\1.\2#")"
-  local patch="$(echo $2 | sed -e "s#$RE#\3#")"
-
-  # The binary version is majMin (e.g. "2.12") if
-  #  - there's no suffix                         : 2.12.0, 2.12.1
-  #  - the suffix starts with "-bin"             : 2.12.1-bin-sha, 2.12.1-bin-sha-custom, 2.12.1-bin-SNAPSHOT
-  #  - the suffix is \w+ and patch version is > 0: 2.12.1-M1, 2.12.1-RC2 (also 2.12.1-sha, 2.12.1-SNAPSHOT, which we don't use)
-  #
-  # Otherwise, the binary version is the full version: 2.12.0-M1, 2.12.0-RC2, 2.12.0-pre-sha, 2.12.0-pre-SNAPSHOT
-  # (also 2.12.0-sha, 2.12.0-SNAPSHOT, which we don't use)
-  #
-  # Adapted from sbt: https://github.com/sbt/sbt/blob/v0.13.13/util/cross/src/main/input_sources/CrossVersionUtil.scala#L42
-  #
-  # During the pre-release cycle of a major release (e.g. before 2.12.0), the SCALA_BINARY_VER of integration / SNAPSHOT
-  # versions is the full version, e.g. 2.12.0-pre-sha, so modules are always re-built.
-
-  if [[ "$3" == "" || "${3:0:4}" == "-bin" || ("$patch" != "0" && "$3" =~ ^-[a-zA-Z0-9_]+$) ]]; then
-    echo "$majMin"
-  else
-    echo "$1"
-  fi
-}
 
 determineScalaVersion() {
   cd $WORKSPACE
@@ -194,25 +48,11 @@ determineScalaVersion() {
   fi
 
   SCALA_VER="$SCALA_VER_BASE$SCALA_VER_SUFFIX"
-  SCALA_BINARY_VER=$(scalaVerToBinary $SCALA_VER $SCALA_VER_BASE $SCALA_VER_SUFFIX)
 
   echo "version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
   echo "sbtDistVersionOverride=-Dproject.version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
 
   echo "Building Scala $SCALA_VER."
-}
-
-# determineScalaVersion must have been called (versions.properties is parsed to env vars)
-deriveModuleVersions() {
-     PARTEST_VER=${PARTEST_VER-$partest_version_number}
-  SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
-
-     PARTEST_REF="v$PARTEST_VER"
-  SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
-
-  echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
-  # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
-
 }
 
 createNetrcFile() {
@@ -222,7 +62,7 @@ createNetrcFile() {
   grep 'password=' $1 | sed 's/password=\(.*\)/password \1/' >> $netrcFile
 }
 
-# deletes existing artifacts (core and modules) matching the $SCALA_VER from the repository passed as argument
+# deletes existing artifacts matching the $SCALA_VER from the repository passed as argument
 removeExistingBuilds() {
   local repoUrl=$1
   local repoPrefix="https://scala-ci.typesafe.com/artifactory/"
@@ -246,27 +86,6 @@ removeExistingBuilds() {
     done
   else
     echo "Unknown repo, not deleting anything: $repoUrl"
-  fi
-}
-
-constructUpdatedModuleVersions() {
-  updatedModuleVersions=()
-
-  # force the new module versions for building the core. these may be different from the values in versions.properties
-  # if the variables (e.g. PARTEST_VER) were provided. in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
-  # updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
-
-  # allow overriding the jline version using a jenkins build parameter
-  if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
-
-  if [ "$SCALA_BINARY_VER" = "$SCALA_VER" ]; then
-    if [ "$1" = "starr" ]; then
-      binaryVer=$STARR_VER
-    else
-      binaryVer=$SCALA_BINARY_VER
-    fi
-    updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$binaryVer")
   fi
 }
 
@@ -327,17 +146,13 @@ buildStarr() {
     travis_fold_end starr
   )
   SET_STARR=-Dstarr.version=$STARR_VER
-
-  buildModules starr # the locker compiler uses these modules to run scaladoc, see comment on top of this file
 }
 
 #### LOCKER
 
-# for bootstrapping, publish core (or at least smallest subset we can get away with)
-# so that we can build modules with this version of Scala and publish them locally
-# must publish under $SCALA_VER so that the modules will depend on this (binary) version of Scala
-# publish more than just core: partest needs scalap
-# in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
+# Publish core for bootstrapping.
+# TODO: now that we no longer build modules, we can use a version number with a `-locker` suffix.
+# Before that was not possible because the module artifacts had a pom dependency on that version.
 buildLocker() {
   clearIvyCache
   cd $WORKSPACE
@@ -345,12 +160,9 @@ buildLocker() {
   travis_fold_start locker "Building locker"
   $SBT_CMD -no-colors $sbtArgs \
     $SET_STARR \
-    ${updatedModuleVersions[@]} \
     "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
     $clean publish
   travis_fold_end locker
-
-  buildModules locker
 }
 
 #### QUICK
@@ -363,7 +175,6 @@ invokeQuickInternal() {
   travis_fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
       -Dstarr.version=$SCALA_VER \
-      ${updatedModuleVersions[@]} \
       "$setupCmd" \
       "$@"
   travis_fold_end quick
@@ -386,8 +197,6 @@ buildQuick() {
   else
     invokeQuick $clean publish
   fi
-
-  buildModules quick
 
   closeStagingRepos
 }

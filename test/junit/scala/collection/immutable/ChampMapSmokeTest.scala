@@ -9,7 +9,7 @@ object ChampMapSmokeTest {
     ChampHashMap.empty[K, V]
 
   private def mapOf[K, V](keyValuePairs: (K, V)*): ChampHashMap[K, V] = {
-    val builder = ChampHashMap.newBuilder[K, V]()
+    val builder = ChampHashMap.newBuilder[K, V]
     keyValuePairs.foreach(builder.addOne)
     builder.result()
   }

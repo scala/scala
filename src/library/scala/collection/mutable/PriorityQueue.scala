@@ -79,7 +79,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   override def isEmpty: Boolean = resarr.p_size0 < 2
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A]): PriorityQueue[A] = PriorityQueue.from(coll)
-  override protected def newSpecificBuilder(): Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder()
+  override protected def newSpecificBuilder: Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder
 
   def mapInPlace(f: A => A): this.type = {
     resarr.mapInPlace(f)
@@ -132,7 +132,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
   override def addAll(xs: IterableOnce[A]): this.type = {
     val from = resarr.p_size0
-    for (x <- xs.iterator()) unsafeAdd(x)
+    for (x <- xs.iterator) unsafeAdd(x)
     heapify(from)
     this
   }
@@ -190,10 +190,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  /** Adds all elements provided by a `TraversableOnce` object
+  /** Adds all elements provided by a `IterableOnce` object
     *  into the priority queue.
     *
-    *  @param  xs    a traversable object.
+    *  @param  xs    a iterable object.
     *  @return       a new priority queue containing elements of both `xs` and `this`.
     */
   def ++(xs: IterableOnce[A]): PriorityQueue[A] = { this.clone() ++= xs }
@@ -249,7 +249,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  @return  an iterator over all the elements.
     */
-  override def iterator(): Iterator[A] = new AbstractIterator[A] {
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 1
     def hasNext: Boolean = i < resarr.p_size0
     def next(): A = {
@@ -308,7 +308,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  Note: the order of elements is undefined.
     */
-  def toQueue: Queue[A] = new Queue[A] ++= this.iterator()
+  def toQueue: Queue[A] = new Queue[A] ++= this.iterator
 
   /** Returns a textual representation of a queue as a string.
     *
@@ -322,7 +322,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  @return a list containing all elements of this $coll.
     */
-  override def toList: immutable.List[A] = immutable.List.from(this.iterator())
+  override def toList: immutable.List[A] = immutable.List.from(this.iterator)
 
   /** This method clones the priority queue.
     *
@@ -340,7 +340,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
 
 object PriorityQueue extends SortedIterableFactory[PriorityQueue] {
-  def newBuilder[A : Ordering](): Builder[A, PriorityQueue[A]] = {
+  def newBuilder[A : Ordering]: Builder[A, PriorityQueue[A]] = {
     new Builder[A, PriorityQueue[A]] {
       val pq = new PriorityQueue[A]
       def addOne(elem: A): this.type = { pq.unsafeAdd(elem); this }
@@ -352,7 +352,7 @@ object PriorityQueue extends SortedIterableFactory[PriorityQueue] {
   def empty[A : Ordering]: PriorityQueue[A] = new PriorityQueue[A]
 
   def from[E : Ordering](it: IterableOnce[E]): PriorityQueue[E] = {
-    val b = newBuilder[E]()
+    val b = newBuilder[E]
     b ++= it
     b.result()
   }

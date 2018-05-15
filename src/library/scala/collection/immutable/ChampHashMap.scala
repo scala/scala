@@ -39,9 +39,9 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator(): Iterator[(K, V)] = new MapKeyValueTupleIterator[K, V](rootNode)
+  def iterator: Iterator[(K, V)] = new MapKeyValueTupleIterator[K, V](rootNode)
 
-  protected[immutable] def reverseIterator(): Iterator[(K, V)] = new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  protected[immutable] def reverseIterator: Iterator[(K, V)] = new MapKeyValueTupleReverseIterator[K, V](rootNode)
 
   override final def contains(key: K): Boolean = rootNode.containsKey(key, computeHash(key), 0)
 
@@ -76,9 +76,9 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   override def init: ChampHashMap[K, V] = this - last._1
 
-  override def head: (K, V) = iterator().next()
+  override def head: (K, V) = iterator.next()
 
-  override def last: (K, V) = reverseIterator().next()
+  override def last: (K, V) = reverseIterator.next()
 
   override def foreach[U](f: ((K, V)) => U): Unit = rootNode.foreach(f)
 
@@ -629,10 +629,10 @@ object ChampHashMap extends MapFactory[ChampHashMap] {
   def from[K, V](source: collection.IterableOnce[(K, V)]): ChampHashMap[K, V] =
     source match {
       case hs: ChampHashMap[K, V] => hs
-      case _ => (newBuilder[K, V]() ++= source).result()
+      case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V](): Builder[(K, V), ChampHashMap[K, V]] =
+  def newBuilder[K, V]: Builder[(K, V), ChampHashMap[K, V]] =
     new ImmutableBuilder[(K, V), ChampHashMap[K, V]](empty) {
       def addOne(element: (K, V)): this.type = {
         elems = elems + element

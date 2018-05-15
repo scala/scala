@@ -68,7 +68,7 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
   }
 
   property("lastOption") = forAll { (set: mutable.TreeSet[K]) =>
-    set.lastOption == Try(set.iterator().max).toOption
+    set.lastOption == Try(set.iterator.max).toOption
   }
 
   property("minAfter") = forAll { (set: mutable.TreeSet[K]) =>
@@ -123,7 +123,7 @@ object MutableTreeSetProjectionProperties extends Properties("mutable.TreeSetPro
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
   def keysInView[This <: IterableOnce[K], That](keys: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, K, That]) = {
-    (bf.newBuilder(keys) ++= keys.iterator().filter(in(_, from, until))).result()
+    (bf.newBuilder(keys) ++= keys.iterator.filter(in(_, from, until))).result()
   }
 
   property("size, isEmpty") = forAll { (keys: Set[K], from: Option[K], until: Option[K]) =>

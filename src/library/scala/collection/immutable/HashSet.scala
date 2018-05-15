@@ -159,12 +159,12 @@ object HashSet extends IterableFactory[HashSet] {
   def from[A](it: collection.IterableOnce[A]): HashSet[A] =
     it match {
       case hs: HashSet[A] => hs
-      case _ => (newBuilder[A]() ++= it).result()
+      case _ => (newBuilder[A] ++= it).result()
     }
 
   def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
-  def newBuilder[A](): Builder[A, HashSet[A]] =
+  def newBuilder[A]: Builder[A, HashSet[A]] =
     new ImmutableBuilder[A, HashSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
@@ -172,7 +172,7 @@ object HashSet extends IterableFactory[HashSet] {
   @SerialVersionUID(3L)
   private object EmptyHashSet extends HashSet[Any] {
 
-    def iterator(): Iterator[Any] = Iterator.empty
+    def iterator: Iterator[Any] = Iterator.empty
 
     override def foreach[U](f: Any => U): Unit = ()
 
@@ -219,7 +219,7 @@ object HashSet extends IterableFactory[HashSet] {
 
   private[immutable] final class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
 
-    def iterator(): Iterator[A] = Iterator.single(key)
+    def iterator: Iterator[A] = Iterator.single(key)
 
     override def foreach[U](f: A => U): Unit = f(key)
 
@@ -302,7 +302,7 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def size = ks.size
 
-    def iterator(): Iterator[A] = ks.iterator()
+    def iterator: Iterator[A] = ks.iterator
 
     override def foreach[U](f: A => U): Unit = ks.foreach(f)
 
@@ -506,7 +506,7 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def size = size0
 
-    def iterator(): Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
+    def iterator: Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
 

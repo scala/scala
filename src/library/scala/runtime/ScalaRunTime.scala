@@ -11,7 +11,7 @@ package runtime
 
 import scala.collection.{ AbstractIterator, AnyConstr, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View }
 import scala.collection.generic.IsIterableLike
-import scala.collection.immutable.{ NumericRange, ImmutableArray }
+import scala.collection.immutable.{ NumericRange, ArraySeq }
 import scala.collection.mutable.StringBuilder
 import scala.reflect.{ ClassTag, classTag }
 import java.lang.{ Class => jClass }
@@ -261,22 +261,22 @@ object ScalaRunTime {
     nl + s + "\n"
   }
 
-  // Convert arrays to ImmutableArray for use with Java varargs:
-  def genericWrapArray[T](xs: Array[T]): ImmutableArray[T] =
+  // Convert arrays to immutable.ArraySeq for use with Java varargs:
+  def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =
     if (xs eq null) null
-    else ImmutableArray.unsafeWrapArray(xs)
-  def wrapRefArray[T <: AnyRef](xs: Array[T]): ImmutableArray[T] = {
+    else ArraySeq.unsafeWrapArray(xs)
+  def wrapRefArray[T <: AnyRef](xs: Array[T]): ArraySeq[T] = {
     if (xs eq null) null
-    else if (xs.length == 0) ImmutableArray.empty[AnyRef].asInstanceOf[ImmutableArray[T]]
-    else new ImmutableArray.ofRef[T](xs)
+    else if (xs.length == 0) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq[T]]
+    else new ArraySeq.ofRef[T](xs)
   }
-  def wrapIntArray(xs: Array[Int]): ImmutableArray[Int] = if (xs ne null) new ImmutableArray.ofInt(xs) else null
-  def wrapDoubleArray(xs: Array[Double]): ImmutableArray[Double] = if (xs ne null) new ImmutableArray.ofDouble(xs) else null
-  def wrapLongArray(xs: Array[Long]): ImmutableArray[Long] = if (xs ne null) new ImmutableArray.ofLong(xs) else null
-  def wrapFloatArray(xs: Array[Float]): ImmutableArray[Float] = if (xs ne null) new ImmutableArray.ofFloat(xs) else null
-  def wrapCharArray(xs: Array[Char]): ImmutableArray[Char] = if (xs ne null) new ImmutableArray.ofChar(xs) else null
-  def wrapByteArray(xs: Array[Byte]): ImmutableArray[Byte] = if (xs ne null) new ImmutableArray.ofByte(xs) else null
-  def wrapShortArray(xs: Array[Short]): ImmutableArray[Short] = if (xs ne null) new ImmutableArray.ofShort(xs) else null
-  def wrapBooleanArray(xs: Array[Boolean]): ImmutableArray[Boolean] = if (xs ne null) new ImmutableArray.ofBoolean(xs) else null
-  def wrapUnitArray(xs: Array[Unit]): ImmutableArray[Unit] = if (xs ne null) new ImmutableArray.ofUnit(xs) else null
+  def wrapIntArray(xs: Array[Int]): ArraySeq[Int] = if (xs ne null) new ArraySeq.ofInt(xs) else null
+  def wrapDoubleArray(xs: Array[Double]): ArraySeq[Double] = if (xs ne null) new ArraySeq.ofDouble(xs) else null
+  def wrapLongArray(xs: Array[Long]): ArraySeq[Long] = if (xs ne null) new ArraySeq.ofLong(xs) else null
+  def wrapFloatArray(xs: Array[Float]): ArraySeq[Float] = if (xs ne null) new ArraySeq.ofFloat(xs) else null
+  def wrapCharArray(xs: Array[Char]): ArraySeq[Char] = if (xs ne null) new ArraySeq.ofChar(xs) else null
+  def wrapByteArray(xs: Array[Byte]): ArraySeq[Byte] = if (xs ne null) new ArraySeq.ofByte(xs) else null
+  def wrapShortArray(xs: Array[Short]): ArraySeq[Short] = if (xs ne null) new ArraySeq.ofShort(xs) else null
+  def wrapBooleanArray(xs: Array[Boolean]): ArraySeq[Boolean] = if (xs ne null) new ArraySeq.ofBoolean(xs) else null
+  def wrapUnitArray(xs: Array[Unit]): ArraySeq[Unit] = if (xs ne null) new ArraySeq.ofUnit(xs) else null
 }
