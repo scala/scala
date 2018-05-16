@@ -305,7 +305,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
     new GroupedIterator[B](self, size, step)
 
-  def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new Iterator[B] {
+  def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
     // We use an intermediate iterator that iterates through the first element `z`
     // and then that will be modified to iterate through the collection
     private var current: Iterator[B] =

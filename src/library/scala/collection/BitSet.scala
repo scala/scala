@@ -64,7 +64,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def iterator: Iterator[Int] = iteratorFrom(0)
 
-  def iteratorFrom(start: Int) = new Iterator[Int] {
+  def iteratorFrom(start: Int): Iterator[Int] = new AbstractIterator[Int] {
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
