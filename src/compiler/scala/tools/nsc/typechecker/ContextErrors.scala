@@ -567,7 +567,7 @@ trait ContextErrors {
           val unknowns = (namelessArgs zip args) collect {
             case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
           }
-          val suppl = 
+          val suppl =
             unknowns.size match {
               case 0 => ""
               case 1 => s"\nNote that '${unknowns.head}' is not a parameter name of the invoked method."
@@ -752,12 +752,7 @@ trait ContextErrors {
 
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {
-        /* Give a better error message for `val thread = java.lang.Thread`. */
-        val betterKindString =
-          if (sym.isJavaDefined && sym.isTrait) "Java interface"
-          else if (sym.isJavaDefined && (sym.isClass || sym.isModule)) "Java class"
-          else sym.kindString
-        issueNormalTypeError(tree, s"$betterKindString ${sym.fullName} is not a value")
+        issueNormalTypeError(tree, sym.kindString + " " + sym.fullName + " is not a value")
         setError(tree)
       }
 
