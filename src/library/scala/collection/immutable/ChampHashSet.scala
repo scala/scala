@@ -545,7 +545,7 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
 
 private final case class SetEffect[A]() {
 
-  private var modified: Boolean = false
+  private[this] var modified: Boolean = false
 
   def isModified =  { modified }
   def setModified = { modified = true }

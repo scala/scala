@@ -688,7 +688,7 @@ object Regex {
       if (end(i) >= 0) source.subSequence(end(i), source.length)
       else null
 
-    private lazy val nameToIndex: Map[String, Int] = Map[String, Int]() ++ ("" :: groupNames.toList).zipWithIndex
+    private[this] lazy val nameToIndex: Map[String, Int] = Map[String, Int]() ++ ("" :: groupNames.toList).zipWithIndex
 
     /** Returns the group with the given name.
      *
@@ -728,9 +728,9 @@ object Regex {
     /** The number of subgroups. */
     def groupCount = matcher.groupCount
 
-    private lazy val starts: Array[Int] =
+    private[this] lazy val starts: Array[Int] =
       Array.tabulate(groupCount + 1) { matcher.start }
-    private lazy val ends: Array[Int] =
+    private[this] lazy val ends: Array[Int] =
       Array.tabulate(groupCount + 1) { matcher.end }
 
     /** The index of the first matched character in group `i`. */
@@ -874,7 +874,7 @@ object Regex {
   private[matching] trait Replacement {
     protected def matcher: Matcher
 
-    private val sb = new java.lang.StringBuffer
+    private[this] val sb = new java.lang.StringBuffer
 
     def replaced = {
       val newsb = new java.lang.StringBuffer(sb)

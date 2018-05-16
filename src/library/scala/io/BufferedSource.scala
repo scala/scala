@@ -27,8 +27,8 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
   // block of data to be read from the stream, which will then be lost
   // to getLines if it creates a new reader, even though next() was
   // never called on the original.
-  private var charReaderCreated = false
-  private lazy val charReader = {
+  private[this] var charReaderCreated = false
+  private[this] lazy val charReader = {
     charReaderCreated = true
     bufferedReader()
   }
@@ -62,7 +62,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
 
 
   class BufferedLineIterator extends AbstractIterator[String] with Iterator[String] {
-    private val lineReader = decachedReader
+    private[this] val lineReader = decachedReader
     var nextLine: String = null
 
     override def hasNext = {

@@ -18,9 +18,9 @@ import scala.language.implicitConversions
  */
 object BigInt {
 
-  private val minCached = -1024
-  private val maxCached = 1024
-  private val cache = new Array[BigInt](maxCached - minCached + 1)
+  private[this] val minCached = -1024
+  private[this] val maxCached = 1024
+  private[this] val cache = new Array[BigInt](maxCached - minCached + 1)
   private val minusOne = BigInteger.valueOf(-1)
 
   /** Constructs a `BigInt` whose value is equal to that of the

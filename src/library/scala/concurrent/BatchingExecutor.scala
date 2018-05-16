@@ -42,10 +42,10 @@ import scala.annotation.tailrec
 private[concurrent] trait BatchingExecutor extends Executor {
 
   // invariant: if "_tasksLocal.get ne null" then we are inside BatchingRunnable.run; if it is null, we are outside
-  private val _tasksLocal = new ThreadLocal[List[Runnable]]()
+  private[this] val _tasksLocal = new ThreadLocal[List[Runnable]]()
 
   private class Batch(val initial: List[Runnable]) extends Runnable with BlockContext {
-    private var parentBlockContext: BlockContext = _
+    private[this] var parentBlockContext: BlockContext = _
     // this method runs in the delegate ExecutionContext's thread
     override def run(): Unit = {
       require(_tasksLocal.get eq null)

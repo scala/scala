@@ -643,9 +643,9 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     with scala.collection.concurrent.Map[K, V]
     with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]] {
 
-  private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
-  private var equalityobj = ef
-  private var rootupdater = rtupd
+  private[this] var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
+  private[this] var equalityobj = ef
+  private[this] var rootupdater = rtupd
   def hashing = hashingobj
   def equality = equalityobj
   @volatile private var root = r

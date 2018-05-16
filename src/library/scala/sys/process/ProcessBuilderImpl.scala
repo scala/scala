@@ -88,7 +88,7 @@ private[process] trait ProcessBuilderImpl {
     protected def toSource = this
     protected def toSink = this
 
-    private val defaultStreamCapacity = 4096
+    private[this] val defaultStreamCapacity = 4096
 
     def #|(other: ProcessBuilder): ProcessBuilder  = {
       require(other.canPipeTo, "Piping to multiple processes is not supported.")

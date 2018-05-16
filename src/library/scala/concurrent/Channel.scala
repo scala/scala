@@ -21,9 +21,9 @@ class Channel[A] {
     var elem: A = _
     var next: LinkedList[A] = null
   }
-  private var written = new LinkedList[A] // FIFO queue, realized through
-  private var lastWritten = written       // aliasing of a linked list
-  private var nreaders = 0
+  private[this] var written = new LinkedList[A] // FIFO queue, realized through
+  private[this] var lastWritten = written       // aliasing of a linked list
+  private[this] var nreaders = 0
 
   /** Append a value to the FIFO queue to be read by `read`.
    *  This operation is nonblocking and can be executed by any thread.

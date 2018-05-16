@@ -45,10 +45,10 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
   import java.util.WeakHashMap
   import java.util.concurrent.locks.ReentrantReadWriteLock
 
-  private val rwl = new ReentrantReadWriteLock()
-  private val rlock = rwl.readLock
-  private val wlock = rwl.writeLock
-  private val map = new WeakHashMap[K, WeakReference[V]]
+  private[this] val rwl = new ReentrantReadWriteLock()
+  private[this] val rlock = rwl.readLock
+  private[this] val wlock = rwl.writeLock
+  private[this] val map = new WeakHashMap[K, WeakReference[V]]
 
   protected def valueFromKey(k: K): V
   protected def keyFromValue(v: V): Option[K]

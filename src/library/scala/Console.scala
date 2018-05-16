@@ -123,9 +123,9 @@ import scala.util.DynamicVariable
  *
  */
 object Console extends AnsiColor {
-  private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
-  private val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
-  private val inVar  = new DynamicVariable[BufferedReader](
+  private[this] val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
+  private[this] val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
+  private[this] val inVar  = new DynamicVariable[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
   protected def setOutDirect(out: PrintStream): Unit  = outVar.value = out

@@ -177,7 +177,7 @@ object Exception {
 
   trait Described {
     protected val name: String
-    private var _desc: String = ""
+    private[this] var _desc: String = ""
     def desc = _desc
     def withDesc(s: String): this.type = {
       _desc = s

@@ -80,7 +80,7 @@ object View extends IterableFactory[View] {
   class Single[A](a: A) extends AbstractView[A] {
     def iterator: Iterator[A] =
       new AbstractIterator[A] {
-        private var notConsumed: Boolean = true
+        private[this] var notConsumed: Boolean = true
         def next(): A =
           if (notConsumed) {
             notConsumed = false
@@ -264,8 +264,8 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class Updated[A](underlying: SomeIterableOps[A], index: Int, elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new AbstractIterator[A] {
-      private val it = underlying.iterator
-      private var i = 0
+      private[this] val it = underlying.iterator
+      private[this] var i = 0
       def next(): A = {
         val value = if (i == index) { it.next(); elem } else it.next()
         i += 1
@@ -303,8 +303,8 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new AbstractIterator[A] {
-      private var i = 0
-      private val it = underlying.iterator
+      private[this] var i = 0
+      private[this] val it = underlying.iterator
       def next(): A = {
         val a =
           if (it.hasNext) it.next()

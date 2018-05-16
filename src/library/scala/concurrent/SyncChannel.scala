@@ -17,8 +17,8 @@ package scala.concurrent
  */
 class SyncChannel[A] {
 
-  private var pendingWrites = List[(A, SyncVar[Boolean])]()
-  private var pendingReads  = List[SyncVar[A]]()
+  private[this] var pendingWrites = List[(A, SyncVar[Boolean])]()
+  private[this] var pendingReads  = List[SyncVar[A]]()
 
   def write(data: A): Unit = {
     // create write request

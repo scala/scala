@@ -23,7 +23,7 @@ object IndexedSeqView {
 
   @SerialVersionUID(3L)
   private final class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
-    private var current = 0
+    private[this] var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size
     def next(): A = {

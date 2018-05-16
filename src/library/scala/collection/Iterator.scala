@@ -103,8 +103,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *  @note    Reuse: $consumesAndProducesIterator
     */
   def buffered: BufferedIterator[A] = new AbstractIterator[A] with BufferedIterator[A] {
-    private var hd: A = _
-    private var hdDefined: Boolean = false
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
 
     def head: A = {
       if (!hdDefined) {
@@ -308,13 +308,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
     // We use an intermediate iterator that iterates through the first element `z`
     // and then that will be modified to iterate through the collection
-    private var current: Iterator[B] =
+    private[this] var current: Iterator[B] =
       new AbstractIterator[B] {
         def hasNext: Boolean = true
         def next(): B = {
           // Here we change our self-reference to a new iterator that iterates through `self`
           current = new AbstractIterator[B] {
-            private var acc = z
+            private[this] var acc = z
             def next(): B = {
               acc = op(acc, self.next())
               acc
@@ -381,8 +381,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
 
   private[collection] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new AbstractIterator[A] {
-    private var hd: A = _
-    private var hdDefined: Boolean = false
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
 
     def hasNext: Boolean = hdDefined || {
       do {
@@ -457,9 +457,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   def distinctBy[B](f: A => B): Iterator[A] = new AbstractIterator[A] {
 
-    private val traversedValues = mutable.HashSet.empty[B]
-    private var nextElementDefined: Boolean = false
-    private var nextElement: A = _
+    private[this] val traversedValues = mutable.HashSet.empty[B]
+    private[this] var nextElementDefined: Boolean = false
+    private[this] var nextElement: A = _
 
     def hasNext: Boolean = {
       @tailrec
@@ -496,7 +496,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def flatMap[B](f: A => IterableOnce[B]): Iterator[B] = new AbstractIterator[B] {
-    private var myCurrent: Iterator[B] = Iterator.empty
+    private[this] var myCurrent: Iterator[B] = Iterator.empty
     private def current = {
       while (!myCurrent.hasNext && self.hasNext)
         myCurrent = f(self.next()).iterator
@@ -514,7 +514,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @`inline` final def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
   def take(n: Int): Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext = self.hasNext && i < n
     def next() =
       if (hasNext) {
@@ -525,9 +525,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
-    private var hd: A = _
-    private var hdDefined: Boolean = false
-    private var tail: Iterator[A] = self
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
+    private[this] var tail: Iterator[A] = self
 
     def hasNext = hdDefined || tail.hasNext && {
       hd = tail.next()
@@ -779,8 +779,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] =
     new AbstractIterator[B] {
-      private var origElems = self
-      private var i = if (from > 0) from else 0 // Counts down, switch to patch on 0, -1 means use patch first
+      private[this] var origElems = self
+      private[this] var i = if (from > 0) from else 0 // Counts down, switch to patch on 0, -1 means use patch first
       def hasNext: Boolean = {
         if (i == 0) {
           origElems = origElems drop replaced
@@ -842,7 +842,7 @@ object Iterator extends IterableFactory[Iterator] {
   @`inline` final def empty[T]: Iterator[T] = _empty
 
   def single[A](a: A): Iterator[A] = new AbstractIterator[A] {
-    private var consumed: Boolean = false
+    private[this] var consumed: Boolean = false
     def hasNext = !consumed
     def next() = if (consumed) empty.next() else { consumed = true; a }
   }
@@ -865,7 +865,7 @@ object Iterator extends IterableFactory[Iterator] {
     *  @return  An iterator that produces the results of `n` evaluations of `elem`.
     */
   override def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = i < len
     def next(): A =
       if (hasNext) { i += 1; elem }
@@ -879,7 +879,7 @@ object Iterator extends IterableFactory[Iterator] {
     *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
     */
   override def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = i < end
     def next(): A =
       if (hasNext) { val result = f(i); i += 1; result }
@@ -900,7 +900,7 @@ object Iterator extends IterableFactory[Iterator] {
     *  @return      the iterator producing the infinite sequence of values `start, start + 1 * step, start + 2 * step, ...`
     */
   def from(start: Int, step: Int): Iterator[Int] = new AbstractIterator[Int] {
-    private var i = start
+    private[this] var i = start
     def hasNext: Boolean = true
     def next(): Int = { val result = i; i += step; result }
   }
@@ -922,8 +922,8 @@ object Iterator extends IterableFactory[Iterator] {
     */
   def range(start: Int, end: Int, step: Int): Iterator[Int] = new AbstractIterator[Int] {
     if (step == 0) throw new IllegalArgumentException("zero step")
-    private var i = start
-    private var hasOverflowed = false
+    private[this] var i = start
+    private[this] var hasOverflowed = false
     def hasNext: Boolean = {
       (step <= 0 || i < end) && (step >= 0 || i > end) && !hasOverflowed
     }
@@ -1046,8 +1046,8 @@ object Iterator extends IterableFactory[Iterator] {
     *  Lazily skip to start on first evaluation.  Avoids daisy-chained iterators due to slicing.
     */
   private[scala] final class SliceIterator[A](val underlying: Iterator[A], start: Int, limit: Int) extends AbstractIterator[A] {
-    private var remaining = limit
-    private var dropping  = start
+    private[this] var remaining = limit
+    private[this] var dropping  = start
     @inline private def unbounded = remaining < 0
     private def skip(): Unit =
       while (dropping > 0) {

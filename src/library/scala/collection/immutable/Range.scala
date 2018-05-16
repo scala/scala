@@ -504,8 +504,8 @@ private class RangeIterator(
   lastElement: Int,
   initiallyEmpty: Boolean
 ) extends AbstractIterator[Int] with Serializable {
-  private var _hasNext: Boolean = !initiallyEmpty
-  private var _next: Int = start
+  private[this] var _hasNext: Boolean = !initiallyEmpty
+  private[this] var _next: Int = start
   override def knownSize: Int = if (_hasNext) (lastElement - _next) / step + 1 else 0
   def hasNext: Boolean = _hasNext
   @throws[NoSuchElementException]
