@@ -202,10 +202,12 @@ class Flags extends ModifierFlags {
   final val AntiShift     = 56
 
   /** all of the flags that are unaffected by phase */
-  // (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift))
-  // will revert to a formula before commit, but currently constant folder does not fold this to a constant
-  // but we need this to be a constant now for benchmarking
   final val PhaseIndependentFlags = 0xF807FFFFFFFFFE08L
+  //this should be
+  // final val PhaseIndependentFlags = (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
+  // but the constant folder doesnt optimise this! Good news is that is expected to be fixed soon :-)
+  assert (PhaseIndependentFlags == (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
+
 
   // Flags which sketchily share the same slot
   // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
