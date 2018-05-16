@@ -61,7 +61,10 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def remove(key: K): C
 
   /** Alias for `remove` */
-  @`inline` final def - (key: K): C = remove(key)
+  /* @`inline` final */ def - (key: K): C = remove(key)
+
+  @deprecated("Use -- with an explicit collection", "2.13.0")
+  def - (key1: K, key2: K, keys: K*): C = remove(key1).remove(key2).removeAll(keys)
 
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.

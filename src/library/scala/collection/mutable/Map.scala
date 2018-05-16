@@ -59,6 +59,12 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     with Growable[(K, V)]
     with Shrinkable[K] {
 
+  @deprecated("Use - or remove on an immutable Map", "2.13.0")
+  /* final */ def - (key: K): C = clone() -= key
+
+  @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
+  /* final */ def - (key1: K, key2: K, keys: K*): C = clone() -= key1 -= key2 --= keys
+
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a
     *  mapping for the key, it will be overridden by the new value.
