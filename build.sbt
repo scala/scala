@@ -577,7 +577,7 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
   )
 
 lazy val bench = project.in(file("test") / "benchmarks")
-  .dependsOn(library)
+  .dependsOn(library, compiler)
   .settings(instanceSettings)
   .settings(disableDocs)
   .settings(disablePublishing)
