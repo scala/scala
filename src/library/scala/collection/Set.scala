@@ -75,7 +75,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *
     *  @return     the iterator.
     */
-  def subsets(): Iterator[C] = new Iterator[C] {
+  def subsets(): Iterator[C] = new AbstractIterator[C] {
     private val elms = toIterable.to(IndexedSeq)
     private var len = 0
     private var itr: Iterator[C] = Iterator.empty

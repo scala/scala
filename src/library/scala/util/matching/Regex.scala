@@ -394,7 +394,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    */
   def findAllMatchIn(source: CharSequence): Iterator[Match] = {
     val matchIterator = findAllIn(source)
-    new Iterator[Match] {
+    new AbstractIterator[Match] {
       def hasNext = matchIterator.hasNext
       def next: Match = {
         matchIterator.next()

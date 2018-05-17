@@ -89,7 +89,7 @@ class LinkedHashSet[A]
     }
   }
 
-  def iterator: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new AbstractIterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =

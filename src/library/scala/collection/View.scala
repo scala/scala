@@ -72,7 +72,7 @@ object View extends IterableFactory[View] {
   /** A view with exactly one element */
   class Single[A](a: A) extends AbstractView[A] {
     def iterator: Iterator[A] =
-      new Iterator[A] {
+      new AbstractIterator[A] {
         private var notConsumed: Boolean = true
         def next(): A =
           if (notConsumed) {
@@ -235,7 +235,7 @@ object View extends IterableFactory[View] {
   }
 
   class Updated[A](underlying: SomeIterableOps[A], index: Int, elem: A) extends AbstractView[A] {
-    def iterator: Iterator[A] = new Iterator[A] {
+    def iterator: Iterator[A] = new AbstractIterator[A] {
       private val it = underlying.iterator
       private var i = 0
       def next(): A = {
@@ -269,7 +269,7 @@ object View extends IterableFactory[View] {
   }
 
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
-    def iterator: Iterator[A] = new Iterator[A] {
+    def iterator: Iterator[A] = new AbstractIterator[A] {
       private var i = 0
       private val it = underlying.iterator
       def next(): A = {
