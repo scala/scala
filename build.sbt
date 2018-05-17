@@ -1074,6 +1074,7 @@ lazy val partest = configureAsSubproject(project)
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-jline-embedded"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
       "/project/description" -> <description>Scala Compiler Testing Tool</description>,
