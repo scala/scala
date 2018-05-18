@@ -43,7 +43,7 @@
             <use xlink:href="#path-5"/>
           </mask>
           <text id="@" mask="url(#mask-6)" font-family="Open Sans, Helvetica Neueu, Sans-serif" font-size="40" font-weight="normal" fill="#FFFFFF">
-            <tspan x="12" y="43">
+            <tspan x="12" y="46">
               @
             </tspan>
           </text>
