@@ -125,7 +125,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
    */
   def apply(lines: IterableOnce[String]): Option[String] = {
     isRunning = true
-    try new PasteAnalyzer(lines.toList).run()
+    try new PasteAnalyzer(List.from(lines)).run()
     finally isRunning = false
   }
 
