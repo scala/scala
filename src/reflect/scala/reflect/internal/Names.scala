@@ -63,7 +63,7 @@ trait Names extends api.Names {
   }
 
   /** Enter characters into chrs array. */
-  private def enterChars(cs: Array[Char], offset: Int, len: Int) {
+  private def enterChars(cs: Array[Char], offset: Int, len: Int): Unit = {
     var i = 0
     while (i < len) {
       if (nc + i == chrs.length) {

@@ -375,7 +375,7 @@ trait Types {
     def map(f: Type => Type): Type
 
     /** Apply `f` to each part of this type, for side effects only */
-    def foreach(f: Type => Unit)
+    def foreach(f: Type => Unit): Unit
 
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.

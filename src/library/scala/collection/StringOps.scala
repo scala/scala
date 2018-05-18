@@ -435,7 +435,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *                   by `other`.
     */
   def patch(from: Int, other: IterableOnce[Char], replaced: Int): String =
-    patch(from, other.mkString, replaced)
+    patch(from, other.iterator.mkString, replaced)
 
   /** Produces a new String where a slice of characters in this String is replaced by another String.
     *

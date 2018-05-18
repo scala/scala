@@ -211,7 +211,7 @@ trait Mirrors extends api.Mirrors {
       try body
       catch { case _: MissingRequirementError => NoSymbol }
 
-    def init() {
+    def init(): Unit = {
       if (initialized) return
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.

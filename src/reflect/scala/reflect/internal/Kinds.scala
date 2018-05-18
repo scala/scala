@@ -140,7 +140,7 @@ trait Kinds {
       // have very different type parameters
       val hkparams = param.typeParams
 
-      def kindCheck(cond: Boolean, f: KindErrors => KindErrors) {
+      def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit = {
         if (!cond)
           kindErrors = f(kindErrors)
       }

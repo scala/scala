@@ -91,7 +91,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
 
   type RanOneTest = (Boolean, LogContext)
 
-  def showCrashInfo(t: Throwable) {
+  def showCrashInfo(t: Throwable): Unit = {
     System.err.println(s"Crashed running test $testIdent: " + t)
     if (!nestUI.terse)
       System.err.println(stackTraceString(t))
@@ -390,7 +390,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
    *  the leading segments (the root) with "\$ROOT" and by replacing
    *  any Windows backslashes with the one true file separator char.
    */
-  def normalizeLog() {
+  def normalizeLog(): Unit = {
     import scala.util.matching.Regex
 
     // Apply judiciously; there are line comments in the "stub implementations" error output.
@@ -737,7 +737,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     (succeeded, LogContext(logFile, swr, wr))
   }
 
-  def cleanup() {
+  def cleanup(): Unit = {
     if (lastState.isOk)
       logFile.delete()
     if (!nestUI.debug)
@@ -862,7 +862,7 @@ class SuiteRunner(
     private val buf = ListBuffer[String]()
 
     def add(action: String): this.type = { buf += action ; this }
-    def append(text: String) { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
+    def append(text: String): Unit = { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
 
     // Colorize prompts according to pass/fail
     def fail: List[String] = {

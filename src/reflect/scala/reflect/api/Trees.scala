@@ -2493,7 +2493,7 @@ trait Trees { self: Universe =>
     def traverseParamss(vparamss: List[List[Tree]]): Unit = vparamss foreach traverseParams
 
     /** Traverses a list of trees with a given owner symbol. */
-    def traverseStats(stats: List[Tree], exprOwner: Symbol) {
+    def traverseStats(stats: List[Tree], exprOwner: Symbol): Unit = {
       stats foreach (stat =>
         if (exprOwner != currentOwner) atOwner(exprOwner)(traverse(stat))
         else traverse(stat)
@@ -2501,7 +2501,7 @@ trait Trees { self: Universe =>
     }
 
     /** Performs a traversal with a given owner symbol. */
-    def atOwner(owner: Symbol)(traverse: => Unit) {
+    def atOwner(owner: Symbol)(traverse: => Unit): Unit = {
       val prevOwner = currentOwner
       currentOwner = owner
       traverse

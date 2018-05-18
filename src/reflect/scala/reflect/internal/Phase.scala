@@ -69,10 +69,10 @@ abstract class Phase(val prev: Phase) {
 object NoPhase extends Phase(null) {
   def name = "<no phase>"
   override def keepsTypeParams = false
-  def run() { throw new Error("NoPhase.run") }
+  def run(): Unit = throw new Error("NoPhase.run")
 }
 
 object SomePhase extends Phase(NoPhase) {
   def name = "<some phase>"
-  def run() { throw new Error("SomePhase.run") }
+  def run(): Unit = throw new Error("SomePhase.run")
 }
