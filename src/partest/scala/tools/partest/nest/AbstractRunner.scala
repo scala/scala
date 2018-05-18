@@ -65,7 +65,7 @@ abstract class AbstractRunner {
 
   private[this] def isSuccess = failedTests.size == expectedFailures
 
-  def issueSummaryReport() {
+  def issueSummaryReport(): Unit = {
     // Don't run twice
     if (!summarizing) {
       summarizing = true

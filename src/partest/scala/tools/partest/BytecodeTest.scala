@@ -142,7 +142,7 @@ object BytecodeTest {
   /** Parse `file` as a class file, transforms the ASM representation with `f`,
    *  and overwrites the original file.
    */
-  def modifyClassFile(file: JFile)(f: ClassNode => ClassNode) {
+  def modifyClassFile(file: JFile)(f: ClassNode => ClassNode): Unit = {
     val rfile = new reflect.io.File(file)
     def readClass: ClassNode = {
       val cr = new ClassReader(rfile.toByteArray())
@@ -151,7 +151,7 @@ object BytecodeTest {
       cn
     }
 
-    def writeClass(cn: ClassNode) {
+    def writeClass(cn: ClassNode): Unit = {
       val writer = new ClassWriter(0)
       cn.accept(writer)
       val os = rfile.bufferedOutput()

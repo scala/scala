@@ -263,7 +263,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     _classLoader = null
     ensureClassLoader()
   }
-  final def ensureClassLoader() {
+  final def ensureClassLoader(): Unit = {
     if (_classLoader == null)
       _classLoader = makeClassLoader()
   }
@@ -366,8 +366,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   private val logScope = scala.sys.props contains "scala.repl.scope"
   private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
-  private def updateReplScope(sym: Symbol, isDefined: Boolean) {
-    def log(what: String) {
+  private def updateReplScope(sym: Symbol, isDefined: Boolean): Unit = {
+    def log(what: String): Unit = {
       val mark = if (sym.isType) "t " else "v "
       val name = exitingTyper(sym.nameString)
       val info = cleanTypeAfterTyper(sym)
@@ -410,7 +410,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
   }
 
-  private[nsc] def replwarn(msg: => String) {
+  private[nsc] def replwarn(msg: => String): Unit = {
     if (!settings.nowarnings)
       reporter.printMessage(msg)
   }
@@ -562,7 +562,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def bind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = bind((name, value))
 
   /** Reset this interpreter, forgetting all user-specified requests. */
-  override def reset() {
+  override def reset(): Unit = {
     clearExecutionWrapper()
     resetClassLoader()
     resetAllCreators()
@@ -574,9 +574,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   /** This instance is no longer needed, so release any resources
     *  it is using.  The reporter's output gets flushed.
     */
-  override def close() {
-    reporter.flush()
-  }
+  override def close(): Unit = reporter.flush()
 
   override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
 
@@ -675,7 +673,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** We get a bunch of repeated warnings for reasons I haven't
       *  entirely figured out yet.  For now, squash.
       */
-    private def updateRecentWarnings(run: Run) {
+    private def updateRecentWarnings(run: Run): Unit = {
       def loop(xs: List[(Position, String)]): List[(Position, String)] = xs match {
         case Nil                  => Nil
         case ((pos, msg)) :: rest =>
@@ -1279,7 +1277,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def namedDefinedTerms: List[String] = definedTerms filterNot (x => isUserVarName("" + x) || directlyBoundNames(x)) map (_.toString)
 
   private var _replScope: Scope = _
-  private def resetReplScope() {
+  private def resetReplScope(): Unit = {
     _replScope = newScope
   }
   def replScope = {

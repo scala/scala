@@ -33,7 +33,7 @@ abstract class Pickler[T] {
    *  @param  wr   the writer to which pickled form is written
    *  @param  x    the value to write
    */
-  def pickle(wr: Writer, x: T)
+  def pickle(wr: Writer, x: T): Unit
 
   /** Reads value from pickled form.
    *
@@ -258,7 +258,7 @@ object Pickler {
    */
   implicit def iterPickler[T: Pickler]: Pickler[Iterator[T]] = new Pickler[Iterator[T]] {
     lazy val p = pkl[T]
-    def pickle(wr: Writer, xs: Iterator[T]) {
+    def pickle(wr: Writer, xs: Iterator[T]): Unit = {
       var first = true
       for (x <- xs) {
         if (first) first = false else wr.write(',')
@@ -311,7 +311,7 @@ object Pickler {
 
   /** A pickler for values of type `Unit`, represented by the empty character string */
   implicit val unitPickler: Pickler[Unit] = new Pickler[Unit] {
-    def pickle(wr: Writer, x: Unit) {}
+    def pickle(wr: Writer, x: Unit): Unit = ()
     def unpickle(rd: Lexer): Unpickled[Unit] = UnpickleSuccess(())
   }
 

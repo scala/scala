@@ -798,7 +798,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
     }
 
-    def reportError(pos: Position, message: String) {
+    def reportError(pos: Position, message: String): Unit = {
       reporter.warning(pos, message)
     }
   }
@@ -809,9 +809,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     def char: Char =
       if (offset >= buffer.length) endOfText else buffer charAt offset
 
-    final def nextChar() {
-      offset += 1
-    }
+    final def nextChar(): Unit = offset += 1
 
     final def check(chars: String): Boolean = {
       val poff = offset

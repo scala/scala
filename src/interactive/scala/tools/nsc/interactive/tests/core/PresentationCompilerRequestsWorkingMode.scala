@@ -15,7 +15,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
    *  `marker`. For instance, askAllSources(TypeMarker)(askTypeAt)(println) would
    *  ask the type at all positions marked with `TypeMarker.marker` and println the result.
    */
-  private def askAllSourcesAsync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit) {
+  private def askAllSourcesAsync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit): Unit = {
     val positions = allPositionsOf(str = marker.marker)
     val responses = for (pos <- positions) yield askAt(pos)
 
@@ -25,7 +25,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
   /** Synchronous version of askAllSources. Each position is treated in turn, waiting for the
    *  response before going to the next one.
    */
-  private def askAllSourcesSync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit) {
+  private def askAllSourcesSync[T](marker: TestMarker)(askAt: Position => Response[T])(f: (Position, T) => Unit): Unit = {
     val positions = allPositionsOf(str = marker.marker)
     for (pos <- positions) withResponse(pos, askAt(pos))(f)
   }
@@ -45,7 +45,7 @@ trait PresentationCompilerRequestsWorkingMode extends TestResources {
     buf.toList
   }
 
-  private def withResponse[T](pos: Position, response: Response[T])(f: (Position, T) => Unit) {
+  private def withResponse[T](pos: Position, response: Response[T])(f: (Position, T) => Unit): Unit = {
     /** Return the filename:line:col version of this position. */
     def showPos(pos: Position): String =
       "%s:%d:%d".format(pos.source.file.name, pos.line, pos.column)

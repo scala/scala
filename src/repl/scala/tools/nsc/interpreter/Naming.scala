@@ -94,7 +94,7 @@ trait Naming {
   def freshInternalVarName() = internalVar()
   def freshLineId() = { _freshLineId += 1 ; _freshLineId}
 
-  def resetAllCreators() {
+  def resetAllCreators(): Unit = {
     userVar.reset()
     internalVar.reset()
     _freshLineId = 0

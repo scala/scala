@@ -44,7 +44,7 @@ object FileManager {
     }
   }
 
-  def mapFile(file: File, replace: String => String) {
+  def mapFile(file: File, replace: String => String): Unit = {
     val f = SFile(file)
 
     f.printlnAll(f.lines.toList map replace: _*)

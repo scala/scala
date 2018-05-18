@@ -14,7 +14,7 @@ final class PresentationCompilerThread(var compiler: Global, name: String = "")
 
   /** The presentation compiler loop.
    */
-  override def run() {
+  override def run(): Unit = {
     compiler.debugLog("starting new runner thread")
     while (compiler ne null) try {
       compiler.checkNoResponsesOutstanding()

@@ -133,7 +133,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     *
     * Used by sbt.
     */
-  def closeInterpreter() {
+  def closeInterpreter(): Unit = {
     if (intp ne null) {
       intp.close()
       intp = null
@@ -171,7 +171,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
 
   /** Search the history */
-  def searchHistory(_cmdline: String) {
+  def searchHistory(_cmdline: String): Unit = {
     val cmdline = _cmdline.toLowerCase
     val offset  = history.index - history.size + 1
 
@@ -544,7 +544,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     else if (intp.updateSettings(words(line))) run(destructive = true)
   }
   /** Resets without announcements. */
-  def reset() {
+  def reset(): Unit = {
     intp.reset()
     unleashAndSetPhase()
   }
@@ -754,7 +754,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       }
     }
 
-  def asyncEcho(async: Boolean, msg: => String) {
+  def asyncEcho(async: Boolean, msg: => String): Unit = {
     if (async) asyncMessage(msg)
     else echo(msg)
   }

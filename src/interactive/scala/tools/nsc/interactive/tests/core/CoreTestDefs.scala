@@ -16,7 +16,7 @@ private[tests] trait CoreTestDefs
     extends PresentationCompilerTestDef
     with AskTypeCompletionAt {
 
-    override def runTest() {
+    override def runTest(): Unit = {
       askAllSources(TypeCompletionMarker) { pos =>
         askTypeCompletionAt(pos)
       } { (pos, members) =>
@@ -40,7 +40,7 @@ private[tests] trait CoreTestDefs
     extends PresentationCompilerTestDef
     with AskScopeCompletionAt {
 
-    override def runTest() {
+    override def runTest(): Unit = {
       askAllSources(ScopeCompletionMarker) { pos =>
         askScopeCompletionAt(pos)
       } { (pos, members) =>
@@ -71,7 +71,7 @@ private[tests] trait CoreTestDefs
     extends PresentationCompilerTestDef
     with AskTypeAt {
 
-    override def runTest() {
+    override def runTest(): Unit = {
       askAllSources(TypeMarker) { pos =>
         askTypeAt(pos)
       } { (pos, tree) =>
@@ -90,7 +90,7 @@ private[tests] trait CoreTestDefs
     with AskTypeAt
     with AskTypeCompletionAt {
 
-    override def runTest() {
+    override def runTest(): Unit = {
       askAllSources(HyperlinkMarker) { pos =>
         askTypeAt(pos)(NullReporter)
       } { (pos, tree) =>

@@ -132,7 +132,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     catch documentError
   }
 
-  private[doc] def docdbg(msg: String) {
+  private[doc] def docdbg(msg: String): Unit = {
     if (settings.Ydocdebug)
       println(msg)
   }

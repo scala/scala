@@ -37,7 +37,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
           /** Finds the Entity on which we will later create a link on,
            * stores it in tree.refs with its position
            */
-          def makeLink(rhs: Tree){
+          def makeLink(rhs: Tree): Unit ={
             val start = pos.start - firstIndex
             val end = pos.end - firstIndex
             if(start != end) {

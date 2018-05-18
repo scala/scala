@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.tools._
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 import scala.io.Source
 import scala.language.reflectiveCalls
 import scala.reflect.internal.util.ScalaClassLoader
@@ -215,7 +215,7 @@ class JavapClass(
     class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
       type D = Diagnostic[_ <: JavaFileObject]
       val diagnostics = new ConcurrentLinkedQueue[D]
-      override def report(d: Diagnostic[_ <: JavaFileObject]) {
+      override def report(d: Diagnostic[_ <: JavaFileObject]): Unit = {
         diagnostics add d
       }
       override def clear() = diagnostics.clear()

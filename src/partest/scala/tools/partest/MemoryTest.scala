@@ -5,7 +5,7 @@ abstract class MemoryTest {
   def calcsPerIter: Int
   def calc(): Unit
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val rt = Runtime.getRuntime()
     def memUsage() = {
       import java.lang.management._

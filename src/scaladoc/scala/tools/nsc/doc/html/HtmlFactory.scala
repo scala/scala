@@ -89,9 +89,9 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     * A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     */
-  def generate() {
+  def generate(): Unit = {
 
-    def copyResource(subPath: String) {
+    def copyResource(subPath: String): Unit = {
       val bytes = new Streamable.Bytes {
         val p = "/scala/tools/nsc/doc/html/resource/" + subPath
         val inputStream = getClass.getResourceAsStream(p)
@@ -115,10 +115,10 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     }
   }
 
-  def writeTemplates(writeForThis: HtmlPage => Unit) {
+  def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity) {
+    def writeTemplate(tpl: DocTemplateEntity): Unit = {
       if (!(written contains tpl)) {
         val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
         writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))

@@ -24,9 +24,9 @@ private[tests] trait PresentationCompilerInstance extends TestSettings {
    * You should provide an implementation of this method if you need
    * to customize the `settings` used to instantiate the presentation compiler.
    * */
-  protected def prepareSettings(settings: Settings) {}
+  protected def prepareSettings(settings: Settings): Unit = ()
 
-  protected def printClassPath(implicit reporter: Reporter) {
+  protected def printClassPath(implicit reporter: Reporter): Unit = {
     reporter.println("\tbootClassPath: %s".format(settings.bootclasspath.value))
     reporter.println("\tverbose: %b".format(settings.verbose.value))
   }
