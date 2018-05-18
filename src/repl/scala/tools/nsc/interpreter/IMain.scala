@@ -336,7 +336,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
-      case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
+      case null if _initializeComplete => translateSimpleResource(name).map(super.findAbstractFile).orNull
       case file => file
     }
   }
@@ -350,7 +350,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def setContextClassLoader() = classLoader.setAsContext()
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
-  def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted
+  def unqualifiedIds: List[String] = allDefinedNames.map(_.decode).sorted
 
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {

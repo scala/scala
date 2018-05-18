@@ -301,7 +301,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       case "" => ":type [-v] <expression>. see also :help kind"
       case s  =>
         val verbose = s startsWith "-v "
-        val (sig, verboseSig) = intp.typeCommandInternal(s stripPrefix "-v " trim, verbose)
+        val (sig, verboseSig) = intp.typeCommandInternal(s.stripPrefix("-v ").trim, verbose)
         if (verbose) echoCommandMessage("// Type signature")
         echoCommandMessage(sig)
         if (!verboseSig.isEmpty) echoCommandMessage("\n// Internal Type structure\n"+ verboseSig)
@@ -352,7 +352,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   private def kindCommand(expr: String): Result = {
     expr.trim match {
       case "" => s":kind $kindUsage"
-      case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
+      case s  => intp.kindCommandInternal(s.stripPrefix("-v ").trim, verbose = s.startsWith("-v "))
     }
   }
 
@@ -998,7 +998,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
             in.initCompletion(newCompleter())
 
         }
-      } orNull // null is used by readLine to signal EOF (`loop` will exit)
+      }.orNull // null is used by readLine to signal EOF (`loop` will exit)
 
     // start full loop (if initialization was successful)
     try
@@ -1082,5 +1082,5 @@ object ILoop {
       }
     }
   }
-  def run(lines: List[String]): String = run(lines map (_ + "\n") mkString)
+  def run(lines: List[String]): String = run(lines.mkString("", "\n", "\n"))
 }
