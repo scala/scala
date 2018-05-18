@@ -191,12 +191,12 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   trait LowPriorityPrettifier {
     implicit object AnyPrettifier extends Prettifier[Any] {
-      def show(x: Any): Unit = prettify(x) foreach println
+      def show(x: Any): Unit = prettify(x).iterator foreach println
       def prettify(x: Any): IterableOnce[String] = x match {
         case x: Name                => List(x.decode)
-        case Tuple2(k, v)           => List(prettify(k).toIterator ++ Iterator("->") ++ prettify(v) mkString " ")
+        case Tuple2(k, v)           => List(prettify(k).iterator ++ Iterator("->") ++ prettify(v) mkString " ")
         case xs: Array[_]           => xs.iterator flatMap prettify
-        case xs: IterableOnce[_]    => xs flatMap prettify
+        case xs: IterableOnce[_]    => xs.iterator flatMap prettify
         case x                      => List(Prettifier.stringOf(x))
       }
     }
@@ -216,7 +216,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def show(x: T): Unit
     def prettify(x: T): IterableOnce[String]
 
-    def prettify(xs: IterableOnce[T]): IterableOnce[String] = xs flatMap (x => prettify(x))
+    def prettify(xs: IterableOnce[T]): IterableOnce[String] = xs.iterator flatMap (x => prettify(x))
   }
 
   abstract class PrettifierClass[T: Prettifier]() {
@@ -224,7 +224,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def value: Seq[T]
 
     def pp(f: Seq[T] => Seq[T]): Unit =
-      pretty prettify f(value) foreach (StringPrettifier show _)
+      pretty.prettify(f(value)).iterator foreach (StringPrettifier show _)
 
     def freq[U](p: T => U) = (value.toSeq groupBy p mapValues (_.size)).toList sortBy (-_._2) map (_.swap)
 
@@ -277,7 +277,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     implicit def replInternalInfo[T: ru.TypeTag : ClassTag](x: T): InternalInfoWrapper[T] = new InternalInfoWrapper[T](Some(x))
     implicit def replEnhancedStrings(s: String): RichReplString = new RichReplString(s)
     implicit def replMultiPrinting[T: Prettifier](xs: IterableOnce[T]): MultiPrettifierClass[T] =
-      new MultiPrettifierClass[T](xs.toSeq)
+      new MultiPrettifierClass[T](Seq.from(xs))
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
 
