@@ -371,7 +371,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   def gitDiff(f1: File, f2: File): Option[String] = {
     try gitRunner map { git =>
       val cmd  = s"$git diff $gitDiffOptions $f1 $f2"
-      val diff = Process(cmd).lineStream_!.drop(4).map(_ + "\n").mkString
+      val diff = Process(cmd).lazyLines_!.drop(4).map(_ + "\n").mkString
 
       "\n" + diff
     }
