@@ -305,7 +305,7 @@ trait Kinds {
           case Head(o, _, _) => o
           case _             => 0
         }).max
-        StringState((tokens /: (0 to maxOrder)) { (ts: Seq[ScalaNotation], o: Int) =>
+        StringState((0 to maxOrder).foldLeft(tokens){ (ts: Seq[ScalaNotation], o: Int) =>
           if (countByOrder(o) <= 1)
             ts map {
               case Head(`o`, _, a) => Head(o, None, a)

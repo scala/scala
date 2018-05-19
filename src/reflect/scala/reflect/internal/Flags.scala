@@ -375,7 +375,7 @@ class Flags extends ModifierFlags {
   private val mappedPickledFlags = rawPickledCorrespondence map (_._2)
 
   private class MapFlags(from: Array[Long], to: Array[Long]) extends (Long => Long) {
-    val fromSet = (0L /: from) (_ | _)
+    val fromSet = from.foldLeft(0L) (_ | _)
 
     def apply(flags: Long): Long = {
       var result = flags & ~fromSet

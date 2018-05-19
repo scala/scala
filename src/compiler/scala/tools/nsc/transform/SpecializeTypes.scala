@@ -1968,7 +1968,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def forwardCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = mmap(paramss)(x => Ident(x.symbol))
-    atPos(pos) { (receiver /: argss) (Apply.apply) }
+    atPos(pos) { argss.foldLeft(receiver)(Apply.apply) }
   }
 
   /** Forward to the generic class constructor. If the current class initializes
@@ -2020,7 +2020,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         Ident(x.symbol)
     )
-    atPos(pos) { (receiver /: argss) (Apply.apply) }
+    atPos(pos) { argss.foldLeft(receiver)(Apply.apply) }
   }
 
   /** Add method m to the set of symbols for which we need an implementation tree

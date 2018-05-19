@@ -101,7 +101,7 @@ abstract class FormatInterpolator {
             val suggest = {
               val r = "([0-7]{1,3}).*".r
               (s0 drop e.index + 1) match {
-                case r(n) => altOf { (0 /: n) { case (a, o) => (8 * a) + (o - '0') } }
+                case r(n) => altOf { n.foldLeft(0){ case (a, o) => (8 * a) + (o - '0') } }
                 case _    => ""
               }
             }

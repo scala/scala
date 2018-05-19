@@ -481,7 +481,7 @@ trait DocComments { self: Global =>
           case _ =>
             (getSite(partnames.head), partnames.tail)
         }
-        val result = (start /: rest)(select(_, _, NoType))
+        val result = rest.foldLeft(start)(select(_, _, NoType))
         if (result == NoType)
           reporter.warning(comment.codePos, "Could not find the type " + variable + " points to while expanding it " +
                                             "for the usecase signature of " + sym + " in " + site + "." +
