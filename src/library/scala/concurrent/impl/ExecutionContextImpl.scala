@@ -132,7 +132,7 @@ private[concurrent] object ExecutionContextImpl {
       with ExecutionContextExecutorService {
         final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
         override def execute(command: Runnable) = executor.execute(command)
-        override def shutdown() { asExecutorService.shutdown() }
+        override def shutdown(): Unit = { asExecutorService.shutdown() }
         override def shutdownNow() = asExecutorService.shutdownNow()
         override def isShutdown = asExecutorService.isShutdown
         override def isTerminated = asExecutorService.isTerminated

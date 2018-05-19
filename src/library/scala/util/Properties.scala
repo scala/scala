@@ -228,7 +228,7 @@ private[scala] trait PropertiesTrait {
   def isJavaAtLeast(version: Int): Boolean = isJavaAtLeast(math.max(version, 0).toString)
 
   // provide a main method so version info can be obtained by running this
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val writer = new PrintWriter(Console.err, true)
     writer println versionMsg
   }
