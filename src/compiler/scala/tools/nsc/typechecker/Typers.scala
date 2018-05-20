@@ -3652,7 +3652,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case treeInfo.Applied(core @ Select(qual, _), _, _) => treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
                   case _ => false
                 }
-                if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply && isSelectionFromListModule(fun)))
+                if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == currentRun.runDefinitions.List_apply && isSelectionFromListModule(fun)))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
                   constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe))
