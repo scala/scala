@@ -103,10 +103,10 @@ quant)
 
   /** Create a new quantity map that shows as `prefix` and is active in given phases.
    */
-  def newQuantMap[K, V <% Ordered[V]](prefix: String, phases: String*)(initValue: => V): QuantMap[K, V] = new QuantMap(prefix, phases, initValue)
+  def newQuantMap[K, V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[K, V] = new QuantMap(prefix, phases, initValue)
 
   /** Same as newQuantMap, where the key type is fixed to be Class[_] */
-  def newByClass[V <% Ordered[V]](prefix: String, phases: String*)(initValue: => V): QuantMap[Class[_], V] = new QuantMap(prefix, phases, initValue)
+  def newByClass[V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[Class[_], V] = new QuantMap(prefix, phases, initValue)
 
   /** Create a new timer stack */
   def newTimerStack() = new TimerStack()
@@ -229,7 +229,7 @@ quant)
   /** A mutable map quantity where missing elements are automatically inserted
    *  on access by executing `initValue`.
    */
-  class QuantMap[K, V <% Ordered[V]](val prefix: String, val phases: Seq[String], initValue: => V)
+  class QuantMap[K, V](val prefix: String, val phases: Seq[String], initValue: => V)(implicit ev: V => Ordered[V])
       extends mutable.HashMap[K, V] with Quantity {
     override def default(key: K) = {
       val elem = initValue
