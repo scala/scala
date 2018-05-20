@@ -1,6 +1,6 @@
 error: Error: ploogin takes no options
-     phase name  id  description
-     ----------  --  -----------
+    phase name  id  description
+    ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring
          namer   2  resolve names, attach symbols to named trees
 packageobjects   3  load package objects
