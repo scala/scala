@@ -54,8 +54,12 @@ trait PostTyperChecks extends AnyRef
         if (global.settings.Yrangepos) global.validatePositions(unit.body)
         if (settings.warnUnusedImport)
           analyzer.warnUnusedImports(unit)
-        if (settings.warnUnused.isSetByUser)
-          typer checkUnused unit
+        if (settings.warnUnused.isSetByUser) {
+          val ignoreNames: Set[TermName] = Set(
+            "readResolve", "readObject", "writeObject", "writeReplace"
+          ).map(TermName(_))
+          new global.analyzer.checkUnused(typer, ignoreNames).apply(unit)
+        }
       }
     }
   }
