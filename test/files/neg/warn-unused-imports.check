@@ -43,4 +43,6 @@ warn-unused-imports_2.scala:149: warning: Unused import
 warn-unused-imports_2.scala:150: warning: Unused import
     import p1.A                         // warn
               ^
-16 warnings found
+error: No warnings can be incurred under -Xfatal-warnings.
+15 warnings found
+one error found
