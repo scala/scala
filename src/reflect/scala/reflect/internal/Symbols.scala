@@ -104,7 +104,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // `isByNameParam` is only true for a call-by-name parameter of a *method*,
     // an argument of the primary constructor seen in the class body is excluded by `isValueParameter`
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
-    def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
+    def isImplementationArtifact: Boolean = this hasFlag (BRIDGE | VBRIDGE | ARTIFACT)
     def isJava: Boolean = isJavaDefined
 
     def isField: Boolean = isTerm && !isModule && (!isMethod || owner.isTrait && isAccessor)
@@ -113,8 +113,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isVar: Boolean = isField && !isLazy && isMutableVal
 
     def isAbstract: Boolean = isAbstractClass || isDeferred || isAbstractType
-    def isPrivateThis = (this hasFlag PRIVATE) && (this hasFlag LOCAL)
-    def isProtectedThis = (this hasFlag PROTECTED) && (this hasFlag LOCAL)
+    def isPrivateThis = this hasAllFlags (PRIVATE | LOCAL)
+    def isProtectedThis = this hasAllFlags (PROTECTED | LOCAL)
 
     def isJavaEnum: Boolean = hasJavaEnumFlag
     def isJavaAnnotation: Boolean = hasJavaAnnotationFlag
@@ -732,28 +732,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  we'd like to expose to reflection users. Therefore a proposed solution is to check whether we're in a
      *  runtime reflection universe, and if yes and if we've not yet loaded the requested info, then to commence initialization.
      */
-    final def getFlag(mask: Long): Long = {
-      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
-      flags & mask
+    def getFlag(mask: Long): Long = {
+      mask & (if ((mask & PhaseIndependentFlags) == mask) rawflags else flags)
     }
     /** Does symbol have ANY flag in `mask` set? */
-    final def hasFlag(mask: Long): Boolean = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
-      (flags & mask) != 0
-    }
+    final def hasFlag(mask: Long): Boolean = getFlag(mask) != 0
+
     def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
 
     /** Does symbol have ALL the flags in `mask` set? */
-    final def hasAllFlags(mask: Long): Boolean = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
-      (flags & mask) == mask
-    }
+    final def hasAllFlags(mask: Long): Boolean = getFlag(mask) == mask
 
     def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
-    def resetFlags() { rawflags = 0 }
+    def resetFlags() { rawflags = 0L }
 
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
@@ -1429,15 +1421,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     private[this] var _privateWithin: Symbol = _
     def privateWithin = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _privateWithin
     }
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
     def setPrivateWithin(sym: Symbol): this.type = { privateWithin_=(sym) ; this }
 
     /** Does symbol have a private or protected qualifier set? */
-    final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
+    final def hasAccessBoundary = {
+      val pw = privateWithin
+      (pw ne null) && (pw ne NoSymbol)
+    }
 
 // ------ info and type -------------------------------------------------------------------
 
@@ -1849,8 +1842,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
-      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _annotations
     }
 
@@ -1871,21 +1862,42 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def addAnnotation(annot: AnnotationInfo): this.type =
       setAnnotations(annot :: annotations)
 
-    // Convenience for the overwhelmingly common case
-    def addAnnotation(sym: Symbol, args: Tree*): this.type = {
+    // Convenience for the overwhelmingly common cases, and avoid varags and listbuilders
+    final def addAnnotation(sym: Symbol): this.type = {
+      addAnnotation(sym, Nil)
+    }
+    final def addAnnotation(sym: Symbol, arg: Tree): this.type = {
+      addAnnotation(sym, arg :: Nil)
+    }
+    final def addAnnotation(sym: Symbol, arg1: Tree, arg2: Tree): this.type = {
+      addAnnotation(sym, arg1 :: arg2 :: Nil)
+    }
+    final def addAnnotation(sym: Symbol, args: Tree*): this.type = {
+      addAnnotation(sym, args.toList)
+    }
+    final def addAnnotation(sym: Symbol, args: List[Tree]): this.type = {
       // The assertion below is meant to prevent from issues like scala/bug#7009 but it's disabled
       // due to problems with cycles while compiling Scala library. It's rather shocking that
       // just checking if sym is monomorphic type introduces nasty cycles. We are definitively
       // forcing too much because monomorphism is a local property of a type that can be checked
       // syntactically
       // assert(sym.initialize.isMonomorphicType, sym)
-      addAnnotation(AnnotationInfo(sym.tpe, args.toList, Nil))
+      addAnnotation(AnnotationInfo(sym.tpe, args, Nil))
     }
 
     /** Use that variant if you want to pass (for example) an applied type */
-    def addAnnotation(tp: Type, args: Tree*): this.type = {
+    final def addAnnotation(tp: Type): this.type = {
+      addAnnotation(tp, Nil)
+    }
+    final def addAnnotation(tp: Type, arg: Tree): this.type = {
+      addAnnotation(tp, arg:: Nil)
+    }
+    final def addAnnotation(tp: Type, arg1: Tree, arg2: Tree): this.type = {
+      addAnnotation(tp, arg1 :: arg2 :: Nil)
+    }
+    final def addAnnotation(tp: Type, args: List[Tree]): this.type = {
       assert(tp.typeParams.isEmpty, tp)
-      addAnnotation(AnnotationInfo(tp, args.toList, Nil))
+      addAnnotation(AnnotationInfo(tp, args, Nil))
     }
 
 // ------ comparisons ----------------------------------------------------------------
@@ -2484,8 +2496,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def caseModule: Symbol = {
       var modname = name.toTermName
-      if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
-        modname = nme.expandedName(modname, privateWithin)
+      val pw = privateWithin
+      if (pw.isClass && !pw.isModuleClass && !hasFlag(EXPANDEDNAME))
+        modname = nme.expandedName(modname, pw)
       initialize.owner.info.decl(modname).suchThat(_.isModule)
     }
 

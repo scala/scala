@@ -225,11 +225,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
           for (s <- decls) {
-            if (s.privateWithin.isClass && !s.isProtected && !s.privateWithin.isModuleClass &&
-                !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
+            val privateWithin = s.privateWithin
+            if (privateWithin.isClass && !s.hasFlag(EXPANDEDNAME | PROTECTED) && !privateWithin.isModuleClass &&
+                !s.isConstructor) {
               val savedName = s.name
               decls.unlink(s)
-              s.expandName(s.privateWithin)
+              s.expandName(privateWithin)
               decls.enter(s)
               log("Expanded '%s' to '%s' in %s".format(savedName, s.name, sym))
             }
