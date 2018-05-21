@@ -5,7 +5,7 @@ error: Error: ploogin takes no options
          namer   2  resolve names, attach symbols to named trees
 packageobjects   3  load package objects
          typer   4  the meat and potatoes: type the trees
-   typerchecks   5  validate the result of typer
+     posttyper   5  validate the result of typer
 superaccessors   6  add super accessors in traits and nested classes
         patmat   7  translate match expressions
     extmethods   8  add extension methods for inline classes

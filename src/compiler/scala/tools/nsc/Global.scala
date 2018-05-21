@@ -459,8 +459,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val runsRightAfter = None
   } with PatternMatching
 
-  // phaseName = "typerchecks"
-  lazy val typerChecks = new {
+  // phaseName = "posttyper"
+  lazy val postTyper = new {
     val global: Global.this.type = Global.this
     val runsAfter = List("typer")
     // sbt needs to run right after typer, so don't conflict
@@ -470,7 +470,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typerchecks")
+    val runsAfter = List("posttyper")
     val runsRightAfter = None
   } with SuperAccessors
 
@@ -637,29 +637,29 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // Note: this fits -Xshow-phases into 80 column width, which is
     // desirable to preserve.
     val phs = List(
-      syntaxAnalyzer               -> "parse source into ASTs, perform simple desugaring",
-      analyzer.namerFactory        -> "resolve names, attach symbols to named trees",
-      analyzer.packageObjects      -> "load package objects",
-      analyzer.typerFactory        -> "the meat and potatoes: type the trees",
-      typerChecks.postTyperFactory -> "validate the result of typer",
-      superAccessors               -> "add super accessors in traits and nested classes",
-      patmat                       -> "translate match expressions",
-      extensionMethods             -> "add extension methods for inline classes",
-      pickler                      -> "serialize symbol tables",
-      refChecks                    -> "reference/override checking, translate nested objects",
-      uncurry                      -> "uncurry, translate function values to anonymous classes",
-      fields                       -> "synthesize accessors and fields, add bitmaps for lazy vals",
-      tailCalls                    -> "replace tail calls by jumps",
-      specializeTypes              -> "@specialized-driven class and method specialization",
-      explicitOuter                -> "this refs to outer pointers",
-      erasure                      -> "erase types, add interfaces for traits",
-      postErasure                  -> "clean up erased inline classes",
-      lambdaLift                   -> "move nested functions to top level",
-      constructors                 -> "move field definitions into constructors",
-      mixer                        -> "mixin composition",
-      delambdafy                   -> "remove lambdas",
-      cleanup                      -> "platform-specific cleanups, generate reflective calls",
-      terminal                     -> "the last phase during a compilation run"
+      syntaxAnalyzer             -> "parse source into ASTs, perform simple desugaring",
+      analyzer.namerFactory      -> "resolve names, attach symbols to named trees",
+      analyzer.packageObjects    -> "load package objects",
+      analyzer.typerFactory      -> "the meat and potatoes: type the trees",
+      postTyper.postTyperFactory -> "validate the result of typer",
+      superAccessors             -> "add super accessors in traits and nested classes",
+      patmat                     -> "translate match expressions",
+      extensionMethods           -> "add extension methods for inline classes",
+      pickler                    -> "serialize symbol tables",
+      refChecks                  -> "reference/override checking, translate nested objects",
+      uncurry                    -> "uncurry, translate function values to anonymous classes",
+      fields                     -> "synthesize accessors and fields, add bitmaps for lazy vals",
+      tailCalls                  -> "replace tail calls by jumps",
+      specializeTypes            -> "@specialized-driven class and method specialization",
+      explicitOuter              -> "this refs to outer pointers",
+      erasure                    -> "erase types, add interfaces for traits",
+      postErasure                -> "clean up erased inline classes",
+      lambdaLift                 -> "move nested functions to top level",
+      constructors               -> "move field definitions into constructors",
+      mixer                      -> "mixin composition",
+      delambdafy                 -> "remove lambdas",
+      cleanup                    -> "platform-specific cleanups, generate reflective calls",
+      terminal                   -> "the last phase during a compilation run"
     )
 
     phs foreach (addToPhasesSet _).tupled

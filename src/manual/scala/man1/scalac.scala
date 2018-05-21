@@ -337,7 +337,7 @@ object scalac extends Command {
           MItalic("typer"),
           "the meat and potatoes: type the trees"),
         Definition(
-          MItalic("typerchecks"),
+          MItalic("posttyper"),
           "validate the result of typer"),
         Definition(
           MItalic("patmat"),
