@@ -2595,7 +2595,7 @@ trait Types
             paramsTpes(ix) = pps.head.tpe
             res = paramsTpes(ix).isTrivial
             pps = pps.tail
-            ix = ix + 1
+            ix += 1
           }
           res
         }
@@ -2611,7 +2611,7 @@ trait Types
           var tpeIx = 0
           while(tpeIx < len && !existsContains){
             existsContains = typeContains(pcc, paramsTpes(tpeIx) )
-            tpeIx = tpeIx + 1
+            tpeIx += 1
           }
           existsContains
         }
@@ -4983,11 +4983,6 @@ trait Types
       case _          => acc
     }
     loop(tps, Depth.Zero)
-  }
-
-  @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
-    case tp :: rest => (tp contains sym) || typesContain(rest, sym)
-    case _ => false
   }
 
   @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {
