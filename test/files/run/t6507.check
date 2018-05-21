@@ -1,5 +1,6 @@
 
 scala> :silent
+Result printing is off.
 
 scala> class A { override def toString() = { println("!"); "A" } }
 
@@ -12,6 +13,7 @@ scala> b = new A
 scala> new A
 
 scala> :silent
+Result printing is on.
 
 scala> res0
 !
