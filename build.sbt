@@ -558,6 +558,7 @@ lazy val partest = configureAsSubproject(project)
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
       "/project/description" -> <description>Scala Compiler Testing Tool</description>,
@@ -577,7 +578,7 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
   )
 
 lazy val bench = project.in(file("test") / "benchmarks")
-  .dependsOn(library)
+  .dependsOn(library, compiler)
   .settings(instanceSettings)
   .settings(disableDocs)
   .settings(disablePublishing)
@@ -873,10 +874,8 @@ lazy val root: Project = (project in file("."))
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
-        // TODO-newColl: re-enable osgi tests. they fail because scala-xml `1.1.0-newCollectionsBootstrap` is not a valid version.
-        // We cannot release 1.1.1 currently, because there's no Scala.js for 2.13.0-M4-pre-20d3c21.
-        // (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
-        // (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
+        (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
+        (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
         (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
         (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),

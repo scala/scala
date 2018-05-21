@@ -169,7 +169,7 @@ private[process] trait ProcessImpl {
         if (isSink) dst else src
       }
     }
-    private def ioHandler(e: IOException) {
+    private def ioHandler(e: IOException): Unit = {
       println("I/O error " + e.getMessage + " for process: " + labelFn())
       e.printStackTrace()
     }
@@ -225,7 +225,7 @@ private[process] trait ProcessImpl {
     private[this] val (thread, value) = Future(action)
     override def isAlive() = thread.isAlive()
     override def exitValue() = value()
-    override def destroy() { }
+    override def destroy(): Unit = { }
   }
 
   /** A thin wrapper around a java.lang.Process.  `outputThreads` are the Threads created to read from the

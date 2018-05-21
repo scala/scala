@@ -435,7 +435,7 @@ trait ModelFactoryImplicitSupport {
 
     val shadowingTable = mutable.Map[MemberEntity, ImplicitMemberShadowing]()
     val membersByName: Map[Name, List[MemberImpl]] = members.groupBy(_.sym.name)
-    val convsByMember = (Map.empty[MemberImpl, ImplicitConversionImpl] /: convs) {
+    val convsByMember = convs.foldLeft(Map.empty[MemberImpl, ImplicitConversionImpl]){
       case (map, conv) => map ++ conv.memberImpls.map (_ -> conv)
     }
 

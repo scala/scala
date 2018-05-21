@@ -582,6 +582,8 @@ trait Definitions extends api.StandardDefinitions {
     object VarArityClass
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+    // A unit test checks these are kept in synch with the library.
+    val MaxTupleAritySpecialized, MaxProductAritySpecialized, MaxFunctionAritySpecialized = 2
 
     lazy val ProductClass          = new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
     lazy val TupleClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)

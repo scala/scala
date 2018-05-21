@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import scala.collection.{SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
+import scala.collection.{AbstractIterator, SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
 
 import java.lang.String
 
@@ -42,7 +42,7 @@ sealed class NumericRange[T](
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with Serializable { self =>
 
-  override def iterator = new Iterator[T] {
+  override def iterator: Iterator[T] = new AbstractIterator[T] {
     import num.mkNumericOps
 
     private var _hasNext = !self.isEmpty

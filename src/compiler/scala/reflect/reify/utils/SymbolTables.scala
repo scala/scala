@@ -48,13 +48,13 @@ trait SymbolTables {
 
     def +(sym: Symbol, name: TermName, reification: Tree): SymbolTable = add(sym, name, reification)
     def +(symDef: Tree): SymbolTable = add(symDef)
-    def ++(symDefs: IterableOnce[Tree]): SymbolTable = (this /: symDefs)((symtab, symDef) => symtab.add(symDef))
+    def ++(symDefs: IterableOnce[Tree]): SymbolTable = symDefs.foldLeft(this)((symtab, symDef) => symtab.add(symDef))
     def ++(symtab: SymbolTable): SymbolTable = { val updated = this ++ symtab.symtab.values; new SymbolTable(updated.symtab, updated.aliases ++ symtab.aliases) }
     def -(sym: Symbol): SymbolTable = remove(sym)
     def -(name: TermName): SymbolTable = remove(name)
     def -(symDef: Tree): SymbolTable = remove(reifyBinding(symDef).symbol)
-    def --(syms: IterableOnce[Symbol]): SymbolTable = (this /: syms)((symtab, sym) => symtab.remove(sym))
-    def --(names: List[TermName]): SymbolTable = (this /: names)((symtab, name) => symtab.remove(name))
+    def --(syms: IterableOnce[Symbol]): SymbolTable = syms.foldLeft(this)((symtab, sym) => symtab.remove(sym))
+    def --(names: List[TermName]): SymbolTable = names.foldLeft(this)((symtab, name) => symtab.remove(name))
     def --(symDefs: Iterable[Tree]): SymbolTable = this -- (symDefs map (reifyBinding(_)))
     def --(symtab: SymbolTable): SymbolTable = { val updated = this -- symtab.symtab.values; new SymbolTable(updated.symtab, updated.aliases diff symtab.aliases) }
     def filterSyms(p: Symbol => Boolean): SymbolTable = this -- (syms filterNot p)

@@ -13,24 +13,9 @@ object TestKinds {
   }
   def denotesTestPath(p: Path) = denotesTestDir(p) || denotesTestFile(p)
 
-  // TODO
-  def isTestForPartest(p: Path) = (
-       (p.name == "intentional-failure.scala")
-    || (p.path contains "test-for-partest")
-  )
+  def kindOf(p: Path) = p.toAbsolute.segments.takeRight(2).head
 
-  def kindOf(p: Path) = {
-    p.toAbsolute.segments takeRight 2 head
-
-    // (srcDir relativize p.toCanonical).segments match {
-    //   case (".." :: "scaladoc" :: xs) => xs.head
-    //   case xs => xs.head
-    // }
-  }
-  def logOf(p: Path) = {
-    p.parent / s"${p.stripExtension}-${kindOf(p)}.log"
-    // p.parent / s"${p.stripExtension}.log"
-  }
+  def logOf(p: Path) = p.parent / s"${p.stripExtension}-${kindOf(p)}.log"
 
   // true if a test path matches the --grep expression.
   private def pathMatchesExpr(path: Path, expr: String) = {
@@ -50,9 +35,6 @@ object TestKinds {
 
     (candidates exists matches)
   }
-
-  def groupedTests(paths: List[Path]): List[(String, List[Path])] =
-    (paths.distinct groupBy kindOf).toList sortBy (standardKinds indexOf _._1)
 
   def testsFor(kind: String): List[Path] = (srcDir / kind toDirectory).list.toList filter denotesTestPath
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))

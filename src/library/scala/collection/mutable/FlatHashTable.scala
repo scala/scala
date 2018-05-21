@@ -1,7 +1,7 @@
 package scala
 package collection.mutable
 
-import collection.Iterator
+import collection.{AbstractIterator, Iterator}
 
 import java.lang.{Integer, ThreadLocal}
 
@@ -192,7 +192,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
     false
   }
 
-  def iterator: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (null == table(i))) i += 1

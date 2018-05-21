@@ -201,12 +201,20 @@ class Flags extends ModifierFlags {
   final val LateShift     = 47
   final val AntiShift     = 56
 
+  /** all of the flags that are unaffected by phase */
+  final val PhaseIndependentFlags = 0xF807FFFFFFFFFE08L
+  //this should be
+  // final val PhaseIndependentFlags = (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
+  // but the constant folder doesnt optimise this! Good news is that is expected to be fixed soon :-)
+  assert (PhaseIndependentFlags == (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
+
+
   // Flags which sketchily share the same slot
   // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
   // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
   // 25:  DEFAULTPARAM/M       TRAIT/M
   // 35:     EXISTENTIAL       MIXEDIN
-  val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL
+  final val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL
 
   // ------- late flags (set by a transformer phase) ---------------------------------
   //
@@ -375,7 +383,7 @@ class Flags extends ModifierFlags {
   private val mappedPickledFlags = rawPickledCorrespondence map (_._2)
 
   private class MapFlags(from: Array[Long], to: Array[Long]) extends (Long => Long) {
-    val fromSet = (0L /: from) (_ | _)
+    val fromSet = from.foldLeft(0L) (_ | _)
 
     def apply(flags: Long): Long = {
       var result = flags & ~fromSet

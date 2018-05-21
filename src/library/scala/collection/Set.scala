@@ -75,7 +75,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *
     *  @return     the iterator.
     */
-  def subsets(): Iterator[C] = new Iterator[C] {
+  def subsets(): Iterator[C] = new AbstractIterator[C] {
     private val elms = toIterable.to(IndexedSeq)
     private var len = 0
     private var itr: Iterator[C] = Iterator.empty
@@ -152,7 +152,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   /** Alias for `diff` */
   @`inline` final def &~ (that: Set[A]): C = this diff that
 
-  @deprecated("Use &- or diff instead of --", "2.13.0")
+  @deprecated("Use &~ or diff instead of --", "2.13.0")
   @`inline` final def -- (that: Set[A]): C = diff(that)
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.

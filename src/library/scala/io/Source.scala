@@ -301,7 +301,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   def reportError(
     pos: Int,
     msg: String,
-    out: PrintStream = Console.err)
+    out: PrintStream = Console.err): Unit =
   {
     nerrors += 1
     report(pos, msg, out)
@@ -313,7 +313,7 @@ abstract class Source extends Iterator[Char] with Closeable {
    *  @param msg the error message to report
    *  @param out PrintStream to use
    */
-  def report(pos: Int, msg: String, out: PrintStream) {
+  def report(pos: Int, msg: String, out: PrintStream): Unit = {
     val line  = Position line pos
     val col   = Position column pos
 
@@ -328,7 +328,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   def reportWarning(
     pos: Int,
     msg: String,
-    out: PrintStream = Console.out)
+    out: PrintStream = Console.out): Unit =
   {
     nwarnings += 1
     report(pos, "warning! " + msg, out)
@@ -361,7 +361,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   }
 
   /** The close() method closes the underlying resource. */
-  def close() {
+  def close(): Unit = {
     if (closeFunction != null) closeFunction()
   }
 

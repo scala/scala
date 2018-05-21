@@ -364,7 +364,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     this
   }
 
-  def iterator: Iterator[(Long, V)] = new Iterator[(Long, V)] {
+  def iterator: Iterator[(Long, V)] = new AbstractIterator[(Long, V)] {
     private[this] val kz = _keys
     private[this] val vz = _values
 

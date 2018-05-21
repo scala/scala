@@ -77,7 +77,7 @@ object Array {
                        srcPos : Int,
                        dest : AnyRef,
                        destPos : Int,
-                       length : Int) {
+                       length : Int): Unit = {
     var i = srcPos
     var j = destPos
     val srcUntil = srcPos + length
@@ -103,7 +103,7 @@ object Array {
    *
    *  @see `java.lang.System#arraycopy`
    */
-  def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
+  def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
     val srcClass = src.getClass
     if (srcClass.isArray && dest.getClass.isAssignableFrom(srcClass))
       java.lang.System.arraycopy(src, srcPos, dest, destPos, length)
@@ -153,25 +153,16 @@ object Array {
     val destClass = ct.runtimeClass.asInstanceOf[Class[A]]
     if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
       if(destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, getArrayClass(destClass).asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
+      else {
+        val destArrayClass = java.lang.reflect.Array.newInstance(destClass, 0).getClass.asInstanceOf[Class[Array[AnyRef]]]
+        java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destArrayClass).asInstanceOf[Array[A]]
+      }
     } else {
       val dest = new Array[A](newLength)
       Array.copy(original, 0, dest, 0, original.length)
       dest
     }
   }
-
-  private def getArrayClass[A](c: Class[A]): Class[Array[A]] = {
-    if(c eq classOf[Int]) classOf[Array[Int]]
-    else if(c eq classOf[Long]) classOf[Array[Long]]
-    else if(c eq classOf[Char]) classOf[Array[Char]]
-    else if(c eq classOf[Boolean]) classOf[Array[Boolean]]
-    else if(c eq classOf[Double]) classOf[Array[Double]]
-    else if(c eq classOf[Byte]) classOf[Array[Byte]]
-    else if(c eq classOf[Float]) classOf[Array[Float]]
-    else if(c eq classOf[Short]) classOf[Array[Short]]
-    else Class.forName(if(c.isArray) "["+c.getName else "[L"+c.getName+";", true, c.getClassLoader)
-  }.asInstanceOf[Class[Array[A]]]
 
   /** Returns an array of length 0 */
   def empty[T: ClassTag]: Array[T] = new Array[T](0)
@@ -614,7 +605,7 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *  @param    x   the value to be written at index `i`
    *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
    */
-  def update(i: Int, x: T) { throw new Error() }
+  def update(i: Int, x: T): Unit = { throw new Error() }
 
   /** Clone the Array.
    *

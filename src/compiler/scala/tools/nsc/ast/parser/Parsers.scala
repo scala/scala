@@ -1400,7 +1400,7 @@ self =>
       else startInfixType()
 
     def annotTypeRest(t: Tree): Tree =
-      (t /: annotations(skipNewLines = false)) (makeAnnotated)
+      annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
 
     /** {{{
      *  WildcardType ::= `_' TypeBounds
@@ -1577,7 +1577,7 @@ self =>
                 syntaxErrorOrIncomplete("`*' expected", skipIt = true)
               }
             } else if (isAnnotation) {
-              t = (t /: annotations(skipNewLines = false))(makeAnnotated)
+              t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
             } else {
               t = atPos(t.pos.start, colonPos) {
                 val tpt = typeOrInfixType(location)
@@ -2966,7 +2966,7 @@ self =>
         val start = in.offset
         val parent = startAnnotType()
         parents += (in.token match {
-          case LPAREN => atPos(start)((parent /: multipleArgumentExprs())(Apply.apply))
+          case LPAREN => atPos(start)(multipleArgumentExprs().foldLeft(parent)(Apply.apply))
           case _      => parent
         })
       }

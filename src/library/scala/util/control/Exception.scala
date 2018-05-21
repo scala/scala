@@ -193,7 +193,7 @@ object Exception {
     protected val name = "Finally"
 
     def and(other: => Unit): Finally = new Finally({ body ; other })
-    def invoke() { body }
+    def invoke(): Unit = { body }
   }
 
   /** A container class for catch/finally logic.

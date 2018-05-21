@@ -69,7 +69,7 @@ private[scala] abstract class Position {
 }
 
 private[scala] object Position extends Position {
-  def checkInput(line: Int, column: Int) {
+  def checkInput(line: Int, column: Int): Unit = {
     if (line < 0)
       throw new IllegalArgumentException(line + " < 0")
     if ((line == 0) && (column != 0))

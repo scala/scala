@@ -53,7 +53,7 @@ object BasicIO {
   }
 
   private[process] trait Uncloseable extends Closeable {
-    final override def close() { }
+    final override def close(): Unit = { }
   }
   private[process] object Uncloseable {
     def apply(in: InputStream): InputStream      = new FilterInputStream(in) with Uncloseable { }
@@ -168,7 +168,7 @@ object BasicIO {
   /** Calls `processLine` with the result of `readLine` until the latter returns
    *  `null` or the current thread is interrupted.
    */
-  def processLinesFully(processLine: String => Unit)(readLine: () => String) {
+  def processLinesFully(processLine: String => Unit)(readLine: () => String): Unit = {
     def working = (Thread.currentThread.isInterrupted == false)
     def halting = { Thread.currentThread.interrupt(); null }
     def readFully(): Unit =
@@ -227,9 +227,9 @@ object BasicIO {
     buffer append Newline
   }
 
-  private[this] def transferFullyImpl(in: InputStream, out: OutputStream) {
+  private[this] def transferFullyImpl(in: InputStream, out: OutputStream): Unit = {
     val buffer = new Array[Byte](BufferSize)
-    @tailrec def loop() {
+    @tailrec def loop(): Unit = {
       val byteCount = in.read(buffer)
       if (byteCount > 0) {
         out.write(buffer, 0, byteCount)

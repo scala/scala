@@ -90,7 +90,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if sym.isSealed =>
 
-          val tpApprox = typer.infer.approximateAbstracts(tp)
+          val tpApprox = analyzer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
 
           def filterChildren(children: List[Symbol]): List[Type] = {
@@ -102,7 +102,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
               val memberType = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
               val subTp = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
-              val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
+              val subTpApprox = analyzer.approximateAbstracts(subTp) // TODO: needed?
               // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
