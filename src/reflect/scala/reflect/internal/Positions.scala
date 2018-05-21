@@ -146,7 +146,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       }
     }
 
-    if (!isPastTyper)
+    if (!isPastTyperChecks)
       validate(tree, tree)
   }
 

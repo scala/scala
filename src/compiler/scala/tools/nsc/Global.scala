@@ -979,7 +979,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
        definitions.isDefinitionsInitialized
     && rootMirror.isMirrorInitialized
   )
-  override def isPastTyper = isPast(currentRun.typerPhase)
+  override def isPastTyper       = isPast(currentRun.typerPhase)
+  override def isPastTyperChecks = isPast(currentRun.typerCheckPhase)
   def isPast(phase: Phase) = (
        (curRun ne null)
     && isGlobalInitialized // defense against init order issues
@@ -1289,6 +1290,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val namerPhase                   = phaseNamed("namer")
     // val packageobjectsPhase          = phaseNamed("packageobjects")
     val typerPhase                   = phaseNamed("typer")
+    val typerCheckPhase              = phaseNamed("typerchecks")
     // val inlineclassesPhase           = phaseNamed("inlineclasses")
     // val superaccessorsPhase          = phaseNamed("superaccessors")
     val picklerPhase                 = phaseNamed("pickler")
