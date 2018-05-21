@@ -666,7 +666,7 @@ trait ReificationSupport { self: SymbolTable =>
       def transformStats(trees: List[Tree]): List[Tree] = trees match {
         case Nil => Nil
         case ValDef(mods, _, SyntacticEmptyTypeTree(), Match(MaybeTyped(MaybeUnchecked(value), tpt), CaseDef(pat, EmptyTree, SyntacticTuple(ids)) :: Nil)) :: tail
-          if mods.hasFlag(SYNTHETIC) && mods.hasFlag(ARTIFACT) =>
+          if mods.hasAllFlags(SYNTHETIC | ARTIFACT) =>
           ids match {
             case Nil =>
               ValDef(NoMods, nme.QUASIQUOTE_PAT_DEF, Typed(pat, tpt), transform(value)) :: transformStats(tail)
@@ -704,7 +704,7 @@ trait ReificationSupport { self: SymbolTable =>
     protected object UnSyntheticParam {
       def unapply(tree: Tree): Option[TermName] = tree match {
         case ValDef(mods, name, _, EmptyTree)
-          if mods.hasFlag(SYNTHETIC) && mods.hasFlag(PARAM) =>
+          if mods.hasAllFlags(SYNTHETIC | PARAM) =>
           Some(name)
         case _ => None
       }
@@ -899,7 +899,7 @@ trait ReificationSupport { self: SymbolTable =>
           if pf.tpe != null && pf.tpe.typeSymbol.eq(PartialFunctionClass) &&
              abspf.tpe != null && abspf.tpe.typeSymbol.eq(AbstractPartialFunctionClass) &&
              ser.tpe != null && ser.tpe.typeSymbol.eq(SerializableClass) &&
-             clsMods.hasFlag(FINAL) && clsMods.hasFlag(SYNTHETIC) =>
+             clsMods.hasAllFlags(FINAL | SYNTHETIC) =>
           Some(cases)
         case _ => None
       }
