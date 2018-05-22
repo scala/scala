@@ -34,7 +34,7 @@ abstract class UnPickler {
    *  @param moduleRoot the top-level module which is unpickled
    *  @param filename   filename associated with bytearray, only used for error messages
    */
-  def unpickle(bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) {
+  def unpickle(bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
     try {
       assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
@@ -69,7 +69,7 @@ abstract class UnPickler {
     /** A map from symbols to their associated `decls` scopes */
     private val symScopes = mutable.HashMap[Symbol, Scope]()
 
-    private def expect(expected: Int, msg: => String) {
+    private def expect(expected: Int, msg: => String): Unit = {
       val tag = readByte()
       if (tag != expected)
         errorBadSignature(s"$msg ($tag)")
@@ -84,7 +84,7 @@ abstract class UnPickler {
     }
 
     // Laboriously unrolled for performance.
-    def run() {
+    def run(): Unit = {
       var i = 0
       while (i < index.length) {
         if (entries(i) == null && isSymbolEntry(i))
@@ -106,7 +106,7 @@ abstract class UnPickler {
       }
     }
 
-    private def checkVersion() {
+    private def checkVersion(): Unit = {
       val major = readNat()
       val minor = readNat()
       if (major != MajorVersion || minor > MinorVersion)
@@ -444,7 +444,7 @@ abstract class UnPickler {
 
     /** Read children and store them into the corresponding symbol.
      */
-    protected def readChildren() {
+    protected def readChildren(): Unit = {
       val tag = readByte()
       assert(tag == CHILDREN)
       val end = readEnd()
@@ -498,7 +498,7 @@ abstract class UnPickler {
     /** Read an annotation and as a side effect store it into
      *  the symbol it requests. Called at top-level, for all
      *  (symbol, annotInfo) entries. */
-    protected def readSymbolAnnotation() {
+    protected def readSymbolAnnotation(): Unit = {
       expect(SYMANNOT, "symbol annotation expected")
       val end = readEnd()
       val target = readSymbolRef()
@@ -693,7 +693,7 @@ abstract class UnPickler {
     protected def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
-    def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
+    def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type): Unit = {} // can't do it; need a compiler for that.
 
     def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
     def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new LazyTypeRefAndAlias(i, j)
@@ -743,7 +743,7 @@ abstract class UnPickler {
         completeInternal(sym)
         if (!isCompilerUniverse) markAllCompleted(sym)
       }
-      override def load(sym: Symbol) { complete(sym) }
+      override def load(sym: Symbol): Unit = { complete(sym) }
     }
 
     /** A lazy type which when completed returns type at index `i` and sets alias

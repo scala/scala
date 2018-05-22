@@ -172,7 +172,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType) {
+  override def validateClassInfo(tp: ClassInfoType): Unit = {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
 

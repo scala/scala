@@ -62,8 +62,8 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  shortening the range, assigning TransparentPositions
    *  to some of the nodes in `tree` or focusing on the position.
    */
-  def ensureNonOverlapping(tree: Tree, others: List[Tree]){ ensureNonOverlapping(tree, others, focus = true) }
-  def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean) {
+  def ensureNonOverlapping(tree: Tree, others: List[Tree]): Unit ={ ensureNonOverlapping(tree, others, focus = true) }
+  def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean): Unit = {
     if (useOffsetPositions) return
 
     def isOverlapping(pos: Position) =
@@ -83,10 +83,10 @@ trait Positions extends api.Positions { self: SymbolTable =>
     if (useOffsetPositions) Position.offset(source, point)
     else Position.range(source, start, point, end)
 
-  def validatePositions(tree: Tree) {
+  def validatePositions(tree: Tree): Unit = {
     if (useOffsetPositions) return
 
-    def reportTree(prefix : String, tree : Tree) {
+    def reportTree(prefix : String, tree : Tree): Unit = {
       val source = if (tree.pos.isDefined) tree.pos.source else ""
       inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
       inform("")
@@ -94,7 +94,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       inform("")
     }
 
-    def positionError(msg: String)(body : => Unit) {
+    def positionError(msg: String)(body : => Unit): Unit = {
       inform("======= Position error\n" + msg)
       body
       inform("\nWhile validating #" + tree.id)
@@ -245,7 +245,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       this.last
     }
     protected def isEligible(t: Tree) = !t.pos.isTransparent
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       t match {
         case tt : TypeTree if tt.original != null && (tt.pos includes tt.original.pos) =>
           traverse(tt.original)
@@ -284,7 +284,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
 
   protected class DefaultPosAssigner extends PosAssigner {
     var pos: Position = _
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       if (!t.canHaveAttrs) ()
       else if (t.pos == NoPosition) {
         t.setPos(pos)

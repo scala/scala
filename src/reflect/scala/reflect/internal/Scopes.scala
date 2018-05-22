@@ -75,7 +75,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     private var elemsCache: List[Symbol] = null
     private var cachedSize = -1
-    private def flushElemsCache() {
+    private def flushElemsCache(): Unit = {
       elemsCache = null
       cachedSize = -1
     }
@@ -115,7 +115,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a scope entry
      */
-    protected def enterEntry(e: ScopeEntry) {
+    protected def enterEntry(e: ScopeEntry): Unit = {
       flushElemsCache()
       if (hashtable ne null)
         enterInHash(e)
@@ -138,7 +138,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      */
-    def enterUnique(sym: Symbol) {
+    def enterUnique(sym: Symbol): Unit = {
       assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
       enter(sym)
     }
@@ -149,12 +149,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       else existing.sym.asInstanceOf[T]
     }
 
-    private def createHash() {
+    private def createHash(): Unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterAllInHash(elems)
     }
 
-    private def enterAllInHash(e: ScopeEntry, n: Int = 0) {
+    private def enterAllInHash(e: ScopeEntry, n: Int = 0): Unit = {
       if (e ne null) {
         if (n < maxRecursions) {
           enterAllInHash(e.next, n + 1)
@@ -171,7 +171,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
-    def rehash(sym: Symbol, newname: Name) {
+    def rehash(sym: Symbol, newname: Name): Unit = {
       if (hashtable ne null) {
         val index = sym.name.start & HASHMASK
         var e1 = hashtable(index)
@@ -198,7 +198,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** remove entry
      */
-    def unlink(e: ScopeEntry) {
+    def unlink(e: ScopeEntry): Unit = {
       if (elems == e) {
         elems = e.next
       } else {
@@ -220,7 +220,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** remove symbol */
-    def unlink(sym: Symbol) {
+    def unlink(sym: Symbol): Unit = {
       var e = lookupEntry(sym.name)
       while (e ne null) {
         if (e.sym == sym) unlink(e)
@@ -496,7 +496,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   /** The empty scope (immutable).
    */
   object EmptyScope extends Scope {
-    override def enterEntry(e: ScopeEntry) {
+    override def enterEntry(e: ScopeEntry): Unit = {
       abort("EmptyScope.enter")
     }
   }

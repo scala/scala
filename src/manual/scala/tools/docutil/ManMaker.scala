@@ -19,22 +19,22 @@ class ManMaker {
   private var manout: Option[File] = None
 
 
-  def setCommand(input: String) {
+  def setCommand(input: String): Unit = {
     command = input.split(",").toList.flatMap { s =>
       val st = s.trim()
       if (st != "") List(st) else Nil
     }
   }
 
-  def setHtmlout(input: File) {
+  def setHtmlout(input: File): Unit = {
     htmlout = Some(input)
   }
 
-  def setManout(input: File) {
+  def setManout(input: File): Unit = {
     manout = Some(input)
   }
 
-  def execute() {
+  def execute(): Unit = {
     if (command.isEmpty) sys.error("Attribute 'command' is not set.")
     if (htmlout.isEmpty) sys.error("Attribute 'htmlout' is not set.")
     if (manout.isEmpty) sys.error("Attribute 'manout' is not set.")

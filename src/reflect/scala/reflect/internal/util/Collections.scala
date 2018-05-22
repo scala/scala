@@ -176,7 +176,7 @@ trait Collections {
     xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
   }
 
-  final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit) {
+  final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit): Unit = {
     var index = 0
     var ys = xs
     while (!ys.isEmpty) {

@@ -29,9 +29,9 @@ private[internal] trait CommonOwners {
   protected class CommonOwnerMap extends TypeTraverserWithResult[Symbol] {
     var result: Symbol = _
 
-    def clear() { result = null }
+    def clear(): Unit = { result = null }
 
-    private def register(sym: Symbol) {
+    private def register(sym: Symbol): Unit = {
       // First considered type is the trivial result.
       if ((result eq null) || (sym eq NoSymbol))
         result = sym

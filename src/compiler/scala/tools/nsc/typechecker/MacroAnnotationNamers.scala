@@ -351,7 +351,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       }
     }
 
-    protected def finishSymbolMaybeExpandee(tree: Tree, annZippers: List[treeInfo.AnnotationZipper]) {
+    protected def finishSymbolMaybeExpandee(tree: Tree, annZippers: List[treeInfo.AnnotationZipper]): Unit = {
       val sym = tree.symbol
       unmarkWeak(sym)
       markMaybeExpandee(sym)
@@ -414,7 +414,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
     //   * non-FSMEC completer for the module and then FSMEC => fallback should call native completer
     //   * FSMEC from enterSyntheticSym for a phantom module and then FSMEC again => fallback should do nothing
     // now it's easy to see that both are correctly handled here
-    protected def finishSymbolMaybeExpandeeCompanion(tree: Tree, m: Symbol, c: Symbol) {
+    protected def finishSymbolMaybeExpandeeCompanion(tree: Tree, m: Symbol, c: Symbol): Unit = {
       val worthBackingUp = !m.rawInfo.isInstanceOf[MacroAnnotationNamer#MaybeExpandeeCompanionCompleter]
       if (worthBackingUp) backupCompleter(m)
       markMaybeExpandee(m)

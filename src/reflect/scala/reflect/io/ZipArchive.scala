@@ -228,7 +228,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
 
-    @tailrec def loop() {
+    @tailrec def loop(): Unit = {
       val zipEntry = in.getNextEntry()
       class EmptyFileEntry() extends Entry(zipEntry.getName) {
         override def toByteArray: Array[Byte] = null
@@ -240,7 +240,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
           val arr    = if (len == 0) Array.emptyByteArray else new Array[Byte](len)
           var offset = 0
 
-          def loop() {
+          def loop(): Unit = {
             if (offset < len) {
               val read = in.read(arr, offset, len - offset)
               if (read >= 0) {

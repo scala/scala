@@ -33,7 +33,7 @@ trait ScalaClassLoader extends JClassLoader {
     try { setContext(this) ; action }
     finally setContext(saved)
   }
-  def setAsContext() { setContext(this) }
+  def setAsContext(): Unit = { setContext(this) }
 
   /** Load and link a class with this classloader */
   def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = false)
@@ -88,7 +88,7 @@ trait ScalaClassLoader extends JClassLoader {
   }
 
   /** Run the main method of a class to be loaded by this classloader */
-  def run(objectName: String, arguments: Seq[String]) {
+  def run(objectName: String, arguments: Seq[String]): Unit = {
     val clsToRun = tryToInitializeClass(objectName) getOrElse (
       throw new ClassNotFoundException(objectName)
     )

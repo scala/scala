@@ -35,10 +35,10 @@ extends AbstractFile {
   override def output = throw new IllegalStateException("directories cannot be written")
 
   /** Does this abstract file denote an existing file? */
-  def create() { unsupported() }
+  def create(): Unit = { unsupported() }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete() { unsupported() }
+  def delete(): Unit = { unsupported() }
 
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
@@ -68,7 +68,7 @@ extends AbstractFile {
       dir
     }
 
-  def clear() {
+  def clear(): Unit = {
     files.clear()
   }
 }

@@ -147,7 +147,7 @@ trait ContextTrees { self: Global =>
               true
             } else false
           }
-          def loop(lo: Int, hi: Int) {
+          def loop(lo: Int, hi: Int): Unit = {
             if (hi - lo > 1) {
               val mid = (lo + hi) / 2
               val midpos = contexts(mid).pos

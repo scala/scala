@@ -477,7 +477,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case an @ Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), tree) =>
-          def printAnnot() {
+          def printAnnot(): Unit = {
             print("@", tpt)
             if (args.nonEmpty)
               printRow(args, "(", ",", ")")
@@ -1121,9 +1121,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
    * output stream.
    */
   object ConsoleWriter extends Writer {
-    override def write(str: String) { Console.print(str) }
+    override def write(str: String): Unit = { Console.print(str) }
 
-    def write(cbuf: Array[Char], off: Int, len: Int) {
+    def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
       write(new String(cbuf, off, len))
     }
 

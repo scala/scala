@@ -1181,8 +1181,8 @@ trait Contexts { self: Analyzer =>
           // actually used.
           val other = lookupImport(imp2, requireExplicit = !importCursor.sameDepth)
 
-          def imp1wins() { importCursor.advanceImp2() }
-          def imp2wins() { impSym = other; importCursor.advanceImp1Imp2() }
+          def imp1wins(): Unit = { importCursor.advanceImp2() }
+          def imp2wins(): Unit = { impSym = other; importCursor.advanceImp1Imp2() }
           if (!other.exists) // imp1 wins; drop imp2 and continue.
             imp1wins()
           else if (importCursor.imp2Wins) // imp2 wins; drop imp1 and continue.
