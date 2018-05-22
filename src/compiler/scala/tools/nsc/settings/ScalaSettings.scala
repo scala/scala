@@ -214,6 +214,7 @@ trait ScalaSettings extends AbsScalaSettings
   val stopAfter       = PhasesSetting     ("-Ystop-after", "Stop after") withAbbreviation ("-stop") // backward compat
   val stopBefore      = PhasesSetting     ("-Ystop-before", "Stop before")
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
+  val Yvalidatepos    = PhasesSetting     ("-Yvalidate-pos", "Validate positions after the given phases") withPostSetHook (_ => Yrangepos.value = true)
   val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", "Show start and end positions of members", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
   val Ymacroexpand    = ChoiceSetting     ("-Ymacro-expand", "policy", "Control expansion of macros, useful for scaladoc and presentation compiler.", List(MacroExpand.Normal, MacroExpand.None, MacroExpand.Discard), MacroExpand.Normal)

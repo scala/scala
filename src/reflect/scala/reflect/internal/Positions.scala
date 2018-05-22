@@ -108,7 +108,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def validate(tree: Tree, encltree: Tree): Unit = {
 
       if (!tree.isEmpty && tree.canHaveAttrs) {
-        if (settings.Yposdebug && (settings.verbose || settings.Yrangepos))
+        if (settings.Yposdebug && settings.verbose)
           inform("[%10s] %s".format("validate", treeStatus(tree, encltree)))
 
         if (!tree.pos.isDefined)
@@ -146,8 +146,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       }
     }
 
-    if (!isPastTyper)
-      validate(tree, tree)
+    validate(tree, tree)
   }
 
   def solidDescendants(tree: Tree): List[Tree] =
