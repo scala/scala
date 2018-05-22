@@ -645,37 +645,32 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
        *   -1 not yet accessed
        *   0 single element waiting in leading
        *   1 defer to self
+       *   2 self.hasNext already
+       *   3 exhausted
        */
       private[this] var status = -1
-      def hasNext = {
-        if (status > 0) self.hasNext
-        else {
-          if (status == 0) true
-          else if (myLeading.finish()) {
-            status = 0
-            true
-          }
-          else {
-            status = 1
-            myLeading = null
-            self.hasNext
-          }
-        }
+      def hasNext = status match {
+        case 3 => false
+        case 2 => true
+        case 1 => if (self.hasNext) { status = 2 ; true } else { status = 3 ; false }
+        case 0 => true
+        case _ =>
+          if (myLeading.finish()) { status = 0 ; true } else { status = 1 ; myLeading = null ; hasNext }
       }
       def next() = {
         if (hasNext) {
-          if (status > 0) self.next()
-          else {
+          if (status == 0) {
             status = 1
-            val ans = myLeading.trailer
+            val res = myLeading.trailer
             myLeading = null
-            ans
+            res
+          } else {
+            status = 1
+            self.next()
           }
         }
         else Iterator.empty.next()
       }
-
-      override def toString = "unknown-if-empty iterator"
     }
 
     (leading, trailing)
@@ -818,11 +813,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   /** Converts this iterator to a string.
    *
-   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on
-   *           whether or not the iterator is empty.
+   *  @return `"<iterator>"`
    *  @note    Reuse: $preservesIterator
    */
-  override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
+  override def toString = "<iterator>"
 
   @deprecated("Iterator.seq always returns the iterator itself", "2.13.0")
   def seq: this.type = this
