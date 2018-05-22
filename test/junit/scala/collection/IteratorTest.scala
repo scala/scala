@@ -325,4 +325,28 @@ class IteratorTest {
     assertSameElements(List(10,11,13), scan)
     assertSameElements(List(10,-1,-1,-11,11,-2,-2,-13,13,-3), results)
   }
+  @Test def `scan trailing avoids extra hasNext`(): Unit = {
+    val it = new AbstractIterator[Int] {
+      var i = 0
+      var checkedAt = -1
+      def hasNext =
+        if (checkedAt == i) false
+        else {
+          checkedAt = i
+          true
+        }
+      def next() = {
+        i += 1
+        i
+      }
+    }
+    val (lo, hi) = it.span(_ < 3)
+    assertTrue(lo.hasNext)
+    assertEquals(1, lo.next())
+    assertTrue(hi.hasNext)
+    assertEquals(3, hi.next())
+    assertTrue(hi.hasNext)
+    assertTrue(hi.hasNext) // no longer delegated
+    assertTrue(hi.hasNext)
+  }
 }
