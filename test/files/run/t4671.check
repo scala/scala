@@ -3,7 +3,7 @@ scala> object o { val file = sys.props("partest.cwd") + "/t4671.scala" }
 defined object o
 
 scala> val s = scala.io.Source.fromFile(o.file)
-s: scala.io.BufferedSource = non-empty iterator
+s: scala.io.BufferedSource = <iterator>
 
 scala> println(s.getLines.mkString("\n"))
 import scala.tools.partest.ReplTest
@@ -23,7 +23,7 @@ println(s.mkString(""))
 scala> 
 
 scala> val s = scala.io.Source.fromFile(o.file)
-s: scala.io.BufferedSource = non-empty iterator
+s: scala.io.BufferedSource = <iterator>
 
 scala> println(s.mkString(""))
 import scala.tools.partest.ReplTest
