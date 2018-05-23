@@ -21,11 +21,9 @@ package mutable
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(3L)
 class LinkedHashSet[A]
   extends AbstractSet[A]
-    with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
-    with Serializable {
+    with SetOps[A, LinkedHashSet, LinkedHashSet[A]] {
 
   override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
 
@@ -142,8 +140,7 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
   /** Class for the linked hash set entry, used internally.
    *  @since 2.10
    */
-  @SerialVersionUID(3L)
-  private[mutable] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
+  private[mutable] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] {
     var earlier: Entry[A] = null
     var later: Entry[A] = null
   }

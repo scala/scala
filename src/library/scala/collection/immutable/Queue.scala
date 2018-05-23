@@ -9,7 +9,9 @@
 package scala.collection
 package immutable
 
-import scala.collection.mutable.{ Builder, ListBuffer }
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
+import scala.collection.mutable.{Builder, ListBuffer}
 
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -34,13 +36,11 @@ import scala.collection.mutable.{ Builder, ListBuffer }
   *  @define willNotTerminateInf
   */
 
-@SerialVersionUID(1L)
 sealed class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, Queue, Queue[A]]
-    with StrictOptimizedSeqOps[A, Queue, Queue[A]]
-    with Serializable {
+    with StrictOptimizedSeqOps[A, Queue, Queue[A]] {
 
   override def iterableFactory: SeqFactory[Queue] = Queue
 
@@ -169,4 +169,9 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
   override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
 
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

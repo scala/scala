@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -24,101 +24,115 @@ class SerializationTest {
 
   @Test
   def hashMap(): Unit = {
-    assertEqualsAfterDeserialization(HashMap.empty[Int, String])
-    assertEqualsAfterDeserialization(HashMap(1 -> "one", 2 -> "two", 3 -> "three"))
+    assertEqualsAfterDeserialization(HashMap.empty[Int, String], classOf[HashMap[_, _]])
+    assertEqualsAfterDeserialization(HashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[HashMap[_, _]])
+    assertEquals(HashMap(1 -> 1, 2 -> 2, 3 -> 3), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").mapValues(_.toInt)).toMap)
+    assertEquals(HashMap(2 -> "2", 3 -> "3"), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").filterKeys(_ > 1)).toMap)
   }
 
   @Test
   def intMap(): Unit = {
-    assertEqualsAfterDeserialization(IntMap.empty[String])
-    assertEqualsAfterDeserialization(IntMap(1 -> "one", 2 -> "two", 3 -> "three"))
+    assertEqualsAfterDeserialization(IntMap.empty[String], classOf[IntMap[_]])
+    assertEqualsAfterDeserialization(IntMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[IntMap[_]])
   }
 
   @Test
   def longMap(): Unit = {
-    assertEqualsAfterDeserialization(LongMap.empty[String])
-    assertEqualsAfterDeserialization(LongMap(1L -> "one", 2L -> "two", 3L -> "three"))
+    assertEqualsAfterDeserialization(LongMap.empty[String], classOf[LongMap[_]])
+    assertEqualsAfterDeserialization(LongMap(1L -> "one", 2L -> "two", 3L -> "three"), classOf[LongMap[_]])
   }
 
   @Test
   def mapWithDefault(): Unit = {
-    assertEqualsAfterDeserialization(Map.empty[Int, String].withDefaultValue("none"))
-    assertEqualsAfterDeserialization(Map(1 -> "one").withDefaultValue("none"))
+    assertEqualsAfterDeserialization(Map.empty[Int, String].withDefaultValue("none"), classOf[Map[_, _]])
+    assertEqualsAfterDeserialization(Map(1 -> "one").withDefaultValue("none"), classOf[Map[_, _]])
   }
 
   @Test
   def sortedMapWithDefault(): Unit = {
-    assertEqualsAfterDeserialization(SortedMap.empty[Int, String].withDefaultValue("none"))
-    assertEqualsAfterDeserialization(SortedMap(1 -> "one").withDefaultValue("none"))
+    assertEqualsAfterDeserialization(SortedMap.empty[Int, String].withDefaultValue("none"), classOf[SortedMap[_, _]])
+    assertEqualsAfterDeserialization(SortedMap(1 -> "one").withDefaultValue("none"), classOf[SortedMap[_, _]])
   }
 
   @Test
   def treeMap(): Unit = {
-    assertEqualsAfterDeserialization(TreeMap.empty[Int, String])
-    assertEqualsAfterDeserialization(TreeMap(1 -> "one", 2 -> "two", 3 -> "three"))
+    assertEqualsAfterDeserialization(TreeMap.empty[Int, String], classOf[TreeMap[_, _]])
+    assertEqualsAfterDeserialization(TreeMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[TreeMap[_, _]])
   }
 
   @Test
   def hashSet(): Unit = {
-    assertEqualsAfterDeserialization(HashSet.empty[Int])
-    assertEqualsAfterDeserialization(HashSet(1, 2, 3))
+    assertEqualsAfterDeserialization(HashSet.empty[Int], classOf[HashSet[_]])
+    assertEqualsAfterDeserialization(HashSet(1, 2, 3), classOf[HashSet[_]])
   }
 
   @Test
   def bitSet(): Unit = {
-    assertEqualsAfterDeserialization(BitSet.empty)
-    assertEqualsAfterDeserialization(BitSet(1, 2, 3))
+    assertEqualsAfterDeserialization(BitSet.empty, classOf[BitSet])
+    assertEqualsAfterDeserialization(BitSet(1, 2, 3), classOf[BitSet])
   }
 
   @Test
   def treeSet(): Unit = {
-    assertEqualsAfterDeserialization(TreeSet.empty[Int])
-    assertEqualsAfterDeserialization(TreeSet(1, 2, 3))
+    assertEqualsAfterDeserialization(TreeSet.empty[Int], classOf[TreeSet[_]])
+    assertEqualsAfterDeserialization(TreeSet(1, 2, 3), classOf[TreeSet[_]])
   }
 
-//  @Test
-//  def lazyList(): Unit = {
-//    assertEqualsAfterDeserialization(LazyList.empty)
-//    assertEqualsAfterDeserialization(LazyList.from(1))
-//  }
+  @Test
+  def lazyList(): Unit = {
+    assertEqualsAfterDeserialization(LazyList.empty, classOf[LazyList[_]])
+    val l = serializeDeserialize(LazyList.from(1))
+    assertEquals(1 to 5, l.take(5))
+    assertEqualsAfterDeserialization(LazyList.from(1).take(10000).force, classOf[LazyList[_]])
+  }
+
+  @Test
+  def stream(): Unit = {
+    assertEqualsAfterDeserialization(Stream.empty, classOf[Stream[_]])
+    val s = serializeDeserialize(Stream.from(1))
+    assertEquals(1 to 5, s.take(5))
+    assertEqualsAfterDeserialization(Stream.from(1).take(10000).force, classOf[Stream[_]])
+  }
 
   @Test
   def list(): Unit = {
-    assertEqualsAfterDeserialization(Nil)
-    assertEqualsAfterDeserialization(List(1, 2, 3))
+    assertEqualsAfterDeserialization(Nil, Nil.getClass)
+    assertEqualsAfterDeserialization(List(1, 2, 3), classOf[List[_]])
   }
 
   @Test
   def listMap(): Unit = {
-    assertEqualsAfterDeserialization(ListMap.empty[Int, String])
-    assertEqualsAfterDeserialization(ListMap(1 -> "one", 2 -> "two", 3 -> "three"))
+    assertEqualsAfterDeserialization(ListMap.empty[Int, String], classOf[ListMap[_, _]])
+    assertEqualsAfterDeserialization(ListMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[ListMap[_, _]])
   }
 
   @Test
   def listSet(): Unit = {
-    assertEqualsAfterDeserialization(ListSet.empty[Int])
-    assertEqualsAfterDeserialization(ListSet(1, 2, 3))
+    assertEqualsAfterDeserialization(ListSet.empty[Int], classOf[ListSet[_]])
+    assertEqualsAfterDeserialization(ListSet(1, 2, 3), classOf[ListSet[_]])
   }
 
   @Test
   def numericRange(): Unit = {
-    assertEqualsAfterDeserialization(NumericRange(start = 0, end = 10, step = 1))
+    assertEqualsAfterDeserialization(NumericRange(start = 0, end = 10, step = 1), classOf[NumericRange[_]])
   }
 
   @Test
   def range(): Unit = {
-    assertEqualsAfterDeserialization(Range(start = 0, end = 10, step = 1))
+    assertEqualsAfterDeserialization(Range(start = 0, end = 10, step = 1), classOf[Range])
   }
 
   @Test
   def vector(): Unit = {
-    assertEqualsAfterDeserialization(Vector.empty[Int])
-    assertEqualsAfterDeserialization(Vector(1, 2, 3))
+    assertEqualsAfterDeserialization(Vector.empty[Int], classOf[Vector[_]])
+    assertEqualsAfterDeserialization(Vector(1, 2, 3), classOf[Vector[_]])
   }
 
-  private def assertEqualsAfterDeserialization[A](original: Iterable[A]): Unit = {
+  private def assertEqualsAfterDeserialization[A](original: Iterable[A], expectedClass: Class[_] = null): Unit = {
     val after = serializeDeserialize(original)
     assertEquals(original, after)
+    if(expectedClass ne null)
+      assertTrue("Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName, expectedClass.isInstance(after))
   }
 
   private def serializeDeserialize[T <: AnyRef](obj: T): T = {

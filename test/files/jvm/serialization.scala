@@ -246,12 +246,10 @@ object Test2_immutable {
     val _ss1: SortedSet[Int] = read(write(ss1))
     check(ss1, _ss1)
 
-    /* TODO-newColl: re-enable when https://github.com/scala/collection-strawman/issues/541 is fixed
     // LazyList
     val st1 = LazyList.range(0, 10)
     val _st1: LazyList[Int] = read(write(st1))
     check(st1, _st1)
-    */
 
     // TreeMap
     val tm1 = new TreeMap[Int, String] + (42 -> "FortyTwo")

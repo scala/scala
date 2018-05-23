@@ -1,9 +1,10 @@
 package scala
 package collection.immutable
 
-import scala.collection.mutable.{ArrayBuffer, Builder, ArrayBuilder}
-import scala.collection.{IterableOnce, Iterator, SeqFactory, ClassTagSeqFactory, StrictOptimizedClassTagSeqFactory, View, ArrayOps}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder}
+import scala.collection.{ArrayOps, ClassTagSeqFactory, IterableOnce, Iterator, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag
@@ -117,6 +118,8 @@ sealed abstract class ArraySeq[+A]
     if(l > 0) Array.copy(unsafeArray, 0, xs, start, l)
     xs
   }
+
+  override protected[this] def writeReplace(): AnyRef = this
 }
 
 /**
@@ -187,7 +190,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }).asInstanceOf[ArraySeq[T]]
 
   @SerialVersionUID(3L)
-  final class ofRef[T <: AnyRef](val unsafeArray: Array[T]) extends ArraySeq[T] with Serializable {
+  final class ofRef[T <: AnyRef](val unsafeArray: Array[T]) extends ArraySeq[T] {
     lazy val elemTag = ClassTag[T](unsafeArray.getClass.getComponentType)
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -200,7 +203,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofByte(val unsafeArray: Array[Byte]) extends ArraySeq[Byte] with Serializable {
+  final class ofByte(val unsafeArray: Array[Byte]) extends ArraySeq[Byte] {
     protected def elemTag = ClassTag.Byte
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -213,7 +216,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofShort(val unsafeArray: Array[Short]) extends ArraySeq[Short] with Serializable {
+  final class ofShort(val unsafeArray: Array[Short]) extends ArraySeq[Short] {
     protected def elemTag = ClassTag.Short
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -226,7 +229,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofChar(val unsafeArray: Array[Char]) extends ArraySeq[Char] with Serializable {
+  final class ofChar(val unsafeArray: Array[Char]) extends ArraySeq[Char] {
     protected def elemTag = ClassTag.Char
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -239,7 +242,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofInt(val unsafeArray: Array[Int]) extends ArraySeq[Int] with Serializable {
+  final class ofInt(val unsafeArray: Array[Int]) extends ArraySeq[Int] {
     protected def elemTag = ClassTag.Int
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -252,7 +255,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofLong(val unsafeArray: Array[Long]) extends ArraySeq[Long] with Serializable {
+  final class ofLong(val unsafeArray: Array[Long]) extends ArraySeq[Long] {
     protected def elemTag = ClassTag.Long
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -265,7 +268,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofFloat(val unsafeArray: Array[Float]) extends ArraySeq[Float] with Serializable {
+  final class ofFloat(val unsafeArray: Array[Float]) extends ArraySeq[Float] {
     protected def elemTag = ClassTag.Float
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -278,7 +281,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofDouble(val unsafeArray: Array[Double]) extends ArraySeq[Double] with Serializable {
+  final class ofDouble(val unsafeArray: Array[Double]) extends ArraySeq[Double] {
     protected def elemTag = ClassTag.Double
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -291,7 +294,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofBoolean(val unsafeArray: Array[Boolean]) extends ArraySeq[Boolean] with Serializable {
+  final class ofBoolean(val unsafeArray: Array[Boolean]) extends ArraySeq[Boolean] {
     protected def elemTag = ClassTag.Boolean
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -304,7 +307,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofUnit(val unsafeArray: Array[Unit]) extends ArraySeq[Unit] with Serializable {
+  final class ofUnit(val unsafeArray: Array[Unit]) extends ArraySeq[Unit] {
     protected def elemTag = ClassTag.Unit
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -315,4 +318,9 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
       case _ => super.equals(that)
     }
   }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

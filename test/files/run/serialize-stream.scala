@@ -13,14 +13,12 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-//  TODO-newColl: re-enable when https://github.com/scala/collection-strawman/issues/541 is fixed.
+    ser(Stream(1, 2, 3))
+    ser(Stream(1))
+    ser(Stream())
 
-//    ser(Stream(1, 2, 3))
-//    ser(Stream(1))
-//    ser(Stream())
-
-//    ser(LazyList(1, 2, 3))
-//    ser(LazyList(1))
-//    ser(LazyList())
+    ser(LazyList(1, 2, 3))
+    ser(LazyList(1))
+    ser(LazyList())
   }
 }

@@ -27,14 +27,12 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
   extends AbstractBuffer[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with IndexedOptimizedBuffer[A]
-    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with Serializable {
+    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 

@@ -2,10 +2,9 @@ package scala
 package collection
 
 import scala.collection.immutable.NumericRange
-
-import scala.language.{ higherKinds, implicitConversions }
+import scala.language.{higherKinds, implicitConversions}
 import scala.collection.mutable.Builder
-
+import scala.collection.generic.{DefaultSerializationProxy, SerializeEnd}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
 
@@ -70,7 +69,7 @@ object Factory {
   * @define coll collection
   * @define Coll `Iterable`
   */
-trait IterableFactory[+CC[_]] {
+trait IterableFactory[+CC[_]] extends Serializable {
 
   /** Creates a target $coll from an existing source collection
     *
@@ -224,7 +223,6 @@ trait IterableFactory[+CC[_]] {
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
   implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
-
 }
 
 object IterableFactory {
@@ -238,7 +236,7 @@ object IterableFactory {
     *         of type `A`
     */
   implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
-    new Factory[A, CC[A]] {
+    new Factory[A, CC[A]] with Serializable {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
       def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
     }
@@ -326,7 +324,7 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   * @define coll collection
   * @define Coll `Iterable`
   */
-trait MapFactory[+CC[_, _]] {
+trait MapFactory[+CC[_, _]] extends Serializable {
 
   def empty[K, V]: CC[K, V]
 
@@ -337,7 +335,6 @@ trait MapFactory[+CC[_, _]] {
   def newBuilder[K, V]: Builder[(K, V), CC[K, V]]
 
   implicit def mapFactory[K, V]: Factory[(K, V), CC[K, V]] = MapFactory.toFactory(this)
-
 }
 
 object MapFactory {
@@ -352,7 +349,7 @@ object MapFactory {
     *         and values of type `V`
     */
   implicit def toFactory[K, V, CC[_, _]](factory: MapFactory[CC]): Factory[(K, V), CC[K, V]] =
-    new Factory[(K, V), CC[K, V]] {
+    new Factory[(K, V), CC[K, V]] with Serializable {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
       def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
     }
@@ -381,7 +378,7 @@ object MapFactory {
   * @define coll collection
   * @define Coll `Iterable`
   */
-trait EvidenceIterableFactory[+CC[_], Ev[_]] {
+trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
 
   def from[E : Ev](it: IterableOnce[E]): CC[E]
 
@@ -420,7 +417,7 @@ object EvidenceIterableFactory {
     *         of type `A`
     */
   implicit def toFactory[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): Factory[A, CC[A]] =
-    new Factory[A, CC[A]] {
+    new Factory[A, CC[A]] with Serializable {
       def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
       def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
     }
@@ -639,7 +636,7 @@ trait StrictOptimizedClassTagSeqFactory[+CC[_]] extends ClassTagSeqFactory[CC] {
   * @define coll collection
   * @define Coll `Iterable`
   */
-trait SortedMapFactory[+CC[_, _]] {
+trait SortedMapFactory[+CC[_, _]] extends Serializable {
 
   def empty[K : Ordering, V]: CC[K, V]
 
@@ -667,7 +664,7 @@ object SortedMapFactory {
     *         type `K` and values of type `V`
     */
   implicit def toFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): Factory[(K, V), CC[K, V]] =
-    new Factory[(K, V), CC[K, V]] {
+    new Factory[(K, V), CC[K, V]] with Serializable {
       def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
       def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
     }

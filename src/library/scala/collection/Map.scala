@@ -2,9 +2,9 @@ package scala
 package collection
 
 import collection.mutable.Builder
-
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.{higherKinds,implicitConversions}
+import scala.collection.generic.DefaultSerializationProxy
+import scala.language.{higherKinds, implicitConversions}
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
@@ -47,6 +47,7 @@ trait Map[K, +V]
 
   override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
 
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(mapFactory.mapFactory[K, V], this)
 }
 
 /** Base Map implementation type
@@ -132,13 +133,12 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** The implementation class of the set returned by `keySet`.
     */
-  @SerialVersionUID(3L)
   protected class KeySet extends AbstractSet[K] with GenKeySet {
     def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
   }
 
   /** A generic trait that is reused by keyset implementations */
-  protected trait GenKeySet extends Serializable { this: Set[K] =>
+  protected trait GenKeySet { this: Set[K] =>
     def iterator: Iterator[K] = MapOps.this.keysIterator
     def contains(key: K): Boolean = MapOps.this.contains(key)
     override def size: Int = MapOps.this.size
@@ -315,4 +315,5 @@ object Map extends MapFactory.Delegate[Map](immutable.Map) {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]

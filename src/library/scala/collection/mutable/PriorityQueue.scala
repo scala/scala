@@ -9,6 +9,7 @@
 package scala.collection
 package mutable
 
+import scala.collection.generic.DefaultSerializationProxy
 import scala.math.Ordering
 
 /** This class implements priority queues using a heap.
@@ -45,7 +46,6 @@ import scala.math.Ordering
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   extends AbstractIterable[A]
     with Iterable[A]
@@ -53,12 +53,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     with StrictOptimizedIterableOps[A, Iterable, PriorityQueue[A]]
     with Builder[A, PriorityQueue[A]]
     with Cloneable[PriorityQueue[A]]
-    with Serializable
     with Growable[A]
 {
   import ord._
 
-  @SerialVersionUID(3L)
   private class ResizableArrayAccess[A] extends ArrayBuffer[A] {
     def p_size0 = size0
     def p_size0_=(s: Int) = size0 = s
@@ -336,6 +334,8 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     pq.resarr.p_size0 = n
     pq
   }
+
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(PriorityQueue.evidenceIterableFactory[A], this)
 }
 
 

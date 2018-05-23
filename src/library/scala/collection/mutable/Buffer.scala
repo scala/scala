@@ -171,4 +171,5 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
 object Buffer extends SeqFactory.Delegate[Buffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]

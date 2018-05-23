@@ -44,4 +44,5 @@ object SeqView {
 }
 
 /** Explicit instantiation of the `SeqView` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractSeqView[+A] extends AbstractView[A] with SeqView[A]

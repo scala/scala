@@ -19,12 +19,10 @@ import java.lang.String
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 class HashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]] {
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
@@ -131,10 +129,8 @@ object HashMap extends MapFactory[HashMap] {
 /** Class used internally for default map model.
   *  @since 2.3
   */
-@SerialVersionUID(3L)
 private[mutable] final class DefaultEntry[A, B](val key: A, var value: B)
-  extends HashEntry[A, DefaultEntry[A, B]]
-    with Serializable {
+  extends HashEntry[A, DefaultEntry[A, B]] {
 
   override def toString = chainString
 

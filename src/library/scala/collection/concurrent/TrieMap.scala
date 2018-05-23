@@ -10,6 +10,7 @@ package scala
 package collection
 package concurrent
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.atomic._
 
 import scala.annotation.tailrec
@@ -637,13 +638,11 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   *  @author Aleksandar Prokopec
   *  @since 2.10
   */
-@SerialVersionUID(3L)
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
   extends scala.collection.mutable.AbstractMap[K, V]
     with scala.collection.concurrent.Map[K, V]
-    with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]]
-    with Serializable
-{
+    with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]] {
+
   private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
   private var equalityobj = ef
   private var rootupdater = rtupd
@@ -991,6 +990,10 @@ object TrieMap extends MapFactory[TrieMap] {
     def hash(k: K)= scala.util.hashing.byteswap32(k.##)
   }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 

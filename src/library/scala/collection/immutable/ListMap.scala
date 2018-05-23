@@ -10,8 +10,9 @@ package scala
 package collection
 package immutable
 
-import collection.{Iterator, MapFactory}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import collection.{Iterator, MapFactory}
 import scala.annotation.tailrec
 import java.lang.Integer
 
@@ -41,12 +42,10 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed class ListMap[K, +V]
   extends AbstractMap[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]] {
 
   override def mapFactory: MapFactory[ListMap] = ListMap
 
@@ -79,9 +78,8 @@ sealed class ListMap[K, +V]
   /**
     * Represents an entry in the `ListMap`.
     */
-  @SerialVersionUID(3L)
   protected class Node[V1 >: V](override protected val key: K,
-                                override protected val value: V1) extends ListMap[K, V1] with Serializable {
+                                override protected val value: V1) extends ListMap[K, V1] {
 
     override def size: Int = sizeInternal(this, 0)
 
@@ -149,7 +147,6 @@ object ListMap extends MapFactory[ListMap] {
 
   def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
 
-  @SerialVersionUID(3L)
   private object EmptyListMap extends ListMap[Any, Nothing]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
@@ -163,5 +160,8 @@ object ListMap extends MapFactory[ListMap] {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
-

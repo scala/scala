@@ -1,6 +1,10 @@
 package scala.collection
 package mutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
+import scala.collection.generic.DefaultSerializationProxy
+
 
 /** This class implements mutable maps with `Long` keys based on a hash table with open addressing.
   *
@@ -22,13 +26,10 @@ package mutable
   *  rapidly as 2^30 is approached.
   *
   */
-@SerialVersionUID(3L)
 final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[Long, V]
     with MapOps[Long, V, Map, LongMap[V]]
-    with StrictOptimizedIterableOps[(Long, V), Iterable, LongMap[V]]
-    with Serializable
-{
+    with StrictOptimizedIterableOps[(Long, V), Iterable, LongMap[V]] {
   import LongMap._
 
   def this() = this(LongMap.exceptionDefault, 16, true)
@@ -525,6 +526,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def collect[V2](pf: PartialFunction[(Long, V), (Long, V2)]): LongMap[V2] =
     flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
 
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[V](LongMap), this)
 }
 
 object LongMap {
@@ -534,14 +536,6 @@ object LongMap {
   private final val MissVacant = 0xC0000000
 
   private val exceptionDefault: Long => Nothing = (k: Long) => throw new NoSuchElementException(k.toString)
-
-  /*
-  implicit def canBuildFrom[V, U]: CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] =
-    new CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] {
-      def apply(from: LongMap[V]): LongMapBuilder[U] = apply()
-      def apply(): LongMapBuilder[U] = new LongMapBuilder[U]
-    }
-    */
 
   /** A builder for instances of `LongMap`.
     *
@@ -587,6 +581,8 @@ object LongMap {
     case _ => buildFromIterableOnce(source)
   }
 
+  def newBuilder[V]: Builder[(Long, V), LongMap[V]] = new LongMapBuilder[V]
+
   /** Creates a new `LongMap` from arrays of keys and values.
     *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
     */
@@ -611,4 +607,21 @@ object LongMap {
     if (lm.size < (sz >> 3)) lm.repack()
     lm
   }
+
+  implicit def toFactory[V](factory: LongMap.type): Factory[(Long, V), LongMap[V]] =
+    new Factory[(Long, V), LongMap[V]] with Serializable {
+      def fromSpecific(it: IterableOnce[(Long, V)]): LongMap[V] = factory.from[V](it)
+      def newBuilder: Builder[(Long, V), LongMap[V]] = factory.newBuilder[V]
+    }
+
+  implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] =
+    new BuildFrom[Any, (Long, V), LongMap[V]] {
+      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[V]
+    }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

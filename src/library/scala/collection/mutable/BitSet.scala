@@ -2,6 +2,8 @@ package scala
 package collection
 package mutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.collection.immutable.Range
 import BitSetOps.{LogWL, MaxSize}
 
@@ -21,15 +23,13 @@ import BitSetOps.{LogWL, MaxSize}
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 class BitSet(protected[collection] final var elems: Array[Long])
   extends AbstractSet[Int]
     with SortedSet[Int]
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
-    with StrictOptimizedIterableOps[Int, Set, BitSet]
-    with Serializable {
+    with StrictOptimizedIterableOps[Int, Set, BitSet] {
 
   def this(initSize: Int) = this(new Array[Long](math.max((initSize + 63) >> 6, 1)))
 
@@ -143,6 +143,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override def map(f: Int => Int): BitSet = super[BitSet].map(f)
   override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
 
+  override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
 
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
@@ -171,4 +172,14 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     if (len == 0) empty
     else new BitSet(elems)
   }
+
+  @SerialVersionUID(3L)
+  private final class SerializationProxy(coll: BitSet) extends scala.collection.BitSet.SerializationProxy(coll) {
+    protected[this] def readResolve(): Any = BitSet.fromBitMaskNoCopy(elems)
+  }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

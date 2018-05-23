@@ -9,9 +9,10 @@
 package scala.collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.IllegalStateException
 
-import scala.collection.generic.BitOperations
+import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
 import scala.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.annotation.tailrec
 import scala.annotation.tailrec
@@ -58,7 +59,6 @@ object LongMap {
       def addOne(elem: (Long, V)): this.type = { elems = elems + elem; this }
     }
 
-  @SerialVersionUID(3L)
   private[immutable] case object Nil extends LongMap[Nothing] {
     // Important, don't remove this! See IntMap for explanation.
     override def equals(that : Any) = that match {
@@ -68,20 +68,35 @@ object LongMap {
     }
   }
 
-  @SerialVersionUID(3L)
   private[immutable] case class Tip[+T](key: Long, value: T) extends LongMap[T] {
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[LongMap.Tip[S]]
       else LongMap.Tip(key, s)
   }
 
-  @SerialVersionUID(3L)
   private[immutable] case class Bin[+T](prefix: Long, mask: Long, left: LongMap[T], right: LongMap[T]) extends LongMap[T] {
     def bin[S](left: LongMap[S], right: LongMap[S]): LongMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[LongMap.Bin[S]]
       else LongMap.Bin[S](prefix, mask, left, right)
     }
   }
+
+  implicit def toFactory[V](factory: LongMap.type): Factory[(Long, V), LongMap[V]] =
+    new Factory[(Long, V), LongMap[V]] with Serializable {
+      def fromSpecific(it: IterableOnce[(Long, V)]): LongMap[V] = factory.from[V](it)
+      def newBuilder: Builder[(Long, V), LongMap[V]] = factory.newBuilder[V]
+    }
+
+  implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] =
+    new BuildFrom[Any, (Long, V), LongMap[V]] {
+      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[V]
+    }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 // Iterator over a non-empty LongMap.
@@ -156,11 +171,9 @@ private[immutable] class LongMapKeyIterator[V](it: LongMap[V]) extends LongMapIt
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   with MapOps[Long, T, Map, LongMap[T]]
-  with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]]
-  with Serializable {
+  with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]] {
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
@@ -463,4 +476,5 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   def collect[V2](pf: PartialFunction[(Long, T), (Long, V2)]): LongMap[V2] =
     flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
 
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[T](LongMap), this)
 }

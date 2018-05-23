@@ -292,6 +292,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
     def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
     def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
+
+    override protected[this] def writeReplace(): AnyRef = this
   }
 
   /** A factory object for value sets */

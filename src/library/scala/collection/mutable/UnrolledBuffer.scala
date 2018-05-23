@@ -9,6 +9,8 @@
 package scala.collection
 package mutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.collection.immutable.Nil
@@ -40,16 +42,14 @@ import scala.collection.immutable.Nil
   *  @author Aleksandar Prokopec
   *
   */
-@SerialVersionUID(3L)
 sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   extends AbstractBuffer[T]
     with Buffer[T]
     with Seq[T]
     with SeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
     with StrictOptimizedSeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
-    with Builder[T, UnrolledBuffer[T]]
-    with Serializable
-{
+    with Builder[T, UnrolledBuffer[T]] {
+
   import UnrolledBuffer.Unrolled
 
   @transient private var headptr = newUnrolled
@@ -418,5 +418,8 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       array.take(size).mkString("Unrolled@%08x".format(System.identityHashCode(this)) + "[" + size + "/" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
   }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
-

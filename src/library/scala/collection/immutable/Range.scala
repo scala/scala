@@ -1,8 +1,7 @@
 package scala
 package collection.immutable
 
-import collection.{Iterator, SeqFactory}
-
+import collection.{AbstractIterator, Iterator, SeqFactory}
 import java.lang.String
 
 import scala.collection.mutable.Builder
@@ -53,8 +52,7 @@ sealed abstract class Range(
   extends AbstractSeq[Int]
     with IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
-    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
-    with Serializable { range =>
+    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]] { range =>
 
   override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
@@ -383,6 +381,7 @@ sealed abstract class Range(
     s"${prefix}Range $start $preposition $end$stepped"
   }
 
+  override protected[this] def writeReplace(): AnyRef = this
 }
 
 /**
@@ -518,12 +517,13 @@ object Range {
   * @param lastElement The last element included in the Range
   * @param initiallyEmpty Whether the Range was initially empty or not
   */
+@SerialVersionUID(3L)
 private class RangeIterator(
   start: Int,
   step: Int,
   lastElement: Int,
   initiallyEmpty: Boolean
-) extends Iterator[Int] {
+) extends AbstractIterator[Int] with Serializable {
   private var _hasNext: Boolean = !initiallyEmpty
   private var _next: Int = start
   override def knownSize: Int = if (_hasNext) (lastElement - _next) / step + 1 else 0

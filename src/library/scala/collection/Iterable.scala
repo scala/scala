@@ -1,13 +1,14 @@
 package scala
 package collection
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.language.{higherKinds, implicitConversions}
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import scala.reflect.ClassTag
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{String, UnsupportedOperationException}
 
-import scala.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
-import java.lang.String
+import scala.collection.generic.DefaultSerializationProxy
 
 /** Base trait for generic collections.
   *
@@ -16,7 +17,7 @@ import java.lang.String
   * @define Coll `Iterable`
   * @define coll iterable collection
   */
-trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
+trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] with Serializable {
 
   // The collection itself
   final def toIterable: this.type = this
@@ -39,6 +40,12 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 
   @deprecated("Iterable.seq always returns the iterable itself", "2.13.0")
   def seq: this.type = this
+
+  /** Create a proxy for Java serialization. The default implementation will serialize all elements and
+    * deserialize by using a builder for `CC` via `iterableFactory`. Override in subclasses if more data needs
+    * to be preserved or a more efficient implementation is available. Override to return `this` in order to
+    * use self-serialization instead of a proxy. */
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(iterableFactory.iterableFactory, this)
 }
 
 /** Base trait for Iterable operations
@@ -756,4 +763,5 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
 }
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractIterable[+A] extends Iterable[A]

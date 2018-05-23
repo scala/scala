@@ -304,6 +304,7 @@ private[collection] trait Wrappers {
     override def clear() = underlying.clear()
   }
 
+  @SerialVersionUID(3L)
   abstract class AbstractJMapWrapper[K, V]
     extends mutable.AbstractMap[K, V]
       with JMapWrapperLike[K, V, mutable.Map, mutable.Map[K, V]]
@@ -353,8 +354,8 @@ private[collection] trait Wrappers {
     */
   @SerialVersionUID(3L)
   class JMapWrapper[A, B](val underlying : ju.Map[A, B])
-    extends AbstractJMapWrapper[A, B]
-    with Serializable {
+    extends AbstractJMapWrapper[A, B] {
+
     override def empty = new JMapWrapper(new ju.HashMap[A, B])
   }
 

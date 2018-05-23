@@ -2,6 +2,8 @@ package scala
 package collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.language.higherKinds
@@ -111,7 +113,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
-  @SerialVersionUID(3L)
   protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet {
     def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
     def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
@@ -131,11 +132,9 @@ object Map extends MapFactory[Map] {
   private final val useBaseline: Boolean =
     System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 
-  @SerialVersionUID(3L)
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
     extends AbstractMap[K, V]
-      with MapOps[K, V, Map, WithDefault[K, V]]
-      with Serializable{
+      with MapOps[K, V, Map, WithDefault[K, V]] {
 
     def get(key: K): Option[V] = underlying.get(key)
 
@@ -172,8 +171,7 @@ object Map extends MapFactory[Map] {
   def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
     if (useBaseline) HashMap.newBuilder else ChampHashMap.newBuilder
 
-  @SerialVersionUID(3L)
-  private object EmptyMap extends AbstractMap[Any, Nothing] with Serializable {
+  private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
     override def knownSize: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
@@ -185,8 +183,7 @@ object Map extends MapFactory[Map] {
     def remove(key: Any): Map[Any, Nothing] = this
   }
 
-  @SerialVersionUID(3L)
-  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Serializable {
+  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -206,8 +203,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  @SerialVersionUID(3L)
-  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with Serializable {
+  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -237,8 +233,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  @SerialVersionUID(3L)
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Serializable {
+  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -273,8 +268,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  @SerialVersionUID(3L)
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with Serializable {
+  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =
@@ -313,7 +307,13 @@ object Map extends MapFactory[Map] {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
   }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]

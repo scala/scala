@@ -91,8 +91,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
   with IndexedOptimizedSeq[Char]
-  with java.lang.CharSequence
-  with Serializable {
+  with java.lang.CharSequence {
 
   def this() = this(new java.lang.StringBuilder)
 
@@ -448,6 +447,8 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @return             the last applicable index where target occurs, or -1 if not found.
    */
   def lastIndexOf(str: String, fromIndex: Int): Int = sb.lastIndexOf(str, fromIndex)
+
+  override protected[this] def writeReplace(): AnyRef = this
 }
 
 object StringBuilder {

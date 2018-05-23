@@ -1,11 +1,11 @@
 package scala
 package collection.immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import collection.{IterableFactory, Iterator, MapFactory, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
-
 import scala.annotation.unchecked.{uncheckedVariance => uV}
-
 import java.lang.Integer.bitCount
 import java.lang.System.arraycopy
 
@@ -24,12 +24,10 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   *  @define coll immutable champ hash map
   */
 
-@SerialVersionUID(3L)
 final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V], val cachedJavaKeySetHashCode: Int, val cachedSize: Int)
   extends AbstractMap[K, V]
     with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]] {
 
   override def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
 
@@ -105,8 +103,7 @@ private[immutable] object MapNode {
 
 }
 
-@SerialVersionUID(3L)
-private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] with Serializable {
+private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] {
 
   def get(key: K, hash: Int, shift: Int): Option[V]
 
@@ -138,7 +135,6 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
 }
 
-@SerialVersionUID(3L)
 private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
 
   import Node._
@@ -489,7 +485,6 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
 }
 
-@SerialVersionUID(3L)
 private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
 
   import Node._
@@ -640,4 +635,8 @@ object ChampHashMap extends MapFactory[ChampHashMap] {
       }
     }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

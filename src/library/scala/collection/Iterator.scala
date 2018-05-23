@@ -1,9 +1,9 @@
 package scala.collection
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -1090,6 +1090,11 @@ object Iterator extends IterableFactory[Iterator] {
       }
     }
   }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
