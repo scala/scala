@@ -290,8 +290,6 @@ object Iterator {
   }
 }
 
-import Iterator.empty
-
 /** Iterators are data structures that allow to iterate over a sequence
  *  of elements. They have a `hasNext` method for checking
  *  if there is a next element available, and a `next` method
@@ -356,6 +354,8 @@ import Iterator.empty
  */
 trait Iterator[+A] extends TraversableOnce[A] {
   self =>
+
+  import Iterator.empty
 
   def seq: Iterator[A] = this
 
@@ -760,37 +760,32 @@ trait Iterator[+A] extends TraversableOnce[A] {
        *   -1 not yet accessed
        *   0 single element waiting in leading
        *   1 defer to self
+       *   2 self.hasNext already
+       *   3 exhausted
        */
       private[this] var status = -1
-      def hasNext = {
-        if (status > 0) self.hasNext
-        else {
-          if (status == 0) true
-          else if (myLeading.finish()) {
-            status = 0
-            true
-          }
-          else {
-            status = 1
-            myLeading = null
-            self.hasNext
-          }
-        }
+      def hasNext = status match {
+        case 3 => false
+        case 2 => true
+        case 1 => if (self.hasNext) { status = 2 ; true } else { status = 3 ; false }
+        case 0 => true
+        case _ =>
+          if (myLeading.finish()) { status = 0 ; true } else { status = 1 ; myLeading = null ; hasNext }
       }
       def next() = {
         if (hasNext) {
-          if (status > 0) self.next()
-          else {
+          if (status == 0) {
             status = 1
-            val ans = myLeading.trailer
+            val res = myLeading.trailer
             myLeading = null
-            ans
+            res
+          } else {
+            status = 1
+            self.next()
           }
         }
-        else Iterator.empty.next()
+        else empty.next()
       }
-
-      override def toString = "unknown-if-empty iterator"
     }
 
     (leading, trailing)
@@ -1421,11 +1416,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
   /** Converts this iterator to a string.
    *
-   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on
+   *  @return `"<iterator>"`
    *           whether or not the iterator is empty.
    *  @note    Reuse: $preservesIterator
    */
-  override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
+  override def toString = "<iterator>"
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
