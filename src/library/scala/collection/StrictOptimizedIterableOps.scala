@@ -143,6 +143,21 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
+  override def scanLeft1[B >: A](op: (B, A) => B): CC[B] = {
+    val it = iterator
+    val b = iterableFactory.newBuilder[B]
+    b.sizeHint(toIterable, delta = 0)
+    if (it.hasNext) {
+      var acc: B = it.next()
+      b += acc
+      while (it.hasNext) {
+        acc = op(acc, it.next())
+        b += acc
+      }
+    }
+    b.result()
+  }
+
   override def filter(pred: A => Boolean): C = filterImpl(pred, isFlipped = false)
 
   override def filterNot(pred: A => Boolean): C = filterImpl(pred, isFlipped = true)

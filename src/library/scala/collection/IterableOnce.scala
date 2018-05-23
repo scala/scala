@@ -165,6 +165,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def scanLeft[B](z: B)(op: (B, A) => B): CC[B]
 
+  /** Produces a $coll containing cumulative results of applying the
+    * operator going left to right.
+    *
+    *  $willNotTerminateInf
+    *  $orderDependent
+    *
+    *  @tparam B      the type of the elements in the resulting collection
+    *  @param op      the binary operator applied to the intermediate result and the element
+    *  @return        collection with intermediate results
+    *  @note          Reuse: $consumesAndProducesIterator
+    */
+   def scanLeft1[B >: A](op: (B, A) => B): CC[B]
+
   /** Selects all elements of this $coll which satisfy a predicate.
     *
     *  @param p     the predicate used to test elements.

@@ -198,6 +198,11 @@ object View extends IterableFactory[View] {
       if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
+  class ScanLeft1[A, +B >: A](underlying: SomeIterableOps[A], op: (B, A) => B) extends AbstractView[B] {
+    def iterator: Iterator[B] = underlying.iterator.scanLeft1[B]((b: B, a: A) => op(b,a))
+    override def knownSize = underlying.knownSize
+  }
+
   /** A view that maps elements of the underlying collection. */
   @SerialVersionUID(3L)
   class Map[+A, +B](underlying: SomeIterableOps[A], f: A => B) extends AbstractView[B] {

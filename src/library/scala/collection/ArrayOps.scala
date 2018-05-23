@@ -658,6 +658,21 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     res 
   }
 
+  def scanLeft1[B >: A : ClassTag](op: (B, A) => B): Array[B] =
+    if (xs.length == 0) Array.empty[B]
+    else {
+      var v: B = xs(0)
+      var i = 1
+      var res = new Array[B](xs.length)
+      res(0) = v
+      while (i < xs.length) {
+        v = op(v, xs(i))
+        res(i) = v
+        i += 1
+      }
+      res
+    }
+
   /** Computes a prefix scan of the elements of the array.
     *
     *  Note: The neutral element `z` may be applied more than once.

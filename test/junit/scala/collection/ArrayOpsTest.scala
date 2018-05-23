@@ -56,6 +56,20 @@ class ArrayOpsTest {
   }
 
   @Test
+  def scanLeft1(): Unit = {
+    val arr = Array(1,2,3,4)
+    val sums = arr.scanLeft1(_ + _)
+    assertArrayEquals(Array(1, 3, 6, 10), sums)
+  }
+
+  @Test
+  def scanLeft1Empty(): Unit = {
+    val arr = Array[Int]()
+    val res = arr.scanLeft1(_ + _)
+    assertArrayEquals(Array[Int](), res)
+  }
+
+  @Test
   def scanRight(): Unit = {
     val arr = Array(4,3,2)
     val sums = arr.scanRight(1)(_ + _)

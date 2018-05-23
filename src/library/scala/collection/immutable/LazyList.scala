@@ -264,6 +264,10 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     if (isEmpty) z +: iterableFactory.empty
     else cons(z, tail.scanLeft(op(z, head))(op))
 
+  override def scanLeft1[B >: A](op: (B, A) => B): CC[B] =
+    if (this.isEmpty) iterableFactory.empty
+    else tail.scanLeft[B](head)(op)
+
   /** LazyList specialization of reduceLeft which allows GC to collect
     *  along the way.
     *
