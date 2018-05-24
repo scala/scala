@@ -53,21 +53,10 @@ trait IntegralProxy[T] extends Any with ScalaWholeNumberProxy[T] with RangedProx
   def to(end: T): NumericRange.Inclusive[T]             = NumericRange.inclusive(self, end, num.one)
   def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
 }
-trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] with RangedProxy[T] {
+trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] {
   protected implicit def num: Fractional[T]
-  protected implicit def integralNum: Integral[T]
-
-  /** In order to supply predictable ranges, we require an Integral[T] which provides
-   *  us with discrete operations on the (otherwise fractional) T.  See Numeric.DoubleAsIfIntegral
-   *  for an example.
-   */
-  type ResultWithoutStep = Range.Partial[T, NumericRange[T]]
 
   def isWhole() = false
-  @deprecated("use BigDecimal range instead", "2.12.6") def until(end: T): ResultWithoutStep                  = new Range.Partial(NumericRange(self, end, _))
-  @deprecated("use BigDecimal range instead", "2.12.6") def until(end: T, step: T): NumericRange.Exclusive[T] = NumericRange(self, end, step)
-  @deprecated("use BigDecimal range instead", "2.12.6") def to(end: T): ResultWithoutStep                     = new Range.Partial(NumericRange.inclusive(self, end, _))
-  @deprecated("use BigDecimal range instead", "2.12.6") def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
 }
 
 trait OrderedProxy[T] extends Any with Ordered[T] with Typed[T] {

@@ -1,6 +1,0 @@
-t5857.scala:25: warning: method to in trait FractionalProxy is deprecated (since 2.12.6): use BigDecimal range instead
-    val numeric = 1.0 to sz.toDouble by 1
-                      ^
-t5857.scala:29: warning: method to in trait FractionalProxy is deprecated (since 2.12.6): use BigDecimal range instead
-    val numdesc = sz.toDouble to 1.0 by -1
-                              ^
