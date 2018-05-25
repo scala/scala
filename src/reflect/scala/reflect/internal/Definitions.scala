@@ -612,6 +612,7 @@ trait Definitions extends api.StandardDefinitions {
 
     def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
     def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
+    def isAbstractFunctionSymbol(sym: Symbol) = AbstractFunctionClass.seq contains unspecializedSymbol(sym)
     def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
