@@ -737,6 +737,12 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     }
   }
 
+  override def take(n: Int): Stream[A] = {
+    if (n <= 0 || isEmpty) Stream.empty
+    else if (n == 1) new Stream.Cons(head, Stream.empty)
+    else new Stream.Cons(head, tail.take(n - 1))
+  }
+
   /** LazyList specialization of foldLeft which allows GC to collect along the
     * way.
     *

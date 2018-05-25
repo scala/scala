@@ -237,4 +237,15 @@ class StreamTest {
     s2.flatMap { i => (if(i < 5) None else Some(i)): Option[Int] }.headOption
     assertEquals(5, it1.current)
   }
+
+  @Test
+  def t10883: Unit = {
+    var value: Int = -1
+    Stream.iterate(0){ a =>
+      val next = a + 1
+      value = next
+      next
+    }.take(3).toList
+    assertEquals(value, 2)
+  }
 }
