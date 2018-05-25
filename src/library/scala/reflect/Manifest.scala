@@ -26,13 +26,13 @@ import scala.collection.mutable.{ArrayBuilder, ArraySeq}
  *    def arr[T](implicit m: Manifest[T]) = new Array[T](0) // compiles
  *    def arr[T: Manifest] = new Array[T](0)                // shorthand for the preceding
  *
- *    // Methods manifest, classManifest, and optManifest are in [[scala.Predef]].
+ *    // Methods manifest and optManifest are in [[scala.Predef]].
  *    def isApproxSubType[T: Manifest, U: Manifest] = manifest[T] <:< manifest[U]
  *    isApproxSubType[List[String], List[AnyRef]] // true
  *    isApproxSubType[List[String], List[Int]]    // false
  *
- *    def methods[T: ClassManifest] = classManifest[T].erasure.getMethods
- *    def retType[T: ClassManifest](name: String) =
+ *    def methods[T: Manifest] = manifest[T].runtimeClass.getMethods
+ *    def retType[T: Manifest](name: String) =
  *      methods[T] find (_.getName == name) map (_.getGenericReturnType)
  *
  *    retType[Map[_, _]]("values")  // Some(scala.collection.Iterable<B>)
