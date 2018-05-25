@@ -532,7 +532,7 @@ object Array {
  *  {{{
  *  val arr = Array(1, 2, 3)
  *  val arrReversed = arr.reverse
- *  val seqReversed : Seq[Int] = arr.reverse
+ *  val seqReversed : collection.Seq[Int] = arr.reverse
  *  }}}
  *
  *  Value `arrReversed` will be of type `Array[Int]`, with an implicit conversion to `ArrayOps` occurring
