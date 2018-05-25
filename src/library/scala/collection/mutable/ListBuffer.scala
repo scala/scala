@@ -27,13 +27,11 @@ import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 class ListBuffer[A]
   extends AbstractBuffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
-     with ReusableBuilder[A, immutable.List[A]]
-     with Serializable {
+     with ReusableBuilder[A, immutable.List[A]] {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null

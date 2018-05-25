@@ -7,7 +7,6 @@ object Test {
 
   import collection._
   def main(args: Array[String]): Unit = {
-    /* TODO-newColl: re-enable when https://github.com/scala/collection-strawman/issues/524 is fixed
     for (i <- Seq(0, 1, 2, 10, 100)) {
       def entries = (0 until i).map(i => (new Foo, i)).toList
       def elements = entries.map(_._1)
@@ -20,7 +19,6 @@ object Test {
           immutable.HashSet.empty).map(_ ++ elements)
       test[Set[Foo]](sets, entries.size, assertSet _)
     }
-    */
   }
 
   private def test[A <: AnyRef](collections: Seq[A], expectedSize: Int, assertFunction: (A, Int) => Unit): Unit = {

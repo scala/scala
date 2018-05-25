@@ -2,10 +2,10 @@ package scala
 package collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import mutable.{Builder, ImmutableBuilder}
 import Hashing.computeHash
-
-
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
@@ -20,12 +20,10 @@ import java.lang.System.arraycopy
   *  @define Coll `immutable.ChampHashSet`
   *  @define coll immutable champ hash set
   */
-@SerialVersionUID(3L)
 final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int, val cachedSize: Int)
   extends AbstractSet[A]
     with SetOps[A, ChampHashSet, ChampHashSet[A]]
-    with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]]
-    with Serializable {
+    with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]] {
 
   override def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet
 
@@ -99,8 +97,7 @@ private[immutable] final object SetNode {
 
 }
 
-@SerialVersionUID(3L)
-private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] with Serializable {
+private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
   def contains(element: A, hash: Int, shift: Int): Boolean
 
@@ -128,7 +125,6 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] wit
 
 }
 
-@SerialVersionUID(3L)
 private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends SetNode[A] {
 
   import Node._
@@ -470,7 +466,6 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 
 }
 
-@SerialVersionUID(3L)
 private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A]) extends SetNode[A] {
 
   import Node._
@@ -618,4 +613,8 @@ object ChampHashSet extends IterableFactory[ChampHashSet] {
       }
     }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

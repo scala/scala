@@ -1,10 +1,11 @@
 package scala.collection
 package mutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.runtime.ScalaRunTime
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
-
 import java.util.Arrays
 
 /**
@@ -29,8 +30,7 @@ abstract class ArraySeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
     with IndexedOptimizedSeq[T]
-    with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]]
-    with Serializable {
+    with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]] {
 
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
@@ -72,6 +72,8 @@ abstract class ArraySeq[T]
     if(l > 0) Array.copy(array, 0, xs, start, l)
     xs
   }
+
+  override protected[this] def writeReplace(): AnyRef = this
 }
 
 /** A companion object used to create instances of `ArraySeq`.
@@ -126,7 +128,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }).asInstanceOf[ArraySeq[T]]
 
   @SerialVersionUID(3L)
-  final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] with Serializable {
+  final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] {
     lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
@@ -139,7 +141,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofByte(val array: Array[Byte]) extends ArraySeq[Byte] with Serializable {
+  final class ofByte(val array: Array[Byte]) extends ArraySeq[Byte] {
     def elemTag = ClassTag.Byte
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
@@ -152,7 +154,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofShort(val array: Array[Short]) extends ArraySeq[Short] with Serializable {
+  final class ofShort(val array: Array[Short]) extends ArraySeq[Short] {
     def elemTag = ClassTag.Short
     def length: Int = array.length
     def apply(index: Int): Short = array(index)
@@ -165,7 +167,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofChar(val array: Array[Char]) extends ArraySeq[Char] with Serializable {
+  final class ofChar(val array: Array[Char]) extends ArraySeq[Char] {
     def elemTag = ClassTag.Char
     def length: Int = array.length
     def apply(index: Int): Char = array(index)
@@ -178,7 +180,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofInt(val array: Array[Int]) extends ArraySeq[Int] with Serializable {
+  final class ofInt(val array: Array[Int]) extends ArraySeq[Int] {
     def elemTag = ClassTag.Int
     def length: Int = array.length
     def apply(index: Int): Int = array(index)
@@ -191,7 +193,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofLong(val array: Array[Long]) extends ArraySeq[Long] with Serializable {
+  final class ofLong(val array: Array[Long]) extends ArraySeq[Long] {
     def elemTag = ClassTag.Long
     def length: Int = array.length
     def apply(index: Int): Long = array(index)
@@ -204,7 +206,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofFloat(val array: Array[Float]) extends ArraySeq[Float] with Serializable {
+  final class ofFloat(val array: Array[Float]) extends ArraySeq[Float] {
     def elemTag = ClassTag.Float
     def length: Int = array.length
     def apply(index: Int): Float = array(index)
@@ -217,7 +219,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofDouble(val array: Array[Double]) extends ArraySeq[Double] with Serializable {
+  final class ofDouble(val array: Array[Double]) extends ArraySeq[Double] {
     def elemTag = ClassTag.Double
     def length: Int = array.length
     def apply(index: Int): Double = array(index)
@@ -230,7 +232,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofBoolean(val array: Array[Boolean]) extends ArraySeq[Boolean] with Serializable {
+  final class ofBoolean(val array: Array[Boolean]) extends ArraySeq[Boolean] {
     def elemTag = ClassTag.Boolean
     def length: Int = array.length
     def apply(index: Int): Boolean = array(index)
@@ -243,7 +245,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofUnit(val array: Array[Unit]) extends ArraySeq[Unit] with Serializable {
+  final class ofUnit(val array: Array[Unit]) extends ArraySeq[Unit] {
     def elemTag = ClassTag.Unit
     def length: Int = array.length
     def apply(index: Int): Unit = array(index)
@@ -254,4 +256,9 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
       case _ => super.equals(that)
     }
   }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

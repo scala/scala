@@ -1,6 +1,8 @@
 package scala
 package collection
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 
@@ -27,6 +29,36 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
   def empty: BitSet = immutable.BitSet.empty
   def newBuilder: Builder[Int, BitSet] = immutable.BitSet.newBuilder
   def fromSpecific(it: IterableOnce[Int]): BitSet = immutable.BitSet.fromSpecific(it)
+
+  @SerialVersionUID(3L)
+  private[collection] abstract class SerializationProxy(@transient protected val coll: BitSet) extends Serializable {
+
+    @transient protected var elems: Array[Long] = _
+
+    private[this] def writeObject(out: ObjectOutputStream): Unit = {
+      out.defaultWriteObject()
+      val nwords = coll.nwords
+      out.writeInt(nwords)
+      var i = 0
+      while(i < nwords) {
+        out.writeLong(coll.word(i))
+        i += 1
+      }
+    }
+
+    private[this] def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      val nwords = in.readInt()
+      elems = new Array[Long](nwords)
+      var i = 0
+      while(i < nwords) {
+        elems(i) = in.readLong()
+        i += 1
+      }
+    }
+
+    protected[this] def readResolve(): Any
+  }
 }
 
 /** Base implementation type of bitsets */

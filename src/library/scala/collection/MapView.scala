@@ -46,4 +46,5 @@ object MapView {
 }
 
 /** Explicit instantiation of the `MapView` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractMapView[K, +V] extends AbstractView[(K, V)] with MapView[K, V]

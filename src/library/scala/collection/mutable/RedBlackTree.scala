@@ -24,12 +24,10 @@ private[collection] object RedBlackTree {
   // Therefore, while obtaining the size of the whole tree is O(1), knowing the number of entries inside a range is O(n)
   // on the size of the range.
 
-  @SerialVersionUID(3L)
-  final class Tree[A, B](var root: Node[A, B], var size: Int) extends Serializable
+  final class Tree[A, B](var root: Node[A, B], var size: Int)
 
-  @SerialVersionUID(3L)
   final class Node[A, B](var key: A, var value: B, var red: Boolean,
-                         var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) extends Serializable {
+                         var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) {
 
     override def toString: String = "Node(" + key + ", " + value + ", " + red + ", " + left + ", " + right + ")"
   }

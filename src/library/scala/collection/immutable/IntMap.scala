@@ -9,9 +9,10 @@
 package scala.collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.IllegalStateException
 
-import scala.collection.generic.BitOperations
+import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
@@ -54,7 +55,6 @@ object IntMap {
   def from[V](coll: IterableOnce[(Int, V)]): IntMap[V] =
     newBuilder[V].addAll(coll).result()
 
-  @SerialVersionUID(3L)
   private[immutable] case object Nil extends IntMap[Nothing] {
     // Important! Without this equals method in place, an infinite
     // loop from Map.equals => size => pattern-match-on-Nil => equals
@@ -67,14 +67,12 @@ object IntMap {
     }
   }
 
-  @SerialVersionUID(3L)
   private[immutable] case class Tip[+T](key: Int, value: T) extends IntMap[T]{
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[IntMap.Tip[S]]
       else IntMap.Tip(key, s)
   }
 
-  @SerialVersionUID(3L)
   private[immutable] case class Bin[+T](prefix: Int, mask: Int, left: IntMap[T], right: IntMap[T]) extends IntMap[T] {
     def bin[S](left: IntMap[S], right: IntMap[S]): IntMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[IntMap.Bin[S]]
@@ -86,6 +84,23 @@ object IntMap {
     new ImmutableBuilder[(Int, V), IntMap[V]](empty) {
       def addOne(elem: (Int, V)): this.type = { elems = elems + elem; this }
     }
+
+  implicit def toFactory[V](factory: IntMap.type): Factory[(Int, V), IntMap[V]] =
+    new Factory[(Int, V), IntMap[V]] with Serializable {
+      def fromSpecific(it: IterableOnce[(Int, V)]): IntMap[V] = factory.from[V](it)
+      def newBuilder: Builder[(Int, V), IntMap[V]] = factory.newBuilder[V]
+    }
+
+  implicit def toBuildFrom[V](factory: IntMap.type): BuildFrom[Any, (Int, V), IntMap[V]] =
+    new BuildFrom[Any, (Int, V), IntMap[V]] {
+      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Int, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[V]
+    }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 import IntMap._
@@ -163,11 +178,9 @@ import IntMap._
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   with MapOps[Int, T, Map, IntMap[T]]
-  with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
-  with Serializable {
+  with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]] {
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Int, T) @uncheckedVariance]): IntMap[T] =
     intMapFromIterable[T](coll)
@@ -477,4 +490,6 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case Tip(k, v) => k
     case IntMap.Nil => throw new IllegalStateException("Empty set")
   }
+
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(IntMap.toFactory[T](IntMap), this)
 }

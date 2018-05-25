@@ -2,8 +2,9 @@ package scala
 package collection
 package immutable
 
-import scala.collection.mutable.{Builder, ReusableBuilder}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.annotation.unchecked.uncheckedVariance
 
 /** $factoryInfo
@@ -27,6 +28,11 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
   // Constants governing concat strategy for performance
   private final val Log2ConcatFaster = 5
   private final val TinyAppendFaster = 2
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 // in principle, most members should be private. however, access privileges must
@@ -60,14 +66,12 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@SerialVersionUID(3L)
 final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
   extends AbstractSeq[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
     with StrictOptimizedSeqOps[A, Vector, Vector[A]]
-    with VectorPointer[A @uncheckedVariance]
-    with Serializable { self =>
+    with VectorPointer[A @uncheckedVariance] { self =>
 
   override def iterableFactory: SeqFactory[Vector] = Vector
 

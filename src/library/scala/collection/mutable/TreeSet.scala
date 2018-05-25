@@ -20,14 +20,12 @@ import java.lang.String
   * @define coll mutable tree set
   */
 // Original API designed in part by Lucien Pereira
-@SerialVersionUID(3L)
 sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
-    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
-    with Serializable {
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]] {
 
   if (ordering eq null)
     throw new NullPointerException("ordering must not be null")
@@ -95,7 +93,6 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
     *              bound.
     */
-  @SerialVersionUID(3L)
   private[this] final class TreeSetProjection(from: Option[A], until: Option[A]) extends TreeSet[A](tree) {
 
     /**

@@ -7,16 +7,7 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 
   override def view: IndexedSeqView[A] = this
 
-  override def iterator: Iterator[A] = new AbstractIterator[A] {
-    private var current = 0
-    override def knownSize: Int = self.size - current
-    def hasNext = current < self.size
-    def next(): A = {
-      val r = self.apply(current)
-      current += 1
-      r
-    }
-  }
+  override def iterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewIterator(this)
 
   override def prepended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Prepended(elem, this)
   override def take(n: Int): IndexedSeqView[A] = new IndexedSeqView.Take(this, n)
@@ -29,6 +20,18 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 }
 
 object IndexedSeqView {
+
+  @SerialVersionUID(3L)
+  private final class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
+    private var current = 0
+    override def knownSize: Int = self.size - current
+    def hasNext = current < self.size
+    def next(): A = {
+      val r = self.apply(current)
+      current += 1
+      r
+    }
+  }
 
   /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
   type SomeIndexedSeqOps[A] = IndexedSeqOps[A, AnyConstr, _]
@@ -82,4 +85,5 @@ object IndexedSeqView {
 }
 
 /** Explicit instantiation of the `IndexedSeqView` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractIndexedSeqView[+A] extends AbstractSeqView[A] with IndexedSeqView[A]

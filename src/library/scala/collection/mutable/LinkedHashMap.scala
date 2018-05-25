@@ -22,10 +22,8 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
   /** Class for the linked hash map entry, used internally.
     *  @since 2.8
     */
-  @SerialVersionUID(3L)
   private[mutable] final class LinkedEntry[K, V](val key: K, var value: V)
-    extends HashEntry[K, LinkedEntry[K, V]]
-      with Serializable {
+    extends HashEntry[K, LinkedEntry[K, V]] {
     var earlier: LinkedEntry[K, V] = null
     var later: LinkedEntry[K, V] = null
   }
@@ -45,12 +43,10 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@SerialVersionUID(3L)
 class LinkedHashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]] {
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
@@ -124,7 +120,6 @@ class LinkedHashMap[K, V]
       else Iterator.empty.next()
   }
 
-  @SerialVersionUID(3L)
   protected class LinkedKeySet extends KeySet {
     override def iterableFactory: IterableFactory[collection.Set] = LinkedHashSet
   }

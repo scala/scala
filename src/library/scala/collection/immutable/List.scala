@@ -73,8 +73,7 @@ sealed abstract class List[+A]
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
-    with StrictOptimizedSeqOps[A, List, List[A]]
-    with Serializable {
+    with StrictOptimizedSeqOps[A, List, List[A]] {
 
   override def iterableFactory: SeqFactory[List] = List
 
@@ -392,10 +391,6 @@ sealed abstract class List[+A]
     None
   }
 
-  // Create a proxy for Java serialization that allows us to avoid mutation
-  // during deserialization.  This is the Serialization Proxy Pattern.
-  protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
-
   override def className = "List"
 
   /** Builds a new list by applying a function to all elements of this list.
@@ -474,7 +469,6 @@ sealed abstract class List[+A]
 
 }
 
-@SerialVersionUID(4L)
 case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
@@ -482,7 +476,6 @@ case class :: [+A](override val head: A, private[scala] var next: List[A @unchec
   override def tail: List[A] = next
 }
 
-@SerialVersionUID(3L)
 case object Nil extends List[Nothing] {
   override def isEmpty: Boolean = true
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
@@ -514,39 +507,8 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
 
-  @SerialVersionUID(3L)
-  private class SerializationProxy[A](@transient private var orig: List[A]) extends Serializable {
-
-    private def writeObject(out: ObjectOutputStream): Unit = {
-      out.defaultWriteObject()
-      var xs: List[A] = orig
-      while (!xs.isEmpty) {
-        out.writeObject(xs.head)
-        xs = xs.tail
-      }
-      out.writeObject(ListSerializeEnd)
-    }
-
-    // Java serialization calls this before readResolve during deserialization.
-    // Read the whole list and store it in `orig`.
-    private def readObject(in: ObjectInputStream): Unit = {
-      in.defaultReadObject()
-      val builder = List.newBuilder[A]
-      while (true) in.readObject match {
-        case ListSerializeEnd =>
-          orig = builder.result()
-          return
-        case a =>
-          builder += a.asInstanceOf[A]
-      }
-    }
-
-    // Provide the result stored in `orig` for Java serialization
-    private def readResolve(): AnyRef = orig
-  }
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
-
-
-/** Only used for list serialization */
-@SerialVersionUID(3L)
-private[scala] case object ListSerializeEnd

@@ -4,8 +4,8 @@ package collection
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.Builder
 import scala.language.higherKinds
-
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.DefaultSerializationProxy
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -28,6 +28,8 @@ trait SortedMap[K, +V]
   def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
   override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
+
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(sortedMapFactory.sortedMapFactory[K, V], this)
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
@@ -117,7 +119,6 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   override def keySet: SortedSet[K] = new KeySortedSet
 
   /** The implementation class of the set returned by `keySet` */
-  @SerialVersionUID(3L)
   protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
     def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(view.filterNot(that))
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {

@@ -2,13 +2,13 @@ package scala
 package collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import mutable.{Builder, ImmutableBuilder}
 import Hashing.computeHash
-
 import java.lang.{Integer, System}
 
 import scala.collection.generic.BitOperations
-
 import scala.annotation.tailrec
 
 /** This class implements immutable sets using a hash trie.
@@ -24,12 +24,10 @@ import scala.annotation.tailrec
   *  @define Coll `immutable.HashSet`
   *  @define coll immutable hash set
   */
-@SerialVersionUID(3L)
 sealed abstract class HashSet[A]
   extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
-    with Serializable {
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
   import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
 
@@ -169,7 +167,6 @@ object HashSet extends IterableFactory[HashSet] {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
-  @SerialVersionUID(3L)
   private object EmptyHashSet extends HashSet[Any] {
 
     def iterator: Iterator[Any] = Iterator.empty
@@ -212,7 +209,6 @@ object HashSet extends IterableFactory[HashSet] {
   /**
     * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
     */
-  @SerialVersionUID(3L)
   private[HashSet] sealed abstract class LeafHashSet[A] extends HashSet[A] {
     private[HashSet] def hash:Int
   }
@@ -497,7 +493,6 @@ object HashSet extends IterableFactory[HashSet] {
     * elems: [a,b]
     * children:        ---b----------------a-----------
     */
-  @SerialVersionUID(3L)
   private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
     extends HashSet[A] {
     assert(Integer.bitCount(bitmap) == elems.length)
@@ -994,4 +989,8 @@ object HashSet extends IterableFactory[HashSet] {
     */
   @`inline` private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

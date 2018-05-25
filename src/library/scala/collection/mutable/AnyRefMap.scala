@@ -2,6 +2,10 @@ package scala
 package collection
 package mutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
+import scala.collection.generic.DefaultSerializationProxy
+
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
  *
@@ -26,12 +30,10 @@ package mutable
  *  rapidly as 2^30^ is approached.
  *
  */
-@SerialVersionUID(3L)
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]] {
 
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
@@ -431,6 +433,8 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
       if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
       else View.Empty
     }
+
+  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
 }
 
 object AnyRefMap {
@@ -439,7 +443,6 @@ object AnyRefMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
 
-  @SerialVersionUID(3L)
   private class ExceptionDefault extends (Any => Nothing) with Serializable {
     def apply(k: Any): Nothing = throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
   }
@@ -461,6 +464,8 @@ object AnyRefMap {
 
   /** Creates a new `AnyRefMap` with zero or more key/value pairs. */
   def apply[K <: AnyRef, V](elems: (K, V)*): AnyRefMap[K, V] = buildFromIterableOnce(elems)
+
+  def newBuilder[K <: AnyRef, V]: Builder[(K, V), AnyRefMap[K, V]] = new AnyRefMapBuilder[K, V]
 
   private def buildFromIterableOnce[K <: AnyRef, V](elems: IterableOnce[(K, V)]): AnyRefMap[K, V] = {
     var sz = elems.knownSize
@@ -514,4 +519,21 @@ object AnyRefMap {
     if (arm.size < (sz >> 3)) arm.repack()
     arm
   }
+
+  implicit def toFactory[K <: AnyRef, V](factory: AnyRefMap.type): Factory[(K, V), AnyRefMap[K, V]] =
+    new Factory[(K, V), AnyRefMap[K, V]] with Serializable {
+      def fromSpecific(it: IterableOnce[(K, V)]): AnyRefMap[K, V] = factory.from[K, V](it)
+      def newBuilder: Builder[(K, V), AnyRefMap[K, V]] = factory.newBuilder[K, V]
+    }
+
+  implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] =
+    new BuildFrom[Any, (K, V), AnyRefMap[K, V]] {
+      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(K, V)]) = factory.from(it)
+      def newBuilder(from: Any) = factory.newBuilder[K, V]
+    }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

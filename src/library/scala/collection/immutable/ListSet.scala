@@ -2,8 +2,9 @@ package scala
 package collection
 package immutable
 
-import mutable.{Builder, ImmutableBuilder}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 
 /**
@@ -28,12 +29,10 @@ import scala.annotation.tailrec
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed class ListSet[A]
   extends AbstractSet[A]
     with SetOps[A, ListSet, ListSet[A]]
-    with StrictOptimizedIterableOps[A, ListSet, ListSet[A]]
-    with Serializable {
+    with StrictOptimizedIterableOps[A, ListSet, ListSet[A]] {
 
   override def className: String = "ListSet"
 
@@ -63,8 +62,7 @@ sealed class ListSet[A]
   /**
     * Represents an entry in the `ListSet`.
     */
-  @SerialVersionUID(3L)
-  protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
+  protected class Node(override protected val elem: A) extends ListSet[A] {
 
     override def size = sizeInternal(this, 0)
 
@@ -115,7 +113,6 @@ object ListSet extends IterableFactory[ListSet] {
       case _ => (newBuilder[E] ++= it).result()
     }
 
-  @SerialVersionUID(3L)
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 
@@ -125,5 +122,9 @@ object ListSet extends IterableFactory[ListSet] {
     new ImmutableBuilder[A, ListSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
-}
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
+}

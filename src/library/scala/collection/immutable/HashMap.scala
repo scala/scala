@@ -1,12 +1,14 @@
 package scala
 package collection.immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
-
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import java.lang.{Integer, String, System}
 
+import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /** This class implements immutable maps using a hash trie.
@@ -26,12 +28,10 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 sealed abstract class HashMap[K, +V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
-    with Serializable {
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]] {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 
@@ -172,7 +172,6 @@ object HashMap extends MapFactory[HashMap] {
     */
   @`inline` private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
 
-  @SerialVersionUID(3L)
   private object EmptyHashMap extends HashMap[Any, Nothing] {
 
     protected def updated0[V1 >: Nothing](key: Any, hash: Int, level: Int, value: V1, kv: (Any, V1), merger: Merger[Any, V1]): HashMap[Any, V1] =
@@ -204,7 +203,6 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(3L)
   final class HashMap1[K, +V](private[collection] val key: K, private[collection] val hash: Int, private[collection] val value: V, private[collection] var kv: (K, V@uV)) extends HashMap[K, V] {
 
     def iterator: Iterator[(K, V)] = Iterator.single(ensurePair)
@@ -257,7 +255,6 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(3L)
   private[collection] class HashMapCollision1[K, +V](private[collection] val hash: Int, val kvs: ListMap[K, V @uV])
     extends HashMap[K, V @uV] {
     // assert(kvs.size > 1)
@@ -329,7 +326,6 @@ object HashMap extends MapFactory[HashMap] {
 
   }
 
-  @SerialVersionUID(3L)
   final class HashTrieMap[K, +V](
     private[collection] val bitmap: Int,
     private[collection] val elems: Array[HashMap[K, V @uV]],
@@ -576,4 +572,8 @@ object HashMap extends MapFactory[HashMap] {
     }
   }
 
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

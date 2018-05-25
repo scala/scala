@@ -19,14 +19,12 @@ import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, St
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 @migration("Stack is now based on an ArrayDeque instead of a linked list", "2.13.0")
 class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Stack, Stack[A]]
     with StrictOptimizedSeqOps[A, Stack, Stack[A]]
-    with Cloneable[Stack[A]]
-    with Serializable {
+    with Cloneable[Stack[A]] {
 
   def this(initialSize: Int = ArrayDeque.DefaultInitialSize) =
     this(ArrayDeque.alloc(initialSize), start = 0, end = 0)

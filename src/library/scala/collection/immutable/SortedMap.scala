@@ -44,7 +44,6 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     override def keySet: SortedSet[K] = new ImmutableKeySortedSet
 
     /** The implementation class of the set returned by `keySet` */
-    @SerialVersionUID(3L)
     protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
       def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
         val map = self.rangeImpl(from, until)
@@ -70,12 +69,10 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
 
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
-  @SerialVersionUID(3L)
   final class WithDefault[K, +V](underlying: SortedMap[K, V], defaultValue: K => V)
     extends Map.WithDefault[K, V](underlying, defaultValue)
       with SortedMap[K, V]
-      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]]
-      with Serializable {
+      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]] {
 
     implicit def ordering: Ordering[K] = underlying.ordering
 

@@ -1,5 +1,7 @@
 package scala.collection
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.{ArraySeq, LazyList}
 
@@ -22,6 +24,8 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
   @`inline` def force: IndexedSeq[A] = toIndexedSeq
+
+  override protected[this] def writeReplace(): AnyRef = this
 }
 
 /** This object reifies operations on views as case classes
@@ -284,7 +288,13 @@ object View extends IterableFactory[View] {
     }
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
   }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** Explicit instantiation of the `View` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractView[+A] extends scala.collection.AbstractIterable[A] with View[A]

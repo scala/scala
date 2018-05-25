@@ -2,6 +2,8 @@ package scala
 package collection
 package immutable
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import BitSetOps.{LogWL, updateArray}
 import mutable.{Builder, GrowableBuilder}
 
@@ -14,15 +16,13 @@ import mutable.{Builder, GrowableBuilder}
   *  @define Coll `immutable.BitSet`
   *  @define coll immutable bitset
   */
-@SerialVersionUID(3L)
 sealed abstract class BitSet
   extends AbstractSet[Int]
     with SortedSet[Int]
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
-    with StrictOptimizedIterableOps[Int, Set, BitSet]
-    with Serializable {
+    with StrictOptimizedIterableOps[Int, Set, BitSet] {
 
   override def className: String = "BitSet"
 
@@ -53,6 +53,8 @@ sealed abstract class BitSet
 
   override def map(f: Int => Int): BitSet = super[BitSet].map(f)
   override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
+
+  override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
 
 /**
@@ -98,7 +100,6 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else new BitSetN(elems)
   }
 
-  @SerialVersionUID(3L)
   class BitSet1(val elems: Long) extends BitSet {
     protected[collection] def nwords = 1
     protected[collection] def word(idx: Int) = if (idx == 0) elems else 0L
@@ -108,7 +109,6 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
   }
 
-  @SerialVersionUID(3L)
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
     protected[collection] def nwords = 2
     protected[collection] def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
@@ -118,10 +118,19 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
   }
 
-  @SerialVersionUID(3L)
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected[collection] def nwords = elems.length
     protected[collection] def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
     protected[collection] def updateWord(idx: Int, w: Long): BitSet = fromBitMaskNoCopy(updateArray(elems, idx, w))
   }
+
+  @SerialVersionUID(3L)
+  private final class SerializationProxy(coll: BitSet) extends scala.collection.BitSet.SerializationProxy(coll) {
+    protected[this] def readResolve(): Any = BitSet.fromBitMaskNoCopy(elems)
+  }
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

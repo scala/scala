@@ -364,12 +364,14 @@ object ManifestFactory {
     new WildcardManifest[T](lowerBound, upperBound)
 
   @SerialVersionUID(1L)
-  private class IntersectionTypeManifest[T](parents: scala.collection.Seq[Manifest[_]]) extends Manifest[T] {
-    def runtimeClass = parents.head.runtimeClass
+  private class IntersectionTypeManifest[T](parents: Array[Manifest[_]]) extends Manifest[T] {
+    // We use an `Array` instead of a `Seq` for `parents` to avoid cyclic dependencies during deserialization
+    // which can cause serialization proxies to leak and cause a ClassCastException.
+    def runtimeClass = parents(0).runtimeClass
     override def toString = parents.mkString(" with ")
   }
 
   /** Manifest for the intersection type `parents_0 with ... with parents_n`. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
-    new IntersectionTypeManifest[T](parents)
+    new IntersectionTypeManifest[T](parents.toArray)
 }

@@ -17,12 +17,10 @@ package mutable
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
-@SerialVersionUID(3L)
 final class HashSet[A]
   extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
-    with Serializable {
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
   @transient private[this] var table = new FlatHashTable[A]
 

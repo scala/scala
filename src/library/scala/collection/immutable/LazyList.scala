@@ -2,10 +2,12 @@ package scala
 package collection
 package immutable
 
-import scala.collection.mutable.{ArrayBuffer, Builder}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
 
@@ -183,6 +185,7 @@ import scala.language.higherKinds
   *  @define orderDependent
   *  @define orderDependentFold
   */
+@SerialVersionUID(3L)
 sealed abstract class LazyList[+A] extends AbstractSeq[A] with LinearSeq[A] with LazyListOps[A, LazyList, LazyList[A]] {
   override def iterableFactory: LazyListFactory[LazyList] = LazyList
 
@@ -221,6 +224,8 @@ sealed abstract class LazyList[+A] extends AbstractSeq[A] with LinearSeq[A] with
     else tail.foldLeft(op(z, head))(op)
   }
 
+  override protected[this] def writeReplace(): AnyRef =
+    if(headDefined && tailDefined) new LazyListOps.SerializationProxy[A, LazyList](this) else this
 }
 
 sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]], +C <: CC[A] with LazyListOps[A, CC, C]]
@@ -469,6 +474,43 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   override def toString = super.mkString(className + "(", ", ", ")")
 }
 
+private[immutable] object LazyListOps {
+
+  /** This serialization proxy is used for LazyLists and Streams which start with a sequence of evaluated cons cells.
+    * The forced sequence is serialized in a compact, sequential format, followed by the unevaluated tail, which uses
+    * standard Java serialization to store the complete structure of unevaluated thunks. This allows the serialization
+    * of long evaluated streams without exhausting the stack through recursive serialization of cons cells.
+    */
+  @SerialVersionUID(3L)
+  class SerializationProxy[A, CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]]](@transient protected var coll: CC[A]) extends Serializable {
+
+    private[this] def writeObject(out: ObjectOutputStream): Unit = {
+      out.defaultWriteObject()
+      var these = coll
+      while(these.headDefined && these.tailDefined) {
+        out.writeObject(these.head)
+        these = these.tail
+      }
+      out.writeObject(SerializeEnd)
+      out.writeObject(these)
+    }
+
+    private[this] def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      val init = new ArrayBuffer[A]
+      var initRead = false
+      while (!initRead) in.readObject match {
+        case SerializeEnd => initRead = true
+        case a => init += a.asInstanceOf[A]
+      }
+      val tail = in.readObject().asInstanceOf[CC[A]]
+      coll = (init ++: tail)
+    }
+
+    protected[this] def readResolve(): Any = coll
+  }
+}
+
 sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]]] extends SeqFactory[CC] {
 
   protected def newCons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
@@ -561,6 +603,7 @@ object LazyList extends LazyListFactory[LazyList] {
 
   protected def newCons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
 
+  @SerialVersionUID(3L)
   object Empty extends LazyList[Nothing] {
     override def isEmpty: Boolean = true
     override def head: Nothing = throw new NoSuchElementException("head of empty lazy list")
@@ -571,6 +614,7 @@ object LazyList extends LazyListFactory[LazyList] {
     protected def headDefined: Boolean = false
   }
 
+  @SerialVersionUID(3L)
   final class Cons[A](hd: => A, tl: => LazyList[A]) extends LazyList[A] {
     private[this] var hdEvaluated: Boolean = false
     private[this] var tlEvaluated: Boolean = false
@@ -658,9 +702,15 @@ object LazyList extends LazyListFactory[LazyList] {
     } else LazyList.Empty
 
   def empty[A]: LazyList[A] = Empty
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
+@SerialVersionUID(3L)
 sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with LazyListOps[A, Stream, Stream[A]] {
   override def iterableFactory: LazyListFactory[Stream] = Stream
 
@@ -704,6 +754,8 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   @deprecated("The `append` operation has been renamed `lazyAppendedAll`", "2.13.0")
   @inline final def append[B >: A](suffix: IterableOnce[B]): Stream[B] = lazyAppendedAll(suffix)
 
+  override protected[this] def writeReplace(): AnyRef =
+    if(headDefined && tailDefined) new LazyListOps.SerializationProxy[A, Stream](this) else this
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
@@ -711,6 +763,7 @@ object Stream extends LazyListFactory[Stream] {
 
   protected def newCons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 
+  //@SerialVersionUID(3L) //TODO Putting an annotation on Stream.empty causes a cyclic dependency in unpickling
   object Empty extends Stream[Nothing] {
     override def isEmpty: Boolean = true
     override def head: Nothing = throw new NoSuchElementException("head of empty lazy list")
@@ -730,6 +783,7 @@ object Stream extends LazyListFactory[Stream] {
     protected def tailDefined: Boolean = false
   }
 
+  @SerialVersionUID(3L)
   final class Cons[A](override val head: A, tl: => Stream[A]) extends Stream[A] {
     private[this] var tlEvaluated: Boolean = false
     override def isEmpty: Boolean = false
@@ -816,6 +870,11 @@ object Stream extends LazyListFactory[Stream] {
     } else Stream.Empty
 
   def empty[A]: Stream[A] = Empty
+
+  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
+  // This prevents it from serializing it in the first place:
+  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
+  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** A specialized, extra-lazy implementation of a stream iterator, so it can
