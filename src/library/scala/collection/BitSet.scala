@@ -204,6 +204,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(new View.FlatMap(toIterable, f))
 
+  def collect(pf: PartialFunction[Int, Int]): C = fromSpecificIterable(super[SortedSetOps].collect(pf).toIterable)
 }
 
 object BitSetOps {
