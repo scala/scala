@@ -490,10 +490,8 @@ case object Nil extends List[Nothing] {
   * @define coll list
   * @define Coll `List`
   */
+@SerialVersionUID(3L)
 object List extends StrictOptimizedSeqFactory[List] {
-
-  // override for now so we can compile in stdlib without https://github.com/scala/scala/pull/6229
-  override def apply[A](elems: A*): List[A] = super.apply[A](elems: _*)
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll

@@ -73,6 +73,7 @@ final class HashSet[A]
   * @define Coll `mutable.HashSet`
   * @define coll mutable hash set
   */
+@SerialVersionUID(3L)
 object HashSet extends IterableFactory[HashSet] {
 
   def from[B](it: scala.collection.IterableOnce[B]): HashSet[B] = Growable.from(empty[B], it)

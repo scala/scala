@@ -235,11 +235,13 @@ object IterableFactory {
     * @return A [[Factory]] that uses the given `factory` to build a collection of elements
     *         of type `A`
     */
-  implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] =
-    new Factory[A, CC[A]] with Serializable {
-      def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
-      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
-    }
+  implicit def toFactory[A, CC[_]](factory: IterableFactory[CC]): Factory[A, CC[A]] = new ToFactory[A, CC](factory)
+
+  @SerialVersionUID(3L)
+  private[this] class ToFactory[A, CC[_]](factory: IterableFactory[CC]) extends Factory[A, CC[A]] with Serializable {
+    def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
+    def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
+  }
 
   implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
     new BuildFrom[Any, A, CC[A]] {
@@ -247,6 +249,7 @@ object IterableFactory {
       def newBuilder(from: Any) = factory.newBuilder
     }
 
+  @SerialVersionUID(3L)
   class Delegate[CC[_]](delegate: IterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
@@ -262,6 +265,7 @@ trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
 }
 
 object SeqFactory {
+  @SerialVersionUID(3L)
   class Delegate[CC[_]](delegate: SeqFactory[CC]) extends SeqFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
@@ -348,11 +352,13 @@ object MapFactory {
     * @return A [[Factory]] that uses the given `factory` to build a map with keys of type `K`
     *         and values of type `V`
     */
-  implicit def toFactory[K, V, CC[_, _]](factory: MapFactory[CC]): Factory[(K, V), CC[K, V]] =
-    new Factory[(K, V), CC[K, V]] with Serializable {
-      def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
-      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
-    }
+  implicit def toFactory[K, V, CC[_, _]](factory: MapFactory[CC]): Factory[(K, V), CC[K, V]] = new ToFactory[K, V, CC](factory)
+
+  @SerialVersionUID(3L)
+  private[this] class ToFactory[K, V, CC[_, _]](factory: MapFactory[CC]) extends Factory[(K, V), CC[K, V]] with Serializable {
+    def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
+    def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
+  }
 
   implicit def toBuildFrom[K, V, CC[_, _]](factory: MapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
     new BuildFrom[Any, (K, V), CC[K, V]] {
@@ -360,6 +366,7 @@ object MapFactory {
       def newBuilder(from: Any) = factory.newBuilder[K, V]
     }
 
+  @SerialVersionUID(3L)
   class Delegate[C[_, _]](delegate: MapFactory[C]) extends MapFactory[C] {
     def from[K, V](it: IterableOnce[(K, V)]): C[K, V] = delegate.from(it)
     def empty[K, V]: C[K, V] = delegate.empty
@@ -416,11 +423,13 @@ object EvidenceIterableFactory {
     * @return A [[Factory]] that uses the given `factory` to build a collection of elements
     *         of type `A`
     */
-  implicit def toFactory[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): Factory[A, CC[A]] =
-    new Factory[A, CC[A]] with Serializable {
-      def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
-      def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
-    }
+  implicit def toFactory[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): Factory[A, CC[A]] = new ToFactory[Ev, A, CC](factory)
+
+  @SerialVersionUID(3L)
+  private[this] class ToFactory[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]) extends Factory[A, CC[A]] with Serializable {
+    def fromSpecific(it: IterableOnce[A]): CC[A] = factory.from[A](it)
+    def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
+  }
 
   implicit def toBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): BuildFrom[Any, A, CC[A]] =
     new BuildFrom[Any, A, CC[A]] {
@@ -428,6 +437,7 @@ object EvidenceIterableFactory {
       def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]
     }
 
+  @SerialVersionUID(3L)
   class Delegate[CC[_], Ev[_]](delegate: EvidenceIterableFactory[CC, Ev]) extends EvidenceIterableFactory[CC, Ev] {
     def empty[A : Ev]: CC[A] = delegate.empty
     def from[E : Ev](it: IterableOnce[E]): CC[E] = delegate.from(it)
@@ -441,6 +451,7 @@ object EvidenceIterableFactory {
 trait SortedIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, Ordering]
 
 object SortedIterableFactory {
+  @SerialVersionUID(3L)
   class Delegate[CC[_]](delegate: EvidenceIterableFactory[CC, Ordering])
     extends EvidenceIterableFactory.Delegate[CC, Ordering](delegate) with SortedIterableFactory[CC]
 }
@@ -566,11 +577,13 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
 }
 
 object ClassTagIterableFactory {
+  @SerialVersionUID(3L)
   class Delegate[CC[_]](delegate: EvidenceIterableFactory[CC, ClassTag])
     extends EvidenceIterableFactory.Delegate[CC, ClassTag](delegate) with ClassTagIterableFactory[CC]
 
   /** An IterableFactory that uses ClassTag.Any as the evidence for every element type. This may or may not be
     * sound depending on the use of the `ClassTag` by the collection implementation. */
+  @SerialVersionUID(3L)
   class AnyIterableDelegate[CC[_]](delegate: ClassTagIterableFactory[CC]) extends IterableFactory[CC] {
     def empty[A]: CC[A] = delegate.empty(ClassTag.Any).asInstanceOf[CC[A]]
     def from[A](it: IterableOnce[A]): CC[A] = delegate.from[Any](it)(ClassTag.Any).asInstanceOf[CC[A]]
@@ -592,11 +605,13 @@ trait ClassTagSeqFactory[+CC[_]] extends ClassTagIterableFactory[CC] {
 }
 
 object ClassTagSeqFactory {
+  @SerialVersionUID(3L)
   class Delegate[CC[_]](delegate: ClassTagSeqFactory[CC])
     extends ClassTagIterableFactory.Delegate[CC](delegate) with ClassTagSeqFactory[CC]
 
   /** A SeqFactory that uses ClassTag.Any as the evidence for every element type. This may or may not be
     * sound depending on the use of the `ClassTag` by the collection implementation. */
+  @SerialVersionUID(3L)
   class AnySeqDelegate[CC[_]](delegate: ClassTagSeqFactory[CC])
     extends ClassTagIterableFactory.AnyIterableDelegate[CC](delegate) with SeqFactory[CC]
 }
@@ -663,11 +678,13 @@ object SortedMapFactory {
     * @return A [[Factory]] that uses the given `factory` to build a map with keys of
     *         type `K` and values of type `V`
     */
-  implicit def toFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): Factory[(K, V), CC[K, V]] =
-    new Factory[(K, V), CC[K, V]] with Serializable {
-      def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
-      def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
-    }
+  implicit def toFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): Factory[(K, V), CC[K, V]] = new ToFactory[K, V, CC](factory)
+
+  @SerialVersionUID(3L)
+  private[this] class ToFactory[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]) extends Factory[(K, V), CC[K, V]] with Serializable {
+    def fromSpecific(it: IterableOnce[(K, V)]): CC[K, V] = factory.from[K, V](it)
+    def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
+  }
 
   implicit def toBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
     new BuildFrom[Any, (K, V), CC[K, V]] {
@@ -675,6 +692,7 @@ object SortedMapFactory {
       def newBuilder(from: Any) = factory.newBuilder[K, V]
     }
 
+  @SerialVersionUID(3L)
   class Delegate[CC[_, _]](delegate: SortedMapFactory[CC]) extends SortedMapFactory[CC] {
     def from[K : Ordering, V](it: IterableOnce[(K, V)]): CC[K, V] = delegate.from(it)
     def empty[K : Ordering, V]: CC[K, V] = delegate.empty

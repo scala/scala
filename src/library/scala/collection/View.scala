@@ -33,6 +33,7 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   * @define Coll View
   * @define coll view
   */
+@SerialVersionUID(3L)
 object View extends IterableFactory[View] {
 
   /**

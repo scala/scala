@@ -41,6 +41,7 @@ trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], 
   extends collection.SortedMapOps[K, V, CC, C]
     with MapOps[K, V, Map, C]
 
+@SerialVersionUID(3L)
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
   final class WithDefault[K, V](underlying: SortedMap[K, V], defaultValue: K => V)

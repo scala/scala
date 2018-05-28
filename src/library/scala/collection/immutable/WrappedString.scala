@@ -43,6 +43,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   *
   *  @since 2.8
   */
+@SerialVersionUID(3L)
 object WrappedString extends SpecificIterableFactory[Char, WrappedString] {
   def fromSpecific(it: IterableOnce[Char]): WrappedString = {
     val b = newBuilder

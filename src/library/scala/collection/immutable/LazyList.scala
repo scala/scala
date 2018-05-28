@@ -598,6 +598,7 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
   * @define coll lazy list
   * @define Coll `LazyList`
   */
+@SerialVersionUID(3L)
 object LazyList extends LazyListFactory[LazyList] {
 
   protected def newCons[T](hd: => T, tl: => LazyList[T]): LazyList[T] = new LazyList.Cons(hd, tl)
@@ -758,6 +759,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
+@SerialVersionUID(3L)
 object Stream extends LazyListFactory[Stream] {
 
   protected def newCons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)

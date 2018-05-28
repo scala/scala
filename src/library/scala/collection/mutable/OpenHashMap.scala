@@ -18,6 +18,7 @@ import java.util.ConcurrentModificationException
   *  @since 2.7
   */
 @deprecated("Use HashMap or one of the specialized versions (LongMap, AnyRefMap) instead of OpenHashMap", "2.13.0")
+@SerialVersionUID(3L)
 object OpenHashMap extends MapFactory[OpenHashMap] {
 
   def empty[K, V] = new OpenHashMap[K, V]

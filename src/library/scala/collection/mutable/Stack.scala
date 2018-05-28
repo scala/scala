@@ -110,6 +110,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   * @define coll stack
   * @define Coll `Stack`
   */
+@SerialVersionUID(3L)
 object Stack extends StrictOptimizedSeqFactory[Stack] {
 
   def from[A](source: IterableOnce[A]): Stack[A] = empty ++= source

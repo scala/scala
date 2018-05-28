@@ -1,7 +1,7 @@
 
 scala> :type List[1, 2, 3]
            ^
-       error: wrong number of type parameters for method apply: [A](elems: A*)List[A] in object List
+       error: wrong number of type parameters for method apply: [A](elems: A*)List[A] in trait IterableFactory
 
 
 scala> :type List(1, 2, 3)

@@ -57,6 +57,7 @@ class ListMap[K, V]
   *  @define Coll `mutable.ListMap`
   *  @define coll mutable list map
   */
+@SerialVersionUID(3L)
 object ListMap extends MapFactory[ListMap] {
   def empty[K, V]: ListMap[K, V] = new ListMap[K, V]
   def from[K, V](it: IterableOnce[(K, V)]): ListMap[K,V] = Growable.from(empty[K, V], it)

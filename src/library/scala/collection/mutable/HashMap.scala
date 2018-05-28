@@ -116,6 +116,7 @@ class HashMap[K, V]
   *  @define Coll `mutable.HashMap`
   *  @define coll mutable hash map
   */
+@SerialVersionUID(3L)
 object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = new HashMap[K, V]

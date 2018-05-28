@@ -146,6 +146,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
 
+@SerialVersionUID(3L)
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
   def fromSpecific(it: scala.collection.IterableOnce[Int]): BitSet = Growable.from(empty, it)

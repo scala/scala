@@ -10,6 +10,7 @@ import scala.language.higherKinds
   */
 trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
 
+@SerialVersionUID(3L)
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.List)
 
 /** Base trait for linear Seq operations */

@@ -127,6 +127,7 @@ sealed abstract class ArraySeq[+A]
   * @define coll immutable array
   * @define Coll `ArraySeq`
   */
+@SerialVersionUID(3L)
 object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   val untagged: SeqFactory[ArraySeq] = new ClassTagSeqFactory.AnySeqDelegate(self)
 

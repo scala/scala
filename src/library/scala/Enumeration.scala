@@ -297,6 +297,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   }
 
   /** A factory object for value sets */
+  @SerialVersionUID(3L)
   object ValueSet extends SpecificIterableFactory[Value, ValueSet] {
     /** The empty value set */
     val empty = new ValueSet(immutable.BitSet.empty)

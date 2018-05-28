@@ -24,6 +24,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C]
   * @define coll immutable sequence
   * @define Coll `immutable.Seq`
   */
+@SerialVersionUID(3L)
 object Seq extends SeqFactory.Delegate[Seq](List)
 
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
@@ -36,6 +37,7 @@ trait IndexedSeq[+A] extends Seq[A]
   override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
 }
 
+@SerialVersionUID(3L)
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
 
 /** Base trait for immutable indexed Seq operations */
@@ -60,6 +62,7 @@ trait LinearSeq[+A]
   override def iterableFactory: SeqFactory[IterableCC] = LinearSeq
 }
 
+@SerialVersionUID(3L)
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)
 
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]]

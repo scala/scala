@@ -85,11 +85,13 @@ object IntMap {
       def addOne(elem: (Int, V)): this.type = { elems = elems + elem; this }
     }
 
-  implicit def toFactory[V](factory: IntMap.type): Factory[(Int, V), IntMap[V]] =
-    new Factory[(Int, V), IntMap[V]] with Serializable {
-      def fromSpecific(it: IterableOnce[(Int, V)]): IntMap[V] = factory.from[V](it)
-      def newBuilder: Builder[(Int, V), IntMap[V]] = factory.newBuilder[V]
-    }
+  implicit def toFactory[V](dummy: IntMap.type): Factory[(Int, V), IntMap[V]] = ToFactory.asInstanceOf[Factory[(Int, V), IntMap[V]]]
+
+  @SerialVersionUID(3L)
+  private[this] object ToFactory extends Factory[(Int, AnyRef), IntMap[AnyRef]] with Serializable {
+    def fromSpecific(it: IterableOnce[(Int, AnyRef)]): IntMap[AnyRef] = IntMap.from[AnyRef](it)
+    def newBuilder: Builder[(Int, AnyRef), IntMap[AnyRef]] = IntMap.newBuilder[AnyRef]
+  }
 
   implicit def toBuildFrom[V](factory: IntMap.type): BuildFrom[Any, (Int, V), IntMap[V]] =
     new BuildFrom[Any, (Int, V), IntMap[V]] {

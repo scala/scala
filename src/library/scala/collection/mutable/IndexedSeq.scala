@@ -10,6 +10,7 @@ trait IndexedSeq[T] extends Seq[T]
   override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
 }
 
+@SerialVersionUID(3L)
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](ArrayBuffer)
 
 trait IndexedSeqOps[A, +CC[_], +C <: AnyRef]

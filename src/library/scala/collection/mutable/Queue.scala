@@ -133,6 +133,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   * @define coll queue
   * @define Coll `Queue`
   */
+@SerialVersionUID(3L)
 object Queue extends StrictOptimizedSeqFactory[Queue] {
 
   def from[A](source: IterableOnce[A]): Queue[A] = empty ++= source

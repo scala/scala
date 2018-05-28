@@ -67,6 +67,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
     override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
 }
 
+@SerialVersionUID(3L)
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
   final class WithDefault[K, +V](underlying: SortedMap[K, V], defaultValue: K => V)

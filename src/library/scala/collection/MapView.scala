@@ -9,12 +9,7 @@ trait MapView[K, +V]
 
   override def view: MapView[K, V] = this
 
-  def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] =
-    new MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
-      def newBuilder[X, Y]: Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]
-      def empty[X, Y]: View[(X, Y)] = View.empty
-      def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
-    }
+  def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] = new MapView.MapViewMapFactory[K, V]
 
   def empty: View[(K, V)] = View.Empty
 
@@ -45,6 +40,13 @@ object MapView {
   class FilterKeys[K, +V](underlying: SomeMapOps[K, V], p: K => Boolean) extends AbstractMapView[K, V] {
     def iterator: Iterator[(K, V)] = underlying.iterator.filter { case (k, _) => p(k) }
     def get(key: K): Option[V] = if (p(key)) underlying.get(key) else None
+  }
+
+  @SerialVersionUID(3L)
+  private class MapViewMapFactory[K, V] extends MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
+    def newBuilder[X, Y]: Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]
+    def empty[X, Y]: View[(X, Y)] = View.empty
+    def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
   }
 }
 

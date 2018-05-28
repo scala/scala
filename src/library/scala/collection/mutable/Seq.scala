@@ -16,6 +16,7 @@ trait Seq[A]
   * @define coll mutable sequence
   * @define Coll `mutable.Seq`
   */
+@SerialVersionUID(3L)
 object Seq extends SeqFactory.Delegate[Seq](ArrayBuffer)
 
 /**

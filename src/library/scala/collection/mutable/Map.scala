@@ -169,6 +169,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   * @define coll mutable map
   * @define Coll `mutable.Map`
   */
+@SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](HashMap) {
 
   class WithDefault[K, V](val underlying: Map[K, V], val defaultValue: K => V)

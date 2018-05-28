@@ -151,6 +151,7 @@ sealed abstract class HashSet[A]
   * @define Coll `immutable.HashSet`
   * @define coll immutable hash set
   */
+@SerialVersionUID(3L)
 object HashSet extends IterableFactory[HashSet] {
 
   def from[A](it: collection.IterableOnce[A]): HashSet[A] =

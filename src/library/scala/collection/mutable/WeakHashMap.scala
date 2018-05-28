@@ -39,6 +39,7 @@ class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
  *  @define Coll `WeakHashMap`
  *  @define coll weak hash map
  */
+@SerialVersionUID(3L)
 object WeakHashMap extends MapFactory[WeakHashMap] {
   def empty[K, V]: WeakHashMap[K,V] = new WeakHashMap[K, V]
   def from[K, V](it: collection.IterableOnce[(K, V)]): WeakHashMap[K,V] = Growable.from(empty[K, V], it)

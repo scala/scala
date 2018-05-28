@@ -520,11 +520,13 @@ object AnyRefMap {
     arm
   }
 
-  implicit def toFactory[K <: AnyRef, V](factory: AnyRefMap.type): Factory[(K, V), AnyRefMap[K, V]] =
-    new Factory[(K, V), AnyRefMap[K, V]] with Serializable {
-      def fromSpecific(it: IterableOnce[(K, V)]): AnyRefMap[K, V] = factory.from[K, V](it)
-      def newBuilder: Builder[(K, V), AnyRefMap[K, V]] = factory.newBuilder[K, V]
-    }
+  implicit def toFactory[K <: AnyRef, V](dummy: AnyRefMap.type): Factory[(K, V), AnyRefMap[K, V]] = ToFactory.asInstanceOf[Factory[(K, V), AnyRefMap[K, V]]]
+
+  @SerialVersionUID(3L)
+  private[this] object ToFactory extends Factory[(AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] with Serializable {
+    def fromSpecific(it: IterableOnce[(AnyRef, AnyRef)]): AnyRefMap[AnyRef, AnyRef] = AnyRefMap.from[AnyRef, AnyRef](it)
+    def newBuilder: Builder[(AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] = AnyRefMap.newBuilder[AnyRef, AnyRef]
+  }
 
   implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] =
     new BuildFrom[Any, (K, V), AnyRefMap[K, V]] {

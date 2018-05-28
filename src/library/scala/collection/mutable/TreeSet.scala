@@ -167,6 +167,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   * @define coll mutable tree set
   * @author Lucien Pereira
   */
+@SerialVersionUID(3L)
 object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A : Ordering]: TreeSet[A] = new TreeSet[A]()

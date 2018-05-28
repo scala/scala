@@ -124,6 +124,7 @@ class LinkedHashSet[A]
  *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
  */
+@SerialVersionUID(3L)
 object LinkedHashSet extends IterableFactory[LinkedHashSet] {
 
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]

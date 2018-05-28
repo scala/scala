@@ -61,6 +61,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   * @define coll immutable set
   * @define Coll `immutable.Set`
   */
+@SerialVersionUID(3L)
 object Set extends IterableFactory[Set] {
 
   // getenv not getProperty for Scala.js friendliness.

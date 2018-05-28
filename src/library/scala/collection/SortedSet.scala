@@ -155,4 +155,5 @@ object SortedSetOps {
 
 }
 
+@SerialVersionUID(3L)
 object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)

@@ -758,6 +758,7 @@ object IterableOps {
 
 }
 
+@SerialVersionUID(3L)
 object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
   implicit def toLazyZipOps[A, CC[X] <: Iterable[X]](that: CC[A]): LazyZipOps[A, CC[A]] = new LazyZipOps(that)
 }

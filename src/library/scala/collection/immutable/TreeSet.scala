@@ -133,6 +133,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
   *  @define Coll `immutable.TreeSet`
   *  @define coll immutable tree set
   */
+@SerialVersionUID(3L)
 object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
