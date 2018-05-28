@@ -1340,7 +1340,7 @@ abstract class RefChecks extends Transform {
     private def checkByNameRightAssociativeDef(tree: DefDef): Unit = {
       tree match {
         case DefDef(_, name, _, params :: _, _, _) =>
-          if (settings.warnByNameRightAssociative && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
+          if (settings.warnByNameRightAssociative && !nme.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
             reporter.warning(tree.pos,
               "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see scala/bug#1980.")
         case _ =>

@@ -411,6 +411,9 @@ trait StdNames {
       name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
+    /** Is name a left-associative operator? */
+    def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
+
     private def expandedNameInternal(name: TermName, base: Symbol, separator: String): TermName =
       newTermNameCached(base.fullName('$') + separator + name)
 

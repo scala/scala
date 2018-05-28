@@ -3632,12 +3632,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 }
 
                 // Inline RHS of ValDef for right-associative by-value operator desugaring
-                val args2 = (args1, mt.params) match {
+                val (args2, pos2) = (args1, mt.params) match {
                   case ((ident: Ident) :: Nil, param :: Nil) if param.isByNameParam && rightAssocValDefs.contains(ident.symbol) =>
                     inlinedRightAssocValDefs += ident.symbol
                     val rhs = rightAssocValDefs.remove(ident.symbol).get
-                    rhs.changeOwner(ident.symbol -> context.owner) :: Nil
-                  case _ => args1
+                    (rhs.changeOwner(ident.symbol -> context.owner) :: Nil, wrappingPos(tree :: rhs :: Nil))
+                  case _ => (args1, tree.pos)
                 }
 
                 /*
@@ -3655,7 +3655,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == currentRun.runDefinitions.List_apply && isSelectionFromListModule(fun)))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
-                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe))
+                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe) setPos pos2)
               }
               if (settings.warnDeadCode) {
                 val sym = fun.symbol
@@ -4261,12 +4261,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _                              => t.children.flatMap(findSelection).headOption
         }
         findSelection(cxTree) map { case (opName, treeInfo.Applied(_, targs, _)) =>
-          val fun = gen.mkTypeApply(Select(qual, opName), targs)
+          val fun = atPos(wrappingPos(qual :: targs)) {
+            gen.mkTypeApply(Select(qual, opName) setPos qual.pos, targs)
+          }
           if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
           val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
            Literal(Constant(name.decode))
           }
-          markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+          markDynamicRewrite {
+            atPos(wrappingPos(qual :: fun :: nameStringLit :: Nil)) {
+              Apply(fun, List(nameStringLit))
+            }
+          }
         } getOrElse {
           // While there may be an error in the found tree itself, it should not be possible to *not find* it at all.
           devWarning(s"Tree $tree not found in the context $cxTree while trying to do a dynamic application")
@@ -4735,7 +4741,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val header = f"${e.errMsg}%n  Expression does not convert to assignment because:%n    "
               val expansion = f"%n    expansion: ${show(convo)}"
               NormalTypeError(tree, err.errors.flatMap(_.errMsg.lines.toList).mkString(header, f"%n    ", expansion))
@@ -4743,7 +4749,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         def advice2(errors: List[AbsTypeError]): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val msg = f"${e.errMsg}%n  Expression does not convert to assignment because receiver is not assignable."
               NormalTypeError(tree, msg)
             } else e
@@ -4839,7 +4845,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
 
-        def mkUpdate(table: Tree, indices: List[Tree], argss: List[List[Tree]]) =
+        def mkUpdate(table: Tree, indices: List[Tree], args_? : Option[List[Tree]]) =
           gen.evalOnceAll(table :: indices, context.owner, context.unit) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
@@ -4848,7 +4854,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   is.map(i => i()) ++ extraArgs
                 ) setPos tree.pos
               )
-              def mkApplies(core: Tree) = argss.foldLeft(core)((x, args) => Apply(x, args))
+              def mkApplies(core: Tree) = args_?.fold(core) { args =>
+                Apply(core, args) setPos wrappingPos(core :: args)
+              }
               mkCall(
                 nme.update,
                 Apply(Select(mkApplies(mkCall(nme.apply)), prefix) setPos fun.pos, args) setPos tree.pos
@@ -4870,14 +4878,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             fn match {
               case treeInfo.Applied(Select(table, nme.apply), _, indices :: Nil) =>
                 // table(indices)(implicits)
-                mkUpdate(table, indices, extra :: Nil)
+                mkUpdate(table, indices, Some(extra))
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
 
           case Apply(fn, indices) =>
             fn match {
               case treeInfo.Applied(Select(table, nme.apply), _, Nil) =>
-                mkUpdate(table, indices, Nil)
+                mkUpdate(table, indices, None)
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }

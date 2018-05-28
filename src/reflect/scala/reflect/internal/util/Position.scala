@@ -120,6 +120,8 @@ private[util] trait InternalPositionImpl {
   def isOpaqueRange              = isRange && !isTransparent
   def pointOrElse(alt: Int): Int = if (isDefined) point else alt
   def makeTransparent: Position  = if (isOpaqueRange) Position.transparent(source, start, point, end) else this
+  final def makeTransparentIf(cond: Boolean): Position =
+    if (cond && isOpaqueRange) Position.transparent(source, start, point, end) else this
 
   /** Copy a range position with a changed value.
    */
