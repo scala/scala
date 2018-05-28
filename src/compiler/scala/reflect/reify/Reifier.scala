@@ -9,7 +9,6 @@ import scala.reflect.reify.utils.Utils
  *  See more info in the comments to `reify` in scala.reflect.api.Universe.
  *
  *  @author   Martin Odersky
- *  @version  2.10
  *  @since    2.10
  */
 abstract class Reifier extends States
