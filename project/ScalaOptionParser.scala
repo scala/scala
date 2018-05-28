@@ -91,7 +91,7 @@ object ScalaOptionParser {
     "-Yoverride-objects", "-Yoverride-vars", "-Ypatmat-debug", "-Yno-adapted-args", "-Ypos-debug", "-Ypresentation-debug",
     "-Ypresentation-strict", "-Ypresentation-verbose", "-Yquasiquote-debug", "-Yrangepos", "-Yreify-copypaste", "-Yreify-debug", "-Yrepl-class-based",
     "-Yrepl-sync", "-Yshow-member-pos", "-Yshow-symkinds", "-Yshow-symowners", "-Yshow-syms", "-Yshow-trees", "-Yshow-trees-compact", "-Yshow-trees-stringified", "-Ytyper-debug",
-    "-Ywarn-adapted-args", "-Ywarn-dead-code", "-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-unused-import", "-Ywarn-value-discard",
+    "-Ywarn-dead-code", "-Ywarn-numeric-widen", "-Ywarn-value-discard", "-Ywarn-extra-implicit", "-Ywarn-self-implicit",
     "-deprecation", "-explaintypes", "-feature", "-help", "-no-specialization", "-nobootcp", "-nowarn", "-optimise", "-print", "-unchecked", "-uniqid", "-usejavacp", "-usemanifestcp", "-verbose", "-version")
   private def stringSettingNames = List("-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
     "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript")
@@ -108,9 +108,11 @@ object ScalaOptionParser {
     "-g" -> List("line", "none", "notailcails", "source", "vars"),
     "-target" -> List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"))
   private def multiChoiceSettingNames = Map[String, List[String]](
-    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "by-name-right-associative", "package-object-classes", "unsound-match", "stars-align"),
+    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "by-name-right-associative", "package-object-classes", "unsound-match", "stars-align", "constant", "unused"),
     "-language" -> List("help", "_", "dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros"),
     "-opt" -> List("l:none", "l:default", "l:method", "l:project", "l:classpath", "unreachable-code", "simplify-jumps", "empty-line-numbers", "empty-labels", "compact-locals", "nullness-tracking", "closure-elimination", "inline-project", "inline-global"),
+    "-Ywarn-unused" -> List("imports", "patvars", "privates", "locals", "explicits", "implicits", "params"),
+    "-Ywarn-macros" -> List("none", "before", "after", "both"),
     "-Ystatistics" -> List("parser", "typer", "patmat", "erasure", "cleanup", "jvm")
   )
   private def scalaVersionSettings = List("-Xmigration", "-Xsource")

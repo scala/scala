@@ -626,7 +626,7 @@ lazy val macroAnnot = project.in(file("test") / "macro-annot")
     baseDirectory in Test := (baseDirectory in ThisBuild).value,
 
     scalacOptions += "-Ymacro-annotations",
-    scalacOptions += "-Ywarn-unused-import",
+    scalacOptions += "-Ywarn-unused:imports",
     scalacOptions += "-Xfatal-warnings"
   )
 

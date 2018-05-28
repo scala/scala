@@ -1,1 +1,1 @@
--Xfatal-warnings -Ywarn-adapted-args
+-Xfatal-warnings -Xlint:adapted-args
