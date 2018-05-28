@@ -31,8 +31,8 @@ object HtmlTags {
     def attribNames = cls.primaryConstructor.asMethod.paramLists.head.map(_.name.decodedName.toString)
     def attribValues = productIterator.toList
 
-    def attribs: Map[String, String] = {
-      (attribNames, attribValues).zipped.collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toMap
+    def attribs: Seq[(String, String)] = {
+      (attribNames, attribValues).zipped.collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toSeq
     }
   }
 

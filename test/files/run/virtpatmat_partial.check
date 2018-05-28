@@ -1,5 +1,5 @@
-ChampHashMap(a -> Some(1), b -> None)
-ChampHashMap(a -> 1)
+Map.Map2(a -> Some(1), b -> None)
+Map.Map1(a -> 1)
 a
 undefined
 a
