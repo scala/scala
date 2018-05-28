@@ -1,6 +1,5 @@
 abstract class TypeAnnotations[@scala.specialized R] extends scala.AnyRef {
   def this() = { /* compiled code */ }
-  @scala.specialized
   val x: scala.Int = { /* compiled code */ }
   @scala.specialized
   type T
