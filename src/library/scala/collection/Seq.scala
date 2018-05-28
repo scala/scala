@@ -46,6 +46,7 @@ trait Seq[+A]
   * @define coll sequence
   * @define Coll `Seq`
   */
+@SerialVersionUID(3L)
 object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
 
 /** Base trait for Seq operations

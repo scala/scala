@@ -976,6 +976,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 }
 
 
+@SerialVersionUID(3L)
 object TrieMap extends MapFactory[TrieMap] {
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]

@@ -199,6 +199,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   * @define coll set
   * @define Coll `Set`
   */
+@SerialVersionUID(3L)
 object Set extends IterableFactory.Delegate[Set](immutable.Set)
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */

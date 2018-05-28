@@ -281,6 +281,7 @@ class ListBuffer[A]
 
 }
 
+@SerialVersionUID(3L)
 object ListBuffer extends StrictOptimizedSeqFactory[ListBuffer] {
 
   def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll

@@ -9,6 +9,7 @@ import Searching.{SearchResult, Found, InsertionPoint}
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
 
+@SerialVersionUID(3L)
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 
 /** Base trait for indexed Seq operations */

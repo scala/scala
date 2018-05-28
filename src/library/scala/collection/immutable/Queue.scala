@@ -159,6 +159,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   *  @define Coll `immutable.Queue`
   *  @define coll immutable queue
   */
+@SerialVersionUID(3L)
 object Queue extends StrictOptimizedSeqFactory[Queue] {
   def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
 

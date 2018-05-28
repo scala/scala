@@ -608,11 +608,13 @@ object LongMap {
     lm
   }
 
-  implicit def toFactory[V](factory: LongMap.type): Factory[(Long, V), LongMap[V]] =
-    new Factory[(Long, V), LongMap[V]] with Serializable {
-      def fromSpecific(it: IterableOnce[(Long, V)]): LongMap[V] = factory.from[V](it)
-      def newBuilder: Builder[(Long, V), LongMap[V]] = factory.newBuilder[V]
-    }
+  implicit def toFactory[V](dummy: LongMap.type): Factory[(Long, V), LongMap[V]] = ToFactory.asInstanceOf[Factory[(Long, V), LongMap[V]]]
+
+  @SerialVersionUID(3L)
+  private[this] object ToFactory extends Factory[(Long, AnyRef), LongMap[AnyRef]] with Serializable {
+    def fromSpecific(it: IterableOnce[(Long, AnyRef)]): LongMap[AnyRef] = LongMap.from[AnyRef](it)
+    def newBuilder: Builder[(Long, AnyRef), LongMap[AnyRef]] = LongMap.newBuilder[AnyRef]
+  }
 
   implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] =
     new BuildFrom[Any, (Long, V), LongMap[V]] {

@@ -588,6 +588,7 @@ private final class SetReverseIterator[A](rootNode: SetNode[A])
   * @define Coll `immutable.ChampHashSet`
   * @define coll immutable champ hash set
   */
+@SerialVersionUID(3L)
 object ChampHashSet extends IterableFactory[ChampHashSet] {
 
   private[ChampHashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int, cachedSize: Int) =

@@ -7,6 +7,7 @@ package mutable
  *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
  */
+@SerialVersionUID(3L)
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
   def empty[A, B] = new LinkedHashMap[A, B]

@@ -610,6 +610,7 @@ private final class MapKeyValueTupleReverseIterator[K, V](rootNode: MapNode[K, V
   * @define Coll `immutable.ChampHashMap`
   * @define coll immutable champ hash map
   */
+@SerialVersionUID(3L)
 object ChampHashMap extends MapFactory[ChampHashMap] {
 
   private[ChampHashMap] def apply[K, V](rootNode: MapNode[K, V], cachedJavaHashCode: Int, cachedSize: Int) =

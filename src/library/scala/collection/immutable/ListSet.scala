@@ -104,6 +104,7 @@ sealed class ListSet[A]
   * @define Coll ListSet
   * @define coll list set
   */
+@SerialVersionUID(3L)
 object ListSet extends IterableFactory[ListSet] {
 
   def from[E](it: scala.collection.IterableOnce[E]): ListSet[E] =

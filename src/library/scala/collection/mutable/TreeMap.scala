@@ -175,6 +175,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   * @define Coll mutable.TreeMap
   * @define coll mutable tree map
   */
+@SerialVersionUID(3L)
 object TreeMap extends SortedMapFactory[TreeMap] {
 
   def from[K : Ordering, V](it: collection.IterableOnce[(K, V)]): TreeMap[K, V] =

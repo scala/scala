@@ -11,6 +11,7 @@ import scala.annotation.unchecked.uncheckedVariance
   * @define Coll `Vector`
   * @define coll vector
   */
+@SerialVersionUID(3L)
 object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def empty[A]: Vector[A] = NIL

@@ -77,6 +77,7 @@ abstract class ArraySeq[T]
 
 /** A companion object used to create instances of `ArraySeq`.
   */
+@SerialVersionUID(3L)
 object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   val untagged: SeqFactory[ArraySeq] = new ClassTagSeqFactory.AnySeqDelegate(self)
 

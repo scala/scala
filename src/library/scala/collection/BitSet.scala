@@ -25,6 +25,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override def empty: BitSetC = bitSetFactory.empty
 }
 
+@SerialVersionUID(3L)
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
   def empty: BitSet = immutable.BitSet.empty
   def newBuilder: Builder[Int, BitSet] = immutable.BitSet.newBuilder

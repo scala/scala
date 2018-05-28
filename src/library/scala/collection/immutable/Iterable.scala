@@ -26,4 +26,5 @@ trait Iterable[+A] extends collection.Iterable[A]
   override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
+@SerialVersionUID(3L)
 object Iterable extends IterableFactory.Delegate[Iterable](List)

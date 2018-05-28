@@ -115,6 +115,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   * @define coll mutable set
   * @define Coll `mutable.Set`
   */
+@SerialVersionUID(3L)
 object Set extends IterableFactory.Delegate[Set](HashSet)
 
 

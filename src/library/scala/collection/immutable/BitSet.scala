@@ -62,6 +62,7 @@ sealed abstract class BitSet
   * @define Coll `immutable.BitSet`
   * @define coll immutable bitset
   */
+@SerialVersionUID(3L)
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
   def fromSpecific(it: scala.collection.IterableOnce[Int]): BitSet =

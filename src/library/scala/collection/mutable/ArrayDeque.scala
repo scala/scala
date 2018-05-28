@@ -500,6 +500,7 @@ class ArrayDeque[A] protected (
   * @define coll array deque
   * @define Coll `ArrayDeque`
   */
+@SerialVersionUID(3L)
 object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
 
   def from[B](coll: collection.IterableOnce[B]): ArrayDeque[B] = {

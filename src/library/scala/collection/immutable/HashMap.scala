@@ -99,6 +99,7 @@ sealed abstract class HashMap[K, +V]
   * @define Coll `immutable.HashMap`
   * @define coll immutable hash map
   */
+@SerialVersionUID(3L)
 object HashMap extends MapFactory[HashMap] {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]

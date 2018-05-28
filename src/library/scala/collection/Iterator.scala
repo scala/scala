@@ -822,6 +822,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def seq: this.type = this
 }
 
+@SerialVersionUID(3L)
 object Iterator extends IterableFactory[Iterator] {
 
   private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {

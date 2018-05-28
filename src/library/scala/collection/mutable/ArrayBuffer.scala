@@ -175,6 +175,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
   * @define coll array buffer
   * @define Coll `mutable.ArrayBuffer`
   */
+@SerialVersionUID(3L)
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   // Avoid reallocation of buffer if length is known.

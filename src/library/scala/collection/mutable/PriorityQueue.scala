@@ -338,6 +338,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 }
 
 
+@SerialVersionUID(3L)
 object PriorityQueue extends SortedIterableFactory[PriorityQueue] {
   def newBuilder[A : Ordering]: Builder[A, PriorityQueue[A]] = {
     new Builder[A, PriorityQueue[A]] {

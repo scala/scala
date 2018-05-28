@@ -226,6 +226,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 }
 
 
+@SerialVersionUID(3L)
 object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] { self =>
 
   val untagged: SeqFactory[UnrolledBuffer] = new ClassTagSeqFactory.AnySeqDelegate(self)

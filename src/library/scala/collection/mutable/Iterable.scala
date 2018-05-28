@@ -35,8 +35,8 @@ trait IterableOps[A, +CC[X], +C]
   * @define coll mutable collection
   * @define Coll `mutable.Iterable`
   */
-object Iterable
-  extends IterableFactory.Delegate[Iterable](ArrayBuffer)
+@SerialVersionUID(3L)
+object Iterable extends IterableFactory.Delegate[Iterable](ArrayBuffer)
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
