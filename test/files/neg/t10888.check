@@ -1,0 +1,14 @@
+t10888.scala:3: error: package java.lang is not a value
+  val v = java.lang                  // package java.lang is not a value
+               ^
+t10888.scala:4: error: class java.lang.Thread is not a value
+  val w = java.lang.Thread           // class java.lang.Thread is not a value
+                    ^
+t10888.scala:5: error: package scala.collection is not a value
+  val x = scala.collection           // package scala.collection is not a value
+                ^
+t10888.scala:7: error: object App is not a member of package scala
+Note: trait App exists, but it has no companion object.
+  val z = scala.App                  // object App is not a member of package scala
+                ^
+four errors found
