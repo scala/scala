@@ -718,6 +718,9 @@ trait Namers extends MethodSynthesis {
       if (isScala) {
         if (nme.isSetterName(tree.name)) ValOrVarWithSetterSuffixError(tree)
         if (tree.mods.isPrivateLocal && tree.mods.isCaseAccessor) PrivateThisCaseClassParameterError(tree)
+        if (tree.mods.isImplicit && !owner.isTerm && settings.warnImplicitNoAnnotation && tree.tpt.isEmpty) {
+          reporter.warning(tree.pos, s"implicit value ${tree.name} has no type annotation")
+        }
       }
 
       if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
@@ -748,6 +751,10 @@ trait Namers extends MethodSynthesis {
       case DefDef(mods, name, _, _, _, _) =>
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
         val sym = enterInScope(assignMemberSymbol(tree)) setFlag bridgeFlag
+
+        if (tree.symbol.isImplicit && settings.warnImplicitNoAnnotation && tree.tpt.isEmpty) {
+          reporter.warning(tree.pos, s"implicit definition ${tree.name} has no type annotation")
+        }
 
         val completer =
           if (sym hasFlag SYNTHETIC) {
