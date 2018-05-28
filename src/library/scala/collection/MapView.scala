@@ -27,18 +27,21 @@ object MapView {
   /** A `MapOps` whose collection type and collection type constructor are (mostly) unknown */
   type SomeMapOps[K, +V] = MapOps[K, V, SomeIterableConstr, _]
 
+  @SerialVersionUID(3L)
   class Id[K, +V](underlying: SomeMapOps[K, V]) extends AbstractMapView[K, V] {
     def get(key: K): Option[V] = underlying.get(key)
     def iterator: Iterator[(K, V)] = underlying.iterator
     override def knownSize: Int = underlying.knownSize
   }
 
+  @SerialVersionUID(3L)
   class MapValues[K, +V, +W](underlying: SomeMapOps[K, V], f: V => W) extends AbstractMapView[K, W] {
     def iterator: Iterator[(K, W)] = underlying.iterator.map(kv => (kv._1, f(kv._2)))
     def get(key: K): Option[W] = underlying.get(key).map(f)
     override def knownSize: Int = underlying.knownSize
   }
 
+  @SerialVersionUID(3L)
   class FilterKeys[K, +V](underlying: SomeMapOps[K, V], p: K => Boolean) extends AbstractMapView[K, V] {
     def iterator: Iterator[(K, V)] = underlying.iterator.filter { case (k, _) => p(k) }
     def get(key: K): Option[V] = if (p(key)) underlying.get(key) else None

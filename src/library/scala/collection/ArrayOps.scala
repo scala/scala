@@ -35,6 +35,7 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
 
 object ArrayOps {
 
+  @SerialVersionUID(3L)
   private class ArrayView[A](xs: Array[A]) extends IndexedSeqView[A] {
     def length = xs.length
     def apply(n: Int) = xs(n)

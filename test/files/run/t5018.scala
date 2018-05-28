@@ -12,9 +12,8 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-//    TODO-newColl: re-enable once https://github.com/scala/collection-strawman/issues/548 is fixed
-//    val values = mutable.Map(1 -> 1).values
-//    assert(serializeDeserialize(values).toList == values.toList)
+    val values = mutable.Map(1 -> 1).values
+    assert(serializeDeserialize(values).toList == values.toList)
 
     val keyset = mutable.Map(1 -> 1).keySet
     assert(serializeDeserialize(keyset) == keyset)
