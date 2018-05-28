@@ -20,7 +20,6 @@ import script._
  *  @tparam A    type of the elements contained in this buffer.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   1
  *  @define Coll `SynchronizedBuffer`
  *  @define coll synchronized buffer

@@ -186,7 +186,6 @@ import scala.language.implicitConversions
  *  @tparam A    the type of the elements contained in this stream.
  *
  *  @author Martin Odersky, Matthias Zenger
- *  @version 1.1 08/08/03
  *  @since   2.8
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#streams "Scala's Collection Library overview"]]
  *  section on `Streams` for more information.
@@ -1070,7 +1069,6 @@ final class StreamIterator[+A] private() extends AbstractIterator[A] with Iterat
  * The object `Stream` provides helper functions to manipulate streams.
  *
  * @author Martin Odersky, Matthias Zenger
- * @version 1.1 08/08/03
  * @since   2.8
  */
 object Stream extends SeqFactory[Stream] {

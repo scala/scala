@@ -18,7 +18,6 @@ package mutable
  *  @tparam Repr  the type of the actual collection containing the elements.
  *
  *  @define Coll `ArrayLike`
- *  @version 2.8
  *  @since   2.8
  */
 trait ArrayLike[A, +Repr] extends Any with IndexedSeqOptimized[A, Repr] { self =>

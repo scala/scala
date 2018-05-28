@@ -17,7 +17,6 @@ import scala.annotation.tailrec
  *  a `clear` method.
  *
  *  @author   Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @define coll growable collection
  *  @define Coll `Growable`

@@ -50,7 +50,7 @@ package scala
  *
  *
  *  @author  Martin Odersky, Pavel Pavlov, Adriaan Moors
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
   import PartialFunction._

@@ -20,7 +20,6 @@ import immutable.StringLike
  *
  *  @author Stephane Micheloud
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.7
  *  @define Coll `mutable.IndexedSeq`
  *  @define coll string builder

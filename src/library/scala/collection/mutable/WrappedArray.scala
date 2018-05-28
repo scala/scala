@@ -26,7 +26,6 @@ import java.util.Arrays
  *  @tparam T    type of the elements in this wrapped array.
  *
  *  @author  Martin Odersky, Stephane Micheloud
- *  @version 1.0
  *  @since 2.8
  *  @define Coll `WrappedArray`
  *  @define coll wrapped array

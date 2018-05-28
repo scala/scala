@@ -20,7 +20,7 @@ package scala
  *  an asymmetric equals method, which is not generally recommended.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 26/04/2004
+ *  @since   1.0
  */
 trait Proxy extends Any {
   def self: Any

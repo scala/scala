@@ -21,7 +21,6 @@ import scala.annotation.tailrec
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 1.0, 08/07/2003
  *  @since   2.8
  *
  *  @tparam A    type of the elements contained in the linked list

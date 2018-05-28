@@ -20,7 +20,6 @@ import script._
  *  events of the type `Message`.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   1
  */
 @deprecated("observables are deprecated because scripting is deprecated", "2.11.0")

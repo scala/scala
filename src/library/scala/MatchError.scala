@@ -16,7 +16,6 @@ package scala
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 1.1, 05/03/2004
  *  @since   2.0
  */
 final class MatchError(@transient obj: Any) extends RuntimeException {

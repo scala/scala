@@ -21,7 +21,6 @@ import generic._
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   1
  *
  *  @tparam A    type of the elements contained in this buffer.

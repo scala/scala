@@ -13,7 +13,6 @@ package scala.concurrent
 /** This class ...
  *
  *  @author  Martin Odersky
- *  @version 1.0, 10/03/2003
  */
 @deprecated("use java.util.concurrent.locks.Lock", "2.11.2")
 class Lock {

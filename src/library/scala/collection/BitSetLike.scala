@@ -27,7 +27,6 @@ import mutable.StringBuilder
  *  variable-size arrays of bits packed into 64-bit words. The memory footprint of a bitset is
  *  determined by the largest number stored in it.
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since 2.8
  *  @define coll bitset
  *  @define Coll `BitSet`

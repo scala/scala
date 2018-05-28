@@ -29,7 +29,6 @@ package mutable
  *  @define coll mutable indexed sequence
  *  @define indexedSeqInfo
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf

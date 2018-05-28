@@ -42,7 +42,6 @@ import scala.math.Ordering
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
- *  @version 1.0, 16/07/2003
  *  @since   2.8
  *
  *  @define Coll `Seq`

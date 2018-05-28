@@ -16,7 +16,6 @@ package util
  *  tuples).
  *
  *  @author  Rex Kerr
- *  @version 2.9
  *  @since   2.9
  */
 

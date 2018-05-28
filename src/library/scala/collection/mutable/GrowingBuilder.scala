@@ -18,7 +18,6 @@ import generic._
  *  GrowableBuilders can produce only a single instance of the collection they are growing.
  *
  *  @author Paul Phillips
- *  @version 2.8
  *  @since 2.8
  *
  *  @define Coll `GrowingBuilder`

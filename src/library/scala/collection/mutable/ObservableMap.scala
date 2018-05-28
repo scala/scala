@@ -22,7 +22,6 @@ import script._
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
  *  @since   1
  */
 @deprecated("observables are deprecated because scripting is deprecated", "2.11.0")

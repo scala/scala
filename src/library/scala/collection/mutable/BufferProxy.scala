@@ -18,7 +18,6 @@ import script._
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 16/04/2004
  *  @since   1
  *
  *  @tparam A     type of the elements the buffer proxy contains.

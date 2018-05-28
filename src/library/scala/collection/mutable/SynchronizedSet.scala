@@ -19,7 +19,6 @@ import script._
  *  @tparam A    type of the elements contained in this synchronized set.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   1
  *  @define Coll `SynchronizedSet`
  *  @define coll synchronized set

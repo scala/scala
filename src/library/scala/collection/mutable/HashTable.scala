@@ -30,7 +30,6 @@ import scala.util.hashing.byteswap32
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
  *  @since   1
  *
  *  @tparam A     type of the elements contained in this hash table.

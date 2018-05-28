@@ -114,7 +114,6 @@ package util
  *  }}}
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 2.0, 2016-07-15
  *  @since 2.7
  */
 sealed abstract class Either[+A, +B] extends Product with Serializable {
@@ -420,7 +419,6 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 /** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
  */
 final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
   def isLeft  = true
@@ -432,7 +430,6 @@ final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Ei
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
  */
 final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
   def isLeft  = false
@@ -477,7 +474,6 @@ object Either {
   /** Projects an `Either` into a `Left`.
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
-   *  @version 1.0, 11/10/2008
    *  @see [[scala.util.Either#left]]
    */
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
@@ -622,7 +618,6 @@ object Either {
    *  2.11 and 2.12.)
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
-   *  @version 1.0, 11/10/2008
    */
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 

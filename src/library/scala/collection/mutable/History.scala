@@ -19,7 +19,6 @@ package mutable
  *  up to maximum number of `maxHistory` events.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
  *  @since   1
  *
  *  @tparam Evt   Type of events.

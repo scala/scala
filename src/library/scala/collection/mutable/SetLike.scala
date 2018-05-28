@@ -26,7 +26,6 @@ import parallel.mutable.ParSet
  *  @tparam This the type of the set itself.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since 2.8
  *
  *  @define setNote

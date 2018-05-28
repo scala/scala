@@ -25,7 +25,6 @@ import scala.annotation.tailrec
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf
- *  @version 2.8
  *  @since   2.3
  *  @define Coll `immutable.HashSet`
  *  @define coll immutable hash set

@@ -14,7 +14,6 @@ package script
  *  class [[scala.collection.script.Message]].
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 10/05/2004
  *  @since   2.8
  */
 

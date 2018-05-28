@@ -13,9 +13,8 @@ package generic
 /** This trait forms part of collections that can be cleared
  *  with a clear() call.
  *
- *  @author   Paul Phillips
- *  @version 2.10
- *  @since   2.10
+ *  @author Paul Phillips
+ *  @since  2.10
  *  @define coll clearable collection
  *  @define Coll `Clearable`
  */

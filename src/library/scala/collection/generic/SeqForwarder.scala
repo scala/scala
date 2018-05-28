@@ -22,7 +22,6 @@ import scala.collection.immutable.Range
  *  The above methods are forwarded by subclass `SeqProxy`.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  */
 @deprecated("forwarding is inherently unreliable since it is not automated and new methods can be forgotten", "2.11.0")

@@ -24,7 +24,6 @@ import scala.language.higherKinds
  *  @define factoryInfo
  *    This object provides a set of operations to create `$Coll` values.
  *    @author Martin Odersky
- *    @version 2.8
  *  @define canBuildFromInfo
  *    The standard `CanBuildFrom` instance for $Coll objects.
  *    @see CanBuildFrom

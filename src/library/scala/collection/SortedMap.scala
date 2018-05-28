@@ -16,7 +16,6 @@ import mutable.Builder
  *
  *  @author Sean McDirmid
  *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.4
  */
 trait SortedMap[A, +B] extends Map[A, B] with SortedMapLike[A, B, SortedMap[A, B]] {

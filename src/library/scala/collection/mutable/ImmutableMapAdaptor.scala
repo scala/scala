@@ -22,7 +22,6 @@ import scala.annotation.migration
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 01/01/2007
  *  @since   1
  */
 @deprecated("adaptors are inherently unreliable and prone to performance problems", "2.11.0")

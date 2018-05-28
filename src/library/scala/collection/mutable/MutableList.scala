@@ -19,7 +19,6 @@ import immutable.List
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   1
  *  @define Coll `mutable.MutableList`
  *  @define coll mutable list

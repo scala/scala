@@ -22,7 +22,6 @@ import scala.language.higherKinds
  *  @define factoryInfo
  *    This object provides a set of operations needed to create sorted sets of type `$Coll`.
  *    @author Martin Odersky
- *    @version 2.8
  *  @define sortedSetCanBuildFromInfo
  *    The standard `CanBuildFrom` instance for sorted sets
  */

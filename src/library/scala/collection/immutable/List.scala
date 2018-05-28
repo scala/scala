@@ -63,7 +63,6 @@ import java.io.{ObjectOutputStream, ObjectInputStream}
  *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
  *
  *  @author  Martin Odersky and others
- *  @version 2.8
  *  @since   1.0
  *  @see  [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
  *  section on `Lists` for more information.
@@ -418,7 +417,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 /** The empty list.
  *
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  *  @since   2.8
  */
 @SerialVersionUID(0 - 8256821097970055419L)
@@ -440,7 +438,6 @@ case object Nil extends List[Nothing] {
  *  @param tl   the list containing the remaining elements of this list after the first one.
  *  @tparam B   the type of the list elements.
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  *  @since   2.8
  */
 @SerialVersionUID(509929039250432923L) // value computed by serialver for 2.11.2, annotation added in 2.11.4

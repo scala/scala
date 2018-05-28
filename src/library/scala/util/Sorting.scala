@@ -34,7 +34,6 @@ import scala.math.Ordering
   * @author  Ross Judson
   * @author  Adriaan Moors
   * @author  Rex Kerr
-  * @version 1.1
   */
 object Sorting {
   /** Sort an array of Doubles using `java.util.Arrays.sort`. */

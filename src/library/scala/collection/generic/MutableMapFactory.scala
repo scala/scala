@@ -17,7 +17,6 @@ import scala.language.higherKinds
 
 /** A template for companion objects of `mutable.Map` and subclasses thereof.
  *    @author Martin Odersky
- *    @version 2.8
  *    @since 2.8
  */
 abstract class MutableMapFactory[CC[A, B] <: mutable.Map[A, B] with mutable.MapLike[A, B, CC[A, B]]]

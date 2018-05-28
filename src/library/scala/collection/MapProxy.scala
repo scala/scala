@@ -14,7 +14,6 @@ package collection
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
  *  @since   1
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.3")

@@ -23,7 +23,6 @@ import scala.collection._
  *  target="ContentFrame">`IterableProxy`</a>.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  */
 @deprecated("forwarding is inherently unreliable since it is not automated and methods can be forgotten", "2.11.0")

@@ -20,7 +20,6 @@ package immutable
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger, Martin Odersky
- *  @version 2.0, 31/12/2006
  *  @since   2.8
  */
 @deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")

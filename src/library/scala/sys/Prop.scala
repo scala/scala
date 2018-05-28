@@ -16,7 +16,6 @@ package sys
  *  See `scala.sys.SystemProperties` for an example usage.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 trait Prop[+T] {
