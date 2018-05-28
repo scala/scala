@@ -68,12 +68,14 @@ object View extends IterableFactory[View] {
   override def apply[A](xs: A*): View[A] = new Elems(xs: _*)
 
   /** The empty view */
+  @SerialVersionUID(3L)
   case object Empty extends AbstractView[Nothing] {
     def iterator = Iterator.empty
     override def knownSize = 0
   }
 
   /** A view with exactly one element */
+  @SerialVersionUID(3L)
   class Single[A](a: A) extends AbstractView[A] {
     def iterator: Iterator[A] =
       new AbstractIterator[A] {
@@ -89,24 +91,28 @@ object View extends IterableFactory[View] {
   }
 
   /** A view with given elements */
+  @SerialVersionUID(3L)
   class Elems[A](xs: A*) extends AbstractView[A] {
     def iterator = xs.iterator
     override def knownSize = xs.knownSize
   }
 
   /** A view containing the results of some element computation a number of times. */
+  @SerialVersionUID(3L)
   class Fill[A](n: Int)(elem: => A) extends AbstractView[A] {
     def iterator = Iterator.fill(n)(elem)
     override def knownSize: Int = 0 max n
   }
 
   /** A view containing values of a given function over a range of integer values starting from 0. */
+  @SerialVersionUID(3L)
   class Tabulate[A](n: Int)(f: Int => A) extends AbstractView[A] {
     def iterator: Iterator[A] = Iterator.tabulate(n)(f)
     override def knownSize: Int = 0 max n
   }
 
   /** A view containing repeated applications of a function to a start value */
+  @SerialVersionUID(3L)
   class Iterate[A](start: A, len: Int)(f: A => A) extends AbstractView[A] {
     def iterator: Iterator[A] = Iterator.iterate(start)(f).take(len)
     override def knownSize: Int = 0 max len
@@ -116,6 +122,7 @@ object View extends IterableFactory[View] {
   type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
   
   /** A view that filters an underlying collection. */
+  @SerialVersionUID(3L)
   class Filter[A](val underlying: SomeIterableOps[A], val p: A => Boolean, val isFlipped: Boolean) extends AbstractView[A] {
     def iterator = underlying.iterator.filterImpl(p, isFlipped)
   }
@@ -129,11 +136,13 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that removes the duplicated elements as determined by the transformation function `f` */
+  @SerialVersionUID(3L)
   class DistinctBy[A, B](underlying: SomeIterableOps[A], f: A => B) extends AbstractView[A] {
     def iterator: Iterator[A] = underlying.iterator.distinctBy(f)
   }
 
   /** A view that partitions an underlying collection into two views */
+  @SerialVersionUID(3L)
   class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) {
 
     /** The view consisting of all elements of the underlying collection
@@ -148,11 +157,13 @@ object View extends IterableFactory[View] {
   }
 
   /** A view representing one half of a partition. */
+  @SerialVersionUID(3L)
   class Partitioned[A](partition: Partition[A], cond: Boolean) extends AbstractView[A] {
     def iterator = partition.underlying.iterator.filter(x => partition.p(x) == cond)
   }
 
   /** A view that drops leading elements of the underlying collection. */
+  @SerialVersionUID(3L)
   class Drop[A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
     def iterator = underlying.iterator.drop(n)
     protected val normN = n max 0
@@ -160,11 +171,13 @@ object View extends IterableFactory[View] {
       if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
   }
 
+  @SerialVersionUID(3L)
   class DropWhile[A](underlying: SomeIterableOps[A], p: A => Boolean) extends AbstractView[A] {
     def iterator = underlying.iterator.dropWhile(p)
   }
 
   /** A view that takes leading elements of the underlying collection. */
+  @SerialVersionUID(3L)
   class Take[+A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
     def iterator = underlying.iterator.take(n)
     protected val normN = n max 0
@@ -172,10 +185,12 @@ object View extends IterableFactory[View] {
       if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
   }
 
+  @SerialVersionUID(3L)
   class TakeWhile[A](underlying: SomeIterableOps[A], p: A => Boolean) extends AbstractView[A] {
     def iterator: Iterator[A] = underlying.iterator.takeWhile(p)
   }
 
+  @SerialVersionUID(3L)
   class ScanLeft[+A, +B](underlying: SomeIterableOps[A], z: B, op: (B, A) => B) extends AbstractView[B] {
     def iterator: Iterator[B] = underlying.iterator.scanLeft(z)(op)
     override def knownSize: Int =
@@ -183,12 +198,14 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that maps elements of the underlying collection. */
+  @SerialVersionUID(3L)
   class Map[+A, +B](underlying: SomeIterableOps[A], f: A => B) extends AbstractView[B] {
     def iterator = underlying.iterator.map(f)
     override def knownSize = underlying.knownSize
   }
 
   /** A view that flatmaps elements of the underlying collection. */
+  @SerialVersionUID(3L)
   class FlatMap[A, B](underlying: SomeIterableOps[A], f: A => IterableOnce[B]) extends AbstractView[B] {
     def iterator = underlying.iterator.flatMap(f)
   }
@@ -196,6 +213,7 @@ object View extends IterableFactory[View] {
   /** A view that concatenates elements of the prefix collection or iterator with the elements
    *  of the suffix collection or iterator.
    */
+  @SerialVersionUID(3L)
   class Concat[A](prefix: SomeIterableOps[A], suffix: SomeIterableOps[A]) extends AbstractView[A] {
     def iterator = prefix.iterator ++ suffix.iterator
     override def knownSize =
@@ -206,6 +224,7 @@ object View extends IterableFactory[View] {
   /** A view that zips elements of the underlying collection with the elements
     *  of another collection.
     */
+  @SerialVersionUID(3L)
   class Zip[A, B](underlying: SomeIterableOps[A], other: Iterable[B]) extends AbstractView[(A, B)] {
     def iterator = underlying.iterator.zip(other)
     override def knownSize = underlying.knownSize min other.knownSize
@@ -215,6 +234,7 @@ object View extends IterableFactory[View] {
     *  of another collection. If one of the two collections is shorter than the other,
     *  placeholder elements are used to extend the shorter collection to the length of the longer.
     */
+  @SerialVersionUID(3L)
   class ZipAll[A, B](underlying: SomeIterableOps[A], other: Iterable[B], thisElem: A, thatElem: B) extends AbstractView[(A, B)] {
     def iterator = underlying.iterator.zipAll(other, thisElem, thatElem)
     override def knownSize = {
@@ -227,17 +247,20 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that appends an element to its elements */
+  @SerialVersionUID(3L)
   class Appended[A](underlying: SomeIterableOps[A], elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new Concat(underlying, new View.Single(elem)).iterator
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
   /** A view that prepends an element to its elements */
+  @SerialVersionUID(3L)
   class Prepended[+A](elem: A, underlying: SomeIterableOps[A]) extends AbstractView[A] {
     def iterator: Iterator[A] = new Concat(new View.Single(elem), underlying).iterator
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
   }
 
+  @SerialVersionUID(3L)
   class Updated[A](underlying: SomeIterableOps[A], index: Int, elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new AbstractIterator[A] {
       private val it = underlying.iterator
@@ -252,26 +275,31 @@ object View extends IterableFactory[View] {
     override def knownSize: Int = underlying.knownSize
   }
 
+  @SerialVersionUID(3L)
   private[collection] class Patched[A](underlying: SomeIterableOps[A], from: Int, other: IterableOnce[A], replaced: Int) extends AbstractView[A] {
     def iterator: Iterator[A] = underlying.iterator.patch(from, other.iterator, replaced)
   }
 
+  @SerialVersionUID(3L)
   class ZipWithIndex[A](underlying: SomeIterableOps[A]) extends AbstractView[(A, Int)] {
     def iterator: Iterator[(A, Int)] = underlying.iterator.zipWithIndex
     override def knownSize: Int = underlying.knownSize
   }
 
+  @SerialVersionUID(3L)
   class Unzip[A, A1, A2](underlying: SomeIterableOps[A])(implicit asPair: A => (A1, A2)) {
     val first: View[A1] = new View.Map[A, A1](underlying, asPair(_)._1)
     val second: View[A2] = new View.Map[A, A2](underlying, asPair(_)._2)
   }
 
+  @SerialVersionUID(3L)
   class Unzip3[A, A1, A2, A3](underlying: SomeIterableOps[A])(implicit asTriple: A => (A1, A2, A3)) {
     val first: View[A1] = new View.Map[A, A1](underlying, asTriple(_)._1)
     val second: View[A2] = new View.Map[A, A2](underlying, asTriple(_)._2)
     val third: View[A3] = new View.Map[A, A3](underlying, asTriple(_)._3)
   }
 
+  @SerialVersionUID(3L)
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new AbstractIterator[A] {
       private var i = 0
