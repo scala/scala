@@ -5615,7 +5615,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val statsEnabled = StatisticsStatics.areSomeHotStatsEnabled() && statistics.areHotStatsLocallyEnabled
       val startByType = if (statsEnabled) statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (statsEnabled) statistics.incCounter(visitsByType, tree.getClass)
-      if (Thread.interrupted()) throw new InterruptedException
       try body
       finally if (statsEnabled) statistics.popTimer(byTypeStack, startByType)
     }

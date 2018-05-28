@@ -67,9 +67,8 @@ abstract class PostProcessor extends PerRunInit {
         null
       case ex: InterruptedException => throw ex
       case ex: Throwable =>
-        // TODO hide this stack trace behind -Ydebug?
         // TODO fail fast rather than continuing to write the rest of the class files?
-        ex.printStackTrace()
+        if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
         backendReporting.error(NoPosition, s"Error while emitting ${internalName}\n${ex.getMessage}")
         null
     }

@@ -155,7 +155,6 @@ private[jvm] object GeneratedClassHandler {
           unitInPostProcess.task.value.get.get
         } catch {
           case _: ClosedByInterruptException => throw new InterruptedException()
-          case ex: InterruptedException => throw ex
           case NonFatal(t) =>
             t.printStackTrace()
             frontendAccess.backendReporting.error(NoPosition, s"unable to write ${unitInPostProcess.paths.sourceFile} $t")
