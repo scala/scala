@@ -13,7 +13,7 @@ package scala.concurrent
  *  data to be written has been read by a corresponding reader thread.
  *
  *  @author  Philipp Haller
- *  @version 2.0, 04/17/2008
+ *  @since 2.0
  */
 class SyncChannel[A] {
 

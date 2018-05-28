@@ -13,7 +13,6 @@ package scala.annotation
  *  in classfiles.
  *
  *  @author  Martin Odersky
- *  @version 1.1, 2/02/2007
  *  @since 2.4
  */
 @deprecated("Annotation classes need to be written in Java in order to be stored in classfiles in a Java-compatible manner", "2.13.0")

@@ -5,7 +5,6 @@ package scala.collection
  *  that inspects the next element without discarding it.
  *
  *  @author  Martin Odersky
- *  @version 2.8
  *  @since   2.8
  */
 trait BufferedIterator[+A] extends Iterator[A] {

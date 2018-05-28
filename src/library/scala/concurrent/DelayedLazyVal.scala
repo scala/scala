@@ -21,7 +21,7 @@ package scala.concurrent
  *  @param  body   the computation to run to completion in another thread
  *
  *  @author  Paul Phillips
- *  @version 2.8
+ *  @since 2.8
  */
 class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionContext){
   @volatile private[this] var _isDone = false

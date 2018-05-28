@@ -18,7 +18,6 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   *  @tparam V      the type of the values associated with the keys in this hash map.
   *
   *  @author  Michael J. Steindorfer
-  *  @version 2.13
   *  @since   2.13
   *  @define Coll `immutable.ChampHashMap`
   *  @define coll immutable champ hash map

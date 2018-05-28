@@ -7,7 +7,6 @@ package mutable
   *
   * @author  Matthias Zenger
   * @author  Martin Odersky
-  * @version 2.0, 31/12/2006
   * @since   1
   * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   * section on `Hash Tables` for more information.

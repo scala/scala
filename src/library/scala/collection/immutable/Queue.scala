@@ -25,7 +25,6 @@ import scala.collection.mutable.{Builder, ListBuffer}
   *  `n` remove operations with `O(1)` cost are guaranteed. Removing an item is on average `O(1)`.
   *
   *  @author  Erik Stenman
-  *  @version 1.0, 08/07/2003
   *  @since   1
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable-queues "Scala's Collection Library overview"]]
   *  section on `Immutable Queues` for more information.

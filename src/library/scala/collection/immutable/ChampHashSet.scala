@@ -15,7 +15,6 @@ import java.lang.System.arraycopy
   *  @tparam A      the type of the elements contained in this hash set.
   *
   *  @author  Michael J. Steindorfer
-  *  @version 2.13
   *  @since   2.13
   *  @define Coll `immutable.ChampHashSet`
   *  @define coll immutable champ hash set

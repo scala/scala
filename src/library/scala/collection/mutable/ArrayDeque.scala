@@ -17,7 +17,6 @@ import java.util.NoSuchElementException
   *  @note Subclasses ''must'' override the `ofArray` protected method to return a more specific type.
   *
   *  @author  Pathikrit Bhowmick
-  *  @version 2.13
   *  @since   2.13
   *
   *  @tparam A  the type of this ArrayDeque's elements.

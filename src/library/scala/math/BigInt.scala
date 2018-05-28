@@ -14,7 +14,6 @@ import scala.language.implicitConversions
 
 /**
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  *  @since 2.1
  */
 object BigInt {
@@ -107,7 +106,6 @@ object BigInt {
 
 /**
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  */
 final class BigInt(val bigInteger: BigInteger)
   extends ScalaNumber

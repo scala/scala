@@ -78,7 +78,6 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   *
   *  @author Stephane Micheloud
   *  @author Martin Odersky
-  *  @version 2.8
   *  @since   2.7
   *  @define Coll `mutable.IndexedSeq`
   *  @define coll string builder

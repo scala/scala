@@ -37,6 +37,5 @@ package scala
  * }}}
  *
  * @author Lex Spoon
- * @version 1.0, 2007-5-21
  */
 class inline extends scala.annotation.StaticAnnotation

@@ -14,7 +14,6 @@ import java.lang.String
   * @tparam V the type of the values associated with the keys.
   *
   * @author Rui Gonçalves
-  * @version 2.12
   * @since 2.12
   *
   * @define Coll mutable.TreeMap

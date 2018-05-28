@@ -61,7 +61,6 @@ import scala.language.{implicitConversions, higherKinds}
   * implicit orderings.
   *
   * @author Geoffrey Washburn
-  * @version 0.9.5, 2008-04-15
   * @since 2.7
   * @see [[scala.math.Ordered]], [[scala.util.Sorting]]
   */

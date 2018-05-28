@@ -36,7 +36,6 @@ import scala.math.Ordering
   *  @param ord   implicit ordering used to compare the elements of type `A`.
   *
   *  @author  Matthias Zenger
-  *  @version 1.0, 03/05/2004
   *  @since   1
   *
   *  @define Coll PriorityQueue

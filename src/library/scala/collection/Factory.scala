@@ -64,7 +64,7 @@ object Factory {
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
   *   @author Martin Odersky
-  *   @version 2.8
+  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -301,7 +301,7 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
   *   @author Martin Odersky
-  *   @version 2.8
+  *   @since  2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -319,7 +319,7 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
   *   @author Martin Odersky
-  *   @version 2.8
+  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -631,7 +631,7 @@ trait StrictOptimizedClassTagSeqFactory[+CC[_]] extends ClassTagSeqFactory[CC] {
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
   *   @author Martin Odersky
-  *   @version 2.8
+  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`

@@ -7,7 +7,6 @@ import scala.annotation.tailrec
   *  using a `-=` operator.
   *
   *  @author   Martin Odersky
-  *  @version 2.8
   *  @since   2.8
   *  @define coll shrinkable collection
   *  @define Coll `Shrinkable`

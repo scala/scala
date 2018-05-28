@@ -13,7 +13,6 @@ import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
   *
   *  @author  Matthias Zenger
   *  @author  Martin Odersky
-  *  @version 2.8
   *  @since   1
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#list-buffers "Scala's Collection Library overview"]]
   *  section on `List Buffers` for more information.

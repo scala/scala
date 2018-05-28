@@ -25,7 +25,6 @@ import scala.language.implicitConversions
  *  @define coll mutable map
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 class SystemProperties

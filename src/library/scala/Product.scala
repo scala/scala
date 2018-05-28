@@ -14,7 +14,6 @@ package scala
  *  all case classes implement `Product` with synthetically generated methods.
  *
  *  @author  Burak Emir
- *  @version 1.0
  *  @since   2.3
  */
 trait Product extends Any with Equals {

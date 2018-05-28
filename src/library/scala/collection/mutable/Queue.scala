@@ -15,7 +15,6 @@ package mutable
   *
   *  @author  Pathikrit Bhowmick
   *
-  *  @version 2.13
   *  @since   2.13
   *
   *  @define Coll `mutable.Queue`

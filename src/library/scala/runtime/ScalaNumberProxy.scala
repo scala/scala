@@ -18,7 +18,6 @@ import Proxy.Typed
  *  As with all classes in scala.runtime.*, this is not a supported API.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed[T] with OrderedProxy[T] {

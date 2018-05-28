@@ -13,7 +13,6 @@ package sys
  *  how to unregister itself.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 class ShutdownHookThread private (runnable: Runnable, name: String) extends Thread(runnable, name) {
