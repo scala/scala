@@ -277,6 +277,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def mkString(start: String, sep: String, end: String): String =
     iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
+  // these dummy overrides are necessary for disambiguation
+  override def mkString(sep: String): String = super.mkString(sep)
+  override def mkString: String = super.mkString
+
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))
 }
