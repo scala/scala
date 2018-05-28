@@ -338,6 +338,24 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     case _        => this.asInstanceOf[Either[A1, B1]]
   }
 
+
+  /** Returns the right value if this is right
+    * or this value if this if this is left
+    *
+    * @example {{{
+    * val  l: Either[String, Either[String, Int]] = Left("pancake")
+    * val rl: Either[String, Either[String, Int]] = Right(Left("flounder"))
+    * val rr: Either[String, Either[String, Int]] = Right(Right(7))
+    *
+    *  l.flatten //Either[String, Int]: Left("pancake")
+    * rl.flatten //Either[String, Int]: Left("flounder")
+    * rr.flatten //Either[String, Int]: Right(7)
+    * }}}
+    * 
+    * Equivalent to `flatMap(id => id)`
+    */
+  def flatten[A1 >: A, B1](implicit ev: B <:< Either[A1, B1]): Either[A1, B1] = flatMap(b => ev(b))
+
   /** The given function is applied if this is a `Right`.
    *
    *  {{{
