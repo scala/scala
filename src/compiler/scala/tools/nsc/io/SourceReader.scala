@@ -27,10 +27,10 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   /** The output character buffer */
   private var chars: CharBuffer = CharBuffer.allocate(0x4000)
 
-  private def reportEncodingError(filename:String) = {
+  private def reportEncodingError(filename: String, e: Exception) = {
+    val advice = "Please try specifying another one using the -encoding option"
     reporter.error(scala.reflect.internal.util.NoPosition,
-                   "IO error while decoding "+filename+" with "+decoder.charset()+"\n"+
-                   "Please try specifying another one using the -encoding option")
+      s"IO error while decoding $filename with ${decoder.charset()}: ${e.getMessage}\n$advice")
   }
 
   /** Reads the specified file. */
@@ -38,7 +38,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
     val c = new FileInputStream(file).getChannel
 
     try read(c)
-    catch { case e: Exception => reportEncodingError("" + file) ; Array() }
+    catch { case e: Exception => reportEncodingError("" + file, e) ; Array() }
     finally c.close()
   }
 
@@ -51,7 +51,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
       case _                   => read(ByteBuffer.wrap(file.toByteArray))
     }
     catch {
-      case e: Exception => reportEncodingError("" + file) ; Array()
+      case e: Exception => reportEncodingError("" + file, e) ; Array()
     }
   }
 

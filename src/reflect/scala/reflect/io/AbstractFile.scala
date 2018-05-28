@@ -30,7 +30,7 @@ object AbstractFile {
    * abstract regular file backed by it. Otherwise, returns `null`.
    */
   def getFile(file: File): AbstractFile =
-    if (file.isFile) new PlainFile(file) else null
+    if (!file.isDirectory) new PlainFile(file) else null
 
   /** Returns "getDirectory(new File(path))". */
   def getDirectory(path: Path): AbstractFile = getDirectory(path.toFile)
