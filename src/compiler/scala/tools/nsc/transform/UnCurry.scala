@@ -623,6 +623,8 @@ abstract class UnCurry extends InfoTransform
           applyUnary()
         case ret @ Return(expr) if isNonLocalReturn(ret) =>
           log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
+          if (settings.warnNonlocalReturn)
+            reporter.warning(ret.pos, s"return statement uses an exception to pass control to the caller of the enclosing named ${ret.symbol}")
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
