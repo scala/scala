@@ -939,7 +939,7 @@ lazy val root: Project = (project in file("."))
     }
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, partest, junit, scalaDist, macroAnnot).settings(
+    scaladoc, scalap, partest, junit, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
