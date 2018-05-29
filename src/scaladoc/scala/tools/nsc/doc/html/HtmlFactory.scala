@@ -28,13 +28,16 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
 
   def libResources = List(
     "class.svg",
+    "annotation.svg",
     "object.svg",
     "trait.svg",
     "package.svg",
     "class_comp.svg",
+    "annotation_comp.svg",
     "object_comp.svg",
     "trait_comp.svg",
     "object_comp_trait.svg",
+    "object_comp_annotation.svg",
     "abstract_type.svg",
     "lato-v11-latin-100.eot",
     "lato-v11-latin-100.ttf",

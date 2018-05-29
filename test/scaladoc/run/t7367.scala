@@ -17,7 +17,7 @@ object Test extends ScaladocModelTest {
     import access._
     val annotations = root._class("B").annotations
     assert(annotations.size == 1)
-    assert(annotations(0).annotationClass == root._class("annot"))
+    assert(annotations(0).annotationClass == root._annotation("annot"))
     val args = annotations(0).arguments
     assert(args.size == 1)
     assert(args(0).value.expression == "0")

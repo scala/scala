@@ -27,7 +27,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, AnnotationClass }
   import rootMirror.{ RootPackage, EmptyPackage }
   import ModelFactory._
 
@@ -633,6 +633,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           new DocTemplateImpl(bSym, inTpl) with Object {}
         else if (bSym.isTrait)
           new DocTemplateImpl(bSym, inTpl) with Trait {}
+        else if (bSym.isClass && bSym.asClass.baseClasses.contains(AnnotationClass))
+          new DocTemplateImpl(bSym, inTpl) with model.AnnotationClass {}
         else if (bSym.isClass || bSym == AnyRefClass)
           new DocTemplateImpl(bSym, inTpl) with Class {}
         else

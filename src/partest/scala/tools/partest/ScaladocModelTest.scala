@@ -109,6 +109,9 @@ abstract class ScaladocModelTest extends DirectTest {
       def _trait(name: String): DocTemplateEntity = getTheFirst(_traits(name), tpl.qualifiedName + ".trait(" + name + ")")
       def _traits(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: DocTemplateEntity with Trait => t})
 
+      def _annotation(name: String): DocTemplateEntity = getTheFirst(_annotations(name), tpl.qualifiedName + ".annotation(" + name + ")")
+      def _annotations(name: String): List[DocTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: DocTemplateEntity with AnnotationClass => t})
+
       def _traitMbr(name: String): MemberTemplateEntity = getTheFirst(_traitsMbr(name), tpl.qualifiedName + ".traitMember(" + name + ")")
       def _traitsMbr(name: String): List[MemberTemplateEntity] = tpl.templates.filter(_.name == name).collect({ case t: MemberTemplateEntity if t.isTrait => t})
 
