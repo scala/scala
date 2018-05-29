@@ -36,7 +36,6 @@ jobs:
 
       # pull request validation (w/ mini-bootstrap)
       - stage: build
-        if: type = pull_request
         script:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
