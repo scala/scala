@@ -1,6 +1,13 @@
 # GCE VMs have better performance (will be upgrading to premium VMs soon)
 sudo: required
 
+branches:
+  only:
+  - 2.11.x
+  - 2.12.x
+  - 2.13.x
+  - 2.14.x
+  
 language: scala
 jdk: openjdk8
 
