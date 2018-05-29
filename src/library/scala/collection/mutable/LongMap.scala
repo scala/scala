@@ -616,11 +616,11 @@ object LongMap {
     def newBuilder: Builder[(Long, AnyRef), LongMap[AnyRef]] = LongMap.newBuilder[AnyRef]
   }
 
-  implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] =
-    new BuildFrom[Any, (Long, V), LongMap[V]] {
-      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, V)]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder[V]
-    }
+  implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (Long, V), LongMap[V]]]
+  private object ToBuildFrom extends BuildFrom[Any, (Long, AnyRef), LongMap[AnyRef]] {
+    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, AnyRef)]) = LongMap.from(it)
+    def newBuilder(from: Any) = LongMap.newBuilder[AnyRef]
+  }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:

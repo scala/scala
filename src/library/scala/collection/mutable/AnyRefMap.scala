@@ -528,11 +528,11 @@ object AnyRefMap {
     def newBuilder: Builder[(AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] = AnyRefMap.newBuilder[AnyRef, AnyRef]
   }
 
-  implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] =
-    new BuildFrom[Any, (K, V), AnyRefMap[K, V]] {
-      def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(K, V)]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder[K, V]
-    }
+  implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (K, V), AnyRefMap[K, V]]]
+  private[this] object ToBuildFrom extends BuildFrom[Any, (AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] {
+    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(AnyRef, AnyRef)]) = AnyRefMap.from(it)
+    def newBuilder(from: Any) = AnyRefMap.newBuilder[AnyRef, AnyRef]
+  }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:

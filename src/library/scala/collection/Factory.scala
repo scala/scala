@@ -34,26 +34,28 @@ trait Factory[-A, +C] extends Any {
 
 object Factory {
 
-  implicit val stringFactory: Factory[Char, String] =
-    new Factory[Char, String] {
-      def fromSpecific(it: IterableOnce[Char]): String = {
-        val b = new mutable.StringBuilder(scala.math.max(0, it.knownSize))
-        b ++= it
-        b.result()
-      }
-      def newBuilder: Builder[Char, String] = new mutable.StringBuilder()
+  implicit val stringFactory: Factory[Char, String] = new StringFactory
+  @SerialVersionUID(3L)
+  private class StringFactory extends Factory[Char, String] with Serializable {
+    def fromSpecific(it: IterableOnce[Char]): String = {
+      val b = new mutable.StringBuilder(scala.math.max(0, it.knownSize))
+      b ++= it
+      b.result()
     }
+    def newBuilder: Builder[Char, String] = new mutable.StringBuilder()
+  }
 
-  implicit def arrayFactory[A: ClassTag]: Factory[A, Array[A]] =
-    new Factory[A, Array[A]] {
-      def fromSpecific(it: IterableOnce[A]): Array[A] = {
-        val b = newBuilder
-        b.sizeHint(scala.math.max(0, it.knownSize))
-        b ++= it
-        b.result()
-      }
-      def newBuilder: Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]
+  implicit def arrayFactory[A: ClassTag]: Factory[A, Array[A]] = new ArrayFactory[A]
+  @SerialVersionUID(3L)
+  private class ArrayFactory[A: ClassTag] extends Factory[A, Array[A]] with Serializable {
+    def fromSpecific(it: IterableOnce[A]): Array[A] = {
+      val b = newBuilder
+      b.sizeHint(scala.math.max(0, it.knownSize))
+      b ++= it
+      b.result()
     }
+    def newBuilder: Builder[A, Array[A]] = mutable.ArrayBuilder.make[A]
+  }
 
 }
 
@@ -431,11 +433,11 @@ object EvidenceIterableFactory {
     def newBuilder: Builder[A, CC[A]] = factory.newBuilder[A]
   }
 
-  implicit def toBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): BuildFrom[Any, A, CC[A]] =
-    new BuildFrom[Any, A, CC[A]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[A]): CC[A] = factory.from[A](it)
-      def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]
-    }
+  implicit def toBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): BuildFrom[Any, A, CC[A]] = new EvidenceIterableFactoryToBuildFrom(factory)
+  private class EvidenceIterableFactoryToBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]) extends BuildFrom[Any, A, CC[A]] {
+    def fromSpecificIterable(from: Any)(it: Iterable[A]): CC[A] = factory.from[A](it)
+    def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]
+  }
 
   @SerialVersionUID(3L)
   class Delegate[CC[_], Ev[_]](delegate: EvidenceIterableFactory[CC, Ev]) extends EvidenceIterableFactory[CC, Ev] {
@@ -686,11 +688,11 @@ object SortedMapFactory {
     def newBuilder: Builder[(K, V), CC[K, V]] = factory.newBuilder[K, V]
   }
 
-  implicit def toBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
-    new BuildFrom[Any, (K, V), CC[K, V]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
-      def newBuilder(from: Any) = factory.newBuilder[K, V]
-    }
+  implicit def toBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] = new SortedMapFactoryToBuildFrom(factory)
+  private class SortedMapFactoryToBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]) extends BuildFrom[Any, (K, V), CC[K, V]] {
+    def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
+    def newBuilder(from: Any) = factory.newBuilder[K, V]
+  }
 
   @SerialVersionUID(3L)
   class Delegate[CC[_, _]](delegate: SortedMapFactory[CC]) extends SortedMapFactory[CC] {
