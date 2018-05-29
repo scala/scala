@@ -1,6 +1,13 @@
 # GCE VMs have better performance (will be upgrading to premium VMs soon)
 sudo: required
 
+branches:
+  only:
+  - 2.11.x
+  - 2.12.x
+  - 2.13.x
+  - 2.14.x
+  
 language: scala
 jdk: openjdk8
 
@@ -10,13 +17,17 @@ cache:
     - $HOME/.sbt
 
 stages:
+  - name: warmup
   - name: build
+  - name: build_publish
 
 jobs:
     include:
-
+      # start sbt, so it can fetch and cache dependencies
+      - stage: warmup
+        script: sbt partest/update test/update junit/update
       # full bootstrap and publish
-      - stage: build
+      - stage: build_publish
         if: type != pull_request
         script:
           # see comment in `bootstrap_fun` for details on the procedure
@@ -36,7 +47,6 @@ jobs:
 
       # pull request validation (w/ mini-bootstrap)
       - stage: build
-        if: type = pull_request
         script:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
