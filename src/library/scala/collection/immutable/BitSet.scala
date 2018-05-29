@@ -55,6 +55,8 @@ sealed abstract class BitSet
   override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
 
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
+  override def collect(pf: PartialFunction[Int, Int]): BitSet = super[BitSet].collect(pf)
+  override def collect[B: Ordering](pf: scala.PartialFunction[Int, B]): SortedSet[B] = super[SortedSetOps].collect(pf)
 }
 
 /**
