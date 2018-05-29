@@ -72,6 +72,7 @@ sealed abstract class List[+A]
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
+    with StrictOptimizedLinearSeqOps[A, List, List[A]]
     with StrictOptimizedSeqOps[A, List, List[A]] {
 
   override def iterableFactory: SeqFactory[List] = List
