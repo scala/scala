@@ -249,7 +249,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     }
   }
 
-  def -(elem: A) = subtractOne(elem)
+  override def -(elem: A) = subtractOne(elem)
 
   // empty this set
   override def clear(): Unit = {

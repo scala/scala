@@ -43,7 +43,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def excl(elem: A): C
 
   /** Alias for `excl` */
-  @`inline` final def - (elem: A): C = excl(elem)
+  /* @`inline` final */ override def - (elem: A): C = excl(elem)
 
   override def concat(that: collection.Iterable[A]): C = {
     var result: C = coll
