@@ -115,39 +115,6 @@ lazy val instanceSettings = Seq[Setting[_]](
   Quiet.silenceScalaBinaryVersionWarning
 )
 
-// be careful with using this instance, as it may cause performance problems (e.g., MetaSpace exhaustion)
-lazy val quickInstanceSettings = Seq[Setting[_]](
-  organization := "org.scala-lang",
-  // we don't cross build Scala itself
-  crossPaths := false,
-  // do not add Scala library jar as a dependency automatically
-  autoScalaLibrary := false,
-  // Avoid circular dependencies for scalaInstance (see https://github.com/sbt/sbt/issues/1872)
-  managedScalaInstance := false,
-  scalaInstance := {
-    // TODO: express in terms of distDependencies?
-    val cpElems: Seq[java.io.File] = (fullClasspath in Compile in replFrontend).value.map(_.data) ++ (fullClasspath in Compile in scaladoc).value.map(_.data)
-    def findJar(name: String): java.io.File = {
-      import java.io.File.separatorChar
-      val target = s"classes$separatorChar$name"
-      cpElems.find(_.getPath.endsWith(target))
-        .getOrElse(throw new RuntimeException(
-          s"""$target not found in:\n${cpElems.mkString("\n")}"""))
-    }
-    val (libraryJar, compilerJar) = (findJar("library"), findJar("compiler"))
-    val extraJars = cpElems.filter(f => (f ne libraryJar) && (f ne compilerJar))
-    val v = (version in Global).value
-    new ScalaInstance(v, new URLClassLoader(cpElems.map(_.toURI.toURL).toArray[URL], null), libraryJar, compilerJar, extraJars, Some(v))
-  },
-  // As of sbt 0.13.12 (sbt/sbt#2634) sbt endeavours to align both scalaOrganization and scalaVersion
-  // in the Scala artefacts, for example scala-library and scala-compiler.
-  // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
-  // scala-library are correct to be different. So disable overriding.
-  ivyScala ~= (_ map (_ copy (overrideScalaVersion = false))),
-  Quiet.silenceScalaBinaryVersionWarning
-)
-
-
 
 lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   // we always assume that Java classes are standalone and do not have any dependency
@@ -609,26 +576,6 @@ lazy val junit = project.in(file("test") / "junit")
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
 
-// imported from scalamacros/paradise for the test suite -- TODO: integrate into build structure, get rid of quickInstanceSettings?
-lazy val macroAnnot = project.in(file("test") / "macro-annot")
-  .dependsOn(library, reflect, compiler, repl, replFrontend, scaladoc)
-  .settings(disableDocs)
-  .settings(disablePublishing)
-  .settings(quickInstanceSettings) // use quick compiler as Scala Instance
-  .settings(
-    fork in Test := true,
-    javaOptions in Test += "-Xss1M",
-    libraryDependencies ++= Seq(junitDep, junitInterfaceDep),
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v",
-                                  s"-Dsbt.paths.tests.classpath=${(fullClasspath in Test).value.files.map(_.getAbsolutePath).mkString(java.io.File.pathSeparatorChar.toString)}"),
-
-    baseDirectory in Compile := (baseDirectory in ThisBuild).value,
-    baseDirectory in Test := (baseDirectory in ThisBuild).value,
-
-    scalacOptions += "-Ymacro-annotations",
-    scalacOptions += "-Ywarn-unused:imports",
-    scalacOptions += "-Xfatal-warnings"
-  )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc, scalacheckLib)
@@ -873,12 +820,12 @@ lazy val root: Project = (project in file("."))
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-//        (Keys.test in Test in macroAnnot).result map (_ -> "macroAnnot/test"),
         (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
         (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
+        (testOnly in IntegrationTest in testP).toTask(" -- -Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot").result map (_ -> "partest --srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
