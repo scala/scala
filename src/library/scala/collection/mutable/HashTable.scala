@@ -268,7 +268,9 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
       }
       i = i - 1
     }
-    threshold = newThreshold(_loadFactor, newSize)
+    // If the table length reaches MaximumTableCapacity of Int.MaxValue / 2 then set the
+    // threshold to Int.MaxValue - 8 as a safe value
+    threshold = if (table.length >= MaximumTableCapacity) Int.MaxValue - 8 else newThreshold(_loadFactor, table.length)
   }
 
   /* Size map handling code */
@@ -403,6 +405,8 @@ private[collection] object HashTable {
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 
   private[collection] final def sizeForThreshold(_loadFactor: Int, thr: Int) = ((thr.toLong * loadFactorDenum) / _loadFactor).toInt
+
+  private val MaximumTableCapacity = 1 << 30
 
   private[collection] final def capacity(expectedSize: Int) = nextPositivePowerOfTwo(expectedSize)
 
