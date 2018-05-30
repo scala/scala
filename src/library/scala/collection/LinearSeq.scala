@@ -21,12 +21,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   def head: A
   def tail: LinearSeq[A]
 
-  // `iterator` is implemented in terms of `head` and `tail`
-  def iterator: Iterator[A] = new AbstractIterator[A] {
-    private[this] var current: Iterable[A] = toIterable
-    def hasNext = !current.isEmpty
-    def next() = { val r = current.head; current = current.tail; r }
-  }
+  def iterator: Iterator[A] = new LinearSeqIterator[A](toSeq)
 
   def length: Int = {
     var these = toIterable
@@ -175,4 +170,34 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
 
   override def tails: Iterator[C] =
     Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder.result())
+}
+
+trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {
+  // A more efficient iterator implementation than the default LinearSeqIterator
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
+    private[this] var current: Iterable[A] = toIterable
+    def hasNext = !current.isEmpty
+    def next() = { val r = current.head; current = current.tail; r }
+  }
+}
+
+/** A specialized Iterator for LinearSeqs that is lazy enough for Stream and LazyList. This is accomplished by not
+  * evaluating the tail after returning the current head.
+  */
+private[collection] final class LinearSeqIterator[A](coll: Seq[A]) extends AbstractIterator[A] {
+  // A call-by-need cell
+  private[this] final class LazyCell(st: => Seq[A]) { lazy val v = st }
+
+  private[this] var these: LazyCell = new LazyCell(coll)
+
+  def hasNext: Boolean = these.v.nonEmpty
+
+  def next(): A =
+    if (isEmpty) Iterator.empty.next()
+    else {
+      val cur    = these.v
+      val result = cur.head
+      these = new LazyCell(cur.tail)
+      result
+    }
 }
