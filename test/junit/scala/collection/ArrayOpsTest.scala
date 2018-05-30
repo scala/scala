@@ -69,5 +69,16 @@ class ArrayOpsTest {
     assertArrayEquals(Array(0), zero)
   }
 
-
+  @Test
+  def patch(): Unit = {
+    val a1 = Array.empty[Int]
+    val v1 = a1.toVector
+    val a2 = Array[Int](1,2,3,4,5)
+    val v2 = a2.toVector
+    assertEquals(v1.patch(0, a1, -1), a1.patch(0, v1, -1).toSeq)
+    assertEquals(v2.patch(0, a2, 0), a2.patch(0, v2, 0).toSeq)
+    assertEquals(v2.patch(0, a2, 3), a2.patch(0, v2, 3).toSeq)
+    assertEquals(v2.patch(0, a2, 8), a2.patch(0, v2, 8).toSeq)
+    assertEquals(v1.patch(-1, a2, 1), a1.patch(-1, v2, 1).toSeq)
+  }
 }

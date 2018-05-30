@@ -1048,11 +1048,12 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def patch[B >: A : ClassTag](from: Int, other: IterableOnce[B], replaced: Int): Array[B] = {
     val b = ArrayBuilder.make[B]
     val k = other.knownSize
-    if(k >= 0) b.sizeHint(xs.length + k - replaced)
+    val r = if(replaced < 0) 0 else replaced
+    if(k >= 0) b.sizeHint(xs.length + k - r)
     val chunk1 = if(from > 0) min(from, xs.length) else 0
     if(chunk1 > 0) b.addAll(xs, 0, chunk1)
     b ++= other
-    val remaining = xs.length - chunk1 - replaced
+    val remaining = xs.length - chunk1 - r
     if(remaining > 0) b.addAll(xs, xs.length - remaining, remaining)
     b.result()
   }
