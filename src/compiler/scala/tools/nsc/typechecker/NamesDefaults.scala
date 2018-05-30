@@ -28,7 +28,7 @@ trait NamesDefaults { self: Analyzer =>
   // object, we need the templateNamer of that module class. These two are stored
   // as an attachment in the companion module symbol
   class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer) {
-    var defaults = mutable.ListBuffer[Symbol]()
+    val defaults = mutable.ListBuffer[Symbol]()
   }
 
   // Attached to the synthetic companion `apply` method symbol generated for case classes, holds
