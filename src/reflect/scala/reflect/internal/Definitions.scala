@@ -81,6 +81,13 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
+    private[Definitions] def valueClassCompanion(name: TermName): ModuleSymbol = {
+      getMember(ScalaPackageClass, name) match {
+        case x: ModuleSymbol => x
+        case _               => catastrophicFailure()
+      }
+    }
+
     private[Definitions] def classesMap[T](f: Name => T): Map[Symbol, T] = symbolsMap(ScalaValueClassesNoUnit, f)
     private def symbolsMap[T](syms: List[Symbol], f: Name => T): Map[Symbol, T] = mapFrom(syms)(x => f(x.name))
     private def symbolsMapFilt[T](syms: List[Symbol], p: Name => Boolean, f: Name => T) = symbolsMap(syms filter (x => p(x.name)), f)
@@ -137,6 +144,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val FloatTpe     = FloatClass.tpe
     lazy val DoubleTpe    = DoubleClass.tpe
     lazy val BooleanTpe   = BooleanClass.tpe
+
+    lazy val UnitModule   = valueClassCompanion(tpnme.Unit.toTermName)
 
     lazy val ScalaNumericValueClasses = ScalaValueClasses filterNot Set[Symbol](UnitClass, BooleanClass)
     lazy val ScalaValueClassesNoUnit  = ScalaValueClasses filterNot (_ eq UnitClass)
@@ -1461,13 +1470,6 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val Boxes_isNumberOrBool  = getDecl(BoxesRunTimeClass, nme.isBoxedNumberOrBoolean)
       lazy val Boxes_isNumber        = getDecl(BoxesRunTimeClass, nme.isBoxedNumber)
-
-      private def valueClassCompanion(name: TermName): ModuleSymbol = {
-        getMember(ScalaPackageClass, name) match {
-          case x: ModuleSymbol => x
-          case _               => catastrophicFailure()
-        }
-      }
 
       private def valueCompanionMember(className: Name, methodName: TermName): TermSymbol =
         getMemberMethod(valueClassCompanion(className.toTermName).moduleClass, methodName)
