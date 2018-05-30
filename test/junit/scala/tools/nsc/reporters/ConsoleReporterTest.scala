@@ -33,7 +33,7 @@ class ConsoleReporterTest {
     try {
       test(pos)
       val buf = writerOut.toString
-      if (msg.isEmpty && severity.isEmpty) assertTrue(buf.isEmpty)
+      if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
       else if (!pos.isDefined) assertEquals(severity + msg, buf.lines.next)
       else {
         val it = buf.lines
@@ -169,7 +169,7 @@ class ConsoleReporterTest {
       settings.maxerrs.value  = 1
       settings.maxwarns.value = 1
 
-      new LimitingReporter(settings, reporter)
+      new Reporter.LimitingReporter(settings, reporter)
     }
 
     // pass one message

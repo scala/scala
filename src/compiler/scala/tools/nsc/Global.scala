@@ -14,8 +14,9 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, U
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import util.{ClassPath, returning}
+import reporters.{Reporter => LegacyReporter}
 import scala.reflect.ClassTag
-import scala.reflect.internal.Reporter
+import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
@@ -34,7 +35,7 @@ import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 
-class Global(var currentSettings: Settings, reporter0: Reporter)
+class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     extends SymbolTable
     with CompilationUnits
     with Plugins
@@ -76,28 +77,20 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   override def settings = currentSettings
 
-  private[this] var currentReporter: Reporter = { reporter = reporter0 ; currentReporter }
+  private[this] var currentReporter: LegacyReporter = { reporter = reporter0 ; currentReporter }
 
-  def reporter: Reporter = currentReporter
-  def reporter_=(newReporter: Reporter): Unit =
-    currentReporter = newReporter match {
-      case _: reporters.ConsoleReporter | _: reporters.DefaultReporter | _: reporters.LimitingReporter => newReporter
-      case _ if settings.maxerrs.isSetByUser && settings.maxerrs.value < settings.maxerrs.default =>
-        new reporters.LimitingReporter(settings, newReporter)
-      case _ => newReporter
-    }
-  def reporter_=(oldReporter: reporters.Reporter): Unit = reporter_=(oldReporter.asInstanceOf[Reporter])
+  def reporter: LegacyReporter = currentReporter
+  // enforce maxerrs if necessary
+  def reporter_=(newReporter: LegacyReporter): Unit = currentReporter = LegacyReporter.limitedReporter(settings, newReporter)
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
 
-  def this(reporter: Reporter) =
+  def this(reporter: LegacyReporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
     this(settings, Global.reporter(settings))
-
-  def this(settings: Settings, reporter: reporters.Reporter) = this(settings, reporter.asInstanceOf[Reporter])
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -261,10 +254,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
     //       in any case don't use reporter for parser hooks
-    reporter match {
-      case hooker: reporters.Reporter => hooker.comment(pos, comment)
-      case _ => ()
-    }
+    reporter.comment(pos, comment)
   }
 
   /** Register new context; called for every created context
@@ -344,7 +334,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     def loadReader(name: String): Option[SourceReader] = {
-      def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[Reporter])
+      def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[InternalReporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
       catch { case ex: Throwable =>
@@ -401,10 +391,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
-      val isCanceled = reporter match {
-        case cancelable: reporters.Reporter => cancelable.cancelled
-        case _ => false
-      }
+      val isCanceled = reporter.cancelled
       // run the typer only if in `createJavadoc` mode
       val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
       isCanceled || unit.isJava && this.id > maxJavaPhase
@@ -1276,10 +1263,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     // for sbt
-    def cancel(): Unit = reporter match {
-      case cancelable: reporters.Reporter => cancelable.cancelled = true
-      case _ => ()
-    }
+    def cancel(): Unit = reporter.cancelled = true
 
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
@@ -1669,14 +1653,16 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 }
 
 object Global {
-  def apply(settings: Settings, reporter: Reporter): Global = new Global(settings, reporter)
+  def apply(settings: Settings, reporter: LegacyReporter): Global = new Global(settings, reporter)
 
   def apply(settings: Settings): Global = new Global(settings, reporter(settings))
 
-  private def reporter(settings: Settings): Reporter = {
+  private def reporter(settings: Settings): LegacyReporter = {
     //val loader = ScalaClassLoader(getClass.getClassLoader)  // apply does not make delegate
     val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
-    loader.create[Reporter](settings.reporter.value, settings.errorFn)(settings)
+    val res = loader.create[InternalReporter](settings.reporter.value, settings.errorFn)(settings)
+    if (res.isInstanceOf[LegacyReporter]) res.asInstanceOf[LegacyReporter]
+    else res: LegacyReporter  // adaptable
   }
   private object InitPhase extends Phase(null) {
     def name = "<init phase>"

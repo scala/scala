@@ -97,8 +97,7 @@ object DisplayReporter {
 class DefaultReporter(settings: Settings, writer: PrintWriter, echo: PrintWriter)
   extends PositionFilter(settings, DisplayReporter(settings, Console.in, writer, echo))
   with CountingReporter
-  with LimitFilter
-  with SummaryReporter {
+  with LimitFilter {
   // required constructor for -Xreporter
   def this(settings: Settings) = this(settings, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
   def shortname_=(flag: Boolean): Unit = delegate.asInstanceOf[DisplayReporter].shortname = flag
@@ -124,11 +123,20 @@ trait FilteringReporter extends ForwardingReporter {
   override def error(pos: Position, msg: String)   = if (filter(pos, msg, ERROR)) delegate.error(pos, msg)
 }
 
+/** A `Reporter` that counts messages that are passed by the filter and echos a summary in `finish`. */
 trait CountingReporter extends FilteringReporter {
   abstract override protected def filter(pos: Position, msg: String, severity: Severity): Boolean =
     super.filter(pos, msg, severity) && { severity.count += 1 ; true }
+  /** Prints the number of warnings and errors if there are any. */
+  override def finish(): Unit = {
+    import reflect.internal.util.StringOps.{countElementsAsString => countAs}
+    if (hasWarnings) echo(s"${countAs(WARNING.count, WARNING.toString.toLowerCase)} found")
+    if (hasErrors)   echo(s"${countAs(ERROR.count, ERROR.toString.toLowerCase)} found")
+    super.finish()
+  }
 }
 
+/** Disable a message when super.filter has passed the message but max limit has been reached. */
 trait LimitFilter extends FilteringReporter {
   def maxerrs: Int
   def maxwarns: Int
@@ -145,23 +153,4 @@ trait LimitFilter extends FilteringReporter {
       case WARNING => warned = true ; WARNING.count <= maxwarns
       case _       => true
     }}
-}
-
-/** A `Reporter` that echos a summary in `finish`.
- */
-trait SummaryReporter extends InternalReporter { _: CountingReporter =>
-  /** Prints the number of warnings and errors if there are any. */
-  override def finish(): Unit = {
-    import reflect.internal.util.StringOps.{countElementsAsString => countAs}
-    if (hasWarnings) echo(s"${countAs(WARNING.count, WARNING.toString.toLowerCase)} found")
-    if (hasErrors)   echo(s"${countAs(ERROR.count, ERROR.toString.toLowerCase)} found")
-    super.finish()
-  }
-}
-
-trait TracingReporter extends ForwardingReporter {
-  private def debug(pos: Position, msg: String, sev: Severity) = println(s"[$sev] $pos $msg")
-  override def echo(pos: Position, msg: String)    = { debug(pos, msg, INFO); delegate.echo(pos, msg) }
-  override def warning(pos: Position, msg: String) = { debug(pos, msg, WARNING); delegate.warning(pos, msg) }
-  override def error(pos: Position, msg: String)   = { debug(pos, msg, ERROR); delegate.error(pos, msg) }
 }

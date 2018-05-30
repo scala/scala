@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Position
 
 /** This class implements a Reporter that stores its reports in the set `infos`. */
-class StoreReporter extends scala.reflect.internal.Reporter {
+class StoreReporter extends Reporter {
   case class Info(pos: Position, msg: String, severity: Severity) {
     override def toString() = s"pos: $pos $msg $severity"
   }
