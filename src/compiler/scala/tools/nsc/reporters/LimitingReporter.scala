@@ -13,4 +13,14 @@ class LimitingReporter(settings: Settings, override protected val delegate: Inte
       case WARNING => warningCount < settings.maxwarns.value
       case _       => true
     }
+  // work around fractured API to support `reporters.Reporter.info`
+  override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = delegate match {
+    case r: Reporter =>
+      severity match {
+        case ERROR   => r.error(pos, msg)
+        case WARNING => r.warning(pos, msg)
+        case _       => if (force) r.echo(pos, msg) else r.info(pos, msg, force = false)
+      }
+    case _           => super.info0(pos, msg, severity, force)
+  }
 }
