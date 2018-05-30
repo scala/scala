@@ -18,11 +18,13 @@ Bindings of different kinds have a precedence defined on them:
 
 1. Definitions and declarations that are local, inherited, or made
    available by a package clause and also defined in the same compilation unit
-   as the reference, have highest precedence.
+   as the reference to them, have highest precedence.
 1. Explicit imports have next highest precedence.
-1. Wildcard imports  have next highest precedence.
+1. Wildcard imports have next highest precedence.
 1. Definitions made available by a package clause, but not also defined in the
-   same compilation unit as the reference, have lowest precedence.
+   same compilation unit as the reference to them, as well as imports which
+   are supplied by the compiler but not explicitly written in source code,
+   have lowest precedence.
 
 There are two different name spaces, one for [types](03-types.html#types)
 and one for [terms](06-expressions.html#expressions). The same name may designate a
@@ -82,6 +84,25 @@ package util {
   }
 }
 ```
+
+The compiler supplies imports in a preamble to every source file. This preamble
+typically has the form:
+
+```scala
+import java.lang._
+{
+  import scala._
+  {
+    import Predef._
+    { /* source */ }
+  }
+}
+```
+
+These imports are taken as lowest precedence, so that they are always shadowed
+by user code, which may contain competing imports and definitions.
+They also increase the nesting depth as shown, so that later imports
+shadow earlier ones.
 
 As a convenience, multiple bindings of a type identifier to the same
 underlying type is permitted. This is possible when import clauses introduce
