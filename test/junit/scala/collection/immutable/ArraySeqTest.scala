@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -44,20 +44,26 @@ class ArraySeqTest {
 
     def unit1(): Unit = {}
     def unit2(): Unit = {}
-    Assert.assertEquals(unit1(), unit2())
+    assertEquals(unit1(), unit2())
     // unitArray is actually an instance of Immutable[BoxedUnit], the check to which is actually checked slice
     // implementation of ofRef
     val unitArray: ArraySeq[Unit] = Array(unit1(), unit2(), unit1(), unit2())
     check(unitArray, Array(unit1(), unit1()), Array(unit1(), unit1()))
   }
 
+  @Test
+  def t10851(): Unit = {
+    val s1 = collection.immutable.ArraySeq.untagged(1,2,3)
+    assertTrue(s1.unsafeArray.getClass == classOf[Array[AnyRef]])
+  }
+
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
-    Assert.assertEquals(array, array.slice(-1, 4))
-    Assert.assertEquals(array, array.slice(0, 5))
-    Assert.assertEquals(array, array.slice(-1, 5))
-    Assert.assertEquals(expectedSliceResult1, array.slice(0, 2))
-    Assert.assertEquals(expectedSliceResult2, array.slice(1, 3))
-    Assert.assertEquals(ArraySeq.empty[T], array.slice(1, 1))
-    Assert.assertEquals(ArraySeq.empty[T], array.slice(2, 1))
+    assertEquals(array, array.slice(-1, 4))
+    assertEquals(array, array.slice(0, 5))
+    assertEquals(array, array.slice(-1, 5))
+    assertEquals(expectedSliceResult1, array.slice(0, 2))
+    assertEquals(expectedSliceResult2, array.slice(1, 3))
+    assertEquals(ArraySeq.empty[T], array.slice(1, 1))
+    assertEquals(ArraySeq.empty[T], array.slice(2, 1))
   }
 }

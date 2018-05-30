@@ -25,20 +25,22 @@ sealed abstract class ArraySeq[+A]
     with IndexedSeqOps[A, ArraySeq, ArraySeq[A]]
     with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]] {
 
-  /** The tag of the element type */
-  protected def elemTag: ClassTag[A] @uncheckedVariance
+  /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
+    * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
+    * or subtype of the element type. */
+  protected def elemTag: ClassTag[_]
 
   override def iterableFactory: SeqFactory[ArraySeq] = ArraySeq.untagged
 
   /** The wrapped mutable `Array` that backs this `ArraySeq`. Any changes to this array will break
-    * the expected immutability. */
-  def unsafeArray: Array[A @uncheckedVariance]
-  // uncheckedVariance should be safe: Array[A] for reference types A is covariant at the JVM level. Array[A] for
-  // primitive types A can only be widened to Array[Any] which erases to Object.
+    * the expected immutability. Its element type does not have to be equal to the element type of this ArraySeq.
+    * A primitive ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an
+    * array of a supertype or subtype of the element type. */
+  def unsafeArray: Array[_]
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from[A](coll)(elemTag)
+  override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
 
-  override protected def newSpecificBuilder: Builder[A, ArraySeq[A]] @uncheckedVariance = ArraySeq.newBuilder[A](elemTag)
+  override protected def newSpecificBuilder: Builder[A, ArraySeq[A]] @uncheckedVariance = ArraySeq.newBuilder[A](elemTag.asInstanceOf[ClassTag[A]])
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
@@ -95,19 +97,19 @@ sealed abstract class ArraySeq[+A]
         fromIterable(new View.Zip(toIterable, that))
     }
 
-  override def take(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).take(n))
+  override def take(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).take(n)).asInstanceOf[ArraySeq[A]]
 
-  override def takeRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).takeRight(n))
+  override def takeRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).takeRight(n)).asInstanceOf[ArraySeq[A]]
 
-  override def drop(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).drop(n))
+  override def drop(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).drop(n)).asInstanceOf[ArraySeq[A]]
 
-  override def dropRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).dropRight(n))
+  override def dropRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).dropRight(n)).asInstanceOf[ArraySeq[A]]
 
-  override def slice(from: Int, until: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until))
+  override def slice(from: Int, until: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until)).asInstanceOf[ArraySeq[A]]
 
-  override def tail: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).tail)
+  override def tail: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).tail).asInstanceOf[ArraySeq[A]]
 
-  override def reverse: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).reverse)
+  override def reverse: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).reverse).asInstanceOf[ArraySeq[A]]
 
   override def className = "ArraySeq"
 
