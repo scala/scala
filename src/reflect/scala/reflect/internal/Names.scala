@@ -40,6 +40,7 @@ trait Names extends api.Names {
   /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
   private[this] var nc = 0
+  final def nameTableSize: Int = nc
 
   /** Hashtable for finding term names quickly. */
   private[this] val termHashtable = new Array[TermName](HASH_SIZE)
