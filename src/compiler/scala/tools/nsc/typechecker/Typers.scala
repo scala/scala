@@ -4809,8 +4809,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedApply(tree: Apply) = tree match {
-        case Apply(Block(stats, expr), args) =>
-          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
+        // Special case for higher-order right associative method, since it will have to be eta-expanded
+        // TODO: can we drop this when we eta-expand more aggressively?
+        // example:
+        //   class S { def ???:[B](a: B)(f: B => B): B = ??? }
+        //   def rightAssocHigherOrder[A](a: A, s: S): A = (a ???: s) (x => x)
+        // error without this hack:                           ^^^^
+        //      missing argument list for method ???: in class S
+        //      Unapplied methods are only converted to functions when a function type is expected.
+        case Apply(Block((vd@ValDef(mods, name, _, _)) :: Nil, expr), args) if mods.isArtifact && name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX) =>
+          typed1(atPos(tree.pos)(Block(vd :: Nil, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
+
         case Apply(fun, args) =>
           normalTypedApply(tree, fun, args) match {
             case treeInfo.ArrayInstantiation(level, componentType, arg) =>
