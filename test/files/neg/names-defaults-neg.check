@@ -154,17 +154,9 @@ names-defaults-neg.scala:149: error: variable definition needs type because 'x' 
 names-defaults-neg.scala:152: error: variable definition needs type because 'x' is used as a named argument in its body.
   object t6 { var x = t.f(x = 1) }
                   ^
-names-defaults-neg.scala:152: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-  object t6 { var x = t.f(x = 1) }
-                            ^
 names-defaults-neg.scala:155: error: variable definition needs type because 'x' is used as a named argument in its body.
   class t9 { var x = t.f(x = 1) }
                  ^
-names-defaults-neg.scala:155: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-  class t9 { var x = t.f(x = 1) }
-                           ^
 names-defaults-neg.scala:169: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u3 { var x = u.f(x = 1) }
                ^
@@ -177,12 +169,8 @@ names-defaults-neg.scala:175: error: reference to x is ambiguous; it is both a m
 names-defaults-neg.scala:182: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
-names-defaults-neg.scala:182: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-  class u15 { var x = u.f(x = 1) }
-                            ^
 names-defaults-neg.scala:185: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
-6 warnings found
+three warnings found
 45 errors found

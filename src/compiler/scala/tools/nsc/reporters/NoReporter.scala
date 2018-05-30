@@ -16,6 +16,6 @@ import scala.reflect.internal.util.Position
 
 /** A reporter that ignores reports.
  */
-object NoReporter extends scala.reflect.internal.Reporter {
+object NoReporter extends Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = ()
 }

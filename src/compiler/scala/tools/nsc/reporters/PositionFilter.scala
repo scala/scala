@@ -55,9 +55,3 @@ class PositionFilter(settings: Settings, protected val delegate: InternalReporte
       }
     }
 }
-
-/** This reporter filters info messages based on `-verbose`.
- */
-class VerboseFilter(settings: Settings, protected val delegate: InternalReporter) extends InternalReporter with FilteringReporter {
-  override protected def filter(pos: Position, msg: String, severity: Severity) = settings.verbose || severity != INFO
-}

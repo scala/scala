@@ -33,7 +33,7 @@ class ConsoleReporterTest {
     try {
       test(pos)
       val buf = writerOut.toString
-      if (msg.isEmpty && severity.isEmpty) assertTrue(buf.isEmpty)
+      if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
       else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next)
       else {
         val it = buf.linesIterator
@@ -170,7 +170,7 @@ class ConsoleReporterTest {
       settings.maxerrs.value  = 1
       settings.maxwarns.value = 1
 
-      new LimitingReporter(settings, reporter)
+      new Reporter.LimitingReporter(settings, reporter)
     }
 
     // pass one message
@@ -201,7 +201,7 @@ class ConsoleReporterTest {
 
   @Test
   def filteredInfoTest(): Unit = {
-    val reporter = new LimitingReporter(new Settings, new StoreReporter)
+    val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
     // test obsolete API, make sure it doesn't throw
     reporter.echo(NoPosition, "goodbye, cruel world")
   }
