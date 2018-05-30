@@ -272,8 +272,13 @@ trait MacroAnnotationNamers { self: Analyzer =>
             if (isEnumConstant(tree))
               tree.symbol setInfo ConstantType(Constant(tree.symbol))
           case tree @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
+            if (mexists(tree.vparamss)(_.mods.hasDefault))
+              enterDefaultGetters(tree.symbol, tree, tree.vparamss, tree.tparams)
             sym setInfo completerOf(tree)
           case tree @ DefDef(mods, name, tparams, _, _, _) =>
+            if (mexists(tree.vparamss)(_.mods.hasDefault))
+              enterDefaultGetters(tree.symbol, tree, tree.vparamss, tree.tparams)
+
             val completer =
               if (sym hasFlag SYNTHETIC) {
                 if (name == nme.copy) copyMethodCompleter(tree)
