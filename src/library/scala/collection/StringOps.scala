@@ -754,56 +754,104 @@ final class StringOps(private val s: String) extends AnyVal {
   def r(groupNames: String*): Regex = new Regex(s, groupNames: _*)
 
   /**
-    * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
-    */
-  def toBoolean: Boolean = parseBoolean(s)
+   * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
+   */
+  def toBoolean: Boolean               = toBooleanImpl(s)
+  
+  /**
+   * Try to parse as a `Boolean`
+   * @return `Some(true)` if the string is "true" case insenitive,
+   * `Some(false)` if the string is "false" case insensitive, 
+   * and `None` if the string is anything else
+   * @throws java.lang.NullPointerException if the string is `null`
+   */
+  def toBooleanOption: Option[Boolean] = StringParsers.parseBool(s)
 
   /**
     * Parse as a `Byte` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Byte`.
     */
-  def toByte: Byte       = java.lang.Byte.parseByte(s)
+  def toByte: Byte                     = java.lang.Byte.parseByte(s)
+
+  /**
+   * Try to parse as a `Byte`
+   * @return `Some(value)` if the string contains a valid byte value, otherwise `None`
+   * @throws java.lang.NullPointerException if the string is `null`
+   */
+  def toByteOption: Option[Byte]       = StringParsers.parseByte(s)
 
   /**
     * Parse as a `Short` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Short`.
     */
-  def toShort: Short     = java.lang.Short.parseShort(s)
+  def toShort: Short                   = java.lang.Short.parseShort(s)
+
+  /**
+   * Try to parse as a `Short`
+   * @return `Some(value)` if the string contains a valid short value, otherwise `None`
+   * @throws java.lang.NullPointerException if the string is `null`
+   */
+  def toShortOption: Option[Short]     = StringParsers.parseShort(s)
 
   /**
     * Parse as an `Int` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
     */
-  def toInt: Int         = java.lang.Integer.parseInt(s)
+  def toInt: Int                       = java.lang.Integer.parseInt(s)
+  
+  /**
+   * Try to parse as an `Int`
+   * @return `Some(value)` if the string contains a valid Int value, otherwise `None`
+   * @throws java.lang.NullPointerException if the string is `null`
+   */
+  def toIntOption: Option[Int]         = StringParsers.parseInt(s)
 
   /**
     * Parse as a `Long` (string must contain only decimal digits and optional leading `-`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Long`.
     */
-  def toLong: Long       = java.lang.Long.parseLong(s)
+  def toLong: Long                     = java.lang.Long.parseLong(s)
+
+  /**
+   * Try to parse as a `Long`
+   * @return `Some(value)` if the string contains a valid long value, otherwise `None`
+   * @throws java.lang.NullPointerException if the string is `null`
+   */
+  def toLongOption: Option[Long]       = StringParsers.parseLong(s)
 
   /**
     * Parse as a `Float` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Float`.
     * @throws java.lang.NullPointerException  If the string is null.
     */
-  def toFloat: Float     = java.lang.Float.parseFloat(s)
+  def toFloat: Float                   = java.lang.Float.parseFloat(s)
+
+  /**
+   * Try to parse as a `Float`
+   * @return `Some(value)` if the string is a parsable `Float`, `None` otherwise
+   * @throws java.lang.NullPointerException If the string is null
+   */
+  def toFloatOption: Option[Float]     = StringParsers.parseFloat(s)
 
   /**
     * Parse as a `Double` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Double`.
     * @throws java.lang.NullPointerException  If the string is null.
     */
-  def toDouble: Double   = java.lang.Double.parseDouble(s)
+  def toDouble: Double                 = java.lang.Double.parseDouble(s)
 
-  private[this] def parseBoolean(s: String): Boolean =
-    if (s != null) s.toLowerCase match {
-      case "true" => true
-      case "false" => false
-      case _ => throw new IllegalArgumentException("For input string: \""+s+"\"")
-    }
-    else
-      throw new IllegalArgumentException("For input string: \"null\"")
+  /**
+   * Try to parse as a `Double`
+   * @return `Some(value)` if the string is a parsable `Double`, `None` otherwise
+   * @throws java.lang.NullPointerException If the string is null
+   */
+  def toDoubleOption: Option[Double]   = StringParsers.parseDouble(s)
+
+  private[this] def toBooleanImpl(s: String): Boolean =
+    if (s == null) throw new IllegalArgumentException("For input string: \"null\"")
+    else if (s.equalsIgnoreCase("true")) true
+    else if (s.equalsIgnoreCase("false")) false
+    else throw new IllegalArgumentException("For input string: \""+s+"\"")
 
   def toArray[B >: Char : ClassTag]: Array[B] =
     s.toCharArray.asInstanceOf[Array[B]]

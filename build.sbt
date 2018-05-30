@@ -590,6 +590,8 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     // TODO remove this when we upgrade scalacheck
     testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
+    //Make scalacheck print full stack traces
+    testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.CustomScalaCheckFramework"), "-verbosity", "2"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   ).settings(
