@@ -1,6 +1,8 @@
 package scala.tools.nsc
 package backend.jvm
 
+import java.nio.channels.ClosedByInterruptException
+import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
@@ -63,8 +65,10 @@ abstract class PostProcessor extends PerRunInit {
         backendReporting.error(NoPosition,
           s"Could not write class ${internalName} because it exceeds JVM code size limits. ${e.getMessage}")
         null
+      case ex: InterruptedException => throw ex
       case ex: Throwable =>
-        ex.printStackTrace()
+        // TODO fail fast rather than continuing to write the rest of the class files?
+        if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
         backendReporting.error(NoPosition, s"Error while emitting ${internalName}\n${ex.getMessage}")
         null
     }

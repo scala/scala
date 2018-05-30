@@ -7,10 +7,11 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ FileInputStream, IOException }
+import java.io.{FileInputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.channels.{ ReadableByteChannel, Channels }
+import java.nio.channels.{AsynchronousCloseException, Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
+
 import scala.tools.nsc.reporters._
 
 /** This class implements methods to read and decode source files. */
@@ -38,7 +39,11 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
     val c = new FileInputStream(file).getChannel
 
     try read(c)
-    catch { case e: Exception => reportEncodingError("" + file, e) ; Array() }
+    catch {
+      case ex: InterruptedException => throw ex
+      case _: ClosedByInterruptException => throw new InterruptedException
+      case e: Exception => reportEncodingError("" + file, e) ; Array()
+    }
     finally c.close()
   }
 
@@ -51,6 +56,8 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
       case _                   => read(ByteBuffer.wrap(file.toByteArray))
     }
     catch {
+      case ex: InterruptedException => throw ex
+      case _: ClosedByInterruptException => throw new InterruptedException
       case e: Exception => reportEncodingError("" + file, e) ; Array()
     }
   }

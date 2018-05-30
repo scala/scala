@@ -2,7 +2,7 @@ package scala.tools.nsc.backend.jvm
 
 import java.io.{BufferedOutputStream, DataOutputStream, FileOutputStream, IOException}
 import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
+import java.nio.channels.{ClosedByInterruptException, FileChannel}
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
@@ -179,7 +179,17 @@ abstract class ClassfileWriters {
           case _: FileAlreadyExistsException => FileChannel.open(path, fallbackOpenOptions)
         }
 
-        os.write(ByteBuffer.wrap(bytes), 0L)
+        try {
+          os.write(ByteBuffer.wrap(bytes), 0L)
+        } catch {
+          case ex: ClosedByInterruptException =>
+            try {
+              Files.deleteIfExists(path) // don't leave a empty of half-written classfile around after an interrupt
+            } catch {
+              case _: Throwable =>
+            }
+            throw ex
+        }
         os.close()
       } catch {
         case e: FileConflictException =>
