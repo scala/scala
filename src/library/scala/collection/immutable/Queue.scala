@@ -39,6 +39,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, Queue, Queue[A]]
+    with StrictOptimizedLinearSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedSeqOps[A, Queue, Queue[A]] {
 
   override def iterableFactory: SeqFactory[Queue] = Queue

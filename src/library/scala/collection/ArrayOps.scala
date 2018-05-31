@@ -1048,11 +1048,12 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def patch[B >: A : ClassTag](from: Int, other: IterableOnce[B], replaced: Int): Array[B] = {
     val b = ArrayBuilder.make[B]
     val k = other.knownSize
-    if(k >= 0) b.sizeHint(xs.length + k - replaced)
+    val r = if(replaced < 0) 0 else replaced
+    if(k >= 0) b.sizeHint(xs.length + k - r)
     val chunk1 = if(from > 0) min(from, xs.length) else 0
     if(chunk1 > 0) b.addAll(xs, 0, chunk1)
     b ++= other
-    val remaining = xs.length - chunk1 - replaced
+    val remaining = xs.length - chunk1 - r
     if(remaining > 0) b.addAll(xs, xs.length - remaining, remaining)
     b.result()
   }
@@ -1361,7 +1362,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  def diff(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).diff(that).array
+  def diff(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).diff(that).array.asInstanceOf[Array[A]]
 
   /** Computes the multiset intersection between this array and another sequence.
     *
@@ -1372,7 +1373,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  def intersect(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).intersect(that).array
+  def intersect(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).intersect(that).array.asInstanceOf[Array[A]]
 
   /** Groups chars in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in grouped.)
@@ -1384,7 +1385,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *          last element (which may be the only element) will be truncated
     *          if there are fewer than `size` chars remaining to be grouped.
     */
-  def sliding(size: Int, step: Int = 1): Iterator[Array[A]] = mutable.ArraySeq.make(xs).sliding(size, step).map(_.array)
+  def sliding(size: Int, step: Int = 1): Iterator[Array[A]] = mutable.ArraySeq.make(xs).sliding(size, step).map(_.array.asInstanceOf[Array[A]])
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
     *  the original string, with the chars taken in order.  Thus, `"xy"` and `"yy"`
@@ -1399,14 +1400,14 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return   An Iterator which traverses the possible n-element combinations of this string.
     *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
     */
-  def combinations(n: Int): Iterator[Array[A]] = mutable.ArraySeq.make(xs).combinations(n).map(_.array)
+  def combinations(n: Int): Iterator[Array[A]] = mutable.ArraySeq.make(xs).combinations(n).map(_.array.asInstanceOf[Array[A]])
 
   /** Iterates over distinct permutations.
     *
     *  @return   An Iterator which traverses the distinct permutations of this string.
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
-  def permutations: Iterator[Array[A]] = mutable.ArraySeq.make(xs).permutations.map(_.array)
+  def permutations: Iterator[Array[A]] = mutable.ArraySeq.make(xs).permutations.map(_.array.asInstanceOf[Array[A]])
 
   // we have another overload here, so we need to duplicate this method
   /** Tests whether this array contains the given sequence at a given index.

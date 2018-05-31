@@ -5,7 +5,7 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.language.higherKinds
 
 
@@ -61,7 +61,10 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def remove(key: K): C
 
   /** Alias for `remove` */
-  @`inline` final def - (key: K): C = remove(key)
+  /* @`inline` final */ def - (key: K): C = remove(key)
+
+  @deprecated("Use -- with an explicit collection", "2.13.0")
+  def - (key1: K, key2: K, keys: K*): C = remove(key1).remove(key2).removeAll(keys)
 
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.
@@ -170,7 +173,9 @@ object Map extends MapFactory[Map] {
     }
 
   def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
-    if (useBaseline) HashMap.newBuilder else ChampHashMap.newBuilder
+    new ImmutableBuilder[(K, V), Map[K, V]](empty) {
+      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+    }
 
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
@@ -184,7 +189,7 @@ object Map extends MapFactory[Map] {
     def remove(key: Any): Map[Any, Nothing] = this
   }
 
-  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] {
+  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -204,7 +209,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] {
+  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -234,7 +239,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] {
+  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -269,7 +274,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] {
+  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =

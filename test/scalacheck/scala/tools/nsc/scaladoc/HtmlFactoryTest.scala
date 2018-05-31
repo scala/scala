@@ -580,21 +580,21 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
     property("scala/bug#8144: Members' permalink - inner package") = files.get("some/pack/index.html").map { page => val html = toHtml(page)
       ("type link" |: html.contains("../../some/pack/index.html")) &&
-        ("member: SomeType (object)" |: html.contains("""<a title="Permalink" href="../../some/pack/index.html#SomeType">""")) &&
-        ("member: SomeType (class)" |: html.contains("""<a title="Permalink" href="../../some/pack/index.html#SomeTypeextendsAnyRef">"""))
+        ("member: SomeType (object)" |: html.contains("""<a href="../../some/pack/index.html#SomeType" title="Permalink">""")) &&
+        ("member: SomeType (class)" |: html.contains("""<a href="../../some/pack/index.html#SomeTypeextendsAnyRef" title="Permalink">"""))
     }.getOrElse(Prop.falsified)
 
     property("scala/bug#8144: Members' permalink - companion object") = files.get("some/pack/SomeType$.html").map { page => val html = toHtml(page)
       ("type link" |: html.contains("../../some/pack/SomeType$.html")) &&
-        ("member: someVal" |: html.contains("""<a title="Permalink" href="../../some/pack/SomeType$.html#someVal:String">"""))
+        ("member: someVal" |: html.contains("""<a href="../../some/pack/SomeType$.html#someVal:String" title="Permalink">"""))
     }.getOrElse(Prop.falsified)
 
     property("scala/bug#8144: Members' permalink - class") = files.get("some/pack/SomeType.html").map { page => val html = toHtml(page)
       (("type link" |: html.contains("../../some/pack/SomeType.html")) &&
-      ("constructor " |: html.contains("""<span class="permalink"><a title="Permalink" href="../../some/pack/SomeType.html#&lt;init&gt;(arg:String):some.pack.SomeType">""")) &&
-        ( "member: type TypeAlias" |: html.contains("""<span class="permalink"><a title="Permalink" href="../../some/pack/SomeType.html#TypeAlias=String">""")) &&
-        ( "member: def >#<():Int " |: html.contains("""<span class="permalink"><a title="Permalink" href="../../some/pack/SomeType.html#&gt;#&lt;():Int">""")) &&
-        ( "member: def >@<():TypeAlias " |: html.contains("""<span class="permalink"><a title="Permalink" href="../../some/pack/SomeType.html#&gt;@&lt;():SomeType.this.TypeAlias">""")))
+      ("constructor " |: html.contains("""<span class="permalink"><a href="../../some/pack/SomeType.html#&lt;init&gt;(arg:String):some.pack.SomeType" title="Permalink">""")) &&
+        ( "member: type TypeAlias" |: html.contains("""<span class="permalink"><a href="../../some/pack/SomeType.html#TypeAlias=String" title="Permalink">""")) &&
+        ( "member: def >#<():Int " |: html.contains("""<span class="permalink"><a href="../../some/pack/SomeType.html#&gt;#&lt;():Int" title="Permalink">""")) &&
+        ( "member: def >@<():TypeAlias " |: html.contains("""<span class="permalink"><a href="../../some/pack/SomeType.html#&gt;@&lt;():SomeType.this.TypeAlias" title="Permalink">""")))
     }.getOrElse(Prop.falsified)
 
   }

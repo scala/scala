@@ -19,7 +19,7 @@ class BitSetTest {
     bitSet &~= bitSet
     assert(bitSet.toBitMask.length == size, "Capacity of bitset changed after &~=")
   }
-  
+
   @Test def test_SI8917(): Unit = {
     val bigBitSet = BitSet(1, 100, 10000)
     val littleBitSet = BitSet(100)
@@ -57,5 +57,31 @@ class BitSetTest {
     val im = collection.immutable.BitSet(1)
     assert(im.map(i=>i.toLong).isInstanceOf[collection.immutable.TreeSet[Long]])
     assert(im.map(i=>i + 1).isInstanceOf[collection.immutable.BitSet])
-  } 
+
+    // SI-10879
+    assert(m.flatMap(i => Seq(i.toLong)).isInstanceOf[TreeSet[Long]])
+    assert(m.flatMap(i => Seq(i + 1)).isInstanceOf[BitSet])
+    assert(im.flatMap(i => Seq(i.toLong)).isInstanceOf[collection.immutable.TreeSet[Long]])
+    assert(im.flatMap(i => Seq(i + 1)).isInstanceOf[collection.immutable.BitSet])
+    assert(m.collect { case i => i.toLong }.isInstanceOf[TreeSet[Long]])
+    assert(m.collect { case i => i + 1 }.isInstanceOf[BitSet])
+    assert(im.collect { case i => i.toLong }.isInstanceOf[collection.immutable.TreeSet[Long]])
+    assert(im.collect { case i => i + 1 }.isInstanceOf[collection.immutable.BitSet])
+  }
+
+  @Test def strawman_507: Unit = {
+    val m = BitSet(1,2,3)
+    assert(m.collect{case i if i%2 == 1 => i.toLong}.isInstanceOf[TreeSet[Long]])
+    assert(m.collect{case i if i%2 == 1 => i.toLong} == TreeSet(1L, 3L))
+
+    assert(m.collect{case i if i%2 == 1 => i}.isInstanceOf[BitSet])
+    assert(m.collect{case i if i%2 == 1 => i} == BitSet(1, 3))
+
+    val im = collection.immutable.BitSet(1,2,3)
+    assert(im.collect{case i if i%2 == 1 => i.toLong}.isInstanceOf[collection.immutable.TreeSet[Long]])
+    assert(im.collect{case i if i%2 == 1 => i.toLong} == collection.immutable.TreeSet(1L, 3L))
+
+    assert(im.collect{case i if i%2 == 1 => i}.isInstanceOf[collection.immutable.BitSet])
+    assert(im.collect{case i if i%2 == 1 => i} == collection.immutable.BitSet(1, 3))
+  }
 }

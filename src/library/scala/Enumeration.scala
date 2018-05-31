@@ -293,6 +293,10 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
     def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
 
+    // necessary for disambiguation:
+    override def map[B : Ordering](f: Value => B): SortedIterableCC[B] = super[SortedSet].map[B](f)
+    override def flatMap[B : Ordering](f: Value => IterableOnce[B]): SortedIterableCC[B] = super[SortedSet].flatMap[B](f)
+
     override protected[this] def writeReplace(): AnyRef = this
   }
 

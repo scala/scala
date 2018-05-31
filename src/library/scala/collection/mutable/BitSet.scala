@@ -143,6 +143,12 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override def map(f: Int => Int): BitSet = super[BitSet].map(f)
   override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
 
+  override def flatMap(f: Int => IterableOnce[Int]): BitSet = super[BitSet].flatMap(f)
+  override def flatMap[B : Ordering](f: Int => IterableOnce[B]): SortedSet[B] = super[SortedSetOps].flatMap(f)
+
+  override def collect(pf: PartialFunction[Int, Int]): BitSet = super[BitSet].collect(pf)
+  override def collect[B: Ordering](pf: scala.PartialFunction[Int, B]): SortedSet[B] = super[SortedSetOps].collect(pf)
+
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
 

@@ -155,6 +155,12 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @deprecated("Use &~ or diff instead of --", "2.13.0")
   @`inline` final def -- (that: Set[A]): C = diff(that)
 
+  @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
+  def - (elem: A): C = diff(Set(elem))
+
+  @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
+  def - (elem1: A, elem2: A, elems: A*): C = diff(elems.toSet + elem1 + elem2)
+
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *
     * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
@@ -170,9 +176,11 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     */
   def concat(that: collection.Iterable[A]): C = fromSpecificIterable(new View.Concat(toIterable, that))
 
-  @deprecated("Consider requiring an immutable Set or fall back to Set.union ", "2.13.0")
+  @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
   def + (elem: A): C = fromSpecificIterable(new View.Appended(toIterable, elem))
-  //TODO We should be able to use `fromIterable` here but Dotty complains about a variance problem with no apparent workaround
+
+  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
+  def + (elem1: A, elem2: A, elems: A*): C = fromSpecificIterable(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   /** Alias for `concat` */
   @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)

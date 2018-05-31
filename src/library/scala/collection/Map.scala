@@ -48,6 +48,12 @@ trait Map[K, +V]
   override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(mapFactory.mapFactory[K, V], this)
+
+  // These two methods are not in MapOps so that MapView is not forced to implement them
+  @deprecated("Use - or remove on an immutable Map", "2.13.0")
+  def - (key: K): Map[K, V]
+  @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
+  def - (key1: K, key2: K, keys: K*): Map[K, V]
 }
 
 /** Base Map implementation type
@@ -277,8 +283,15 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def mkString(start: String, sep: String, end: String): String =
     iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
 
-  @deprecated("Consider requiring an immutable Map or fall back to Map.concat ", "2.13.0")
+  // these dummy overrides are necessary for disambiguation
+  override def mkString(sep: String): String = super.mkString(sep)
+  override def mkString: String = super.mkString
+
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))
+
+  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
+  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 }
 
 object MapOps {

@@ -4,7 +4,7 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.language.higherKinds
 
 
@@ -43,7 +43,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def excl(elem: A): C
 
   /** Alias for `excl` */
-  @`inline` final def - (elem: A): C = excl(elem)
+  /* @`inline` final */ override def - (elem: A): C = excl(elem)
 
   override def concat(that: collection.Iterable[A]): C = {
     var result: C = coll
@@ -81,7 +81,9 @@ object Set extends IterableFactory[Set] {
     }
 
   def newBuilder[A]: Builder[A, Set[A]] =
-    if (useBaseline) HashSet.newBuilder else ChampHashSet.newBuilder
+    new ImmutableBuilder[A, Set[A]](empty) {
+      def addOne(elem: A): this.type = { elems = elems + elem; this }
+    }
 
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] {
@@ -95,7 +97,7 @@ object Set extends IterableFactory[Set] {
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
   /** An optimized representation for immutable sets of size 1 */
-  final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] {
+  final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 1
     def contains(elem: A): Boolean = elem == elem1
     def incl(elem: A): Set[A] =
@@ -117,7 +119,7 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 2 */
-  final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] {
+  final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 2
     def contains(elem: A): Boolean = elem == elem1 || elem == elem2
     def incl(elem: A): Set[A] =
@@ -148,7 +150,7 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 3 */
-  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] {
+  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 3
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3
@@ -182,7 +184,7 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 4 */
-  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] {
+  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 4
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
