@@ -239,6 +239,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   val YaddBackendThreads = IntSetting   ("-Ybackend-parallelism", "maximum worker threads for backend", 1, Some((1,16)), (x: String) => None )
   val YmaxQueue = IntSetting   ("-Ybackend-worker-queue", "backend threads worker queue size", 0, Some((0,1000)), (x: String) => None )
+  val YmaxImplicitCycleDepth = IntSetting("-Ymax-implicit-cycle-depth", "Fail with divergence on implicit resolution cycles > this depth", 0, Some((0,1000)), (x: String) => None )
   val YjarCompressionLevel = IntSetting("-Yjar-compression-level", "compression level to use when writing jar files",
     Deflater.DEFAULT_COMPRESSION, Some((Deflater.DEFAULT_COMPRESSION,Deflater.BEST_COMPRESSION)), (x: String) => None)
 
