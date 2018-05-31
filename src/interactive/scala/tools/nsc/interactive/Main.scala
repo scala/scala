@@ -22,14 +22,10 @@ object Main extends nsc.MainClass {
       compiler.askReload(sfs, reloaded)
 
       reloaded.get.right.toOption match {
-        case Some(ex) =>
-          reporter match {
-            case cancelable: reporters.Reporter => cancelable.cancelled = true   // Causes exit code to be non-0
-            case _ => ()
-          }
-        case None => reporter.reset() // Causes other compiler errors to be ignored
+        case Some(ex) => reporter.ERROR.count += 1 // Causes exit code to be non-0
+        case None     => reporter.reset()          // Causes other compiler errors to be ignored
       }
-      compiler.askShutdown
+      compiler.askShutdown()
     }
     super.processSettingsHook() && (
       if (this.settings.Yidedebug) { run() ; false } else true

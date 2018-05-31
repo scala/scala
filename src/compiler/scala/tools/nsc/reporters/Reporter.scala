@@ -43,6 +43,7 @@ object Reporter {
   /** Adapt a reporter to legacy reporter API. Handle `info` by forwarding to `echo`. */
   class AdaptedReporter(val delegate: InternalReporter) extends Reporter with ForwardingReporter {
     override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = delegate.echo(pos, msg)
+    override def toString() = s"AdaptedReporter($delegate)"
   }
   /** A marker trait for adapted reporters that respect maxerrs. */
   trait LimitedReporter { _: Reporter => }

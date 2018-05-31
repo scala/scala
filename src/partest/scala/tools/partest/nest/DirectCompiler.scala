@@ -7,15 +7,15 @@ package scala.tools.partest
 package nest
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.{ Global, Settings, CompilerCommand }
-import scala.tools.nsc.reporters.{DisplayReporter, PositionFilter, DefaultReporter}
-import scala.reflect.internal.{Reporter, ForwardingReporter}
+import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.reporters.{DefaultReporter, Reporter}
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
-import java.io.{ PrintWriter, FileWriter }
+import java.io.{PrintWriter, FileWriter}
 
 object ExtConsoleReporter {
-  def apply(settings: Settings, writer: PrintWriter) = {
+  // `compile` exploits `close` method on default reporter
+  def apply(settings: Settings, writer: PrintWriter): DefaultReporter = {
     val r = DefaultReporter(settings, writer)
     r.shortname = true
     r
@@ -120,6 +120,7 @@ class DirectCompiler(val runner: Runner) {
         if (!reporter.hasErrors) runner.genPass()
         else {
           reporter.finish()
+          reporter.close()
           runner.genFail(s"compilation failed with $errorCount errors")
         }
       }
