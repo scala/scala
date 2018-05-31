@@ -201,7 +201,19 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *           applied to this $coll. By default the string prefix is the
     *           simple name of the collection class $coll.
     */
-  def className: String = {
+  @`inline` protected[this] def className: String = stringPrefix
+
+  /** Forwarder to `className` for use in `scala.runtime.ScalaRunTime`.
+    * 
+    * This allows the proper visibility for `className` to be
+    * published, but provides the exclusive access needed by
+    * `scala.runtime.ScalaRunTime.stringOf` (and a few tests in
+    * the test suite).
+    */
+  private[scala] final def collectionClassName: String = className
+
+  @deprecatedOverriding("Override className instead", "2.13.0")
+  protected[this] def stringPrefix: String = {
     /* This method is written in a style that avoids calling `String.split()`
      * as well as methods of java.lang.Character that require the Unicode
      * database information. This is mostly important for Scala.js, so that
@@ -265,9 +277,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     // dead code
     result
   }
-
-  @deprecated("Use className instead of stringPrefix", "2.13.0")
-  @`inline` final def stringPrefix: String = className
 
   /** Converts this $coll to a string.
     *

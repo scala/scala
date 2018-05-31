@@ -13,7 +13,7 @@ class QueueTest {
   def reversingReturnsAQueue(): Unit = {
     val q1 = Queue(1, 2, 3)
     val q2: Queue[Int] = q1.reverse
-    assertEquals("Queue", q2.className)
+    assertEquals("Queue", q2.collectionClassName)
   }
 
   @Test

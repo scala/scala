@@ -17,7 +17,7 @@ class FactoriesTest {
     def cloneCollection[A, C](xs: Iterable[A])(implicit bf: BuildFrom[xs.type, A, C]): C =
       bf.fromSpecificIterable(xs)(xs)
 
-    Assert.assertEquals("ArrayBuffer", cloneCollection(seq).className)
+    Assert.assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
   }
 
   @Test def factoryIgnoresSourceCollectionFactory(): Unit = {
@@ -25,7 +25,7 @@ class FactoriesTest {
     def cloneElements[A, C](xs: Iterable[A])(cb: Factory[A, C]): C =
       cb.fromSpecific(xs)
 
-    Assert.assertEquals("List", cloneElements(seq)(Seq).className)
+    Assert.assertEquals("List", cloneElements(seq)(Seq).collectionClassName)
   }
 
   def apply(factory: IterableFactory[Iterable]): Unit = {

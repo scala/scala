@@ -13,6 +13,6 @@ class StackTest {
   def reversingReturnsAStack(): Unit = {
     val s1 = Stack(1, 2, 3)
     val s2: Stack[Int] = s1.reverse
-    assertEquals("Stack", s2.className)
+    assertEquals("Stack", s2.collectionClassName)
   }
 }
