@@ -1,3 +1,21 @@
+Classes_1.scala:16: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    (() => "-1")
+        ^
+Classes_1.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  (() => "1")
+      ^
+Classes_1.scala:31: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+    (() => "2")
+        ^
+Classes_1.scala:66: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+    (() => () => "5")
+        ^
+Classes_1.scala:75: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  (() => "1")
+      ^
+Classes_1.scala:83: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  (() => "1")
+      ^
 A / A (canon) / A (simple)
 - declared cls: List(class A$B, interface A$C, class A$D$)
 - enclosing   : null (declaring cls) / null (cls) / null (constr) / null (meth)

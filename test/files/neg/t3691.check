@@ -1,16 +1,16 @@
 t3691.scala:4: error: type mismatch;
  found   : Test.A[String]
  required: AnyRef{type A[x]}
- val b = (new A[String]{}): { type A[x] } // not ok
-          ^
+  val b = (new A[String]{}): { type A[x] } // not ok
+           ^
 t3691.scala:5: error: type mismatch;
  found   : Test.A[String]
  required: AnyRef{type A}
- val c = (new A[String]{}): { type A } // not ok
-          ^
+  val c = (new A[String]{}): { type A } // not ok
+           ^
 t3691.scala:7: error: type mismatch;
  found   : AnyRef{type A = String}
  required: AnyRef{type A[X]}
- val x = (new { type A = String }): { type A[X] } // not ok
-          ^
+  val x = (new { type A = String }): { type A[X] } // not ok
+           ^
 three errors found

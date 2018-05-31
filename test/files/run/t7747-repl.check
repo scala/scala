@@ -102,6 +102,8 @@ res15: (Int, Int, Int) = (1,2,3)
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+                     ^
+       warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
 res16: () => Int = <function0>
 
 scala> 

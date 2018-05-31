@@ -10,7 +10,7 @@ class TailRec {
   }.length
 
   // transform the body of a function
-  () => {
+  def f = () => {
     @tailrec def inner(i: Int): Int = 1 + inner(i)
     inner(0)
   }
