@@ -1720,7 +1720,7 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val warn =
       """T::m()I is annotated @inline but could not be inlined:
-        |The callee T::m()I contains the instruction INVOKESPECIAL T.impl$1 ()I
+        |The callee T::m()I contains the instruction INVOKESPECIAL T.impl$1 ()I (itf)
         |that would cause an IllegalAccessError when inlined into class C.""".stripMargin
     val List(a, c, t) = compileClasses(code, allowMessage = _.msg contains warn)
     assertInvoke(getMethod(c, "t"), "T", "m$")
