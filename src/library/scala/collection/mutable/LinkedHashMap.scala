@@ -114,7 +114,7 @@ class LinkedHashMap[K, V]
   def subtractOne(key: K): this.type = { remove(key); this }
 
   def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next() =
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
@@ -128,7 +128,7 @@ class LinkedHashMap[K, V]
   override def keySet: collection.Set[K] = new LinkedKeySet
 
   override def keysIterator: Iterator[K] = new AbstractIterator[K] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next() =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
@@ -136,7 +136,7 @@ class LinkedHashMap[K, V]
   }
 
   override def valuesIterator: Iterator[V] = new AbstractIterator[V] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next() =
       if (hasNext) { val res = cur.value; cur = cur.later; res }

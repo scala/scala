@@ -34,8 +34,8 @@ class ListBuffer[A]
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
-  private var aliased = false
-  private var len = 0
+  private[this] var aliased = false
+  private[this] var len = 0
 
   private type Predecessor[A] = ::[A] /*| Null*/
 

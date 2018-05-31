@@ -563,8 +563,8 @@ private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vect
 
 private final case class MapEffect[K, +V]() {
 
-  private var modified: Boolean = false
-  private var replacedValue: Boolean = false
+  private[this] var modified: Boolean = false
+  private[this] var replacedValue: Boolean = false
 
   def isModified =  { modified }
   def setModified = { modified = true }

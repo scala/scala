@@ -597,8 +597,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *  - `FF` - form feed   (`0x0C`)
     */
   def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
-    private val len = s.length
-    private var index = 0
+    private[this] val len = s.length
+    private[this] var index = 0
     def hasNext: Boolean = index < len
     def next(): String = {
       if (index >= len) Iterator.empty.next()

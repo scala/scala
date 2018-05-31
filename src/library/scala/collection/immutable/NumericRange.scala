@@ -175,7 +175,7 @@ sealed class NumericRange[T](
     // XXX This may be incomplete.
     new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
 
-      private lazy val underlyingRange: NumericRange[T] = self
+      private[this] lazy val underlyingRange: NumericRange[T] = self
       override def foreach[@specialized(Unit) U](f: A => U): Unit = { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
@@ -405,9 +405,9 @@ object NumericRange {
   private final class NumericRangeIterator[T](self: NumericRange[T], num: Integral[T]) extends AbstractIterator[T] with Serializable {
     import num.mkNumericOps
 
-    private var _hasNext = !self.isEmpty
-    private var _next: T = self.start
-    private val lastElement: T = if (_hasNext) self.last else self.start
+    private[this] var _hasNext = !self.isEmpty
+    private[this] var _next: T = self.start
+    private[this] val lastElement: T = if (_hasNext) self.last else self.start
     override def knownSize: Int = if (_hasNext) num.toInt((lastElement - _next) / self.step) + 1 else 0
     def hasNext: Boolean = _hasNext
     def next(): T = {

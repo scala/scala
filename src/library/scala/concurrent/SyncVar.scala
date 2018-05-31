@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit
  *  @author  Martin Odersky
  */
 class SyncVar[A] {
-  private var isDefined: Boolean = false
-  private var value: A = _
+  private[this] var isDefined: Boolean = false
+  private[this] var value: A = _
 
   /**
    * Wait for this SyncVar to become defined and then get

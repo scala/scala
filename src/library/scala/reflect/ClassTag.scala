@@ -76,9 +76,9 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
  */
 object ClassTag {
-  private val ObjectTYPE = classOf[java.lang.Object]
-  private val NothingTYPE = classOf[scala.runtime.Nothing$]
-  private val NullTYPE = classOf[scala.runtime.Null$]
+  private[this] val ObjectTYPE = classOf[java.lang.Object]
+  private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
+  private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
   val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
   val Short   : ClassTag[scala.Short]      = Manifest.Short

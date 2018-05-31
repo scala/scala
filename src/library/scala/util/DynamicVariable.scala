@@ -38,7 +38,7 @@ import java.lang.InheritableThreadLocal
  *  @since   2.6
  */
 class DynamicVariable[T](init: T) {
-  private val tl = new InheritableThreadLocal[T] {
+  private[this] val tl = new InheritableThreadLocal[T] {
     override def initialValue = init.asInstanceOf[T with AnyRef]
   }
 

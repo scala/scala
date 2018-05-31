@@ -193,7 +193,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
   }
 
   def iterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (null == table(i))) i += 1
       i < table.length

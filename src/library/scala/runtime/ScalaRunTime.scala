@@ -147,8 +147,8 @@ object ScalaRunTime {
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {
     new AbstractIterator[T] {
-      private var c: Int = 0
-      private val cmax = x.productArity
+      private[this] var c: Int = 0
+      private[this] val cmax = x.productArity
       def hasNext = c < cmax
       def next() = {
         val result = x.productElement(c)

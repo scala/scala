@@ -32,8 +32,8 @@ class ListMap[K, V]
 
   override def mapFactory: MapFactory[ListMap] = ListMap
 
-  private var elems: List[(K, V)] = List()
-  private var siz: Int = 0
+  private[this] var elems: List[(K, V)] = List()
+  private[this] var siz: Int = 0
 
   def get(key: K): Option[V] = elems find (_._1 == key) map (_._2)
   def iterator: Iterator[(K, V)] = elems.iterator

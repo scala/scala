@@ -24,12 +24,12 @@ object BigDecimal {
   private final val maximumHashScale = 4934           // Quit maintaining hash identity with BigInt beyond this scale
   private final val hashCodeNotComputed = 0x5D50690F  // Magic value (happens to be "BigDecimal" old MurmurHash3 value)
   private final val deci2binary = 3.3219280948873626  // Ratio of log(10) to log(2)
-  private val minCached = -512
-  private val maxCached = 512
+  private[this] val minCached = -512
+  private[this] val maxCached = 512
   val defaultMathContext = MathContext.DECIMAL128
 
   /** Cache only for defaultMathContext using BigDecimals in a small range. */
-  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
+  private[this] lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
   object RoundingMode extends Enumeration {
     // Annoying boilerplate to ensure consistency with java.math.RoundingMode

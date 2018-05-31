@@ -20,7 +20,7 @@ class ShutdownHookThread private (runnable: Runnable, name: String) extends Thre
 }
 
 object ShutdownHookThread {
-  private var hookNameCount: Int = 0
+  private[this] var hookNameCount: Int = 0
   private def hookName(): String = synchronized {
     hookNameCount += 1
     "shutdownHook" + hookNameCount

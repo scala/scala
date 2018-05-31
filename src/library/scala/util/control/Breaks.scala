@@ -26,7 +26,7 @@ package util.control
  */
 class Breaks {
 
-  private val breakException = new BreakControl
+  private[this] val breakException = new BreakControl
 
   /**
    * A block from which one can exit with a `break`. The `break` may be

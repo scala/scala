@@ -76,9 +76,9 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return     the iterator.
     */
   def subsets(): Iterator[C] = new AbstractIterator[C] {
-    private val elms = toIterable.to(IndexedSeq)
-    private var len = 0
-    private var itr: Iterator[C] = Iterator.empty
+    private[this] val elms = toIterable.to(IndexedSeq)
+    private[this] var len = 0
+    private[this] var itr: Iterator[C] = Iterator.empty
 
     def hasNext = len <= elms.size || itr.hasNext
     def next() = {
@@ -101,8 +101,8 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @author Eastsun
     */
   private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends Iterator[C] {
-    private val idxs = Array.range(0, len+1)
-    private var _hasNext = true
+    private[this] val idxs = Array.range(0, len+1)
+    private[this] var _hasNext = true
     idxs(len) = elms.size
 
     def hasNext = _hasNext

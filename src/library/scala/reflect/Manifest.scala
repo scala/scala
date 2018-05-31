@@ -235,9 +235,9 @@ object ManifestFactory {
   }
   val Unit: AnyValManifest[Unit] = new UnitManifest
 
-  private val ObjectTYPE = classOf[java.lang.Object]
-  private val NothingTYPE = classOf[scala.runtime.Nothing$]
-  private val NullTYPE = classOf[scala.runtime.Null$]
+  private[this] val ObjectTYPE = classOf[java.lang.Object]
+  private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
+  private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
   @SerialVersionUID(1L)
   private class AnyManifest extends PhantomManifest[scala.Any](ObjectTYPE, "Any") {

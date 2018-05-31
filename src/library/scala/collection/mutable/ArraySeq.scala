@@ -86,7 +86,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   val untagged: SeqFactory[ArraySeq] = new ClassTagSeqFactory.AnySeqDelegate(self)
 
   // This is reused for all calls to empty.
-  private val EmptyArraySeq  = new ofRef[AnyRef](new Array[AnyRef](0))
+  private[this] val EmptyArraySeq  = new ofRef[AnyRef](new Array[AnyRef](0))
   def empty[T : ClassTag]: ArraySeq[T] = EmptyArraySeq.asInstanceOf[ArraySeq[T]]
 
   def from[A : ClassTag](it: scala.collection.IterableOnce[A]): ArraySeq[A] = {
