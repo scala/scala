@@ -42,11 +42,12 @@ object Array {
   val emptyObjectArray  = new Array[Object](0)
 
   /** Provides an implicit conversion from the Array object to a collection Factory */
-  implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] =
-    new Factory[A, Array[A]] {
-      def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
-      def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
-    }
+  implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
+  @SerialVersionUID(3L)
+  private class ArrayFactory[A : ClassTag](dummy: Array.type) extends Factory[A, Array[A]] with Serializable {
+    def fromSpecific(it: IterableOnce[A]): Array[A] = Array.from[A](it)
+    def newBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder[A]
+  }
 
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].

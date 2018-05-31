@@ -6,11 +6,11 @@ import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.internal.util.AbstractFileClassLoader
+import scala.reflect.internal.util.{AbstractFileClassLoader, FreshNameCreator, NoSourceFile}
 import scala.reflect.internal.Flags._
-import scala.reflect.internal.util.NoSourceFile
 import java.lang.{Class => jClass}
 import java.lang.System.{lineSeparator => EOL}
+
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
 import scala.reflect.io.NoAbstractFile

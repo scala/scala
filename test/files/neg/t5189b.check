@@ -1,7 +1,7 @@
 t5189b.scala:38: error: type mismatch;
- found   : TestNeg.Wrapped[?T7] where type ?T7 <: T (this is a GADT skolem)
+ found   : TestNeg.Wrapped[?T1] where type ?T1 <: T (this is a GADT skolem)
  required: TestNeg.Wrapped[T]
-Note: ?T7 <: T, but class Wrapped is invariant in type W.
+Note: ?T1 <: T, but class Wrapped is invariant in type W.
 You may wish to define W as +W instead. (SLS 4.5)
     case Wrapper/*[_ <: T ]*/(wrapped) => wrapped // : Wrapped[_ <: T], which is a subtype of Wrapped[T] if and only if Wrapped is covariant in its type parameter
                                           ^
