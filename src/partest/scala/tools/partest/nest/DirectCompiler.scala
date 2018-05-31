@@ -13,18 +13,18 @@
 package scala.tools.partest
 package nest
 
-import java.io.{FileWriter, PrintWriter}
+import java.io.{PrintWriter, FileWriter}
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.reporters.DefaultReporter
-import scala.reflect.internal.Reporter
+import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.reporters.{DefaultReporter, Reporter}
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.sys.process._
 
 object ExtConsoleReporter {
-  def apply(settings: Settings, writer: PrintWriter) = {
+  // `compile` exploits `close` method on default reporter
+  def apply(settings: Settings, writer: PrintWriter): DefaultReporter = {
     val r = DefaultReporter(settings, writer)
     r.shortname = true
     r
@@ -137,6 +137,7 @@ class DirectCompiler(val runner: Runner) {
         if (!reporter.hasErrors) runner.genPass()
         else {
           reporter.finish()
+          reporter.close()
           runner.genFail(s"compilation failed with $errorCount errors")
         }
       }

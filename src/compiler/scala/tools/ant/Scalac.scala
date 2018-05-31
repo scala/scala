@@ -691,7 +691,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         buildError("Compile failed because of an internal compiler error (" + msg + "); see the error output for details.")
     }
 
-    reporter.printSummary()
+    reporter.finish()
     if (reporter.hasErrors) {
       val msg = "Compile failed with %d error%s; see the compiler error output for details.".format(
         reporter.ERROR.count, plural(reporter.ERROR.count))

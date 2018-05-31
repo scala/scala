@@ -11,9 +11,14 @@ import scala.tools.nsc.Settings
 import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.reflect.internal.util.Position
 
-/** This reporter implements filtering by severity and position.
- */
-class PositionFilter(settings: Settings, protected val delegate: InternalReporter) extends InternalReporter with FilteringReporter {
+/** Filtering by severity and position. */
+trait PositionFiltering extends InternalReporter with Filtering {
+
+  /** True to disable warnings. */
+  protected def noWarnings: Boolean
+
+  /** Invoked when an error or warning is filtered by position. */
+  protected def suppressed(pos: Position, msg: String, severity: Severity): Unit
 
   private val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
   private val messages  = mutable.Map[Position, List[String]]() withDefaultValue Nil
@@ -27,11 +32,8 @@ class PositionFilter(settings: Settings, protected val delegate: InternalReporte
   override protected def filter(pos: Position, msg: String, severity: Severity) =
     severity match {
       case INFO => true
-      case WARNING if settings.nowarnings => false
-      case _ =>
-        val hidden = testAndLog(pos, severity, msg)
-        if (hidden && settings.debug) forward(pos, "[ suppressed ] " + msg, severity)
-        !hidden
+      case WARNING if noWarnings => false
+      case _ => !testAndLog(pos, severity, msg) || { suppressed(pos, msg, severity) ; false }
     }
 
   /** Logs a position and returns true if it was already logged.
@@ -54,4 +56,13 @@ class PositionFilter(settings: Settings, protected val delegate: InternalReporte
         false
       }
     }
+}
+
+/** This reporter implements filtering by severity and position.
+ */
+class PositionFilter(settings: Settings, protected val delegate: InternalReporter) extends InternalReporter with FilteringReporter with PositionFiltering {
+  protected def noWarnings = settings.nowarnings
+  protected def suppressed(pos: Position, msg: String, severity: Severity): Unit =
+    if (settings.prompt) forward(pos, msg, severity)
+    else if (settings.debug) forward(pos, "[ suppressed ] " + msg, severity)
 }

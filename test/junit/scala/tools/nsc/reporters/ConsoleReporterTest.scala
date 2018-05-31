@@ -46,9 +46,8 @@ class ConsoleReporterTest {
   @Test
   def printMessageTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "Hello World!")(_ => reporter.printMessage("Hello World!"))
-    testHelper(msg = "Testing with NoPosition")(reporter.printMessage(_, "Testing with NoPosition"))
-    testHelper(posWithSource, "Testing with Defined Position")(reporter.printMessage(_, "Testing with Defined Position"))
+    testHelper(msg = "Hello World!")(_ => reporter.display(NoPosition, "Hello World!", null))
+    testHelper(posWithSource, "Testing with Defined Position")(reporter.display(_, "Testing with Defined Position", null))
   }
 
   @Test
@@ -65,23 +64,13 @@ class ConsoleReporterTest {
   @Test
   def printTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "test")(reporter.print(_, "test", reporter.INFO))
-    testHelper(msg = "test", severity = "warning: ")(reporter.print(_, "test", reporter.WARNING))
-    testHelper(msg = "test", severity = "error: ")(reporter.print(_, "test", reporter.ERROR))
-    testHelper(posWithSource, msg = "test")(reporter.print(_, "test", reporter.INFO))
-    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.print(_, "test", reporter.WARNING))
-    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.print(_, "test", reporter.ERROR))
-  }
-
-  @Test
-  def printColumnMarkerTest(): Unit = {
-    val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "")(reporter.printColumnMarker(_))
-
-    reporter.printColumnMarker(posWithSource)
-    assertEquals("    ^", writerOut.toString.linesIterator.next)
-    writerOut.reset
-  }
+    testHelper(msg = "test")(reporter.display(_, "test", reporter.INFO))
+    testHelper(msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
+    testHelper(msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
+    testHelper(posWithSource, msg = "test")(reporter.display(_, "test", reporter.INFO))
+    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
+    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
+ }
 
   @Test
   def displayTest(): Unit = {
@@ -114,7 +103,7 @@ class ConsoleReporterTest {
 
   @Test
   def finishTest(): Unit = {
-    val reporter = createConsoleReporter("r", writerOut)
+    val reporter = createConsoleReporter("", writerOut)
 
     reporter.resetCount(reporter.ERROR)
     reporter.resetCount(reporter.WARNING)

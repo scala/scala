@@ -686,7 +686,7 @@ class Scaladoc extends ScalaMatchingTask {
           reporter.WARNING.count + " warning" +
           (if (reporter.WARNING.count > 1) "s" else "") +
           "; see the documenter output for details.")
-      reporter.printSummary()
+      reporter.finish()
     } catch {
       case exception: Throwable =>
         exception.printStackTrace()

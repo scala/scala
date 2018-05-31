@@ -6,8 +6,8 @@ defined class Foo
 
 scala> val f = new Foo
 <console>:12: warning: class Foo is deprecated (since ReplTest version 1.0-FINAL): foooo
-       val f = new Foo
-                   ^
+val f = new Foo
+            ^
 f: Foo = Bippy
 
 scala> :quit
