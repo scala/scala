@@ -340,7 +340,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
 
   /** Returns the right value if this is right
-    * or this value if this if this is left
+    * or this value if this is left
     *
     * @example {{{
     * val  l: Either[String, Either[String, Int]] = Left("pancake")
