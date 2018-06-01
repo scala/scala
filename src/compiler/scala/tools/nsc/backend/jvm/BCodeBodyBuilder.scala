@@ -662,7 +662,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               else InvokeStyle.Virtual
 
             if (invokeStyle.hasInstance) genLoadQualifier(fun)
-            genLoadArguments(args, paramTKs(app))
 
             val Select(qual, _) = fun // fun is a Select, also checked in genLoadQualifier
             if (sym == definitions.Array_clone) {
@@ -679,12 +678,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               //   http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/interpreter/linkResolver.cpp#l439
               // Example: `class C { override def clone(): Object = "hi" }`
               // Emitting `def f(c: C) = c.clone()` as `Object.clone()` gives a VerifyError.
+              assert(args.isEmpty)
               val target: String = tpeTK(qual).asRefBType.classOrArrayType
               val methodBType = methodBTypeFromSymbol(sym)
               bc.invokevirtual(target, sym.javaSimpleName.toString, methodBType.descriptor, app.pos)
               generatedType = methodBType.returnType
             } else {
-              val receiverClass = if (!invokeStyle.isVirtual) null else {
+              val (receiverClass, method) = if (!invokeStyle.isVirtual) (null, sym) else {
                 // receiverClass is used in the bytecode to as the method receiver. using sym.owner
                 // may lead to IllegalAccessErrors, see 9954eaf / aladdin bug 455.
                 val qualSym = qual.tpe.typeSymbol
@@ -694,11 +694,27 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                   // to work as well, but it seems safer not to change this. Javac also uses Object.
                   // Note that array apply/update/length are handled by isPrimitive (above).
                   assert(sym.owner == ObjectClass, s"unexpected array call: ${show(app)}")
-                  ObjectClass
-                } else qualSym
+                  (ObjectClass, sym)
+                } else if (qualSym.isSealed) {
+                  // If we know that there is a single non-abstract subclass of a sealed receiver,
+                  // make the virtual method call directly on that subclass. This enables the call
+                  // to later be inlined.
+                  qualSym.sealedDescendants filter (_.isConcreteClass) match {
+                    case s if s.size == 1
+                           && getMemberIfDefined(s.head, sym.name).hasFlag(Flags.METHOD)
+                           && s.head.rawname != tpnme.LOCAL_CHILD =>
+                      val theClass = s.head
+                      val theMethod = getMemberMethod(theClass, sym.name)
+                      genCast(classBTypeFromSymbol(theClass), true)
+                      (theClass, theMethod)
+                    case _ => (qualSym, sym)
+                  }
+                } else (qualSym, sym)
               }
 
-              generatedType = genCallMethod(sym, invokeStyle, app.pos, receiverClass)
+              genLoadArguments(args, paramTKs(app))
+
+              generatedType = genCallMethod(method, invokeStyle, app.pos, receiverClass)
 
               // Check if the Apply tree has an InlineAnnotatedAttachment, added by the typer
               // for callsites marked `f(): @inline/noinline`. For nullary calls, the attachment
